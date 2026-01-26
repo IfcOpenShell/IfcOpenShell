@@ -16,33 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 import os
 import re
-import bpy
-import math
-import bmesh
 import shutil
-from bpy.types import SplineBezierPoints, SplinePoints
-import mathutils
 import xml.etree.ElementTree as ET
-import svgwrite
-import svgwrite.container
-import svgwrite.text
+from collections.abc import Callable, Sequence
+from math import acos, atan, ceil, degrees, pi
+from pathlib import Path
+from typing import Optional, Self, Union
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.helper as helper
-from bonsai.bim.module.drawing.data import DrawingsData
-from bonsai.bim.module.drawing.data import DecoratorData
-from math import pi, ceil, atan, degrees, acos
-from mathutils import geometry, Vector
-from typing import Optional, Self, Union
-from collections.abc import Callable, Sequence
-from pathlib import Path
+import mathutils
+import svgwrite
+import svgwrite.container
+import svgwrite.text
+from bpy.types import SplineBezierPoints, SplinePoints
 from markdown_it import MarkdownIt
+from mathutils import Vector, geometry
+
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 
 
 class External(svgwrite.container.Group):

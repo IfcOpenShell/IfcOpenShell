@@ -1,15 +1,17 @@
 from __future__ import annotations
-import bpy
-import time
+
 import os
 import platform
-import bonsai.tool as tool
+import time
 from typing import TYPE_CHECKING
 
+import bpy
+
+import bonsai.tool as tool
 from bonsai.bim.module.ifcgit.data import IfcGitData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.ifcgit.prop import IfcGitProperties, IfcGitListItem
+    from bonsai.bim.module.ifcgit.prop import IfcGitListItem, IfcGitProperties
 
 
 class IFCGIT_PT_panel(bpy.types.Panel):

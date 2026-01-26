@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.element
+
 import bonsai.tool as tool
 
 

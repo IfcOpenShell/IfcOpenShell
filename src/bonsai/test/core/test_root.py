@@ -18,7 +18,7 @@
 
 import bonsai.core.root as subject
 import test.core.test_geometry
-from test.core.bootstrap import ifc, collector, geometry, root
+from test.core.bootstrap import collector, geometry, ifc, root
 
 
 class TestCopyClass:

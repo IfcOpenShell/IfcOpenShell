@@ -17,20 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
+import math
+from typing import TYPE_CHECKING, Any, Union
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
+import mathutils
+from lark import Lark, Transformer
+from mathutils import Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
-import math
-import mathutils
-from mathutils import Matrix, Vector
-from lark import Lark, Transformer
-from typing import Union, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties

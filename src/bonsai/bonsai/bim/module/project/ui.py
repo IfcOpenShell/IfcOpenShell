@@ -17,19 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import os
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search, draw_attributes
-from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.project.data import ProjectData, LinksData
 from typing import TYPE_CHECKING
 
+import bpy
+import ifcopenshell
+from bpy.types import Menu, Panel, UIList
+
+import bonsai.bim
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import LinksData, ProjectData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        FilterCategory,
+        LibraryElement,
+        Link,
+    )
 
 
 def file_import_menu(self, context):

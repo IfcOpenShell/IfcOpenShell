@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
+
 import bonsai.tool as tool
-from typing import Any, Union
 
 
 def refresh():

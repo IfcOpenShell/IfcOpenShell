@@ -21,11 +21,12 @@ import bpy
 import gpu
 import ifcopenshell
 import ifcopenshell.util.element
-import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 

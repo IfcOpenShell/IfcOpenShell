@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 print("Here are the detected system paths:")
@@ -45,10 +45,10 @@ for dep in dependencies:
     subprocess.check_call(command + [dep])
 
 try:
+    import pygments
     import pytest
     import pytest_bdd
     import pytest_blender
-    import pygments
 
     print("Test dependency installation was successful!")
 except Exception as e:

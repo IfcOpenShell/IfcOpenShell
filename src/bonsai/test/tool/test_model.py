@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+from typing import Any
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
@@ -26,14 +29,13 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import numpy as np
-import json
-from typing import Any
-from test.bim.bootstrap import NewFile
 from bonsai.tool.model import Model as subject
-from ifcopenshell.util.shape_builder import V, ShapeBuilder
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from math import acos, cos, degrees, pi, sin
+from typing import Optional
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -28,18 +31,21 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
 import ifcopenshell.util.type
-import bonsai.core.type
+import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.root
+import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos, sin, pi, acos, degrees
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional
 
 
 class DumbSlabGenerator:

@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.aggregate as subject
-from test.core.bootstrap import ifc, aggregate, collector
+from test.core.bootstrap import aggregate, collector, ifc
 
 
 class TestEnableEditingAggregate:

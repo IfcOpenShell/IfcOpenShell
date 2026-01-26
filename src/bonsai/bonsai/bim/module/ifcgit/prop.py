@@ -1,15 +1,17 @@
+from typing import TYPE_CHECKING, Literal
+
 import bpy
-import bonsai.tool as tool
-from bpy.types import PropertyGroup
 from bpy.props import (
-    StringProperty,
     BoolProperty,
     CollectionProperty,
-    IntProperty,
     EnumProperty,
+    IntProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
 from bonsai.bim.module.ifcgit.data import IfcGitData
-from typing import TYPE_CHECKING, Literal
 
 
 def git_branches(self: "IfcGitProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:

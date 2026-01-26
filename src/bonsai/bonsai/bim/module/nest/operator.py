@@ -19,8 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import bonsai.tool as tool
+
 import bonsai.core.nest as core
+import bonsai.tool as tool
 
 
 class BIM_OT_nest_assign_object(bpy.types.Operator, tool.Ifc.Operator):

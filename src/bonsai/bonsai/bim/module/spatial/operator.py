@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.spatial as core
+
 import bonsai.bim.handler
-from typing import TYPE_CHECKING
+import bonsai.core.spatial as core
+import bonsai.tool as tool
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):

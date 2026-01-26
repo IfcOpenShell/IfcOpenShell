@@ -16,27 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+import json
+import os
+from math import pi, radians
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
 import pytz
 import tzfpy
-import json
-import datetime
-import bonsai.tool as tool
-from typing import TYPE_CHECKING, Literal, Union
-from math import radians, pi
-from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import (
-    IntProperty,
-    StringProperty,
+    BoolProperty,
+    CollectionProperty,
     EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    BoolProperty,
-    CollectionProperty,
+    IntProperty,
     PointerProperty,
+    StringProperty,
 )
-import os
 from bpy.types import PropertyGroup
+from mathutils import Euler, Matrix, Quaternion, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 

@@ -1,9 +1,10 @@
 """This script converts Graphisoft XML into an IFC file"""
 
+import os
 import xml.etree.ElementTree as ET
+
 import ifcopenshell
 import ifcopenshell.guid
-import os
 
 
 class IFC4Extractor:

@@ -18,7 +18,7 @@
 
 
 import bonsai.core.system as subject
-from test.core.bootstrap import ifc, system, spatial, group
+from test.core.bootstrap import group, ifc, spatial, system
 
 
 class TestLoadSystems:

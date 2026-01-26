@@ -18,14 +18,15 @@
 
 
 import bpy
-import numpy as np
-import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
-from mathutils import Matrix, Vector
+import numpy as np
 from ifcopenshell.util.doc import get_entity_doc
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 
 
 def refresh():

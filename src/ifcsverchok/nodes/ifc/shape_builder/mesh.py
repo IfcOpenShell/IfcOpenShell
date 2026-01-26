@@ -17,11 +17,10 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcsverchok.helper as helper
 import sverchok.core.sockets
 from ifcsverchok.nodes.ifc.shape_builder.representation import ShapeBuilder
 from sverchok.node_tree import SverchCustomTreeNode
-
-import ifcsverchok.helper as helper
 
 
 class SvSbMesh(bpy.types.Node, SverchCustomTreeNode, helper.SvIfcCore):

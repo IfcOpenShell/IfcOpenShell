@@ -17,10 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
-import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from bonsai.bim.helper import prop_with_search, get_display_value
+
+import bonsai.bim.module.type.prop as type_prop
+import bonsai.tool as tool
+from bonsai.bim.helper import get_display_value, prop_with_search
 from bonsai.bim.module.type.data import TypeData
 
 

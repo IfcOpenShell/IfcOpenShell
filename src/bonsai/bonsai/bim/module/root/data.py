@@ -17,13 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import defaultdict
+from typing import Union
+
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
+from ifcopenshell.util.doc import (
+    get_class_suggestions,
+    get_entity_doc,
+    get_predefined_type_doc,
+)
+
 import bonsai.tool as tool
-from typing import Union
 
 
 def refresh():

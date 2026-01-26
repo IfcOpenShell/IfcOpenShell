@@ -16,13 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import math
 import collections
 import collections.abc
-import bmesh
-import re
 import json
+import math
+import re
+from copy import copy
+from math import asin, cos, degrees, pi, radians, sin, tan
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -35,14 +38,13 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 import numpy as np
-import bonsai.core.type
-import bonsai.core.root
-import bonsai.core.geometry
-import bonsai.tool as tool
-from math import pi, degrees, radians, sin, cos, asin, tan
-from copy import copy
-from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Matrix, Vector
+
+import bonsai.core.geometry
+import bonsai.core.root
+import bonsai.core.type
+import bonsai.tool as tool
 from bonsai.bim.module.model.profile import DumbProfileJoiner
 from bonsai.tool.cad import VTX_PRECISION
 

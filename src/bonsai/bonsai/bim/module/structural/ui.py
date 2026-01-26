@@ -17,31 +17,34 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Union
+
 import bpy
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.structural.data import (
-    StructuralBoundaryConditionsData,
+    BoundaryConditionsData,
     ConnectedStructuralMembersData,
-    StructuralMemberData,
     StructuralAnalysisModelsData,
+    StructuralBoundaryConditionsData,
+    StructuralConnectionData,
     StructuralLoadCasesData,
     StructuralLoadsData,
-    StructuralConnectionData,
-    BoundaryConditionsData,
+    StructuralMemberData,
 )
-from typing import TYPE_CHECKING, Any, Union
 
 if TYPE_CHECKING:
     from bonsai.bim.module.structural.prop import (
-        BIMStructuralProperties,
         BIMObjectStructuralProperties,
+        BIMStructuralProperties,
         BoundaryCondition,
-        StructuralLoad,
         StructuralActivity,
         StructuralAnalysisModel,
+        StructuralLoad,
     )
 
 

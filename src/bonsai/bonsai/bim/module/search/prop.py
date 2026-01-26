@@ -16,24 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, get_args
+
 import bpy
-import bonsai.tool as tool
 import ifcopenshell.util.schema
-from bonsai.bim.prop import ObjProperty, BIMFilterGroup
-from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
-from bpy.types import PropertyGroup
-from . import ui, prop, operator
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, get_args
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.search.data import (
+    ColourByPropertyData,
+    SearchData,
+    SelectSimilarData,
+)
+from bonsai.bim.prop import BIMFilterGroup, ObjProperty
+
+from . import operator, prop, ui
 
 
 def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

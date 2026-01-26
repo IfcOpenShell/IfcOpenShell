@@ -17,16 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.geolocation
+import numpy as np
 
-import test.bim.bootstrap
 import bonsai.core.tool
 import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool import Surveyor as subject
 
 

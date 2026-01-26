@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
 import json
+from pathlib import Path
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api.library
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
-import bonsai.core.tool
-import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
-from bonsai.tool.loader import Loader as subject
 import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
-from pathlib import Path
+
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.tool.loader import Loader as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -188,8 +190,8 @@ class TestCreatingStyles(NewFile):
 
         def get_png_raster_code():
             import base64
-            import zlib
             import struct
+            import zlib
 
             # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
             width = 2

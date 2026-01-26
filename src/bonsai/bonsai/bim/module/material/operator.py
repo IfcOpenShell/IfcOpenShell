@@ -16,20 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.profile
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+
 import bonsai.bim.helper
-import bonsai.tool as tool
-import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from typing import Any, Union, TYPE_CHECKING, Literal
-from bonsai.bim.module.model import wall, slab
+import bonsai.core.material as core
+import bonsai.tool as tool
+from bonsai.bim.module.model import slab, wall
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute

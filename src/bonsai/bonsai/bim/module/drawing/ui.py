@@ -17,20 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Union
+
 import bpy
+from bpy.types import Panel
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bpy.types import Panel
 from bonsai.bim.module.drawing.data import (
-    ProductAssignmentsData,
-    SheetsData,
+    DecoratorData,
     DocumentsData,
     DrawingsData,
     ElementFiltersData,
-    DecoratorData,
     ElementValuesData,
+    ProductAssignmentsData,
+    SheetsData,
 )
-from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet

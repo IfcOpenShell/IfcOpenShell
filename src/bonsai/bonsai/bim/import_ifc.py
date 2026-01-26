@@ -17,32 +17,35 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import time
+
 import json
-import ifcpatch
 import logging
-import traceback
-import mathutils
-import numpy as np
-import numpy.typing as npt
 import multiprocessing
+import time
+import traceback
+from collections.abc import Iterable
+from typing import Any, Literal, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
-import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Union, Optional, Any, Literal
-from collections.abc import Iterable
+import ifcopenshell.util.unit
+import ifcpatch
+import mathutils
+import numpy as np
+import numpy.typing as npt
 from ifcopenshell.util.shape import MatrixType
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE, IfcStore
+from bonsai.tool.loader import OBJECT_DATA_TYPE
 
 
 class MaterialCreator:

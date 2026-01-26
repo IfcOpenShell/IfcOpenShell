@@ -17,27 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
 import shutil
+from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
+
+import bonsai.bim.schema
 import bonsai.core.aggregate
 import bonsai.core.context
-import bonsai.core.tool
-import bonsai.core.root
-import bonsai.core.unit
 import bonsai.core.owner
-import bonsai.bim.schema
+import bonsai.core.root
+import bonsai.core.tool
+import bonsai.core.unit
 import bonsai.tool as tool
-from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
-from pathlib import Path
-from typing import NamedTuple, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings

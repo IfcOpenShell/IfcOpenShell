@@ -18,25 +18,25 @@
 
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
+import calendar
+import json
 import os
-
-import ifcopenshell.api.alignment
+import time
+from datetime import datetime
 
 import bpy
-import json
-import time
-import calendar
-import isodate
-import bonsai.core.sequence as core
-import bonsai.tool as tool
-import bonsai.bim.module.sequence.helper as helper
+import ifcopenshell.api.alignment
 import ifcopenshell.api.spatial
 import ifcopenshell.geom
-import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
-from datetime import datetime
-from dateutil import parser, relativedelta
+import ifcopenshell.util.sequence
+import isodate
 from bpy_extras.io_utils import ImportHelper
+from dateutil import parser, relativedelta
+
+import bonsai.bim.module.sequence.helper as helper
+import bonsai.core.sequence as core
+import bonsai.tool as tool
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):

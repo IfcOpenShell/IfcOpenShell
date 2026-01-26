@@ -18,19 +18,21 @@
 
 import os
 import sys
+from functools import partial
+from typing import Any, Optional, Union
+
 import bpy
 import bpy.utils.previews
+from bpy.types import Menu, WorkSpaceTool
+
 import bonsai.bim
-import bonsai.tool as tool
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
-from bonsai.bim.helper import prop_with_search, draw_attribute
-from bpy.types import WorkSpaceTool, Menu
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, prop_with_search
 from bonsai.bim.module.model.data import AuthoringData, ItemData
-from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union, Any
-from functools import partial
+from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
+from bonsai.bim.module.system.data import PortData
 
 
 def load_custom_icons():

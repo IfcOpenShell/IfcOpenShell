@@ -18,37 +18,39 @@
 #
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
 import copy
 import math
-import numpy as np
+from math import acos, atan2, cos, degrees, pi, sin
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
-import ifcopenshell.api.geometry
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import mathutils.geometry
-import bonsai.core.type
-import bonsai.core.root
+import numpy as np
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.model as core
+import bonsai.core.root
+import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, atan2, acos
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
 
 
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):

@@ -4,20 +4,20 @@ try:
     # Ensure it's not fake-bpy-module.
     if not hasattr(bpy, "context"):
         raise ModuleNotFoundError
-    import bl_i18n_utils
     import addon_utils
+    import bl_i18n_utils
 
     BPY_IS_LOADED = True
 except ModuleNotFoundError:
     BPY_IS_LOADED = False
 
-import shutil
-import tempfile
 import importlib
 import os
 import re
-from pathlib import Path
+import shutil
+import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 bl_info = {
@@ -274,7 +274,9 @@ if BPY_IS_LOADED:
                     f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
                 )
 
-            from ui_translate.settings import settings as ui_translate_settings  # pyright: ignore[reportMissingImports]
+            from ui_translate.settings import (
+                settings as ui_translate_settings,  # pyright: ignore[reportMissingImports]
+            )
             from ui_translate.update_ui import (  # pyright: ignore[reportMissingImports]
                 UI_OT_i18n_updatetranslation_init_settings,
             )

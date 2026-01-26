@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from gpu_extras.batch import batch_for_shader
 import gpu
+from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-
 
 # NOTES:
 # Since Metal doesn't support geometry shaders we stick to builtin shaders

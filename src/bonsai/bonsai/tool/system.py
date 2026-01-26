@@ -17,26 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import re
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+from mathutils import Matrix, Vector
+from natsort import natsorted
+
 import bonsai.bim.helper
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
-import re
-from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from enum import Enum
-from typing import TYPE_CHECKING, Optional, Any, Union
-from natsort import natsorted
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):

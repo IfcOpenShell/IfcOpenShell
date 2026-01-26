@@ -17,17 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import bpy
+from collections.abc import Sequence
+from time import time
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Union,
+    assert_never,
+    get_args,
+)
+
 import bmesh
-import numpy as np
-import numpy.typing as npt
+import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.api.drawing
-import ifcopenshell.api.group
-import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
+import ifcopenshell.api.grid
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.element
@@ -35,26 +48,23 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import ifcopenshell.api
-import ifcopenshell.api.boundary
-import ifcopenshell.api.grid
+import numpy as np
+import numpy.typing as npt
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Matrix, Quaternion, Vector
+
+import bonsai.bim.handler
+import bonsai.core.aggregate
+import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.geometry as core
-import bonsai.core.aggregate
 import bonsai.core.nest
+import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
-import bonsai.core.root
-import bonsai.core.drawing
 import bonsai.tool as tool
-import bonsai.bim.handler
-from bonsai.bim.module.model.data import AuthoringData
-from mathutils import Vector, Matrix, Quaternion
-from time import time
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.util.shape_builder import ShapeBuilder
-from collections.abc import Sequence
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
+from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:

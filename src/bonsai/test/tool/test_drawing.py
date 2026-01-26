@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import xml.etree.ElementTree as ET
 from pathlib import Path
-import numpy as np
+
 import bpy
-import mathutils
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -28,14 +28,15 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
-import bonsai.core.tool
-import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
-from bonsai.tool.drawing import Drawing as subject
-from bonsai.bim.module.drawing.data import DecoratorData
+import mathutils
+import numpy as np
 from mathutils import Vector
 
-import xml.etree.ElementTree as ET
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData
+from bonsai.tool.drawing import Drawing as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

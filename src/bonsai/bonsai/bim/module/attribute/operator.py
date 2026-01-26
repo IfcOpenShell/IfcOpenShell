@@ -16,21 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.guid
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
-import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
-from typing import TYPE_CHECKING, Any, Union, Literal
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     import bpy.stub_internal.rna_enums as rna_enums
+
+    from bonsai.bim.prop import Attribute
 
 
 def get_objs_for_operation(

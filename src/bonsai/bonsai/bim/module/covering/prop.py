@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 from bpy.types import PropertyGroup
-from typing import TYPE_CHECKING
 
 
 class BIMCoveringProperties(PropertyGroup):

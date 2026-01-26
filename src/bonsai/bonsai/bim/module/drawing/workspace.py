@@ -18,18 +18,20 @@
 
 
 import os
+from functools import partial
+
 import bpy
 import ifcopenshell.api.group
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
+from bpy.types import WorkSpaceTool
+
+import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.core.type
-import bonsai.core.drawing as core
 import bonsai.tool as tool
-import ifcopenshell.util.representation
-from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
 from bonsai.bim.helper import prop_with_search
-from bpy.types import WorkSpaceTool
-from functools import partial
+from bonsai.bim.module.drawing.data import AnnotationData, DecoratorData
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):

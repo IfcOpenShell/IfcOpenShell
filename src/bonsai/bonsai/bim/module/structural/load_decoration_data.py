@@ -16,20 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
-import numpy as np
+from collections.abc import Iterable
 from math import sin
-from mathutils import Vector
+from typing import Literal, TypedDict
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
+import numpy as np
+from mathutils import Vector
+
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
-from typing import Literal, TypedDict
-from collections.abc import Iterable
 
 
 class MemberInfo(TypedDict):

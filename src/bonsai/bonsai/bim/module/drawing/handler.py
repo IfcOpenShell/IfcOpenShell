@@ -17,9 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from bpy.app.handlers import persistent
+
 import bonsai.bim.module.drawing.decoration as decoration
 import bonsai.tool as tool
-from bpy.app.handlers import persistent
 
 
 @persistent

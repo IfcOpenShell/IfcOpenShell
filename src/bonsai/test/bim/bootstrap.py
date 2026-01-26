@@ -19,16 +19,18 @@
 
 import os
 import re
-import bpy
-import pytest
 import webbrowser
-import bonsai.bim.handler
-import bonsai.tool as tool
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from bonsai.bim.ifc import IfcStore
+import pytest
 from mathutils import Vector
+
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 # Monkey-patch webbrowser opening since we want to test headlessly
 webbrowser.open = lambda x: True

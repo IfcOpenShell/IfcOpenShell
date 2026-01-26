@@ -17,60 +17,63 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import re
+
 import collections
 import collections.abc
-import bpy
-import math
 import json
-import lark
-import bmesh
-import shutil
 import logging
-import shapely
+import math
+import os
 import platform
-import mathutils
+import re
+import shutil
 import subprocess
-import numpy as np
-import bonsai.core.tool
-import bonsai.core.geometry
-import bonsai.core.type
-import bonsai.tool as tool
+from collections.abc import Iterable, Sequence
+from fractions import Fraction
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Union
+
+import bmesh
+import bpy
 import ifcopenshell.api
-import ifcopenshell.api.geometry
 import ifcopenshell.api.context
-import ifcopenshell.api.drawing
 import ifcopenshell.api.document
+import ifcopenshell.api.drawing
+import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
-import ifcopenshell.util.placement
-import ifcopenshell.util.unit
-import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
+import ifcopenshell.util.unit
+import lark
+import mathutils
+import numpy as np
+import shapely
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from lxml import etree
+from mathutils import Matrix, Vector
+from shapely.ops import unary_union
+
 import bonsai.bim.helper
 import bonsai.bim.import_ifc
+import bonsai.core.geometry
 import bonsai.core.root
-from shapely.ops import unary_union
-from lxml import etree
-from mathutils import Vector, Matrix
-from fractions import Fraction
-from typing import Optional, Union, Any, Literal, TYPE_CHECKING, NamedTuple
-from collections.abc import Iterable, Sequence
-from pathlib import Path
-from ifcopenshell.util.shape_builder import ShapeBuilder
+import bonsai.core.tool
+import bonsai.core.type
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import (
+        BIMAnnotationProperties,
+        BIMAssignedProductProperties,
+        BIMCameraProperties,
+        BIMTextProperties,
         DocProperties,
         Sheet,
-        BIMAnnotationProperties,
-        BIMTextProperties,
-        BIMCameraProperties,
-        BIMAssignedProductProperties,
     )
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
@@ -2793,8 +2796,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
-        import ezdxf
         import xml.etree.ElementTree as ET
+
+        import ezdxf
 
         SVG = "{http://www.w3.org/2000/svg}"
         IFC = "{http://www.ifcopenshell.org/ns}"

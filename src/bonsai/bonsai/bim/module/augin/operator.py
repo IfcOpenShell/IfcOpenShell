@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import os
-import bpy
-import string
 import random
 import shutil
-import requests
+import string
 import tempfile
-import datetime
+
+import bpy
+import requests
+
 import bonsai.tool as tool
 
 

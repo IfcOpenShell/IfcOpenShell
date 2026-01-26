@@ -21,10 +21,9 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.shape
+import ifcsverchok.helper as helper
 import sverchok.core.sockets
 from sverchok.node_tree import SverchCustomTreeNode
-
-import ifcsverchok.helper as helper
 
 
 class SvSbShapeOutput(bpy.types.Node, SverchCustomTreeNode, helper.SvIfcCore):

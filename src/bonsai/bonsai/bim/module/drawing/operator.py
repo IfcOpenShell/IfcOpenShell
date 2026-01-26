@@ -16,58 +16,73 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
-import re
-import time
-import bmesh
-import shutil
 import hashlib
-import shapely
-import shapely.ops
-import subprocess
-import numpy as np
+import json
 import multiprocessing
+import os
+import re
+import shutil
+import subprocess
+import time
+from math import radians
+from pathlib import Path
+from timeit import default_timer as timer
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypedDict,
+    Union,
+    get_args,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
-import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-import bonsai.bim.helper
+import numpy as np
+import shapely
+import shapely.ops
+from bpy_extras.image_utils import load_image
+from bpy_extras.io_utils import ImportHelper
+from lxml import etree
+from mathutils import Color, Matrix, Vector
+
+import bonsai.bim.export_ifc
 import bonsai.bim.handler
-import bonsai.tool as tool
-import bonsai.core.geometry
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.bim.helper
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
-import bonsai.bim.export_ifc
-from bpy_extras.io_utils import ImportHelper
-from bonsai.bim.module.drawing.decoration import CutDecorator
+import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.core.drawing as core
+import bonsai.core.geometry
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
+from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.drawing.prop import (
+    RASTER_STYLE_PROPERTIES_EXCLUDE,
+    RasterStyleProperty,
+)
 from bonsai.bim.module.drawing.ui import get_current_product_for_element_values
 from bonsai.bim.prop import StrProperty
-from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
-from lxml import etree
-from math import radians
-from mathutils import Vector, Color, Matrix
-from timeit import default_timer as timer
-from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
-from bonsai.bim.ifc import IfcStore
-from pathlib import Path
-from bpy_extras.image_utils import load_image
 
 if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
     from bonsai.bim.module.drawing.prop import RenderType
     from bonsai.bim.module.project.prop import Link
-    from bpy.stub_internal import rna_enums
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 

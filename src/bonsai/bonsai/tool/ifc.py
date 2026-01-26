@@ -17,20 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, final
+
 import bpy
-import numpy as np
 import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-import bonsai.core.tool
+import numpy as np
+
 import bonsai.bim.handler
 import bonsai.bim.schema
+import bonsai.core.tool
 import bonsai.tool as tool
-from pathlib import Path
-from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from typing import Optional, Union, Any, final, Literal, TYPE_CHECKING
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE, IfcStore
 
 if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums

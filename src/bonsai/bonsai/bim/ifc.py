@@ -17,26 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
-import uuid
-import shutil
+
 import hashlib
-import zipfile
+import os
+import shutil
 import tempfile
 import traceback
+import uuid
+import zipfile
+from collections.abc import Callable
+from pathlib import Path
+from typing import Literal, NotRequired, Optional, TypedDict, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
+from ifcopenshell.file import UndoSystemError
+
 import bonsai
 import bonsai.bim.handler
 import bonsai.tool as tool
-from ifcopenshell.file import UndoSystemError
-from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Union, Optional, TypedDict, NotRequired, Literal
-from collections.abc import Callable
-
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 

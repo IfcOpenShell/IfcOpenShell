@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.misc as subject
-from test.core.bootstrap import misc, ifc
+from test.core.bootstrap import ifc, misc
 
 
 class TestResizeToStorey:

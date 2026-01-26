@@ -23,9 +23,9 @@ import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.bim.schema
 
+import bonsai.bim.schema
+import bonsai.tool as tool
 
 # TODO: Should this cache belong here? Dunno. Maybe.
 is_expanded: dict[int, bool] = {}

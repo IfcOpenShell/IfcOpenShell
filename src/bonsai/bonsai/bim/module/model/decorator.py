@@ -17,26 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
+import math
+from itertools import chain
+from math import cos, radians, sin, tan
+from typing import Any, Literal, Union
+
 import blf
+import bmesh
 import bpy
 import gpu
-import bmesh
 import ifcopenshell
-import bonsai.tool as tool
-import math
 import mathutils
-from math import sin, cos, tan, radians
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
-from mathutils import Vector, Matrix, Quaternion
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
-from typing import Union
+from mathutils import Matrix, Quaternion, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from itertools import chain
-from typing import Union, Any, Literal
-from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
 def transparent_color(color, alpha=0.1):

@@ -18,9 +18,9 @@
 
 """This script converts the computer iterpretable listing ifcXML XSD into a JSON file"""
 
-import xml.etree.ElementTree as ET
 import collections
 import json
+import xml.etree.ElementTree as ET
 
 
 class IFC4Extractor:

@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.unit
-import ifcopenshell.util.selector
-import bonsai.tool as tool
+import os
 from pathlib import Path
 from typing import Any, Union
+
+import bpy
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.selector
+import ifcopenshell.util.unit
 from natsort import natsorted
+
+import bonsai.tool as tool
 
 
 def refresh():

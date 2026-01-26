@@ -1,8 +1,9 @@
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
-from ifctester.ids import Ids, IdsXmlValidationError, get_schema
 from xmlschema.validators.exceptions import XMLSchemaValidationError
+
+from ifctester.ids import Ids, IdsXmlValidationError, get_schema
 
 # https://github.com/buildingSMART/IDS/blob/9914d568c7ac037acd97e58a0d16e9f93c3e3416/Schema/ids.xsd#L232
 ifc_schemas = ["IFC2X3", "IFC4", "IFC4X3_ADD2"]

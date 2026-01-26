@@ -16,33 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
-import bpy
-import blf
-import os
 import math
+import os
+from collections.abc import Generator, Iterator
+from functools import cache
+from math import acos, atan, cos, degrees, pi, radians, sin
+from pathlib import Path
+from timeit import default_timer as timer
+from typing import Optional, Union
+
+import blf
 import bmesh
-import shapely
-import numpy as np
+import bpy
+import gpu
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.helper as helper
-from pathlib import Path
-from math import pi, sin, cos, acos, atan, degrees, radians
+import numpy as np
+import shapely
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
-from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from bonsai.bim.module.drawing.helper import format_distance
-from timeit import default_timer as timer
-from functools import cache
-from typing import Optional, Union
-from collections.abc import Generator, Iterator
+from bonsai.bim.module.drawing.shaders import add_offsets, add_verts_sequence
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 

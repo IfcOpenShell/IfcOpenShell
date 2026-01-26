@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from math import atan2, degrees
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+
 import bonsai.tool as tool
-from math import degrees, atan2
 
 from .api import Api
 

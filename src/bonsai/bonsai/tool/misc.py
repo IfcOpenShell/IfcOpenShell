@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from typing import Union
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.core.tool
+from mathutils import Matrix, Vector
+
 import bonsai.core.root
+import bonsai.core.tool
 import bonsai.tool as tool
-from mathutils import Vector, Matrix
-from typing import Union
 
 
 class Misc(bonsai.core.tool.Misc):

@@ -16,33 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import bonsai.bim.schema
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute, StrProperty
-from bonsai.bim.module.pset.data import (
-    AddEditCustomPropertiesData,
-    ObjectPsetsData,
-    MaterialPsetsData,
-    PsetsGeneralData,
-)
-from bonsai.bim.module.material.data import ObjectMaterialData
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import Union, Literal, TYPE_CHECKING, get_args, Literal
+from bpy.types import PropertyGroup
+
+import bonsai.bim.schema
+import bonsai.tool as tool
+from bonsai.bim.module.material.data import ObjectMaterialData
+from bonsai.bim.module.pset.data import (
+    AddEditCustomPropertiesData,
+    MaterialPsetsData,
+    ObjectPsetsData,
+    PsetsGeneralData,
+)
+from bonsai.bim.prop import Attribute, StrProperty
 
 psetnames = {}
 qtonames = {}

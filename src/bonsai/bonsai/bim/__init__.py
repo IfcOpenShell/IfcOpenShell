@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import importlib
 import os
+from collections.abc import Callable
+from typing import Union
+
 import bpy
 import bpy.utils.previews
-import importlib
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from . import handler, ui, prop, operator
-from typing import Union
-from collections.abc import Callable
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+from . import handler, operator, prop, ui
 
 try:
     from bonsai.translations import translations_dict

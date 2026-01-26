@@ -17,22 +17,25 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import json
-import numpy as np
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
+import numpy as np
+
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-from typing import Any, Union, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.georeference.prop import BIMGeoreferenceProperties
+    from bonsai.bim.prop import Attribute
 
 
 class Georeference(bonsai.core.tool.Georeference):

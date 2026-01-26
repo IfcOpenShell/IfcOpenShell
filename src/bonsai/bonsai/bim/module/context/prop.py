@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.context.data import ContextData
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING
+from bpy.types import PropertyGroup
+
+from bonsai.bim.module.context.data import ContextData
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 class BIMContextProperties(PropertyGroup):

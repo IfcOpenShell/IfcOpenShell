@@ -18,10 +18,11 @@
 
 import bpy
 import ifcopenshell.api.pset
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bonsai.bim.module.resource.ui import draw_productivity_ui
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 import bonsai.core.resource as core
 import bonsai.tool as tool
+from bonsai.bim.module.resource.ui import draw_productivity_ui
 
 
 class LoadResources(bpy.types.Operator):

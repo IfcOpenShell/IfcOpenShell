@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.style as subject
-from test.core.bootstrap import ifc, material, style, spatial
+from test.core.bootstrap import ifc, material, spatial, style
 
 
 class TestAddStyle:

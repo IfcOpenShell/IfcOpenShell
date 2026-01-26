@@ -16,39 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import contextlib
-import bpy
-import bmesh
-import time
 import logging
-import textwrap
-import shutil
+import os
 import platform
+import shutil
 import subprocess
 import tempfile
+import textwrap
+import time
 import webbrowser
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-import bonsai.bim.handler
+from collections import namedtuple
+from collections.abc import Iterable
 from enum import Enum
-from bpy_extras.io_utils import ImportHelper
-from bonsai.bim import import_ifc
-from bonsai.bim.prop import StrProperty
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim.helper import get_enum_items
-from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
-from collections import namedtuple
-from typing import Union, TYPE_CHECKING, Literal, get_args
-from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bmesh
+import bpy
+import ifcopenshell
+from bpy_extras.io_utils import ImportHelper
+from mathutils import Euler, Vector
 from natsort import natsorted
 
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim import import_ifc
+from bonsai.bim.helper import get_enum_items
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.ui import IFCFileSelector
+
 if TYPE_CHECKING:
-    from bonsai.bim.prop import MultipleFileSelect, Attribute
     from bpy.stub_internal import rna_enums
+
+    from bonsai.bim.prop import Attribute, MultipleFileSelect
 
 
 class SetTab(bpy.types.Operator):

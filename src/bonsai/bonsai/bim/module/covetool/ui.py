@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy.types
-import bonsai.tool as tool
+
 from typing import TYPE_CHECKING
 
+import bpy.types
+
+import bonsai.tool as tool
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.covetool.prop import CoveToolProperties, CoveToolProject
+    from bonsai.bim.module.covetool.prop import CoveToolProject, CoveToolProperties
 
 
 class BIM_PT_covetool(bpy.types.Panel):

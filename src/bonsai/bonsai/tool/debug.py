@@ -17,25 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
 import os
 import re
-import json
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, assert_never
+
 import bmesh
 import bpy
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
 import ifcopenshell.api.owner
 import ifcopenshell.express
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from mathutils import Vector
+
 import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from mathutils import Vector
-from collections import defaultdict
-from typing import Literal, TYPE_CHECKING, assert_never, Union
-from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.debug.prop import BIMDebugProperties

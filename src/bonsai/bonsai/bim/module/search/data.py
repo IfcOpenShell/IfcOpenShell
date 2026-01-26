@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
+import bpy
 import ifcopenshell.util.element
-import bonsai.tool as tool
 from natsort import natsorted
+
+import bonsai.tool as tool
 
 
 def refresh():

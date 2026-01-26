@@ -16,10 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
 from bpy.types import PropertyGroup
-from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, CollectionProperty, EnumProperty
-from typing import Union, TYPE_CHECKING, Literal, get_args
 
 OperatorType = Literal["DIFFERENCE", "INTERSECTION", "UNION"]
 

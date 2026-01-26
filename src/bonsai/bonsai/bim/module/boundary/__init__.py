@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, operator, prop
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddBoundary,

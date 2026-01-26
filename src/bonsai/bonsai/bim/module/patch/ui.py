@@ -17,11 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search
-from bonsai.bim.helper import draw_attributes
+
 from typing import TYPE_CHECKING
+
+import bpy
+
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute

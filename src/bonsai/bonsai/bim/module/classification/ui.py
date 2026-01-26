@@ -17,24 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.bim.helper
-import bonsai.tool as tool
-import bonsai.bim.module.classification.prop as classification_prop
-import ifcopenshell.util.classification
 
-from bpy.types import Panel, UIList
-from bonsai.bim.module.classification.data import (
-    ClassificationsData,
-    ObjectClassificationsData,
-    MaterialClassificationsData,
-    CostClassificationsData,
-    ZoneClassificationsData,
-)
 from typing import TYPE_CHECKING, Any, Union
 
+import bpy
+import ifcopenshell.util.classification
+from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.bim.module.classification.prop as classification_prop
+import bonsai.tool as tool
+from bonsai.bim.module.classification.data import (
+    ClassificationsData,
+    CostClassificationsData,
+    MaterialClassificationsData,
+    ObjectClassificationsData,
+    ZoneClassificationsData,
+)
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.classification.prop import BIMClassificationProperties, ClassificationReference
+    from bonsai.bim.module.classification.prop import (
+        BIMClassificationProperties,
+        ClassificationReference,
+    )
 
 
 class BIM_PT_classifications(Panel):

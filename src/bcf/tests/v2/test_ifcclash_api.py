@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from bcf.v2.bcfxml import BcfXml
 
 

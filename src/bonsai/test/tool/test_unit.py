@@ -21,10 +21,11 @@ import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.unit import Unit as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

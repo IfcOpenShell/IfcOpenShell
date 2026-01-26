@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Union
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-from typing import Any, Union
 from mathutils import Vector
+
+import bonsai.tool as tool
 
 
 def refresh():

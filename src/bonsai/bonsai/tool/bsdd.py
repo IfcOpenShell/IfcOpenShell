@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bonsai.core.tool
-import bonsai.tool as tool
-import bpy
+
 import json
+from typing import TYPE_CHECKING, Any, TypedDict, Union
+
+import bpy
 import bsdd
 import ifcopenshell.api.library
-import ifcopenshell.util.type
-import ifcopenshell.util.element
 import ifcopenshell.util.classification
-from typing import Any, Union, TYPE_CHECKING, TypedDict
+import ifcopenshell.util.element
+import ifcopenshell.util.type
+
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary

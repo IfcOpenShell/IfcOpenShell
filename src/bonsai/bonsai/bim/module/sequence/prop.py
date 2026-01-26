@@ -16,32 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import isodate
 import ifcopenshell.api
 import ifcopenshell.api.sequence
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
-import bonsai.tool as tool
-import bonsai.core.sequence as core
-from bonsai.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
-import bonsai.bim.module.resource.data
-import bonsai.bim.module.pset.data
-from mathutils import Color
-from bonsai.bim.prop import Attribute, ISODuration
-from dateutil import parser
-from bpy.types import PropertyGroup
+import isodate
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from bpy.types import PropertyGroup
+from dateutil import parser
+from mathutils import Color
+
+import bonsai.bim.module.pset.data
+import bonsai.bim.module.resource.data
+import bonsai.core.sequence as core
+import bonsai.tool as tool
+from bonsai.bim.module.sequence.data import AnimationColorSchemeData, SequenceData
+from bonsai.bim.module.sequence.data import refresh as refresh_sequence_data
+from bonsai.bim.prop import Attribute, ISODuration
 
 
 def getTaskColumns(self, context):

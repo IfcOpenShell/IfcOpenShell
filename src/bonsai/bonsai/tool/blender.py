@@ -17,53 +17,63 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
-import bpy
-import bmesh
+
+import contextlib
+import importlib
 import json
 import os
 import platform
 import subprocess
-import contextlib
+import sys
 import tempfile
 import traceback
+import types
+from collections.abc import Callable, Generator, Iterable, Sequence, Sized
+from datetime import datetime
+from functools import cache, lru_cache
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
+import ifcopenshell.api
+import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
-import ifcopenshell.api
-import ifcopenshell.util.element
+from mathutils import Vector
+
+import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim
-import types
-import importlib
-from datetime import datetime
-from mathutils import Vector
-from pathlib import Path
-from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import (
-    Any,
-    Optional,
-    Union,
-    Literal,
-    TypeVar,
-    TYPE_CHECKING,
-    assert_never,
-)
-from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
-    from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
-    from bonsai.bim.prop import BIMProperties, BIMObjectProperties, BIMSnapProperties
+    from sun_position.properties import SunPosProperties
+
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
-    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.constraint.prop import (
+        BIMConstraintProperties,
+        BIMObjectConstraintProperties,
+    )
     from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
-    from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
+    from bonsai.bim.module.light.prop import (
+        BIMSolarProperties,
+        RadianceExporterProperties,
+    )
+    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
 
     T = TypeVar("T")
 
@@ -1349,11 +1359,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1381,11 +1391,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def unregister_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1763,8 +1773,8 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     @lru_cache
     def get_list_of_tools(cls) -> tuple[str, ...]:
-        from bonsai.bim.module.model.workspace import BimTool
         from bonsai.bim.module.drawing.workspace import AnnotationTool
+        from bonsai.bim.module.model.workspace import BimTool
 
         return tuple(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool, AnnotationTool]))
 

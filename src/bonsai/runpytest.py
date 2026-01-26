@@ -23,6 +23,7 @@ Usage: `blender -b -P runpytest.py -- ARGS`
 """
 
 import sys
+
 import pytest
 
 argv = [__file__]

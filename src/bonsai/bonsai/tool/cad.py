@@ -29,15 +29,17 @@
 #  - You can now derive the center from an arc without generating geometry
 
 from __future__ import annotations
-import sys
-import bpy
-import math
-import bmesh
-import numpy as np
-import mathutils.geometry
-from mathutils import Vector, Matrix, geometry
+
 import itertools
+import math
+import sys
 from typing import TYPE_CHECKING, Union
+
+import bmesh
+import bpy
+import mathutils.geometry
+import numpy as np
+from mathutils import Matrix, Vector, geometry
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cad.prop import BIMCadProperties

@@ -17,17 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import logging
 import os
 import re
 import subprocess
-import bpy
-import logging
 import tempfile
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
+
+import bonsai.tool as tool
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
-import bonsai.tool as tool
-from pathlib import Path
-from typing import TYPE_CHECKING, Union, Literal, Any
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"

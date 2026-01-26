@@ -16,28 +16,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-from bonsai.bim.prop import ObjProperty
-from bonsai.bim.module.spatial.data import SpatialDecompositionData
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-import bonsai.tool as tool
-import bonsai.bim.handler
-import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.util.unit
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
+import bonsai.bim.handler
+import bonsai.core.geometry
+import bonsai.tool as tool
+from bonsai.bim.module.spatial.data import SpatialDecompositionData
+from bonsai.bim.prop import ObjProperty
 from bonsai.tool.unit import parse_distance_string
-from typing import TYPE_CHECKING, Union, Literal
 
 
 def get_subelement_class(

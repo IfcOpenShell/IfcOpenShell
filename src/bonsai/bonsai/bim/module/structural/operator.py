@@ -16,20 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from math import degrees
+from typing import TYPE_CHECKING, Any, Literal
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
+from mathutils import Matrix, Vector
+
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
-from math import degrees
-from mathutils import Vector, Matrix
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from typing import Literal, Any, TYPE_CHECKING
 
 
 class ShowLoads(bpy.types.Operator):

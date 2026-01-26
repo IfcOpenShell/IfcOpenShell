@@ -17,15 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import json
 import math
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
+
+import bpy
 import ifcopenshell
+from lark import Lark, Transformer
+
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from lark import Lark, Transformer
-from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties

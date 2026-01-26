@@ -17,20 +17,22 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import tempfile
+from pathlib import Path
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.document
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import bonsai.core.tool
-import bonsai.tool as tool
-import tempfile
 import ifcpatch
 from ifcpatch.recipes import Ifc2Sql
-from test.bim.bootstrap import NewFile
+
+import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.tool.project import Project as subject
-from pathlib import Path
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

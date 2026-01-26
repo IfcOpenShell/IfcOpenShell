@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from typing import TYPE_CHECKING
+
 import bmesh
-import ifcopenshell.util.element
-import ifcopenshell.util.schema
-import ifcopenshell.util.representation
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
+import bpy
 import ifcopenshell.api
 import ifcopenshell.api.attribute
 import ifcopenshell.api.type
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.schema
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
+
 import bonsai.bim.helper
-import bonsai.tool as tool
 import bonsai.core.geometry
-import bonsai.core.type as core
 import bonsai.core.root
-from typing import TYPE_CHECKING
+import bonsai.core.type as core
+import bonsai.tool as tool
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):

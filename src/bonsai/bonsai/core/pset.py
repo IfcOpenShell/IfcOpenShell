@@ -18,11 +18,13 @@
 
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, Any
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 

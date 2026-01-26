@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+from typing import Any
+
 import bpy
-import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 from ifcopenshell.util.doc import get_predefined_type_doc
-import json
-from typing import Any
+
+import bonsai.tool as tool
 
 
 def refresh():

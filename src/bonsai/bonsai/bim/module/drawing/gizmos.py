@@ -132,28 +132,32 @@ __all__ = [  # noqa: RUF022 (unsorted `__all__`)
     "ExtrusionWidget",
 ]
 
-from typing import Any, Literal, Protocol, runtime_checkable, get_args
+import math
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Literal, Protocol, get_args, runtime_checkable
 
 import blf
 import bpy
 import gpu
-import math
 import numpy as np
 from bpy import types
-from dataclasses import dataclass
-from mathutils import Vector, Matrix
-from mathutils.kdtree import KDTree
-from mathutils.geometry import intersect_line_line
-from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d, location_3d_to_region_2d
 from bpy_extras import view3d_utils
+from bpy_extras.view3d_utils import (
+    location_3d_to_region_2d,
+    region_2d_to_origin_3d,
+    region_2d_to_vector_3d,
+)
 from gpu_extras.batch import batch_for_shader
-import bonsai.tool as tool
-from bonsai.tool.unit import parse_distance_string
-from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
 from ifcopenshell.util.unit import si_conversions
+from mathutils import Matrix, Vector
+from mathutils.geometry import intersect_line_line
+from mathutils.kdtree import KDTree
 
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
+from bonsai.tool.unit import parse_distance_string
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)

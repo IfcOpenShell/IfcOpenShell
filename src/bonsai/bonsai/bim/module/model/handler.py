@@ -19,8 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from bonsai.bim.module.model import product, wall, slab, profile, opening, task
 from bpy.app.handlers import persistent
+
+from bonsai.bim.module.model import opening, product, profile, slab, task, wall
 
 
 @persistent

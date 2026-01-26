@@ -17,22 +17,24 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import brickschema
 import brickschema.persistent
-from brickschema.namespaces import REF, A
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.root
 import ifcopenshell.guid
+from brickschema.namespaces import REF, A
+from rdflib import Literal, Namespace, URIRef
+from rdflib.namespace import RDF
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from rdflib.namespace import RDF
-from rdflib import Literal, URIRef, Namespace
-from test.bim.bootstrap import NewFile
 from bonsai.tool.brick import Brick as subject
 from bonsai.tool.brick import BrickStore
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

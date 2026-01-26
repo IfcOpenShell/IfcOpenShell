@@ -17,26 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import bonsai.tool as tool
-import bonsai.bim.helper
-from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty, ObjProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
     IntProperty,
+    PointerProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args, assert_never
-from collections.abc import Generator
+from bpy.types import PropertyGroup
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
+from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

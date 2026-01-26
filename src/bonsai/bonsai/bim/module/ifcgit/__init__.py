@@ -16,8 +16,8 @@
 # Massimo Fabbro <maxfb87@yahoo.it>
 
 import bpy
-from . import ui, prop, operator
 
+from . import operator, prop, ui
 
 classes = (
     operator.AddFileToRepo,

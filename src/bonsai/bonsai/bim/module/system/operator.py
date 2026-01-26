@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.system
 import ifcopenshell.util.system
-import bonsai.tool as tool
-import bonsai.core.system as core
+
 import bonsai.bim.helper
+import bonsai.core.system as core
+import bonsai.tool as tool
 from bonsai.bim.module.system.data import PortData, SystemData
-from typing import TYPE_CHECKING
 
 
 class LoadSystems(bpy.types.Operator):

@@ -17,49 +17,51 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
 import platform
-import platformdirs
-import bonsai.bim.helper
+import textwrap
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, Optional
+
+import bpy
+import platformdirs
+from bpy.props import BoolProperty, IntProperty, StringProperty
 from bpy.types import Panel
-from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
+    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
-    get_attribute_doc,
 )
-from . import ifc
-from bonsai import get_debug_info
-import bonsai.bim
-import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from bonsai.bim.prop import Attribute
+from natsort import natsorted
+
+import bonsai.bim
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai import get_debug_info
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
-from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
-    BIMWindowProperties,
     BIMRailingProperties,
     BIMRoofProperties,
     BIMStairProperties,
+    BIMWindowProperties,
 )
 from bonsai.bim.module.model.ui import (
     draw_door_properties,
-    draw_window_properties,
     draw_railing_properties,
     draw_roof_properties,
     draw_stair_properties,
+    draw_window_properties,
 )
-from typing import Optional, TYPE_CHECKING, Literal
-from natsort import natsorted
-import textwrap
+from bonsai.bim.module.pset.prop import IfcProperty
+from bonsai.bim.prop import Attribute
 
+from . import ifc
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import ObjProperty
     from bonsai.bim.module.project.prop import BIMProjectProperties
+    from bonsai.bim.prop import ObjProperty
 
 
 class IFCFileSelector:

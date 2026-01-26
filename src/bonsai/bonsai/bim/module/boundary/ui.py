@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import Panel, UIList
+
 import bonsai.tool as tool
 from bonsai.bim.module.boundary.data import SpaceBoundariesData
 

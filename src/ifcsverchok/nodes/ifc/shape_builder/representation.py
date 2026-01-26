@@ -19,11 +19,10 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.representation
-from ifcopenshell.util.shape_builder import ShapeBuilder
-from sverchok.node_tree import SverchCustomTreeNode
-
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from sverchok.node_tree import SverchCustomTreeNode
 
 
 class SvIfcSbRepresentation(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

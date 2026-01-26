@@ -17,18 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 class BIMMiscProperties(PropertyGroup):

@@ -17,13 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from functools import partial
+
 import bpy
-import bonsai.tool as tool
-import bonsai.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
+
+import bonsai.bim.module.type.prop as type_prop
+import bonsai.tool as tool
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
-from functools import partial
 
 
 def load_custom_icons():

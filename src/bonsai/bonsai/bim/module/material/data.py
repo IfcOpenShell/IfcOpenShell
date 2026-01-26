@@ -17,15 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from typing import Any, Union
+
 import bpy
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.doc
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from natsort import natsorted
+
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from typing import Any, Union
-from natsort import natsorted
 
 
 def refresh():

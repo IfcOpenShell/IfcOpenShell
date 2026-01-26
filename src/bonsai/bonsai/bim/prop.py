@@ -16,35 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
+import os
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
-from ifcopenshell.util.doc import (
-    get_entity_doc,
-    get_attribute_doc,
-    get_property_set_doc,
-    get_property_doc,
-    get_predefined_type_doc,
-)
-import bonsai.bim
-import bonsai.bim.schema
-import bonsai.bim.handler
-import bonsai.tool as tool
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
+from bpy.types import PropertyGroup
+from ifcopenshell.util.doc import (
+    get_attribute_doc,
+    get_entity_doc,
+    get_predefined_type_doc,
+    get_property_doc,
+    get_property_set_doc,
+)
+
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.bim.schema
+import bonsai.tool as tool
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 

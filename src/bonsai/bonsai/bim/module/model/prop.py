@@ -16,22 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from collections.abc import Callable
+from math import pi, radians
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from bpy.types import NodeTree, PropertyGroup
+from mathutils import Vector
+
 import bonsai.tool as tool
-import math
-from bonsai.bim.prop import ObjProperty
+from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.model.data import AuthoringData
-from bpy.types import PropertyGroup, NodeTree
-from math import pi, radians
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
+from bonsai.bim.module.model.decorator import (
+    BoundingBoxDecorator,
+    SlabDirectionDecorator,
+    WallAxisDecorator,
+)
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from bonsai.bim.module.drawing.decoration import CutDecorator
-from typing import TYPE_CHECKING, Literal, get_args, Union, Any, Optional
-from collections.abc import Callable
-from mathutils import Vector
+from bonsai.bim.prop import ObjProperty
 
 if TYPE_CHECKING:
     import sverchok.node_tree

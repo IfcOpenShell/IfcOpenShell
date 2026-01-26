@@ -17,29 +17,31 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
-import json
-import bmesh
 import collections
 import collections.abc
+import json
+from typing import TYPE_CHECKING, get_args
+
+import bmesh
+import bpy
 import ifcopenshell
-import ifcopenshell.api.geometry
-import ifcopenshell.api.pset
-import bonsai.tool as tool
-import bonsai.core.root
-import bonsai.core.geometry
-from bonsai.bim.module.drawing import gizmos as gizmo
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
-from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 from bmesh.types import BMVert
-from mathutils import Vector, Matrix
-from typing import get_args, TYPE_CHECKING
+from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
+from mathutils import Matrix, Vector
+
+import bonsai.core.geometry
+import bonsai.core.root
+import bonsai.tool as tool
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 
 if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import BIMWindowProperties

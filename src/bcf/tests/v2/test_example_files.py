@@ -3,10 +3,11 @@ import os
 import zipfile
 from pathlib import Path
 
+from xsdata.models.datatype import XmlDateTime
+
 import bcf.v2.model as mdl
 from bcf.v2.bcfxml import BcfXml
 from bcf.v2.topic import TopicHandler
-from xsdata.models.datatype import XmlDateTime
 
 
 def test_maximum_information() -> None:

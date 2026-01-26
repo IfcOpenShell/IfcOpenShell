@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import copy
+from typing import Union
+
 import bmesh
 import bpy
-import copy
+import mathutils
 import numpy as np
 from bpy_extras import view3d_utils
+from mathutils import Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import mathutils
-from mathutils import Vector
-from typing import Union
 
 
 class Raycast(bonsai.core.tool.Raycast):
