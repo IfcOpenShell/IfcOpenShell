@@ -307,7 +307,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     with context.temp_override(selected_editable_objects=[obj]):
                         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                     # object.transform_apply is losing normals.
-                    if is_negative:
+                    if is_negative and bpy.app.version >= (5, 1, 0):
                         for polygon in obj.data.polygons:
                             polygon.flip()
 
