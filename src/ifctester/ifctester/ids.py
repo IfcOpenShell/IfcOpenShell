@@ -28,16 +28,10 @@ from xmlschema import XMLSchema, etree_tostring
 from xmlschema.validators.exceptions import XMLSchemaValidationError
 
 from .facet import (
-    Attribute,
     Cardinality,
-    Classification,
     Entity,
     Facet,
     FacetFailure,
-    Material,
-    PartOf,
-    Property,
-    Restriction,
     get_pset,
     get_psets,
 )

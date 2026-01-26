@@ -18,7 +18,6 @@
 
 import logging
 
-import ifcopenshell
 
 
 class Patcher:
@@ -70,7 +69,6 @@ class Patcher:
     def patch(self) -> None:
         import bonsai.tool as tool
         import bpy
-        import ifcopenshell
         import ifcopenshell.util.element
         from mathutils import Matrix, Vector
 

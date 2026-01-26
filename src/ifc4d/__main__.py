@@ -1,6 +1,4 @@
 import argparse
-import os
-import sys
 
 import ifcopenshell
 from ifc4d.msp2ifc import MSP2Ifc

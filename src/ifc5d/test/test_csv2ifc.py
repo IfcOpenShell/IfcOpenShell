@@ -26,7 +26,6 @@ import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.cost
-import ifcopenshell.util.element
 import pytest
 
 

@@ -19,7 +19,6 @@
 
 import logging
 
-import ifcopenshell
 
 
 class Patcher:

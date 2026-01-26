@@ -984,7 +984,6 @@ class Client:
 def apply_ifc_classification_properties(
     ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, classificationProperties: dict[str, Any]
 ) -> None:
-    import ifcopenshell.api
     import ifcopenshell.api.pset
     import ifcopenshell.util.element
 

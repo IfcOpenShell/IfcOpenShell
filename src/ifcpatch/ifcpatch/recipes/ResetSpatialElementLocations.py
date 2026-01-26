@@ -19,9 +19,7 @@
 import logging
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
-import ifcopenshell.util
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import numpy as np

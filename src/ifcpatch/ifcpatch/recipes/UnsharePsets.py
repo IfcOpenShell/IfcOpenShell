@@ -20,7 +20,6 @@ from logging import Logger
 
 import ifcopenshell
 import ifcopenshell.api.pset
-import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 

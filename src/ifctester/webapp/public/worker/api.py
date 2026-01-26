@@ -1,10 +1,7 @@
-import xml.etree.ElementTree as ET
 
 import ifcopenshell
-import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
-import ifcopenshell.util.schema
 from ifctester.ids import Ids, IdsXmlValidationError, get_schema
 from xmlschema.validators.exceptions import XMLSchemaValidationError
 

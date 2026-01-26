@@ -17,7 +17,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import ifcopenshell
 import numpy as np

@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import Optional, TypedDict, Union
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.root

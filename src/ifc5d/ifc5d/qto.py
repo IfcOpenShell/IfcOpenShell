@@ -27,7 +27,6 @@ from collections.abc import Iterable
 from typing import Any, Literal, NamedTuple, Union, get_args
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
@@ -35,7 +34,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import ifcopenshell.util.type
 import ifcopenshell.util.unit
 
 
