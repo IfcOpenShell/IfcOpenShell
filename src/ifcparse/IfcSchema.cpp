@@ -143,7 +143,8 @@ IfcParse::schema_definition::schema_definition(const std::string& name, const st
             entities_.push_back((**it).as_entity());
         }
     }
-    schemas[name_] = this;
+    // Use uppercase key for consistent case-insensitive lookup
+    schemas[boost::to_upper_copy(name_)] = this;
 }
 
 IfcParse::schema_definition::~schema_definition() {

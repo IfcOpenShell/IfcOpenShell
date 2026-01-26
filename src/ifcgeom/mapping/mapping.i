@@ -120,6 +120,10 @@ BIND(IfcSegmentedReferenceCurve);
 BIND(IfcGradientCurve);
 #endif
 BIND(IfcCompositeCurve);
+#ifdef SCHEMA_HAS_Ifc2DCompositeCurve
+// Ifc2DCompositeCurve (IFC2X3 only) - 2D constrained composite curve
+BIND(Ifc2DCompositeCurve);
+#endif
 #ifdef SCHEMA_HAS_IfcOffsetCurveByDistances
 BIND(IfcOffsetCurveByDistances)
 #endif
@@ -148,6 +152,10 @@ BIND(IfcLine);
 #ifdef SCHEMA_HAS_IfcBSplineCurveWithKnots
 // IfcRationalBSplineCurveWithKnots included
 BIND(IfcBSplineCurveWithKnots);
+#endif
+#ifdef SCHEMA_HAS_IfcBezierCurve
+// IfcBezierCurve and IfcRationalBezierCurve (IFC2X3 only) - Bezier curve representation
+BIND(IfcBezierCurve);
 #endif
 #ifdef SCHEMA_HAS_IfcSurfaceCurve
 BIND(IfcSurfaceCurve);
