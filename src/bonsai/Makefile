@@ -61,6 +61,11 @@ PYLIBDIR:=python3.12
 PYNUMBER:=312
 PYPI_VERSION:=3.12
 endif
+ifeq ($(PYVERSION), py313)
+PYLIBDIR:=python3.13
+PYNUMBER:=313
+PYPI_VERSION:=3.13
+endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
