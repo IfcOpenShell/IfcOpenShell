@@ -2744,6 +2744,21 @@ class Model(bonsai.core.tool.Model):
                 cls.recreate_wall(element, wall)
 
     @classmethod
+    def regenerate_slab(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        element = tool.Ifc.get_entity(obj)
+        material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
+        DumbSlabPlaner().change_thickness(element, new_thickness)
+
+    @classmethod
+    def regenerate_profile(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.profile import DumbProfileRecalculator
+
+        DumbProfileRecalculator().recalculate([obj])
+
+    @classmethod
     def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:
         from ifcsverchok.ifcstore import SvIfcStore
         from sverchok.core.update_system import UpdateTree

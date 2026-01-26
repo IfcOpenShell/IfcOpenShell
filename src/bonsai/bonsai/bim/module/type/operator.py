@@ -74,7 +74,7 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+            core.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
             # Switch to the drawing's target view if available
             if active_target_view and element.Representation:
@@ -384,7 +384,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             for selected_obj in selected_objects:
                 selected_element = tool.Ifc.get_entity(selected_obj)
                 if selected_element and selected_element.is_a("IfcObject"):
-                    core.assign_type(tool.Ifc, tool.Type, element=selected_element, type=new)
+                    core.assign_type(tool.Ifc, tool.Model, tool.Type, element=selected_element, type=new)
                     if prefs.occurrence_name_style == "TYPE":
                         selected_obj.name = tool.Model.generate_occurrence_name(new, selected_element.is_a())
 

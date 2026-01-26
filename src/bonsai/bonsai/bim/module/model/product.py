@@ -380,7 +380,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class=instance_class,
                 should_add_representation=False,
             )
-            bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+            bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
             rprops = tool.Root.get_root_props()
             ifc_context = None
@@ -433,7 +433,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         element = tool.Ifc.get_entity(obj)
-        bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
         if existing_context:
             representation = ifcopenshell.util.representation.get_representation(element, existing_context)

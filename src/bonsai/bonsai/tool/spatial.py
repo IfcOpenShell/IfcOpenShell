@@ -1177,6 +1177,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
+        # TODO this code looks in the wrong spot and suspicious
         props = tool.Model.get_model_props()
         ifc_file = tool.Ifc.get()
         relating_type_id = props.relating_type_id
@@ -1196,7 +1197,7 @@ class Spatial(bonsai.core.tool.Spatial):
         element: ifcopenshell.entity_instance,
         relating_type: ifcopenshell.entity_instance,
     ) -> None:
-        bonsai.core.type.assign_type(ifc, type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
 
     @classmethod
     def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:

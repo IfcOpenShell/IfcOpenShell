@@ -31,14 +31,22 @@ if TYPE_CHECKING:
 
 def assign_type(
     ifc: type[tool.Ifc],
+    model: type[tool.Model],
     type_tool: type[tool.Type],
     element: ifcopenshell.entity_instance,
     type: ifcopenshell.entity_instance,
 ) -> None:
+    usage_attributes = type_tool.record_material_usage_attributes(element)
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
-    if type_tool.has_material_usage(element):
-        pass  # for now, representation regeneration handled by API listeners
+    if (usage := model.get_usage_type(type)) and usage_attributes:
+        type_tool.restore_material_usage_attributes(element, usage_attributes)
+    if (usage := model.get_usage_type(type)) == "PROFILE":
+        model.regenerate_profile(obj)
+    elif usage == "LAYER2":
+        model.recalculate_walls([obj])
+    elif usage == "LAYER3":
+        model.regenerate_slab(obj)
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:

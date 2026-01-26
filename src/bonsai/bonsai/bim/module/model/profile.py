@@ -267,22 +267,6 @@ class DumbProfileRegenerator:
                 results.extend(inverse.RelatedObjects)
         return results
 
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
-            return
-
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
-
-    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-        DumbProfileRecalculator().recalculate([obj])
-
 
 class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"

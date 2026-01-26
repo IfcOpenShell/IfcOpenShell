@@ -143,3 +143,20 @@ class Type(bonsai.core.tool.Type):
             obj=obj,
             representation=representation,
         )
+
+    @classmethod
+    def record_material_usage_attributes(cls, element: ifcopenshell.entity_instance) -> dict | None:
+        if (material := ifcopenshell.util.element.get_material(element)) and "Usage" in material.is_a():
+            return material.get_info()
+
+    @classmethod
+    def restore_material_usage_attributes(cls, element: ifcopenshell.entity_instance, usage_attributes: dict) -> None:
+        if (material := ifcopenshell.util.element.get_material(element)) and material.is_a() == usage_attributes[
+            "type"
+        ]:
+            if usage_attributes["type"] == "IfcMaterialLayerSetUsage":
+                for attr in ("LayerSetDirection", "DirectionSense", "OffsetFromReferenceLine", "ReferenceExtent"):
+                    setattr(material, attr, usage_attributes.get(attr))
+            elif usage_attributes["type"] == "IfcMaterialProfileSetUsage":
+                for attr in ("CardinalPoint", "ReferenceExtent"):
+                    setattr(material, attr, usage_attributes.get(attr))

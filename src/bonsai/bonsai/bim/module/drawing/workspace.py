@@ -168,7 +168,7 @@ def create_annotation_occurrence(context):
     )
     assert element
 
-    bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+    bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
     ifcopenshell.api.group.assign_group(ifc_file, group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)

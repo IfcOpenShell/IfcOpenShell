@@ -1279,7 +1279,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
-        return bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        return bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
     @classmethod
     def reload_representation(cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance):

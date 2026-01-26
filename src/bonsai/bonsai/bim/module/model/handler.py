@@ -38,22 +38,9 @@ def load_post(*args):
     )
 
     ifcopenshell.api.add_post_listener(
-        "type.assign_type", "Bonsai.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
-    )
-
-    ifcopenshell.api.add_post_listener(
-        "type.assign_type", "Bonsai.DumbSlab.RegenerateFromType", slab.DumbSlabPlaner().regenerate_from_type
-    )
-
-    ifcopenshell.api.add_post_listener(
         "material.edit_profile",
         "Bonsai.DumbProfile.RegenerateFromProfile",
         profile.DumbProfileRegenerator().regenerate_from_profile,
-    )
-    ifcopenshell.api.add_post_listener(
-        "type.assign_type",
-        "Bonsai.DumbProfile.RegenerateFromType",
-        profile.DumbProfileRegenerator().regenerate_from_type,
     )
 
     ifcopenshell.api.add_post_listener(
