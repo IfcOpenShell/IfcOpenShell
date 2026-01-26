@@ -29,19 +29,7 @@ foreach(file ${files})
     message(STATUS "Uninstalling ${filepath}")
 
     if(IS_SYMLINK "${filepath}" OR EXISTS "${filepath}")
-        exec_program(
-            "@CMAKE_COMMAND@"
-            ARGS
-            "-E remove \"${filepath}\""
-            OUTPUT_VARIABLE
-            rm_out
-            RETURN_VALUE
-            rm_retval
-        )
-
-        if(NOT "${rm_retval}" STREQUAL 0)
-            message(FATAL_ERROR "Problem when removing ${filepath}")
-        endif()
+        file(REMOVE "${filepath}")
     else(IS_SYMLINK "${filepath}" OR EXISTS "${filepath}")
         message(STATUS "File ${filepath} does not exist.")
     endif()
