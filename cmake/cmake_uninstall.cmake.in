@@ -30,7 +30,7 @@ foreach(file ${files})
 
     if(IS_SYMLINK "${filepath}" OR EXISTS "${filepath}")
         file(REMOVE "${filepath}")
-    else(IS_SYMLINK "${filepath}" OR EXISTS "${filepath}")
+    else(NOT EXISTS "${filepath}")
         message(STATUS "File ${filepath} does not exist.")
     endif()
 endforeach()
