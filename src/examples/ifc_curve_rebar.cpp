@@ -27,16 +27,15 @@
 #include <string>
 #include <fstream>
 
-#include "ifcparse\Ifc2x3.h"
-#include "ifcparse\IfcUtil.h"
-#include "ifcparse\IfcHierarchyHelper.h"
-#include "ifcgeom\IfcGeom.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
 
-void create_curve_rebar(IfcHierarchyHelper& file)
+void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 {
 	int dia = 24;
 	int R = 3 * dia;
@@ -83,14 +82,15 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 	IfcSchema::IfcCircle* circle = new IfcSchema::IfcCircle(axis1, R);
 	file.addEntity(circle);
 
-	IfcEntityList::ptr trim1(new IfcEntityList);
-	IfcEntityList::ptr trim2(new IfcEntityList);
-
+	IfcSchema::IfcTrimmingSelect::list::ptr trim1(new IfcSchema::IfcTrimmingSelect::list);
+    IfcSchema::IfcTrimmingSelect::list::ptr trim2(new IfcSchema::IfcTrimmingSelect::list);
+	
 	trim1->push(new IfcSchema::IfcParameterValue(180));
 	trim1->push(p2);
 
 	trim2->push(new IfcSchema::IfcParameterValue(270));
 	trim2->push(p4);
+	
 	IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1, trim2, false, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
 	file.addEntity(trimmed_curve);
 
@@ -133,8 +133,8 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 
 int main()
 {
-	IfcHierarchyHelper file;
-	file.header().file_name().name("ifc_curve_rebar.ifc");
+	IfcHierarchyHelper<IfcSchema> file;
+	file.header().file_name()->setname("ifc_curve_rebar.ifc");
 	create_curve_rebar(file);
 	std::ofstream f("ifc_curve_rebar.ifc");
 	f << file;
