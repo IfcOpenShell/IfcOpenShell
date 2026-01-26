@@ -1,4 +1,3 @@
-
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.pset

@@ -20,7 +20,6 @@
 import logging
 
 
-
 class Patcher:
     def __init__(self, file: None, logger: logging.Logger, filepath: str, is_solid: bool = True):
         """Fix missing or spot-coordinate bugged TINs loading in Revit

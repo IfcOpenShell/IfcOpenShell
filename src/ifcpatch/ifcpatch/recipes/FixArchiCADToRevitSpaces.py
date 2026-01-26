@@ -19,7 +19,6 @@
 import logging
 
 
-
 class Patcher:
     def __init__(self, file: None, logger: logging.Logger, filepath: str):
         """Allow ArchiCAD IFC spaces to open as Revit rooms

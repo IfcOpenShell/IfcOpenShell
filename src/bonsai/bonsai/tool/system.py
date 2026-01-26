@@ -112,20 +112,20 @@ class System(bonsai.core.tool.System):
     def create_port_at_cursor(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
         element_obj = tool.Ifc.get_object(element)
-        
+
         port = ifcopenshell.api.system.add_port(ifc_file, element=element)
         port.FlowDirection = "NOTDEFINED"
         port.PredefinedType = "USERDEFINED"
-        
+
         systems = ifcopenshell.util.system.get_element_systems(element)
         system = systems[0] if systems else None
         port.SystemType = getattr(system, "PredefinedType", None) or "USERDEFINED"
-        
+
         matrix = element_obj.matrix_world.copy()
         matrix.translation = bpy.context.scene.cursor.matrix.translation
-        
+
         ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
-        
+
         return port
 
     @classmethod
@@ -218,7 +218,7 @@ class System(bonsai.core.tool.System):
             for collection in obj.users_collection:
                 target_collection = collection
                 break
-            
+
             if target_collection:
                 for port_obj in ifc_importer.added_data.values():
                     if isinstance(port_obj, bpy.types.Object):

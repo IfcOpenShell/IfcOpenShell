@@ -25,7 +25,6 @@ import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
-
 class Ifc2P6:
     def __init__(self):
         self.xml = None

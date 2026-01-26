@@ -153,8 +153,8 @@ class TestAddPort:
     def test_run(self, ifc, system):
         system.get_ports("element").should_be_called().will_return(["port"])
         system.load_ports("element", ["port"]).should_be_called()
-        #system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
-        #system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort", should_add_representation=False).should_be_called().will_return("port")
+        # system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
+        # system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort", should_add_representation=False).should_be_called().will_return("port")
         system.create_port_at_cursor("element").should_be_called().will_return("port")
         system.load_ports("element", ["port"]).should_be_called()
         subject.add_port(ifc, system, element="element")

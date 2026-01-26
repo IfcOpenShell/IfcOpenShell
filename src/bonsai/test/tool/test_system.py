@@ -103,6 +103,7 @@ class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
         obj = subject.create_empty_at_cursor_with_element_orientation(element)
         assert obj.matrix_world == bpy.context.scene.cursor.matrix
 
+
 class TestCreatePortAtCursor(NewFile):
     def test_run(self):
         assert bpy.context.scene
