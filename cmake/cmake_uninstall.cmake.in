@@ -29,9 +29,13 @@ foreach(file ${files})
 
     if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
         exec_program(
-            "@CMAKE_COMMAND@" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
-            OUTPUT_VARIABLE rm_out
-            RETURN_VALUE rm_retval
+            "@CMAKE_COMMAND@"
+            ARGS
+            "-E remove \"$ENV{DESTDIR}${file}\""
+            OUTPUT_VARIABLE
+            rm_out
+            RETURN_VALUE
+            rm_retval
         )
 
         if(NOT "${rm_retval}" STREQUAL 0)
