@@ -1096,7 +1096,7 @@ class Model(bonsai.core.tool.Model):
                         # TODO Is this correct to assume one child? I really
                         # don't understand the linked aggregates and array
                         # behaviour.
-                        child_element = list(old_to_new.values())[0][0]
+                        child_element = next(iter(old_to_new.values()))[0]
                         child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
