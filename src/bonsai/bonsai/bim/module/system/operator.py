@@ -479,6 +479,56 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class EstablishPathDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.establish_path_direction"
+    bl_label = "Establish Path Direction"
+    bl_description = "Propagates flow direction through connected flow segments with two ports"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        connected_port = tool.Ifc.get().by_id(self.port_id)
+        
+        
+        if not connected_port or not connected_port.is_a("IfcDistributionPort"):
+            self.report({"ERROR"}, "Invalid port specified.")
+            return {"CANCELLED"}
+        
+        direction_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCE",
+            "SOURCEANDSINK": "SOURCEANDSINK",
+            "NOTDEFINED": "NOTDEFINED",
+        }
+        next_element = tool.System.get_port_relating_element(connected_port)
+        ports = tool.System.get_ports(next_element)
+        segments_processed = 0
+        while (len(ports) == 2):
+            if ports[0].id() == connected_port.id():
+                other_port = ports[1]
+            else:
+                other_port = ports[0]
+            
+            new_direction = direction_map.get(connected_port.FlowDirection, "NOTDEFINED")
+            other_port.FlowDirection = new_direction
+            segments_processed += 1
+            
+            connected_port = tool.System.get_connected_port(other_port)
+            if not connected_port:
+                break
+            connected_port.FlowDirection = direction_map.get(other_port.FlowDirection, "NOTDEFINED")
+            next_element = tool.System.get_port_relating_element(connected_port)
+            
+            if not next_element.is_a("IfcFlowSegment"):
+                print(f"DEBUG: next_element is not IfcFlowSegment, stopping")
+                break
+            
+            ports = tool.System.get_ports(next_element)
+        
+        self.report({"INFO"}, f"Established path direction through {segments_processed} flow segment(s).")
+        return {"FINISHED"}
+
+
 class LoadZones(bpy.types.Operator):
     bl_idname = "bim.load_zones"
     bl_label = "Load Zones"
