@@ -28,14 +28,21 @@ from xmlschema import XMLSchema, etree_tostring
 from xmlschema.validators.exceptions import XMLSchemaValidationError
 
 from .facet import (
+    Attribute,
     Cardinality,
+    Classification,
     Entity,
     Facet,
     FacetFailure,
+    Material,
+    PartOf,
+    Property,
+    Restriction,
     get_pset,
     get_psets,
 )
 
+__all__ = ["Attribute", "Classification", "Entity", "Material", "PartOf", "Property", "Restriction"]
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 

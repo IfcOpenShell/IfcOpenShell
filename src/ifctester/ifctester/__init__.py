@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
-from .ids import open as open
+from .ids import open
 
 __version__ = version = "0.0.0"
+__all__ = ["open"]
