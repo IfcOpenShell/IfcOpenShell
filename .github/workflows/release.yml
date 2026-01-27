@@ -74,45 +74,23 @@ jobs:
         id: package
         run: |
           make package
-          echo ::set-output name=tgz::$( ls assets/*.tar.gz | head -n 1 | xargs basename )
-          echo ::set-output name=deb::$( ls assets/*.deb | head -n 1 | xargs basename )
+          echo "tgz=$( ls assets/*.tar.gz | head -n 1 | xargs basename )" >> $GITHUB_OUTPUT
+          echo "deb=$( ls assets/*.deb | head -n 1 | xargs basename )" >> $GITHUB_OUTPUT
         working-directory: build
         env:
-          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
-      - name: Release
-        id: release
-        uses: actions/create-release@v1
+          CHANGELOG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload Assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true
-          body: |
-            Changes to this release
+        run: |
+          # Create release using gh CLI (replaces deprecated actions/create-release@v1)
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ github.ref_name }}" \
+            --prerelease \
+            --notes "Changes to this release
               - add github actions support #1306
               - add boost depends to ifcopenshell deb packaging
               - <add more changes here>
-            See more details in the documentation
-#          body_path: build/CHANGELOG.md
-      - name: Upload TGZ
-        id: upload-tgz
-        uses: actions/upload-release-asset@v1
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: build/assets/${{ steps.package.outputs.tgz }}
-          asset_name: ${{ steps.package.outputs.tgz }}
-          asset_content_type: application/x-gzip
-      - name: Upload DEB
-        id: upload-deb
-        uses: actions/upload-release-asset@v1
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: build/assets/${{ steps.package.outputs.deb }}
-          asset_name: ${{ steps.package.outputs.deb }}
-          asset_content_type: application/vnd.debian.binary-package
+            See more details in the documentation" \
+            build/assets/${{ steps.package.outputs.tgz }} \
+            build/assets/${{ steps.package.outputs.deb }}

@@ -195,7 +195,7 @@ class Transaction:
                 element = self.file.by_id(operation["id"])
                 try:
                     element[operation["index"]] = self.unserialise_value(element, operation["old"])
-                except:
+                except (RuntimeError, ValueError, TypeError, AttributeError):
                     # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
                     pass
             elif operation["action"] == "delete":
@@ -203,7 +203,7 @@ class Transaction:
                 for k, v in operation["value"].items():
                     try:
                         setattr(e, k, self.unserialise_value(e, v))
-                    except:
+                    except (RuntimeError, ValueError, TypeError, AttributeError):
                         # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
                         pass
                 for inverse_id, data in operation["inverses"].items():
@@ -225,7 +225,7 @@ class Transaction:
                 for k, v in operation["value"].items():
                     try:
                         setattr(e, k, self.unserialise_value(e, v))
-                    except:
+                    except (RuntimeError, ValueError, TypeError, AttributeError):
                         # Catch discrepancy where IfcOpenShell creates but doesn't allow editing of invalid values
                         pass
             elif operation["action"] == "edit":
@@ -255,7 +255,7 @@ INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 # TODO: Workaround for old builds, remove after build stabilizes.
 try:
     UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
-except:
+except AttributeError:
     UNKNOWN = 5  # Workaround
 
 import struct

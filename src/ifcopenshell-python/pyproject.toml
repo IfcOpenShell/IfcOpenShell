@@ -16,12 +16,12 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 dependencies = [
-    "shapely",
-    "numpy",
-    "isodate",
-    "python-dateutil",
-    "lark",
-    "typing-extensions",
+    "shapely>=1.8.0",
+    "numpy>=1.21.0",
+    "isodate>=0.6.0",
+    "python-dateutil>=2.8.0",
+    "lark>=1.0.0",
+    "typing-extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]

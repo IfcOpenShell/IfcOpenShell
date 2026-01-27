@@ -46,13 +46,34 @@ class PP2Ifc:
 
         self.relationship_map = {0: "FINISH_START", 1: "FINISH_FINISH", 2: "START_START", 3: "START_FINISH"}
 
+    # Allowed table names for SQL queries (whitelist to prevent SQL injection)
+    ALLOWED_TABLES = frozenset([
+        "BAR", "EXPANDED_TASK", "PERMANENT_RESOURCE", "CONSUMABLE_RESOURCE",
+        "TASK", "PROJECT_SUMMARY", "WBS_ENTRY", "CALENDAR", "WORK_PATTERN",
+        "EXCEPTIONN", "MILESTONE", "LINK"
+    ])
+
+    # Allowed column names for SQL queries (whitelist to prevent SQL injection)
+    ALLOWED_COLUMNS = frozenset(["ID"])
+
     def get_json(self, table_name: str) -> list[dict[str, Any]]:
-        self.cur.execute("select * from " + table_name)
+        # Validate table name against whitelist to prevent SQL injection
+        if table_name not in self.ALLOWED_TABLES:
+            raise ValueError(f"Invalid table name: {table_name}")
+        # Using string formatting is safe here because table_name is validated against whitelist
+        self.cur.execute(f"SELECT * FROM {table_name}")
         r = [dict((self.cur.description[i][0], value) for i, value in enumerate(row)) for row in self.cur.fetchall()]
         return r
 
     def get_json_with_filter(self, table_name: str, attr_name: str, attr_value: Any) -> list[dict[str, Any]]:
-        self.cur.execute("select * from " + table_name + " where " + attr_name + " = " + str(attr_value))
+        # Validate table and column names against whitelist to prevent SQL injection
+        if table_name not in self.ALLOWED_TABLES:
+            raise ValueError(f"Invalid table name: {table_name}")
+        if attr_name not in self.ALLOWED_COLUMNS:
+            raise ValueError(f"Invalid column name: {attr_name}")
+        # Using parameterized query for the value to prevent SQL injection
+        # Table and column names are validated against whitelist above
+        self.cur.execute(f"SELECT * FROM {table_name} WHERE {attr_name} = ?", (attr_value,))
         r = [dict((self.cur.description[i][0], value) for i, value in enumerate(row)) for row in self.cur.fetchall()]
         return r
 

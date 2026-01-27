@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import os
 import tempfile
 from pathlib import Path
 
@@ -153,7 +154,7 @@ class PreserveFileContents:
     def __enter__(self):
         if not self.filepath.exists():
             self.filepath.parent.mkdir(parents=True, exist_ok=True)
-            open(self.filepath, "w").close()  # touch.
+            self.filepath.touch()  # Use pathlib touch instead of unclosed file handle
 
         with open(self.filepath, "r") as file:
             self.original_content = file.read()
@@ -186,8 +187,8 @@ class TestRecentIFCProjects(NewFile):
 
             projects: list[Path] = []
             for _ in range(3):
-                ifc_file = Path(tempfile.NamedTemporaryFile(suffix=".ifc").name)
-                open(ifc_file, "w").close()
+                ifc_file = Path(tempfile.NamedTemporaryFile(suffix=".ifc", delete=False).name)
+                ifc_file.touch()  # Ensure file exists
                 projects.append(ifc_file)
 
             subject.write_recent_ifc_projects(projects)
@@ -366,7 +367,10 @@ class TestLoadingIfcSqlite(NewFile):
             sql_type="SQLite",
         )
         patcher.patch()
-        tmp_file = Path(tempfile.mktemp(suffix=".ifcsqlite"))
+        # Use mkstemp for secure temporary file creation (avoids TOCTOU race condition)
+        fd, tmp_path = tempfile.mkstemp(suffix=".ifcsqlite")
+        os.close(fd)
+        tmp_file = Path(tmp_path)
         ifcpatch.write(patcher.get_output(), tmp_file)
 
         elements_with_meshes = [

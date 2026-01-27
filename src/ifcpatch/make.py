@@ -21,5 +21,5 @@
 import os
 import subprocess
 
-cmd = f'pyinstaller ./bootstrap.py --name ifcpatch --onefile --clean --add-data "ifcpatch{os.pathsep}ifcpatch"'
-subprocess.check_output(cmd, shell=True)
+cmd = ["pyinstaller", "./bootstrap.py", "--name", "ifcpatch", "--onefile", "--clean", "--add-data", f"ifcpatch{os.pathsep}ifcpatch"]
+subprocess.check_output(cmd)

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py39, py310, py311, py312, py313, py314]
+        pyver: [py310, py311, py312, py313, py314]  # py39 removed (EOL October 2025)
         config:
           - {
             name: "Windows 64bit",

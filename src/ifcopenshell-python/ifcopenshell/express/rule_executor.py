@@ -84,8 +84,9 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
 
     fn = os.path.join(os.path.dirname(__file__), "rules", f"{f.schema_identifier}.py")
     try:
-        source = open(fn, "r").read()
-    except FileNotFoundError as e:
+        with open(fn, "r") as source_file:
+            source = source_file.read()
+    except FileNotFoundError:
         import sys
         import time
         import subprocess
@@ -97,7 +98,8 @@ def run(f: ifcopenshell.file, logger: Logger) -> None:
         if not os.path.exists(fn):
             subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
             time.sleep(1.)
-        source = open(fn, "r").read()
+        with open(fn, "r") as source_file:
+            source = source_file.read()
 
     a = ast.parse(source)
     assertion.rewrite.rewrite_asserts(mod=a, source=source)

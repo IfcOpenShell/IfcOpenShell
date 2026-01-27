@@ -17,10 +17,17 @@
 #                                                                              #
 ################################################################################
 
-if(POLICY CMP0148) # 3.27
+# CMP0148 (CMake 3.27+): FindPythonInterp and FindPythonLibs modules removed
+# We use OLD behavior for backward compatibility with older CMake versions.
+# TODO: Migrate fully to FindPython module and remove these policies when
+# minimum CMake version is raised to 3.27+
+if(POLICY CMP0148)
     cmake_policy(SET CMP0148 OLD)
 endif()
-if(POLICY CMP0177) # 3.31
+# CMP0177 (CMake 3.31+): install() DESTINATION paths are normalized
+# We use OLD behavior for backward compatibility with older CMake versions.
+# TODO: Review and potentially update to NEW behavior when minimum CMake version is raised
+if(POLICY CMP0177)
     cmake_policy(SET CMP0177 OLD)
 endif()
 

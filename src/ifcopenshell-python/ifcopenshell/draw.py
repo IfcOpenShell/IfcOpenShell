@@ -657,9 +657,12 @@ def main(
         svg = dom1.documentElement
         style = dom1.createElement("style")
         style.setAttribute("type", "text/css")
-        style.appendChild(
-            dom1.createTextNode(open(settings.css[1:]).read() if settings.css.startswith("@") else settings.css)
-        )
+        if settings.css.startswith("@"):
+            with open(settings.css[1:]) as css_file:
+                css_content = css_file.read()
+        else:
+            css_content = settings.css
+        style.appendChild(dom1.createTextNode(css_content))
         svg.insertBefore(style, svg.firstChild)
 
     data = dom1.toprettyxml()

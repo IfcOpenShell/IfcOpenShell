@@ -52,10 +52,16 @@ class Test:
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
 
-        output_path = Path(tempfile.mktemp())
+        # Use mkstemp for secure temporary file creation (avoids TOCTOU race condition)
+        fd, tmp_path = tempfile.mkstemp(suffix=".ifc")
+        output_path = Path(tmp_path)
         try:
+            # Close the file descriptor since we just need the path
+            import os
+            os.close(fd)
+            output_path.unlink()  # Remove it so we can test file creation
             assert not output_path.exists()
             ifcpatch.write(patcher.get_output(), output_path)
             assert output_path.exists()
         finally:
-            output_path.unlink()
+            output_path.unlink(missing_ok=True)
