@@ -2063,6 +2063,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 return position
 
             items = list(representation.Items)
+            skipped_objects = []
             for obj in context.selected_editable_objects:
                 if obj == self.target:
                     continue
@@ -2082,12 +2083,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 assert obj_rep
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    self.report(
-                        {"ERROR"},
-                        f"IFC join failed - object '{obj.name}' has a different representation type "
-                        f"({obj_rep.RepresentationType})\nthan target '{self.target.name}' ({representation_type}).",
-                    )
-                    return
+                    skipped_objects.append((obj.name, obj_rep.RepresentationType))
+                    continue
 
                 placement = np.array(obj.matrix_world)
                 placement[M_TRANSLATION] /= si_conversion
@@ -2167,6 +2164,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                     items.append(copied_item)
                 ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            if skipped_objects:
+                skipped_info = ", ".join(f"'{name}' ({rep_type})" for name, rep_type in skipped_objects)
+                self.report({"INFO"}, f"Skipped incompatible objects: {skipped_info}")
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(
