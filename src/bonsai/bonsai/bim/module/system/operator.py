@@ -317,17 +317,19 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Connect MEP Elements"
     bl_description = "Connects two selected elements by their closest located ports and adjusts them"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not len(context.selected_objects) == 2:
-            cls.poll_message_set("Need to select 2 objects.")
-            return False
-        return True
+    obj1_name: bpy.props.StringProperty(name="Object 1")
+    obj2_name: bpy.props.StringProperty(name="Object 2")
 
     def _execute(self, context):
-        obj1 = context.active_object
-        obj2 = next(o for o in context.selected_objects if o != obj1)
+        if self.obj1_name and self.obj2_name:
+            obj1 = bpy.data.objects.get(self.obj1_name)
+            obj2 = bpy.data.objects.get(self.obj2_name)
+        else:
+            if not context.selected_objects or len(context.selected_objects) != 2:
+                self.report({"ERROR"}, "Need to select 2 objects.")
+                return {"CANCELLED"}
+            obj1 = context.active_object
+            obj2 = next(o for o in context.selected_objects if o != obj1)
 
         tool.Model.sync_object_ifc_position(obj1)
         tool.Model.sync_object_ifc_position(obj2)
