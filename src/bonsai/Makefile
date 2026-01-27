@@ -48,7 +48,6 @@ VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
-PYVERSION:=py310
 PYPI_IMP:=cp
 
 ifeq ($(PYVERSION), py311)
@@ -104,7 +103,10 @@ endif
 .PHONY: dist
 dist:
 ifndef PLATFORM
-	$(error PLATFORM is not set)
+	$(error PLATFORM is not set. Example values: win, linux, macos, macosm1.)
+endif
+ifndef PYVERSION
+	$(error PYVERSION is not set. Example value - 'py313'. Supported Python versions - 3.11-3.13.)
 endif
 	rm -rf build
 	mkdir -p build
