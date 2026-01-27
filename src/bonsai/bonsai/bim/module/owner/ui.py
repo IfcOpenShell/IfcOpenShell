@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import bpy
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from typing import Any
 from bonsai.bim.module.owner.data import (
-    PeopleData,
+    ActorData,
+    ApplicationsData,
+    ObjectActorData,
     OrganisationsData,
     OwnerData,
-    ActorData,
-    ObjectActorData,
-    ApplicationsData,
+    PeopleData,
 )
 
 

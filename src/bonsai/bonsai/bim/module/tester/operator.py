@@ -16,28 +16,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import time
-import tempfile
-import webbrowser
-import traceback
-import subprocess
-import socket
-import sys
-import threading
 import asyncio
-import socketio
-from aiohttp import web
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import traceback
+import webbrowser
+from pathlib import Path
+from typing import Union
+
+import bpy
+import ifcopenshell
 import ifctester
 import ifctester.ids
 import ifctester.reporter
-import ifcopenshell
-import bonsai.tool as tool
-import bonsai.bim.handler
+import socketio
+from aiohttp import web
 from bpy_extras.io_utils import ExportHelper
-from pathlib import Path
-from typing import Union
+
+import bonsai.bim.handler
+import bonsai.tool as tool
 
 webapp_process = None
 websocket_server_thread = None

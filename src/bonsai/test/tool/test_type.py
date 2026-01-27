@@ -20,10 +20,11 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.type import Type as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

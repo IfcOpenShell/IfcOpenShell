@@ -17,26 +17,31 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import weakref
+from collections.abc import Callable
+from math import cos
+from typing import Union
+
 import bpy
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import ifcopenshell.api.owner.settings
+from bpy.app.handlers import persistent
+from mathutils import Vector
+
 import bonsai.bim
 import bonsai.tool as tool
-import weakref
-from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.decorator import (
+    BoundingBoxDecorator,
+    SlabDirectionDecorator,
+    WallAxisDecorator,
+)
 from bonsai.bim.module.nest.decorator import NestDecorator
-from mathutils import Vector
-from math import cos
-from typing import Union
-from collections.abc import Callable
-
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
@@ -202,8 +207,8 @@ def refresh_ui_data():
     Note that calling non-ifc-operators by itself doesn't refresh the UI data
     and it need to be refreshed manually if needed.
     """
-    from bonsai.bim import modules
     import bonsai.bim.ui
+    from bonsai.bim import modules
 
     bonsai.bim.ui.refresh()
 

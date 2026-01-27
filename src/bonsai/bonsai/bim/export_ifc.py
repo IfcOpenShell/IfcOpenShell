@@ -17,27 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
-import json
+
 import datetime
-import zipfile
+import json
+import os
 import tempfile
+import zipfile
+from logging import Logger
+from math import radians
+from typing import Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.geometry
+from mathutils import Vector
+
 import bonsai.core.aggregate
+import bonsai.core.geometry
 import bonsai.core.spatial
 import bonsai.core.style
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from mathutils import Vector
-from typing import Union
-from logging import Logger
-from math import radians
 
 
 class IfcExporter:

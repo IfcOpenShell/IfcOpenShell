@@ -17,24 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
 import bpy
+from bpy.types import Menu, Panel
+
 import bonsai.bim
-from bonsai.bim import module
 import bonsai.tool as tool
-from bpy.types import Panel, Menu
+from bonsai.bim import module
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
-    AuthoringData,
     ArrayData,
-    StairData,
-    SverchokData,
-    WindowData,
+    AuthoringData,
     DoorData,
     RailingData,
     RoofData,
+    StairData,
+    SverchokData,
+    WindowData,
 )
-from collections.abc import Iterable
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bl_ui_utils.layout as bl_ui_utils_layout

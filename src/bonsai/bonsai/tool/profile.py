@@ -17,22 +17,25 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.profile
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import numpy as np
+import PIL.ImageDraw
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import PIL.ImageDraw
 from bonsai.bim.module.model.decorator import ProfileDecorator
-from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bonsai.bim.module.profile.prop

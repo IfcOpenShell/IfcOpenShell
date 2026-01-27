@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.nest as subject
-from test.core.bootstrap import ifc, nest, collector
+from test.core.bootstrap import collector, ifc, nest
 
 
 class TestEnableEditingNeset:

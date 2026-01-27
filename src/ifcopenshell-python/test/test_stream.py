@@ -18,7 +18,6 @@
 
 from pathlib import Path
 
-
 import ifcopenshell
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"

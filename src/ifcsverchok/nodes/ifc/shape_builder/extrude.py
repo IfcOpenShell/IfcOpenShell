@@ -20,13 +20,12 @@ from typing import TYPE_CHECKING, Literal
 
 import bpy
 import ifcopenshell
+import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from sverchok.core.sockets import SvVerticesSocket
 from sverchok.data_structure import updateNode
 from sverchok.node_tree import SverchCustomTreeNode
-
-import ifcsverchok.helper
-import ifcsverchok.helper as helper
 
 
 class SvIfcSbExtrude(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

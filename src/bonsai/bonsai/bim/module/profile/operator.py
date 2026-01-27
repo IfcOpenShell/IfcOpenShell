@@ -20,14 +20,15 @@ import bpy
 import ifcopenshell.api
 import ifcopenshell.api.profile
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
-import bonsai.tool as tool
 import bonsai.bim.module.model.profile as model_profile
 import bonsai.core.profile as core
-from bonsai.bim.module.model.decorator import ProfileDecorator
-from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
-from bonsai.bim.module.profile.data import refresh
+import bonsai.tool as tool
 from bonsai.bim.module.geometry.helper import Helper
+from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.profile.data import refresh
+from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
 
 
 class LoadProfiles(bpy.types.Operator):

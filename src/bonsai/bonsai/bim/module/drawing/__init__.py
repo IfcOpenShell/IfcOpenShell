@@ -17,8 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, handler, gizmos, workspace
+
 import bonsai.tool as tool
+
+from . import gizmos, handler, operator, prop, ui, workspace
 
 classes = (
     operator.ActivateDrawing,

@@ -1,11 +1,12 @@
 import csv
-import os
 import json
+import os
 
 # import pystache
 import subprocess
-import ifcopenshell
 from pathlib import Path
+
+import ifcopenshell
 
 
 class Generator:

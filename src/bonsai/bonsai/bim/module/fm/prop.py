@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal
+
 import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
 import bonsai.tool as tool
 from bonsai.bim.module.fm.data import FMData
 from bonsai.bim.prop import MultipleFileSelect, StrProperty
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import TYPE_CHECKING, Literal
 
 
 def get_engine(self: "BIMFMProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:

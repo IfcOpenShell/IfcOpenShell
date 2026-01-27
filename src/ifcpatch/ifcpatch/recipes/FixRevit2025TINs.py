@@ -21,9 +21,7 @@ import logging
 from typing import Optional
 
 import ifcopenshell
-import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
-import ifcopenshell.util.unit
 
 
 class Patcher:
@@ -167,8 +165,6 @@ class Patcher:
         import bpy
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
 
@@ -234,11 +230,8 @@ class Patcher:
 
         import bmesh
         import bonsai.tool as tool
-        import bpy
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
 
@@ -284,11 +277,8 @@ class Patcher:
 
         import bmesh
         import bonsai.tool as tool
-        import bpy
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.type
         import ifcopenshell.util.element
         import ifcopenshell.util.representation
         from mathutils import Matrix

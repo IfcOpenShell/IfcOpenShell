@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 from typing import TYPE_CHECKING
+
+import bpy
 
 
 class CoveToolProject(bpy.types.PropertyGroup):

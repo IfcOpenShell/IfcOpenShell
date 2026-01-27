@@ -18,16 +18,16 @@
 
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
 import textwrap
-import ifcopenshell.api.nest
-import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-import bonsai.tool as tool
-import bonsai.core.cost as core
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, get_args
 
-from typing import get_args, TYPE_CHECKING, Literal
+import bpy
+import ifcopenshell.api.nest
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.core.cost as core
+import bonsai.tool as tool
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):

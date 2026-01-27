@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, workspace
+
+from . import operator, prop, ui, workspace
 
 classes = (
     operator.ShowLoads,

@@ -1,6 +1,7 @@
 # This can be run using `blender -b -P headless_import.py`
 
 import bpy
+
 import bonsai.tool as tool
 
 # When federating, you may wish to manually specify the origin to ensure models

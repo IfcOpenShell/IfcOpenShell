@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from typing import TYPE_CHECKING
+
 import bmesh
+import bpy
 import idprop
 import ifcopenshell
 import ifcopenshell.api
@@ -25,20 +27,20 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
-import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import bonsai.bim.handler
-import bonsai.core.root as core
-import bonsai.core.geometry
-import bonsai.tool as tool
-import bonsai.bim.module.root.prop as root_prop
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.helper import get_enum_items, prop_with_search
 from mathutils import Vector
-from typing import TYPE_CHECKING
+
+import bonsai.bim.handler
+import bonsai.bim.module.root.prop as root_prop
+import bonsai.core.geometry
+import bonsai.core.root as core
+import bonsai.tool as tool
+from bonsai.bim.helper import get_enum_items, prop_with_search
+from bonsai.bim.ifc import IfcStore
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -307,7 +309,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     with context.temp_override(selected_editable_objects=[obj]):
                         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                     # object.transform_apply is losing normals.
-                    if is_negative:
+                    if is_negative and bpy.app.version >= (5, 1, 0):
                         for polygon in obj.data.polygons:
                             polygon.flip()
 

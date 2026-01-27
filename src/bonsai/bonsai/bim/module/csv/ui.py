@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from bpy.types import Panel
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData
 
 

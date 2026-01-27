@@ -24,8 +24,6 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
-from .common import ScheduleIfcGenerator
-
 
 class Ifc2P6:
     def __init__(self):

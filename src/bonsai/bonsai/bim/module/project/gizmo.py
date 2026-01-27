@@ -18,9 +18,10 @@
 
 
 import bpy
-import bonsai.tool as tool
 from bpy.types import GizmoGroup
 from mathutils import Matrix
+
+import bonsai.tool as tool
 
 
 class ClippingPlane(GizmoGroup):

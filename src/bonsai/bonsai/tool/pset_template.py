@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal, final
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset_template
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+
+import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim
-from pathlib import Path
-from typing import Literal, final, TYPE_CHECKING
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:

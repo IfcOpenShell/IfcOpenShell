@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from math import radians
+
 import blf
-import gpu
 import bmesh
+import bpy
+import gpu
 import ifcopenshell
 import ifcopenshell.util.geolocation
-import bonsai.tool as tool
-from math import radians
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
-from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.georeference.data import GeoreferenceData
 
 

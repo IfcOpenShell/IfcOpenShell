@@ -17,16 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.bim.helper
-import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search, draw_attributes
-from bpy.types import Panel, UIList
-from bonsai.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
+
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
+from bonsai.bim.module.system.data import (
+    ActiveObjectZonesData,
+    ObjectSystemData,
+    PortData,
+    SystemData,
+    ZonesData,
+)
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, System, BIMZoneProperties, Zone
+    from bonsai.bim.module.system.prop import (
+        BIMSystemProperties,
+        BIMZoneProperties,
+        System,
+        Zone,
+    )
 
 
 FLOW_DIRECTION_TO_ICON = {

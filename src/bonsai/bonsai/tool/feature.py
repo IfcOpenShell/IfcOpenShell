@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
-import bonsai.bim.helper
-import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.api.feature
 import ifcopenshell.util.representation
-from typing import TYPE_CHECKING
-from collections.abc import Iterable
+
+import bonsai.bim.helper
+import bonsai.core.geometry
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.void.prop import BIMBooleanProperties

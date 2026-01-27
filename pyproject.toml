@@ -82,4 +82,4 @@ black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
 
-cmake-format = "gersemi cmake src --in-place"
+cmake-format = "gersemi . --in-place"

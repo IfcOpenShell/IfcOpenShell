@@ -1,4 +1,8 @@
-import numpy as np
+# https://stackoverflow.com/a/9184560/9627415
+# Possible optimisation to linalg.norm?
+from itertools import cycle
+from math import radians
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
@@ -12,14 +16,7 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.shape_builder
-
-# https://stackoverflow.com/a/9184560/9627415
-# Possible optimisation to linalg.norm?
-
-# from ifcopenshell.util.shape_builder import VectorType, SequenceOfVectors
-from itertools import cycle
-from collections import namedtuple
-from math import sin, cos, radians
+import numpy as np
 
 f = ifcopenshell.api.project.create_file()
 

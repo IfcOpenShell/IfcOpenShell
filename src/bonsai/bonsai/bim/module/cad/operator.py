@@ -16,17 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import bmesh
-import mathutils
-import bpy_extras
-import bonsai.tool as tool
-from mathutils import Vector, Matrix
-from math import pi, radians, sin, cos, sqrt
-import ifcopenshell.util.unit
+from math import cos, pi, radians, sin, sqrt
 from typing import Union
 
+import bmesh
+import bpy
+import bpy_extras
+import ifcopenshell.util.unit
+import mathutils
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 
 messages = {
     "SHARED_VERTEX": "Shared Vertex, no intersection possible",

@@ -17,15 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Union, TYPE_CHECKING, Literal
+
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.aggregate.prop import BIMAggregateProperties, BIMObjectAggregateProperties
+    from bonsai.bim.module.aggregate.prop import (
+        BIMAggregateProperties,
+        BIMObjectAggregateProperties,
+    )
 
 
 class Aggregate(bonsai.core.tool.Aggregate):

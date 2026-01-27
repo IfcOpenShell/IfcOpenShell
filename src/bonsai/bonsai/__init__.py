@@ -32,17 +32,16 @@ if IN_BLENDER:
 # and then as a bonsai-package.
 IN_PACKAGE = __package__ == "bonsai"
 
-import re
 import platform
-import traceback
-import webbrowser
-import uuid
+import re
 import shutil
+import traceback
+import uuid
+import webbrowser
 from collections import deque
-from pathlib import Path
-from typing import Union, Any
 from collections.abc import Generator
-
+from pathlib import Path
+from typing import Any, Union
 
 last_commit_hash = "8888888"
 last_commit_date = "9999999"

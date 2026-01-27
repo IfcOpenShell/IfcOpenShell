@@ -16,27 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, get_args
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.resource
 import ifcopenshell.util.resource
-import bonsai.tool as tool
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
 import bonsai.bim.module.pset.data
 import bonsai.bim.module.resource.data
 import bonsai.bim.module.sequence.data
+import bonsai.tool as tool
 from bonsai.bim.prop import Attribute, ISODuration
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import TYPE_CHECKING, Literal, get_args
 
 quantitytypes_enum: dict[str, tool.Blender.BLENDER_ENUM_ITEMS] = {}
 

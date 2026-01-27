@@ -17,12 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset_template
-import bonsai.bim.schema
+
 import bonsai.bim.handler
+import bonsai.bim.schema
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 

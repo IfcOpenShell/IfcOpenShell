@@ -17,50 +17,40 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bonsai.core.geometry
+
 from typing import TYPE_CHECKING, Optional
-import ifcopenshell.util.element
+
+import bonsai.core.geometry
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
 def assign_type(
     ifc: type[tool.Ifc],
+    model: type[tool.Model],
     type_tool: type[tool.Type],
     element: ifcopenshell.entity_instance,
     type: ifcopenshell.entity_instance,
 ) -> None:
-
-    # Get the instance's current CardinalPoint before type assignment
-    instance_cardinal_point = None
-    instance_material = ifcopenshell.util.element.get_material(element)
-    if instance_material and instance_material.is_a("IfcMaterialProfileSetUsage"):
-        instance_cardinal_point = instance_material.CardinalPoint
-
+    usage_attributes = type_tool.record_material_usage_attributes(element)
     ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
-
-    if type_tool.has_material_usage(element):
-        # Restore the instance's CardinalPoint to the new material usage
-        if instance_cardinal_point is not None:
-            new_instance_material = ifcopenshell.util.element.get_material(element)
-            if new_instance_material and new_instance_material.is_a("IfcMaterialProfileSetUsage"):
-                if new_instance_material.CardinalPoint != instance_cardinal_point:
-                    new_instance_material.CardinalPoint = instance_cardinal_point
-
-                    # Force representation regeneration
-                    from bonsai.bim.module.model.profile import DumbProfileRecalculator
-
-                    DumbProfileRecalculator().recalculate([obj])
-        # for now, representation regeneration handled by API listeners
+    if (usage := model.get_usage_type(type)) and usage_attributes:
+        type_tool.restore_material_usage_attributes(element, usage_attributes)
+    if (usage := model.get_usage_type(type)) == "PROFILE":
+        model.regenerate_profile(obj)
+    elif usage == "LAYER2":
+        model.recalculate_walls([obj])
+    elif usage == "LAYER3":
+        model.regenerate_slab(obj)
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:
             type_tool.change_object_data(obj, type_data, is_global=False)
-
     type_tool.disable_editing(obj)
 
 

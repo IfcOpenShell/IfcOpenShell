@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import math
 import json
+import math
+from math import degrees
+from typing import Any, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
-import bonsai.tool as tool
-from math import degrees
 from natsort import natsorted
-from typing import Union, Optional, Any
+
+import bonsai.tool as tool
 
 
 def refresh():

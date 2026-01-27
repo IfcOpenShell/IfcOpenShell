@@ -16,39 +16,45 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
 import enum
+import json
+import os
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.decoration as decoration
-from mathutils import Matrix
-from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData, ElementValuesData
-from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from pathlib import Path
-from bonsai.bim.prop import Attribute, StrProperty
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    BoolVectorProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
-    BoolVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, get_args, Union
-from collections.abc import Callable
+from bpy.types import PropertyGroup
+from mathutils import Matrix
 
+import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.core.drawing as core
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import (
+    AnnotationData,
+    DecoratorData,
+    DrawingsData,
+    ElementValuesData,
+    SheetsData,
+)
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
+from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
 
 diagram_scales_enum = []
 

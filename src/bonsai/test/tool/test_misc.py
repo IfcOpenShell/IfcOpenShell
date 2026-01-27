@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import numpy
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import test.bim.bootstrap
+import numpy
+
 import bonsai.core.tool
 import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool.misc import Misc as subject
 
 

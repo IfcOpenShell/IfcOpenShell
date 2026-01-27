@@ -17,31 +17,34 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
-import types
-import bpy
-import pytest
-import shutil
 import pprint
+import shutil
 import traceback
+import types
 import webbrowser
-import numpy as np
-import test.bim.stub
+from collections.abc import Generator
+from inspect import signature
+from math import radians
+from pathlib import Path
+from typing import Any, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.bim.handler
-from collections.abc import Generator
-from bonsai.bim.ifc import IfcStore
-from bonsai.tool.brick import BrickStore
-from bonsai.bim.module.model.data import AuthoringData
-from pytest_bdd import scenarios, given, when, then, parsers
-from inspect import signature
+import numpy as np
+import pytest
 from mathutils import Vector
-from math import radians
-from pathlib import Path
-from typing import Union, Any
+from pytest_bdd import given, parsers, scenarios, then, when
+
+import bonsai.bim.handler
+import bonsai.tool as tool
+import test.bim.stub
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.tool.brick import BrickStore
 
 scenarios("feature")
 

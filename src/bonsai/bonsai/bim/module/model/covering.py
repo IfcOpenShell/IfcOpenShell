@@ -20,8 +20,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import bonsai.tool as tool
+
 import bonsai.core.covering as core
+import bonsai.tool as tool
 
 
 class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):

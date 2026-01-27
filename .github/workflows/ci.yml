@@ -209,17 +209,36 @@ jobs:
 
       - name: Build standalone examples to test cmake package
         run: |
+          set -x
           cd src/examples
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build .
+          ./arbitrary_open_profile_def  && test -f arbitrary_open_profile_def.ifc
+          ./composite_profile_def       && test -f composite_profile_def.ifc
+          ./csg_primitive               && test -f csg_primitive.ifc
+          ./ellipse_pies                && test -f ellipse_pies.ifc
+          ./faces                       && test -f faces.ifc
+          ./ifc_curve_rebar             && test -f ifc_curve_rebar.ifc
+          ./profiles
+          test -f IfcUShapeProfileDef.ifc
+          test -f IfcTShapeProfileDef.ifc
+          test -f IfcZShapeProfileDef.ifc
+          test -f IfcEllipseProfileDef.ifc
+          test -f IfcIShapeProfileDef.ifc
+          test -f IfcLShapeProfileDef.ifc
+          test -f IfcCShapeProfileDef.ifc
+          test -f IfcCircleProfileDef.ifc
+          test -f IfcRectangleProfileDef.ifc
+          test -f IfcTrapeziumProfileDef.ifc
           ./IfcParseExamples "../IfcParseExamples_test.ifc"
-          ./IfcOpenHouse
-          ./IfcAdvancedHouse
-          ./IfcAlignment
-          ./IfcSimplifiedAlignment
+          ./IfcOpenHouse                && test -f IfcOpenHouse.ifc
+          ./IfcAdvancedHouse            && test -f IfcAdvancedHouse.ifc 
+          ./IfcAlignment                && test -f IfcAlignment.ifc 
+          ./IfcSimplifiedAlignment      && test -f IfcSimplifiedAlignment.ifc
+          ./triangulated_faceset        && test -f triangulated_faceset.ifc 
 
       - name: Test ifcopenshell-python
         run: |

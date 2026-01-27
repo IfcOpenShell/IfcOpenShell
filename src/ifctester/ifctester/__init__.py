@@ -19,3 +19,4 @@
 from .ids import open
 
 __version__ = version = "0.0.0"
+__all__ = ["open"]

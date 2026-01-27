@@ -17,20 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
+
 import json
-import ifccsv
 import logging
+import os
 import tempfile
+from collections import Counter
+from typing import TYPE_CHECKING
+
+import bpy
+import ifccsv
 import ifcopenshell
 import ifcopenshell.util.selector
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.scheduler as scheduler
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.bim.module.drawing.scheduler as scheduler
+import bonsai.tool as tool
 from bonsai.bim.handler import refresh_ui_data
-from typing import TYPE_CHECKING
-from collections import Counter
 
 if TYPE_CHECKING:
     import pandas as pd

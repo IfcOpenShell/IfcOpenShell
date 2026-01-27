@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.spatial as core
+
 import bonsai.bim.handler
-from typing import TYPE_CHECKING
+import bonsai.core.spatial as core
+import bonsai.tool as tool
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -175,84 +177,31 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return
 
-        def get_root_aggregate(element):
-            """Traverse up the aggregate hierarchy to find the top-most aggregate"""
-            current = element
-            root = None
-            while aggregate := ifcopenshell.util.element.get_aggregate(current):
-                root = aggregate
-                current = aggregate
-            return root
-
-        def get_all_parts_recursive(element):
-            """Recursively get all parts of an aggregate"""
-            parts = []
-            for part in ifcopenshell.util.element.get_parts(element):
-                parts.append(part)
-                # Recursively get nested parts
-                parts.extend(get_all_parts_recursive(part))
-            return parts
-
         objs: list[bpy.types.Object] = []
-        processed_elements = set()  # Track elements we've already handled (by IFC ID)
-        promoted_parts = 0  # Count how many parts were promoted to their root aggregate
-
+        # In IFC element can be either contained of aggregated,
+        # tehrefore we skip aggregated elements here to prevent confusion.
+        # Can't handle it in `poll` since user might just select bunch of elements
+        # and try to assign a container to them
+        # and excluding aggregates because of the `poll` failing might get awkward.
+        skipped_aggregates = 0
         for obj in tool.Blender.get_selected_objects():
             if not (element := tool.Ifc.get_entity(obj)):
                 continue
-
-            # Check if element is part of an aggregate (at any level)
-            if root_aggregate := get_root_aggregate(element):
-                # Skip if we've already processed this root aggregate
-                if root_aggregate.id() in processed_elements:
-                    continue
-
-                # Get the root aggregate object and add it instead
-                if root_aggregate_obj := tool.Ifc.get_object(root_aggregate):
-                    objs.append(root_aggregate_obj)
-                    processed_elements.add(root_aggregate.id())
-                    if root_aggregate != element:  # Only count as promoted if different from selected
-                        promoted_parts += 1
-            else:
-                # Element is not part of any aggregate
-                if element.id() not in processed_elements:
-                    objs.append(obj)
-                    processed_elements.add(element.id())
-
-        # Get the container's collection
-        container_obj = tool.Ifc.get_object(container)
-        container_collection = container_obj.BIMObjectProperties.collection if container_obj else None
+            if ifcopenshell.util.element.get_aggregate(element):
+                skipped_aggregates += 1
+                continue
+            objs.append(obj)
 
         for element_obj in objs:
-            element = tool.Ifc.get_entity(element_obj)
-
-            # Only assign container to the ROOT aggregate (this updates IFC relationships)
             if self.remove_from_other_containers:
                 for col in element_obj.users_collection[:]:
                     col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
-            # For parts, only move them in Blender collections (don't change IFC relationships)
-            if container_collection:
-                all_parts = get_all_parts_recursive(element)
-                for part in all_parts:
-                    if part_obj := tool.Ifc.get_object(part):
-                        # Always remove from ALL previous collections when moving to new container
-                        for col in part_obj.users_collection[:]:
-                            col.objects.unlink(part_obj)
-
-                        # Link to new container collection (Blender-only, no IFC change)
-                        if part_obj.name not in container_collection.objects:
-                            container_collection.objects.link(part_obj)
-
-        # Disable editing mode for all selected objects
-        for obj in tool.Blender.get_selected_objects():
-            core.disable_editing_container(tool.Spatial, obj=obj)
-
-        promoted_msg = ""
-        if promoted_parts:
-            promoted_msg = f" {promoted_parts} nested parts promoted to their root aggregates."
-        self.report({"INFO"}, f"{len(objs)} elements assigned.{promoted_msg}")
+        aggregates_msg = ""
+        if skipped_aggregates:
+            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
+        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
 
 
 class EnableEditingContainer(bpy.types.Operator):

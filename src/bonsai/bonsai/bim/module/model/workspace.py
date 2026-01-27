@@ -18,19 +18,21 @@
 
 import os
 import sys
+from functools import partial
+from typing import Any, Optional, Union
+
 import bpy
 import bpy.utils.previews
+from bpy.types import Menu, WorkSpaceTool
+
 import bonsai.bim
-import bonsai.tool as tool
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
-from bonsai.bim.helper import prop_with_search, draw_attribute
-from bpy.types import WorkSpaceTool, Menu
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, prop_with_search
 from bonsai.bim.module.model.data import AuthoringData, ItemData
-from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union, Any
-from functools import partial
+from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
+from bonsai.bim.module.system.data import PortData
 
 
 def load_custom_icons():
@@ -399,16 +401,6 @@ class EditItemUI:
         assert obj
 
         mesh_props = tool.Geometry.get_mesh_props(obj.data)
-
-        # Get the parent element from representation_obj to check for layer set usage
-        has_layer_set_usage = False
-        props = tool.Geometry.get_geometry_props()
-        if props.representation_obj:
-            parent_element = tool.Ifc.get_entity(props.representation_obj)
-            if parent_element:
-                material_usage = tool.Model.get_usage_type(parent_element)
-                has_layer_set_usage = material_usage == "LAYER3"
-
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
             # will need to add second attribute for this.
@@ -422,12 +414,8 @@ class EditItemUI:
                 op.profile_id = int(mesh_props.item_profile)
 
         for item_attribute in mesh_props.item_attributes:
-            # Skip depth attribute for LAYER3 objects with layer set usage
-            if has_layer_set_usage and item_attribute.name.lower() == "depth":
-                continue
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-
         if len(mesh_props.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")

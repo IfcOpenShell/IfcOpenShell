@@ -16,32 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import copy
+from math import atan2, degrees, pi
+from typing import Any, Literal, Optional, Union
+
 import bmesh
-import mathutils.geometry
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.type
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.core.type
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
+import mathutils.geometry
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
+import bonsai.core.type
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, degrees, atan2
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, Any, Optional, Literal
-
 
 ProfileFrom2PointsReturn = Union[dict[str, Any], None]
 
@@ -261,22 +266,6 @@ class DumbProfileRegenerator:
                     continue
                 results.extend(inverse.RelatedObjects)
         return results
-
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
-            return
-
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
-
-    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-        DumbProfileRecalculator().recalculate([obj])
 
 
 class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):

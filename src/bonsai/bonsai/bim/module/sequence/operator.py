@@ -18,23 +18,23 @@
 
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
+import calendar
+import time
 import types
-
 from collections import Counter
+from datetime import datetime
 from functools import cache
+from typing import TYPE_CHECKING, Union, assert_never, get_args
 
 import bpy
-import time
-import calendar
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from dateutil import parser, relativedelta
+
 import bonsai.bim.schema
 import bonsai.core.sequence as core
 import bonsai.tool as tool
-from datetime import datetime
-from dateutil import parser, relativedelta
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from typing import Union, get_args, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bpy.stub_internal.rna_enums import OperatorReturnItems

@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.georeference as subject
-from test.core.bootstrap import ifc, georeference
+from test.core.bootstrap import georeference, ifc
 
 
 class TestAddGeoreferencing:

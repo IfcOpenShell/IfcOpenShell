@@ -25,11 +25,12 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.pset
-import test.bim.bootstrap
-import bonsai.core.tool
-import bonsai.core.root
-import bonsai.tool as tool
+
 import bonsai.bim.import_ifc as import_ifc
+import bonsai.core.root
+import bonsai.core.tool
+import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool.qto import Qto as subject
 
 

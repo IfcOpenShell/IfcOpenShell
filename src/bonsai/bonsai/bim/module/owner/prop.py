@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
 from typing import TYPE_CHECKING, Literal
-from bpy.types import PropertyGroup
+
+import bpy
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.owner.data import ActorData, ObjectActorData, OwnerData
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def get_user_person(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:

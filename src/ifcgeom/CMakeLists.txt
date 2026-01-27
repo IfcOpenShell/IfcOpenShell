@@ -29,13 +29,7 @@ endif()
 
 find_package(Eigen3 REQUIRED)
 
-target_link_libraries(
-    IfcGeom
-    ${mapping_libraries}
-    ${CMAKE_THREAD_LIBS_INIT}
-    "Eigen3::Eigen"
-    ${CGAL_LIBRARIES}
-)
+target_link_libraries(IfcGeom ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen" ${CGAL_LIBRARIES})
 
 if(WITH_OPENCASCADE)
     target_link_libraries(IfcGeom TKernel)

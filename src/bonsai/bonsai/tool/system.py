@@ -17,26 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import re
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+from mathutils import Matrix, Vector
+from natsort import natsorted
+
 import bonsai.bim.helper
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
-import re
-from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from enum import Enum
-from typing import TYPE_CHECKING, Optional, Any, Union
-from natsort import natsorted
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
@@ -112,20 +115,20 @@ class System(bonsai.core.tool.System):
     def create_port_at_cursor(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         ifc_file = tool.Ifc.get()
         element_obj = tool.Ifc.get_object(element)
-        
+
         port = ifcopenshell.api.system.add_port(ifc_file, element=element)
         port.FlowDirection = "NOTDEFINED"
         port.PredefinedType = "USERDEFINED"
-        
+
         systems = ifcopenshell.util.system.get_element_systems(element)
         system = systems[0] if systems else None
         port.SystemType = getattr(system, "PredefinedType", None) or "USERDEFINED"
-        
+
         matrix = element_obj.matrix_world.copy()
         matrix.translation = bpy.context.scene.cursor.matrix.translation
-        
+
         ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
-        
+
         return port
 
     @classmethod
@@ -218,7 +221,7 @@ class System(bonsai.core.tool.System):
             for collection in obj.users_collection:
                 target_collection = collection
                 break
-            
+
             if target_collection:
                 for port_obj in ifc_importer.added_data.values():
                     if isinstance(port_obj, bpy.types.Object):

@@ -17,26 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from collections.abc import Generator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
+
 import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.api.cost
 import ifcopenshell.api.document
 import ifcopenshell.api.nest
-import ifcopenshell.util.element
-import ifcopenshell.util.date
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
+
 import bonsai.bim.helper
-import json
-from pathlib import Path
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
-from collections.abc import Generator
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
+    from bonsai.bim.prop import Attribute
 
 
 class Cost(bonsai.core.tool.Cost):
@@ -581,8 +584,9 @@ class Cost(bonsai.core.tool.Cost):
     ) -> ifcopenshell.entity_instance:
         if not file_path:
             return
-        from ifc5d.csv2ifc import Csv2Ifc
         import time
+
+        from ifc5d.csv2ifc import Csv2Ifc
 
         start = time.time()
 
@@ -804,8 +808,8 @@ class Cost(bonsai.core.tool.Cost):
         format: Literal["CSV", "ODS", "XLSX"],
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
-        import subprocess
         import os
+        import subprocess
         import sys
 
         if dirpath:

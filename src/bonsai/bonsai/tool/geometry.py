@@ -17,14 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bmesh
-import struct
+
 import hashlib
 import logging
-import numpy as np
-import numpy.typing as npt
 import multiprocessing
+import struct
+from collections import defaultdict
+from collections.abc import Generator, Iterable, Iterator
+from math import pi, radians
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypeGuard,
+    Union,
+    cast,
+    get_args,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.boundary
@@ -45,37 +58,30 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
-import bonsai.core.tool
+import numpy as np
+import numpy.typing as npt
+from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
+from typing_extensions import TypeIs
+
+import bonsai.bim.helper
+import bonsai.bim.import_ifc
 import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
 import bonsai.core.system
+import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-import bonsai.bim.import_ifc
-from collections import defaultdict
-from math import radians, pi
-from mathutils import Vector, Matrix
-from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
-from typing import (
-    Union,
-    Optional,
-    Literal,
-    TYPE_CHECKING,
-    get_args,
-    cast,
-    TypeGuard,
-    Any,
-)
-from collections.abc import Iterable, Iterator, Generator
-from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.geometry.prop import (
+        BIMGeometryProperties,
+        BIMObjectGeometryProperties,
+    )
     from bonsai.bim.prop import Attribute, BIMMeshProperties
-    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties, BIMGeometryProperties
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -1797,6 +1803,10 @@ class Geometry(bonsai.core.tool.Geometry):
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()
+        element = tool.Ifc.get_entity(tool.Geometry.get_geometry_props().representation_obj)
+        if tool.Model.get_usage_type(element) == "LAYER3":
+            return  # All LAYER3 attributes are parametrically determined from the IfcMaterialLayerSet
+
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
@@ -2106,6 +2116,14 @@ class Geometry(bonsai.core.tool.Geometry):
         active_object: Optional[bpy.types.Object] = None,
         linked: bool = False,
     ) -> tuple[dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]], Union[bpy.types.Object, None]]:
+        """Duplicate IFC objects
+
+        Duplication is surprisingly complicated because you might only select
+        part of a group of related items.
+
+        TODO: write some tests and figure out how to make this function
+        actually understandable.
+        """
         # Handle arrays
         objects_to_duplicate = set(objects_to_duplicate)
         arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)

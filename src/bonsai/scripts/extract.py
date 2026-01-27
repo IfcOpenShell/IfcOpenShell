@@ -16,9 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import xml.sax, json, copy, pathlib
-from bs4 import BeautifulSoup  # pyright: ignore[reportMissingModuleSource]
+import copy
+import json
+import pathlib
 import sys
+import xml.sax
+
+from bs4 import BeautifulSoup  # pyright: ignore[reportMissingModuleSource]
 
 sys.setrecursionlimit(100)
 

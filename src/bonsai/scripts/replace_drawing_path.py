@@ -27,15 +27,15 @@ It works on the active ifc file (if exists).
 
 """
 
-import bonsai.tool as tool
+import os
+import sys
+from sys import platform
+
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import sys
 
-
-import os
-from sys import platform
+import bonsai.tool as tool
 
 file = tool.Ifc.get()
 if not file:

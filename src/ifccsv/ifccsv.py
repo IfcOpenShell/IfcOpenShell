@@ -29,14 +29,11 @@ from statistics import mean
 from typing import Literal, Optional, Union
 
 import ifcopenshell
-import ifcopenshell.util.element
-import ifcopenshell.util.schema
 import ifcopenshell.util.selector
 
 try:
     from odf.namespaces import OFFICENS
-    from odf.opendocument import OpenDocumentSpreadsheet, load
-    from odf.style import Style, TableCellProperties
+    from odf.opendocument import load
     from odf.table import Table, TableCell, TableRow
     from odf.text import P
 except:

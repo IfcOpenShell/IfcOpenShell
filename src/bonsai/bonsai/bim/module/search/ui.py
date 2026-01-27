@@ -17,15 +17,26 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.tool as tool
-import bonsai.bim.helper
-from bpy.types import Panel
-from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Panel
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.module.search.data import (
+    ColourByPropertyData,
+    SearchData,
+    SelectSimilarData,
+)
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.search.prop import BIMSearchProperties, BIMColour, BIMFilterItem
+    from bonsai.bim.module.search.prop import (
+        BIMColour,
+        BIMFilterItem,
+        BIMSearchProperties,
+    )
 
 
 class BIM_PT_search(Panel):

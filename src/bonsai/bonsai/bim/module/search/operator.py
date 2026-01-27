@@ -16,32 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import json
 import bisect
+import json
 import traceback
+from typing import TYPE_CHECKING, Literal, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-import bonsai.tool as tool
-import bonsai.core.search as core
-from bonsai.bim.ifc import IfcStore
-from natsort import natsorted
-from bpy.types import PropertyGroup, Operator
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import Operator, PropertyGroup
+from natsort import natsorted
+
+import bonsai.core.search as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
-from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
 def draw_text_editor_header(self, context):

@@ -17,17 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
+
 import json
-import ifcopenshell
-import bonsai.core.tool
-import bonsai.tool as tool
+import os
 from contextlib import contextmanager
-from mathutils import Vector
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bpy
+import ifcopenshell
 from ifcclash import ifcclash
 from ifcclash.ifcclash import ClashSource
-from typing import TYPE_CHECKING, Union, Literal, get_args
+from mathutils import Vector
+
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.clash.prop import BIMClashProperties

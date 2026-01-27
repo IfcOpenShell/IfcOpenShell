@@ -20,7 +20,6 @@ from logging import Logger
 from typing import Any
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 

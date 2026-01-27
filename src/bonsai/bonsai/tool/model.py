@@ -17,13 +17,26 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import json
-import bmesh
-import shapely
+
 import collections
 import collections.abc
-import numpy as np
+import json
+from collections.abc import Iterable, Sequence
+from copy import deepcopy
+from math import atan, cos, degrees, pi, radians
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -37,37 +50,36 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import mathutils
+import numpy as np
+import shapely
+from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
-import mathutils
-from math import atan, cos, degrees, pi, radians
-from mathutils import Matrix, Vector
-from copy import deepcopy
 from bonsai.bim import import_ifc
-
-from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
-from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
-    import sverchok.node_tree
     import ifcsverchok.nodes.ifc.shape_builder.shape_output
-    from bonsai.bim.module.model.prop import (
-        BIMModelProperties,
-        BIMDoorProperties,
-        BIMArrayProperties,
-        BIMRoofProperties,
-        BIMWindowProperties,
-        BIMStairProperties,
-        BIMRailingProperties,
-        BIMExternalParametricGeometryProperties,
-        BIMPolylineProperties,
-    )
+    import sverchok.node_tree
     from sverchok.core.node_group import SvGroupTreeNode
+
+    from bonsai.bim.module.model.prop import (
+        BIMArrayProperties,
+        BIMDoorProperties,
+        BIMExternalParametricGeometryProperties,
+        BIMModelProperties,
+        BIMPolylineProperties,
+        BIMRailingProperties,
+        BIMRoofProperties,
+        BIMStairProperties,
+        BIMWindowProperties,
+    )
 
 
 class Model(bonsai.core.tool.Model):
@@ -1063,8 +1075,7 @@ class Model(bonsai.core.tool.Model):
                 removed_children = set(array["children"])
                 for removed_child in removed_children:
                     element = tool.Ifc.get().by_guid(removed_child)
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
+                    if obj := tool.Ifc.get_object(element):
                         tool.Geometry.delete_ifc_object(obj)
                 array["children"].clear()
 
@@ -1087,19 +1098,18 @@ class Model(bonsai.core.tool.Model):
                 offset = base_offset * i
 
                 for obj in obj_stack:
-                    # get currently proccesed array element and it's object
-                    if child_i >= total_existing_children:
-                        child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                        child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
-                    else:
+                    try:
                         global_id = array["children"][child_i]
-                        try:
-                            child_element = tool.Ifc.get().by_guid(global_id)
-                            child_obj = tool.Ifc.get_object(child_element)
-                            assert child_obj
-                        except:
-                            child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                            child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+                        child_element = tool.Ifc.get().by_guid(global_id)
+                        child_obj = tool.Ifc.get_object(child_element)
+                        assert child_obj
+                    except:
+                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([obj])
+                        # TODO Is this correct to assume one child? I really
+                        # don't understand the linked aggregates and array
+                        # behaviour.
+                        child_element = next(iter(old_to_new.values()))[0]
+                        child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
                     child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
@@ -1183,6 +1193,7 @@ class Model(bonsai.core.tool.Model):
             return
 
         from PIL import Image, ImageDraw
+
         from bonsai.bim.module.model.data import AuthoringData
 
         obj = tool.Ifc.get_object(element)
@@ -2731,6 +2742,21 @@ class Model(bonsai.core.tool.Model):
                     material.OffsetFromReferenceLine = custom_offset
 
                 cls.recreate_wall(element, wall)
+
+    @classmethod
+    def regenerate_slab(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        element = tool.Ifc.get_entity(obj)
+        material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
+        DumbSlabPlaner().change_thickness(element, new_thickness)
+
+    @classmethod
+    def regenerate_profile(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.profile import DumbProfileRecalculator
+
+        DumbProfileRecalculator().recalculate([obj])
 
     @classmethod
     def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:

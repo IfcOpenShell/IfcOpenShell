@@ -16,23 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
+from typing import TYPE_CHECKING, Literal, Optional, Union
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute, ObjProperty
-from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
-from bpy.types import PropertyGroup
+import ifcopenshell
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import Optional, TYPE_CHECKING, Union, Literal
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
+from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def get_contexts(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bonsai.tool as tool
-from bpy.types import Panel, UIList
-from bonsai.bim.helper import draw_attributes
-from bonsai.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
+
 from typing import TYPE_CHECKING
 
+from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes
+from bonsai.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties, Constraint
+    from bonsai.bim.module.constraint.prop import (
+        BIMConstraintProperties,
+        BIMObjectConstraintProperties,
+        Constraint,
+    )
 
 
 class BIM_PT_constraints(Panel):

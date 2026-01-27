@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 

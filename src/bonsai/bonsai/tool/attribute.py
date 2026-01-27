@@ -17,23 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.core.tool
-import bonsai.bim.helper as helper
-import bonsai.tool as tool
-import ifcopenshell
+
 from typing import (
-    Any,
-    Optional,
-    Union,
-    Literal,
-    TypeVar,
     TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
     assert_never,
 )
 
+import bpy
+import ifcopenshell
+
+import bonsai.bim.helper as helper
+import bonsai.core.tool
+import bonsai.tool as tool
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.attribute.prop import BIMAttributeProperties, BIMExplorerProperties
+    from bonsai.bim.module.attribute.prop import (
+        BIMAttributeProperties,
+        BIMExplorerProperties,
+    )
 
     T = TypeVar("T")
 

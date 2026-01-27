@@ -17,15 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
-import bpy
-import bonsai.tool as tool
-from . import bcfstore
-from bpy.types import Panel
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Panel
+
+import bonsai.tool as tool
+
+from . import bcfstore
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.bcf.prop import BcfTopic, BCFProperties
+    from bonsai.bim.module.bcf.prop import BCFProperties, BcfTopic
 
 
 class BIM_PT_bcf(Panel):

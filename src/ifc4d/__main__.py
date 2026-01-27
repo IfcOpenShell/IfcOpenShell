@@ -1,8 +1,7 @@
 import argparse
-import os
-import sys
 
 import ifcopenshell
+
 from ifc4d.msp2ifc import MSP2Ifc
 from ifc4d.p6xer2ifc import P6XER2Ifc
 from ifc4d.p62ifc import P62Ifc

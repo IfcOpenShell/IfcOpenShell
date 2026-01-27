@@ -17,12 +17,7 @@
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import math
 import xml.etree.ElementTree as ET
-
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.date
 
 from .common import ScheduleIfcGenerator
 

@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -31,8 +33,8 @@ import ifcopenshell.api.style
 import ifcopenshell.api.unit
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
+
 import bonsai.tool as tool
-from pathlib import Path
 
 
 def sync_guids(target_file: ifcopenshell.file, source_file: ifcopenshell.file) -> None:

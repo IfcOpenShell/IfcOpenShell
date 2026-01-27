@@ -16,18 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import cos, radians, sin
+
+import bmesh
 import bpy
 import gpu
-import bmesh
-import bonsai.tool as tool
-from math import sin, cos, radians
-from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
-from gpu_extras.batch import batch_for_shader
 import ifcopenshell
-from bonsai.bim.module.system.data import SystemDecorationData
 from bpy.app.handlers import persistent
+from bpy.types import SpaceView3D
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
 
+import bonsai.tool as tool
+from bonsai.bim.module.system.data import SystemDecorationData
 
 ERROR_ELEMENTS_COLOR = (1, 0.2, 0.322, 1)  # RED
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY

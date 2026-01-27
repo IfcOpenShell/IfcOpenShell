@@ -17,17 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.util.representation
 import pytest
+from ifcopenshell.util.shape_builder import ShapeBuilder
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.style import Style as subject
-from ifcopenshell.util.shape_builder import ShapeBuilder
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

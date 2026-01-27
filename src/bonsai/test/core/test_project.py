@@ -18,7 +18,7 @@
 
 
 import bonsai.core.project as subject
-from test.core.bootstrap import ifc, project, spatial, georeference
+from test.core.bootstrap import georeference, ifc, project, spatial
 
 
 class TestCreateProject:

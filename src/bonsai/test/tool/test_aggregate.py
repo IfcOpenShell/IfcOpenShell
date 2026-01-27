@@ -24,10 +24,11 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.util.shape_builder
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.aggregate import Aggregate as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

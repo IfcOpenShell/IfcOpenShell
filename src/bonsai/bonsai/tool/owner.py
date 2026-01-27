@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
+
 import bpy
+import ifcopenshell
+
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-import ifcopenshell
-from typing import Union, Any, TYPE_CHECKING, Literal, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.owner.prop import BIMOwnerProperties

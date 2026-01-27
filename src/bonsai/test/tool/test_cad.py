@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from test.bim.bootstrap import NewFile
-from bonsai.tool.cad import Cad as subject
 from mathutils import Vector
+
+from bonsai.tool.cad import Cad as subject
+from test.bim.bootstrap import NewFile
 
 V = lambda *x: Vector([float(i) for i in x])
 

@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.tool as tool
-from mathutils import Vector, Matrix
 
 
 class AddArray(bpy.types.Operator, tool.Ifc.Operator):

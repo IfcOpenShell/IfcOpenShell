@@ -17,20 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import json
-import lark
-import bonsai.tool as tool
-import bonsai.core.tool
+from itertools import cycle
+from typing import TYPE_CHECKING, Literal, Union
+
+import bpy
 import ifcopenshell.guid
 import ifcopenshell.util.selector
-from itertools import cycle
+import lark
+
+import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.bim.prop import BIMFacet
-from typing import Union, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import BIMFilterGroup
     from bonsai.bim.module.search.prop import BIMSearchProperties
+    from bonsai.bim.prop import BIMFilterGroup
 
 
 class Search(bonsai.core.tool.Search):

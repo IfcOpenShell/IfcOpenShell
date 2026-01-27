@@ -16,58 +16,63 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import time
+import datetime
 import json
 import logging
-import tempfile
-import traceback
+import os
 import subprocess
-import datetime
-import ifcopenshell.api.attribute
-import numpy as np
+import tempfile
+import time
+import traceback
+from collections import defaultdict
+from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.element
 import ifcopenshell.util.file
-import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
+import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import numpy as np
+from bpy.app.handlers import persistent
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from ifcopenshell.geom import ShapeElementType
+from mathutils import Matrix, Vector
+
 import bonsai.bim.handler
 import bonsai.bim.helper
 import bonsai.bim.schema
-import bonsai.tool as tool
 import bonsai.core.project as core
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+import bonsai.tool as tool
+from bonsai.bim import export_ifc, import_ifc
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim import import_ifc
-from bonsai.bim import export_ifc
-from math import radians
-from pathlib import Path
-from collections import defaultdict
-from mathutils import Vector, Matrix
-from bpy.app.handlers import persistent
-from ifcopenshell.geom import ShapeElementType
-from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
-from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
-from bonsai.bim.module.project.prop import BreadcrumbType
-from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
+from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, get_args, Literal
+from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
+from bonsai.bim.module.project.decorator import (
+    ClippingPlaneDecorator,
+    MeasureDecorator,
+    ProjectDecorator,
+)
+from bonsai.bim.module.project.prop import BreadcrumbType
+from bonsai.bim.ui import IFCFileSelector
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
+
     from bonsai.bim.module.project.prop import Link
 
 
@@ -119,8 +124,6 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bim_props.area_unit = "SQUARE_METRE"
             bim_props.volume_unit = "CUBIC_METRE"
-            bim_props.mass_unit = "KILOGRAM"
-            bim_props.time_unit = "SECOND"
             pprops.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":
@@ -1850,8 +1853,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
-        import ifcpatch
         import multiprocessing
+
+        import ifcpatch
 
         start = time.time()
 
@@ -2162,7 +2166,11 @@ class QueryLinkedElement(bpy.types.Operator):
 
     def execute(self, context):
         import sqlite3
-        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+
+        from bpy_extras.view3d_utils import (
+            region_2d_to_origin_3d,
+            region_2d_to_vector_3d,
+        )
 
         LinksData.linked_data = {}
         props = tool.Project.get_project_props()
@@ -2507,8 +2515,9 @@ class RefreshClippingPlanes(bpy.types.Operator):
                 break
 
     def refresh_clipping_planes(self, context):
-        import bmesh
         from itertools import cycle
+
+        import bmesh
 
         area = next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")
         region = next(r for r in area.regions if r.type == "WINDOW")
@@ -2569,7 +2578,10 @@ class CreateClippingPlane(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+        from bpy_extras.view3d_utils import (
+            region_2d_to_origin_3d,
+            region_2d_to_vector_3d,
+        )
 
         # Clean up deleted planes
         props = tool.Project.get_project_props()

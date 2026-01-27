@@ -16,26 +16,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Any, Optional
+
 import bpy
 import ifcopenshell
 import isodate
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.sequence.data import (
+    AnimationColorSchemeData,
+    SequenceData,
+    StatusData,
+    TaskICOMData,
     WorkPlansData,
     WorkScheduleData,
-    SequenceData,
-    TaskICOMData,
-    AnimationColorSchemeData,
-    StatusData,
 )
-from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.sequence.prop import (
+        BIMTaskTreeProperties,
+        BIMWorkScheduleProperties,
+        Task,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.sequence.prop import BIMWorkScheduleProperties, BIMTaskTreeProperties, Task
 
 
 class BIM_PT_status(Panel):

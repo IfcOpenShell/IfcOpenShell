@@ -489,6 +489,6 @@ int main() {
     }
 
     // That's it - save the model to a file
-    std::ofstream ofs("FHWA_Bridge_Geometry_Alignment_Example.ifc");
+    std::ofstream ofs("IfcAlignment.ifc");
     ofs << file;
 }

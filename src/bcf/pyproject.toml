@@ -140,3 +140,9 @@ max-attributes = 10
 [tool.pylint.format]
 expected-line-ending-format = "LF"
 max-line-length = 120
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+lint.select = [
+  "F401",  # unused imports
+]

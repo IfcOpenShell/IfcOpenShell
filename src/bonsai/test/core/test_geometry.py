@@ -18,7 +18,7 @@
 
 import bonsai.core.geometry as subject
 import test.core.test_style
-from test.core.bootstrap import ifc, surveyor, geometry, style
+from test.core.bootstrap import geometry, ifc, style, surveyor
 
 
 class TestEditObjectPlacement:

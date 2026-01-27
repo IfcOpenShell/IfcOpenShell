@@ -16,17 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import numpy as np
+from mathutils import Matrix
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.spatial import Spatial as subject
 from test.bim.bootstrap import NewFile
-from mathutils import Matrix
 
 
 class TestImplementsTool(NewFile):

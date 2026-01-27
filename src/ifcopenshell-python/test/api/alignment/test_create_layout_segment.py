@@ -18,7 +18,6 @@
 
 import math
 
-
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit

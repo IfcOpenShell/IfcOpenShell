@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import pi
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.util.unit
+import numpy as np
+from mathutils import Euler, Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import numpy as np
-from test.bim.bootstrap import NewFile
 from bonsai.tool.system import System as subject
-from mathutils import Euler, Vector, Matrix
-from math import pi
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -102,6 +104,7 @@ class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
         tool.Ifc.link(element, obj)
         obj = subject.create_empty_at_cursor_with_element_orientation(element)
         assert obj.matrix_world == bpy.context.scene.cursor.matrix
+
 
 class TestCreatePortAtCursor(NewFile):
     def test_run(self):

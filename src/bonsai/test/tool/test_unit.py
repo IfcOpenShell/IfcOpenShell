@@ -21,15 +21,27 @@ import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.unit import Unit as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Unit)
+
+
+class TestParseDistanceString(NewFile):
+    def test_run(self):
+        assert subject.parse_distance_string("5m") == (True, 5.0)
+        assert subject.parse_distance_string("30cm") == (True, 0.3)
+        assert subject.parse_distance_string("10ft") == (True, 3.048)
+        assert subject.parse_distance_string("12in") == (True, 0.3048)
+        assert subject.parse_distance_string("5'6\"") == (True, 1.6764)
+        assert subject.parse_distance_string("-5'6\"") == (True, -1.6764)
+        assert subject.parse_distance_string("invalid") == (False, 0.0)
 
 
 class TestClearActiveUnit(NewFile):
@@ -130,25 +142,43 @@ class TestGetSceneUnitName(NewFile):
         assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
         assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
 
+    def test_getting_an_si_name(self):
+        props = tool.Blender.get_bim_props()
+        bpy.context.scene.unit_settings.system = "METRIC"
+        bpy.context.scene.unit_settings.length_unit = "METERS"
+        props.area_unit = "SQUARE_METRE"
+        props.volume_unit = "CUBIC_METRE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        assert subject.get_scene_unit_name("AREAUNIT") == "SQUARE_METRE"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "CUBIC_METRE"
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "MILLI/METRE"
+        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+
     def test_getting_a_name_with_no_unit_system(self):
         assert bpy.context.scene
         bpy.context.scene.unit_settings.system = "NONE"
-        assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        assert subject.get_scene_unit_name("AREAUNIT") == "SQUARE_METRE"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "CUBIC_METRE"
 
     def test_getting_mass_unit_names(self):
         """Test getting mass unit names for different systems"""
         assert bpy.context.scene
         props = tool.Blender.get_bim_props()
         props.mass_unit = "GRAM"
-        assert subject.get_scene_unit_name("MASSUNIT") == "gram"
-        props.mass_unit = "KILOGRAM"
-        assert subject.get_scene_unit_name("MASSUNIT") == "kilogram"
-        props.mass_unit = "POUND"
+        assert subject.get_scene_unit_name("MASSUNIT") == "GRAM"
+        props.mass_unit = "KILO/GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "KILO/GRAM"
+        props.mass_unit = "MEGA/GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "MEGA/GRAM"
+        props.mass_unit = "pound"
         assert subject.get_scene_unit_name("MASSUNIT") == "pound"
-        props.mass_unit = "OUNCE"
+        props.mass_unit = "ounce"
         assert subject.get_scene_unit_name("MASSUNIT") == "ounce"
-        props.mass_unit = "TONNE"
-        assert subject.get_scene_unit_name("MASSUNIT") == "tonne"
 
     def test_getting_time_unit_names(self):
         """Test getting time unit names for different systems"""
@@ -156,64 +186,26 @@ class TestGetSceneUnitName(NewFile):
         props = tool.Blender.get_bim_props()
 
         props.time_unit = "SECOND"
-        assert subject.get_scene_unit_name("TIMEUNIT") == "second"
-        props.time_unit = "MINUTE"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "SECOND"
+        props.time_unit = "minute"
         assert subject.get_scene_unit_name("TIMEUNIT") == "minute"
-        props.time_unit = "HOUR"
-        assert subject.get_scene_unit_name("TIMEUNIT") == "hour"
-        props.time_unit = "DAY"
-        assert subject.get_scene_unit_name("TIMEUNIT") == "day"
+        props.time_unit = "NONE"
+        assert not subject.get_scene_unit_name("TIMEUNIT")
 
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):
         assert bpy.context.scene
-        bpy.context.scene.unit_settings.system = "METRIC"
-        bpy.context.scene.unit_settings.length_unit = "METERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
-        bpy.context.scene.unit_settings.length_unit = "MICROMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MICRO"
-        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MILLI"
-        bpy.context.scene.unit_settings.length_unit = "CENTIMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "CENTI"
-        bpy.context.scene.unit_settings.length_unit = "KILOMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "KILO"
-        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
-        props = tool.Blender.get_bim_props()
-        props.area_unit = "SQUARE_METRE"
-        assert subject.get_scene_unit_si_prefix("AREAUNIT") is None
-        props.area_unit = "MILLI/SQUARE_METRE"
-        assert subject.get_scene_unit_si_prefix("AREAUNIT") == "MILLI"
-        props.volume_unit = "CUBIC_METRE"
-        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") is None
-        props.volume_unit = "MILLI/CUBIC_METRE"
-        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") == "MILLI"
+        assert subject.get_scene_unit_si_prefix("METRE") is None
+        assert subject.get_scene_unit_si_prefix("MICRO/METRE") == "MICRO"
+        assert subject.get_scene_unit_si_prefix("SQUARE_METRE") is None
+        assert subject.get_scene_unit_si_prefix("MILLI/SQUARE_METRE") == "MILLI"
+        assert subject.get_scene_unit_si_prefix("foot") is None
 
     def test_mass_and_time_unit_prefixes(self):
-        assert bpy.context.scene
-        props = tool.Blender.get_bim_props()
-
-        props.mass_unit = "KILOGRAM"
-        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "KILO"
-        props.mass_unit = "GRAM"
-        assert subject.get_scene_unit_si_prefix("MASSUNIT") is None
-        props.mass_unit = "POUND"
-        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "CONVERSION"
-        props.mass_unit = "OUNCE"
-        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "CONVERSION"
-        props.mass_unit = "TONNE"
-        assert subject.get_scene_unit_si_prefix("MASSUNIT") == "MEGA"
-
-        props.time_unit = "SECOND"
-        assert subject.get_scene_unit_si_prefix("TIMEUNIT") is None
-        props.time_unit = "MINUTE"
-        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
-        props.time_unit = "HOUR"
-        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
-        props.time_unit = "DAY"
-        assert subject.get_scene_unit_si_prefix("TIMEUNIT") == "CONVERSION"
+        assert subject.get_scene_unit_si_prefix("KILO/GRAM") == "KILO"
+        assert subject.get_scene_unit_si_prefix("MEGA/GRAM") == "MEGA"
+        assert subject.get_scene_unit_si_prefix("GRAM") is None
 
 
 class TestImportUnitAttributes(NewFile):

@@ -17,13 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union, Literal
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import ifcopenshell.util.representation
+
     import bonsai.tool as tool
 
 

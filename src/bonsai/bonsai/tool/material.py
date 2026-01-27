@@ -17,22 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.material
-import bonsai.core.tool
-import bonsai.core.material
-import bonsai.tool as tool
-import bonsai.bim.helper
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
-from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING, Optional
+import ifcopenshell.util.unit
+
+import bonsai.bim.helper
+import bonsai.core.material
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     # Avoid circular imports.
+    from bonsai.bim.module.material.prop import (
+        BIMMaterialProperties,
+        BIMObjectMaterialProperties,
+    )
     from bonsai.bim.module.material.prop import Material as MaterialItem
-    from bonsai.bim.module.material.prop import BIMMaterialProperties, BIMObjectMaterialProperties
 
 
 class Material(bonsai.core.tool.Material):

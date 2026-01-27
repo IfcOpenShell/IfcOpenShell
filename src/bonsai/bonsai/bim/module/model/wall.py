@@ -18,37 +18,39 @@
 #
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
 import copy
 import math
-import numpy as np
+from math import acos, atan2, cos, degrees, pi, sin
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
-import ifcopenshell.api.geometry
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import mathutils.geometry
-import bonsai.core.type
-import bonsai.core.root
+import numpy as np
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.model as core
+import bonsai.core.root
+import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, atan2, acos
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
 
 
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -1129,37 +1131,6 @@ class DumbWallPlaner:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
         tool.Model.recalculate_walls([w for w in set(walls) if w])
-
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
-            return
-
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        layer_set_direction = None
-        if parametric:
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object, layer_set_direction)
-
-    def _regenerate_from_type(
-        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str]
-    ) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-
-        material = ifcopenshell.util.element.get_material(related_object)
-        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
-            return
-        if layer_set_direction:
-            material.LayerSetDirection = layer_set_direction
-        if material.LayerSetDirection == "AXIS2":
-            tool.Model.recalculate_walls([obj])
 
 
 class DumbWallJoiner:

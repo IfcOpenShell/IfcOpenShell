@@ -19,13 +19,14 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.api.pset
 import ifcopenshell.api.classification
+import ifcopenshell.api.pset
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy_extras.io_utils import ImportHelper
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 

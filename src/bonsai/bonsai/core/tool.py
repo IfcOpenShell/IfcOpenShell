@@ -1132,7 +1132,6 @@ class Unit:
     def set_active_unit(cls, unit): pass
     def get_project_currency_unit(cls): pass
     def get_currency_name(cls): pass
-    def add_mass_and_time_units(cls): pass
 
 @interface
 class Voider:

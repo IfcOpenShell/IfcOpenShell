@@ -17,15 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union, assert_never
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.classification
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, assert_never, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.classification.prop import BIMClassificationReferenceProperties, BIMClassificationProperties
+    from bonsai.bim.module.classification.prop import (
+        BIMClassificationProperties,
+        BIMClassificationReferenceProperties,
+    )
 
 
 class Classification(bonsai.core.tool.Classification):

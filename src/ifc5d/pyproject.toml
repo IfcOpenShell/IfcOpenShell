@@ -35,3 +35,9 @@ exclude = ["test*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+lint.select = [
+  "F401",  # unused imports
+]

@@ -24,7 +24,6 @@ import time
 import urllib.parse
 import uuid
 import webbrowser
-from re import A
 from typing import Any, Optional
 
 import requests

@@ -20,12 +20,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from bonsai.bim.ui import draw_multiline_text
-
 import bpy
 from bpy.types import Panel, UIList
+
 import bonsai.tool as tool
 from bonsai.bim.module.tester.data import TesterData
+from bonsai.bim.ui import draw_multiline_text
 
 if TYPE_CHECKING:
     from bonsai.bim.module.tester.prop import (

@@ -18,8 +18,6 @@
 
 
 import logging
-import math
-import os
 from typing import Union
 
 import ifcopenshell

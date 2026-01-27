@@ -16,33 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import NamedTuple
+
 import bpy
+
 from . import (
-    handler,
-    prop,
-    ui,
-    grid,
     array,
+    covering,
+    door,
+    external,
+    grid,
+    handler,
+    mep,
+    opening,
     product,
-    wall,
+    profile,
+    prop,
+    railing,
     roof,
     slab,
     space,
-    covering,
     stair,
-    window,
-    opening,
-    mep,
-    workspace,
-    profile,
     sverchok_modifier,
-    door,
-    railing,
-    roof,
-    mep,
-    external,
+    ui,
+    wall,
+    window,
+    workspace,
 )
-from typing import NamedTuple
 
 classes = (
     array.AddArray,

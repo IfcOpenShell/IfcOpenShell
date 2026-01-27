@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, assert_never, get_args
+
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.misc as core
+import numpy as np
+from mathutils import Euler, Matrix, Vector
+
 import bonsai.core.geometry as core_geometry
+import bonsai.core.misc as core
 import bonsai.core.root
-from mathutils import Vector, Matrix, Euler
-from typing import TYPE_CHECKING, Literal, get_args, assert_never
+import bonsai.tool as tool
 
 
 class SetOverrideColour(bpy.types.Operator):

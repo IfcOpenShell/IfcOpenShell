@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.module.context.data import ContextData

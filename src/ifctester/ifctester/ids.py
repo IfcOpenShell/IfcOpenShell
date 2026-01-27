@@ -42,6 +42,7 @@ from .facet import (
     get_psets,
 )
 
+__all__ = ["Attribute", "Classification", "Entity", "Material", "PartOf", "Property", "Restriction"]
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 

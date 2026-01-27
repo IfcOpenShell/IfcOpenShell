@@ -1,5 +1,9 @@
-import bonsai, json, bpy
+import json
 from pathlib import Path
+
+import bpy
+
+import bonsai
 
 repo_path = Path(bonsai.__file__).resolve().parent
 install_path = Path(bonsai.__file__).absolute().parent

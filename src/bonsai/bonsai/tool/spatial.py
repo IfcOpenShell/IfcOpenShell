@@ -17,43 +17,46 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
+import json
+from collections import defaultdict
+from collections.abc import Generator, Iterable
+from math import pi
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
 import bmesh
-import shapely
-import shapely.ops
+import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.api.type
 import ifcopenshell.geom
+import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import ifcopenshell.util.classification
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import bonsai.core.type
-import bonsai.core.tool
+import numpy as np
+import shapely
+import shapely.ops
+from mathutils import Matrix, Vector
+from natsort import natsorted
+from shapely import Polygon
+
+import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.spatial
-import bonsai.core.geometry
+import bonsai.core.tool
+import bonsai.core.type
 import bonsai.core.unit
 import bonsai.tool as tool
-import json
-import numpy as np
-from math import pi
-from mathutils import Vector, Matrix
-from shapely import Polygon
-from typing import Optional, Union, Literal, Any, TYPE_CHECKING
-from collections.abc import Generator, Iterable
-from collections import defaultdict
-from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.module.spatial.prop import (
         BIMGridProperties,
-        BIMSpatialDecompositionProperties,
         BIMObjectSpatialProperties,
+        BIMSpatialDecompositionProperties,
     )
 
 
@@ -1174,6 +1177,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
+        # TODO this code looks in the wrong spot and suspicious
         props = tool.Model.get_model_props()
         ifc_file = tool.Ifc.get()
         relating_type_id = props.relating_type_id
@@ -1193,7 +1197,7 @@ class Spatial(bonsai.core.tool.Spatial):
         element: ifcopenshell.entity_instance,
         relating_type: ifcopenshell.entity_instance,
     ) -> None:
-        bonsai.core.type.assign_type(ifc, type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
 
     @classmethod
     def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:

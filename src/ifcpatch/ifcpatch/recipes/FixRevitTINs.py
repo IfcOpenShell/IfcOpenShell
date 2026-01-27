@@ -19,8 +19,6 @@
 
 import logging
 
-import ifcopenshell
-
 
 class Patcher:
     def __init__(self, file: None, logger: logging.Logger, filepath: str, is_solid: bool = True):

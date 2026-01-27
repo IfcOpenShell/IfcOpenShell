@@ -31,3 +31,11 @@ Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 [tool.setuptools.packages.find]
 include = ["ifcpatch*"]
 exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+select = [
+    "F401", # unused imports
+]

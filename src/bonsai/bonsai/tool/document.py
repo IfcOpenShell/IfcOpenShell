@@ -17,14 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, Any, Union
+
 import bpy
 import ifcopenshell.util.system
+from natsort import natsorted
+
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-import json
-from natsort import natsorted
-from typing import Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.document.prop import BIMDocumentProperties

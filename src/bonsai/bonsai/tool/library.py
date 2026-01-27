@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import ifcopenshell
+
+from typing import TYPE_CHECKING, Any, Literal, Union
+
 import bpy
+import ifcopenshell
+
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Literal, Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.library.prop import BIMLibraryProperties

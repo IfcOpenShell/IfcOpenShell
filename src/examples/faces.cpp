@@ -22,18 +22,19 @@
  * Example that generates various forms of IfcFace                              *
  *                                                                              *
  ********************************************************************************/
+#include <fstream>
 
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
-boost::none_t const null = (static_cast<boost::none_t>(0));
+boost::none_t const null = boost::none;
 
 static int x = 0;
 
-void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const std::string& name) {
+void create_testcase(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcFace* face, const std::string& name) {
 	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
 	faces->push(face);
 	IfcSchema::IfcOpenShell* shell = new IfcSchema::IfcOpenShell(faces);
@@ -57,14 +58,14 @@ void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const s
 		file.getRepresentationContext("Model"), S("Body"), S("SurfaceModel"), items);
 	reps->push(rep);
 
-	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
 	file.addEntity(shape);
 		
 	product->setRepresentation(shape);
 }
 
 int main(int argc, char** argv) {
-	IfcHierarchyHelper file;
+	IfcHierarchyHelper<IfcSchema> file;
 	{ 
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 0));
@@ -192,7 +193,7 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcCartesianPoint::list::ptr trim2(new IfcSchema::IfcCartesianPoint::list);
 		trim1->push(point1);
 		trim2->push(point2);
-		IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1->generalize(), trim2->generalize(), true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);
+		IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1->generalize()->as<IfcSchema::IfcTrimmingSelect>(), trim2->generalize()->as<IfcSchema::IfcTrimmingSelect>(), true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);
 		IfcSchema::IfcArbitraryOpenProfileDef* profile = new IfcSchema::IfcArbitraryOpenProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE, boost::none, trimmed_curve);
 		IfcSchema::IfcAxis1Placement* place = new IfcSchema::IfcAxis1Placement(file.addTriplet<IfcSchema::IfcCartesianPoint>(0., 0., 0.), file.addTriplet<IfcSchema::IfcDirection>(1., 0., 0.));
 		IfcSchema::IfcSurfaceOfRevolution* surface = new IfcSchema::IfcSurfaceOfRevolution(profile, file.addPlacement3d(), place);
@@ -200,8 +201,8 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcFace* face = new IfcSchema::IfcFaceSurface(bounds, surface, true);
 		create_testcase(file, face, "face surface");
 	}
-	const std::string filename = "faces.ifc";
-	file.header().file_name().name(filename);
-	std::ofstream f(filename.c_str());
+	const char filename[] = "faces.ifc";
+	file.header().file_name()->setname(filename);
+	std::ofstream f(filename);
 	f << file;
 }
