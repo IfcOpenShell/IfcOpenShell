@@ -1725,40 +1725,19 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 # Only assign container if element is not already aggregated under another element
                 # Aggregated elements should not be in the spatial structure
                 if not ifcopenshell.util.element.get_aggregate(element):
-                    container = original_data[matching_group_id][index]["Container"]
                     bonsai.core.spatial.assign_container(
                         tool.Ifc,
                         tool.Collector,
                         tool.Spatial,
-                        container=container,
+                        container=original_data[matching_group_id][index]["Container"],
                         element_obj=obj,
                     )
+                    for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                        tool.Collector.assign(tool.Ifc.get_object(part))
 
-                    # Get the container's collection for moving parts in the outliner
-                    container_obj = tool.Ifc.get_object(container)
-                    container_collection = container_obj.BIMObjectProperties.collection if container_obj else None
-
-                    # Move all parts to the container's collection in the outliner
-                    if container_collection:
-                        for part in ifcopenshell.util.element.get_parts(element):
-                            part_obj = tool.Ifc.get_object(part)
-                            if part_obj:
-                                # Remove from all previous collections
-                                for col in part_obj.users_collection[:]:
-                                    col.objects.unlink(part_obj)
-
-                                # Link to container collection
-                                if part_obj.name not in container_collection.objects:
-                                    container_collection.objects.link(part_obj)
-
-                                # Recursively handle nested parts
-                                for nested_part in ifcopenshell.util.element.get_parts(part):
-                                    nested_part_obj = tool.Ifc.get_object(nested_part)
-                                    if nested_part_obj:
-                                        for col in nested_part_obj.users_collection[:]:
-                                            col.objects.unlink(nested_part_obj)
-                                        if nested_part_obj.name not in container_collection.objects:
-                                            container_collection.objects.link(nested_part_obj)
+                assignments = original_data[matching_group_id][index]["Assignment"]
+                if assignments:
+                    assign_to_annotations(obj, assignments)
             else:
                 try:
                     obj.name = original_data[matching_group_id][index]["Name"]
