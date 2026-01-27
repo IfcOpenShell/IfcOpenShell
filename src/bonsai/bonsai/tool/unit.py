@@ -336,11 +336,18 @@ class Unit(bonsai.core.tool.Unit):
     def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str | None:
         if unit_type == "LENGTHUNIT":
             name = bpy.context.scene.unit_settings.length_unit
-            name = {"MILES": "mile", "FEET": "foot", "INCHES": "inch", "THOU": "thou", "ADAPTIVE": "METERS"}.get(
-                name, name
+            if name == "ADAPTIVE":
+                if bpy.context.scene.unit_settings.system == "IMPERIAL":
+                    name = "foot"
+                else:
+                    name = "METRE"
+            name = (
+                {"MILES": "mile", "FEET": "foot", "INCHES": "inch", "THOU": "thou", "ADAPTIVE": "METERS"}
+                .get(name, name)
+                .replace("METERS", "METRE")
             )
-            if len(name) > len("METERS") and name.endswith("METERS"):
-                return f"{name[:-6]}/METRE"
+            if len(name) > len("METRE") and name.endswith("METRE"):
+                return f"{name[:-5]}/METRE"
             return name
         bim_props = tool.Blender.get_bim_props()
         if (name := getattr(bim_props, f"{unit_type[:-4].lower()}_unit")) != "NONE":
