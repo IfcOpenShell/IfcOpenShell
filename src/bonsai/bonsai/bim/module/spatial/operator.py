@@ -153,16 +153,10 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         "Assign the selected objects to the container selected in Spatial Manager.\n\n"
         "All elements-parts of an aggregate will be skipped.\n"
         "To assign a container, they should be unassigned from an aggregate first.\n\n"
-        "This will also move objects to the container collection in the outliner.\n"
-        "ALT + Click to ensure objects are only linked in the container collection"
+        "This will also move objects to the container collection in the outliner."
     )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
-    remove_from_other_containers: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-
-    def invoke(self, context, event):
-        self.remove_from_other_containers = event.alt
-        return self.execute(context)
 
     def _execute(self, context):
         if self.container:
@@ -193,9 +187,6 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             objs.append(obj)
 
         for element_obj in objs:
-            if self.remove_from_other_containers:
-                for col in element_obj.users_collection[:]:
-                    col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
         aggregates_msg = ""
