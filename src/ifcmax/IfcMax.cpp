@@ -382,24 +382,30 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
 	auto startTime = std::chrono::high_resolution_clock::now();
 	std::stringstream log_stream;
 
-	do{
+	do {
+		// clear the log
+		log_stream.str("");
 
-		auto iter = iterator.get();
-		auto prod = iter->product();
+		//const IfcGeom::Element* element = static_cast<const IfcGeom::Element*>(iterator.get());
+		//const IfcGeom::BRepElement* brepElement = static_cast<const IfcGeom::BRepElement*>(iterator.get_native());
+		const IfcGeom::Element* element = iterator.get();
+		const IfcGeom::TriangulationElement* triElement = static_cast<const IfcGeom::TriangulationElement*>(element);
 
-		const IfcGeom::Element* element = static_cast<const IfcGeom::Element*>(iterator.get());
-		const IfcGeom::BRepElement* brepElement = static_cast<const IfcGeom::BRepElement*>(iterator.get_native());
-		const IfcGeom::TriangulationElement* triElement = static_cast<const IfcGeom::TriangulationElement*>(iterator.get());
+		if(triElement==nullptr)
+		{
+			LogToListener(_M("%3d%% - Skipping non/null TriangulationElement [#%d]\n"), iterator.progress(), element != nullptr ? element->id() : -1);
+			continue;
+		}
 
-		TSTR e_type = TSTR::FromUTF8(element->type().c_str());
-		TSTR e_guid = TSTR::FromUTF8(element->guid().c_str());
-		TSTR e_name = TSTR::FromUTF8(element->name().c_str());
-		TSTR e_idStr = TSTR(std::to_wstring(element->id()).c_str());
+		auto prod = triElement->product();
+		TSTR e_type = TSTR::FromUTF8(triElement->type().c_str());
+		TSTR e_guid = TSTR::FromUTF8(triElement->guid().c_str());
+		TSTR e_name = TSTR::FromUTF8(triElement->name().c_str());
+		TSTR e_idStr = TSTR(std::to_wstring(triElement->id()).c_str());
 
 
 		// dump out the parent tree up to IfcProject for each element
-		log_stream.str("");
-        auto parents = element->parents(); // keep a persistent copy
+        auto parents = triElement->parents(); // keep a persistent copy
         if (!parents.empty()) {
 			for(auto it =parents.rbegin(); it != parents.rend(); ++it) {
 				auto p_e = *it;
@@ -407,7 +413,7 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
 			}
 		}
         TSTR logString = TSTR::FromUTF8(log_stream.str().c_str());
-        LogToListener(_M("%3d%% - [#%d] %s: '%s' %s\n"), iterator.progress(), element->id(), e_type.data(), e_name.data(), logString.data());
+        LogToListener(_M("%3d%% - [#%d] %s: '%s' %s\n"), iterator.progress(), triElement->id(), e_type.data(), e_name.data(), logString.data());
 
 		Mtl *mat = ComposeMultiMaterial(material_cache, mats, ip, slot, triElement->geometry().materials(), triElement->type(), triElement->geometry().material_ids());
 
@@ -421,7 +427,7 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
             refSuccess = impNode->Reference(mesh);
 
         if (refSuccess != REF_SUCCEED) {
-			LogToListener(_M("Error creating importer reference for imported element #%d.\n"), element->id());
+			LogToListener(_M("Error creating importer reference for imported element #%d.\n"), triElement->id());
             continue;
         }
 
