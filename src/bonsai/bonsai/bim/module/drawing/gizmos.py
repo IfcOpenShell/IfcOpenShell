@@ -157,7 +157,6 @@ from mathutils.kdtree import KDTree
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
-from bonsai.tool.unit import parse_distance_string
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
@@ -1028,7 +1027,7 @@ class NumericInputState:
             return
 
         input_str = self.get_input_string()
-        is_valid, value = parse_distance_string(input_str)
+        is_valid, value = tool.Unit.parse_distance_string(input_str)
 
         if is_valid:
             self.parsed_value = value

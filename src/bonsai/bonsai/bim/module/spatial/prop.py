@@ -39,7 +39,6 @@ import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.module.spatial.data import SpatialDecompositionData
 from bonsai.bim.prop import ObjProperty
-from bonsai.tool.unit import parse_distance_string
 
 
 def get_subelement_class(
@@ -52,7 +51,7 @@ def get_subelement_class(
 
 def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
     # Try to parse the input string with unit support first
-    is_valid, parsed_elevation = parse_distance_string(self.elevation, use_project_unit=True)
+    is_valid, parsed_elevation = tool.Unit.parse_distance_string(self.elevation, use_project_unit=True)
 
     if is_valid:
         elevation = parsed_elevation

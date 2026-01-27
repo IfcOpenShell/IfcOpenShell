@@ -33,6 +33,17 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Unit)
 
 
+class TestParseDistanceString(NewFile):
+    def test_run(self):
+        assert subject.parse_distance_string("5m") == (True, 5.0)
+        assert subject.parse_distance_string("30cm") == (True, 0.3)
+        assert subject.parse_distance_string("10ft") == (True, 3.048)
+        assert subject.parse_distance_string("12in") == (True, 0.3048)
+        assert subject.parse_distance_string("5'6\"") == (True, 1.6764)
+        assert subject.parse_distance_string("-5'6\"") == (True, -1.6764)
+        assert subject.parse_distance_string("invalid") == (False, 0.0)
+
+
 class TestClearActiveUnit(NewFile):
     def test_run(self):
         props = tool.Unit.get_unit_props()
