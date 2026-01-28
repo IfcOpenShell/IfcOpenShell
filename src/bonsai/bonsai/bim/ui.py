@@ -736,6 +736,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=".ifc.metadata.blend",
     )
 
+    decorator_font_scale: bpy.props.FloatProperty(
+        name="Decorator Font Scale",
+        description="Scale factor for decorator font size.",
+        default=1.0,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -775,6 +781,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
+        decorator_font_scale: float
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -997,6 +1004,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             else:
                 row = layout.row()
                 row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+        layout.prop(self, "decorator_font_scale")
 
 
 # Scene panel groups
