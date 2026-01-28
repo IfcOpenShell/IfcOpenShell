@@ -171,28 +171,9 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return
 
-        objs: list[bpy.types.Object] = []
-        # In IFC element can be either contained of aggregated,
-        # tehrefore we skip aggregated elements here to prevent confusion.
-        # Can't handle it in `poll` since user might just select bunch of elements
-        # and try to assign a container to them
-        # and excluding aggregates because of the `poll` failing might get awkward.
-        skipped_aggregates = 0
-        for obj in tool.Blender.get_selected_objects():
-            if not (element := tool.Ifc.get_entity(obj)):
-                continue
-            if ifcopenshell.util.element.get_aggregate(element):
-                skipped_aggregates += 1
-                continue
-            objs.append(obj)
-
-        for element_obj in objs:
-            core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
-
-        aggregates_msg = ""
-        if skipped_aggregates:
-            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
-        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
+        core.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
+        )
 
 
 class EnableEditingContainer(bpy.types.Operator):

@@ -175,8 +175,8 @@ def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.ty
     obj = self.id_data
     if (
         (container := tool.Ifc.get_entity(container_obj))
-        and (tool.Ifc.get_entity(obj))
-        and tool.Spatial.can_contain(container, obj)
+        and (element := tool.Ifc.get_entity(obj))
+        and tool.Spatial.can_contain(container, element)
     ):
         return True
     return False

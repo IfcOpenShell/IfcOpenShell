@@ -954,12 +954,14 @@ class Spatial:
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_selected_product_types(cls): pass
+    def get_root_element(cls, element): pass
+    def get_decomposition(cls, element): pass
     def get_selected_products(cls): pass
     def import_spatial_decomposition(cls): pass
     def import_spatial_element(cls, element, level_index): pass
     def load_contained_elements(cls): pass
     def run_root_copy_class(cls, obj): pass
-    def run_spatial_assign_container(cls, container, element_obj): pass
+    def run_spatial_assign_container(cls, container, objs): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
