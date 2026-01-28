@@ -1033,57 +1033,28 @@ class Loader(bonsai.core.tool.Loader):
             sense_factor = 1
         else:
             return mesh
-
         if len(layer_set.MaterialLayers) == 1:
             return mesh
-
         bm = bmesh.new()
         bm.from_mesh(mesh)
-
         prev_co = None
-        advance_direction = None  # Will store direction to advance planes
-
         if not usage:
-            sense_factor = 1
+            sense_factor = 1  # Assume the extrusion vector points in the direction sense
             no = cls.get_extrusion_vector(element).normalized()
             co = Vector((0.0, 0.0, offset))
-            advance_direction = no
         elif usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
-
-            # Get LOCAL extrusion direction
-            local_extrusion = Vector([0.0, 0.0, 1.0])
-            if body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
-                for item in ifcopenshell.util.representation.resolve_representation(body).Items:
-                    while item.is_a("IfcBooleanResult"):
-                        item = item.FirstOperand
-                    if item.is_a("IfcExtrudedAreaSolid"):
-                        local_extrusion = Vector(item.ExtrudedDirection.DirectionRatios).normalized()
-                        break
-
-            # Thickness direction: perpendicular to extrusion and length
-            thickness_dir = local_extrusion.cross(Vector([1.0, 0.0, 0.0])).normalized()
-
-            # Ensure it points in POSITIVE Y (through wall thickness, not backwards)
-            if thickness_dir.y < 0:
-                thickness_dir = -thickness_dir
-
-            no = thickness_dir
-            advance_direction = thickness_dir
+            no = cls.get_extrusion_vector(element).normalized()
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
         elif usage.LayerSetDirection == "AXIS3":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
-            advance_direction = no
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
-            advance_direction = no
-
         no *= sense_factor
-        advance_direction *= sense_factor
-
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1091,25 +1062,20 @@ class Loader(bonsai.core.tool.Loader):
         for i, material in enumerate(mesh.materials):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
-
         last_i = len(layer_set.MaterialLayers) - 1
         for i, layer in enumerate(layer_set.MaterialLayers):
             if i != last_i:
                 prev_co = co.copy()
-                # Use advance_direction (not no) to move planes!
-                co += advance_direction * layer.LayerThickness * cls.unit_scale
-
+                co += no * layer.LayerThickness * cls.unit_scale
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )
                 bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
-
             if not (style := ifcopenshell.util.representation.get_material_style(layer.Material, body)):
                 continue
             if (material_index := styles.get(style, None)) is None:
                 material_index = len(mesh.materials)
                 mesh.materials.append(tool.Ifc.get_object(style))
-
             if i == last_i:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
@@ -1134,35 +1100,13 @@ class Loader(bonsai.core.tool.Loader):
         return mesh
 
     @classmethod
-    def get_extrusion_vector(cls, element):
-        """Get the extrusion direction in WORLD coordinates (accounting for object rotation)"""
-        if body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
             for item in ifcopenshell.util.representation.resolve_representation(body).Items:
                 while item.is_a("IfcBooleanResult"):
                     item = item.FirstOperand
                 if item.is_a("IfcExtrudedAreaSolid"):
-                    local_direction = Vector(item.ExtrudedDirection.DirectionRatios)
-
-                    # Transform to world coordinates using object rotation
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
-                        # Apply object rotation to get actual world direction
-                        world_direction = obj.matrix_world.to_3x3() @ local_direction
-                        return world_direction
-
-                    return local_direction
-        return Vector([0.0, 0.0, 1.0])
-
-    @classmethod
-    def get_local_extrusion_vector(cls, element):
-        """Get the extrusion direction in LOCAL coordinates (from IFC, no object rotation)"""
-        if body := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
-            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
-                while item.is_a("IfcBooleanResult"):
-                    item = item.FirstOperand
-                if item.is_a("IfcExtrudedAreaSolid"):
-                    local_direction = Vector(item.ExtrudedDirection.DirectionRatios)
-                    return local_direction
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
         return Vector([0.0, 0.0, 1.0])
 
     @classmethod
