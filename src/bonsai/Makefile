@@ -336,7 +336,11 @@ test:
 
 .PHONY: test-core
 test-core:
+ifndef MODULE
 	pytest -p no:pytest-blender test/core
+else
+	pytest -p no:pytest-blender test/core/test_${MODULE}.py
+endif
 
 .PHONY: test-bim
 test-bim:
