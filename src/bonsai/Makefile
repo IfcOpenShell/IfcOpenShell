@@ -195,12 +195,23 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# pyradiance is using different platform versions than defaults in our makefile.
+	# Temporary use `pyradiance_py313` until https://github.com/LBNL-ETA/pyradiance/issues/53 is resolved.
+ifeq ($(PYVERSION), py313)
+ifeq ($(PLATFORM), linux)
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+else ifeq ($(PLATFORM), macos)
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+else
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+endif
+else
 ifeq ($(PLATFORM), linux)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else ifeq ($(PLATFORM), macos)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+endif
 endif
 	# Required by ifctester web ui.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download flask $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
