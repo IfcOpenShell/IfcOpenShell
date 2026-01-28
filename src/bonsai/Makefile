@@ -285,6 +285,11 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 
+# Blender 5.1+ requires Python 3.13.
+ifeq ($(PYVERSION), py313)
+	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
+endif
+
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
 	# Provides bonsai Add-on functionality
