@@ -231,17 +231,16 @@ class DumbSlabPlaner:
         for inverse in tool.Ifc.get().get_inverse(layer_set):
             if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
                 continue
-
             if tool.Ifc.get().schema == "IFC2X3":
                 for rel in tool.Ifc.get().get_inverse(inverse):
                     if not rel.is_a("IfcRelAssociatesMaterial"):
                         continue
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness, preserve_offset=True)
+                        self.change_thickness(element, total_thickness)
             else:
                 for rel in inverse.AssociatedTo:
                     for element in rel.RelatedObjects:
-                        self.change_thickness(element, total_thickness, preserve_offset=True)
+                        self.change_thickness(element, total_thickness)
 
     def regenerate_from_occurence(self, element, material_set_usage):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -251,12 +250,9 @@ class DumbSlabPlaner:
             return
         self.change_thickness(element, total_thickness)
 
-    def change_thickness(
-        self, element: ifcopenshell.entity_instance, thickness: float, preserve_offset: bool = False
-    ) -> None:
+    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
-
         layer_params = tool.Model.get_material_layer_parameters(element)
         ifc_file = tool.Ifc.get()
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
@@ -282,40 +278,79 @@ class DumbSlabPlaner:
                     cos_angle = direction_ratios.normalized().dot(Vector((0, 0, 1)))
                     extrusion_angle = acos(min(max(cos_angle, -1), 1))
 
-                # Only apply 1/cos factor when there's actual extrusion slope
+                # FIX: Only apply 1/cos factor when there's actual extrusion slope
                 if extrusion_angle > 1e-6:
                     perpendicular_depth = thickness * abs(1 / cos(extrusion_angle))
-                    perpendicular_offset = layer_offset * abs(1 / cos(extrusion_angle))
+                    perpendicular_offset = layer_offset * abs(1 / cos(extrusion_angle)) / self.unit_scale
                 else:
                     perpendicular_depth = thickness
-                    perpendicular_offset = layer_offset
+                    perpendicular_offset = layer_offset / self.unit_scale
 
+                # Check if direction sense needs to be applied
+                # This should only happen if explicitly requested, not automatically
+                if layer_params.get("apply_direction_sense", False):
+                    # Store current direction before potential change
+                    old_direction = direction_ratios.copy()
+
+                    # Apply direction sense logic
+                    existing_x_angle = extrusion_angle
+                    if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
+                        abs(existing_x_angle) > (pi / 2) and direction_ratios.z < 0
+                    ):
+                        if layer_params["direction_sense"] == "NEGATIVE":
+                            direction_ratios *= -1
+                    elif (abs(existing_x_angle) > (pi / 2) and direction_ratios.z > 0) or (
+                        abs(existing_x_angle) < (pi / 2) and direction_ratios.z < 0
+                    ):
+                        offset_direction = direction_ratios.copy() * -1
+                        if layer_params["direction_sense"] == "POSITIVE":
+                            direction_ratios *= -1
+
+                    # If direction changed, update extrusion with rotation compensation
+                    if (direction_ratios.normalized() - old_direction.normalized()).length > 1e-6:
+                        update_extrusion_direction(element, tuple(direction_ratios), obj)
+                        # After updating direction, get the updated extrusion
+                        extrusion = tool.Model.get_extrusion(representation)
+
+                # Update depth
                 extrusion.Depth = perpendicular_depth
 
                 # Update position
                 ifc_position = extrusion.Position
-
                 if direction_ratios.length > 0:
                     offset_vector = direction_ratios.normalized() * perpendicular_offset
                     position = offset_vector
 
                     material = ifcopenshell.util.element.get_material(element)
                     if material and material.is_a("IfcMaterialLayerSetUsage"):
-                        # Only set offset if not preserving it (preserves independent offsets per instance)
-                        if not preserve_offset:
-                            material.OffsetFromReferenceLine = position.z
+                        material.OffsetFromReferenceLine = position.z
 
                     if ifc_position:
                         ifc_position.Location.Coordinates = position
                     else:
                         tool.Model.add_extrusion_position(extrusion, position)
 
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-            )
+            else:
+                props = tool.Model.get_model_props()
+                x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
+                new_rep = ifcopenshell.api.geometry.add_slab_representation(
+                    tool.Ifc.get(),
+                    context=body_context,
+                    depth=thickness * self.unit_scale,
+                    x_angle=x_angle,
+                )
+                for inverse in tool.Ifc.get().get_inverse(representation):
+                    ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc,
+                    tool.Geometry,
+                    obj=obj,
+                    representation=new_rep,
+                )
+                bonsai.core.geometry.remove_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=representation
+                )
+                return
         else:
             props = tool.Model.get_model_props()
             x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
@@ -328,12 +363,13 @@ class DumbSlabPlaner:
             ifcopenshell.api.geometry.assign_representation(
                 tool.Ifc.get(), product=element, representation=representation
             )
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-            )
+
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+        )
 
     def update_extrusion_direction(
         element: ifcopenshell.entity_instance, new_direction_ratios: tuple, obj: bpy.types.Object = None
