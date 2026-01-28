@@ -951,11 +951,11 @@ class Spatial:
     def get_active_container(cls): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container, recursive): pass
+    def get_decomposition(cls, element): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
-    def get_selected_product_types(cls): pass
     def get_root_element(cls, element): pass
-    def get_decomposition(cls, element): pass
+    def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_spatial_decomposition(cls): pass
     def import_spatial_element(cls, element, level_index): pass
@@ -1125,15 +1125,15 @@ class Unit:
     def disable_editing_units(cls): pass
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
+    def get_currency_name(cls): pass
+    def get_project_currency_unit(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls, name): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
-    def is_scene_unit_metric(cls): pass
+    def is_si_unit(cls, name): pass
     def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
-    def get_project_currency_unit(cls): pass
-    def get_currency_name(cls): pass
 
 @interface
 class Voider:
