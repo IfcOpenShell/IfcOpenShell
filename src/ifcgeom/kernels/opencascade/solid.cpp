@@ -25,6 +25,7 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <ShapeFix_Solid.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -98,6 +99,19 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 	if (!S.IsNull()) {
 		result = S;
 	}
+
+	{
+        std::ofstream f("C:\\temp\\my_solid.brep");
+        BRepTools::Dump(result, f);
+	}
+
+	{
+        auto test = BRepPrimAPI_MakeCylinder(1., 10.).Solid();
+        std::ofstream f("C:\\temp\\ref_solid.brep");
+        BRepTools::Dump(test, f);
+	}
+	
+
 	return !result.IsNull();
 }
 

@@ -136,6 +136,10 @@ public:
 
 	typedef boost::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
 	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
+
+	std::map<uint32_t, curve_creation_visitor_result_type> curve_cache_, edge_curve_cache_;
+    std::map<std::tuple<double, double, double>, TopoDS_Vertex> vertex_cache_;
+
 	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
 
 	template <typename T, typename U>

@@ -19,6 +19,10 @@
 #include <TopTools_ListOfShape.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
+#include <GeomAPI_ProjectPointOnCurve.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <ShapeFix_Shape.hxx>
+
 
 #include <Standard_Version.hxx>
 #if OCC_VERSION_HEX < 0x70600
@@ -34,6 +38,18 @@ namespace {
 	struct curve_creation_visitor {
 		OpenCascadeKernel* kernel;
 		OpenCascadeKernel::curve_creation_visitor_result_type result;
+
+		const TopoDS_Vertex create_cached_vertex(const taxonomy::point3::ptr& pnt) {
+            auto cs = pnt->components();
+            auto it = kernel->vertex_cache_.find({cs(0), cs(1), cs(2)});
+            if (it == kernel->vertex_cache_.end()) {
+				TopoDS_Vertex v = BRepBuilderAPI_MakeVertex(OpenCascadeKernel::convert_xyz<gp_Pnt>(*pnt)).Vertex();
+				kernel->vertex_cache_[{cs(0), cs(1), cs(2)}] = v;
+				return v;
+			} else {
+				return it->second;
+            }
+        }
 
 		OpenCascadeKernel::curve_creation_visitor_result_type operator()(const taxonomy::bspline_curve::ptr& bc) {
 
@@ -155,13 +171,44 @@ namespace {
 				if (e_start.which() == 0) {
 					E = BRepBuilderAPI_MakeEdge(curve).Edge();
 				} else if (e_start.which() == 1) {
-					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_start));
-					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_end));
+                    auto p1 = create_cached_vertex(boost::get<taxonomy::point3::ptr>(e_start));
+                    auto p2 = create_cached_vertex(boost::get<taxonomy::point3::ptr>(e_end));
 
-					if (curve->IsClosed() && p1.Distance(p2) <= kernel->settings().get<settings::Precision>().get()) {
-						E = BRepBuilderAPI_MakeEdge(curve).Edge();
+					// Closed or Periodic, what do in case of Bspline?
+					// p1.Distance(p2) <= kernel->settings().get<settings::Precision>().get()
+					if (curve->IsClosed() && p1.IsSame(p2)) {
+                        if (curve->IsPeriodic()) {
+                            auto pp1 = BRep_Tool::Pnt(p1);
+							GeomAPI_ProjectPointOnCurve proj(pp1, curve);
+							auto u0 = proj.Parameter(1);
+							auto u1 = u0 + curve->Period();
+
+							E = BRepBuilderAPI_MakeEdge(curve, p1, p1, u0, u1);
+                        } else {
+                            E = BRepBuilderAPI_MakeEdge(curve);
+						}
 					} else {
-						E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+                        double u0 = 0., u1 = 0.;
+                        auto pp1 = BRep_Tool::Pnt(p1);
+                        auto pp2 = BRep_Tool::Pnt(p2);
+
+                            try {
+                                GeomAPI_ProjectPointOnCurve proj(pp1, curve);
+								u0 = proj.Parameter(1);
+                            }
+                            catch (const Standard_Failure&) {
+                            }
+                            try {
+                                GeomAPI_ProjectPointOnCurve proj(pp2, curve);
+                                u1 = proj.Parameter(1);
+                            } catch (const Standard_Failure&) {
+                            }
+
+						if (u1 > u0) {                            
+							E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+						} else {
+                            E = TopoDS::Edge(BRepBuilderAPI_MakeEdge(curve, p2, p1).Edge().Reversed());
+                        }
 					}
 				} else if (e_start.which() == 2) {
 					auto v1 = boost::get<double>(e_start);
@@ -222,8 +269,33 @@ namespace {
 }
 
 OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert_curve(const taxonomy::ptr curve) {
+    auto it = curve_cache_.find(curve->identity());
+    if (it != curve_cache_.end()) {
+		return it->second;
+    }
+	// hack hack
+    auto has_edge_geom = curve->kind() == taxonomy::EDGE && std::static_pointer_cast<taxonomy::edge>(curve)->basis;
+    if (has_edge_geom) {
+		auto edge_curve = std::static_pointer_cast<taxonomy::edge>(curve)->basis;
+        auto jt = edge_curve_cache_.find(edge_curve->identity());
+        if (jt != edge_curve_cache_.end()) {
+            auto& w = boost::get<TopoDS_Wire>(jt->second);
+            TopoDS_Iterator it(w);
+            auto& e = it.Value();
+            auto partner = e.Reversed();
+            BRep_Builder B;
+            TopoDS_Wire W;
+            B.MakeWire(W);
+            B.Add(W, partner);
+            return W;
+        }
+    }
 	curve_creation_visitor v{ this };
 	if (dispatch_curve_creation<curve_creation_visitor, 0>::dispatch(curve, v)) {
+        curve_cache_[curve->identity()] = v.result;
+        if (curve->kind() == taxonomy::EDGE && std::static_pointer_cast<taxonomy::edge>(curve)->basis) {
+            edge_curve_cache_[std::static_pointer_cast<taxonomy::edge>(curve)->basis->identity()] = v.result;
+        }
 		return v.result;
 	} else {
 		throw std::runtime_error("No curve created");
@@ -265,6 +337,19 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		converted_segments.Append(segment_wire);
 	}
 
+	{
+        for (auto& seg : converted_segments) {
+            TopoDS_Iterator it_seg(seg);
+            auto& e = TopoDS::Edge(it_seg.Value());
+            TopoDS_Vertex v0, v1;
+            TopExp::Vertices(e, v0, v1, true);
+            gp_Pnt p0 = BRep_Tool::Pnt(v0);
+            gp_Pnt p1 = BRep_Tool::Pnt(v1);
+            std::wcout << "or: " << e.Orientation() << " p0 " << p0.X() << " " << p0.Y() << " " << p0.Z() << " p1 " << p1.X() << " " << p1.Y() << " " << p1.Z() << std::endl;
+		}
+	}
+
+	/*
 	if (converted_segments.Extent() == 0) {
 		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", loop->instance);
 		return false;
@@ -361,6 +446,71 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		}
 
 		wire = mw.Wire();
+	}
+	*/
+
+	{
+		// Rebuild to use partners in case of seam curves
+		// This swaps the edge, but fails to maintain partners in vertices
+		// Therefore see hack hack.
+		
+		std::map<Geom_Curve*, TopoDS_Edge> curve_edge_map;
+        
+        BRep_Builder BB;
+        TopoDS_Wire new_wire;
+        BB.MakeWire(new_wire);
+
+        for (auto& seg : converted_segments) {
+            TopoDS_Iterator it_seg(seg);
+            auto& edge = TopoDS::Edge(it_seg.Value());
+
+            double u0, u1;
+            if (auto crv = BRep_Tool::Curve(TopoDS::Edge(edge), u0, u1)) {
+                auto crvp = crv.get();
+                auto it = curve_edge_map.find(crvp);
+
+				TopoDS_Vertex v0, v1;
+                TopExp::Vertices(edge, v0, v1, true);
+                gp_Pnt p0 = BRep_Tool::Pnt(v0);
+                gp_Pnt p1 = BRep_Tool::Pnt(v1);
+
+				std::wcout << "or: " << edge.Orientation() << " p0 " << p0.X() << " " << p0.Y() << " " << p0.Z() << " p1 " << p1.X() << " " << p1.Y() << " " << p1.Z() << std::endl;
+
+                if (it == curve_edge_map.end()) {
+                    curve_edge_map[crvp] = edge;
+                    BB.Add(new_wire, edge);
+                } else {
+                    auto partner = TopoDS::Edge(it->second.Reversed());
+                    TopoDS_Vertex v0, v1;
+                    TopExp::Vertices(partner, v0, v1, true);
+                    gp_Pnt p0 = BRep_Tool::Pnt(v0);
+                    gp_Pnt p1 = BRep_Tool::Pnt(v1);
+
+                    std::wcout << ">>> " << partner.Orientation() << " p0 " << p0.X() << " " << p0.Y() << " " << p0.Z() << " p1 " << p1.X() << " " << p1.Y() << " " << p1.Z() << std::endl;
+
+
+                    BB.Add(new_wire, TopoDS::Edge(it->second.Reversed()));
+                }
+            }
+        }
+
+		new_wire.Closed(true);
+        ShapeFix_Shape sw(new_wire);
+        sw.Perform();
+        wire = TopoDS::Wire(sw.Shape());
+
+		/*
+		new_wire.Checked(wire.Checked());
+        new_wire.Closed(wire.Closed());
+        new_wire.Convex(wire.Convex());
+        new_wire.Free(wire.Free());
+        new_wire.Infinite(wire.Infinite());
+        new_wire.Locked(wire.Locked());
+        new_wire.Modified(wire.Modified());
+        new_wire.Orientable(wire.Orientable());
+		*/
+
+        wire = new_wire;
 	}
 
 	if (loop->matrix && !loop->matrix->is_identity()) {

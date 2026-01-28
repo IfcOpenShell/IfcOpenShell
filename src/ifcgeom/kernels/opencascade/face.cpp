@@ -47,6 +47,9 @@
 #include <Geom_SurfaceOfLinearExtrusion.hxx>
 #include <Geom_SurfaceOfRevolution.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
+#include <GeomProjLib.hxx>
+#include <BRepTools_WireExplorer.hxx>
+#include <Geom2d_TrimmedCurve.hxx>
 
 #if OCC_VERSION_HEX < 0x70600
 #include <BRepAdaptor_HCompCurve.hxx>
@@ -431,6 +434,155 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		if (reversed_surface) {
 			surf = surf->UReversed();
 		}
+
+		if (!(surf->DynamicType() == STANDARD_TYPE(Geom_Plane))) {
+            for (auto& w : fd.wires()) {
+                bool has_seam = false;
+                double u0, u1;
+                std::set<Geom_Curve*> curves;
+                for (TopoDS_Iterator it(w); it.More(); it.Next()) {
+                    const auto& ed = TopoDS::Edge(it.Value());
+                    auto crv = BRep_Tool::Curve(ed, u0, u1);
+                    if (curves.find(crv.get()) != curves.end()) {
+                        has_seam = true;
+                    } else {
+                        curves.insert(crv.get());
+                    }
+                }
+
+				if (has_seam) {
+                    BRep_Builder BB;
+
+					std::vector<TopoDS_Edge> edges;
+                    for (BRepTools_WireExplorer it(w); it.More(); it.Next()) {
+                        const auto& ed = it.Current();
+                        edges.push_back(ed);
+                    }
+
+					for (auto it = edges.begin(); it != edges.end(); ++it) {
+                        const auto& ed = *it;
+
+                        TopLoc_Location L3d;
+                        Standard_Real f3d = 0.0, l3d = 0.0;
+                        Handle(Geom_Curve) c3d = BRep_Tool::Curve(ed, L3d, f3d, l3d); // may be null
+                        
+						std::ostringstream oss;
+
+						oss << "Ed orien: " << ed.Orientation() << std::endl;
+
+                        oss << "3d: " << f3d << " - " << l3d << " ";
+                        c3d->DumpJson(oss);
+
+						for (Standard_Integer idx = 1;; ++idx) {
+                            Handle(Geom2d_Curve) c2d;
+                            Handle(Geom_Surface) s;
+                            TopLoc_Location L;
+                            Standard_Real f = 0.0, l = 0.0;
+
+                            BRep_Tool::CurveOnSurface(ed, c2d, s, L, f, l, idx);
+
+							// "C and S are null if the index is out of range"
+                            if (c2d.IsNull() || s.IsNull()) {
+                                break;
+                            }
+							
+							oss << idx << " ";
+                            c2d->DumpJson(oss);
+                        }
+
+                        // Build 2D curve for the segment [f3d,l3d] on surface S
+                        Handle(Geom2d_Curve) base2d = GeomProjLib::Curve2d(c3d, f3d, l3d, fd.surface());
+                        if (base2d.IsNull()) {
+                            throw std::runtime_error("Failed to project 3D curve to 2D on surface with seam");
+                        }
+
+						Handle(Geom2d_TrimmedCurve) trim2d = new Geom2d_TrimmedCurve(base2d, f3d, l3d);
+
+						auto Pf = trim2d->Value(trim2d->FirstParameter());
+                        auto Pl = trim2d->Value(trim2d->LastParameter());
+
+												oss << std::endl
+                            << Pf.X() << "," << Pf.Y() << " to " << Pl.X() << "," << Pl.Y() << std::endl;
+
+
+						BB.UpdateEdge(ed, trim2d, fd.surface(), L3d, 1.e-7, Pf, Pl);
+
+						oss << "2d: ";
+                        trim2d->DumpJson(oss);
+
+						auto s = oss.str();
+                        std::wcout << s.c_str() << "\n\n\n\n" << std::endl;
+                    }
+
+					for (auto it = edges.begin(); it != edges.end(); ++it) {
+                        const auto& ed = *it;
+                        const auto& prev = (it == edges.begin()) ? *(edges.end() - 1) : *(it - 1);
+                        const auto& next = (it == (edges.end() - 1)) ? *(edges.begin()) : *(it + 1);
+
+                        std::ostringstream oss;
+
+						TopLoc_Location L3d;
+                        Standard_Real f3d = 0.0, l3d = 0.0;
+                        Handle(Geom_Curve) c3d = BRep_Tool::Curve(ed, L3d, f3d, l3d); // may be null
+
+                        auto idx = 1;
+                        Handle(Geom2d_Curve) c2d, prev_c2d;
+                        Handle(Geom_Surface) surf;
+                        TopLoc_Location L;
+                        Standard_Real f = 0.0, l = 0.0;
+
+                        BRep_Tool::CurveOnSurface(ed, c2d, surf, L, f, l, idx);
+
+						if (c2d.IsNull()) {
+							throw std::runtime_error("Failed to retrieve 2D curve on surface with seam");
+                        }
+
+						if (surf != fd.surface()) {
+							throw std::runtime_error("Unexpected surface on edge with seam");
+                        }
+
+						auto Pf = c2d->Value(c2d->FirstParameter());
+                        auto Pl = c2d->Value(c2d->LastParameter());
+
+						if (ed.Orientation() == TopAbs_REVERSED) {
+                            std::swap(Pf, Pl);
+                        }
+
+												oss << std::endl
+                            << Pf.X() << "," << Pf.Y() << " to " << Pl.X() << "," << Pl.Y() << std::endl;
+
+
+						BRep_Tool::CurveOnSurface(prev, prev_c2d, surf, L, f, l, idx);
+                                                auto PPf = prev_c2d->Value(prev_c2d->FirstParameter());
+						auto PPl = prev_c2d->Value(prev_c2d->LastParameter());
+
+						if (prev.Orientation() == TopAbs_REVERSED) {
+							std::swap(PPf, PPl);
+                        }
+
+						if (Pl.Distance(PPl) < 1.e-7) {
+							continue;
+                        }
+
+						gp_Trsf2d tr;
+                        tr.SetTranslation(PPl, Pf);
+                        auto updated = Handle(Geom2d_Curve)::DownCast(c2d->Transformed(tr));
+
+                        updated->DumpJson(oss);
+                        BB.UpdateEdge(ed, updated, fd.surface(), L3d, 1.e-7, Pf, Pl);
+						
+						oss << std::endl << Pf.X() << "," << Pf.Y() << " to " << Pl.X() << "," << Pl.Y() << std::endl;
+
+						auto s = oss.str();
+                        std::wcout << s.c_str() << "\n\n\n\n"
+                                   << std::endl;
+
+                    }
+                }
+            }
+
+		}
+
 		BRepBuilderAPI_MakeFace mf(surf, fd.outer_wire());
 
 		if (mf.IsDone()) {
@@ -501,6 +653,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			// For planar faces, Open Cascade generates p-curves on the fly.
 
 			for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+                continue;
+
 				ShapeFix_Shape sfs(it.Value());
 
 				Handle(ShapeExtend_MsgRegistrator) msg;
@@ -534,6 +688,9 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		}
 
 		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+            continue;
+
+
 			const TopoDS_Face& occ_face = TopoDS::Face(it.Value());
 
 			ShapeFix_Face sfs(TopoDS::Face(occ_face));
@@ -559,6 +716,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		}
 
 		for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
+            continue;
+
 			TopoDS_Face& occ_face = TopoDS::Face(it.Value());
 
 			bool all_reversed = true;
