@@ -249,6 +249,7 @@ class DumbSlabPlaner:
         self.change_thickness(element, total_thickness)
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
