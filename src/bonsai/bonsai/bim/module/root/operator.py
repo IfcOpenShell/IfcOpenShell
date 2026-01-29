@@ -735,6 +735,21 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         Radius=(default_diameter / 2) / unit_scale,
                         WallThickness=default_thickness,
                     )
+                elif representation_template == "FLOW_SEGMENT_U_SHAPE":
+                    default_depth = 0.4
+                    default_flange_width = 0.2
+                    default_web_thickness = 0.005
+                    default_flange_thickness = 0.005
+                    profile_name = f"{props.ifc_class}-{default_depth*1000}x{default_flange_width*1000}x{default_web_thickness*1000}x{default_flange_thickness*1000}"
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcUShapeProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Depth=default_depth / unit_scale,
+                        FlangeWidth=default_flange_width / unit_scale,
+                        WebThickness=default_web_thickness / unit_scale,
+                        FlangeThickness=default_flange_thickness / unit_scale,
+                    )
 
             rel = ifcopenshell.api.material.assign_material(
                 tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"

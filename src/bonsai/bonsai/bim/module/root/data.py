@@ -206,6 +206,11 @@ class IfcClassData:
                         "Circular Hollow Distribution Segment",
                         "Works similarly to Profile, has distribution ports",
                     ),
+                    (
+                        "FLOW_SEGMENT_U_SHAPE",
+                        "U-Shape Distribution Segment",
+                        "Uses IfcUShapeProfileDef, has distribution ports",
+                    ),
                 )
             )
 
