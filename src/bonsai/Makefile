@@ -198,7 +198,7 @@ endif
 	# Temporary use `pyradiance_py313` until https://github.com/LBNL-ETA/pyradiance/issues/53 is resolved.
 ifeq ($(PYVERSION), py313)
 ifeq ($(PLATFORM), linux)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else ifeq ($(PLATFORM), macos)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
@@ -206,7 +206,7 @@ else
 endif
 else
 ifeq ($(PLATFORM), linux)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else ifeq ($(PLATFORM), macos)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
