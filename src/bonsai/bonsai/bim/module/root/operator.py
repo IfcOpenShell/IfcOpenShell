@@ -703,7 +703,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                     default_thickness = 0.005
                     default_inner_fillet_radius = 0.005
                     default_outer_fillet_radius = 0.005
-                    profile_name = f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}"
+                    profile_name = f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}x{default_thickness*1000}"
                     profile = tool.Ifc.get().create_entity(
                         "IfcRectangleHollowProfileDef",
                         ProfileName=profile_name,
