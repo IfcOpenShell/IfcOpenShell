@@ -22,119 +22,91 @@ from test.core.bootstrap import ifc, unit
 
 class TestAssignSceneUnits:
     def test_creating_and_assigning_metric_units(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(True)
-        unit.get_scene_unit_si_prefix("LENGTHUNIT").should_be_called().will_return("prefix")
-        unit.get_scene_unit_si_prefix("AREAUNIT").should_be_called().will_return("prefix")
-        unit.get_scene_unit_si_prefix("VOLUMEUNIT").should_be_called().will_return("prefix")
-        unit.add_mass_and_time_units().should_be_called().will_return(True)
-        unit.get_scene_unit_si_prefix("MASSUNIT").should_be_called().will_return("KILO")
-        unit.get_scene_unit_si_prefix("TIMEUNIT").should_be_called().will_return(None)
-
-        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="prefix").should_be_called().will_return(
+        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("length_name")
+        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("area_name")
+        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("volume_name")
+        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("mass_name")
+        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("time_name")
+        unit.is_si_unit("length_name").should_be_called().will_return(True)
+        unit.is_si_unit("area_name").should_be_called().will_return(True)
+        unit.is_si_unit("volume_name").should_be_called().will_return(True)
+        unit.is_si_unit("mass_name").should_be_called().will_return(True)
+        unit.is_si_unit("time_name").should_be_called().will_return(True)
+        unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")
+        unit.get_scene_unit_si_prefix("area_name").should_be_called().will_return("area_prefix")
+        unit.get_scene_unit_si_prefix("volume_name").should_be_called().will_return("volume_prefix")
+        unit.get_scene_unit_si_prefix("mass_name").should_be_called().will_return("mass_prefix")
+        unit.get_scene_unit_si_prefix("time_name").should_be_called().will_return("time_prefix")
+        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
             "lengthunit"
         )
-        ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix="prefix").should_be_called().will_return("areaunit")
-        ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix="prefix").should_be_called().will_return(
+        ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix="area_prefix").should_be_called().will_return(
+            "areaunit"
+        )
+        ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix="volume_prefix").should_be_called().will_return(
             "volumeunit"
         )
-        ifc.run("unit.add_si_unit", unit_type="MASSUNIT", prefix="KILO").should_be_called().will_return("massunit")
-        ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix=None).should_be_called().will_return("timeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-
+        ifc.run("unit.add_si_unit", unit_type="MASSUNIT", prefix="mass_prefix").should_be_called().will_return(
+            "massunit"
+        )
+        ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix="time_prefix").should_be_called().will_return(
+            "timeunit"
+        )
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
-    def test_creating_and_assigning_metric_units_without_mass_and_time(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(True)
-        unit.get_scene_unit_si_prefix("LENGTHUNIT").should_be_called().will_return("CENTI")
-        unit.get_scene_unit_si_prefix("AREAUNIT").should_be_called().will_return("CENTI")
-        unit.get_scene_unit_si_prefix("VOLUMEUNIT").should_be_called().will_return("CENTI")
-        unit.add_mass_and_time_units().should_be_called().will_return(False)
-        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="CENTI").should_be_called().will_return("lengthunit")
-        ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix="CENTI").should_be_called().will_return("areaunit")
-        ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix="CENTI").should_be_called().will_return("volumeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-        ifc.run("unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit"]).should_be_called()
+    def test_creating_and_assigning_only_specified_units(self, ifc, unit):
+        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("length_name")
+        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return(None)
+        unit.is_si_unit("length_name").should_be_called().will_return(True)
+        unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")
+        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
+            "lengthunit"
+        )
+        ifc.run("unit.assign_unit", units=["lengthunit"]).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
     def test_creating_and_assigning_imperial_units(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(False)
-        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("foot")
-        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("square foot")
-        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("cubic foot")
-        unit.add_mass_and_time_units().should_be_called().will_return(True)
-        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("pound")
-        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("SECOND")
-
-        ifc.run("unit.add_conversion_based_unit", name="foot").should_be_called().will_return("lengthunit")
-        ifc.run("unit.add_conversion_based_unit", name="square foot").should_be_called().will_return("areaunit")
-        ifc.run("unit.add_conversion_based_unit", name="cubic foot").should_be_called().will_return("volumeunit")
-        ifc.run("unit.add_conversion_based_unit", name="pound").should_be_called().will_return("massunit")
-        ifc.run("unit.add_si_unit", unit_type="TIMEUNIT", prefix=None).should_be_called().will_return("timeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-
+        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("length_name")
+        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("area_name")
+        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("volume_name")
+        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("mass_name")
+        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("time_name")
+        unit.is_si_unit("length_name").should_be_called().will_return(False)
+        unit.is_si_unit("area_name").should_be_called().will_return(False)
+        unit.is_si_unit("volume_name").should_be_called().will_return(False)
+        unit.is_si_unit("mass_name").should_be_called().will_return(False)
+        unit.is_si_unit("time_name").should_be_called().will_return(False)
+        ifc.run("unit.add_conversion_based_unit", name="length_name").should_be_called().will_return("lengthunit")
+        ifc.run("unit.add_conversion_based_unit", name="area_name").should_be_called().will_return("areaunit")
+        ifc.run("unit.add_conversion_based_unit", name="volume_name").should_be_called().will_return("volumeunit")
+        ifc.run("unit.add_conversion_based_unit", name="mass_name").should_be_called().will_return("massunit")
+        ifc.run("unit.add_conversion_based_unit", name="time_name").should_be_called().will_return("timeunit")
         ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
+            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "massunit", "timeunit"]
         ).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
-    def test_creating_and_assigning_imperial_units_without_mass_and_time(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(False)
-        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("yard")
-        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("square yard")
-        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("cubic yard")
-        unit.add_mass_and_time_units().should_be_called().will_return(False)
-        ifc.run("unit.add_conversion_based_unit", name="yard").should_be_called().will_return("lengthunit")
-        ifc.run("unit.add_conversion_based_unit", name="square yard").should_be_called().will_return("areaunit")
-        ifc.run("unit.add_conversion_based_unit", name="cubic yard").should_be_called().will_return("volumeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-        ifc.run("unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit"]).should_be_called()
-        subject.assign_scene_units(ifc, unit)
-
-    def test_creating_metric_units_with_conversion_based_mass_and_time(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(True)
-        unit.get_scene_unit_si_prefix("LENGTHUNIT").should_be_called().will_return("MILLI")
-        unit.get_scene_unit_si_prefix("AREAUNIT").should_be_called().will_return(None)
-        unit.get_scene_unit_si_prefix("VOLUMEUNIT").should_be_called().will_return(None)
-        unit.add_mass_and_time_units().should_be_called().will_return(True)
-        unit.get_scene_unit_si_prefix("MASSUNIT").should_be_called().will_return("CONVERSION")
-        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("tonne")
-        unit.get_scene_unit_si_prefix("TIMEUNIT").should_be_called().will_return("CONVERSION")
-        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("minute")
-
-        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="MILLI").should_be_called().will_return("lengthunit")
-        ifc.run("unit.add_si_unit", unit_type="AREAUNIT", prefix=None).should_be_called().will_return("areaunit")
-        ifc.run("unit.add_si_unit", unit_type="VOLUMEUNIT", prefix=None).should_be_called().will_return("volumeunit")
-        ifc.run("unit.add_conversion_based_unit", name="tonne").should_be_called().will_return("massunit")
-        ifc.run("unit.add_conversion_based_unit", name="minute").should_be_called().will_return("timeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-
-        ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
-        ).should_be_called()
-        subject.assign_scene_units(ifc, unit)
-
-    def test_creating_imperial_units_with_conversion_based_units(self, ifc, unit):
-        unit.is_scene_unit_metric().should_be_called().will_return(False)
-        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("inch")
-        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("square inch")
-        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return("cubic inch")
-        unit.add_mass_and_time_units().should_be_called().will_return(True)
-        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return("ounce")
-        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return("hour")
-
-        ifc.run("unit.add_conversion_based_unit", name="inch").should_be_called().will_return("lengthunit")
-        ifc.run("unit.add_conversion_based_unit", name="square inch").should_be_called().will_return("areaunit")
-        ifc.run("unit.add_conversion_based_unit", name="cubic inch").should_be_called().will_return("volumeunit")
-        ifc.run("unit.add_conversion_based_unit", name="ounce").should_be_called().will_return("massunit")
-        ifc.run("unit.add_conversion_based_unit", name="hour").should_be_called().will_return("timeunit")
-        ifc.run("unit.add_conversion_based_unit", name="degree").should_be_called().will_return("planeangleunit")
-
-        ifc.run(
-            "unit.assign_unit", units=["lengthunit", "areaunit", "volumeunit", "planeangleunit", "massunit", "timeunit"]
-        ).should_be_called()
+    def test_creating_both_metric_and_imperial_units(self, ifc, unit):
+        # I know British doctors measure with stones so...
+        unit.get_scene_unit_name("LENGTHUNIT").should_be_called().will_return("length_name")
+        unit.get_scene_unit_name("AREAUNIT").should_be_called().will_return("area_name")
+        unit.get_scene_unit_name("VOLUMEUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("MASSUNIT").should_be_called().will_return(None)
+        unit.get_scene_unit_name("TIMEUNIT").should_be_called().will_return(None)
+        unit.is_si_unit("length_name").should_be_called().will_return(True)
+        unit.is_si_unit("area_name").should_be_called().will_return(False)
+        unit.get_scene_unit_si_prefix("length_name").should_be_called().will_return("length_prefix")
+        ifc.run("unit.add_si_unit", unit_type="LENGTHUNIT", prefix="length_prefix").should_be_called().will_return(
+            "lengthunit"
+        )
+        ifc.run("unit.add_conversion_based_unit", name="area_name").should_be_called().will_return("areaunit")
+        ifc.run("unit.assign_unit", units=["lengthunit", "areaunit"]).should_be_called()
         subject.assign_scene_units(ifc, unit)
 
 

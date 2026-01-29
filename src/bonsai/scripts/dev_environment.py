@@ -193,7 +193,7 @@ def main() -> None:
         print(f"Downloading {url} -> {filepath}")
         urllib.request.urlretrieve(url, filepath)
 
-    input("Dev environment is all set. 🎉🎉\nPress Enter to continue..." "")
+    input("Dev environment is all set!! \nPress Enter to continue...")
 
 
 if __name__ == "__main__":

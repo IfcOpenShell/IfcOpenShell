@@ -99,8 +99,7 @@ def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
         tool.Spatial.edit_container_name(element, self.name)
         if obj := tool.Ifc.get_object(element):
             tool.Root.set_object_name(obj, element)
-            if collection := tool.Blender.get_object_bim_props(obj).collection:
-                collection.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
+            tool.Collector.assign(obj)
         bonsai.bim.handler.refresh_ui_data()
 
 
