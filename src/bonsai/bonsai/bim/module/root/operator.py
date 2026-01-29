@@ -697,6 +697,24 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         XDim=default_x_dim / unit_scale,
                         YDim=default_y_dim / unit_scale,
                     )
+                elif representation_template == "FLOW_SEGMENT_RECTANGULAR_HOLLOW":
+                    default_x_dim = 0.4
+                    default_y_dim = 0.2
+                    default_thickness = 0.005
+                    default_inner_fillet_radius = 0.005
+                    default_outer_fillet_radius = 0.005
+                    profile_name = f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}"
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcRectangleHollowProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        XDim=default_x_dim / unit_scale,
+                        YDim=default_y_dim / unit_scale,
+                        WallThickness=default_thickness / unit_scale,
+                        InnerFilletRadius=default_inner_fillet_radius / unit_scale,
+                        OuterFilletRadius=default_outer_fillet_radius / unit_scale,
+                    )
+
                 elif representation_template == "FLOW_SEGMENT_CIRCULAR":
                     default_diameter = 0.1
                     profile_name = f"{props.ifc_class}-{default_diameter*1000}"

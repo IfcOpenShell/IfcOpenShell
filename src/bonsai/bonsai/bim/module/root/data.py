@@ -192,6 +192,11 @@ class IfcClassData:
                         "Works similarly to Profile, has distribution ports",
                     ),
                     (
+                        "FLOW_SEGMENT_RECTANGULAR_HOLLOW",
+                        "Rectangular Hollow Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
                         "FLOW_SEGMENT_CIRCULAR",
                         "Circular Distribution Segment",
                         "Works similarly to Profile, has distribution ports",
