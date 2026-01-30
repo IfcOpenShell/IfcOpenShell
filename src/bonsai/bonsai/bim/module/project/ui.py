@@ -31,7 +31,6 @@ import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
-from bonsai.bim.module.georeference.data import GeoreferenceData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -485,31 +484,6 @@ class BIM_PT_links(Panel):
             row.operator("bim.create_project", text="Create Parent Project to Link Projects", icon="FILE_NEW")
             return
         
-        if not GeoreferenceData.is_loaded:
-            GeoreferenceData.load()
-        
-        georef_props = tool.Georeference.get_georeference_props()
-        projected_crs = GeoreferenceData.data.get("projected_crs", {})
-        
-        if georef_props.is_editing:
-            self.draw_georeferencing_editable_ui(context, georef_props)
-        else:
-            if projected_crs and projected_crs.get("Name"):
-                crs_name = projected_crs.get("Name")
-                vertical_datum = ""
-                if projected_crs.get("VerticalDatum"):
-                    vertical_datum = " / " + projected_crs.get("VerticalDatum")
-                else:
-                    vertical_datum = " - No vertical Datum. z coordinates might be inaccurate"
-                georef_row = self.layout.row(align=True)
-                georef_row.label(text=crs_name + vertical_datum, icon="WORLD")
-                georef_row.operator("bim.enable_editing_georeferencing", text="", icon="GREASEPENCIL")
-                georef_row.operator("bim.remove_georeferencing", text="", icon="X")
-            else:
-                georef_row = self.layout.row(align=True)
-                georef_row.label(text="Not georeferenced", icon="ERROR")
-                georef_row.operator("bim.add_georeferencing", text="", icon="ADD")
-
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
@@ -562,40 +536,6 @@ class BIM_PT_links(Panel):
                     row.label(text=name)
                     row.label(text=value)
 
-    def draw_georeferencing_editable_ui(self, context, georef_props):
-        """Draw the georeferencing editing UI inline (same as in BIM_PT_gis)"""
-        from bonsai.bim.helper import draw_attributes, draw_attribute
-        
-        row = self.layout.row(align=True)
-        row.label(text="Projected CRS", icon="WORLD")
-        row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
-        row.operator("bim.disable_editing_georeferencing", icon="CANCEL", text="")
-
-        draw_attributes(georef_props.projected_crs, self.layout)
-
-        row = self.layout.row()
-        row.label(text="Coordinate Operation", icon="GRID")
-
-        for attribute in georef_props.coordinate_operation:
-            if attribute.name == "XAxisAbscissa":
-                row = self.layout.row(align=True)
-                row.prop(georef_props, "grid_north_angle", text="Angle")
-                row.prop(
-                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
-                )
-                row = self.layout.row(align=True)
-                row.prop(georef_props, "x_axis_abscissa", text="XAxis Abscissa")
-                row.prop(
-                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
-                )
-            elif attribute.name == "XAxisOrdinate":
-                row = self.layout.row(align=True)
-                row.prop(georef_props, "x_axis_ordinate", text="XAxis Ordinate")
-                row.prop(
-                    georef_props, "x_axis_is_null", icon="RADIOBUT_OFF" if georef_props.x_axis_is_null else "RADIOBUT_ON", text=""
-                )
-            else:
-                draw_attribute(attribute, self.layout.row())
 
 class BIM_UL_library(UIList):
     def draw_item(
