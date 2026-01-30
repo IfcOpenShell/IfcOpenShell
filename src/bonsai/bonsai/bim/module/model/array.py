@@ -61,7 +61,6 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             "y": 0.0,
             "z": 0.0,
             "use_local_space": True,
-            "sync_children": False,
             "method": "OFFSET",
         }
 
@@ -80,28 +79,27 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             pset=pset,
             properties={"Parent": element.GlobalId, "Data": ifc_file.create_entity("IfcText", json.dumps(data))},
         )
-        return {"FINISHED"}
 
 
-class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingArray(bpy.types.Operator):
     bl_idname = "bim.disable_editing_array"
     bl_label = "Disable Editing Array"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         obj = context.active_object
         assert obj
         tool.Model.get_array_props(obj).is_editing = -1
         return {"FINISHED"}
 
 
-class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingArray(bpy.types.Operator):
     bl_idname = "bim.enable_editing_array"
     bl_label = "Enable Editing Array"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
@@ -122,11 +120,9 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         props.y = data["y"] * si_conversion
         props.z = data["z"] * si_conversion
         props.use_local_space = data.get("use_local_space", False)
-        props.sync_children = data.get("sync_children", False)
         props.method = data.get("method", "OFFSET")
 
         props.is_editing = self.item
-
         return {"FINISHED"}
 
 
@@ -151,30 +147,24 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
             "y": props.y / si_conversion,
             "z": props.z / si_conversion,
             "use_local_space": props.use_local_space,
-            "sync_children": props.sync_children,
             "method": props.method,
         }
 
         props.is_editing = -1
 
         try:
-            parent = tool.Ifc.get_object(tool.Ifc.get().by_guid(pset["Parent"]))
+            parent_element = tool.Ifc.get().by_guid(pset["Parent"])
+            parent = tool.Ifc.get_object(parent_element)
         except:
             return {"FINISHED"}
 
+        tool.Blender.Modifier.Array.remove_constraints(parent_element)
         tool.Model.regenerate_array(parent, data)
-
-        pset = tool.Ifc.get().by_id(pset["id"])
-        data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
-
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
         # clears the relating_array_object so it doesn't show again next time
         props.relating_array_object = None
-
-        return {"FINISHED"}
 
 
 class ApplyArray(bpy.types.Operator, tool.Ifc.Operator):
@@ -190,6 +180,33 @@ class ApplyArray(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(pset["Data"])
         bpy.ops.bim.remove_array(item=len(data) - 1, keep_objs=True)
         return {"FINISHED"}
+
+
+class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.regenerate_array"
+    bl_label = "Regenerate Array"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        try:
+            parent_element = tool.Ifc.get().by_guid(pset["Parent"])
+            parent = tool.Ifc.get_object(parent_element)
+        except:
+            return {"FINISHED"}
+        pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
+        arrays = json.loads(pset["Data"])
+        pset = tool.Ifc.get().by_id(pset["id"])
+        for array in arrays:
+            for child in set(array["children"]):
+                if child_obj := tool.Ifc.get_object(tool.Ifc.get().by_guid(child)):
+                    tool.Geometry.delete_ifc_object(child_obj)
+            array["children"].clear()
+        print('cleared array', arrays)
+        tool.Model.regenerate_array(obj, arrays)
+        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
@@ -216,7 +233,8 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = -1
 
         try:
-            parent = tool.Ifc.get_object(tool.Ifc.get().by_guid(pset["Parent"]))
+            parent_element = tool.Ifc.get().by_guid(pset["Parent"])
+            parent = tool.Ifc.get_object(parent_element)
         except:
             return {"FINISHED"}
 
@@ -226,9 +244,10 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         if not self.keep_objs:
             data[self.item]["count"] = 1
+        tool.Blender.Modifier.Array.remove_constraints(parent_element)
         tool.Model.regenerate_array(parent, data, array_layers_to_apply=[self.item] if self.keep_objs else [])
 
-        pset = tool.Ifc.get().by_id(pset["id"])
+        pset = tool.Pset.get_element_pset(element, "BBIM_Array")
         if len(data) == 1:
             ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
         else:
@@ -236,8 +255,6 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
             data = tool.Ifc.get().createIfcText(json.dumps(data))
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
-
-        return {"FINISHED"}
 
 
 class SelectArrayParent(bpy.types.Operator):
