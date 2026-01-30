@@ -229,6 +229,7 @@ class BIM_PT_array(bpy.types.Panel):
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
+            row.operator("bim.regenerate_array", icon="FILE_REFRESH", text="")
             row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
             row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
 
@@ -246,7 +247,6 @@ class BIM_PT_array(bpy.types.Panel):
                     row.prop(props, "method")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
-                    row.prop(props, "sync_children")
                     col = box.column()
                     row = col.row(align=True)
                     row.prop(props, "x")

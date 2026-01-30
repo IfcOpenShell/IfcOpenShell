@@ -1051,6 +1051,7 @@ class Model(bonsai.core.tool.Model):
 
             tool.Model.regenerate_array(obj, array_data)
 
+            array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
             json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
@@ -1063,22 +1064,15 @@ class Model(bonsai.core.tool.Model):
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
     ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
-        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
+        parent_element = tool.Ifc.get_entity(parent_obj)
+
+        if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=parent_element, pset=tool.Ifc.get().by_id(pset["id"]))
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent_obj]
 
         for array_i, array in enumerate(data):
-            # for `sync_children` we remove all previously generated children to regenerate them again
-            # to assure they are in complete sync (psets, etc) with the array parent
-            if array["sync_children"]:
-                removed_children = set(array["children"])
-                for removed_child in removed_children:
-                    element = tool.Ifc.get().by_guid(removed_child)
-                    if obj := tool.Ifc.get_object(element):
-                        tool.Geometry.delete_ifc_object(obj)
-                array["children"].clear()
-
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
@@ -1104,22 +1098,19 @@ class Model(bonsai.core.tool.Model):
                         child_obj = tool.Ifc.get_object(child_element)
                         assert child_obj
                     except:
-                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([obj])
-                        # TODO Is this correct to assume one child? I really
-                        # don't understand the linked aggregates and array
-                        # behaviour.
+                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
                         child_element = next(iter(old_to_new.values()))[0]
                         child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
-                    child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
-                    if child_pset:
-                        ifcopenshell.api.pset.edit_pset(
-                            tool.Ifc.get(),
-                            pset=child_pset,
-                            properties={"Data": None},
-                            should_purge=False,
-                        )
+                    if not (child_pset := tool.Pset.get_element_pset(child_element, "BBIM_Array")):
+                        child_pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=child_element, name="BBIM_Array")
+                    ifcopenshell.api.pset.edit_pset(
+                        tool.Ifc.get(),
+                        pset=child_pset,
+                        properties={"Data": None, "Parent": parent_element.GlobalId},
+                        should_purge=False,
+                    )
 
                     # set child object position
                     new_matrix = obj.matrix_world.copy()
@@ -1154,6 +1145,10 @@ class Model(bonsai.core.tool.Model):
                 array["count"] = 1
 
             bpy.context.view_layer.update()
+
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=parent_element, name="BBIM_Array")
+        json_data = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId})
 
     @classmethod
     def replace_object_ifc_representation(

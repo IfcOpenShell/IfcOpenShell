@@ -5056,7 +5056,7 @@ class ShowCategoryHelp(bpy.types.Operator):
 
 class AddElementValueRow(bpy.types.Operator):
     bl_idname = "bim.add_element_value_row"
-    bl_label = "Add Element"
+    bl_label = "Add Element Value Row"
     bl_description = "Add a new element value row"
     bl_options = {"REGISTER", "UNDO"}
 

@@ -74,9 +74,25 @@ class Spatial(bonsai.core.tool.Spatial):
         return bpy.context.scene.BIMGridProperties
 
     @classmethod
-    def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
-        if not (element := tool.Ifc.get_entity(element_obj)):
-            return False
+    def get_decomposition(cls, element: ifcopenshell.entity_instance) -> list(ifcopenshell.entity_instance):
+        return ifcopenshell.util.element.get_decomposition(element)
+
+    @classmethod
+    def get_root_element(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        while True:
+            if parent := (
+                ifcopenshell.util.element.get_aggregate(element)
+                or ifcopenshell.util.element.get_nest(element)
+                or ifcopenshell.util.element.get_filled_void(element)
+                or ifcopenshell.util.element.get_voided_element(element)
+            ):
+                element = parent
+            else:
+                break
+        return element
+
+    @classmethod
+    def can_contain(cls, container: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
         if tool.Ifc.get_schema() == "IFC2X3":
             if not container.is_a("IfcSpatialStructureElement"):
                 return False
@@ -147,10 +163,10 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def run_spatial_assign_container(
-        cls, container: ifcopenshell.entity_instance, element_obj: bpy.types.Object
+        cls, container: ifcopenshell.entity_instance, objs: list[bpy.types.Object]
     ) -> Union[ifcopenshell.entity_instance, None]:
         return bonsai.core.spatial.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=objs
         )
 
     @classmethod

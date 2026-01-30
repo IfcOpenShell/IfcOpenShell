@@ -627,8 +627,8 @@ class BIMProperties(PropertyGroup):
         items=[
             ("NONE", "None", ""),
             ("GRAM", "Gram", "Grams"),
-            ("KILO/KILOGRAM", "Kilogram", "Kilograms"),
-            ("MEGA/TONNE", "Tonne", "Metric Tons"),
+            ("KILO/GRAM", "Kilogram", "Kilograms"),
+            ("MEGA/GRAM", "Tonne", "Metric Tons"),
             ("pound", "Pound", "Pounds"),
             ("ounce", "Ounce", "Ounces"),
         ],

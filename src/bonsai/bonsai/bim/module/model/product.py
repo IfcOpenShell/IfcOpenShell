@@ -470,7 +470,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 parent = ifcopenshell.util.element.get_container(building_element)
                 if parent:
                     bonsai.core.spatial.assign_container(
-                        tool.Ifc, tool.Collector, tool.Spatial, container=parent, element_obj=obj
+                        tool.Ifc, tool.Collector, tool.Spatial, container=parent, objs=[obj]
                     )
 
         # set occurrences properties for the types defined with modifiers
@@ -493,7 +493,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         else:
             if self.container_obj:
                 bonsai.core.spatial.assign_container(
-                    tool.Ifc, tool.Collector, tool.Spatial, container=self.container, element_obj=obj
+                    tool.Ifc, tool.Collector, tool.Spatial, container=self.container, objs=[obj]
                 )
                 if props.rl_mode == "BOTTOM":
                     obj.location.z = self.container_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
