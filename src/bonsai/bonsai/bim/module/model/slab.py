@@ -40,9 +40,11 @@ import bonsai.core.root
 import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos, pi
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 
