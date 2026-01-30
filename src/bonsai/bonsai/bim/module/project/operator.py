@@ -1767,8 +1767,8 @@ except Exception as e:
         linked_ifc = ifcopenshell.open(self.filepath_)
         
         # Get CRS information from both models
-        parent_crs = self.get_projected_crs(parent_ifc)
-        linked_crs = self.get_projected_crs(linked_ifc)
+        parent_crs = ifcopenshell.util.geolocation.get_projected_crs(parent_ifc)
+        linked_crs = ifcopenshell.util.geolocation.get_projected_crs(linked_ifc)
         
         # If linked model has no georeferencing
         if not linked_crs:
@@ -1804,27 +1804,6 @@ except Exception as e:
             link.georeferenced = "NOT_COMPATIBLE"
             print("DEBUG: Not compatible - CRS differs")
     
-    def get_projected_crs(self, ifc_file) -> dict:
-        """Get ProjectedCRS information from an IFC file."""
-        if ifc_file.schema == "IFC2X3":
-            # For IFC2X3, check ePSet_ProjectedCRS on IfcProject
-            project = ifc_file.by_type("IfcProject")
-            if project:
-                crs = ifcopenshell.util.element.get_pset(project[0], "ePSet_ProjectedCRS")
-                return crs if crs else {}
-            return {}
-        
-        # For IFC4+, get from IfcProjectedCRS
-        for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
-            if hasattr(context, "HasCoordinateOperation") and context.HasCoordinateOperation:
-                projected_crs = context.HasCoordinateOperation[0].TargetCRS
-                return {
-                    "Name": getattr(projected_crs, "Name", ""),
-                    "Description": getattr(projected_crs, "Description", ""),
-                    "GeodeticDatum": getattr(projected_crs, "GeodeticDatum", ""),
-                    "VerticalDatum": getattr(projected_crs, "VerticalDatum", ""),
-                }
-        return {}
 
     def calculate_link_position(self) -> None:
         """Calculate and set the position property of the link based on false_origin_mode."""
