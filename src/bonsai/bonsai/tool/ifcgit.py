@@ -64,10 +64,13 @@ class IfcGit:
 
     @classmethod
     def clone_repo(cls, remote_url: str, local_folder: str) -> git.Repo:
-        IfcGitRepo.repo = git.Repo.clone_from(
+        repo = git.Repo.clone_from(
             url=remote_url,
             to_path=local_folder,
         )
+        # Close the repo to release stale subprocess
+        repo.close()
+        IfcGitRepo.repo = git.Repo(local_folder)
         cls.config_info_attributes(IfcGitRepo.repo)
         return IfcGitRepo.repo
 
