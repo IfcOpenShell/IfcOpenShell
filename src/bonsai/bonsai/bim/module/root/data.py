@@ -134,44 +134,8 @@ class IfcClassData:
             return [("FACE", "Face", "A planar face surface")]
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
-            None,
-            (
-                "OBJ",
-                "Tessellation From Object",
-                "Use an object as a template to create a new tessellation",
-            ),
-            (
-                "MESH",
-                "Custom Tessellation",
-                "Create a basic tessellated or faceted cube",
-            ),
-            (
-                "EXTRUSION",
-                "Custom Extruded Solid",
-                "An extrusion from an arbitrary profile",
-            ),
         ]
-        if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
-            templates.extend(
-                [
-                    None,
-                    (
-                        "LAYERSET_AXIS2",
-                        "Vertical Layers",
-                        "For objects similar to walls, will automatically add IfcMaterialLayerSet",
-                    ),
-                    (
-                        "LAYERSET_AXIS3",
-                        "Horizontal Layers",
-                        "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
-                    ),
-                    (
-                        "PROFILESET",
-                        "Extruded Profile",
-                        "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
-                    ),
-                ]
-            )
+
         if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
             templates.extend([None, ("WINDOW", "Window", "Parametric window")])
         elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
@@ -206,6 +170,11 @@ class IfcClassData:
                         "Circular Hollow Distribution Segment",
                         "Works similarly to Profile, has distribution ports",
                     ),
+                )
+            )
+        if (ifc_class and "IfcCableCarrierSegment" in ifc_class):
+            templates.extend(
+                (
                     (
                         "FLOW_SEGMENT_U_SHAPE",
                         "U-Shape Distribution Segment",
@@ -213,7 +182,48 @@ class IfcClassData:
                     ),
                 )
             )
-
+        
+        if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
+            templates.extend(
+                [
+                    None,
+                    (
+                        "LAYERSET_AXIS2",
+                        "Vertical Layers",
+                        "For objects similar to walls, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "LAYERSET_AXIS3",
+                        "Horizontal Layers",
+                        "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "PROFILESET",
+                        "Extruded Profile",
+                        "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
+                    ),
+                ]
+            )
+        templates.extend(
+            [
+                None,
+                (
+                    "OBJ",
+                    "Tessellation From Object",
+                    "Use an object as a template to create a new tessellation",
+                ),
+                (
+                    "MESH",
+                    "Custom Tessellation",
+                    "Create a basic tessellated or faceted cube",
+                ),
+                (
+                    "EXTRUSION",
+                    "Custom Extruded Solid",
+                    "An extrusion from an arbitrary profile",
+                ),
+            ]
+        )
         return templates
 
     @classmethod
