@@ -50,20 +50,31 @@ LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 PYPI_IMP:=cp
 
-ifeq ($(PYVERSION), py311)
-PYLIBDIR:=python3.11
-PYNUMBER:=311
-PYPI_VERSION:=3.11
+ifdef PYVERSION
+SUPPORTED_PYVERSIONS := py311 py312 py313
+
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
-ifeq ($(PYVERSION), py312)
-PYLIBDIR:=python3.12
-PYNUMBER:=312
-PYPI_VERSION:=3.12
+
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYLIBDIR:=python3.$(PYMINOR)
+PYNUMBER:=3$(PYMINOR)
+PYPI_VERSION:=3.$(PYMINOR)
+endif # def PYVERSION
+
+
+ifdef PLATFORM
+SUPPORTED_PLATFORMS := linux macos macosm1 win
+
+ifeq ($(filter $(PLATFORM),$(SUPPORTED_PLATFORMS)),)
+$(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
 endif
-ifeq ($(PYVERSION), py313)
-PYLIBDIR:=python3.13
-PYNUMBER:=313
-PYPI_VERSION:=3.13
+
+ifeq ($(PLATFORM),macos)
+ifeq ($(PYVERSION),py313)
+$(error Blender 5.1 with Python 3.13 doesn't support intel macOS.)
+endif
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -90,6 +101,8 @@ PYPI_PLATFORM:=--platform win_amd64
 BLENDER_PLATFORM:=windows-x64
 endif
 
+endif # def PLATFORM
+
 # Current build commit hash.
 OLD:=e8eb5e4
 .PHONY: bump
@@ -103,10 +116,10 @@ endif
 .PHONY: dist
 dist:
 ifndef PLATFORM
-	$(error PLATFORM is not set. Example values: win, linux, macos, macosm1.)
+	$(error PLATFORM is not set. Example values: $(SUPPORTED_PLATFORMS).)
 endif
 ifndef PYVERSION
-	$(error PYVERSION is not set. Example value - 'py313'. Supported Python versions - 3.11-3.13.)
+	$(error PYVERSION is not set. Example values: $(SUPPORTED_PYVERSIONS). )
 endif
 	rm -rf build
 	mkdir -p build
