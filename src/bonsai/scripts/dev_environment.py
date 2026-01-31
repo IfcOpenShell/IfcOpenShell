@@ -117,10 +117,30 @@ def main() -> None:
     # (they could be disabled by default on Windows).
     subprocess.check_call(("git", "config", "--local", "core.symlinks", "true"), cwd=REPO_PATH)
     symlinks_glob = "src/bonsai/bonsai/bim/data/templates/projects/*.ifc"
-    # Delete and checkout is the only way to ensure files are added as symlinks.
-    for path in REPO_PATH.glob(symlinks_glob):
-        path.unlink()
-    subprocess.check_call(("git", "checkout", "--", symlinks_glob), cwd=REPO_PATH)
+    symlink_paths = list(REPO_PATH.glob(symlinks_glob))
+
+    # Check if symlinks already exist and are valid
+    all_symlinks_valid = symlink_paths and all(p.is_symlink() for p in symlink_paths)
+
+    if not all_symlinks_valid:
+        # Delete existing files/broken symlinks and recreate from git
+        for path in symlink_paths:
+            path.unlink()
+        # Refresh git index to recognize deleted files
+        subprocess.run(("git", "update-index", "--refresh"), cwd=REPO_PATH, capture_output=True)
+        # Get tracked files matching the glob (git checkout with glob doesn't work on Windows)
+        result = subprocess.run(
+            ("git", "ls-files", symlinks_glob),
+            cwd=REPO_PATH,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        for file_path in result.stdout.strip().split("\n"):
+            if file_path:
+                subprocess.check_call(("git", "checkout", "HEAD", "--", file_path), cwd=REPO_PATH)
+    else:
+        print("Symlinks already exist and are valid, skipping recreation.")
 
     print("Copying compiled dependencies to the repo...")
     dest = REPO_PATH / "src" / "ifcopenshell-python" / "ifcopenshell"
