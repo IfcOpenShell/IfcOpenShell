@@ -269,20 +269,13 @@ def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Option
 
 def get_projected_crs(ifc_file: ifcopenshell.file) -> dict[str, Any]:
     """Get ProjectedCRS information from an IFC file."""
-    if ifc_file.schema == "IFC2X3":
-        # For IFC2X3, check ePSet_ProjectedCRS on IfcProject
-        project = ifc_file.by_type("IfcProject")
-        if project:
-            crs = ifcopenshell.util.element.get_pset(project[0], "ePSet_ProjectedCRS")
-            return crs if crs else {}
-        return {}
+    if ifc_file.schema == "IFC2X3":  
+        return ifcopenshell.util.element.get_pset(ifc_file.by_type("IfcProject")[0], "ePSet_ProjectedCRS")
 
     # For IFC4+, get from IfcProjectedCRS
     for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
-        if getattr(context, "HasCoordinateOperation", None):
-            projected_crs = context.HasCoordinateOperation[0].TargetCRS
-            return projected_crs.get_info() if projected_crs else {}
-    return {}
+        if operation := context.HasCoordinateOperation:  
+            return operation[0].TargetCRS.get_info()
 
 def auto_z2e(ifc_file: ifcopenshell.file, z: float, should_return_in_map_units: bool = True) -> float:
     """Convert a Z coordinate to an elevation using model georeferencing data
