@@ -31,6 +31,9 @@
 #include "ifcparse/Ifc2x3.h"
 #include "ifcparse/IfcHierarchyHelper.h"
 
+#include <boost/math/constants/constants.hpp>
+const static double PI = boost::math::constants::pi<double>();
+
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
@@ -41,7 +44,7 @@ void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 	int R = 3 * dia;
 	int length = 12 * dia;
 
-	double crossSectionarea = M_PI * (dia / 2) * 2;
+	double crossSectionarea = PI * dia * dia / 4;
 	IfcSchema::IfcReinforcingBar* rebar = new IfcSchema::IfcReinforcingBar(
 		guid(), 0, S("test"), null,
 		null, 0, 0,
