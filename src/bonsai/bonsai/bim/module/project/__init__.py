@@ -19,7 +19,6 @@
 import bpy
 
 from . import decorator, gizmo, operator, prop, ui, workspace
-import bonsai.tool as tool
 
 classes = (
     operator.AddProjectLibrary,
