@@ -276,14 +276,80 @@ class Alignment:
         return obj
 
     @classmethod
-    def create_object_for_segment(
-        cls, segment: ifcopenshell.entity_instance, index: int, parent_obj: Optional[bpy.types.Object] = None
+    def create_curve_from_representation(
+        cls,
+        layout: "ifcopenshell.entity_instance",
+        parent_obj: Optional[bpy.types.Object] = None,
     ) -> Optional[bpy.types.Object]:
-        """Create a Blender curve object for an IFC alignment segment.
+        """Create a Blender curve from an alignment layout's IFC representation.
 
-        Creates actual curve geometry (not just an empty) to visualize
-        the segment. LINE segments become straight curves, CIRCULARARC
-        segments become arcs.
+        Uses IfcOpenShell's geometry engine to generate vertices, supporting
+        all segment types (LINE, CIRCULARARC, CLOTHOID, spirals, etc.).
+
+        Args:
+            layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
+            parent_obj: The parent Blender object (alignment object)
+
+        Returns:
+            The created Blender curve object, or None if no representation
+        """
+        import ifcopenshell.api.alignment as align_api
+        from ifcopenshell.api.alignment import util as align_util
+
+        # Get the layout's curve representation
+        try:
+            rep_curve = align_api.get_layout_curve(layout)
+        except Exception:
+            rep_curve = None
+
+        if rep_curve is None:
+            return None
+
+        # Generate vertices using IfcOpenShell's geometry engine
+        try:
+            vertices = align_util.generate_vertices(rep_curve, distance_interval=1.0)
+        except (ValueError, NotImplementedError):
+            return None
+
+        if len(vertices) < 2:
+            return None
+
+        # Create Blender curve from vertices
+        layout_type = layout.is_a().replace("IfcAlignment", "")  # "Horizontal", "Vertical", etc.
+        name = f"{layout_type}Curve"
+        curve_data = bpy.data.curves.new(name, type="CURVE")
+        curve_data.dimensions = "3D"
+
+        spline = curve_data.splines.new("POLY")
+        spline.points.add(len(vertices) - 1)
+
+        for i, vert in enumerate(vertices):
+            spline.points[i].co = (vert[0], vert[1], vert[2], 1.0)
+
+        obj = bpy.data.objects.new(name, curve_data)
+        obj.show_in_front = True
+        curve_data.bevel_depth = 0.0
+
+        # Set parent relationship
+        if parent_obj:
+            obj.parent = parent_obj
+
+        # Assign to same collection as parent
+        if parent_obj and parent_obj.users_collection:
+            parent_obj.users_collection[0].objects.link(obj)
+        else:
+            tool.Collector.assign(obj)
+
+        return obj
+
+    @classmethod
+    def _create_segment_empty(
+        cls, segment: "ifcopenshell.entity_instance", index: int, parent_obj: Optional[bpy.types.Object] = None
+    ) -> Optional[bpy.types.Object]:
+        """Create an empty Blender object linked to an IFC segment.
+
+        Creates an empty (no geometry) for segment selection/editing.
+        The layout curve handles visualization.
 
         Args:
             segment: The IfcAlignmentSegment entity
@@ -298,51 +364,24 @@ class Alignment:
         if existing_obj:
             return existing_obj
 
-        # Get segment parameters
+        # Get segment parameters for naming and positioning
         if not hasattr(segment, "DesignParameters") or not segment.DesignParameters:
             return None
 
         dp = segment.DesignParameters
         seg_type = getattr(dp, "PredefinedType", "UNKNOWN") or "UNKNOWN"
-        seg_length = getattr(dp, "SegmentLength", 0.0) or 0.0
+        name = f"Segment {index + 1} ({seg_type})"
 
-        # Skip zero-length terminal segments
-        if seg_length < 0.0001:
-            return None
+        # Create empty (no geometry - the layout curve handles visualization)
+        obj = bpy.data.objects.new(name, None)
+        obj.empty_display_type = "PLAIN_AXES"
+        obj.empty_display_size = 0.5
 
-        # Get start point
-        start_point = None
+        # Position at segment start point
         if hasattr(dp, "StartPoint") and dp.StartPoint:
             coords = dp.StartPoint.Coordinates
             if len(coords) >= 2:
-                start_point = (coords[0], coords[1], 0.0)
-
-        if not start_point:
-            return None
-
-        # Get start direction - IFC stores this in degrees, convert to radians
-        start_direction_deg = getattr(dp, "StartDirection", 0.0) or 0.0
-        start_direction = math.radians(start_direction_deg)
-
-        name = f"Segment {index + 1} ({seg_type})"
-
-        # Create curve geometry based on segment type
-        if seg_type == "LINE":
-            obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-        elif seg_type == "CIRCULARARC":
-            # Get radius for arc (positive = left, negative = right in IFC)
-            radius = getattr(dp, "StartRadiusOfCurvature", None)
-            if radius is None or radius == 0:
-                # Fallback to line if no radius
-                obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-            else:
-                obj = cls._create_arc_segment(name, start_point, start_direction, seg_length, radius)
-        else:
-            # For unsupported types, create a simple line approximation
-            obj = cls._create_line_segment(name, start_point, start_direction, seg_length)
-
-        if not obj:
-            return None
+                obj.location = (coords[0], coords[1], 0.0)
 
         # Link to IFC element
         tool.Ifc.link(segment, obj)
@@ -351,7 +390,7 @@ class Alignment:
         if parent_obj:
             obj.parent = parent_obj
 
-        # Assign to same collection as parent (avoid "Unsorted")
+        # Assign to same collection as parent
         if parent_obj and parent_obj.users_collection:
             parent_obj.users_collection[0].objects.link(obj)
         else:
@@ -360,125 +399,7 @@ class Alignment:
         return obj
 
     @classmethod
-    def _create_line_segment(
-        cls, name: str, start_point: tuple, direction: float, length: float
-    ) -> Optional[bpy.types.Object]:
-        """Create a Blender curve for a LINE segment.
-
-        Args:
-            name: Object name
-            start_point: (x, y, z) start coordinates
-            direction: Direction angle in radians (IFC uses bearing from North/Y-axis)
-            length: Segment length
-
-        Returns:
-            Blender curve object
-        """
-        # IFC uses standard math convention: angle counter-clockwise from +X axis
-        end_x = start_point[0] + length * math.cos(direction)
-        end_y = start_point[1] + length * math.sin(direction)
-        end_point = (end_x, end_y, start_point[2])
-
-        # Create curve data
-        curve_data = bpy.data.curves.new(name, type="CURVE")
-        curve_data.dimensions = "3D"
-
-        # Create a polyline spline
-        spline = curve_data.splines.new("POLY")
-        spline.points.add(1)  # Start with 1 point, add 1 more = 2 total
-
-        # Set point coordinates (Blender uses 4D coords: x, y, z, w)
-        spline.points[0].co = (start_point[0], start_point[1], start_point[2], 1.0)
-        spline.points[1].co = (end_point[0], end_point[1], end_point[2], 1.0)
-
-        # Create object
-        obj = bpy.data.objects.new(name, curve_data)
-
-        # Set curve display properties
-        curve_data.bevel_depth = 0.0  # No thickness for now
-        obj.show_in_front = True  # Always visible
-
-        return obj
-
-    @classmethod
-    def _create_arc_segment(
-        cls, name: str, start_point: tuple, direction: float, length: float, radius: float
-    ) -> Optional[bpy.types.Object]:
-        """Create a Blender curve for a CIRCULARARC segment.
-
-        Args:
-            name: Object name
-            start_point: (x, y, z) start coordinates
-            direction: Start direction angle in radians (IFC uses bearing from North/Y-axis)
-            length: Arc length
-            radius: Radius of curvature (positive = curves left, negative = curves right)
-
-        Returns:
-            Blender curve object
-        """
-        # Calculate arc parameters
-        # Arc length L = R * theta, so theta = L / R
-        abs_radius = abs(radius)
-        if abs_radius < 0.0001:
-            # Degenerate case - just make a line
-            return cls._create_line_segment(name, start_point, direction, length)
-
-        theta = length / abs_radius  # Total angle swept
-
-        # Determine if curving left (positive radius) or right (negative radius)
-        curve_left = radius > 0
-
-        # Generate points along the arc
-        num_points = max(int(theta * 10) + 2, 8)  # At least 8 points, more for larger arcs
-
-        # Create curve data
-        curve_data = bpy.data.curves.new(name, type="CURVE")
-        curve_data.dimensions = "3D"
-
-        # Create a polyline spline
-        spline = curve_data.splines.new("POLY")
-        spline.points.add(num_points - 1)  # Add points (starts with 1)
-
-        # Calculate center of the arc
-        # Center is perpendicular to start direction at distance R
-        # For standard math convention (angle from +X, CCW):
-        # Perpendicular left = direction + 90°, perpendicular right = direction - 90°
-        if curve_left:
-            center_angle = direction + math.pi / 2
-        else:
-            center_angle = direction - math.pi / 2
-
-        center_x = start_point[0] + abs_radius * math.cos(center_angle)
-        center_y = start_point[1] + abs_radius * math.sin(center_angle)
-
-        # Start angle from center to start point
-        start_angle = math.atan2(start_point[1] - center_y, start_point[0] - center_x)
-
-        # Generate points
-        for i in range(num_points):
-            t = i / (num_points - 1)  # Parameter from 0 to 1
-            if curve_left:
-                angle = start_angle + t * theta
-            else:
-                angle = start_angle - t * theta
-
-            px = center_x + abs_radius * math.cos(angle)
-            py = center_y + abs_radius * math.sin(angle)
-            pz = start_point[2]
-
-            spline.points[i].co = (px, py, pz, 1.0)
-
-        # Create object
-        obj = bpy.data.objects.new(name, curve_data)
-
-        # Set curve display properties
-        curve_data.bevel_depth = 0.0
-        obj.show_in_front = True
-
-        return obj
-
-    @classmethod
-    def create_hierarchy_for_alignment(cls, alignment: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
+    def create_hierarchy_for_alignment(cls, alignment: "ifcopenshell.entity_instance") -> Optional[bpy.types.Object]:
         """Create the full Blender object hierarchy for an alignment.
 
         Creates:
@@ -516,28 +437,37 @@ class Alignment:
 
     @classmethod
     def create_objects_for_layout_segments(
-        cls, layout: ifcopenshell.entity_instance, layout_obj: bpy.types.Object
+        cls, layout: "ifcopenshell.entity_instance", layout_obj: bpy.types.Object
     ) -> List[bpy.types.Object]:
         """Create Blender objects for all segments in a layout.
+
+        Creates a single curve from the IFC representation for visualization,
+        plus empty objects for each segment (for selection/editing).
 
         Args:
             layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
             layout_obj: The parent Blender object for the layout
 
         Returns:
-            List of created segment Blender objects
+            List of created Blender objects (curve + segment empties)
         """
-        segment_objs = []
+        result_objs = []
 
-        # Get segments via IfcRelNests
+        # Create layout curve from IFC representation (for visualization)
+        # This uses IfcOpenShell's geometry engine which supports all segment types
+        curve_obj = cls.create_curve_from_representation(layout, layout_obj)
+        if curve_obj:
+            result_objs.append(curve_obj)
+
+        # Create empty objects for each segment (for selection/editing)
         for rel in getattr(layout, "IsNestedBy", []) or []:
             for i, segment in enumerate(rel.RelatedObjects or []):
                 if segment.is_a() == "IfcAlignmentSegment":
-                    seg_obj = cls.create_object_for_segment(segment, i, layout_obj)
+                    seg_obj = cls._create_segment_empty(segment, i, layout_obj)
                     if seg_obj:
-                        segment_objs.append(seg_obj)
+                        result_objs.append(seg_obj)
 
-        return segment_objs
+        return result_objs
 
     @classmethod
     def update_pi_properties(cls, props, geometry_result) -> None:

@@ -114,21 +114,16 @@ def create_layout_segment_objects(
 ) -> list:
     """Create Blender objects for all segments in a layout.
 
+    Delegates to the tool layer which creates both:
+    - A curve from the IFC representation (for visualization)
+    - Empty objects for each segment (for selection/editing)
+
     Args:
         alignment_tool: The Alignment tool class
         layout: The IFC layout entity
         layout_obj: The parent Blender object
 
     Returns:
-        List of created segment Blender objects
+        List of created Blender objects (curve + segment empties)
     """
-    segment_objs = []
-
-    for rel in getattr(layout, "IsNestedBy", []) or []:
-        for i, segment in enumerate(rel.RelatedObjects or []):
-            if segment.is_a() == "IfcAlignmentSegment":
-                seg_obj = alignment_tool.create_object_for_segment(segment, i, layout_obj)
-                if seg_obj:
-                    segment_objs.append(seg_obj)
-
-    return segment_objs
+    return alignment_tool.create_objects_for_layout_segments(layout, layout_obj)
