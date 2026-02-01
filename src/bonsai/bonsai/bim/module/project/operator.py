@@ -1419,6 +1419,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
             new.filepath = filepath
             new.position = "0.000,0.000,0.000,0.000"
             new.mode = props.false_origin_mode
+            new.is_locked = False
             status = bpy.ops.bim.load_link(link="#0", use_cache=self.use_cache)
             if status == {"CANCELLED"}:
                 # Remove the temporary link entry
@@ -1453,9 +1454,10 @@ class DuplicateLink(bpy.types.Operator):
         new_link.mode = original_link.mode
         new_link.georeferenced = original_link.georeferenced
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
+        new_link.is_locked = False  # Start unlocked, will be locked after loading
         
         # Load the new link, skipping position recalculation to preserve the cursor position
-        status = bpy.ops.bim.load_link(link="#0", use_cache=True, skip_position_calculation=True)
+        status = bpy.ops.bim.load_link(link="#0", use_cache=True, skip_position_calculation_and_not_locked=True)
         if status == {"CANCELLED"}:
             # Remove the temporary link entry if loading failed
             index = props.links.find("#0")
@@ -1572,7 +1574,7 @@ class LoadLink(bpy.types.Operator):
     bl_description = "Load the selected file"
     link: bpy.props.StringProperty(name="Linked IFC UUID")
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
-    skip_position_calculation: bpy.props.BoolProperty(name="Skip Position Calculation", default=False)
+    skip_position_calculation_and_not_locked: bpy.props.BoolProperty(name="Skip Position Calculation and Not Locked", default=False)
 
     def execute(self, context):
         # Look up link by UUID to get filepath and store reference
@@ -1630,6 +1632,8 @@ class LoadLink(bpy.types.Operator):
             link.empty_handle = empty
             bpy.context.scene.collection.objects.link(empty)
             link.is_loaded = True
+            if not self.skip_position_calculation_and_not_locked:
+                link.is_locked = True  # Lock all loaded links unless explicitly skipped
             tool.Blender.select_and_activate_single_object(bpy.context, empty)
             break
         else:
@@ -1723,26 +1727,18 @@ except Exception as e:
         # Only calculate position for new links (link.name == "#0")
         # For existing links (loaded from saved session), use stored position
         print(f"DEBUG LoadLink.link_ifc: link.name='{self.link_obj.name}', link.position='{self.link_obj.position}'")
-        if self.link_obj.name == "#0" and not self.skip_position_calculation:
+        if self.link_obj.name == "#0" and not self.skip_position_calculation_and_not_locked:
             self.calculate_link_position()
             print(f"DEBUG LoadLink.link_ifc: Calculated new position='{self.link_obj.position}'")
         else:
             print(f"DEBUG LoadLink.link_ifc: Using existing position from saved link or skipping calculation")
 
-        if tool.Ifc.get():
-            # Don't update positions during linking - only during save
-            success = tool.Project.save_linked_models_to_ifc(update_positions=False)
-            if not success:
-                print("Duplicate link detected, removing #0 from props and returning CANCELLED.")
-                # Remove the link directly without unlinking (no IfcDocumentReference was created)
-                props = tool.Project.get_project_props()
-                index = props.links.find("#0")
-                if index != -1:
-                    props.links.remove(index)
-                return {"CANCELLED"}
-
         print("No duplicate link detected, proceeding to link blend.")
         self.link_blend(blend_filepath)
+        
+        # Save position to IFC for new links (triggers update callback)
+        if tool.Ifc.get() and self.link_obj.name == "#0" and self.link_obj.is_loaded and not self.skip_position_calculation_and_not_locked:
+            self.link_obj.is_locked = True
 
     def set_model_origin_from_link(self) -> None:
         if tool.Ifc.get():
@@ -1972,6 +1968,9 @@ class ReloadLink(bpy.types.Operator):
         if status == {"CANCELLED"}:
             self.report({"WARNING"}, f"Could not reload link: failed to load")
             return {"CANCELLED"}
+        
+        link.is_locked = True
+        
         return {"FINISHED"}
 
 

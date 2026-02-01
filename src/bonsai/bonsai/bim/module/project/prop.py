@@ -41,6 +41,25 @@ from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
+def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
+    if not self.empty_handle:
+        return
+    
+    if self.is_locked:
+        tool.Geometry.lock_object(self.empty_handle)
+        self.empty_handle.hide_select = True
+        
+        x, y, z = self.empty_handle.location
+        angle = round(bpy.data.objects[self.empty_handle.name].rotation_euler.z * 180 / 3.14159265359, 3)
+        self.position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
+        
+        if tool.Ifc.get():
+            tool.Project.save_linked_models_to_ifc(update_positions=True)
+    else:
+        tool.Geometry.unlock_object(self.empty_handle)
+        self.empty_handle.hide_select = False
+
+
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
@@ -264,6 +283,12 @@ class Link(PropertyGroup):
         default="0.0,0.0,0.0,0.0",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
+    is_locked: BoolProperty(
+        name="Is Locked",
+        description="Prevent this linked model from being moved, rotated, or scaled. Lock to save position to IFC",
+        default=False,
+        update=update_link_is_locked,
+    )
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
@@ -281,6 +306,7 @@ class Link(PropertyGroup):
         mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
         georeferenced: Literal["NONE", "NOT_COMPATIBLE", "PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"]
         is_loaded: bool
+        is_locked: bool
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool

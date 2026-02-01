@@ -721,6 +721,7 @@ class BIM_UL_links(UIList):
             op.link = item.name
             op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
             op.link = item.name
+            row.prop(item, "is_locked", text="", icon="VIEW_LOCKED" if item.is_locked else "VIEW_UNLOCKED", emboss=False)
         else:
             display_name = self.get_display_name(item)
             display_text = f"{display_name} | {item.filepath}"
