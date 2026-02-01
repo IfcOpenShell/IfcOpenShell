@@ -697,6 +697,24 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         XDim=default_x_dim / unit_scale,
                         YDim=default_y_dim / unit_scale,
                     )
+                elif representation_template == "FLOW_SEGMENT_RECTANGULAR_HOLLOW":
+                    default_x_dim = 0.4
+                    default_y_dim = 0.2
+                    default_thickness = 0.005
+                    default_inner_fillet_radius = 0.005
+                    default_outer_fillet_radius = 0.005
+                    profile_name = f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}x{default_thickness*1000}"
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcRectangleHollowProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        XDim=default_x_dim / unit_scale,
+                        YDim=default_y_dim / unit_scale,
+                        WallThickness=default_thickness / unit_scale,
+                        InnerFilletRadius=default_inner_fillet_radius / unit_scale,
+                        OuterFilletRadius=default_outer_fillet_radius / unit_scale,
+                    )
+
                 elif representation_template == "FLOW_SEGMENT_CIRCULAR":
                     default_diameter = 0.1
                     profile_name = f"{props.ifc_class}-{default_diameter*1000}"
@@ -716,6 +734,21 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         ProfileType="AREA",
                         Radius=(default_diameter / 2) / unit_scale,
                         WallThickness=default_thickness,
+                    )
+                elif representation_template == "FLOW_SEGMENT_U_SHAPE":
+                    default_depth = 0.4
+                    default_flange_width = 0.2
+                    default_web_thickness = 0.005
+                    default_flange_thickness = 0.005
+                    profile_name = f"{props.ifc_class}-{default_depth*1000}x{default_flange_width*1000}x{default_web_thickness*1000}x{default_flange_thickness*1000}"
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcUShapeProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Depth=default_depth / unit_scale,
+                        FlangeWidth=default_flange_width / unit_scale,
+                        WebThickness=default_web_thickness / unit_scale,
+                        FlangeThickness=default_flange_thickness / unit_scale,
                     )
 
             rel = ifcopenshell.api.material.assign_material(
