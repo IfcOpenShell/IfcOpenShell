@@ -1718,6 +1718,8 @@ except Exception as e:
             self.set_model_origin_from_link()
             print(f"DEBUG LoadLink.link_ifc: After set_model_origin_from_link, link.position='{self.link_obj.position}'")
         
+        self.determine_georeferencing_compatibility()
+        
         # Only calculate position for new links (link.name == "#0")
         # For existing links (loaded from saved session), use stored position
         print(f"DEBUG LoadLink.link_ifc: link.name='{self.link_obj.name}', link.position='{self.link_obj.position}'")

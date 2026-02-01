@@ -290,10 +290,15 @@ for collection in list(bpy.data.collections):
     if collection.name.startswith('IfcProject'):
         bpy.data.collections.remove(collection, do_unlink=True)
 
-# 4. Remove all collections from linked libraries (they will be recreated by bonsai)
+# 4.1 Remove all collections from linked libraries (they will be recreated by bonsai)
 for collection in list(bpy.data.collections):
     if collection.library:
         bpy.data.collections.remove(collection, do_unlink=True)
+
+# 4.2. Remove all empty objects that are collection instances for linked models
+for obj in list(bpy.data.objects):
+    if obj.type == 'EMPTY' and obj.instance_type == 'COLLECTION' and obj.name.startswith('IfcProject/'):
+        bpy.data.objects.remove(obj, do_unlink=True)
 
 # 5. Purge orphaned data blocks after removing IfcProject collections
 bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
