@@ -250,28 +250,38 @@ class Project(bonsai.core.tool.Project):
         tool.Root.reload_grid_decorator()
 
     @classmethod
-    def get_linked_models_document(cls) -> Union[ifcopenshell.entity_instance, None]:
-        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
-            if document.Name == "BBIM_Linked_Models":
-                return document
+    def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        linked_docs = {}
+        for doc in ifc_file.by_type("IfcDocumentInformation"):
+            if getattr(doc, "Scope", None) == "LINKED_MODEL":
+                location = doc.Location
+                if location:
+                    linked_docs[Path(location).as_posix()] = doc
+        return linked_docs
 
     @classmethod
     def load_linked_models_from_ifc(cls) -> None:
         links = tool.Project.get_project_props().links
         links.clear()
-        links_document = cls.get_linked_models_document()
-        if not links_document:
+        
+        linked_docs = cls.get_linked_models_documents()
+        if not linked_docs:
             return
 
-        references = tool.Document.get_document_references(links_document)
-        if not references:
-            return
-
-        for reference in references:
-            link = links.add()
-            link.name = f"#{reference.id()}"  # UUID as primary key
-            link.filepath = reference.Location
-            link.position = reference.Identification or ""
+        for filepath, doc in linked_docs.items():
+            references = tool.Document.get_document_references(doc)
+            if not references:
+                link = links.add()
+                link.name = f"#{doc.id()}"
+                link.filepath = filepath
+                link.position = ""
+            else:
+                for reference in references:
+                    link = links.add()
+                    link.name = f"#{reference.id()}"
+                    link.filepath = filepath
+                    link.position = reference.Location or ""
 
     @classmethod
     def save_linked_models_to_ifc(cls, update_positions: bool = True) -> bool:
@@ -299,79 +309,64 @@ class Project(bonsai.core.tool.Project):
                         print(f"DEBUG: Updating position for link {link.name} from '{link.position}' to '{new_position}'")
                         link.position = new_position
                         
-                        # Update the IfcDocumentReference.Identification
                         reference_id = int(link.name[1:])
                         reference = ifc_file.by_id(reference_id)
-                        reference.Identification = new_position
+                        reference.Location = new_position
 
         if "#0" in links:
             new_link = links["#0"]
-            links_document = cls.get_linked_models_document()
-            if links_document:
-                references = tool.Document.get_document_references(links_document)
-                new_filepath = Path(new_link.filepath).as_posix()
-                new_position = new_link.position or ""
-                ref_set = set()
-                print("DEBUG save_linked_models_to_ifc: Checking for duplicates against references:")
-                for ref in references:
-                    loc = ref.Location or ""
-                    ident = getattr(ref, "Identification", None) or ""
-                    print(f"  - Location: '{loc}', Identification: '{ident}'")
-                    ref_set.add((loc, ident))
-                print(f"DEBUG save_linked_models_to_ifc: New link: filepath='{new_filepath}', position='{new_position}'")
-                if (new_filepath, new_position) in ref_set:
-                    print("DEBUG save_linked_models_to_ifc: Duplicate found!!!!!!!!!!!!")
-                    print("DEBUG save_linked_models_to_ifc: Returning False")
+            new_filepath = Path(new_link.filepath).as_posix()
+            new_position = new_link.position or ""
+            
+            for link in links:
+                if link.name == "#0":
+                    continue
+                if Path(link.filepath).as_posix() == new_filepath and (link.position or "") == new_position:
                     return False
 
-        link_keys: set[tuple[str, str]] = set()
+        links_by_filepath: dict[str, list[tuple[str, str]]] = defaultdict(list)  # filepath -> [(position, link_name), ...]
         for link in links:
             filepath = Path(link.filepath).as_posix()
-            identification = link.position or ""
-            link_keys.add((filepath, identification))
+            position = link.position or ""
+            links_by_filepath[filepath].append((position, link.name))
 
-        links_document = cls.get_linked_models_document()
+        existing_docs = cls.get_linked_models_documents()
 
-        if not link_keys and links_document is None:
-            return True
+        for filepath, position_list in links_by_filepath.items():
+            doc = existing_docs.get(filepath)
+            
+            if doc is None:
+                doc = ifcopenshell.api.document.add_information(ifc_file)
+                doc_name = Path(filepath).name
+                doc.Name = doc_name
+                doc.Location = filepath
+                doc.Scope = "LINKED_MODEL"
+                existing_docs[filepath] = doc
 
-        docRef_keys: set[tuple[str, str]] = set()
-        reference_map: dict[tuple[str, str], ifcopenshell.entity_instance] = {}
+            existing_refs = tool.Document.get_document_references(doc)
+            existing_positions = {(ref.Location or ""): ref for ref in existing_refs}
 
-        if links_document:
-            references = tool.Document.get_document_references(links_document)
-            for reference in references:
-                location = reference.Location or ""
-                identification = getattr(reference, "Identification", None) or ""
-                pair = (location, identification)
-                docRef_keys.add(pair)
-                reference_map[pair] = reference
+            required_positions = {pos for pos, _ in position_list}
 
-        docRefs_to_add = link_keys - docRef_keys
-        docRefs_to_remove = docRef_keys - link_keys
+            for position in required_positions:
+                if position not in existing_positions:
+                    reference = ifcopenshell.api.document.add_reference(ifc_file, doc)
+                    reference.Location = position
+                    
+                    for pos, link_name in position_list:
+                        if pos == position and link_name == "#0":
+                            for link in links:
+                                if link.name == "#0":
+                                    link.name = f"#{reference.id()}"
+                                    break
 
-        if docRefs_to_add:
-            if links_document is None:
-                links_document = ifcopenshell.api.document.add_information(ifc_file)
-                links_document.Name = "BBIM_Linked_Models"
-                links_document.Description = "Bonsai internal document containing references to currently linked models"
-
-            for filepath, identification in docRefs_to_add:
-                reference = ifcopenshell.api.document.add_reference(ifc_file, links_document)
-                reference.Location = filepath
-                reference.Identification = identification
-
-                # Set name (uuid) on the corresponding link
-                for link in links:
-                    if Path(link.filepath).as_posix() == filepath and (link.position or "") == identification:
-                        link.name = f"#{reference.id()}"
-                        break
-
-        for docRef in docRefs_to_remove:
-            ifcopenshell.api.document.remove_reference(ifc_file, reference_map[docRef])
+            # Remove obsolete references (or corrupted by user)
+            for position, ref in existing_positions.items():
+                if position not in required_positions:
+                    ifcopenshell.api.document.remove_reference(ifc_file, ref)
 
         return True
-
+    
     @classmethod
     def get_project_library_elements(
         cls, project_library: ifcopenshell.entity_instance

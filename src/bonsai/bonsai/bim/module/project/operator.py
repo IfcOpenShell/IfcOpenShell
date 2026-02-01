@@ -1481,27 +1481,32 @@ class UnlinkIfc(bpy.types.Operator):
         
         bpy.ops.bim.unload_link(link=self.link)
         
-        # Remove cache files if no other links use this file
-        original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link_obj.filepath))
-        cache_blend = original_filepath.with_suffix(".ifc.cache.blend")
-        cache_h5 = original_filepath.with_suffix(".ifc.cache.h5")
-        cache_json = original_filepath.with_suffix(".ifc.cache.json")
-        cache_sqlite = original_filepath.with_suffix(".ifc.cache.sqlite")
-        
-        for cache_file in [cache_blend, cache_h5, cache_json, cache_sqlite]:
-            if cache_file.exists():
-                try:
-                    os.remove(cache_file)
-                    print(f"DEBUG: Removed cache file: {cache_file}")
-                except Exception as e:
-                    print(f"DEBUG: Failed to remove cache file {cache_file}: {e}")
-    
-        # Remove the IfcDocumentReference from the IFC file
         reference_id = int(link_obj.name[1:])
         ifc_file = tool.Ifc.get()
         reference = ifc_file.by_id(reference_id)
+        
+        doc_info = reference.ReferencedDocument
+        
         ifcopenshell.api.document.remove_reference(ifc_file, reference)
-        print(f"DEBUG: Removed IfcDocumentReference #{reference_id}")
+        
+        if doc_info and not tool.Document.get_document_references(doc_info):
+            ifcopenshell.api.document.remove_information(ifc_file, doc_info)
+            
+            original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link_obj.filepath))
+            cache_files = [
+                original_filepath.with_suffix(".ifc.cache.blend"),
+                original_filepath.with_suffix(".ifc.cache.h5"),
+                original_filepath.with_suffix(".ifc.cache.json"),
+                original_filepath.with_suffix(".ifc.cache.sqlite"),
+            ]
+            
+            for cache_file in cache_files:
+                if cache_file.exists():
+                    try:
+                        os.remove(cache_file)
+                        print(f"DEBUG: Removed cache file: {cache_file}")
+                    except Exception as e:
+                        print(f"DEBUG: Failed to remove cache file {cache_file}: {e}")
 
         index = props.links.find(self.link)
         if index != -1:
@@ -1597,38 +1602,39 @@ class LoadLink(bpy.types.Operator):
         # Only load the library if it's not already loaded
         if not library_already_loaded:
             with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
-                data_to.scenes = data_from.scenes
+                data_to.collections = data_from.collections
         
         # Use stored link reference
         link = self.link_obj
         
         # Find the linked collection
-        for scene in bpy.data.scenes:
-            if not scene.library or Path(scene.library.filepath) != filepath:
+        for collection in bpy.data.collections:
+            if not collection.library or Path(collection.library.filepath) != filepath:
                 continue
-            for child in scene.collection.children:
-                if "IfcProject" not in child.name:
-                    continue
-                # Create unique empty instance for this link
-                empty_name = f"{child.name}_{link.name}"
-                empty = bpy.data.objects.new(empty_name, None)
-                empty.instance_type = "COLLECTION"
-                empty.instance_collection = child
-                
-                # Apply saved position and rotation
-                if link.position and link.position != "0.0,0.0,0.0,0.0":
-                    print(f"DEBUG LoadLink.link_blend: Applying saved position='{link.position}'")
-                    x, y, z, angle = [float(v.strip()) for v in link.position.split(",")]
-                    empty.location = (x, y, z)
-                    empty.rotation_euler = (0, 0, radians(angle))
-                    print(f"DEBUG link_blend: Positioned empty at ({x}, {y}, {z}) with rotation {angle}°")
-                
-                link.empty_handle = empty
-                bpy.context.scene.collection.objects.link(empty)
-                break
+            if "IfcProject" not in collection.name:
+                continue
+            # Create unique empty instance for this link
+            empty_name = f"{collection.name}_{link.name}"
+            empty = bpy.data.objects.new(empty_name, None)
+            empty.instance_type = "COLLECTION"
+            empty.instance_collection = collection
+            
+            # Apply saved position and rotation
+            if link.position and link.position != "0.0,0.0,0.0,0.0":
+                print(f"DEBUG LoadLink.link_blend: Applying saved position='{link.position}'")
+                x, y, z, angle = [float(v.strip()) for v in link.position.split(",")]
+                empty.location = (x, y, z)
+                empty.rotation_euler = (0, 0, radians(angle))
+                print(f"DEBUG link_blend: Positioned empty at ({x}, {y}, {z}) with rotation {angle}°")
+            
+            link.empty_handle = empty
+            bpy.context.scene.collection.objects.link(empty)
+            link.is_loaded = True
+            tool.Blender.select_and_activate_single_object(bpy.context, empty)
             break
-        link.is_loaded = True
-        tool.Blender.select_and_activate_single_object(bpy.context, empty)
+        else:
+            print(f"WARNING: No IfcProject collection found in {filepath}")
+            link.is_loaded = False
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
@@ -1942,9 +1948,13 @@ class ReloadLink(bpy.types.Operator):
             self.report({"ERROR"}, f"Link with UUID {self.link} not found in IFC")
             return {"CANCELLED"}
         
-        # Get filepath and position from IfcDocReference
-        filepath = doc_reference.Location
-        position = doc_reference.Identification or ""
+        doc_info = doc_reference.ReferencedDocument
+        if not doc_info:
+            self.report({"ERROR"}, f"Link {self.link} has no referenced document")
+            return {"CANCELLED"}
+        
+        filepath = doc_info.Location
+        position = doc_reference.Location or ""
         
         # Unload the link
         bpy.ops.bim.unload_link(link=self.link)
