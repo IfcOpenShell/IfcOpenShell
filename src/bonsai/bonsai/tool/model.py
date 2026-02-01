@@ -1067,7 +1067,9 @@ class Model(bonsai.core.tool.Model):
         parent_element = tool.Ifc.get_entity(parent_obj)
 
         if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
-            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=parent_element, pset=tool.Ifc.get().by_id(pset["id"]))
+            ifcopenshell.api.pset.remove_pset(
+                tool.Ifc.get(), product=parent_element, pset=tool.Ifc.get().by_id(pset["id"])
+            )
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent_obj]
@@ -1104,7 +1106,9 @@ class Model(bonsai.core.tool.Model):
 
                     # add child pset
                     if not (child_pset := tool.Pset.get_element_pset(child_element, "BBIM_Array")):
-                        child_pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=child_element, name="BBIM_Array")
+                        child_pset = ifcopenshell.api.pset.add_pset(
+                            tool.Ifc.get(), product=child_element, name="BBIM_Array"
+                        )
                     ifcopenshell.api.pset.edit_pset(
                         tool.Ifc.get(),
                         pset=child_pset,
@@ -1148,7 +1152,9 @@ class Model(bonsai.core.tool.Model):
 
         pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=parent_element, name="BBIM_Array")
         json_data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId})
+        ifcopenshell.api.pset.edit_pset(
+            tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
+        )
 
     @classmethod
     def replace_object_ifc_representation(

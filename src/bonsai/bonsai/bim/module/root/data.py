@@ -134,23 +134,55 @@ class IfcClassData:
             return [("FACE", "Face", "A planar face surface")]
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
-            None,
-            (
-                "OBJ",
-                "Tessellation From Object",
-                "Use an object as a template to create a new tessellation",
-            ),
-            (
-                "MESH",
-                "Custom Tessellation",
-                "Create a basic tessellated or faceted cube",
-            ),
-            (
-                "EXTRUSION",
-                "Custom Extruded Solid",
-                "An extrusion from an arbitrary profile",
-            ),
         ]
+
+        if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
+            templates.extend([None, ("WINDOW", "Window", "Parametric window")])
+        elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
+            templates.extend([None, ("DOOR", "Door", "Parametric door")])
+        elif ifc_class in ("IfcStairType", "IfcStairFlightType", "IfcStair", "IfcStairFlight"):
+            templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
+        elif ifc_class in ("IfcRailingType", "IfcRailing"):
+            templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
+        elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
+            templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
+        elif ifc_class and "Segment" in ifc_class:
+            templates.extend(
+                (
+                    None,
+                    (
+                        "FLOW_SEGMENT_RECTANGULAR",
+                        "Rectangular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_RECTANGULAR_HOLLOW",
+                        "Rectangular Hollow Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR",
+                        "Circular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR_HOLLOW",
+                        "Circular Hollow Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                )
+            )
+        if (ifc_class and "IfcCableCarrierSegment" in ifc_class):
+            templates.extend(
+                (
+                    (
+                        "FLOW_SEGMENT_U_SHAPE",
+                        "U-Shape Distribution Segment",
+                        "Uses IfcUShapeProfileDef, has distribution ports",
+                    ),
+                )
+            )
+        
         if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
             templates.extend(
                 [
@@ -172,38 +204,26 @@ class IfcClassData:
                     ),
                 ]
             )
-        if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
-            templates.extend([None, ("WINDOW", "Window", "Parametric window")])
-        elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
-            templates.extend([None, ("DOOR", "Door", "Parametric door")])
-        elif ifc_class in ("IfcStairType", "IfcStairFlightType", "IfcStair", "IfcStairFlight"):
-            templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
-        elif ifc_class in ("IfcRailingType", "IfcRailing"):
-            templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
-        elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
-            templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
-        elif ifc_class and "Segment" in ifc_class:
-            templates.extend(
+        templates.extend(
+            [
+                None,
                 (
-                    None,
-                    (
-                        "FLOW_SEGMENT_RECTANGULAR",
-                        "Rectangular Distribution Segment",
-                        "Works similarly to Profile, has distribution ports",
-                    ),
-                    (
-                        "FLOW_SEGMENT_CIRCULAR",
-                        "Circular Distribution Segment",
-                        "Works similarly to Profile, has distribution ports",
-                    ),
-                    (
-                        "FLOW_SEGMENT_CIRCULAR_HOLLOW",
-                        "Circular Hollow Distribution Segment",
-                        "Works similarly to Profile, has distribution ports",
-                    ),
-                )
-            )
-
+                    "OBJ",
+                    "Tessellation From Object",
+                    "Use an object as a template to create a new tessellation",
+                ),
+                (
+                    "MESH",
+                    "Custom Tessellation",
+                    "Create a basic tessellated or faceted cube",
+                ),
+                (
+                    "EXTRUSION",
+                    "Custom Extruded Solid",
+                    "An extrusion from an arbitrary profile",
+                ),
+            ]
+        )
         return templates
 
     @classmethod

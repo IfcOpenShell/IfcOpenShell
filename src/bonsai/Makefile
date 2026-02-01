@@ -48,18 +48,33 @@ VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
-PYVERSION:=py310
 PYPI_IMP:=cp
 
-ifeq ($(PYVERSION), py311)
-PYLIBDIR:=python3.11
-PYNUMBER:=311
-PYPI_VERSION:=3.11
+ifdef PYVERSION
+SUPPORTED_PYVERSIONS := py311 py312 py313
+
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
-ifeq ($(PYVERSION), py312)
-PYLIBDIR:=python3.12
-PYNUMBER:=312
-PYPI_VERSION:=3.12
+
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYLIBDIR:=python3.$(PYMINOR)
+PYNUMBER:=3$(PYMINOR)
+PYPI_VERSION:=3.$(PYMINOR)
+endif # def PYVERSION
+
+
+ifdef PLATFORM
+SUPPORTED_PLATFORMS := linux macos macosm1 win
+
+ifeq ($(filter $(PLATFORM),$(SUPPORTED_PLATFORMS)),)
+$(error Unsupported PLATFORM=$(PLATFORM). Must be one of $(SUPPORTED_PLATFORMS))
+endif
+
+ifeq ($(PLATFORM),macos)
+ifeq ($(PYVERSION),py313)
+$(error Blender 5.1 with Python 3.13 doesn't support intel macOS.)
+endif
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -86,6 +101,8 @@ PYPI_PLATFORM:=--platform win_amd64
 BLENDER_PLATFORM:=windows-x64
 endif
 
+endif # def PLATFORM
+
 # Current build commit hash.
 OLD:=e8eb5e4
 .PHONY: bump
@@ -99,7 +116,10 @@ endif
 .PHONY: dist
 dist:
 ifndef PLATFORM
-	$(error PLATFORM is not set)
+	$(error PLATFORM is not set. Example values: $(SUPPORTED_PLATFORMS).)
+endif
+ifndef PYVERSION
+	$(error PYVERSION is not set. Example values: $(SUPPORTED_PYVERSIONS). )
 endif
 	rm -rf build
 	mkdir -p build
@@ -188,12 +208,23 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# pyradiance is using different platform versions than defaults in our makefile.
+	# Temporary use `pyradiance_py313` until https://github.com/LBNL-ETA/pyradiance/issues/53 is resolved.
+ifeq ($(PYVERSION), py313)
 ifeq ($(PLATFORM), linux)
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+else ifeq ($(PLATFORM), macos)
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+else
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance_py313 $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+endif
+else
+ifeq ($(PLATFORM), linux)
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_28_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else ifeq ($(PLATFORM), macos)
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+endif
 endif
 	# Required by ifctester web ui.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download flask $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
@@ -267,6 +298,11 @@ else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 
+# Blender 5.1+ requires Python 3.13.
+ifeq ($(PYVERSION), py313)
+	$(SED) 's/blender_version_min = "4\.2\.0"/blender_version_min = "5.1.0"/' build/bonsai/blender_manifest.toml
+endif
+
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/bonsai/blender_manifest.toml
 
 	# Provides bonsai Add-on functionality
@@ -287,12 +323,6 @@ endif
 		exit 1; \
 	fi
 	mv build/wheels/*.whl build/bonsai/wheels/
-
-	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
-	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
-	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
-	mv --update=none "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,

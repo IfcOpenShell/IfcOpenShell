@@ -204,7 +204,7 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
                 if child_obj := tool.Ifc.get_object(tool.Ifc.get().by_guid(child)):
                     tool.Geometry.delete_ifc_object(child_obj)
             array["children"].clear()
-        print('cleared array', arrays)
+        print("cleared array", arrays)
         tool.Model.regenerate_array(obj, arrays)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 

@@ -1131,8 +1131,14 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
                         MEPGenerator().setup_ports(profile1["obj"])
                 else:
+                    connect_IfcFlowSegments = tool.Ifc.get_entity(profiles[0]["obj"]).is_a("IfcFlowSegment")
                     for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
                         DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                        if connect_IfcFlowSegments:
+                            bpy.ops.bim.mep_connect_elements(
+                                obj1_name=profile1["obj"].name,
+                                obj2_name=profile2["obj"].name
+                            )
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
