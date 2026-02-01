@@ -296,7 +296,7 @@ class BIM_PT_port(Panel):
         element = tool.Ifc.get_entity(context.active_object)
 
         row = layout.row(align=True)
-        cols = [row.column(align=True) for i in range(9)]
+        cols = [row.column(align=True) for i in range(10)]
         cols[3].scale_x = 1.0
         cols[6].scale_x = 1.0
         cols[8].scale_x = 1.33
@@ -333,12 +333,14 @@ class BIM_PT_port(Panel):
             else:
                 cols[7].label(text="", icon="BLANK1")
                 cols[8].label(text="")
+            cols[9].operator("bim.establish_path_direction", text="", icon="CON_FOLLOWPATH").port_id = connected_port.id()
         else:
             cols[4].label(text="", icon="BLANK1")
             cols[5].label(text="", icon="BLANK1")
             cols[6].label(text="Port is disconnected")
             cols[7].label(text="", icon="BLANK1")
             cols[8].label(text="")
+            cols[9].label(text="", icon="BLANK1")
 
 
 class BIM_PT_flow_controls(Panel):

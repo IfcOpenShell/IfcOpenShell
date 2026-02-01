@@ -317,17 +317,19 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Connect MEP Elements"
     bl_description = "Connects two selected elements by their closest located ports and adjusts them"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not len(context.selected_objects) == 2:
-            cls.poll_message_set("Need to select 2 objects.")
-            return False
-        return True
+    obj1_name: bpy.props.StringProperty(name="Object 1")
+    obj2_name: bpy.props.StringProperty(name="Object 2")
 
     def _execute(self, context):
-        obj1 = context.active_object
-        obj2 = next(o for o in context.selected_objects if o != obj1)
+        if self.obj1_name and self.obj2_name:
+            obj1 = bpy.data.objects.get(self.obj1_name)
+            obj2 = bpy.data.objects.get(self.obj2_name)
+        else:
+            if not context.selected_objects or len(context.selected_objects) != 2:
+                self.report({"ERROR"}, "Need to select 2 objects.")
+                return {"CANCELLED"}
+            obj1 = context.active_object
+            obj2 = next(o for o in context.selected_objects if o != obj1)
 
         tool.Model.sync_object_ifc_position(obj1)
         tool.Model.sync_object_ifc_position(obj2)
@@ -474,6 +476,56 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         PortData.is_loaded = False
 
+        return {"FINISHED"}
+
+
+class EstablishPathDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.establish_path_direction"
+    bl_label = "Establish Path Direction"
+    bl_description = "Propagates flow direction through connected flow segments with two ports"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        connected_port = tool.Ifc.get().by_id(self.port_id)
+        
+        
+        if not connected_port or not connected_port.is_a("IfcDistributionPort"):
+            self.report({"ERROR"}, "Invalid port specified.")
+            return {"CANCELLED"}
+        
+        direction_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCE",
+            "SOURCEANDSINK": "SOURCEANDSINK",
+            "NOTDEFINED": "NOTDEFINED",
+        }
+        next_element = tool.System.get_port_relating_element(connected_port)
+        ports = tool.System.get_ports(next_element)
+        segments_processed = 0
+        while (len(ports) == 2):
+            if ports[0].id() == connected_port.id():
+                other_port = ports[1]
+            else:
+                other_port = ports[0]
+            
+            new_direction = direction_map.get(connected_port.FlowDirection, "NOTDEFINED")
+            other_port.FlowDirection = new_direction
+            segments_processed += 1
+            
+            connected_port = tool.System.get_connected_port(other_port)
+            if not connected_port:
+                break
+            connected_port.FlowDirection = direction_map.get(other_port.FlowDirection, "NOTDEFINED")
+            next_element = tool.System.get_port_relating_element(connected_port)
+            
+            if not next_element.is_a("IfcFlowSegment"):
+                print(f"DEBUG: next_element is not IfcFlowSegment, stopping")
+                break
+            
+            ports = tool.System.get_ports(next_element)
+        
+        self.report({"INFO"}, f"Established path direction through {segments_processed} flow segment(s).")
         return {"FINISHED"}
 
 
