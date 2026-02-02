@@ -357,7 +357,15 @@ class Project(bonsai.core.tool.Project):
                         if pos == position and link_name == "#0":
                             for link in links:
                                 if link.name == "#0":
-                                    link.name = f"#{reference.id()}"
+                                    old_name = link.name
+                                    new_name = f"#{reference.id()}"
+                                    link.name = new_name
+                                    
+                                    # Update the empty handle name if it exists
+                                    if link.empty_handle:
+                                        old_empty_name = link.empty_handle.name
+                                        # Replace the old link ID in the empty name with the new one
+                                        link.empty_handle.name = old_empty_name.replace(old_name, new_name)
                                     break
 
             # Remove obsolete references (or corrupted by user)

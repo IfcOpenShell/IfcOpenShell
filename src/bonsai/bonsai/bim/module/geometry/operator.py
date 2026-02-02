@@ -1175,12 +1175,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
         if not context.selected_objects:
             return {"FINISHED"}
         
-        if context.active_object and tool.Ifc.get():
-            props = tool.Project.get_project_props()
-            for link in props.links:
-                if link.empty_handle == context.active_object:
-                    return bpy.ops.bim.duplicate_link(link=link.name)
-        
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
@@ -1203,6 +1197,14 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
+        # Duplicate a linked project empty handle
+        if context.active_object:
+            props = tool.Project.get_project_props()
+            for link in props.links:
+                if link.empty_handle == context.active_object:
+                    bpy.ops.bim.duplicate_link(link=link.name)
+                    return {}
+        
         objects_to_remove: set[bpy.types.Object] = set()
 
         for obj in context.selected_objects:
