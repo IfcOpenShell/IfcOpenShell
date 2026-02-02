@@ -308,7 +308,8 @@ class Alignment:
         # Generate vertices using IfcOpenShell's geometry engine
         try:
             vertices = align_util.generate_vertices(rep_curve, distance_interval=1.0)
-        except (ValueError, NotImplementedError):
+        except (ValueError, NotImplementedError, RuntimeError):
+            # RuntimeError can occur if IfcOpenShell version doesn't support certain settings
             return None
 
         if len(vertices) < 2:
