@@ -52,6 +52,17 @@ def update_system_name(self: "System", context: bpy.types.Context) -> None:
     bonsai.bim.handler.refresh_ui_data()
 
 
+class UnassignedDistributionElement(PropertyGroup):
+    name: StringProperty(name="Name")
+    ifc_class: StringProperty(name="IFC Class")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_class: str
+        ifc_definition_id: int
+
+
 class System(PropertyGroup):
     name: StringProperty(name="Name", update=update_system_name)
     ifc_class: StringProperty(name="IFC Class")
@@ -136,6 +147,10 @@ class BIMSystemProperties(PropertyGroup):
         description="Select a port to connect to",
         items=get_available_ports_for_connection,
     )
+    unassigned_distribution_elements: CollectionProperty(
+        name="Unassigned Distribution Elements", type=UnassignedDistributionElement
+    )
+    active_unassigned_element_index: IntProperty(name="Active Unassigned Element Index")
 
     if TYPE_CHECKING:
         system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -149,6 +164,8 @@ class BIMSystemProperties(PropertyGroup):
         system_class: str
         should_draw_decorations: bool
         related_port: str
+        unassigned_distribution_elements: bpy.types.bpy_prop_collection_idprop[UnassignedDistributionElement]
+        active_unassigned_element_index: int
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:

@@ -196,6 +196,24 @@ class System(bonsai.core.tool.System):
     @classmethod
     def import_systems(cls) -> None:
         tool.Group.import_groups("IfcSystem")
+        cls.import_unassigned_distribution_elements()
+
+    @classmethod
+    def import_unassigned_distribution_elements(cls) -> None:
+        from bonsai.bim.module.system.data import SystemData
+        
+        if not SystemData.is_loaded:
+            SystemData.load()
+        
+        props = cls.get_system_props()
+        props.unassigned_distribution_elements.clear()
+        
+        unassigned_elements = SystemData.data.get("unassigned_distribution_elements", [])
+        for element_data in unassigned_elements:
+            new = props.unassigned_distribution_elements.add()
+            new.ifc_definition_id = element_data["id"]
+            new.name = element_data["name"]
+            new.ifc_class = element_data["ifc_class"]
 
     @classmethod
     def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:

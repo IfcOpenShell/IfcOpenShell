@@ -51,6 +51,7 @@ classes = (
     operator.UnassignSystem,
     operator.UnloadZones,
     prop.System,
+    prop.UnassignedDistributionElement,
     prop.Zone,
     prop.BIMSystemProperties,
     prop.BIMZoneProperties,
@@ -61,6 +62,7 @@ classes = (
     ui.BIM_PT_port,
     ui.BIM_PT_flow_controls,
     ui.BIM_UL_systems,
+    ui.BIM_UL_unassigned_distribution_elements,
     ui.BIM_UL_zones,
 )
 

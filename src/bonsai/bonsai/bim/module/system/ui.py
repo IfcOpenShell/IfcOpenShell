@@ -39,6 +39,7 @@ if TYPE_CHECKING:
         BIMSystemProperties,
         BIMZoneProperties,
         System,
+        UnassignedDistributionElement,
         Zone,
     )
 
@@ -130,6 +131,27 @@ class BIM_PT_systems(Panel):
                 self.props,
                 "active_group_index",
             )
+
+            row = self.layout.row(align=True)
+            unassigned_count = len(SystemData.data.get("unassigned_distribution_elements", []))
+            row.label(text=f"{unassigned_count} Unassigned Distribution Elements", icon="OUTLINER_OB_POINTCLOUD")
+            
+            if unassigned_count > 0:
+                row = self.layout.row(align=True)
+                if self.props.unassigned_distribution_elements and self.props.active_unassigned_element_index < len(self.props.unassigned_distribution_elements):
+                    element = self.props.unassigned_distribution_elements[self.props.active_unassigned_element_index]
+                    element_id = element.ifc_definition_id
+                    row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = element_id
+                    row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = self.props.active_system_id if self.props.active_system_id else 0
+                
+                self.layout.template_list(
+                    "BIM_UL_unassigned_distribution_elements",
+                    "",
+                    self.props,
+                    "unassigned_distribution_elements",
+                    self.props,
+                    "active_unassigned_element_index",
+                )
 
         if self.props.edited_system_id:
             self.draw_editable_ui(context)
@@ -504,6 +526,23 @@ class BIM_UL_systems(UIList):
             if data.edited_system_id == system_id:
                 row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", icon=tool.System.SYSTEM_ICONS[item.ifc_class], emboss=False)
+
+
+class BIM_UL_unassigned_distribution_elements(UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data,
+        item,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        if item:
+            row = layout.row(align=True)
+            row.label(text="", icon=tool.System.SYSTEM_ICONS.get(item.ifc_class, "OUTLINER_OB_POINTCLOUD"))
+            row.prop(item, "name", text="", emboss=False)
 
 
 class BIM_UL_zones(UIList):

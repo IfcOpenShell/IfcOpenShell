@@ -47,6 +47,7 @@ class SystemData:
             "system_class": cls.system_class(),
             "total_systems": cls.total_systems(),
             "active_system": cls.active_system(),
+            "unassigned_distribution_elements": cls.unassigned_distribution_elements(),
         }
         cls.is_loaded = True
 
@@ -74,6 +75,22 @@ class SystemData:
         if not active_system:
             return None
         return {"id": active_system.id(), "Name": active_system.Name, "ifc_class": active_system.is_a()}
+
+    @classmethod
+    def unassigned_distribution_elements(cls):
+        results = []
+        ifc_file = tool.Ifc.get()
+        for element in ifc_file.by_type("IfcDistributionElement"):
+            if not ifcopenshell.util.system.get_element_systems(element):
+                obj = tool.Ifc.get_object(element)
+                name = obj.name if obj else element.Name or "Unnamed"
+                results.append({
+                    "id": element.id(),
+                    "name": name,
+                    "ifc_class": element.is_a(),
+                })
+        
+        return results
 
 
 class ObjectSystemData:
