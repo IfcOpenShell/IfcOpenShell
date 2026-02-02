@@ -310,6 +310,11 @@ powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF /I "%VS_PLATFORM%"=="ARM64" (
+    echo "Applying ARM64 Patches for Mpir"
+    git apply "%~dp0patches\mpir-arm64-changes.patch" --unidiff-zero --ignore-whitespace
+)
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
 call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
@@ -335,6 +340,11 @@ git reset --hard
 powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%UCRTVersion%\"} | %%{$_ -replace \"fn\",\"lib_mpfr\"}" | git apply --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF /I "%VS_PLATFORM%"=="ARM64" (
+    echo "Applying ARM64 Patches for Mpir"
+    git apply "%~dp0patches\mpfr-arm64-changes.patch" --unidiff-zero --ignore-whitespace
+)
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
