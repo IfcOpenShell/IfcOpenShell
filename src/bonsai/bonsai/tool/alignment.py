@@ -248,6 +248,108 @@ class Alignment:
         return False
 
     # =========================================================================
+    # Segment Geometry Utilities
+    # =========================================================================
+
+    @classmethod
+    def get_segment_vertices(
+        cls, segment: "ifcopenshell.entity_instance", distance_interval: float = 1.0
+    ) -> Optional[List[Tuple[float, float, float]]]:
+        """Get vertices for a single alignment segment using IfcOpenShell's geometry engine.
+
+        Uses the proven IfcOpenShell geometry engine to evaluate points along
+        the segment, supporting all segment types (LINE, CIRCULARARC, CLOTHOID,
+        spirals, etc.).
+
+        Args:
+            segment: The IfcAlignmentSegment entity
+            distance_interval: Distance between sample points (default 1.0 units)
+
+        Returns:
+            List of (x, y, z) tuples representing vertices along the segment,
+            or None if geometry cannot be generated
+        """
+        import ifcopenshell.api.alignment as align_api
+        from ifcopenshell.api.alignment import util as align_util
+        import ifcopenshell.util.unit
+        import numpy as np
+
+        # Skip zero-length segments
+        if cls.is_zero_length_segment(segment):
+            return None
+
+        # Get the mapped curve segment(s) for this alignment segment
+        try:
+            mapped_segments = align_api.get_mapped_segments(segment)
+        except Exception as e:
+            print(f"[Alignment] get_mapped_segments failed: {e}")
+            return None
+
+        if not mapped_segments:
+            return None
+
+        # Get IFC file for unit scale
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        all_vertices = []
+
+        # Process each curve segment (usually 1, but HELMERTCURVE has 2)
+        for curve_segment in mapped_segments:
+            if curve_segment is None:
+                continue
+
+            # Get segment length
+            try:
+                seg_length = abs(curve_segment.SegmentLength.wrappedValue)
+            except (AttributeError, TypeError):
+                try:
+                    seg_length = abs(float(curve_segment.SegmentLength))
+                except:
+                    continue
+
+            if seg_length < 1e-6:
+                continue
+
+            # Calculate number of sample points
+            num_points = max(int(seg_length / distance_interval) + 1, 2)
+
+            # Sample points along the segment using IfcOpenShell's geometry engine
+            for i in range(num_points):
+                # Calculate distance along segment (don't exceed segment length)
+                if num_points > 1:
+                    dist_along = min(i * distance_interval, seg_length)
+                    # Ensure we get the last point exactly at segment end
+                    if i == num_points - 1:
+                        dist_along = seg_length
+                else:
+                    dist_along = 0.0
+
+                try:
+                    # Use IfcOpenShell's evaluate_segment to get transform matrix
+                    transform_matrix = align_util.evaluate_segment(curve_segment, dist_along)
+
+                    # Extract position from 4x4 matrix
+                    # Matrix is transposed by util.py, so translation is in row 3
+                    x = float(transform_matrix[3, 0]) / unit_scale
+                    y = float(transform_matrix[3, 1]) / unit_scale
+                    z = float(transform_matrix[3, 2]) / unit_scale
+
+                    all_vertices.append((x, y, z))
+
+                except Exception as e:
+                    # If evaluation fails at this point, skip it
+                    continue
+
+        if len(all_vertices) < 2:
+            return None
+
+        return all_vertices
+
+    # =========================================================================
     # Blender Object Creation
     # =========================================================================
 
@@ -446,13 +548,13 @@ class Alignment:
         return obj
 
     @classmethod
-    def _create_segment_empty(
+    def _create_segment_curve(
         cls, segment: "ifcopenshell.entity_instance", index: int, parent_obj: Optional[bpy.types.Object] = None
     ) -> Optional[bpy.types.Object]:
-        """Create an empty Blender object linked to an IFC segment.
+        """Create a Blender curve object for an IFC alignment segment.
 
-        Creates an empty (no geometry) for segment selection/editing.
-        The layout curve handles visualization.
+        Creates actual curve geometry using IfcOpenShell's geometry engine,
+        so the segment can be selected and highlighted in the viewport.
 
         Zero-length segments (required terminators) are skipped as they should
         be invisible to users.
@@ -463,8 +565,8 @@ class Alignment:
             parent_obj: The parent Blender object (layout object)
 
         Returns:
-            The created Blender object, or existing one if already linked,
-            or None for zero-length segments
+            The created Blender curve object, or existing one if already linked,
+            or None for zero-length segments or geometry failures
         """
         # Skip zero-length segments - they are required terminators but should be invisible
         if cls.is_zero_length_segment(segment):
@@ -475,7 +577,7 @@ class Alignment:
         if existing_obj:
             return existing_obj
 
-        # Get segment parameters for naming and positioning
+        # Get segment parameters for naming
         if not hasattr(segment, "DesignParameters") or not segment.DesignParameters:
             return None
 
@@ -483,18 +585,30 @@ class Alignment:
         seg_type = getattr(dp, "PredefinedType", "UNKNOWN") or "UNKNOWN"
         name = f"Segment {index + 1} ({seg_type})"
 
-        # Create empty (no geometry - the layout curve handles visualization)
-        obj = bpy.data.objects.new(name, None)
-        obj.empty_display_type = "PLAIN_AXES"
-        obj.empty_display_size = 0.5
+        # Get vertices for this segment using IfcOpenShell's geometry engine
+        vertices = cls.get_segment_vertices(segment, distance_interval=1.0)
+        if not vertices or len(vertices) < 2:
+            # Fall back to empty if geometry fails
+            obj = bpy.data.objects.new(name, None)
+            obj.empty_display_type = "PLAIN_AXES"
+            obj.empty_display_size = 0.5
+        else:
+            # Transform vertices from IFC to Blender coordinates
+            blender_vertices = [cls.ifc_to_blender_coordinates(v[0], v[1], v[2]) for v in vertices]
 
-        # Position at segment start point (convert from IFC to Blender coordinates)
-        if hasattr(dp, "StartPoint") and dp.StartPoint:
-            coords = dp.StartPoint.Coordinates
-            if len(coords) >= 2:
-                # Transform from IFC global to Blender local coordinates
-                blender_coords = cls.ifc_to_blender_coordinates(coords[0], coords[1], 0.0)
-                obj.location = blender_coords
+            # Create Blender curve from vertices
+            curve_data = bpy.data.curves.new(name, type="CURVE")
+            curve_data.dimensions = "3D"
+
+            spline = curve_data.splines.new("POLY")
+            spline.points.add(len(blender_vertices) - 1)
+
+            for i, vert in enumerate(blender_vertices):
+                spline.points[i].co = (vert[0], vert[1], vert[2], 1.0)
+
+            obj = bpy.data.objects.new(name, curve_data)
+            obj.show_in_front = True
+            curve_data.bevel_depth = 0.0
 
         # Link to IFC element
         tool.Ifc.link(segment, obj)
@@ -552,28 +666,23 @@ class Alignment:
     def create_objects_for_layout_segments(
         cls, layout: "ifcopenshell.entity_instance", layout_obj: bpy.types.Object
     ) -> List[bpy.types.Object]:
-        """Create Blender objects for all segments in a layout.
+        """Create Blender curve objects for all segments in a layout.
 
-        Creates a single curve from the IFC representation for visualization,
-        plus empty objects for each segment (for selection/editing).
+        Each segment becomes its own selectable curve object, using IfcOpenShell's
+        geometry engine to generate accurate geometry for all segment types
+        (LINE, CIRCULARARC, CLOTHOID, spirals, etc.).
 
         Args:
             layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
             layout_obj: The parent Blender object for the layout
 
         Returns:
-            List of created Blender objects (curve + segment empties)
+            List of created Blender curve objects for each segment
         """
         result_objs = []
 
-        # Create layout curve from IFC representation (for visualization)
-        # This uses IfcOpenShell's geometry engine which supports all segment types
-        curve_obj = cls.create_curve_from_representation(layout, layout_obj)
-        if curve_obj:
-            result_objs.append(curve_obj)
-
-        # Create empty objects for each segment (for selection/editing)
-        # Use a separate counter for visible segments to ensure consistent numbering
+        # Create individual curve objects for each segment
+        # Each segment is its own selectable object with actual geometry
         visible_index = 0
         for rel in getattr(layout, "IsNestedBy", []) or []:
             for segment in rel.RelatedObjects or []:
@@ -581,7 +690,7 @@ class Alignment:
                     # Skip zero-length segments (they are invisible terminators)
                     if cls.is_zero_length_segment(segment):
                         continue
-                    seg_obj = cls._create_segment_empty(segment, visible_index, layout_obj)
+                    seg_obj = cls._create_segment_curve(segment, visible_index, layout_obj)
                     if seg_obj:
                         result_objs.append(seg_obj)
                     visible_index += 1  # Always increment for consistent numbering
