@@ -3294,6 +3294,15 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
         """Apply changes to other selected text objects using captured apply settings"""
         selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
 
+        # Track editing status ONLY for selected objects (not all visible objects)
+        editing_status = {}
+        for obj in selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
+            obj_props = tool.Drawing.get_text_props(obj)
+            editing_status[obj] = obj_props.is_editing if hasattr(obj_props, "is_editing") else False
+
         for obj in selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -3345,6 +3354,16 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
             if needs_update:
                 core.edit_text(tool.Drawing, obj=obj)
 
+        # Restore original editing state for all selected objects
+        for obj, was_editing in editing_status.items():
+            obj_props = tool.Drawing.get_text_props(obj)
+            if hasattr(obj_props, "is_editing"):
+                # If object was NOT originally being edited, disable editing mode now
+                if not was_editing and obj_props.is_editing:
+                    core.disable_editing_text(tool.Drawing, obj=obj)
+                # If object WAS originally being edited but isn't now, re-enable it
+                elif was_editing and not obj_props.is_editing:
+                    core.enable_editing_text(tool.Drawing, obj=obj)
 
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
