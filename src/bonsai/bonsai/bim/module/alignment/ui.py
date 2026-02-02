@@ -205,7 +205,6 @@ class SAIKEI_PT_alignment_creation(Panel):
         col = layout.column(align=True)
         col.operator("saikei.create_alignment", icon="ADD")
         col.operator("saikei.create_alignment_by_pi", icon="CURVE_DATA")
-        col.operator("saikei.import_alignment_csv", icon="IMPORT")
 
 
 # =============================================================================
@@ -259,62 +258,6 @@ class SAIKEI_PT_pi_editor(Panel):
         col.operator("saikei.remove_pi", icon="REMOVE", text="")
         col.separator()
         col.operator("saikei.pick_pi_from_viewport", icon="EYEDROPPER", text="")
-
-        # Active item details - show details based on selected row
-        if props.display_rows and 0 <= props.active_display_row_index < len(props.display_rows):
-            active_row = props.display_rows[props.active_display_row_index]
-
-            if active_row.row_type == "POINT" and active_row.pi_index < len(props.pis):
-                pi = props.pis[active_row.pi_index]
-
-                box = layout.box()
-                box.label(text=f"PI {active_row.pi_index + 1} Details:", icon="PROPERTIES")
-
-                row = box.row()
-                row.prop(pi, "pi_type", text="Type")
-
-                row = box.row(align=True)
-                row.prop(pi, "x", text="X")
-                row.prop(pi, "y", text="Y")
-
-                # Show radius for interior points (can add curve)
-                if pi.pi_type != "ENDPOINT":
-                    row = box.row()
-                    row.prop(pi, "radius", text="Radius")
-
-                # Display computed values
-                row = box.row()
-                row.label(text=f"Station: {pi.station:.2f}")
-                row.label(text=f"Length: {pi.length_to_next:.2f}")
-
-            elif active_row.row_type == "SEGMENT":
-                if active_row.display_type == "Curve":
-                    # Curve segment - show curve details with editable radius
-                    pi = props.pis[active_row.pi_index] if active_row.pi_index < len(props.pis) else None
-
-                    box = layout.box()
-                    box.label(text=f"Curve {active_row.segment_number} Details:", icon="SPHERECURVE")
-
-                    row = box.row()
-                    row.label(text=f"PI Location: ({active_row.x:.2f}, {active_row.y:.2f})")
-
-                    row = box.row()
-                    row.label(text=f"Arc Length: {active_row.arc_length:.2f}")
-
-                    # Editable radius
-                    if pi:
-                        row = box.row()
-                        row.prop(pi, "radius", text="Radius")
-                    else:
-                        row = box.row()
-                        row.label(text=f"Radius: {active_row.radius:.2f}")
-                else:
-                    # Tangent segment
-                    box = layout.box()
-                    box.label(text=f"Tangent {active_row.segment_number} Details:", icon="IPO_LINEAR")
-
-                    row = box.row()
-                    row.label(text=f"Length: {active_row.length:.2f}")
 
         # Bottom actions
         layout.separator()
