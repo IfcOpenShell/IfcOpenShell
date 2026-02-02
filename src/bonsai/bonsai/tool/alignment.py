@@ -197,6 +197,57 @@ class Alignment:
         return ((bc_x, bc_y), (ec_x, ec_y))
 
     # =========================================================================
+    # Zero-Length Segment Utilities
+    # =========================================================================
+
+    @classmethod
+    def is_zero_length_segment(cls, segment: "ifcopenshell.entity_instance") -> bool:
+        """Check if a segment is a zero-length terminator segment.
+
+        Zero-length segments are required by IFC to mark the end of an alignment
+        but should be invisible to users in the UI.
+
+        Args:
+            segment: The IfcAlignmentSegment entity
+
+        Returns:
+            True if this is a zero-length segment
+        """
+        if not hasattr(segment, "DesignParameters") or not segment.DesignParameters:
+            return False
+
+        dp = segment.DesignParameters
+
+        # Check based on segment type
+        if dp.is_a("IfcAlignmentHorizontalSegment"):
+            return abs(dp.SegmentLength) < 1e-6
+        elif dp.is_a("IfcAlignmentVerticalSegment"):
+            return abs(dp.HorizontalLength) < 1e-6
+        elif dp.is_a("IfcAlignmentCantSegment"):
+            return abs(dp.HorizontalLength) < 1e-6
+
+        return False
+
+    @classmethod
+    def layout_has_real_segments(cls, layout: "ifcopenshell.entity_instance") -> bool:
+        """Check if a layout has any real (non-zero-length) segments.
+
+        An empty layout only has the mandatory zero-length terminator segment.
+
+        Args:
+            layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
+
+        Returns:
+            True if the layout has at least one real segment
+        """
+        for rel in getattr(layout, "IsNestedBy", []) or []:
+            for segment in rel.RelatedObjects or []:
+                if segment.is_a("IfcAlignmentSegment"):
+                    if not cls.is_zero_length_segment(segment):
+                        return True
+        return False
+
+    # =========================================================================
     # Blender Object Creation
     # =========================================================================
 
@@ -290,17 +341,23 @@ class Alignment:
         is configured (for handling large geospatial coordinates), the vertices
         are transformed to Blender local coordinates.
 
+        Empty alignments (only zero-length terminator segment) are silently skipped.
+
         Args:
             layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
             parent_obj: The parent Blender object (alignment object)
 
         Returns:
-            The created Blender curve object, or None if no representation
+            The created Blender curve object, or None if no representation or empty
         """
         import ifcopenshell.api.alignment as align_api
         from ifcopenshell.api.alignment import util as align_util
         import ifcopenshell.util.geolocation
         import ifcopenshell.util.unit
+
+        # Skip empty layouts (only zero-length terminator) - no error message needed
+        if not cls.layout_has_real_segments(layout):
+            return None
 
         # Get the layout's curve representation
         try:
@@ -397,14 +454,22 @@ class Alignment:
         Creates an empty (no geometry) for segment selection/editing.
         The layout curve handles visualization.
 
+        Zero-length segments (required terminators) are skipped as they should
+        be invisible to users.
+
         Args:
             segment: The IfcAlignmentSegment entity
             index: The segment index (for naming)
             parent_obj: The parent Blender object (layout object)
 
         Returns:
-            The created Blender object, or existing one if already linked
+            The created Blender object, or existing one if already linked,
+            or None for zero-length segments
         """
+        # Skip zero-length segments - they are required terminators but should be invisible
+        if cls.is_zero_length_segment(segment):
+            return None
+
         # Check if a Blender object already exists for this IFC element
         existing_obj = tool.Ifc.get_object(segment)
         if existing_obj:
@@ -508,12 +573,18 @@ class Alignment:
             result_objs.append(curve_obj)
 
         # Create empty objects for each segment (for selection/editing)
+        # Use a separate counter for visible segments to ensure consistent numbering
+        visible_index = 0
         for rel in getattr(layout, "IsNestedBy", []) or []:
-            for i, segment in enumerate(rel.RelatedObjects or []):
+            for segment in rel.RelatedObjects or []:
                 if segment.is_a() == "IfcAlignmentSegment":
-                    seg_obj = cls._create_segment_empty(segment, i, layout_obj)
+                    # Skip zero-length segments (they are invisible terminators)
+                    if cls.is_zero_length_segment(segment):
+                        continue
+                    seg_obj = cls._create_segment_empty(segment, visible_index, layout_obj)
                     if seg_obj:
                         result_objs.append(seg_obj)
+                    visible_index += 1  # Always increment for consistent numbering
 
         return result_objs
 
