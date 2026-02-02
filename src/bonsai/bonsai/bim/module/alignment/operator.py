@@ -793,11 +793,34 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
     bl_description = "Click in the viewport to add PI points. Right-click or Escape to finish."
     bl_options = {"REGISTER", "UNDO"}
 
+    # Store reference to 3D view for modal
+    _area = None
+    _region = None
+    _rv3d = None
+
     @classmethod
     def poll(cls, context):
         return poll_ifc4x3(cls, context)
 
     def invoke(self, context, event):
+        # Find the 3D viewport area, region, and region_data
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                self._area = area
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        self._region = region
+                        break
+                for space in area.spaces:
+                    if space.type == "VIEW_3D":
+                        self._rv3d = space.region_3d
+                        break
+                break
+
+        if not self._region or not self._rv3d:
+            self.report({"ERROR"}, "No 3D Viewport found")
+            return {"CANCELLED"}
+
         context.window.cursor_set("CROSSHAIR")
         context.window_manager.modal_handler_add(self)
         self.report({"INFO"}, "Click to add PIs. Right-click or Escape to finish.")
@@ -809,7 +832,8 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
             coord = self.get_ground_intersection(context, event)
             if coord:
                 self.add_pi_at_location(context, coord)
-                context.area.tag_redraw()
+                if self._area:
+                    self._area.tag_redraw()
             return {"RUNNING_MODAL"}
 
         elif event.type in {"RIGHTMOUSE", "ESC"}:
@@ -827,9 +851,19 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
         """Raycast from mouse to Z=0 ground plane"""
         from bpy_extras.view3d_utils import region_2d_to_origin_3d, region_2d_to_vector_3d
 
-        region = context.region
-        rv3d = context.region_data
-        coord = (event.mouse_region_x, event.mouse_region_y)
+        region = self._region
+        rv3d = self._rv3d
+
+        # Guard against None context
+        if region is None or rv3d is None:
+            return None
+
+        # Use absolute mouse coordinates and convert to the 3D viewport region's local coords
+        # event.mouse_region_x/y are relative to whatever region received the event,
+        # which may not be the 3D viewport region we stored
+        region_x = event.mouse_x - region.x
+        region_y = event.mouse_y - region.y
+        coord = (region_x, region_y)
 
         origin = region_2d_to_origin_3d(region, rv3d, coord)
         direction = region_2d_to_vector_3d(region, rv3d, coord)
@@ -843,12 +877,21 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
         return None
 
     def add_pi_at_location(self, context, coord):
-        """Add a new PI at the given (x, y) coordinate"""
+        """Add a new PI at the given (x, y) coordinate.
+
+        The coordinate is in Blender world space. If there's a Blender offset
+        configured (for geospatial coordinates), we convert to IFC global
+        coordinates before storing.
+        """
         props = context.scene.SaikeiAlignmentProperties
 
+        # Convert Blender coordinates to IFC coordinates
+        # PIs are stored in IFC coordinate space (global/map coordinates)
+        ifc_coord = tool.Alignment.blender_to_ifc_coordinates(coord[0], coord[1], 0.0)
+
         pi = props.pis.add()
-        pi.x = coord[0]
-        pi.y = coord[1]
+        pi.x = ifc_coord[0]
+        pi.y = ifc_coord[1]
 
         # Determine PI type based on position in list
         if len(props.pis) == 1:

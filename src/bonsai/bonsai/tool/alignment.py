@@ -286,6 +286,10 @@ class Alignment:
         Uses IfcOpenShell's geometry engine to generate vertices, supporting
         all segment types (LINE, CIRCULARARC, CLOTHOID, spirals, etc.).
 
+        The vertices from IFC are in global/map coordinates. If a Blender offset
+        is configured (for handling large geospatial coordinates), the vertices
+        are transformed to Blender local coordinates.
+
         Args:
             layout: The IFC layout entity (IfcAlignmentHorizontal, etc.)
             parent_obj: The parent Blender object (alignment object)
@@ -295,11 +299,14 @@ class Alignment:
         """
         import ifcopenshell.api.alignment as align_api
         from ifcopenshell.api.alignment import util as align_util
+        import ifcopenshell.util.geolocation
+        import ifcopenshell.util.unit
 
         # Get the layout's curve representation
         try:
             rep_curve = align_api.get_layout_curve(layout)
-        except Exception:
+        except Exception as e:
+            print(f"[Alignment] get_layout_curve failed: {e}")
             rep_curve = None
 
         if rep_curve is None:
@@ -308,12 +315,47 @@ class Alignment:
         # Generate vertices using IfcOpenShell's geometry engine
         try:
             vertices = align_util.generate_vertices(rep_curve, distance_interval=1.0)
-        except (ValueError, NotImplementedError, RuntimeError):
+        except (ValueError, NotImplementedError, RuntimeError) as e:
             # RuntimeError can occur if IfcOpenShell version doesn't support certain settings
+            print(f"[Alignment] generate_vertices failed: {e}")
             return None
 
         if len(vertices) < 2:
+            print(f"[Alignment] Not enough vertices ({len(vertices)}), need at least 2")
             return None
+
+        # Check if we need to apply Blender offset transformation
+        # IFC vertices are in global/map coordinates, we need to convert to Blender local
+        gprops = tool.Georeference.get_georeference_props()
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file) if ifc_file else 1.0
+
+        if gprops.has_blender_offset:
+            offset_x = float(gprops.blender_offset_x) * unit_scale
+            offset_y = float(gprops.blender_offset_y) * unit_scale
+            offset_z = float(gprops.blender_offset_z) * unit_scale
+            x_axis_abscissa = float(gprops.blender_x_axis_abscissa)
+            x_axis_ordinate = float(gprops.blender_x_axis_ordinate)
+
+            # Transform each vertex from IFC global to Blender local
+            transformed_vertices = []
+            for vert in vertices:
+                # Create a 4x4 identity matrix with translation set to vertex position
+                import numpy as np
+                matrix = np.eye(4)
+                matrix[0, 3] = vert[0]
+                matrix[1, 3] = vert[1]
+                matrix[2, 3] = vert[2]
+
+                # Apply global2local transformation
+                local_matrix = ifcopenshell.util.geolocation.global2local(
+                    matrix, offset_x, offset_y, offset_z, x_axis_abscissa, x_axis_ordinate
+                )
+
+                # Extract transformed position
+                transformed_vertices.append((local_matrix[0, 3], local_matrix[1, 3], local_matrix[2, 3]))
+
+            vertices = transformed_vertices
 
         # Create Blender curve from vertices
         layout_type = layout.is_a().replace("IfcAlignment", "")  # "Horizontal", "Vertical", etc.
@@ -330,6 +372,9 @@ class Alignment:
         obj = bpy.data.objects.new(name, curve_data)
         obj.show_in_front = True
         curve_data.bevel_depth = 0.0
+
+        # Set a visible color for the curve (black, like construction lines)
+        obj.color = (0.0, 0.0, 0.0, 1.0)  # Black color
 
         # Set parent relationship
         if parent_obj:
@@ -378,11 +423,13 @@ class Alignment:
         obj.empty_display_type = "PLAIN_AXES"
         obj.empty_display_size = 0.5
 
-        # Position at segment start point
+        # Position at segment start point (convert from IFC to Blender coordinates)
         if hasattr(dp, "StartPoint") and dp.StartPoint:
             coords = dp.StartPoint.Coordinates
             if len(coords) >= 2:
-                obj.location = (coords[0], coords[1], 0.0)
+                # Transform from IFC global to Blender local coordinates
+                blender_coords = cls.ifc_to_blender_coordinates(coords[0], coords[1], 0.0)
+                obj.location = blender_coords
 
         # Link to IFC element
         tool.Ifc.link(segment, obj)
@@ -718,3 +765,101 @@ class Alignment:
         )
 
         return alignment
+
+    # =========================================================================
+    # Coordinate Transformation Methods
+    # =========================================================================
+
+    @classmethod
+    def blender_to_ifc_coordinates(cls, x: float, y: float, z: float = 0.0) -> Tuple[float, float, float]:
+        """Convert Blender local coordinates to IFC global/map coordinates.
+
+        When a Blender offset is configured (for handling large geospatial coordinates),
+        this transforms from Blender's local coordinate system (near origin) to
+        the IFC global coordinate system (large geospatial values).
+
+        Args:
+            x: X coordinate in Blender space
+            y: Y coordinate in Blender space
+            z: Z coordinate in Blender space (default 0.0)
+
+        Returns:
+            Tuple of (x, y, z) in IFC global coordinates
+        """
+        import ifcopenshell.util.geolocation
+        import ifcopenshell.util.unit
+
+        gprops = tool.Georeference.get_georeference_props()
+        ifc_file = tool.Ifc.get()
+
+        if not gprops.has_blender_offset or ifc_file is None:
+            # No transformation needed
+            return (x, y, z)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        offset_x = float(gprops.blender_offset_x) * unit_scale
+        offset_y = float(gprops.blender_offset_y) * unit_scale
+        offset_z = float(gprops.blender_offset_z) * unit_scale
+        x_axis_abscissa = float(gprops.blender_x_axis_abscissa)
+        x_axis_ordinate = float(gprops.blender_x_axis_ordinate)
+
+        # Create a 4x4 identity matrix with translation set to position
+        import numpy as np
+        matrix = np.eye(4)
+        matrix[0, 3] = x
+        matrix[1, 3] = y
+        matrix[2, 3] = z
+
+        # Apply local2global transformation (inverse of global2local)
+        global_matrix = ifcopenshell.util.geolocation.local2global(
+            matrix, offset_x, offset_y, offset_z, x_axis_abscissa, x_axis_ordinate
+        )
+
+        return (global_matrix[0, 3], global_matrix[1, 3], global_matrix[2, 3])
+
+    @classmethod
+    def ifc_to_blender_coordinates(cls, x: float, y: float, z: float = 0.0) -> Tuple[float, float, float]:
+        """Convert IFC global/map coordinates to Blender local coordinates.
+
+        When a Blender offset is configured (for handling large geospatial coordinates),
+        this transforms from the IFC global coordinate system (large geospatial values)
+        to Blender's local coordinate system (near origin).
+
+        Args:
+            x: X coordinate in IFC global space
+            y: Y coordinate in IFC global space
+            z: Z coordinate in IFC global space (default 0.0)
+
+        Returns:
+            Tuple of (x, y, z) in Blender local coordinates
+        """
+        import ifcopenshell.util.geolocation
+        import ifcopenshell.util.unit
+
+        gprops = tool.Georeference.get_georeference_props()
+        ifc_file = tool.Ifc.get()
+
+        if not gprops.has_blender_offset or ifc_file is None:
+            # No transformation needed
+            return (x, y, z)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        offset_x = float(gprops.blender_offset_x) * unit_scale
+        offset_y = float(gprops.blender_offset_y) * unit_scale
+        offset_z = float(gprops.blender_offset_z) * unit_scale
+        x_axis_abscissa = float(gprops.blender_x_axis_abscissa)
+        x_axis_ordinate = float(gprops.blender_x_axis_ordinate)
+
+        # Create a 4x4 identity matrix with translation set to position
+        import numpy as np
+        matrix = np.eye(4)
+        matrix[0, 3] = x
+        matrix[1, 3] = y
+        matrix[2, 3] = z
+
+        # Apply global2local transformation
+        local_matrix = ifcopenshell.util.geolocation.global2local(
+            matrix, offset_x, offset_y, offset_z, x_axis_abscissa, x_axis_ordinate
+        )
+
+        return (local_matrix[0, 3], local_matrix[1, 3], local_matrix[2, 3])

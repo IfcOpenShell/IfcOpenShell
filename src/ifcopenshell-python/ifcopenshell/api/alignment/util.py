@@ -93,8 +93,11 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
     try:
         s.set("piecewise-step-type", 0)  # 0 = step-size is maximum step size, 1 = step-size is mininimum number of steps
     except RuntimeError:
-        pass  # Setting not available in older IfcOpenShell versions
-    s.set("piecewise-step-size", distance_interval)
+        print("[util.py] piecewise-step-type setting not available, skipping")
+    try:
+        s.set("piecewise-step-size", distance_interval)
+    except RuntimeError:
+        print("[util.py] piecewise-step-size setting not available, skipping")
     shape = ifcopenshell.geom.create_shape(s, rep_curve)
     vertices = shape.verts
     if len(vertices) == 0:
