@@ -36,7 +36,6 @@ classes = (
     operator.CreateProject,
     operator.DisableCulling,
     operator.DisableEditingHeader,
-    operator.DuplicateLink,
     operator.EditHeader,
     operator.EditProjectLibrary,
     operator.EnableCulling,

@@ -82,6 +82,37 @@ class Project(bonsai.core.tool.Project):
         tool.Ifc.link(reference, empty)
 
     @classmethod
+    def duplicate_link(cls, link_name: str) -> bool:
+        """Duplicate a link. Returns True if successful, False otherwise."""
+        props = cls.get_project_props()
+        original_link = props.links[link_name]
+        
+        x, y, z, angle = [float(v.strip()) for v in original_link.position.split(",")]
+        x += 0.5  # Offset to avoid duplicate detection
+        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
+        
+        # Create a new link entry
+        new_link = props.links.add()
+        new_link.name = "#0"  # Temporary name, will be updated by load_link
+        new_link.filepath = original_link.filepath
+        new_link.position = new_position
+        new_link.mode = original_link.mode
+        new_link.georeferenced = original_link.georeferenced
+        new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
+        new_link.is_locked = False  # Start unlocked, will be locked after loading
+        
+        # Load the new link, skipping position recalculation to preserve the cursor position
+        status = bpy.ops.bim.load_link(link="#0", use_cache=True, skip_position_calculation_and_not_locked=True)
+        if status == {"CANCELLED"}:
+            # Remove the temporary link entry if loading failed
+            index = props.links.find("#0")
+            if index != -1:
+                props.links.remove(index)
+            return False
+        
+        return True
+
+    @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
         filepath = tool.Blender.get_data_dir_path(Path("templates") / "projects" / template)
@@ -329,7 +360,6 @@ class Project(bonsai.core.tool.Project):
                         new_position = f"{x},{y},{z},{angle}"
                         
                         if link.position != new_position:
-                            print(f"DEBUG: Updating position for link {link.name} from '{link.position}' to '{new_position}'")
                             link.position = new_position
                         
                         reference_id = int(link.name[1:])

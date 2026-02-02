@@ -1431,45 +1431,6 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class DuplicateLink(bpy.types.Operator):
-    bl_idname = "bim.duplicate_link"
-    bl_label = "Duplicate Link"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Duplicate the selected link. Creates a new link to the same file at a new position"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
-
-    def execute(self, context):
-        props = tool.Project.get_project_props()
-        original_link = props.links[self.link]
-        
-        x, y, z, angle = [float(v.strip()) for v in original_link.position.split(",")]
-        x += 0.5 #to avoid duplicate detection
-        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-        
-        # Create a new link entry
-        new_link = props.links.add()
-        new_link.name = "#0"  # Temporary name, will be updated by load_link
-        new_link.filepath = original_link.filepath
-        new_link.position = new_position
-        new_link.mode = original_link.mode
-        new_link.georeferenced = original_link.georeferenced
-        new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
-        new_link.is_locked = False  # Start unlocked, will be locked after loading
-        
-        # Load the new link, skipping position recalculation to preserve the cursor position
-        status = bpy.ops.bim.load_link(link="#0", use_cache=True, skip_position_calculation_and_not_locked=True)
-        if status == {"CANCELLED"}:
-            # Remove the temporary link entry if loading failed
-            index = props.links.find("#0")
-            if index != -1:
-                props.links.remove(index)
-            self.report({"ERROR"}, f"Failed to duplicate link: {original_link.filepath}")
-            return {"CANCELLED"}
-        
-        self.report({"INFO"}, f"Duplicated link to {original_link.filepath} at cursor location")
-        return {"FINISHED"}
-
-
 class UnlinkIfc(bpy.types.Operator):
     bl_idname = "bim.unlink_ifc"
     bl_label = "Unlink IFC"
@@ -1483,36 +1444,38 @@ class UnlinkIfc(bpy.types.Operator):
         
         bpy.ops.bim.unload_link(link=self.link)
         
-        reference_id = int(link_obj.name[1:])
-        ifc_file = tool.Ifc.get()
-        reference = ifc_file.by_id(reference_id)
-        
-        doc_info = reference.ReferencedDocument
-        
-        ifcopenshell.api.document.remove_reference(ifc_file, reference)
-        
-        if doc_info and not tool.Document.get_document_references(doc_info):
-            ifcopenshell.api.document.remove_information(ifc_file, doc_info)
+        # For temporary links (#0), just remove the entry
+        if link_obj.name != "#0":
+            reference_id = int(link_obj.name[1:])
+            ifc_file = tool.Ifc.get()
+            reference = ifc_file.by_id(reference_id)
             
-            original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link_obj.filepath))
-            cache_files = [
-                original_filepath.with_suffix(".ifc.cache.blend"),
-                original_filepath.with_suffix(".ifc.cache.h5"),
-                original_filepath.with_suffix(".ifc.cache.json"),
-                original_filepath.with_suffix(".ifc.cache.sqlite"),
-            ]
+            doc_info = reference.ReferencedDocument
             
-            for cache_file in cache_files:
-                if cache_file.exists():
-                    try:
-                        os.remove(cache_file)
-                        print(f"DEBUG: Removed cache file: {cache_file}")
-                    except Exception as e:
-                        print(f"DEBUG: Failed to remove cache file {cache_file}: {e}")
+            ifcopenshell.api.document.remove_reference(ifc_file, reference)
+            
+            if doc_info and not tool.Document.get_document_references(doc_info):
+                ifcopenshell.api.document.remove_information(ifc_file, doc_info)
+                
+                original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link_obj.filepath))
+                cache_files = [
+                    original_filepath.with_suffix(".ifc.cache.blend"),
+                    original_filepath.with_suffix(".ifc.cache.h5"),
+                    original_filepath.with_suffix(".ifc.cache.json"),
+                    original_filepath.with_suffix(".ifc.cache.sqlite"),
+                ]
+                
+                for cache_file in cache_files:
+                    if cache_file.exists():
+                        try:
+                            os.remove(cache_file)
+                        except Exception as e:
+                            print(f"Failed to remove cache file {cache_file}: {e}")
 
         index = props.links.find(self.link)
         if index != -1:
             props.links.remove(index)
+        
         return {"FINISHED"}
 
 
@@ -1623,11 +1586,9 @@ class LoadLink(bpy.types.Operator):
             
             # Apply saved position and rotation
             if link.position and link.position != "0.0,0.0,0.0,0.0":
-                print(f"DEBUG LoadLink.link_blend: Applying saved position='{link.position}'")
                 x, y, z, angle = [float(v.strip()) for v in link.position.split(",")]
                 empty.location = (x, y, z)
                 empty.rotation_euler = (0, 0, radians(angle))
-                print(f"DEBUG link_blend: Positioned empty at ({x}, {y}, {z}) with rotation {angle}°")
             
             tool.Project.set_link_empty_handle(link.name, empty)
             bpy.context.scene.collection.objects.link(empty)
@@ -1718,22 +1679,15 @@ except Exception as e:
                 if not blend_filepath.exists() or blend_filepath.stat().st_mtime < t:
                     return {"CANCELLED"}
 
-            print(f"DEBUG LoadLink.link_ifc: Before set_model_origin_from_link, link.position='{self.link_obj.position}'")
             self.set_model_origin_from_link()
-            print(f"DEBUG LoadLink.link_ifc: After set_model_origin_from_link, link.position='{self.link_obj.position}'")
         
         self.determine_georeferencing_compatibility()
         
         # Only calculate position for new links (link.name == "#0")
         # For existing links (loaded from saved session), use stored position
-        print(f"DEBUG LoadLink.link_ifc: link.name='{self.link_obj.name}', link.position='{self.link_obj.position}'")
         if self.link_obj.name == "#0" and not self.skip_position_calculation_and_not_locked:
             self.calculate_link_position()
-            print(f"DEBUG LoadLink.link_ifc: Calculated new position='{self.link_obj.position}'")
-        else:
-            print(f"DEBUG LoadLink.link_ifc: Using existing position from saved link or skipping calculation")
 
-        print("No duplicate link detected, proceeding to link blend.")
         self.link_blend(blend_filepath)
         
         # Save position to IFC for new links (triggers update callback)
@@ -1764,7 +1718,6 @@ except Exception as e:
         parent_ifc = tool.Ifc.get()
         if not parent_ifc:
             link.georeferenced = "NONE"
-            print("DEBUG: No parent IFC, setting georeferenced to NONE")
             return
         
         # Open linked IFC
@@ -1777,13 +1730,11 @@ except Exception as e:
         # If linked model has no georeferencing
         if not linked_crs:
             link.georeferenced = "NONE"
-            print("DEBUG: Linked model has no georeferencing")
             return
         
         # If parent has no georeferencing but linked does
         if not parent_crs:
             link.georeferenced = "NONE"
-            print("DEBUG: Parent has no georeferencing, cannot compare")
             return
         
         # Compare CRS name and vertical datum
@@ -1792,21 +1743,15 @@ except Exception as e:
         parent_vertical_datum = parent_crs.get("VerticalDatum", "")
         linked_vertical_datum = linked_crs.get("VerticalDatum", "")
         
-        print(f"DEBUG: Parent CRS: {parent_crs_name}, VerticalDatum: {parent_vertical_datum}")
-        print(f"DEBUG: Linked CRS: {linked_crs_name}, VerticalDatum: {linked_vertical_datum}")
-        
         crs_match = parent_crs_name == linked_crs_name
         datum_match = parent_vertical_datum == linked_vertical_datum
         
         if crs_match and datum_match:
             link.georeferenced = "FULL_COMPATIBLE"
-            print("DEBUG: Full compatibility - CRS and vertical datum match")
         elif crs_match and not datum_match:
             link.georeferenced = "PARTIAL_COMPATIBLE"
-            print("DEBUG: Partial compatibility - CRS matches but vertical datum differs")
         else:
             link.georeferenced = "NOT_COMPATIBLE"
-            print("DEBUG: Not compatible - CRS differs")
     
 
     def calculate_link_position(self) -> None:
@@ -1816,7 +1761,6 @@ except Exception as e:
         # Use stored link reference
         link = self.link_obj
         
-        print(f"DEBUG calculate_link_position: false_origin_mode='{pprops.false_origin_mode}'")
         
         # Determine georeferencing compatibility
         self.determine_georeferencing_compatibility()
@@ -1848,13 +1792,11 @@ except Exception as e:
                     linked_helmert_list = list(linked_helmert)
                 
                 if manual_false_origin == linked_helmert_list and float(pprops.project_north) == ifcopenshell.util.geolocation.get_grid_north(linked_ifc):
-                    print("DEBUG: Manual false origin matches linked IFC georeferencing: placed_as_per_georeference = True")
                     link.placed_as_per_georeference = True
             else:
                 child_origin = "0,0,0,0"
         elif pprops.false_origin_mode == "DISABLED":
             positioning_action = "0,0,0,0"
-            print("DEBUG: DISABLED mode → Using default position 0,0,0,0")
 
         if parent_origin == "PARENT_IFC":
             parent_ifc = tool.Ifc.get()
@@ -1878,8 +1820,6 @@ except Exception as e:
 
         # Execute positioning based on the determined action
         if positioning_action == "HELMERT":
-            print("DEBUG calculate_link_position: Using HELMERT positioning")
-            print(f"DEBUG: parent_origin={parent_origin}, child_origin={child_origin}")
             
             # Use the helmert values already prepared above
             if isinstance(parent_helmert, list):
@@ -1900,29 +1840,21 @@ except Exception as e:
             false_origin_y =  (offset_e * math.sin(angrad) + offset_n * math.cos(angrad))
             false_origin_z =  offset_h
         
-            print(f"DEBUG false origins: ({false_origin_x}, {false_origin_y}, {false_origin_z}), angle={angle_diff})")
             position_x = round(false_origin_x, 3)
             position_y = round(false_origin_y, 3)
             position_z = round(false_origin_z, 3)
             position_angle = -round(angle_diff, 3)
-            print("Negated coords!!! ")
 
             link.position = f"{position_x:.3f},{position_y:.3f},{position_z:.3f},{position_angle:.3f}"
-            print(f"DEBUG calculate_link_position HELMERT: offset=({offset_e}, {offset_n}, {offset_h}), angle={angle_diff}, final position='{link.position}'")
         
         elif positioning_action == "3DCURSOR":
-            print("DEBUG positioning_action: Using 3DCURSOR positioning")
             cursor = bpy.context.scene.cursor
             x, y, z = cursor.location
             angle = degrees(cursor.rotation_euler.z)  # Convert radians to degrees
-            print(f"DEBUG calculate_link_position 3DCURSOR: cursor location=({x}, {y}, {z}), rotation_z={cursor.rotation_euler.z} rad, angle={angle} deg")
             link.position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-            print(f"DEBUG calculate_link_position 3DCURSOR: final position='{link.position}'")
 
         elif positioning_action == "0,0,0,0":
-            print("DEBUG positioning_action: Using default position 0,0,0,0")
             link.position = "0.000,0.000,0.000,0.000"
-            print(f"DEBUG calculate_link_position DEFAULT: final position='{link.position}'")
         
         if link.placed_as_per_georeference:
             link.geo_pos_in_3dview = link.position

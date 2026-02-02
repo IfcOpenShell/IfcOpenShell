@@ -902,6 +902,21 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
+            
+            # Check if this is a link empty handle (check links list, not IFC entity)
+            is_link_handle = False
+            props = tool.Project.get_project_props()
+            for link in props.links:
+                empty_handle = tool.Project.get_link_empty_handle(link.name)
+                if empty_handle == obj:
+                    is_link_handle = True
+                    # UnlinkIfc handles both unloading and removal for all link types
+                    bpy.ops.bim.unlink_ifc(link=link.name)
+                    break
+            
+            if is_link_handle:
+                continue
+                
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -1203,7 +1218,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
             for link in props.links:
                 empty_handle = tool.Project.get_link_empty_handle(link.name)
                 if empty_handle == context.active_object:
-                    bpy.ops.bim.duplicate_link(link=link.name)
+                    if tool.Project.duplicate_link(link.name):
+                        operator.report({"INFO"}, f"Duplicated link to {link.filepath}")
+                    else:
+                        operator.report({"ERROR"}, f"Failed to duplicate link: {link.filepath}")
                     return {}
         
         objects_to_remove: set[bpy.types.Object] = set()
