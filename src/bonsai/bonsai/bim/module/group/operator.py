@@ -58,8 +58,14 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
         option: tool.Group.ToggleOption
 
     def _execute(self, context):
-        group = tool.Ifc.get().by_id(self.ifc_definition_id)
-        tool.Group.toggle_group(group, self.group_type, self.option)
+        # Handle connection groups (negative IDs) differently
+        if self.ifc_definition_id < 0:
+            # This is a connection group or branch group, not a real IFC entity
+            print(f"DEBUG: Toggling group with ID {self.ifc_definition_id}, option={self.option}")
+            tool.Group.toggle_connection_group(self.ifc_definition_id, self.group_type, self.option)
+        else:
+            group = tool.Ifc.get().by_id(self.ifc_definition_id)
+            tool.Group.toggle_group(group, self.group_type, self.option)
         return {"FINISHED"}
 
 

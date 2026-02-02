@@ -486,8 +486,8 @@ class BIM_UL_systems(UIList):
             
             item_id = item.ifc_definition_id
             
-            # Toggle button for items with children (systems with subsystems or elements)
-            if item.has_children and not item.is_element:
+            # Toggle button for items with children (systems, subsystems, or connection groups)
+            if item.has_children and (not item.is_element or item.is_connection_group):
                 op = row.operator(
                     "bim.toggle_group",
                     text="",
@@ -497,17 +497,28 @@ class BIM_UL_systems(UIList):
                 op.group_type = "IfcSystem"
                 op.ifc_definition_id = item.ifc_definition_id
                 op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
+                # For connection groups, we need to store additional info
+                if item.is_connection_group:
+                    # The toggle operator will need to know this is a connection group
+                    pass
             
             # Show editing indicator for systems being edited
-            if not item.is_element and data.edited_system_id == item_id:
+            if not item.is_element and not item.is_connection_group and data.edited_system_id == item_id:
                 row.label(text="", icon="GREASEPENCIL")
             
             # Display name with appropriate icon
-            icon_name = tool.System.SYSTEM_ICONS.get(item.ifc_class, "OUTLINER_OB_POINTCLOUD")
-            row.prop(item, "name", text="", icon=icon_name, emboss=False)
+            if item.is_connection_group:
+                # Connection groups and branch groups: no icon, just text (number of elements)
+                row.prop(item, "name", text="", emboss=False)
+            else:
+                icon_name = tool.System.SYSTEM_ICONS.get(item.ifc_class, "OUTLINER_OB_POINTCLOUD")
+                row.prop(item, "name", text="", icon=icon_name, emboss=False)
             
             # Right-aligned action buttons
-            if not item.is_element:
+            if item.is_connection_group:
+                # Connection groups don't have action buttons
+                pass
+            elif not item.is_element:
                 # For systems: add select products button
                 row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = item_id
                 row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = item_id
@@ -524,7 +535,12 @@ class BIM_UL_systems(UIList):
             else:
                 # For elements: show select and unassign from parent system
                 row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = item_id
-                row.label(text="", icon="BLANK1")
+                if not item.is_reference:
+                    row.label(text="", icon="BLANK1")
+                else:
+                    # This is a reference to a circular connection
+                    row.label(text="", icon="LOOP_FORWARDS")
+                
 
                 # Find parent system by traversing backwards through the list
                 parent_system_id = None
@@ -535,7 +551,7 @@ class BIM_UL_systems(UIList):
                     if potential_parent.tree_depth == item.tree_depth - 1 and not potential_parent.is_element:
                         parent_system_id = potential_parent.ifc_definition_id
                         break
-                if parent_system_id:
+                if parent_system_id and not item.is_reference:
                     op = row.operator("bim.unassign_element_from_system", text="", icon="KEYFRAME")
                     op.element = item_id
                     op.system = parent_system_id

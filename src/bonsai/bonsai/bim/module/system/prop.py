@@ -71,6 +71,10 @@ class System(PropertyGroup):
     tree_depth: IntProperty(name="Tree Depth")
     is_expanded: BoolProperty(name="Is Expanded")
     is_element: BoolProperty(name="Is Element", default=False)
+    is_connection_group: BoolProperty(name="Is Connection Group", default=False)
+    connection_group_id: IntProperty(name="Connection Group ID", default=0)
+    is_reference: BoolProperty(name="Is Reference", default=False)
+    reference_element_name: StringProperty(name="Reference Element Name", default="")
 
     if TYPE_CHECKING:
         name: str
@@ -80,6 +84,10 @@ class System(PropertyGroup):
         tree_depth: int
         is_expanded: bool
         is_element: bool
+        is_connection_group: bool
+        connection_group_id: int
+        is_reference: bool
+        reference_element_name: str
 
 
 def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
@@ -153,6 +161,8 @@ class BIMSystemProperties(PropertyGroup):
         name="Unassigned Distribution Elements", type=UnassignedDistributionElement
     )
     active_unassigned_element_index: IntProperty(name="Active Unassigned Element Index")
+    connection_groups_json: StringProperty(name="Connection Groups JSON", default="{}")
+    """JSON serialized dict[parent_system_id, list[list[element_id]]] storing connection groups."""
 
     if TYPE_CHECKING:
         system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -168,6 +178,7 @@ class BIMSystemProperties(PropertyGroup):
         related_port: str
         unassigned_distribution_elements: bpy.types.bpy_prop_collection_idprop[UnassignedDistributionElement]
         active_unassigned_element_index: int
+        connection_groups_json: str
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:
