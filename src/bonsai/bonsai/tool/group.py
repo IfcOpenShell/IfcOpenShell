@@ -86,6 +86,7 @@ class Group(bonsai.core.tool.System):
             new.tree_depth = tree_depth
             new.has_children = False
             new.is_expanded = group.id() in expanded_groups
+            new.is_element = False
             if isinstance(new, System):
                 new.ifc_class = group.is_a()
 
@@ -98,11 +99,36 @@ class Group(bonsai.core.tool.System):
             ]
             sorted_related_groups = natsorted(related_groups, key=lambda group: group.Name or "Unnamed")
 
-            if sorted_related_groups:
+            # Get assigned elements if this is a System
+            assigned_elements: list[ifcopenshell.entity_instance] = []
+            if group_type == "IfcSystem":
+                import ifcopenshell.util.system
+                assigned_elements = [
+                    elem for elem in ifcopenshell.util.system.get_system_elements(group)
+                    if elem.is_a("IfcDistributionElement")
+                ]
+                sorted_assigned_elements = natsorted(assigned_elements, key=lambda elem: elem.Name or "Unnamed")
+            else:
+                sorted_assigned_elements = []
+
+            if sorted_related_groups or sorted_assigned_elements:
                 new.has_children = True
                 if new.is_expanded:
                     for related_group in sorted_related_groups:
                         load_group(related_group, tree_depth=tree_depth + 1)
+                    
+                    # Add assigned elements as children
+                    for element in sorted_assigned_elements:
+                        elem_item = blender_groups.add()
+                        elem_item.ifc_definition_id = element.id()
+                        obj = tool.Ifc.get_object(element)
+                        elem_item["name"] = obj.name if obj else (element.Name or "Unnamed")
+                        elem_item.tree_depth = tree_depth + 1
+                        elem_item.has_children = False
+                        elem_item.is_expanded = False
+                        elem_item.is_element = True
+                        if isinstance(elem_item, System):
+                            elem_item.ifc_class = element.is_a()
 
         for group in sorted_groups:
             load_group(group)

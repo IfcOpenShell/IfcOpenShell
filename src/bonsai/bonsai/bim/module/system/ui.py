@@ -77,23 +77,6 @@ class BIM_PT_systems(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "should_draw_decorations")
 
-        row = self.layout.row()
-        if active_system := SystemData.data["active_system"]:
-            row.label(text=f"Active system:")
-            tool.System.draw_system_ui(
-                self.layout, active_system["id"], active_system["Name"], active_system["ifc_class"]
-            )
-        else:
-            row.label(text="No active system is selected")
-
-        if ObjectSystemData.data["systems"]:
-            row = self.layout.row()
-            row.label(text="Active object systems:")
-            for system in ObjectSystemData.data["systems"]:
-                tool.System.draw_system_ui(self.layout, system["id"], system["name"], system["ifc_class"])
-        else:
-            self.layout.label(text="No System associated with active object")
-
         row = self.layout.row(align=True)
         row.label(text="{} Systems Found in Project".format(SystemData.data["total_systems"]), icon="OUTLINER")
         if self.props.is_editing:
@@ -106,19 +89,7 @@ class BIM_PT_systems(Panel):
                 op = row.operator("bim.add_system", text="", icon="ADD")
                 op.parent_system_id = active_system_item.ifc_definition_id
 
-                system_id = active_system_item.ifc_definition_id
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
-                row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
-                if self.props.edited_system_id == system_id:
-                    row.operator("bim.edit_system", text="", icon="CHECKMARK")
-                    row.operator("bim.disable_editing_system", text="", icon="CANCEL")
-                else:
-                    op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
-                    op.system = system_id
-                    op = row.operator("bim.remove_system", text="", icon="X")
-                    op.system = system_id
+
         else:
             row.operator("bim.load_systems", text="", icon="IMPORT")
 
@@ -142,7 +113,7 @@ class BIM_PT_systems(Panel):
                     element = self.props.unassigned_distribution_elements[self.props.active_unassigned_element_index]
                     element_id = element.ifc_definition_id
                     row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = element_id
-                    row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = self.props.active_system_id if self.props.active_system_id else 0
+                    row.operator("bim.assign_element_to_system", text="", icon="KEYFRAME_HLT").element = element_id
                 
                 self.layout.template_list(
                     "BIM_UL_unassigned_distribution_elements",
@@ -457,7 +428,6 @@ class BIM_PT_zones(Panel):
         row.operator("bim.add_zone", text="", icon="ADD")
         if self.props.zones and self.props.active_zone_index < len(self.props.zones):
             ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
-            row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
             row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
             row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
             row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
@@ -509,11 +479,15 @@ class BIM_UL_systems(UIList):
         active_propname,
     ) -> None:
         if item:
+            self.props = tool.System.get_system_props()
             row = layout.row(align=True)
             for i in range(0, item.tree_depth):
                 row.label(text="", icon="BLANK1")
-            system_id = item.ifc_definition_id
-            if item.has_children:
+            
+            item_id = item.ifc_definition_id
+            
+            # Toggle button for items with children (systems with subsystems or elements)
+            if item.has_children and not item.is_element:
                 op = row.operator(
                     "bim.toggle_group",
                     text="",
@@ -523,9 +497,52 @@ class BIM_UL_systems(UIList):
                 op.group_type = "IfcSystem"
                 op.ifc_definition_id = item.ifc_definition_id
                 op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
-            if data.edited_system_id == system_id:
+            
+            # Show editing indicator for systems being edited
+            if not item.is_element and data.edited_system_id == item_id:
                 row.label(text="", icon="GREASEPENCIL")
-            row.prop(item, "name", text="", icon=tool.System.SYSTEM_ICONS[item.ifc_class], emboss=False)
+            
+            # Display name with appropriate icon
+            icon_name = tool.System.SYSTEM_ICONS.get(item.ifc_class, "OUTLINER_OB_POINTCLOUD")
+            row.prop(item, "name", text="", icon=icon_name, emboss=False)
+            
+            # Right-aligned action buttons
+            if not item.is_element:
+                # For systems: add select products button
+                row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = item_id
+                row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = item_id
+                row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = item_id
+                if self.props.edited_system_id == item_id:
+                    row.operator("bim.edit_system", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_system", text="", icon="CANCEL")
+                else:
+                    op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
+                    op.system = item_id
+                    op = row.operator("bim.remove_system", text="", icon="X")
+                    op.system = item_id
+
+            else:
+                # For elements: show select and unassign from parent system
+                row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = item_id
+                row.label(text="", icon="BLANK1")
+
+                # Find parent system by traversing backwards through the list
+                parent_system_id = None
+                props = tool.System.get_system_props()
+                current_index = list(props.systems).index(item)
+                for i in range(current_index - 1, -1, -1):
+                    potential_parent = props.systems[i]
+                    if potential_parent.tree_depth == item.tree_depth - 1 and not potential_parent.is_element:
+                        parent_system_id = potential_parent.ifc_definition_id
+                        break
+                if parent_system_id:
+                    op = row.operator("bim.unassign_element_from_system", text="", icon="KEYFRAME")
+                    op.element = item_id
+                    op.system = parent_system_id
+                else:
+                    row.label(text="", icon="BLANK1")
+                row.label(text="", icon="BLANK1")
+                row.label(text="", icon="BLANK1")
 
 
 class BIM_UL_unassigned_distribution_elements(UIList):

@@ -46,7 +46,6 @@ class SystemData:
         cls.data = {
             "system_class": cls.system_class(),
             "total_systems": cls.total_systems(),
-            "active_system": cls.active_system(),
             "unassigned_distribution_elements": cls.unassigned_distribution_elements(),
         }
         cls.is_loaded = True

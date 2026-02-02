@@ -91,6 +91,9 @@ class RemoveSystem(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.remove_system(tool.Ifc, tool.Group, tool.System, system=tool.Ifc.get().by_id(self.system))
 
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
 
 class EnableEditingSystem(bpy.types.Operator):
     bl_idname = "bim.enable_editing_system"
@@ -143,6 +146,8 @@ class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"CANCELLED"}
         core.assign_system(tool.Ifc, system=system, products=assignable_elements)
+        SystemData.load()
+        tool.System.import_systems()
         self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
         return {"FINISHED"}
 
@@ -168,7 +173,70 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         system = tool.Ifc.get().by_id(self.system)
         core.unassign_system(tool.Ifc, system=system, products=elements)
+        SystemData.load()
+        tool.System.import_systems()
         self.report({"INFO"}, f"System unassigned from {len(elements)} elements.")
+        return {"FINISHED"}
+
+
+class UnassignElementFromSystem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_element_from_system"
+    bl_label = "Unassign Element From System"
+    bl_description = "Unassign this element from its parent system"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+    system: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        system = tool.Ifc.get().by_id(self.system)
+        core.unassign_system(tool.Ifc, system=system, products=[element])
+        SystemData.load()
+        tool.System.import_systems()
+        self.report({"INFO"}, f"Element unassigned from system {system.Name}.")
+        return {"FINISHED"}
+
+
+class AssignElementToSystem(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_element_to_system"
+    bl_label = "Assign Element To System"
+    bl_description = "Assign this element to the active system in the systems list"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        props = tool.System.get_system_props()
+        
+        # Check if there's an active item in the systems list
+        if not props.systems or props.active_group_index >= len(props.systems):
+            self.report({"ERROR"}, "No system selected in the systems list.")
+            return {"CANCELLED"}
+        
+        active_item = props.systems[props.active_group_index]
+        
+        # Check if the active item is an element instead of a system
+        if active_item.is_element:
+            self.report({"ERROR"}, "You must select a system in the systems list, not an element.")
+            return {"CANCELLED"}
+        
+        # Assign element to the selected system
+        element = tool.Ifc.get().by_id(self.element)
+        system = tool.Ifc.get().by_id(active_item.ifc_definition_id)
+        
+        # Check if element is assignable to this system
+        if not ifcopenshell.util.system.is_assignable(element, system):
+            supported_elements_str = ", ".join(ifcopenshell.util.system.group_types[system.is_a()])
+            self.report(
+                {"ERROR"},
+                f"Element {element.is_a()} cannot be assigned to {system.is_a()}.\n"
+                f"Assignable element types are: {supported_elements_str}.",
+            )
+            return {"CANCELLED"}
+        
+        core.assign_system(tool.Ifc, system=system, products=[element])
+        SystemData.load()
+        tool.System.import_systems()
+        self.report({"INFO"}, f"Element assigned to system {system.Name}.")
         return {"FINISHED"}
 
 

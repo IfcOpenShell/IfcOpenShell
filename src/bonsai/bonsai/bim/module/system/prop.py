@@ -70,6 +70,7 @@ class System(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     tree_depth: IntProperty(name="Tree Depth")
     is_expanded: BoolProperty(name="Is Expanded")
+    is_element: BoolProperty(name="Is Element", default=False)
 
     if TYPE_CHECKING:
         name: str
@@ -78,6 +79,7 @@ class System(PropertyGroup):
         has_children: bool
         tree_depth: int
         is_expanded: bool
+        is_element: bool
 
 
 def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
