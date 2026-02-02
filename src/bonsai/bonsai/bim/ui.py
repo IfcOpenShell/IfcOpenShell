@@ -1675,6 +1675,25 @@ class BIM_PT_tab_profiles(Panel):
         pass
 
 
+# Civil Infrastructure tab panels
+class BIM_PT_tab_horizontal_alignment(Panel):
+    bl_idname = "BIM_PT_tab_horizontal_alignment"
+    bl_label = "Horizontal Alignment"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+    bim_tab_name = "CIVIL"
+
+    @classmethod
+    def poll(cls, context):
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_sheets(Panel):
     bl_idname = "BIM_PT_tab_sheets"
     bl_label = "Sheets"
@@ -1861,6 +1880,7 @@ class UIData:
                 ("PROJECT", bonsai.bim.icons[f"{color_mode}_ifc"].icon_id, True),
                 ("OBJECT", "FILE_3D", is_ifc_project),
                 ("GEOMETRY", "MATERIAL", is_ifc_project),
+                ("CIVIL", "CURVE_DATA", is_ifc_project),
                 ("DRAWINGS", "DOCUMENTS", is_ifc_project),
                 ("SERVICES", "NETWORK_DRIVE", is_ifc_project),
                 ("STRUCTURE", "EDITMODE_HLT", is_ifc_project),

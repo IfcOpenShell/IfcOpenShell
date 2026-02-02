@@ -19,7 +19,8 @@
 
 """UI panels for the alignment module
 
-All panels appear in the VIEW_3D N-panel under the "Saikei Civil" tab.
+All panels appear in the Properties sidebar under the CIVIL tab,
+nested under BIM_PT_tab_horizontal_alignment.
 """
 
 import bpy
@@ -118,39 +119,44 @@ class SAIKEI_UL_alignment_pis(UIList):
 
 
 # =============================================================================
-# Main Panel
+# Main Status Panel
 # =============================================================================
 
 
-class SAIKEI_PT_horizontal_alignment(Panel):
-    """Main Horizontal Alignment panel in the N-panel"""
+class SAIKEI_PT_alignment_status(Panel):
+    """Status panel showing IFC schema and alignment count"""
 
-    bl_label = "Horizontal Alignment"
-    bl_idname = "SAIKEI_PT_horizontal_alignment"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
+    bl_label = "Status"
+    bl_idname = "SAIKEI_PT_alignment_status"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_horizontal_alignment"
+    bl_options = {"HIDE_HEADER"}
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and tool.Ifc.get()
 
     def draw(self, context):
         layout = self.layout
         props = context.scene.SaikeiAlignmentProperties
-
-        # Status box
-        box = layout.box()
         ifc = tool.Ifc.get()
 
         if ifc is None:
-            box.label(text="No IFC file loaded", icon="ERROR")
-            box.label(text="Open an IFC4X3 file via Bonsai")
+            row = layout.row()
+            row.label(text="No IFC file loaded", icon="ERROR")
             return
 
         if ifc.schema != "IFC4X3":
-            box.label(text=f"Schema: {ifc.schema}", icon="ERROR")
-            box.label(text="Alignments require IFC4X3")
+            row = layout.row()
+            row.label(text=f"Schema: {ifc.schema}", icon="ERROR")
+            row = layout.row()
+            row.label(text="Alignments require IFC4X3")
             return
 
         # IFC file is loaded and correct schema
-        row = box.row()
+        row = layout.row()
         row.label(text="IFC4X3", icon="CHECKMARK")
 
         # Count alignments
@@ -159,9 +165,9 @@ class SAIKEI_PT_horizontal_alignment(Panel):
 
         # Active alignment selector
         if alignments:
-            box = layout.box()
-            box.label(text="Active Alignment:", icon="CURVE_PATH")
-            row = box.row()
+            row = layout.row()
+            row.label(text="Active Alignment:", icon="CURVE_DATA")
+            row = layout.row()
             row.prop(props, "active_alignment_name", text="")
 
 
@@ -175,15 +181,15 @@ class SAIKEI_PT_alignment_creation(Panel):
 
     bl_label = "Creation"
     bl_idname = "SAIKEI_PT_alignment_creation"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_horizontal_alignment"
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return is_ifc4x3()
+        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout
@@ -198,7 +204,7 @@ class SAIKEI_PT_alignment_creation(Panel):
         # Creation operators
         col = layout.column(align=True)
         col.operator("saikei.create_alignment", icon="ADD")
-        col.operator("saikei.create_alignment_by_pi", icon="CURVE_PATH")
+        col.operator("saikei.create_alignment_by_pi", icon="CURVE_DATA")
         col.operator("saikei.import_alignment_csv", icon="IMPORT")
 
 
@@ -212,15 +218,15 @@ class SAIKEI_PT_pi_editor(Panel):
 
     bl_label = "PI Editor"
     bl_idname = "SAIKEI_PT_pi_editor"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_horizontal_alignment"
     bl_options = set()  # Open by default
 
     @classmethod
     def poll(cls, context):
-        return is_ifc4x3()
+        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout
@@ -327,15 +333,15 @@ class SAIKEI_PT_alignment_stationing(Panel):
 
     bl_label = "Stationing"
     bl_idname = "SAIKEI_PT_alignment_stationing"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "Saikei Civil"
-    bl_parent_id = "SAIKEI_PT_horizontal_alignment"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_horizontal_alignment"
     bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
-        return is_ifc4x3()
+        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and is_ifc4x3()
 
     def draw(self, context):
         layout = self.layout

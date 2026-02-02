@@ -60,8 +60,8 @@ classes = (
     # Operators - Stationing
     operator.SAIKEI_OT_add_stationing_referent,
     operator.SAIKEI_OT_name_segments,
-    # UI Panels
-    ui.SAIKEI_PT_horizontal_alignment,
+    # UI Panels (appear in Properties sidebar under CIVIL tab)
+    ui.SAIKEI_PT_alignment_status,
     ui.SAIKEI_PT_alignment_creation,
     ui.SAIKEI_PT_pi_editor,
     ui.SAIKEI_PT_alignment_stationing,
