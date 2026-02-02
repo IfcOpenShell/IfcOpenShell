@@ -23,7 +23,7 @@ import math
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional
 
 import bpy
 import ifcopenshell
@@ -58,6 +58,28 @@ class Project(bonsai.core.tool.Project):
     def get_measure_tool_settings(cls) -> MeasureToolSettings:
         assert (scene := bpy.context.scene)
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_link_empty_handle(cls, link_name: str) -> bpy.types.Object | None:
+        if link_name == "#0":
+            props = cls.get_project_props()
+            if link_name in props.links:
+                return props.links[link_name].empty_handle
+            return None
+        reference_id = int(link_name[1:])
+        reference = tool.Ifc.get().by_id(reference_id)
+        return tool.Ifc.get_object(reference)
+
+    @classmethod
+    def set_link_empty_handle(cls, link_name: str, empty: bpy.types.Object) -> None:
+        if link_name == "#0":
+            props = cls.get_project_props()
+            if link_name in props.links:
+                props.links[link_name].empty_handle = empty
+            return
+        reference_id = int(link_name[1:])
+        reference = tool.Ifc.get().by_id(reference_id)
+        tool.Ifc.link(reference, empty)
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
@@ -296,18 +318,19 @@ class Project(bonsai.core.tool.Project):
         # Update positions from empty handles for all loaded links (only when saving, not during linking)
         if update_positions:
             for link in links:
-                if link.is_loaded and link.empty_handle and link.name != "#0":
-                    # Update position from current empty handle location
-                    empty = link.empty_handle
-                    x = round(empty.location.x, 3)
-                    y = round(empty.location.y, 3)
-                    z = round(empty.location.z, 3)
-                    angle = round(math.degrees(empty.rotation_euler.z), 3)
-                    new_position = f"{x},{y},{z},{angle}"
-                    
-                    if link.position != new_position:
-                        print(f"DEBUG: Updating position for link {link.name} from '{link.position}' to '{new_position}'")
-                        link.position = new_position
+                if link.is_loaded and link.name != "#0":
+                    empty = tool.Project.get_link_empty_handle(link.name)
+                    if empty:
+                        # Update position from current empty handle location
+                        x = round(empty.location.x, 3)
+                        y = round(empty.location.y, 3)
+                        z = round(empty.location.z, 3)
+                        angle = round(math.degrees(empty.rotation_euler.z), 3)
+                        new_position = f"{x},{y},{z},{angle}"
+                        
+                        if link.position != new_position:
+                            print(f"DEBUG: Updating position for link {link.name} from '{link.position}' to '{new_position}'")
+                            link.position = new_position
                         
                         reference_id = int(link.name[1:])
                         reference = ifc_file.by_id(reference_id)
@@ -359,13 +382,19 @@ class Project(bonsai.core.tool.Project):
                                 if link.name == "#0":
                                     old_name = link.name
                                     new_name = f"#{reference.id()}"
+                                    
+                                    # Get the empty handle before renaming
+                                    empty = cls.get_link_empty_handle(old_name)
+                                    
+                                    # Update the link name
                                     link.name = new_name
                                     
-                                    # Update the empty handle name if it exists
-                                    if link.empty_handle:
-                                        old_empty_name = link.empty_handle.name
-                                        # Replace the old link ID in the empty name with the new one
-                                        link.empty_handle.name = old_empty_name.replace(old_name, new_name)
+                                    # Update the empty handle name and link it to the IFC entity
+                                    if empty:
+                                        old_empty_name = empty.name
+                                        empty.name = old_empty_name.replace(old_name, new_name)
+                                        # Now properly link it to the IFC entity
+                                        cls.set_link_empty_handle(new_name, empty)
                                     break
 
             # Remove obsolete references (or corrupted by user)

@@ -42,22 +42,23 @@ from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
-    if not self.empty_handle:
+    empty_handle = tool.Project.get_link_empty_handle(self.name)
+    if not empty_handle:
         return
     
     if self.is_locked:
-        tool.Geometry.lock_object(self.empty_handle)
-        self.empty_handle.hide_select = True
+        tool.Geometry.lock_object(empty_handle)
+        empty_handle.hide_select = True
         
-        x, y, z = self.empty_handle.location
-        angle = round(bpy.data.objects[self.empty_handle.name].rotation_euler.z * 180 / 3.14159265359, 3)
+        x, y, z = empty_handle.location
+        angle = round(bpy.data.objects[empty_handle.name].rotation_euler.z * 180 / 3.14159265359, 3)
         self.position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
         
         if tool.Ifc.get():
             tool.Project.save_linked_models_to_ifc(update_positions=True)
     else:
-        tool.Geometry.unlock_object(self.empty_handle)
-        self.empty_handle.hide_select = False
+        tool.Geometry.unlock_object(empty_handle)
+        empty_handle.hide_select = False
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -295,7 +296,7 @@ class Link(PropertyGroup):
     include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
-        description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
+        description="Temporary storage for empty handle during link creation (only used for '#0' links before IFC entity creation)",
         type=bpy.types.Object,
     )
 

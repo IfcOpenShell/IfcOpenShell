@@ -628,12 +628,13 @@ class BIM_UL_links(UIList):
             icon_row.ui_units_x = 1.0
 
             placed_as_per_georef = item.placed_as_per_georef
-            if item.is_loaded and item.empty_handle and item.georeferenced in ("PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"):
+            empty_handle = tool.Project.get_link_empty_handle(item.name)
+            if item.is_loaded and empty_handle and item.georeferenced in ("PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"):
                 # Get current position and rotation
-                actual_x = round(item.empty_handle.location.x, 3)
-                actual_y = round(item.empty_handle.location.y, 3)
-                actual_z = round(item.empty_handle.location.z, 3)
-                actual_angle = round(math.degrees(item.empty_handle.rotation_euler.z), 3)  # Convert to degrees
+                actual_x = round(empty_handle.location.x, 3)
+                actual_y = round(empty_handle.location.y, 3)
+                actual_z = round(empty_handle.location.z, 3)
+                actual_angle = round(math.degrees(empty_handle.rotation_euler.z), 3)  # Convert to degrees
                 
                 # Parse expected position from geo_pos_in_3dview
                 if item.geo_pos_in_3dview:
@@ -678,8 +679,8 @@ class BIM_UL_links(UIList):
 
             # Display position from the empty handle if loaded
             position_text = "N/A"
-            if item.is_loaded and item.empty_handle:
-                empty = item.empty_handle
+            empty = tool.Project.get_link_empty_handle(item.name)
+            if item.is_loaded and empty:
                 loc = empty.location
                 rot = empty.rotation_euler
                 position_x = round(loc.x, 3)

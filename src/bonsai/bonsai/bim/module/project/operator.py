@@ -1551,7 +1551,7 @@ class UnloadLink(bpy.types.Operator):
                     bpy.data.libraries.remove(library)
 
         # Let's assume that user might delete it.
-        if empty_handle := link.empty_handle:
+        if empty_handle := tool.Project.get_link_empty_handle(link.name):
             bpy.data.objects.remove(empty_handle)
 
         link.is_loaded = False
@@ -1629,7 +1629,7 @@ class LoadLink(bpy.types.Operator):
                 empty.rotation_euler = (0, 0, radians(angle))
                 print(f"DEBUG link_blend: Positioned empty at ({x}, {y}, {z}) with rotation {angle}°")
             
-            link.empty_handle = empty
+            tool.Project.set_link_empty_handle(link.name, empty)
             bpy.context.scene.collection.objects.link(empty)
             link.is_loaded = True
             if not self.skip_position_calculation_and_not_locked:
@@ -1988,7 +1988,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
             collection.hide_select = not is_selectable
-        if handle := link.empty_handle:
+        if handle := tool.Project.get_link_empty_handle(link.name):
             handle.hide_select = not is_selectable
         return {"FINISHED"}
 
@@ -2033,7 +2033,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         layer_collections = tool.Blender.get_layer_collections_mapping(linked_collections)
         for layer_collection in layer_collections.values():
             layer_collection.exclude = is_hidden
-        if handle := link.empty_handle:
+        if handle := tool.Project.get_link_empty_handle(link.name):
             handle.hide_set(is_hidden)
 
     def get_linked_collections(self) -> list[bpy.types.Collection]:
@@ -2054,7 +2054,7 @@ class SelectLinkHandle(bpy.types.Operator):
     def execute(self, context):
         props = tool.Project.get_project_props()
         link = props.links[self.index]
-        handle = link.empty_handle
+        handle = tool.Project.get_link_empty_handle(link.name)
         if not handle:
             self.report({"ERROR"}, "Link has no empty handle (probably it was deleted).")
             return {"CANCELLED"}

@@ -1201,7 +1201,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
         if context.active_object:
             props = tool.Project.get_project_props()
             for link in props.links:
-                if link.empty_handle == context.active_object:
+                empty_handle = tool.Project.get_link_empty_handle(link.name)
+                if empty_handle == context.active_object:
                     bpy.ops.bim.duplicate_link(link=link.name)
                     return {}
         
