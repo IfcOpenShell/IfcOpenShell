@@ -39,6 +39,7 @@ import numpy as np
 import numpy.typing as npt
 from ifcopenshell.util.shape_builder import np_to_4d
 from mathutils import Matrix, Vector
+from mathutils.kdtree import KDTree
 
 import bonsai.bim.import_ifc
 import bonsai.core.tool
@@ -562,7 +563,18 @@ class Loader(bonsai.core.tool.Loader):
 
         bm_verts = np.array([v.co for v in bm.verts])
         coords_scaled = np.array(faceset.Coordinates.CoordList) * si_conversion
-        coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
+        # See #2824. IfcIndexedColourMap is not natively handled by IfcOpenShell
+        # As a result, we map IFC coords to Blender coords (highly wasteful but...)
+        # coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
+        # Because this is O(N*M), here is a faster KDTree implementation.
+        kd = KDTree(len(bm_verts))
+        for i, v in enumerate(bm_verts):
+            kd.insert((float(v[0]), float(v[1]), float(v[2])), i)
+        kd.balance()
+        coordinates_remap = np.empty(len(coords_scaled), dtype=np.int32)
+        for j, co in enumerate(coords_scaled):
+            _co, index, _dist = kd.find((float(co[0]), float(co[1]), float(co[2])))
+            coordinates_remap[j] = index
 
         # ifc indices start with 1
         remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
