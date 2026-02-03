@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.app.handlers import persistent
-from . import ui, prop, operator
+from . import ui, prop, operator, decorator
 
 
 @persistent

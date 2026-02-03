@@ -28,6 +28,8 @@ import ifcopenshell.api.spatial
 from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator
 from bpy.props import StringProperty, FloatProperty, IntProperty
+from mathutils import Vector
+from . import decorator as alignment_decorator
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
@@ -821,24 +823,51 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
             self.report({"ERROR"}, "No 3D Viewport found")
             return {"CANCELLED"}
 
+        # Install the PI picker decorator for visual feedback
+        alignment_decorator.PIPickerDecorator.install(context, self._region, self._rv3d)
+
+        # Initialize decorator with any existing PIs
+        alignment_decorator.PIPickerDecorator.update(
+            pi_points_blender=self._get_pi_points_blender(context),
+            mouse_3d=None,
+        )
+
         context.window.cursor_set("CROSSHAIR")
         context.window_manager.modal_handler_add(self)
         self.report({"INFO"}, "Click to add PIs. Right-click or Escape to finish.")
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
+        # Update rubber band position on mouse move
+        if event.type == "MOUSEMOVE":
+            coord = self.get_ground_intersection(context, event)
+            if coord:
+                mouse_3d = Vector((coord[0], coord[1], 0.0))
+                alignment_decorator.PIPickerDecorator.update(
+                    pi_points_blender=self._get_pi_points_blender(context),
+                    mouse_3d=mouse_3d,
+                )
+                if self._area:
+                    self._area.tag_redraw()
+            return {"RUNNING_MODAL"}
+
         if event.type == "LEFTMOUSE" and event.value == "PRESS":
             # Raycast to ground plane (Z=0)
             coord = self.get_ground_intersection(context, event)
             if coord:
                 self.add_pi_at_location(context, coord)
+                # Update decorator with new PI
+                mouse_3d = Vector((coord[0], coord[1], 0.0))
+                alignment_decorator.PIPickerDecorator.update(
+                    pi_points_blender=self._get_pi_points_blender(context),
+                    mouse_3d=mouse_3d,
+                )
                 if self._area:
                     self._area.tag_redraw()
             return {"RUNNING_MODAL"}
 
         elif event.type in {"RIGHTMOUSE", "ESC"}:
-            context.window.cursor_set("DEFAULT")
-            self.report({"INFO"}, "Finished adding PIs")
+            self._finish_modal(context)
             return {"FINISHED"}
 
         # Allow viewport navigation
@@ -875,6 +904,31 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
                 hit = origin + direction * t
                 return (hit.x, hit.y)
         return None
+
+    def _get_pi_points_blender(self, context):
+        """Get all PI points converted to Blender coordinates.
+
+        PI coordinates are stored in IFC space; this converts them
+        to Blender local coordinates for visualization.
+
+        Returns:
+            List of Vector - PI positions in Blender coordinates
+        """
+        props = context.scene.SaikeiAlignmentProperties
+        points = []
+        for pi in props.pis:
+            # Convert from IFC to Blender coordinates
+            blender_coord = tool.Alignment.ifc_to_blender_coordinates(pi.x, pi.y, 0.0)
+            points.append(Vector(blender_coord))
+        return points
+
+    def _finish_modal(self, context):
+        """Clean up modal state and uninstall decorator."""
+        context.window.cursor_set("DEFAULT")
+        alignment_decorator.PIPickerDecorator.uninstall()
+        if self._area:
+            self._area.tag_redraw()
+        self.report({"INFO"}, "Finished adding PIs")
 
     def add_pi_at_location(self, context, coord):
         """Add a new PI at the given (x, y) coordinate.
