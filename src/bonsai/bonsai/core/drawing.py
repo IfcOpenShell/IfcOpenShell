@@ -38,11 +38,14 @@ def disable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> 
     drawing.disable_editing_text(obj)
 
 
-def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
-    drawing.synchronise_ifc_and_text_attributes(obj)
-    drawing.update_text_size_pset(obj)
-    drawing.update_text_annotation_properties(obj)
-    drawing.disable_editing_text(obj)
+def edit_text(drawing: type[tool.Drawing], attribute_obj: bpy.types.Object, apply_objs: list[bpy.types.Object]) -> None:
+    literal_attributes = drawing.export_text_literal_attributes(attribute_obj)
+    for obj in apply_objs:
+        drawing.edit_text_literals(obj, literal_attributes)
+        # TODO: font size should be part of a separate set of formatting controls, not part of text editing
+        drawing.update_text_size_pset(obj)
+        drawing.update_text_annotation_properties(obj)
+        drawing.disable_editing_text(obj)
 
 
 def enable_editing_assigned_product(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:

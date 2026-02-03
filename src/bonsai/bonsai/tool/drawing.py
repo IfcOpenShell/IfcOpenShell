@@ -835,43 +835,12 @@ class Drawing(bonsai.core.tool.Drawing):
         return props.is_editing_sheets
 
     @classmethod
-    def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
+    def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
-
-        old_literals = cls.get_text_literal(obj, return_list=True)
-        assert isinstance(old_literals, list)
-        literals_attributes = cls.export_text_literal_attributes(obj)
-        props = cls.get_text_props(obj)
-        defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
-        ifc_file = tool.Ifc.get()
-
-        added_literals: list[ifcopenshell.entity_instance] = []
-        new_literals: list[ifcopenshell.entity_instance] = []
-        for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
-            # making sure all literals from text edit exist in ifc
-            if ifc_definition_id == 0:
-                literal = cls.add_literal(**attributes)
-                added_literals.append(literal)
-            else:
-                literal = ifc_file.by_id(ifc_definition_id)
-                ifcopenshell.api.drawing.edit_text_literal(
-                    ifc_file,
-                    text_literal=literal,
-                    attributes=attributes,
-                )
-            new_literals.append(literal)
-
-        removed_literals = set(old_literals) - set(new_literals)
-
-        # Add new literals and keep the order as defined in text props.
-        items = [i for i in rep.Items if i not in removed_literals] + added_literals
-        items.sort(key=lambda x: new_literals.index(x) if x in new_literals else -1)
-        rep.Items = items
-
-        # Remove from ifc the literals that were removed during the edit.
-        for literal in removed_literals:
-            ifcopenshell.util.element.remove_deep2(ifc_file, literal)
+        for literal in cls.get_text_literal(obj, return_list=True):
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), literal)
+        rep.Items = [cls.add_literal(**a) for a in literal_attributes]
 
     @classmethod
     def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
