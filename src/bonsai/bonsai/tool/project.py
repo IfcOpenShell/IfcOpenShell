@@ -60,26 +60,44 @@ class Project(bonsai.core.tool.Project):
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
+    def get_next_link_id(cls) -> int:
+        props = cls.get_project_props()
+        if not props.links:
+            return 1
+        max_id = max((int(link.name) for link in props.links if link.name.isdigit()), default=0)
+        return max_id + 1
+
+    @classmethod
     def get_link_empty_handle(cls, link_name: str) -> bpy.types.Object | None:
-        if link_name == "#0":
-            props = cls.get_project_props()
-            if link_name in props.links:
-                return props.links[link_name].empty_handle
+        props = cls.get_project_props()
+        if link_name not in props.links:
             return None
-        reference_id = int(link_name[1:])
-        reference = tool.Ifc.get().by_id(reference_id)
-        return tool.Ifc.get_object(reference)
+        
+        link = props.links[link_name]
+        if link.empty_handle:
+            return link.empty_handle
+        
+        ifc_file = tool.Ifc.get()
+        if ifc_file and link.ifc_definition_id:
+            reference = ifc_file.by_id(link.ifc_definition_id)
+            return tool.Ifc.get_object(reference)
+        
+        return None
 
     @classmethod
     def set_link_empty_handle(cls, link_name: str, empty: bpy.types.Object) -> None:
-        if link_name == "#0":
-            props = cls.get_project_props()
-            if link_name in props.links:
-                props.links[link_name].empty_handle = empty
+        props = cls.get_project_props()
+        if link_name not in props.links:
             return
-        reference_id = int(link_name[1:])
-        reference = tool.Ifc.get().by_id(reference_id)
-        tool.Ifc.link(reference, empty)
+        
+        link = props.links[link_name]
+        
+        ifc_file = tool.Ifc.get()
+        if ifc_file and link.ifc_definition_id:
+            reference = ifc_file.by_id(link.ifc_definition_id)
+            tool.Ifc.link(reference, empty)
+        else:
+            link.empty_handle = empty
 
     @classmethod
     def duplicate_link(cls, link_name: str) -> bool:
@@ -91,9 +109,11 @@ class Project(bonsai.core.tool.Project):
         x += 0.5  # Offset to avoid duplicate detection
         new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
         
-        # Create a new link entry
+        next_id = cls.get_next_link_id()
+        new_link_name = str(next_id)
+        
         new_link = props.links.add()
-        new_link.name = "#0"  # Temporary name, will be updated by load_link
+        new_link.name = new_link_name
         new_link.filepath = original_link.filepath
         new_link.position = new_position
         new_link.mode = original_link.mode
@@ -101,11 +121,9 @@ class Project(bonsai.core.tool.Project):
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
         new_link.is_locked = False  # Start unlocked, will be locked after loading
         
-        # Load the new link, skipping position recalculation to preserve the cursor position
-        status = bpy.ops.bim.load_link(link="#0", use_cache=True, skip_position_calculation_and_not_locked=True)
+        status = bpy.ops.bim.load_link(link=new_link_name, use_cache=True, skip_position_calculation_and_not_locked=True)
         if status == {"CANCELLED"}:
-            # Remove the temporary link entry if loading failed
-            index = props.links.find("#0")
+            index = props.links.find(new_link_name)
             if index != -1:
                 props.links.remove(index)
             return False
@@ -322,19 +340,43 @@ class Project(bonsai.core.tool.Project):
         if not linked_docs:
             return
 
+        seen_links = set()
+
         for filepath, doc in linked_docs.items():
             references = tool.Document.get_document_references(doc)
+            
             if not references:
+                filepath_posix = Path(filepath).as_posix()
+                link_key = (filepath_posix, "")
+                if link_key in seen_links:
+                    print(f"Warning: Skipping duplicate link: {filepath} at default position")
+                    continue
+                seen_links.add(link_key)
+                
+                next_id = cls.get_next_link_id()
                 link = links.add()
-                link.name = f"#{doc.id()}"
+                link.name = str(next_id)
                 link.filepath = filepath
                 link.position = ""
+                link.ifc_definition_id = doc.id()
             else:
                 for reference in references:
+                    position = reference.Location or ""
+                    filepath_posix = Path(filepath).as_posix()
+                    
+                    link_key = (filepath_posix, position)
+                    if link_key in seen_links:
+                        print(f"Warning: Skipping duplicate link: {filepath} at position {position}")
+                        continue
+                    seen_links.add(link_key)
+                    
+                    next_id = cls.get_next_link_id()
                     link = links.add()
-                    link.name = f"#{reference.id()}"
+                    link.name = str(next_id)
                     link.filepath = filepath
-                    link.position = reference.Location or ""
+                    link.position = position
+                    link.ifc_definition_id = reference.id()
+                    print(f"DEBUG: Added link {link.name}: {filepath} at position {position}")
 
     @classmethod
     def save_linked_models_to_ifc(cls, update_positions: bool = True) -> bool:
@@ -349,7 +391,7 @@ class Project(bonsai.core.tool.Project):
         # Update positions from empty handles for all loaded links (only when saving, not during linking)
         if update_positions:
             for link in links:
-                if link.is_loaded and link.name != "#0":
+                if link.is_loaded and link.ifc_definition_id:
                     empty = tool.Project.get_link_empty_handle(link.name)
                     if empty:
                         # Update position from current empty handle location
@@ -357,25 +399,25 @@ class Project(bonsai.core.tool.Project):
                         y = round(empty.location.y, 3)
                         z = round(empty.location.z, 3)
                         angle = round(math.degrees(empty.rotation_euler.z), 3)
-                        new_position = f"{x},{y},{z},{angle}"
+
+                        x = 0.0 if x == 0.0 else x
+                        y = 0.0 if y == 0.0 else y
+                        z = 0.0 if z == 0.0 else z
+                        angle = 0.0 if angle == 0.0 else angle
+                        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
                         
                         if link.position != new_position:
                             link.position = new_position
                         
-                        reference_id = int(link.name[1:])
-                        reference = ifc_file.by_id(reference_id)
+                        reference = ifc_file.by_id(link.ifc_definition_id)
                         reference.Location = new_position
 
-        if "#0" in links:
-            new_link = links["#0"]
-            new_filepath = Path(new_link.filepath).as_posix()
-            new_position = new_link.position or ""
-            
-            for link in links:
-                if link.name == "#0":
-                    continue
-                if Path(link.filepath).as_posix() == new_filepath and (link.position or "") == new_position:
-                    return False
+        seen_links = set()
+        for link in links:
+            link_key = (Path(link.filepath).as_posix(), link.position or "")
+            if link_key in seen_links:
+                return False
+            seen_links.add(link_key)
 
         links_by_filepath: dict[str, list[tuple[str, str]]] = defaultdict(list)  # filepath -> [(position, link_name), ...]
         for link in links:
@@ -407,24 +449,14 @@ class Project(bonsai.core.tool.Project):
                     reference.Location = position
                     
                     for pos, link_name in position_list:
-                        if pos == position and link_name == "#0":
+                        if pos == position:
                             for link in links:
-                                if link.name == "#0":
-                                    old_name = link.name
-                                    new_name = f"#{reference.id()}"
+                                if link.name == link_name:
+                                    link.ifc_definition_id = reference.id()
                                     
-                                    # Get the empty handle before renaming
-                                    empty = cls.get_link_empty_handle(old_name)
-                                    
-                                    # Update the link name
-                                    link.name = new_name
-                                    
-                                    # Update the empty handle name and link it to the IFC entity
+                                    empty = cls.get_link_empty_handle(link_name)
                                     if empty:
-                                        old_empty_name = empty.name
-                                        empty.name = old_empty_name.replace(old_name, new_name)
-                                        # Now properly link it to the IFC entity
-                                        cls.set_link_empty_handle(new_name, empty)
+                                        cls.set_link_empty_handle(link_name, empty)
                                     break
 
             # Remove obsolete references (or corrupted by user)

@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import math
 from collections.abc import Generator
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
 
 import bpy
@@ -47,12 +48,34 @@ def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
         return
     
     if self.is_locked:
+        x = round(empty_handle.location.x, 3)
+        y = round(empty_handle.location.y, 3)
+        z = round(empty_handle.location.z, 3)
+        angle = round(math.degrees(empty_handle.rotation_euler.z), 3)
+        # Normalize -0.0 to 0.0 to avoid string comparison issues
+        x = 0.0 if x == 0.0 else x
+        y = 0.0 if y == 0.0 else y
+        z = 0.0 if z == 0.0 else z
+        angle = 0.0 if angle == 0.0 else angle
+        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
+        
+        props = tool.Project.get_project_props()
+        filepath_posix = Path(self.filepath).as_posix()
+        for existing_link in props.links:
+            existing_filepath_posix = Path(existing_link.filepath).as_posix()
+            if existing_link.name == self.name:
+                continue
+            if existing_filepath_posix == filepath_posix and existing_link.position == new_position:
+                self.is_locked = False
+                def draw_error(self, context):
+                    self.layout.label(text=f"Cannot lock link: A link to this file")
+                    self.layout.label(text=f"already exists at position {new_position}")
+                context.window_manager.popup_menu(draw_error, title="Duplicate Link", icon='ERROR')
+                return
+        
         tool.Geometry.lock_object(empty_handle)
         empty_handle.hide_select = True
-        
-        x, y, z = empty_handle.location
-        angle = round(bpy.data.objects[empty_handle.name].rotation_euler.z * 180 / 3.14159265359, 3)
-        self.position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
+        self.position = new_position
         
         if tool.Ifc.get():
             tool.Project.save_linked_models_to_ifc(update_positions=True)
@@ -241,7 +264,7 @@ class FilterCategory(PropertyGroup):
 class Link(PropertyGroup):
     name: StringProperty(
         name="Name",
-        description="STEP ID of the IfcDocumentReference (format: #123). Used as unique identifier for dictionary lookup",
+        description="Unique sequential identifier for the link",
     )
     filepath: StringProperty(
         name="Filepath",
@@ -296,8 +319,13 @@ class Link(PropertyGroup):
     include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
-        description="Temporary storage for empty handle during link creation (only used for '#0' links before IFC entity creation)",
+        description="Storage for empty handle. Used in non-IFC scenarios or temporarily during link creation",
         type=bpy.types.Object,
+    )
+    ifc_definition_id: IntProperty(
+        name="IFC Definition ID",
+        description="STEP ID of the IfcDocumentReference when linked to a parent IFC project. Zero when no parent IFC exists",
+        default=0,
     )
 
     if TYPE_CHECKING:
@@ -313,6 +341,7 @@ class Link(PropertyGroup):
         is_hidden: bool
         include_in_drawings: bool
         empty_handle: Union[bpy.types.Object, None]
+        ifc_definition_id: int
 
 
 class EditedObj(PropertyGroup):

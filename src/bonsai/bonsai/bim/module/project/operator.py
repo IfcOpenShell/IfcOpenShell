@@ -1413,17 +1413,20 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
                 self.report({"INFO"}, "Can't link the current .blend file")
                 continue
             props = tool.Project.get_project_props()
-            new = props.links.add()
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
-            new.name = "#0"
+            
+            next_id = tool.Project.get_next_link_id()
+            link_name = str(next_id)
+            
+            new = props.links.add()
+            new.name = link_name
             new.filepath = filepath
             new.position = "0.000,0.000,0.000,0.000"
             new.mode = props.false_origin_mode
             new.is_locked = False
-            status = bpy.ops.bim.load_link(link="#0", use_cache=self.use_cache)
+            status = bpy.ops.bim.load_link(link=link_name, use_cache=self.use_cache)
             if status == {"CANCELLED"}:
-                # Remove the temporary link entry
-                index = props.links.find("#0")
+                index = props.links.find(link_name)
                 if index != -1:
                     props.links.remove(index)
                 self.report({"ERROR"}, f"Failed to load link: {filepath}")
@@ -1444,11 +1447,10 @@ class UnlinkIfc(bpy.types.Operator):
         
         bpy.ops.bim.unload_link(link=self.link)
         
-        # For temporary links (#0), just remove the entry
-        if link_obj.name != "#0":
-            reference_id = int(link_obj.name[1:])
-            ifc_file = tool.Ifc.get()
-            reference = ifc_file.by_id(reference_id)
+        # If we have a parent IFC and an IFC reference, remove it from IFC
+        ifc_file = tool.Ifc.get()
+        if ifc_file and link_obj.ifc_definition_id:
+            reference = ifc_file.by_id(link_obj.ifc_definition_id)
             
             doc_info = reference.ReferencedDocument
             
@@ -1683,15 +1685,12 @@ except Exception as e:
         
         self.determine_georeferencing_compatibility()
         
-        # Only calculate position for new links (link.name == "#0")
-        # For existing links (loaded from saved session), use stored position
-        if self.link_obj.name == "#0" and not self.skip_position_calculation_and_not_locked:
+        if not self.link_obj.ifc_definition_id and not self.skip_position_calculation_and_not_locked:
             self.calculate_link_position()
 
         self.link_blend(blend_filepath)
         
-        # Save position to IFC for new links (triggers update callback)
-        if tool.Ifc.get() and self.link_obj.name == "#0" and self.link_obj.is_loaded and not self.skip_position_calculation_and_not_locked:
+        if tool.Ifc.get() and not self.link_obj.ifc_definition_id and self.link_obj.is_loaded and not self.skip_position_calculation_and_not_locked:
             self.link_obj.is_locked = True
 
     def set_model_origin_from_link(self) -> None:
