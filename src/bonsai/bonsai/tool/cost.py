@@ -151,17 +151,14 @@ class Cost(bonsai.core.tool.Cost):
         # TODO: make pitch higher as costs rise
         try:
             import aud
+        except ImportError:
+            return  # ah well
 
-            device = aud.Device()
-            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
-            handle = device.play(sound)
-            sound_buffered = aud.Sound.buffer(sound)
-            handle_buffered = device.play(sound_buffered)
-            handle.stop()
-            handle_buffered.stop()
-        except:
-            pass  # ah well
+        device = aud.Device()
+        # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+        filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
+        sound = aud.Sound(filepath)
+        device.play(sound)
 
     @classmethod
     def load_cost_schedule_tree(cls) -> None:
