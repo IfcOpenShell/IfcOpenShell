@@ -238,7 +238,7 @@ class SAIKEI_PT_pi_editor(Panel):
             box.label(text="PI Edit Mode Active", icon="EDITMODE_HLT")
             col = box.column(align=True)
             col.label(text="Move PIs with G key")
-            col.label(text="Press Enter to apply")
+            col.label(text="Press Enter or Space to apply")
             col.label(text="Press Escape to cancel")
             layout.separator()
             return  # Don't show normal UI while in edit mode

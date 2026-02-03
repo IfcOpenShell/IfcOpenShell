@@ -1453,7 +1453,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
 
         # Start modal loop
         context.window_manager.modal_handler_add(self)
-        self.report({"INFO"}, "PI Edit Mode: Move PIs with G. Press Enter to apply, Escape to cancel.")
+        self.report({"INFO"}, "PI Edit Mode: Move PIs with G. Press Enter/Space to apply, Escape to cancel.")
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
@@ -1477,8 +1477,12 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
             if self._area:
                 self._area.tag_redraw()
 
-        # Handle keyboard input
-        if event.type == "RET" and event.value == "PRESS":
+        # Handle keyboard input for apply/cancel
+        # Support both regular Enter and Numpad Enter, plus Space as alternative
+        if event.type in {"RET", "NUMPAD_ENTER", "SPACE"} and event.value == "PRESS":
+            # Don't consume Space if user is typing in a field
+            if event.type == "SPACE" and context.area.type != "VIEW_3D":
+                return {"PASS_THROUGH"}
             return self._cleanup_and_finish(context, apply=True)
 
         if event.type == "ESC" and event.value == "PRESS":
