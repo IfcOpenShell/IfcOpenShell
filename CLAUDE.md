@@ -462,6 +462,46 @@ New-Item -ItemType SymbolicLink -Path "C:\Users\{USER}\AppData\Roaming\Blender F
 2. Extract all wheels to site-packages (see Development Notes)
 3. Mark manifest as skip-worktree: `git update-index --skip-worktree src/bonsai/bonsai/blender_manifest.toml`
 
+### Git Workflow for Local-Only Files
+
+This file (CLAUDE.md) is committed locally but should **never be pushed to origin**. A pre-push hook automatically enforces this.
+
+**How it works:**
+- CLAUDE.md is tracked in git (committed normally)
+- The pre-push hook at `.git/hooks/pre-push` detects commits containing local-only files
+- When you try to `git push`, it blocks and shows the exact command to push only feature commits
+
+**To push your feature commits:**
+```bash
+# Option 1: Use the alias
+git push-features
+
+# Option 2: Manual command (shown by pre-push hook)
+git push origin HEAD~N:branch_name   # N = number of local-only commits at HEAD
+```
+
+**Workflow example:**
+```bash
+# Normal development
+git add src/bonsai/...
+git commit -m "Add new feature"
+
+# Update CLAUDE.md (keeps it at tip of branch)
+git add -f CLAUDE.md
+git commit -m "Local: Update CLAUDE.md"
+
+# Push feature commits only
+git push-features   # Pushes everything except CLAUDE.md commit
+```
+
+**If you need to set this up on a new machine:**
+1. The pre-push hook is in `.git/hooks/pre-push` (not tracked by git)
+2. Create the git alias: `git config alias.push-features "push origin HEAD~1:saikei"`
+3. Force-add CLAUDE.md: `git add -f CLAUDE.md`
+
+**Local-only files pattern:**
+The hook checks for files listed in `LOCAL_ONLY_FILES` variable (currently just `CLAUDE.md`). Add more files there if needed.
+
 ---
 
 ## Development Progress
