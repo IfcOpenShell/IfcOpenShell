@@ -30,10 +30,23 @@ def on_undo_redo(scene):
     - If the active alignment still exists, extracts PI data from IFC segments
     - If the alignment was deleted/invalidated, clears the PI Editor
     - Rebuilds display_rows to match the synced state
+    - If in PI edit mode and empties are gone, reset edit mode state
     """
     if not hasattr(scene, "SaikeiAlignmentProperties"):
         return
     props = scene.SaikeiAlignmentProperties
+
+    # Handle orphaned PI edit mode state (empties removed by undo)
+    if props.is_pi_edit_mode:
+        empties = [obj for obj in bpy.data.objects if obj.get("saikei_is_pi_empty")]
+        if not empties:
+            # Empties were undone - reset edit mode state
+            # The modal operator will detect this and clean up
+            props.is_pi_edit_mode = False
+            props.pi_edit_alignment_id = 0
+            # Uninstall decorator if still active
+            decorator.PIEditDecorator.uninstall()
+
     # Sync PI Editor from IFC to ensure consistency after undo/redo
     operator.sync_pis_from_ifc(props)
 
@@ -60,6 +73,8 @@ classes = (
     # Operators - Stationing
     operator.SAIKEI_OT_add_stationing_referent,
     operator.SAIKEI_OT_name_segments,
+    # Operators - PI Edit Mode
+    operator.SAIKEI_OT_enter_pi_edit_mode,
     # UI Panels (appear in Properties sidebar under CIVIL tab)
     ui.SAIKEI_PT_alignment_status,
     ui.SAIKEI_PT_alignment_creation,

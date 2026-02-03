@@ -231,6 +231,25 @@ class SAIKEI_PT_pi_editor(Panel):
         layout = self.layout
         props = context.scene.SaikeiAlignmentProperties
 
+        # PI Edit Mode indicator
+        if props.is_pi_edit_mode:
+            box = layout.box()
+            box.alert = True
+            box.label(text="PI Edit Mode Active", icon="EDITMODE_HLT")
+            col = box.column(align=True)
+            col.label(text="Move PIs with G key")
+            col.label(text="Press Enter to apply")
+            col.label(text="Press Escape to cancel")
+            layout.separator()
+            return  # Don't show normal UI while in edit mode
+
+        # Edit existing alignment button
+        if props.active_alignment_id != 0:
+            box = layout.box()
+            box.label(text="Edit Alignment:", icon="EDITMODE_HLT")
+            box.operator("saikei.enter_pi_edit_mode", icon="PIVOT_CURSOR", text="Edit PIs (G key)")
+            layout.separator()
+
         # Header row with column labels
         header = layout.row(align=True)
         header.label(text="No.")

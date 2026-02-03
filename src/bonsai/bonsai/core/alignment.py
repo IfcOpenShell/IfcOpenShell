@@ -127,3 +127,169 @@ def create_layout_segment_objects(
         List of created Blender objects (curve + segment empties)
     """
     return alignment_tool.create_objects_for_layout_segments(layout, layout_obj)
+
+
+# =============================================================================
+# PI Edit Mode Functions
+# =============================================================================
+
+
+def enter_pi_edit_mode(
+    ifc_tool: "type[tool.Ifc]",
+    alignment_tool: "type[tool.Alignment]",
+    alignment_id: int,
+) -> list:
+    """Enter PI edit mode for an alignment.
+
+    Business logic for entering PI edit mode:
+    1. Validates that the alignment exists
+    2. Validates that the alignment has a horizontal layout with real segments
+    3. Back-calculates PI positions from segments
+    4. Creates temporary EMPTY objects at each PI location
+
+    Args:
+        ifc_tool: The IFC tool class
+        alignment_tool: The Alignment tool class
+        alignment_id: The IFC ID of the alignment to edit
+
+    Returns:
+        List of created PI EMPTY objects
+
+    Raises:
+        ValueError: If alignment doesn't exist, has no horizontal layout,
+                   or has no real segments
+    """
+    import ifcopenshell.api.alignment as align_api
+
+    # Validate alignment exists
+    ifc_file = ifc_tool.get()
+    if ifc_file is None:
+        raise ValueError("No IFC file loaded")
+
+    try:
+        alignment = ifc_file.by_id(alignment_id)
+    except RuntimeError:
+        raise ValueError(f"Alignment with ID {alignment_id} not found")
+
+    if not alignment.is_a("IfcAlignment"):
+        raise ValueError(f"Entity {alignment_id} is not an IfcAlignment")
+
+    # Validate alignment has horizontal layout
+    h_layout = align_api.get_horizontal_layout(alignment)
+    if h_layout is None:
+        raise ValueError(f"Alignment '{alignment.Name}' has no horizontal layout")
+
+    # Validate layout has real segments (not just zero-length terminator)
+    if not alignment_tool.layout_has_real_segments(h_layout):
+        raise ValueError(f"Alignment '{alignment.Name}' has no editable segments")
+
+    # Back-calculate PI positions from segments
+    pis = alignment_tool.back_calculate_pis_from_alignment(alignment)
+
+    if len(pis) < 2:
+        raise ValueError(f"Alignment '{alignment.Name}' must have at least 2 PIs")
+
+    # Create temporary EMPTY objects at each PI location
+    empties = alignment_tool.create_pi_edit_empties(alignment, pis)
+
+    return empties
+
+
+def exit_pi_edit_mode(
+    ifc_tool: "type[tool.Ifc]",
+    alignment_tool: "type[tool.Alignment]",
+    alignment_id: int,
+    apply: bool,
+) -> bool:
+    """Exit PI edit mode for an alignment.
+
+    Business logic for exiting PI edit mode:
+    1. If apply=True:
+       - Collect new PI positions from empties
+       - Validate the new configuration
+       - Regenerate alignment segments
+    2. Always:
+       - Remove temporary EMPTY objects
+       - Return success status
+
+    Args:
+        ifc_tool: The IFC tool class
+        alignment_tool: The Alignment tool class
+        alignment_id: The IFC ID of the alignment being edited
+        apply: If True, regenerate alignment with new PI positions
+
+    Returns:
+        True if successful
+
+    Raises:
+        ValueError: If alignment doesn't exist or regeneration fails
+    """
+    import ifcopenshell
+    import ifcopenshell.api.alignment as align_api
+
+    ifc_file = ifc_tool.get()
+    if ifc_file is None:
+        # No file loaded, just clean up empties
+        alignment_tool.remove_pi_edit_empties(alignment_id)
+        return True
+
+    # Get alignment
+    try:
+        alignment = ifc_file.by_id(alignment_id)
+    except RuntimeError:
+        # Alignment was deleted, just clean up empties
+        alignment_tool.remove_pi_edit_empties(alignment_id)
+        return True
+
+    if apply:
+        # Collect PI positions from empties
+        hpoints, radii = alignment_tool.collect_pis_from_empties(alignment_id)
+
+        if len(hpoints) < 2:
+            raise ValueError("At least 2 PIs are required")
+
+        # Get alignment metadata for recreation
+        alignment_name = alignment.Name or "Alignment"
+
+        # Get start station from existing alignment (or default)
+        start_station = 0.0
+        try:
+            h_layout = align_api.get_horizontal_layout(alignment)
+            if h_layout:
+                # Try to get existing start station from referent
+                for rel in getattr(alignment, "IsNestedBy", []) or []:
+                    for child in rel.RelatedObjects or []:
+                        if child.is_a("IfcReferent"):
+                            pos_el = child.ObjectPlacement
+                            if pos_el and hasattr(pos_el, "PlacementRelTo"):
+                                # Extract station value if available
+                                pass
+        except Exception:
+            pass  # Use default start_station
+
+        # Remove empties BEFORE deleting alignment (they're parented to it)
+        alignment_tool.remove_pi_edit_empties(alignment_id)
+
+        # Remove old alignment hierarchy from Blender
+        alignment_tool.remove_alignment_hierarchy(alignment)
+
+        # Delete old IFC alignment
+        ifcopenshell.api.run("root.remove_product", ifc_file, product=alignment)
+
+        # Create new alignment with updated PI positions
+        new_alignment = alignment_tool.safe_create_alignment_by_pi_method(
+            ifc_file,
+            name=alignment_name,
+            hpoints=hpoints,
+            radii=radii,
+            start_station=start_station,
+        )
+
+        # Create new Blender hierarchy
+        alignment_tool.create_hierarchy_for_alignment(new_alignment)
+
+        return True
+    else:
+        # Cancel - just remove empties without regenerating
+        alignment_tool.remove_pi_edit_empties(alignment_id)
+        return True

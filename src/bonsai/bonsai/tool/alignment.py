@@ -1043,3 +1043,339 @@ class Alignment:
         )
 
         return (local_matrix[0, 3], local_matrix[1, 3], local_matrix[2, 3])
+
+    # =========================================================================
+    # PI Edit Mode Methods
+    # =========================================================================
+    # These methods support the PI Edit Mode feature, which allows users to
+    # move alignment PIs (Points of Intersection) using Blender's standard
+    # transform tools (G key). The workflow is:
+    # 1. Back-calculate PI positions from existing IFC segments
+    # 2. Create temporary EMPTY objects at each PI location
+    # 3. User moves empties with standard Blender tools
+    # 4. Collect new positions and regenerate alignment segments
+
+    @classmethod
+    def back_calculate_pis_from_alignment(
+        cls, alignment: "ifcopenshell.entity_instance"
+    ) -> List[dict]:
+        """Reverse-engineer PI positions from IFC alignment segments.
+
+        This function analyzes the alignment's horizontal segments and
+        reconstructs the original PI (Point of Intersection) positions
+        that were used to create the alignment.
+
+        Algorithm:
+        1. Get horizontal layout and segments
+        2. First PI = start point of first segment
+        3. For each CIRCULARARC segment:
+           - Extract BC (begin curve) from StartPoint
+           - Calculate deflection: Δ = arc_length / radius
+           - Calculate tangent length: T = R × tan(Δ/2)
+           - PI position = BC + T × direction_vector
+           - Store radius
+        4. For LINE-only transitions (radius=0):
+           - PI = endpoint of LINE segment (becomes a tangent PI)
+        5. Last PI = end point of last real segment
+
+        Args:
+            alignment: The IfcAlignment entity
+
+        Returns:
+            List of dicts, each containing:
+            - "x": float - X coordinate in IFC space
+            - "y": float - Y coordinate in IFC space
+            - "radius": float - Curve radius (0 for endpoints/tangent PIs)
+            - "type": str - "ENDPOINT", "CURVE", or "TANGENT"
+
+        Raises:
+            ValueError: If alignment has no horizontal layout or segments
+        """
+        import ifcopenshell.api.alignment as align_api
+
+        # Get horizontal layout
+        h_layout = align_api.get_horizontal_layout(alignment)
+        if h_layout is None:
+            raise ValueError(f"Alignment #{alignment.id()} has no horizontal layout")
+
+        # Get all segments
+        segments = []
+        for rel in getattr(h_layout, "IsNestedBy", []) or []:
+            for segment in rel.RelatedObjects or []:
+                if segment.is_a("IfcAlignmentSegment"):
+                    segments.append(segment)
+
+        if not segments:
+            raise ValueError(f"Alignment #{alignment.id()} has no segments")
+
+        # Filter out zero-length terminator segments
+        real_segments = []
+        for seg in segments:
+            if not cls.is_zero_length_segment(seg):
+                real_segments.append(seg)
+
+        if not real_segments:
+            raise ValueError(f"Alignment #{alignment.id()} has no real segments (only terminator)")
+
+        pis = []
+
+        # First PI: start point of first segment
+        first_dp = real_segments[0].DesignParameters
+        first_x = float(first_dp.StartPoint.Coordinates[0])
+        first_y = float(first_dp.StartPoint.Coordinates[1])
+        pis.append({
+            "x": first_x,
+            "y": first_y,
+            "radius": 0.0,
+            "type": "ENDPOINT"
+        })
+
+        # Track current position and direction for LINE segments
+        # This helps us identify tangent PIs (where LINE meets LINE)
+        prev_seg_type = first_dp.PredefinedType
+
+        # Process each segment
+        for i, seg in enumerate(real_segments):
+            dp = seg.DesignParameters
+            seg_type = dp.PredefinedType
+
+            if seg_type == "CIRCULARARC":
+                # Reconstruct PI from arc segment
+                bc_x = float(dp.StartPoint.Coordinates[0])
+                bc_y = float(dp.StartPoint.Coordinates[1])
+                angle_in = float(dp.StartDirection)
+                radius = abs(float(dp.StartRadiusOfCurvature))
+                arc_length = float(dp.SegmentLength)
+
+                # Deflection angle: Δ = L / R
+                deflection = arc_length / radius
+
+                # Tangent length: T = R × tan(Δ/2)
+                tangent_length = radius * math.tan(deflection / 2)
+
+                # PI position: BC + T × direction_vector
+                pi_x = bc_x + tangent_length * math.cos(angle_in)
+                pi_y = bc_y + tangent_length * math.sin(angle_in)
+
+                pis.append({
+                    "x": pi_x,
+                    "y": pi_y,
+                    "radius": radius,
+                    "type": "CURVE"
+                })
+
+            elif seg_type == "LINE":
+                # For LINE segments, check if this is a transition point
+                # If the previous segment was also LINE and this isn't the first,
+                # we may have a tangent PI at the connection point
+                if i > 0 and prev_seg_type == "LINE":
+                    # There's a tangent PI at the start of this LINE
+                    # (end of previous LINE)
+                    start_x = float(dp.StartPoint.Coordinates[0])
+                    start_y = float(dp.StartPoint.Coordinates[1])
+                    pis.append({
+                        "x": start_x,
+                        "y": start_y,
+                        "radius": 0.0,
+                        "type": "TANGENT"
+                    })
+
+            prev_seg_type = seg_type
+
+        # Last PI: end point of last segment
+        last_dp = real_segments[-1].DesignParameters
+        last_seg_type = last_dp.PredefinedType
+        last_length = float(last_dp.SegmentLength)
+        last_direction = float(last_dp.StartDirection)
+        last_start_x = float(last_dp.StartPoint.Coordinates[0])
+        last_start_y = float(last_dp.StartPoint.Coordinates[1])
+
+        if last_seg_type == "LINE":
+            # End of LINE: simple projection
+            end_x = last_start_x + last_length * math.cos(last_direction)
+            end_y = last_start_y + last_length * math.sin(last_direction)
+        elif last_seg_type == "CIRCULARARC":
+            # End of ARC: use geometry engine or calculate
+            last_radius = abs(float(last_dp.StartRadiusOfCurvature))
+            deflection = last_length / last_radius
+
+            # Determine curve direction (positive radius = counterclockwise)
+            is_ccw = float(last_dp.StartRadiusOfCurvature) > 0
+            if is_ccw:
+                end_direction = last_direction + deflection
+            else:
+                end_direction = last_direction - deflection
+
+            # Calculate EC (end curve) position
+            # For an arc, EC is at BC + arc travel
+            # We need to use the center calculation
+            center_offset_angle = last_direction + (math.pi / 2 if is_ccw else -math.pi / 2)
+            center_x = last_start_x + last_radius * math.cos(center_offset_angle)
+            center_y = last_start_y + last_radius * math.sin(center_offset_angle)
+
+            # EC is at the end of the arc
+            ec_angle = center_offset_angle + math.pi + (deflection if is_ccw else -deflection)
+            end_x = center_x + last_radius * math.cos(ec_angle)
+            end_y = center_y + last_radius * math.sin(ec_angle)
+        else:
+            # For other segment types (CLOTHOID, etc.), use start point as fallback
+            # TODO: Support spiral transitions
+            end_x = last_start_x
+            end_y = last_start_y
+
+        pis.append({
+            "x": end_x,
+            "y": end_y,
+            "radius": 0.0,
+            "type": "ENDPOINT"
+        })
+
+        return pis
+
+    @classmethod
+    def create_pi_edit_empties(
+        cls,
+        alignment: "ifcopenshell.entity_instance",
+        pis: List[dict],
+    ) -> List[bpy.types.Object]:
+        """Create EMPTY objects at PI locations for editing.
+
+        Creates temporary Blender EMPTY objects at each PI position,
+        allowing users to move them with standard Blender tools (G key).
+
+        The empties are:
+        - Parented to the alignment object
+        - Tagged with custom properties for identification
+        - Named sequentially (PI.001, PI.002, etc.)
+
+        Args:
+            alignment: The IfcAlignment entity
+            pis: List of PI dicts from back_calculate_pis_from_alignment()
+
+        Returns:
+            List of created Blender EMPTY objects, sorted by index
+        """
+        alignment_obj = tool.Ifc.get_object(alignment)
+        if alignment_obj is None:
+            return []
+
+        # Get the collection to add objects to
+        collection = None
+        if alignment_obj.users_collection:
+            collection = alignment_obj.users_collection[0]
+        else:
+            collection = bpy.context.scene.collection
+
+        alignment_id = alignment.id()
+        empties = []
+
+        for i, pi in enumerate(pis):
+            # Convert IFC coordinates to Blender coordinates
+            blender_pos = cls.ifc_to_blender_coordinates(pi["x"], pi["y"], 0.0)
+
+            # Create EMPTY object
+            name = f"PI.{i + 1:03d}"
+            empty = bpy.data.objects.new(name, None)
+            empty.empty_display_type = "SPHERE"
+            empty.empty_display_size = 2.0
+            empty.location = blender_pos
+
+            # Tag with custom properties for identification
+            empty["saikei_is_pi_empty"] = True
+            empty["saikei_pi_index"] = i
+            empty["saikei_pi_radius"] = pi["radius"]
+            empty["saikei_alignment_id"] = alignment_id
+            empty["saikei_pi_type"] = pi["type"]
+
+            # Parent to alignment object
+            empty.parent = alignment_obj
+
+            # Link to collection
+            collection.objects.link(empty)
+
+            empties.append(empty)
+
+        return empties
+
+    @classmethod
+    def get_pi_edit_empties(cls, alignment_id: int) -> List[bpy.types.Object]:
+        """Find all PI EMPTY objects for a given alignment.
+
+        Searches all objects in the scene for empties tagged with
+        the PI edit mode custom properties.
+
+        Args:
+            alignment_id: The IFC ID of the alignment being edited
+
+        Returns:
+            List of PI EMPTY objects, sorted by pi_index
+        """
+        empties = []
+
+        for obj in bpy.data.objects:
+            if obj.get("saikei_is_pi_empty") and obj.get("saikei_alignment_id") == alignment_id:
+                empties.append(obj)
+
+        # Sort by PI index
+        empties.sort(key=lambda e: e.get("saikei_pi_index", 0))
+
+        return empties
+
+    @classmethod
+    def remove_pi_edit_empties(cls, alignment_id: int) -> int:
+        """Remove all PI EMPTY objects for a given alignment.
+
+        Args:
+            alignment_id: The IFC ID of the alignment being edited
+
+        Returns:
+            Number of objects removed
+        """
+        empties = cls.get_pi_edit_empties(alignment_id)
+        removed_count = 0
+
+        for empty in empties:
+            bpy.data.objects.remove(empty, do_unlink=True)
+            removed_count += 1
+
+        return removed_count
+
+    @classmethod
+    def collect_pis_from_empties(
+        cls, alignment_id: int
+    ) -> Tuple[List[Tuple[float, float]], List[float]]:
+        """Gather current PI positions from EMPTY objects.
+
+        Reads the current positions of PI empties and converts them
+        back to IFC coordinates for regenerating the alignment.
+
+        Args:
+            alignment_id: The IFC ID of the alignment being edited
+
+        Returns:
+            Tuple of:
+            - hpoints: List of (x, y) tuples in IFC coordinates
+            - radii: List of radii for interior PIs only (not first/last)
+        """
+        empties = cls.get_pi_edit_empties(alignment_id)
+
+        if len(empties) < 2:
+            return ([], [])
+
+        hpoints = []
+        radii = []
+
+        for i, empty in enumerate(empties):
+            # Convert Blender position to IFC coordinates
+            blender_pos = empty.location
+            ifc_pos = cls.blender_to_ifc_coordinates(
+                blender_pos.x, blender_pos.y, blender_pos.z
+            )
+            hpoints.append((ifc_pos[0], ifc_pos[1]))
+
+            # Collect radii for interior PIs only (not first or last)
+            if 0 < i < len(empties) - 1:
+                radius = empty.get("saikei_pi_radius", 0.0)
+                radii.append(radius)
+
+        return (hpoints, radii)

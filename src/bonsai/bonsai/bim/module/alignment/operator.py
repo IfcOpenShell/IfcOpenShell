@@ -1378,3 +1378,158 @@ class SAIKEI_OT_name_segments(Operator):
         return {"FINISHED"}
 
 
+# =============================================================================
+# PI Edit Mode Operator
+# =============================================================================
+
+
+class SAIKEI_OT_enter_pi_edit_mode(Operator):
+    """Enter PI editing mode - move PIs with G key, press Enter to apply or Escape to cancel"""
+
+    bl_idname = "saikei.enter_pi_edit_mode"
+    bl_label = "Edit PIs"
+    bl_description = "Enter PI edit mode. Move PI points with G key. Press Enter to apply changes, Escape to cancel."
+    bl_options = {"REGISTER", "UNDO"}
+
+    # Instance state for modal operation
+    _pi_empties: list = []
+    _last_positions: list = []
+    _area = None
+    _alignment_id: int = 0
+
+    @classmethod
+    def poll(cls, context):
+        if not poll_ifc4x3(cls, context):
+            return False
+        props = context.scene.SaikeiAlignmentProperties
+        if props.is_pi_edit_mode:
+            cls.poll_message_set("Already in PI edit mode")
+            return False
+        if props.active_alignment_id == 0:
+            cls.poll_message_set("No alignment selected")
+            return False
+        # Verify alignment still exists
+        ifc = tool.Ifc.get()
+        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        if alignment is None:
+            cls.poll_message_set("Selected alignment no longer exists")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        props = context.scene.SaikeiAlignmentProperties
+        self._alignment_id = props.active_alignment_id
+
+        # Enter edit mode via core layer (validates and creates empties)
+        try:
+            empties = core.enter_pi_edit_mode(
+                tool.Ifc, tool.Alignment, self._alignment_id
+            )
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        if not empties:
+            self.report({"ERROR"}, "Failed to create PI empties")
+            return {"CANCELLED"}
+
+        # Cache references to empties and their positions
+        self._pi_empties = empties
+        self._last_positions = [e.location.copy() for e in empties]
+
+        # Find viewport for redraws
+        self._area = None
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                self._area = area
+                break
+
+        # Install visual feedback decorator
+        alignment_decorator.PIEditDecorator.install(context, empties)
+
+        # Update UI state
+        props.is_pi_edit_mode = True
+        props.pi_edit_alignment_id = self._alignment_id
+
+        # Start modal loop
+        context.window_manager.modal_handler_add(self)
+        self.report({"INFO"}, "PI Edit Mode: Move PIs with G. Press Enter to apply, Escape to cancel.")
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        props = context.scene.SaikeiAlignmentProperties
+
+        # Safety: check if empties still exist (handles undo edge case)
+        if not self._empties_still_exist():
+            self.report({"WARNING"}, "PI Edit Mode cancelled - empties were removed")
+            return self._cleanup_and_finish(context, apply=False)
+
+        # Detect position changes and update decorator
+        positions_changed = False
+        for i, empty in enumerate(self._pi_empties):
+            if empty.location != self._last_positions[i]:
+                positions_changed = True
+                self._last_positions[i] = empty.location.copy()
+
+        if positions_changed:
+            # Update decorator to show new tangent lines
+            alignment_decorator.PIEditDecorator.update_positions(self._pi_empties)
+            if self._area:
+                self._area.tag_redraw()
+
+        # Handle keyboard input
+        if event.type == "RET" and event.value == "PRESS":
+            return self._cleanup_and_finish(context, apply=True)
+
+        if event.type == "ESC" and event.value == "PRESS":
+            return self._cleanup_and_finish(context, apply=False)
+
+        # Let all other events pass through (G key, mouse, viewport navigation, etc.)
+        return {"PASS_THROUGH"}
+
+    def _empties_still_exist(self) -> bool:
+        """Check if all PI empties still exist in the scene."""
+        for empty in self._pi_empties:
+            if empty is None:
+                return False
+            if empty.name not in bpy.data.objects:
+                return False
+        return True
+
+    def _cleanup_and_finish(self, context, apply: bool):
+        """Exit edit mode, optionally applying changes."""
+        props = context.scene.SaikeiAlignmentProperties
+
+        try:
+            if apply:
+                # Regenerate alignment from new PI positions
+                core.exit_pi_edit_mode(
+                    tool.Ifc, tool.Alignment, self._alignment_id, apply=True
+                )
+                self.report({"INFO"}, "PI changes applied - alignment regenerated")
+            else:
+                # Just cleanup without regenerating
+                core.exit_pi_edit_mode(
+                    tool.Ifc, tool.Alignment, self._alignment_id, apply=False
+                )
+                self.report({"INFO"}, "PI Edit Mode cancelled")
+        except ValueError as e:
+            self.report({"ERROR"}, str(e))
+
+        # Cleanup decorator
+        alignment_decorator.PIEditDecorator.uninstall()
+
+        # Reset UI state
+        props.is_pi_edit_mode = False
+        props.pi_edit_alignment_id = 0
+
+        # Clear instance state
+        self._pi_empties = []
+        self._last_positions = []
+
+        if self._area:
+            self._area.tag_redraw()
+
+        return {"FINISHED"}
+
+

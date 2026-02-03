@@ -235,6 +235,19 @@ class SaikeiAlignmentProperties(PropertyGroup):
         default=False,
     )
 
+    # PI Edit Mode state (for moving PIs with G key)
+    is_pi_edit_mode: BoolProperty(
+        name="PI Edit Mode Active",
+        description="Whether PI edit mode is currently active",
+        default=False,
+    )
+
+    pi_edit_alignment_id: IntProperty(
+        name="Editing Alignment ID",
+        description="IFC ID of alignment being edited in PI edit mode",
+        default=0,
+    )
+
     # Display options
     show_pi_markers: BoolProperty(
         name="Show PI Markers",
