@@ -144,7 +144,8 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def play_sound(cls) -> None:
-        if tool.Blender.get_addon_preferences().should_play_chaching_sound:
+        # Save ears for those running the tests in background mode.
+        if tool.Blender.get_addon_preferences().should_play_chaching_sound and not bpy.app.background:
             cls.play_chaching_sound()  # lol
 
     @classmethod
