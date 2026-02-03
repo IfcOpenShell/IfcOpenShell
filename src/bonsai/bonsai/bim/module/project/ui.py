@@ -479,10 +479,6 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
-        if not tool.Ifc.get():
-            row = self.layout.row(align=True)
-            row.operator("bim.create_project", text="Create Parent Project to Link Projects", icon="FILE_NEW")
-            return
         
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")

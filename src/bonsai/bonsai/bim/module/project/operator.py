@@ -1394,10 +1394,6 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
         return super().invoke(context, event)
 
     def execute(self, context):
-        if not tool.Ifc.get():
-            self.report({"ERROR"}, "Cannot link IFC without a parent IFC project")
-            return {"CANCELLED"}
-        
         start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
         
@@ -1697,6 +1693,11 @@ except Exception as e:
         if tool.Ifc.get():
             return  # The current model's coordinates always take priority.
 
+        # When no parent IFC exists, the first linked file's false origin becomes the host false origin
+        props = tool.Project.get_project_props()
+        if len(props.links) > 1:
+            return  # Only the first link sets the origin
+
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
         if not json_filepath.exists():
             return
@@ -1799,12 +1800,20 @@ except Exception as e:
 
         if parent_origin == "PARENT_IFC":
             parent_ifc = tool.Ifc.get()
-            parent_helmert = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(parent_ifc)
-            if parent_helmert is None:
-                parent_helmert = [0.0, 0.0, 0.0]
-                parent_grid_north = 0.0
+            if parent_ifc is None:
+                # Use first link's false origin as reference when no parent IFC
+                props = tool.Project.get_project_props()
+                first_link = props.links[0]
+                parts = [float(v.strip()) for v in first_link.position.split(",")]
+                parent_helmert = [parts[0], parts[1], parts[2]]
+                parent_grid_north = parts[3] if len(parts) > 3 else 0.0
             else:
-                parent_grid_north = ifcopenshell.util.geolocation.get_grid_north(parent_ifc)
+                parent_helmert = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(parent_ifc)
+                if parent_helmert is None:
+                    parent_helmert = [0.0, 0.0, 0.0]
+                    parent_grid_north = 0.0
+                else:
+                    parent_grid_north = ifcopenshell.util.geolocation.get_grid_north(parent_ifc)
         elif parent_origin == "FALSE_ORIGIN":
             parent_helmert = [float(v.strip()) for v in pprops.false_origin.split(",")]
             parent_grid_north = float(pprops.project_north)
