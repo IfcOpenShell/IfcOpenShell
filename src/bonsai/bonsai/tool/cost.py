@@ -23,6 +23,7 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
 
+import aud
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.cost
@@ -149,11 +150,6 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def play_chaching_sound(cls) -> None:
         # TODO: make pitch higher as costs rise
-        try:
-            import aud
-        except ImportError:
-            return  # ah well
-
         device = aud.Device()
         # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
         filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
