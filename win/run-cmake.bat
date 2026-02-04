@@ -23,6 +23,7 @@
 ::
 :: Used environment variables:
 :: - `ADD_COMMIT_SHA` - if defined then `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` cmake args will be set to `ON`.
+:: - `USE_NINJA` - if defined then the Ninja generator will be used instead of the Visual Studio.
 
 
 @if not defined ECHO_ON ( echo off )
