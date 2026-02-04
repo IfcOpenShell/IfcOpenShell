@@ -81,6 +81,7 @@ class BIM_PT_systems(Panel):
         row.label(text="{} Systems Found in Project".format(SystemData.data["total_systems"]), icon="OUTLINER")
         if self.props.is_editing:
             row.operator("bim.add_system", text="", icon="ADD")
+            row.operator("bim.refresh_system_uilist", text="", icon="FILE_REFRESH")
             row.operator("bim.disable_system_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)

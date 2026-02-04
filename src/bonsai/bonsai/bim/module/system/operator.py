@@ -49,6 +49,17 @@ class DisableSystemEditingUI(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RefreshSystemUIList(bpy.types.Operator):
+    bl_idname = "bim.refresh_system_uilist"
+    bl_label = "Refresh System UIList"
+    bl_description = "Update the highlighted item in the system list based on the selected object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        tool.System.update_system_uilist_indices()
+        return {"FINISHED"}
+
+
 class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_system"
     bl_label = "Add System"
