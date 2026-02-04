@@ -78,7 +78,8 @@ BONSAI_PATH = find_bonsai_path()
 # ---------------------------
 
 # Never changed by user.
-PACKAGE_PATH = BLENDER_PATH / r"extensions/.local/lib/python3.11/site-packages"
+PYTHON_VERSION = "3.13" if BLENDER_VERSION == "5.1" else "3.11"
+PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/site-packages"
 
 
 def main() -> None:
