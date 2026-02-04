@@ -333,7 +333,9 @@ class BIM_PT_port(Panel):
             else:
                 cols[7].label(text="", icon="BLANK1")
                 cols[8].label(text="")
-            cols[9].operator("bim.establish_path_direction", text="", icon="CON_FOLLOWPATH").port_id = connected_port.id()
+            cols[9].operator("bim.establish_path_direction", text="", icon="CON_FOLLOWPATH").port_id = (
+                connected_port.id()
+            )
         else:
             cols[4].label(text="", icon="BLANK1")
             cols[5].label(text="", icon="BLANK1")

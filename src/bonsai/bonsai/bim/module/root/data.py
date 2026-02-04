@@ -172,7 +172,7 @@ class IfcClassData:
                     ),
                 )
             )
-        if (ifc_class and "IfcCableCarrierSegment" in ifc_class):
+        if ifc_class and "IfcCableCarrierSegment" in ifc_class:
             templates.extend(
                 (
                     (
@@ -182,7 +182,7 @@ class IfcClassData:
                     ),
                 )
             )
-        
+
         if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
             templates.extend(
                 [
