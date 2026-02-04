@@ -49,7 +49,7 @@ import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 import bonsai.bim
 import bonsai.core.tool
@@ -2127,3 +2127,32 @@ class Blender(bonsai.core.tool.Blender):
         if cls.BLENDER_5:
             return "BLENDER_EEVEE"
         return "BLENDER_EEVEE_NEXT"
+
+    @classmethod
+    def np_frombuffer_legacy(cls, bytedata: bytes, n: int) -> npt.NDArray[np.float32]:
+        """
+        Read ``n`` float values from ``bytedata``, regardless if they are stored as ``float32`` or ``float64``.
+        Needed to support .blend files saved in Blender <5.0.0.
+        Also allows to work with .blend files from 5.0.0+ in older Blender versions.
+
+        In ``bpy.app.version >= 5.0.0`` ``mathutils`` transitioned to use ``float32`` buffer type,
+        while in previous version they were using ``float64``.
+        In some cases we are storing raw bytes (e.g. object transforms cheksums), so old .blend files
+        might still have ``float64`` data stored.
+
+        See https://projects.blender.org/blender/blender/issues/149283
+        """
+        if len(bytedata) == (n * 2):
+            return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
+        return np.frombuffer(bytedata, dtype=np.float32)
+
+    @classmethod
+    def np_array_legacy(cls, mathutils_type: Union[Vector, Matrix]) -> npt.NDArray[np.float32]:
+        """
+        Converts ``mathutils`` types to ``np.float32`` arrays, regardless of Blender version.
+
+        See ``np_frombuffer_legacy`` for more details.
+        """
+        if cls.BLENDER_5:
+            return np.array(mathutils_type)
+        return np.array(mathutils_type, dtype=np.float32)
