@@ -788,11 +788,10 @@ class Search(Operator):
             )
 
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
-        for obj in objs:
-            tool.Blender.set_object_selection(obj)
-        if objs:
-            tool.Blender.set_active_object(objs[0])
-        self.report({"INFO"}, f"{len(results)} Results.")
+        active_object = next(iter(objs), None)
+        selection = tool.Blender.validate_object_selection(context, active_object, objs)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
         return {"FINISHED"}
 
 

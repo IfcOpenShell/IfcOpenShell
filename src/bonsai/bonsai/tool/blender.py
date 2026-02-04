@@ -36,6 +36,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
+    NamedTuple,
     Optional,
     TypeVar,
     Union,
@@ -718,13 +719,18 @@ class Blender(bonsai.core.tool.Blender):
         if active_object:
             active_object.select_set(True)
 
+    class ObjectsSelectionArgs(NamedTuple):
+        context: bpy.types.Context
+        active_object: bpy.types.Object | None
+        selected_objects: list[bpy.types.Object]
+
     @classmethod
     def validate_object_selection(
         cls,
         context: bpy.types.Context,
         active_object: Union[bpy.types.Object, None] = None,
         selected_objects: Sequence[bpy.types.Object] = (),
-    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+    ) -> ObjectsSelectionArgs:
         """Validate object selection and return only valid objects.
 
         Can be used before ``set_objects_selection`` to avoid errors
@@ -739,7 +745,7 @@ class Blender(bonsai.core.tool.Blender):
         if active_object and not cls.is_valid_data_block(active_object):
             active_object = None
 
-        return context, active_object, new_selected_objects
+        return cls.ObjectsSelectionArgs(context, active_object, new_selected_objects)
 
     @classmethod
     def clear_objects_selection(cls) -> None:
