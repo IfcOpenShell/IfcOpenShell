@@ -30,6 +30,22 @@ def run(command: list[str]) -> None:
     subprocess.check_call(command)  # nosec B603
 
 
+def set_env(var_name: str, value: str) -> tuple[str, str | None]:
+    """
+    :return: Tuple of ``(var_name, old_value)`` to be passed to ``restore_env``.
+    """
+    old_value = os.getenv(var_name)
+    os.environ[var_name] = value
+    return var_name, old_value
+
+
+def restore_env(var_name: str, old_value: str | None) -> None:
+    if old_value is None:
+        del os.environ[var_name]
+    else:
+        os.environ[var_name] = old_value
+
+
 def build() -> None:
     for python_version in PYTHON_VERSIONS:
         os.environ["PYTHON_VERSION"] = python_version
@@ -40,16 +56,16 @@ def build() -> None:
             text=True,
             input="y\n",
         )
+        OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
         run(
             [
                 str(REPO_WIN / "run-cmake.bat"),
                 "vs2022-x64",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
-                "-DADD_COMMIT_SHA=ON",
-                "-DVERSION_OVERRIDE=ON",
             ]
         )
+        restore_env(*OLD_ADD_COMMIT_SHA)
         run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-x64", "Release"])
 
 
