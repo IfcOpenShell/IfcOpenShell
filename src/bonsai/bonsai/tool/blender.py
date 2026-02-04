@@ -740,9 +740,12 @@ class Blender(bonsai.core.tool.Blender):
         assert context.view_layer
         view_layer_objects = set(context.view_layer.objects)
 
-        new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
+        def is_selectable(obj: bpy.types.Object) -> bool:
+            return cls.is_valid_data_block(obj) and obj in view_layer_objects
 
-        if active_object and not cls.is_valid_data_block(active_object):
+        new_selected_objects = [o for o in selected_objects if is_selectable(o)]
+
+        if active_object and not is_selectable(active_object):
             active_object = None
 
         return cls.ObjectsSelectionArgs(context, active_object, new_selected_objects)
