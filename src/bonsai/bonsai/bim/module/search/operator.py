@@ -45,8 +45,12 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMFacet
 
-def draw_text_editor_header(self, context):
+
+def draw_text_editor_header(self: bpy.types.TEXT_HT_header, context: bpy.types.Context) -> None:
+    assert isinstance(context.space_data, bpy.types.SpaceTextEditor)
     if context.space_data.text and context.space_data.text.name.startswith("FilterQuery_"):
         layout = self.layout
         layout.separator()
@@ -160,6 +164,7 @@ class FilterValueSuggestions(Operator):
 
     def draw(self, context):
         layout = self.layout
+        assert layout
 
         filter_groups = tool.Search.get_filter_groups(self.module)
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
@@ -202,8 +207,8 @@ class FilterValueSuggestions(Operator):
             results_are_suggestions=True,
         )
 
-    def get_suggestions(self, ifc_file, ifc_filter):
-        suggestions = set()
+    def get_suggestions(self, ifc_file: ifcopenshell.file, ifc_filter: "BIMFacet") -> set[str]:
+        suggestions: set[str] = set()
 
         if ifc_filter.type == "entity":
             suggestions = self.get_entity_suggestions(ifc_file)
@@ -236,8 +241,8 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def build_hierarchy_path(self, element):
-        path = []
+    def build_hierarchy_path(self, element: ifcopenshell.entity_instance) -> list[str]:
+        path: list[str] = []
         current = element
 
         while current:
@@ -262,8 +267,8 @@ class FilterValueSuggestions(Operator):
 
         return path
 
-    def get_entity_suggestions(self, ifc_file):
-        all_classes = set()
+    def get_entity_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        all_classes: set[str] = set()
         schema = tool.Ifc.schema()
 
         for element_id in IfcStore.id_map.keys():
@@ -273,11 +278,13 @@ class FilterValueSuggestions(Operator):
 
                 try:
                     entity = schema.declaration_by_name(class_name).as_entity()
+                    assert entity
                     current = entity
 
                     chain_names = [class_name]
                     while current.supertype():
                         supertype = current.supertype()
+                        assert supertype
                         chain_names.insert(0, supertype.name())
                         current = supertype
 
@@ -295,8 +302,8 @@ class FilterValueSuggestions(Operator):
 
         return all_classes
 
-    def get_type_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_type_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for element_type in ifc_file.by_type("IfcTypeObject"):
             if element_type.Name:
                 hierarchy_path = self.build_hierarchy_path(element_type)
@@ -306,15 +313,15 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(element_type.Name)
         return suggestions
 
-    def get_material_suggestions(self, ifc_file):
+    def get_material_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
         suggestions = set()
         for material in ifc_file.by_type("IfcMaterial"):
             if material.Name:
                 suggestions.add(material.Name)
         return suggestions
 
-    def get_location_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_location_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for spatial in ifc_file.by_type("IfcSpatialStructureElement"):
             if spatial.Name:
                 hierarchy_path = self.build_hierarchy_path(spatial)
@@ -324,8 +331,8 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(spatial.Name)
         return suggestions
 
-    def get_group_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_group_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for group in ifc_file.by_type("IfcGroup"):
             if group.Name:
                 hierarchy_path = self.build_hierarchy_path(group)
@@ -335,15 +342,15 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(group.Name)
         return suggestions
 
-    def get_classification_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_classification_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for ref in ifc_file.by_type("IfcClassificationReference"):
             if ref.Identification:
                 suggestions.add(ref.Identification)
         return suggestions
 
-    def get_parent_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_parent_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -371,9 +378,9 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def get_instance_suggestions(self, ifc_file):
-        suggestions = set()
-        element_data = []
+    def get_instance_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
+        element_data: list[tuple[str, str]] = []
 
         for element_id in IfcStore.id_map.keys():
             try:
@@ -392,7 +399,7 @@ class FilterValueSuggestions(Operator):
             except:
                 continue
 
-        display_counts = {}
+        display_counts: dict[str, int] = {}
         for display_str, global_id in element_data:
             display_counts[display_str] = display_counts.get(display_str, 0) + 1
 
@@ -404,8 +411,8 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def get_property_sets(self, ifc_file):
-        psets = set()
+    def get_property_sets(self, ifc_file: ifcopenshell.file) -> set[str]:
+        psets: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -418,8 +425,8 @@ class FilterValueSuggestions(Operator):
                 continue
         return psets
 
-    def get_property_names(self, ifc_file, pset_name):
-        property_names = set()
+    def get_property_names(self, ifc_file: ifcopenshell.file, pset_name: str) -> set[str]:
+        property_names: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -435,8 +442,8 @@ class FilterValueSuggestions(Operator):
                 continue
         return property_names
 
-    def get_property_values(self, ifc_file, pset_name, property_name):
-        property_values = set()
+    def get_property_values(self, ifc_file: ifcopenshell.file, pset_name: str, property_name: str) -> set[str]:
+        property_values: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -462,8 +469,8 @@ class FilterValueSuggestions(Operator):
                 continue
         return property_values
 
-    def get_attribute_names(self, ifc_file):
-        attribute_names = set()
+    def get_attribute_names(self, ifc_file: ifcopenshell.file) -> set[str]:
+        attribute_names: set[str] = set()
         schema = tool.Ifc.schema()
 
         ifc_classes = set()
@@ -477,6 +484,7 @@ class FilterValueSuggestions(Operator):
         for ifc_class in ifc_classes:
             try:
                 entity = schema.declaration_by_name(ifc_class).as_entity()
+                assert entity
                 attributes = entity.all_attributes()
                 for attr in attributes:
                     attribute_names.add(attr.name())
@@ -485,8 +493,8 @@ class FilterValueSuggestions(Operator):
 
         return attribute_names
 
-    def get_attribute_values(self, ifc_file, attribute_name):
-        attribute_values = set()
+    def get_attribute_values(self, ifc_file: ifcopenshell.file, attribute_name: str) -> set[str]:
+        attribute_values: set[str] = set()
 
         for element_id in IfcStore.id_map.keys():
             try:
