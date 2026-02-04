@@ -32,6 +32,7 @@ target_link_libraries(
         ${GLTF_LIBRARIES}
         IfcGeom
         ${OpenCASCADE_LIBRARIES}
+        ${ROCKSDB_LIBRARIES}
         ${kernel_libraries}
         IfcParse
 )

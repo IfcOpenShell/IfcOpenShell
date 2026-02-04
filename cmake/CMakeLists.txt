@@ -317,6 +317,8 @@ endif()
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
     set(CGAL_LIBRARIES CGAL::CGAL)
+    add_definitions(-DIFOPSH_WITH_CGAL)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
 

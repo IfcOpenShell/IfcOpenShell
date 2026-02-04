@@ -33,7 +33,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
             PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
         )
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
-        target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+        target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} IfcGeom Eigen3::Eigen)
         target_link_libraries(${KERNEL_TARGET_SIMPLE} CGAL::CGAL)
         install(TARGETS ${KERNEL_TARGET_SIMPLE} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
     elseif(${kernel} STREQUAL "opencascade")
