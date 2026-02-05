@@ -21,11 +21,8 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
-    Literal,
-    Optional,
     TypeVar,
     Union,
-    assert_never,
 )
 
 import bpy
@@ -37,7 +34,6 @@ import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.attribute.prop import (
-        BIMAttributeProperties,
         BIMExplorerProperties,
     )
 

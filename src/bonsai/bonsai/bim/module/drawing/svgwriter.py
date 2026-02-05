@@ -18,7 +18,6 @@
 
 import math
 import os
-import re
 import shutil
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Sequence
@@ -30,10 +29,8 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-import mathutils
 import svgwrite
 import svgwrite.container
 import svgwrite.text

@@ -23,7 +23,6 @@ import ifcopenshell.util.element
 
 import bonsai.bim.helper
 import bonsai.bim.module.model.profile as model_profile
-import bonsai.core.profile as core
 import bonsai.tool as tool
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator

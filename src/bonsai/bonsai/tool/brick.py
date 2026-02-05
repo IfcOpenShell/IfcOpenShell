@@ -37,13 +37,11 @@ import bonsai.core.tool
 import bonsai.tool as tool
 
 try:
-    import urllib.parse
 
     import brickschema
     import brickschema.persistent
     from brickschema.namespaces import REF, A
     from rdflib import BNode, Literal, Namespace, URIRef
-    from rdflib.namespace import RDF
 except:
     # See #1860
     print("Warning: brickschema not available.")

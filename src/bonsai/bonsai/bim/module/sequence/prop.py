@@ -16,14 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.sequence
-import ifcopenshell.util.attribute
 import ifcopenshell.util.date
-import isodate
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -31,7 +28,6 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup

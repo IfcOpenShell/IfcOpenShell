@@ -28,7 +28,6 @@ import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 from mathutils import Matrix, Vector
-from natsort import natsorted
 
 import bonsai.bim.helper
 import bonsai.core.geometry

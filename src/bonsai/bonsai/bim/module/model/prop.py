@@ -22,7 +22,6 @@ from math import pi, radians
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 from bpy.types import NodeTree, PropertyGroup
 from mathutils import Vector

@@ -19,8 +19,6 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root

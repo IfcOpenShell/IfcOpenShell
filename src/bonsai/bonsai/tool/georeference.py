@@ -22,7 +22,6 @@ import json
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement

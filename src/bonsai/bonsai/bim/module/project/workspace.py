@@ -19,7 +19,6 @@
 import os
 
 import bpy
-from bpy.types import WorkSpaceTool
 
 import bonsai.tool as tool
 from bonsai.bim.module.project.data import LinksData

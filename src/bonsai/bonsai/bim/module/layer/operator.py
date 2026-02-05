@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.layer
 import ifcopenshell.util.element
 

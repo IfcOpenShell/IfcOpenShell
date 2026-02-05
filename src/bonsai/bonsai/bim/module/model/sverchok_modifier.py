@@ -22,7 +22,6 @@ import zipfile
 
 import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bpy_extras.io_utils import ExportHelper, ImportHelper

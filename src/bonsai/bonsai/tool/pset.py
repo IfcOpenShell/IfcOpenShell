@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 

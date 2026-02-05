@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Literal, assert_never, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -31,13 +30,10 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
-from bpy.types import Operator, PropertyGroup
+from bpy.types import Operator
 from natsort import natsorted
 
 import bonsai.core.search as core

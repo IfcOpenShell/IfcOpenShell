@@ -25,7 +25,6 @@ import bpy
 import ifcopenshell
 from natsort import natsorted
 
-import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 

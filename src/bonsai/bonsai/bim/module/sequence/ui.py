@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 import bpy
-import ifcopenshell
 import isodate
 from bpy.types import Panel, UIList
 

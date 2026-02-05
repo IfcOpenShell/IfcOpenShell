@@ -25,21 +25,19 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
-import bonsai.tool as tool
 from bonsai.bim.module.structural.data import (
     BoundaryConditionsData,
     LoadGroupDecorationData,
     StructuralLoadCasesData,
     StructuralLoadsData,
 )
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

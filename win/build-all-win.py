@@ -28,7 +28,7 @@ ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-win64.zip"
 
 def run(command: list[str]) -> None:
     print("Running:", command)
-    subprocess.check_call(command)  # nosec B603
+    subprocess.check_call(command)
 
 
 def set_env(var_name: str, value: str) -> tuple[str, str | None]:

@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any
 
 import bpy
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 from bpy.types import Panel, UIList
 
 import bonsai.bim.helper

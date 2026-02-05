@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root

@@ -19,12 +19,11 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import json
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
 import ifcopenshell.util.element
@@ -34,8 +33,6 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import mathutils
-import numpy as np
 from bpy_extras.object_utils import AddObjectHelper
 from mathutils import Matrix, Vector
 

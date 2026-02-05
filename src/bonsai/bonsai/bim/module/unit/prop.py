@@ -23,16 +23,13 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 from bonsai.bim.module.unit.data import UnitsData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_unit_classes(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

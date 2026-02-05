@@ -19,14 +19,10 @@
 from __future__ import annotations
 
 import json
-import logging
-import os
-import tempfile
 from collections import Counter
 from typing import TYPE_CHECKING
 
 import bpy
-import ifccsv
 import ifcopenshell
 import ifcopenshell.util.selector
 from bpy_extras.io_utils import ExportHelper, ImportHelper

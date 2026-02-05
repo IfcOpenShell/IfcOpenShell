@@ -22,7 +22,6 @@ import os
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 from bpy.types import Menu, Panel, UIList
 
 import bonsai.bim

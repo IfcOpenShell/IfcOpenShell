@@ -21,7 +21,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 
 import bonsai.core.tool

@@ -31,7 +31,6 @@ from typing import TYPE_CHECKING, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.attribute
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
@@ -49,12 +48,10 @@ import ifcopenshell.util.unit
 import numpy as np
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
-from ifcopenshell.geom import ShapeElementType
 from mathutils import Matrix, Vector
 
 import bonsai.bim.handler
 import bonsai.bim.helper
-import bonsai.bim.schema
 import bonsai.core.project as core
 import bonsai.tool as tool
 from bonsai.bim import export_ifc, import_ifc

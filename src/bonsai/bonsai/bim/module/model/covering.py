@@ -18,8 +18,6 @@
 
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.element
 
 import bonsai.core.covering as core
 import bonsai.tool as tool

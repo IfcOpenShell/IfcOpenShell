@@ -21,7 +21,6 @@ from bpy_extras.io_utils import ImportHelper
 
 import bonsai.core.georeference as core
 import bonsai.tool as tool
-from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):

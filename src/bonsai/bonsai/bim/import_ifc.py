@@ -32,7 +32,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape

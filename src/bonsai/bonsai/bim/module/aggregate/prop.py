@@ -23,12 +23,7 @@ import ifcopenshell.util.element
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
     PointerProperty,
-    StringProperty,
 )
 from bpy.types import PropertyGroup
 
@@ -37,8 +32,6 @@ from bonsai.bim.module.aggregate.decorator import (
     AggregateDecorator,
     AggregateModeDecorator,
 )
-from bonsai.bim.module.spatial.data import SpatialData
-from bonsai.bim.prop import Attribute, StrProperty
 
 
 def can_aggregate(relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:

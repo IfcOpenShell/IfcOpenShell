@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
 from bpy.types import GizmoGroup
 from mathutils import Matrix
 

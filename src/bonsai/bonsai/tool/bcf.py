@@ -33,7 +33,6 @@ import bcf.v3.topic
 import bpy
 
 import bonsai.core.tool
-import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.bcf.prop import BCFProperties
