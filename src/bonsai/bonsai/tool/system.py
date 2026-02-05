@@ -521,99 +521,99 @@ class System(bonsai.core.tool.System):
         systems = ifcopenshell.util.system.get_element_systems(element)
         print(f"[DEBUG] Element systems: {systems}")
         if systems:
-            # Ensure parent systems and connection groups are expanded
+            # Ensure parent systems are expanded and refresh to get connection groups data
             import json
             expanded_groups: set[int] = set(json.loads(props.expanded_groups_json))
-            needs_refresh = False
+            initial_expanded = expanded_groups.copy()
             print(f"[DEBUG] Currently expanded groups: {expanded_groups}")
             
-            # Expand all parent systems that contain this element
+            # Expand all parent systems
             for system in systems:
                 print(f"[DEBUG] Processing system {system.id()}: {system.Name}")
                 if system.id() not in expanded_groups:
                     expanded_groups.add(system.id())
-                    needs_refresh = True
                     print(f"[DEBUG] Added system {system.id()} to expanded groups")
-                
-                # Find the connection group containing this element
-                connection_groups_json = props.connection_groups_json
-                connection_groups_data: dict[str, list[list[int]]] = json.loads(connection_groups_json)
-                print(f"[DEBUG] Connection groups data keys: {list(connection_groups_data.keys())}")
-                
-                system_id_str = str(system.id())
-                if system_id_str in connection_groups_data:
-                    conn_groups = connection_groups_data[system_id_str]
-                    print(f"[DEBUG] System {system_id_str} has {len(conn_groups)} connection groups")
-                    for group_idx, conn_group in enumerate(conn_groups):
-                        print(f"[DEBUG]   Connection group {group_idx}: {conn_group}")
-                        if element.id() in conn_group:
-                            # Calculate the connection group ID
-                            conn_group_id = -((system.id() * 1000) + group_idx + 1)
-                            print(f"[DEBUG]   Element found in connection group {group_idx}, ID: {conn_group_id}")
-                            if conn_group_id not in expanded_groups:
-                                expanded_groups.add(conn_group_id)
-                                needs_refresh = True
-                                print(f"[DEBUG]   Added connection group {conn_group_id} to expanded groups")
-                            
-                            # Also need to expand branch groups that contain this element
-                            # Branch groups have IDs like: -2000000 - (parent_element_id * 100 + branch_idx)
-                            # We need to find all branch groups within this connection group
-                            # For now, expand all branch-like negative IDs that might be relevant
-                            for elem_id in conn_group:
-                                # Check for branch groups for each element in the connection group
-                                for branch_idx in range(10):  # Assume max 10 branches per element
-                                    branch_id = -2000000 - (elem_id * 100 + branch_idx)
-                                    # Check if this branch ID exists in current UIList
-                                    branch_exists = any(
-                                        item.ifc_definition_id == branch_id 
-                                        for item in props.systems
-                                    )
-                                    if branch_exists and branch_id not in expanded_groups:
-                                        expanded_groups.add(branch_id)
-                                        needs_refresh = True
-                                        print(f"[DEBUG]   Added branch group {branch_id} to expanded groups")
-                            break
-                else:
-                    print(f"[DEBUG] System {system_id_str} NOT in connection_groups_data")
             
-            # Update expanded groups and refresh if needed
+            # If we expanded any systems, refresh first to populate connection_groups_data
+            if expanded_groups != initial_expanded:
+                print(f"[DEBUG] Refreshing UIList to populate connection groups...")
+                props.expanded_groups_json = json.dumps(list(expanded_groups))
+                tool.Group.import_groups("IfcSystem")
+                # Re-read the expanded groups after refresh
+                expanded_groups = set(json.loads(props.expanded_groups_json))
+            
+            # Now check connection_groups_data which should be populated after refresh
+            connection_groups_json = props.connection_groups_json
+            connection_groups_data: dict[str, list[list[int]]] = json.loads(connection_groups_json)
+            print(f"[DEBUG] Connection groups data: {connection_groups_data}")
+            
+            # Find and expand connection groups that contain this element
+            needs_refresh = False
+            for system_id_str, conn_groups in connection_groups_data.items():
+                for group_idx, conn_group in enumerate(conn_groups):
+                    if element.id() in conn_group:
+                        # Calculate the connection group ID
+                        system_id = int(system_id_str)
+                        conn_group_id = -((system_id * 1000) + group_idx + 1)
+                        print(f"[DEBUG] Element found in connection group {group_idx} of system {system_id_str}, ID: {conn_group_id}")
+                        if conn_group_id not in expanded_groups:
+                            expanded_groups.add(conn_group_id)
+                            needs_refresh = True
+                            print(f"[DEBUG] Added connection group {conn_group_id} to expanded groups")
+            
+            # Refresh if we expanded any connection groups
             if needs_refresh:
-                print(f"[DEBUG] Refreshing UIList with expanded groups: {expanded_groups}")
+                print(f"[DEBUG] Refreshing after expanding connection groups")
                 props.expanded_groups_json = json.dumps(list(expanded_groups))
                 tool.Group.import_groups("IfcSystem")
             
+            # Now iteratively expand branch groups until we find the element
+            # We need to loop because new branch groups are created during each refresh
+            max_iterations = 10  # Prevent infinite loops
+            for iteration in range(max_iterations):
+                print(f"[DEBUG] Iteration {iteration + 1}: Looking for branch groups to expand")
+                found_new_branches = False
+                
+                for system_item in props.systems:
+                    synthetic_type = system_item.synthetic_group_type if hasattr(system_item, 'synthetic_group_type') else ""
+                    
+                    # Check subConnectedPaths (branch) groups
+                    if synthetic_type == "subConnectedPaths":
+                        item_id = system_item.ifc_definition_id
+                        if item_id not in expanded_groups:
+                            expanded_groups.add(item_id)
+                            found_new_branches = True
+                            print(f"[DEBUG] Added branch group {item_id} to expanded groups")
+                
+                # If we found new branches, refresh and continue
+                if found_new_branches:
+                    print(f"[DEBUG] Iteration {iteration + 1}: Refreshing with newly expanded branches")
+                    props.expanded_groups_json = json.dumps(list(expanded_groups))
+                    tool.Group.import_groups("IfcSystem")
+                else:
+                    # No new branches found, we're done
+                    print(f"[DEBUG] No new branches found in iteration {iteration + 1}, stopping")
+                    break
+            
             # Find the index of the element in the systems UI list
             print(f"[DEBUG] Searching for element {element.id()} in systems UIList ({len(props.systems)} items)")
-            element_items = []
             for i, system_item in enumerate(props.systems):
-                # Show first 20 items
-                if i < 20:
-                    print(f"[DEBUG]   systems[{i}]: id={system_item.ifc_definition_id}, name={system_item.name}, is_element={system_item.is_element if hasattr(system_item, 'is_element') else 'N/A'}")
-                # Collect all element items (is_element=True)
-                if hasattr(system_item, 'is_element') and system_item.is_element:
-                    element_items.append((i, system_item.ifc_definition_id, system_item.name))
-                # Check if this is our element
                 if system_item.ifc_definition_id == element.id():
                     new_index = tool.Blender.get_valid_uilist_index(i, props.systems)
                     print(f"[DEBUG] FOUND in systems at index {i}! Setting active_group_index to {new_index}")
                     props.active_group_index = new_index
                     return
-            
-            print(f"[DEBUG] Found {len(element_items)} element items in UIList:")
-            for idx, elem_id, elem_name in element_items[:10]:
-                print(f"[DEBUG]   Element at [{idx}]: id={elem_id}, name={elem_name}")
-            print(f"[DEBUG] NOT FOUND in systems list despite being in a system!")
+            print(f"[DEBUG] Element NOT FOUND in systems UIList after expanding groups")
         else:
             # Element is unassigned, find it in unassigned list
             print(f"[DEBUG] Element is unassigned. Searching in unassigned elements list ({len(props.unassigned_distribution_elements)} items)")
             for i, unassigned_item in enumerate(props.unassigned_distribution_elements):
-                print(f"[DEBUG]   unassigned[{i}]: id={unassigned_item.ifc_definition_id}, name={unassigned_item.name}")
                 if unassigned_item.ifc_definition_id == element.id():
                     new_index = tool.Blender.get_valid_uilist_index(i, props.unassigned_distribution_elements)
                     print(f"[DEBUG] FOUND in unassigned at index {i}! Setting active_unassigned_element_index to {new_index}")
                     props.active_unassigned_element_index = new_index
                     return
-            print(f"[DEBUG] NOT FOUND in unassigned elements list!")
+            print(f"[DEBUG] Element NOT FOUND in unassigned elements list")
 
     @classmethod
     def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:

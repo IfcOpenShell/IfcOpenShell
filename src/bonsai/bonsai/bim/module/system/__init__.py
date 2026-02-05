@@ -43,6 +43,7 @@ classes = (
     operator.LoadSystems,
     operator.LoadZones,
     operator.MEPConnectElements,
+    operator.RebuildSystemFromElement,
     operator.RefreshSystemUIList,
     operator.RemovePort,
     operator.RemoveSystem,

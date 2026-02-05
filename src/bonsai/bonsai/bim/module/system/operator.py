@@ -60,6 +60,87 @@ class RefreshSystemUIList(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class RebuildSystemFromElement(bpy.types.Operator):
+    bl_idname = "bim.rebuild_system_from_element"
+    bl_label = "Rebuild System From Selected Element"
+    bl_description = "Rebuild the connection branch using the selected element in the UIList as the starting point"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMSystemProperties
+        active_index = props.active_group_index
+        
+        if active_index < 0 or active_index >= len(props.systems):
+            self.report({'WARNING'}, f"No element selected in the system list (index={active_index}, total={len(props.systems)})")
+            return {"CANCELLED"}
+        
+        active_item = props.systems[active_index]
+        ifc_definition_id = active_item.ifc_definition_id
+        
+        # Check if it's a regular element (positive ID)
+        if ifc_definition_id <= 0:
+            self.report({'WARNING'}, "Selected item is not an element. Please select a distribution element.")
+            return {"CANCELLED"}
+        
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        if not element or not element.is_a("IfcDistributionElement"):
+            self.report({'WARNING'}, "Selected item is not a valid distribution element")
+            return {"CANCELLED"}
+        
+        # Find which system this element belongs to
+        systems = ifcopenshell.util.system.get_element_systems(element)
+        if not systems:
+            self.report({'WARNING'}, "Element is not assigned to any system")
+            return {"CANCELLED"}
+        
+        # Use the first system (elements typically belong to one system)
+        system = systems[0]
+        
+        # Find which connection group this element belongs to
+        import json
+        connection_groups_data = json.loads(props.connection_groups_json)
+        system_id_str = str(system.id())
+        
+        if system_id_str not in connection_groups_data:
+            self.report({'WARNING'}, "System has no connection groups")
+            return {"CANCELLED"}
+        
+        conn_groups = connection_groups_data[system_id_str]
+        connection_group_index = None
+        for group_idx, conn_group in enumerate(conn_groups):
+            if element.id() in conn_group:
+                connection_group_index = group_idx
+                break
+        
+        if connection_group_index is None:
+            self.report({'WARNING'}, "Element not found in any connection group")
+            return {"CANCELLED"}
+        
+        # Store the custom start element persistently
+        import json
+        custom_start_elements = json.loads(props.custom_start_elements_json)
+        
+        # Key format: "system_id:connection_group_index"
+        rebuild_key = f"{system.id()}:{connection_group_index}"
+        custom_start_elements[rebuild_key] = element.id()
+        props.custom_start_elements_json = json.dumps(custom_start_elements)
+        
+        self.report({'INFO'}, f"Rebuilding system '{system.Name or 'Unnamed'}' from element #{element.id()}")
+        
+        # Force rebuild by refreshing groups
+        tool.Group.import_groups("IfcSystem")
+        
+        # Find the element's new position in the rebuilt list and set it as active
+        element_id = element.id()
+        for idx, item in enumerate(props.systems):
+            if item.ifc_definition_id == element_id:
+                props.active_group_index = idx
+                break
+        
+        return {"FINISHED"}
+
+
+
 class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_system"
     bl_label = "Add System"

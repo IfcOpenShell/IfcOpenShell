@@ -133,8 +133,17 @@ class Group(bonsai.core.tool.System):
                         
                         for group_idx, connected_group in enumerate(connection_groups):
                             if len(connected_group) > 1:
+                                # Check if we should use a custom start element for this connection group
+                                start_element = None
+                                import json
+                                custom_start_elements = json.loads(bpy.context.scene.BIMSystemProperties.custom_start_elements_json)
+                                rebuild_key = f"{group.id()}:{group_idx}"
+                                if rebuild_key in custom_start_elements:
+                                    start_elem_id = custom_start_elements[rebuild_key]
+                                    start_element = tool.Ifc.get().by_id(start_elem_id) if start_elem_id in [e.id() for e in connected_group] else None
+                                
                                 # Order elements within this connection group
-                                ordered_tree = cls._order_connected_elements(connected_group)
+                                ordered_tree = cls._order_connected_elements(connected_group, start_element=start_element)
                                 
                                 # Create a connection group item
                                 group_item = blender_groups.add()
@@ -151,6 +160,7 @@ class Group(bonsai.core.tool.System):
                                     group_item.is_connection_group = True
                                     group_item.connection_group_id = group_idx
                                     group_item.ifc_class = "ConnectionGroup"
+                                    group_item.synthetic_group_type = "connectedElements"
                                 
                                 # Add elements under this connection group if expanded
                                 if group_item.is_expanded:
@@ -302,6 +312,7 @@ class Group(bonsai.core.tool.System):
                             branch_item.is_element = False
                             branch_item.is_connection_group = True  # Reuse flag for branch groups
                             branch_item.ifc_class = "Branch"
+                            branch_item.synthetic_group_type = "subConnectedPaths"
                         
                         print(f"DEBUG:   Created branch group {branch_id} with {branch_size} elements, expanded={branch_item.is_expanded}")
                         
@@ -311,9 +322,13 @@ class Group(bonsai.core.tool.System):
     
     @classmethod
     def _order_connected_elements(
-        cls, elements: list[ifcopenshell.entity_instance]
+        cls, elements: list[ifcopenshell.entity_instance], start_element: ifcopenshell.entity_instance | None = None
     ) -> list[dict]:
         """Order elements in a connection group based on flow direction.
+        
+        Args:
+            elements: List of connected elements to order
+            start_element: Optional element to use as starting point. If None, will auto-detect.
         
         Returns a hierarchical list where each item is a dict with:
         - 'element': the IFC element
@@ -326,9 +341,11 @@ class Group(bonsai.core.tool.System):
         if not elements:
             return []
         
-        # Find starting element: boundary element with SINK port
-        start_element = cls._find_start_element(elements)
+        # Use provided start element or find one automatically
         if not start_element:
+            # Find starting element: boundary element with SINK port
+            start_element = cls._find_start_element(elements)
+        if not start_element or start_element not in elements:
             # Fallback: use first element
             start_element = elements[0]
         

@@ -75,6 +75,7 @@ class System(PropertyGroup):
     connection_group_id: IntProperty(name="Connection Group ID", default=0)
     is_reference: BoolProperty(name="Is Reference", default=False)
     reference_element_name: StringProperty(name="Reference Element Name", default="")
+    synthetic_group_type: StringProperty(name="Synthetic Group Type", default="")  # "connectedElements" or "subConnectedPaths"
 
     if TYPE_CHECKING:
         name: str
@@ -88,6 +89,7 @@ class System(PropertyGroup):
         connection_group_id: int
         is_reference: bool
         reference_element_name: str
+        synthetic_group_type: str
 
 
 def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
@@ -163,6 +165,8 @@ class BIMSystemProperties(PropertyGroup):
     active_unassigned_element_index: IntProperty(name="Active Unassigned Element Index")
     connection_groups_json: StringProperty(name="Connection Groups JSON", default="{}")
     """JSON serialized dict[parent_system_id, list[list[element_id]]] storing connection groups."""
+    custom_start_elements_json: StringProperty(name="Custom Start Elements JSON", default="{}")
+    """JSON serialized dict mapping 'system_id:connection_group_index' to element_id for custom chain start points."""
 
     if TYPE_CHECKING:
         system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
