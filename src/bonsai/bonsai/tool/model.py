@@ -2637,7 +2637,7 @@ class Model(bonsai.core.tool.Model):
         reference_obj: bpy.types.Object,
         objs: Iterable[bpy.types.Object],
         align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
-    ):
+    ) -> None:
         if align_type == "CENTER":
             point = reference_obj.matrix_world @ (Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2))
         elif align_type == "POSITIVE":
@@ -2782,7 +2782,7 @@ class Model(bonsai.core.tool.Model):
             SvIfcStore.use_bonsai_file = False
 
     @classmethod
-    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+    def create_bmesh_from_vertices(cls, vertices: list[Vector], is_closed: bool = False) -> bmesh.types.BMesh:
         bm = bmesh.new()
 
         new_verts = [bm.verts.new(v) for v in vertices]

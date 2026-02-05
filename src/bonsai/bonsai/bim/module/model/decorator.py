@@ -1076,7 +1076,7 @@ class ProductDecorator:
         data["verts"] = []
 
         # Verts
-        polyline_vertices = []
+        polyline_vertices: list[Vector] = []
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -1196,7 +1196,7 @@ class ProductDecorator:
         data = {}
         data["verts"] = []
         # Verts
-        polyline_vertices = []
+        polyline_vertices: list[Vector] = []
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
