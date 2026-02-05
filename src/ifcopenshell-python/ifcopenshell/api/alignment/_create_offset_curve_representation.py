@@ -37,7 +37,7 @@ def _create_offset_curve_representation(
     if not alignment.is_a(expected_type):
         raise TypeError(f"Expected {expected_type} but got {alignment.is_a()}")
     
-    expected_type = "IfcPointByDistaceExpression"
+    expected_type = "IfcPointByDistanceExpression"
     for offset in offsets:
         if not offset.is_a(expected_type):
             raise TypeError(f"Expected {expected_type} but got {offset.is_a()}")
