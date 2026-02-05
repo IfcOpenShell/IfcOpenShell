@@ -29,6 +29,21 @@ import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 
+# Module-level storage for the current system tree
+# This will be rebuilt each time import_groups is called
+_current_system_tree: SystemTree | None = None
+
+
+def get_system_tree() -> SystemTree | None:
+    """Get the current system tree structure."""
+    return _current_system_tree
+
+
+def clear_system_tree() -> None:
+    """Clear the current system tree."""
+    global _current_system_tree
+    _current_system_tree = None
+
 if TYPE_CHECKING:
     from bonsai.bim.module.group.prop import BIMGroupProperties
     from bonsai.bim.module.group.prop import Group as GroupProp
@@ -36,6 +51,22 @@ if TYPE_CHECKING:
 
 
 class Group(bonsai.core.tool.System):
+    
+    @classmethod
+    def get_system_tree(cls) -> SystemTree | None:
+        """Get the current system tree structure.
+        
+        Returns None if no tree has been built yet or if we're not in system mode.
+        """
+        return get_system_tree()
+    
+    @classmethod
+    def find_node_by_id(cls, ifc_id: int) -> SystemTreeNode | None:
+        """Find a tree node by IFC entity ID."""
+        tree = get_system_tree()
+        if tree:
+            return tree.find_by_id(ifc_id)
+        return None
     
     @classmethod
     def get_group_props(cls) -> BIMGroupProperties:
@@ -64,6 +95,8 @@ class Group(bonsai.core.tool.System):
     def import_groups(cls, group_type: GroupType) -> None:
         from bonsai.bim.module.system.prop import System
 
+        global _current_system_tree
+        
         ifc_file = tool.Ifc.get()
         props, blender_groups = cls.get_groups_data(group_type)
         if group_type == "IfcGroup":
@@ -77,22 +110,49 @@ class Group(bonsai.core.tool.System):
         expanded_groups: list[int] = json.loads(expanded_groups_json)
         blender_groups.clear()
         
+        # Initialize tree structure for systems
+        global _current_system_tree
+        tree = SystemTree() if group_type == "IfcSystem" else None
+        _current_system_tree = tree
+        
         # Store connection groups data for Systems
         connection_groups_data: dict[int, list[list[int]]] = {}
 
         groups = [g for g in base_groups if not g.HasAssignments]
         sorted_groups = natsorted(groups, key=lambda group: group.Name or "Unnamed")
 
-        def load_group(group: ifcopenshell.entity_instance, tree_depth: int = 0) -> None:
-            new = blender_groups.add()
-            new.ifc_definition_id = group.id()
-            new["name"] = group.Name or "Unnamed"
-            new.tree_depth = tree_depth
-            new.has_children = False
-            new.is_expanded = group.id() in expanded_groups
-            if isinstance(new, System):
-                new.ifc_class = group.is_a()
-                new.is_element = False
+        def load_group(group: ifcopenshell.entity_instance, tree_depth: int = 0, parent_node: SystemTreeNode | None = None, parent_is_expanded: bool = True) -> SystemTreeNode | None:
+            """Load a group into both the UIList and the tree structure.
+            
+            Returns the tree node if building a tree, None otherwise.
+            parent_is_expanded: If False, this group won't be added to UIList (but will be in tree).
+            """
+            # Only add to UIList if parent is expanded (or this is a root group)
+            new = None
+            if parent_is_expanded:
+                new = blender_groups.add()
+                new.ifc_definition_id = group.id()
+                new["name"] = group.Name or "Unnamed"
+                new.tree_depth = tree_depth
+                new.has_children = False
+                new.is_expanded = group.id() in expanded_groups
+                if isinstance(new, System):
+                    new.ifc_class = group.is_a()
+                    new.is_element = False
+            
+            # Build tree node if we're building a tree (always, regardless of UIList)
+            current_node = None
+            if tree is not None:
+                current_node = SystemTreeNode(
+                    node_type="system",
+                    ifc_entity=group,
+                    name=group.Name or "Unnamed",
+                    is_expanded=group.id() in expanded_groups
+                )
+                if parent_node:
+                    parent_node.add_child(current_node)
+                else:
+                    tree.add_root(current_node)
 
             related_groups: list[ifcopenshell.entity_instance]
             related_groups = [
@@ -116,40 +176,59 @@ class Group(bonsai.core.tool.System):
                 sorted_assigned_elements = []
 
             if sorted_related_groups or sorted_assigned_elements:
-                new.has_children = True
-                if new.is_expanded:
-                    for related_group in sorted_related_groups:
-                        load_group(related_group, tree_depth=tree_depth + 1)
+                if new:
+                    new.has_children = True
+                
+                # Process child groups - only add to UIList if current group is expanded
+                this_group_is_expanded = group.id() in expanded_groups
+                for related_group in sorted_related_groups:
+                    load_group(related_group, tree_depth=tree_depth + 1, parent_node=current_node, parent_is_expanded=this_group_is_expanded and parent_is_expanded)
+                
+                # Group elements by their connectivity (only for Systems)  
+                # Always build connection groups for tree, regardless of expansion
+                if sorted_assigned_elements and group_type == "IfcSystem":
+                    connection_groups = cls._group_connected_elements(sorted_assigned_elements)
                     
-                    # Group elements by their connectivity (only for Systems)
-                    if sorted_assigned_elements and group_type == "IfcSystem":
-                        connection_groups = cls._group_connected_elements(sorted_assigned_elements)
-                        
-                        # Store connection groups for this system
-                        connection_groups_data[group.id()] = [
-                            [elem.id() for elem in conn_group]
-                            for conn_group in connection_groups
-                        ]
-                        
-                        for group_idx, connected_group in enumerate(connection_groups):
-                            if len(connected_group) > 1:
-                                # Check if we should use a custom start element for this connection group
-                                start_element = None
-                                import json
-                                custom_start_elements = json.loads(bpy.context.scene.BIMSystemProperties.custom_start_elements_json)
-                                rebuild_key = f"{group.id()}:{group_idx}"
-                                if rebuild_key in custom_start_elements:
-                                    start_elem_id = custom_start_elements[rebuild_key]
-                                    start_element = tool.Ifc.get().by_id(start_elem_id) if start_elem_id in [e.id() for e in connected_group] else None
-                                
-                                # Order elements within this connection group
-                                ordered_tree = cls._order_connected_elements(connected_group, start_element=start_element)
-                                
-                                # Create a connection group item
+                    # Store connection groups for this system
+                    connection_groups_data[group.id()] = [
+                        [elem.id() for elem in conn_group]
+                        for conn_group in connection_groups
+                    ]
+                    
+                    for group_idx, connected_group in enumerate(connection_groups):
+                        if len(connected_group) > 1:
+                            # Check if we should use a custom start element for this connection group
+                            start_element = None
+                            import json
+                            custom_start_elements = json.loads(bpy.context.scene.BIMSystemProperties.custom_start_elements_json)
+                            rebuild_key = f"{group.id()}:{group_idx}"
+                            if rebuild_key in custom_start_elements:
+                                start_elem_id = custom_start_elements[rebuild_key]
+                                start_element = tool.Ifc.get().by_id(start_elem_id) if start_elem_id in [e.id() for e in connected_group] else None
+                            
+                            # Order elements within this connection group
+                            ordered_tree = cls._order_connected_elements(connected_group, start_element=start_element)
+                            
+                            # Calculate connection group ID
+                            conn_group_id = -((group.id() * 1000) + group_idx + 1)
+                            
+                            # Create tree node for connection group (always, regardless of expansion)
+                            conn_group_node = SystemTreeNode(
+                                node_type="connection_group",
+                                synthetic_id=conn_group_id,
+                                is_expanded=conn_group_id in expanded_groups
+                            )
+                            current_node.add_child(conn_group_node)
+                            tree._id_map[conn_group_id] = conn_group_node
+                            
+                            # Always build tree nodes for elements (for navigation)
+                            cls._add_ordered_elements_to_tree(
+                                ordered_tree, conn_group_node
+                            )
+                            
+                            # Add connection group to UIList only if parent system is expanded
+                            if new and this_group_is_expanded:
                                 group_item = blender_groups.add()
-                                # Use negative IDs to distinguish from real IFC entities
-                                # Format: -((parent_system_id * 1000) + group_idx + 1)
-                                conn_group_id = -((group.id() * 1000) + group_idx + 1)
                                 group_item.ifc_definition_id = conn_group_id
                                 group_item["name"] = f"({len(connected_group)} elements)"
                                 group_item.tree_depth = tree_depth + 1
@@ -162,25 +241,39 @@ class Group(bonsai.core.tool.System):
                                     group_item.ifc_class = "ConnectionGroup"
                                     group_item.synthetic_group_type = "connectedElements"
                                 
-                                # Add elements under this connection group if expanded
+                                # Add elements to UIList only if connection group is also expanded
                                 if group_item.is_expanded:
                                     cls._add_ordered_elements_to_ui(
-                                        ordered_tree, blender_groups, tree_depth + 2, expanded_groups
+                                        ordered_tree, blender_groups, tree_depth + 2, expanded_groups, parent_node=conn_group_node
                                     )
                             else:
-                                # Single unconnected element, add directly
+                                # Single unconnected element
                                 element = connected_group[0]
-                                elem_item = blender_groups.add()
-                                elem_item.ifc_definition_id = element.id()
-                                obj = tool.Ifc.get_object(element)
-                                elem_item["name"] = obj.name if obj else (element.Name or "Unnamed")
-                                elem_item.tree_depth = tree_depth + 1
-                                elem_item.has_children = False
-                                elem_item.is_expanded = False
-                                if isinstance(elem_item, System):
-                                    elem_item.is_element = True
-                                    elem_item.is_connection_group = False
-                                    elem_item.ifc_class = element.is_a()
+                                
+                                # Create tree node for single element (always, regardless of expansion)
+                                element_node = SystemTreeNode(
+                                    node_type="element",
+                                    ifc_entity=element,
+                                    is_expanded=False
+                                )
+                                current_node.add_child(element_node)
+                                tree._id_map[element.id()] = element_node
+                                
+                                # Add to UIList only if parent system is expanded
+                                if new and this_group_is_expanded:
+                                    elem_item = blender_groups.add()
+                                    elem_item.ifc_definition_id = element.id()
+                                    obj = tool.Ifc.get_object(element)
+                                    elem_item["name"] = obj.name if obj else (element.Name or "Unnamed")
+                                    elem_item.tree_depth = tree_depth + 1
+                                    elem_item.has_children = False
+                                    elem_item.is_expanded = False
+                                    if isinstance(elem_item, System):
+                                        elem_item.is_element = True
+                                        elem_item.is_connection_group = False
+                                        elem_item.ifc_class = element.is_a()
+            
+            return current_node
 
         for group in sorted_groups:
             load_group(group)
@@ -190,6 +283,51 @@ class Group(bonsai.core.tool.System):
             from bonsai.bim.module.system.prop import BIMSystemProperties
             if isinstance(props, BIMSystemProperties):
                 props.connection_groups_json = json.dumps(connection_groups_data)
+
+    @classmethod
+    def _add_ordered_elements_to_tree(cls, ordered_tree: list[dict], parent_node: SystemTreeNode) -> None:
+        """Build tree nodes for elements without adding to UIList.
+        
+        This ensures the tree is complete even when UIList items are collapsed.
+        """
+        tree = get_system_tree()
+        if not tree:
+            return
+        
+        for item in ordered_tree:
+            element = item['element']
+            is_reference = item['is_reference']
+            children = item['children']
+            
+            if not is_reference:
+                # Create tree node for element
+                element_node = SystemTreeNode(
+                    node_type="element",
+                    ifc_entity=element,
+                    is_expanded=False
+                )
+                parent_node.add_child(element_node)
+                tree._id_map[element.id()] = element_node
+                
+                # Handle children (branches)
+                if len(children) > 1:
+                    # Multiple branches - create branch group nodes
+                    for branch_idx, branch_tree in enumerate(children):
+                        branch_id = -2000000 - (element.id() * 100 + branch_idx)
+                        
+                        branch_node = SystemTreeNode(
+                            node_type="branch_group",
+                            synthetic_id=branch_id,
+                            is_expanded=False
+                        )
+                        element_node.add_child(branch_node)
+                        tree._id_map[branch_id] = branch_node
+                        
+                        # Recursively build branch elements
+                        cls._add_ordered_elements_to_tree(branch_tree, branch_node)
+                elif len(children) == 1:
+                    # Single continuation - no branch, just continue
+                    cls._add_ordered_elements_to_tree(children[0], element_node)
 
     @classmethod
     def _group_connected_elements(
@@ -245,13 +383,17 @@ class Group(bonsai.core.tool.System):
         ordered_tree: list[dict],
         blender_groups,
         base_depth: int,
-        expanded_groups: list[int] | None = None
+        expanded_groups: list[int] | None = None,
+        parent_node=None
     ) -> None:
         """Add ordered elements to the UI list with proper indentation and branching."""
         from bonsai.bim.module.system.prop import System
         
         if expanded_groups is None:
             expanded_groups = []
+        
+        # Get the tree from module-level storage
+        tree = get_system_tree()
         
         for item in ordered_tree:
             element = item['element']
@@ -282,16 +424,27 @@ class Group(bonsai.core.tool.System):
                     elem_item.is_element = True
                     elem_item.is_reference = False
                     elem_item.ifc_class = element.is_a()
-                    print(f"DEBUG: Set is_element=True for {element.is_a()} #{element.id()} at depth {base_depth}")
+                
+                # Create tree node for element
+                if tree and parent_node and not is_reference:
+                    element_node = SystemTreeNode(
+                        node_type="element",
+                        ifc_entity=element,
+                        is_expanded=False
+                    )
+                    parent_node.add_child(element_node)
+                    tree._id_map[element.id()] = element_node
+                    current_element_node = element_node
+                else:
+                    current_element_node = parent_node
                 
                 # Handle children
                 if len(children) == 1:
                     # Single continuation - add at same depth (no branch)
                     # children[0] is a list of dicts from _build_connection_tree
-                    cls._add_ordered_elements_to_ui(children[0], blender_groups, base_depth, expanded_groups)
+                    cls._add_ordered_elements_to_ui(children[0], blender_groups, base_depth, expanded_groups, parent_node=current_element_node)
                 elif len(children) > 1:
                     # Multiple branches - create toggleable branch groups
-                    print(f"DEBUG: Creating {len(children)} branch groups at element {element.is_a()} #{element.id()}, base_depth={base_depth}")
                     for branch_idx, branch_tree in enumerate(children):
                         # Create a deterministic branch ID based on parent element ID and branch index
                         # Format: -2000000 - (parent_id * 100 + branch_idx)
@@ -314,11 +467,22 @@ class Group(bonsai.core.tool.System):
                             branch_item.ifc_class = "Branch"
                             branch_item.synthetic_group_type = "subConnectedPaths"
                         
-                        print(f"DEBUG:   Created branch group {branch_id} with {branch_size} elements, expanded={branch_item.is_expanded}")
+                        # Create tree node for branch group
+                        if tree and current_element_node:
+                            branch_node = SystemTreeNode(
+                                node_type="branch_group",
+                                synthetic_id=branch_id,
+                                is_expanded=branch_item.is_expanded
+                            )
+                            current_element_node.add_child(branch_node)
+                            tree._id_map[branch_id] = branch_node
+                        else:
+                            branch_node = None
+                        
                         
                         # Add branch elements if expanded
                         if branch_item.is_expanded:
-                            cls._add_ordered_elements_to_ui(branch_tree, blender_groups, base_depth + 2, expanded_groups)
+                            cls._add_ordered_elements_to_ui(branch_tree, blender_groups, base_depth + 2, expanded_groups, parent_node=branch_node)
     
     @classmethod
     def _order_connected_elements(
@@ -362,7 +526,6 @@ class Group(bonsai.core.tool.System):
         """
         import ifcopenshell.util.system
         
-        print("\n--- Finding start element ---")
         element_set = set(elements)
         boundary_elements = []
         
@@ -371,15 +534,12 @@ class Group(bonsai.core.tool.System):
             has_external_port = False
             has_sink_port = False
             
-            print(f"  Checking {element.is_a()} #{element.id()}: {len(ports)} ports")
-            
             for port in ports:
                 flow_dir = getattr(port, 'FlowDirection', 'NOTDEFINED')
                 connected_port = ifcopenshell.util.system.get_connected_port(port)
                 
                 if not connected_port:
                     # Unconnected port
-                    print(f"    Port (unconnected, {flow_dir})")
                     has_external_port = True
                     if flow_dir == "SINK":
                         has_sink_port = True
@@ -391,32 +551,22 @@ class Group(bonsai.core.tool.System):
                         break
                     
                     if connected_elem and connected_elem not in element_set:
-                        print(f"    Port (external, {flow_dir}) -> {connected_elem.is_a()} #{connected_elem.id()}")
                         has_external_port = True
                         if flow_dir == "SINK":
                             has_sink_port = True
-                    elif connected_elem:
-                        print(f"    Port ({flow_dir}) -> {connected_elem.is_a()} #{connected_elem.id()} (in group)")
             
             if has_external_port:
                 boundary_elements.append((element, has_sink_port))
-                print(f"    -> Boundary element (has_sink: {has_sink_port})")
-        
-        print(f"\nFound {len(boundary_elements)} boundary elements")
         
         # Prefer elements with SINK ports
         for elem, has_sink in boundary_elements:
             if has_sink:
-                print(f"Selected (has SINK): {elem.is_a()} #{elem.id()} ({elem.Name})")
                 return elem
         
         # Otherwise return first boundary element
         if boundary_elements:
-            elem = boundary_elements[0][0]
-            print(f"Selected (first boundary): {elem.is_a()} #{elem.id()} ({elem.Name})")
-            return elem
+            return boundary_elements[0][0]
         
-        print("No boundary elements found!")
         return None
     
     @classmethod
@@ -430,7 +580,6 @@ class Group(bonsai.core.tool.System):
         """Recursively build connection tree starting from element."""
         import ifcopenshell.util.system
         
-        indent = "  " * depth
         result = []
         element_set = set(all_elements)
         
@@ -439,7 +588,6 @@ class Group(bonsai.core.tool.System):
         
         if element in visited:
             # Circular reference - create reference item
-            print(f"{indent}CIRCULAR REF: {element.is_a()} #{element.id()} ({elem_name})")
             result.append({
                 'element': element,
                 'is_reference': True,
@@ -448,7 +596,6 @@ class Group(bonsai.core.tool.System):
             })
             return result
         
-        print(f"{indent}Building: {element.is_a()} #{element.id()} ({elem_name})")
         visited.add(element)
         
         # Add current element
@@ -463,14 +610,6 @@ class Group(bonsai.core.tool.System):
         connected_to_elements = ifcopenshell.util.system.get_connected_to(element)
         connected_from_elements = ifcopenshell.util.system.get_connected_from(element)
         
-        print(f"{indent}  Connected TO: {len(connected_to_elements)} elements")
-        for conn_elem in connected_to_elements:
-            print(f"{indent}    -> {conn_elem.is_a()} #{conn_elem.id()} ({conn_elem.Name})")
-        
-        print(f"{indent}  Connected FROM: {len(connected_from_elements)} elements")
-        for conn_elem in connected_from_elements:
-            print(f"{indent}    <- {conn_elem.is_a()} #{conn_elem.id()} ({conn_elem.Name})")
-        
         # Filter to only elements in our group and deduplicate (remove elements in both TO and FROM)
         # Use dict.fromkeys to preserve order while removing duplicates
         combined_elements = list(dict.fromkeys(connected_to_elements + connected_from_elements))
@@ -479,24 +618,16 @@ class Group(bonsai.core.tool.System):
             if e in element_set and e not in visited
         ]
         
-        print(f"{indent}  Next elements (in group, not visited): {len(next_elements)}")
-        for next_elem in next_elements:
-            print(f"{indent}    => {next_elem.is_a()} #{next_elem.id()} ({next_elem.Name})")
-        
         if len(next_elements) == 0:
             # Leaf node
-            print(f"{indent}  LEAF (no next elements)")
             result.append(item)
         elif len(next_elements) == 1:
             # Single path - continue on same level
-            print(f"{indent}  SINGLE PATH (continuing)")
             result.append(item)
             result.extend(cls._build_connection_tree(next_elements[0], all_elements, visited, depth))
         else:
             # Multiple branches - add each as a separate child branch
-            print(f"{indent}  BRANCHING ({len(next_elements)} branches)")
-            for branch_idx, next_elem in enumerate(next_elements):
-                print(f"{indent}  Branch {branch_idx + 1}:")
+            for next_elem in next_elements:
                 child_tree = cls._build_connection_tree(next_elem, all_elements, visited, depth + 1)
                 # Keep each branch as a separate list in children
                 item['children'].append(child_tree)
@@ -553,27 +684,19 @@ class Group(bonsai.core.tool.System):
     @classmethod
     def toggle_connection_group(cls, connection_group_id: int, group_type: GroupType, option: ToggleOption) -> None:
         """Toggle expansion state of a connection group or branch group (synthetic group with negative ID)."""
-        print(f"DEBUG toggle_connection_group: ID={connection_group_id}, type={group_type}, option={option}")
         # Branch groups use IDs < -2000000, connection groups use IDs < -1000000
         if connection_group_id < -2000000:
-            print(f"DEBUG: This is a BRANCH group")
             # Branch group - use similar pattern with expanded_groups_json
             props, _ = cls.get_groups_data(group_type)
             expanded_groups: set[int]
             expanded_groups = set(json.loads(props.expanded_groups_json))
-            print(f"DEBUG: Current expanded groups: {expanded_groups}")
             if option == "EXPAND":
                 expanded_groups.add(connection_group_id)
-                print(f"DEBUG: Added {connection_group_id} to expanded groups")
             elif connection_group_id in expanded_groups:
                 expanded_groups.remove(connection_group_id)
-                print(f"DEBUG: Removed {connection_group_id} from expanded groups")
             props.expanded_groups_json = json.dumps(list(expanded_groups))
-            print(f"DEBUG: New expanded groups: {expanded_groups}")
-            print(f"DEBUG: Re-importing groups...")
             cls.import_groups(group_type)
         else:
-            print(f"DEBUG: This is a CONNECTION group")
             # Connection group - original logic
             props, _ = cls.get_groups_data(group_type)
             expanded_groups: set[int]
@@ -589,3 +712,143 @@ class Group(bonsai.core.tool.System):
     def update_uilist_index(cls, group_type: GroupType) -> None:
         props, blender_groups = cls.get_groups_data(group_type)
         props.active_group_index = tool.Blender.get_valid_uilist_index(props.active_group_index, blender_groups)
+
+
+# Tree structure for system/group hierarchy representation
+
+NodeType = Literal["system", "connection_group", "branch_group", "element"]
+
+
+class SystemTreeNode:
+    """Represents a node in the system hierarchy tree.
+    
+    This separates the tree structure from the UI representation,
+    making it easier to navigate and manipulate the hierarchy.
+    """
+    
+    def __init__(
+        self,
+        node_type: NodeType,
+        ifc_entity: ifcopenshell.entity_instance | None = None,
+        synthetic_id: int | None = None,
+        name: str = "",
+        is_expanded: bool = False,
+    ):
+        """Initialize a tree node.
+        
+        Args:
+            node_type: Type of node (system, connection_group, branch_group, element)
+            ifc_entity: The IFC entity this node represents (None for synthetic groups)
+            synthetic_id: Negative ID for connection/branch groups
+            name: Display name for the node
+            is_expanded: Whether this node's children are visible
+        """
+        self.node_type: NodeType = node_type
+        self.ifc_entity: ifcopenshell.entity_instance | None = ifc_entity
+        self.synthetic_id: int | None = synthetic_id
+        self.name: str = name
+        self.is_expanded: bool = is_expanded
+        
+        self.parent: SystemTreeNode | None = None
+        self.children: list[SystemTreeNode] = []
+        self.depth: int = 0
+        
+        # Additional metadata
+        self.connection_group_index: int | None = None
+        self.is_connection_group: bool = node_type == "connection_group"
+        self.is_branch_group: bool = node_type == "branch_group"
+        self.is_element: bool = node_type == "element"
+    
+    @property
+    def ifc_definition_id(self) -> int:
+        """Get the IFC ID or synthetic ID for this node."""
+        if self.synthetic_id is not None:
+            return self.synthetic_id
+        if self.ifc_entity:
+            return self.ifc_entity.id()
+        return 0
+    
+    def add_child(self, child: SystemTreeNode) -> SystemTreeNode:
+        """Add a child node and set parent/depth relationships."""
+        child.parent = self
+        child.depth = self.depth + 1
+        self.children.append(child)
+        return child
+    
+    def find_ancestor_system(self) -> SystemTreeNode | None:
+        """Find the nearest ancestor that is a system node."""
+        current = self.parent
+        while current:
+            if current.node_type == "system":
+                return current
+            current = current.parent
+        return None
+    
+    def find_by_ifc_id(self, ifc_id: int) -> SystemTreeNode | None:
+        """Recursively find a node by IFC entity ID."""
+        if self.ifc_definition_id == ifc_id:
+            return self
+        for child in self.children:
+            result = child.find_by_ifc_id(ifc_id)
+            if result:
+                return result
+        return None
+    
+    def flatten_to_list(self, result: list[SystemTreeNode] | None = None) -> list[SystemTreeNode]:
+        """Flatten the tree to a list in display order (depth-first, respecting expanded state).
+        
+        This generates the order that should appear in the UIList.
+        """
+        if result is None:
+            result = []
+        
+        result.append(self)
+        
+        # Only include children if this node is expanded
+        if self.is_expanded:
+            for child in self.children:
+                child.flatten_to_list(result)
+        
+        return result
+    
+    def __repr__(self) -> str:
+        entity_info = f"#{self.ifc_entity.id()}" if self.ifc_entity else f"synthetic:{self.synthetic_id}"
+        return f"<SystemTreeNode {self.node_type} {entity_info} '{self.name}' depth={self.depth} children={len(self.children)}>"
+
+
+class SystemTree:
+    """Container for the entire system tree structure."""
+    
+    def __init__(self):
+        self.roots: list[SystemTreeNode] = []
+        self._id_map: dict[int, SystemTreeNode] = {}
+    
+    def add_root(self, node: SystemTreeNode) -> SystemTreeNode:
+        """Add a root-level node."""
+        self.roots.append(node)
+        self._index_node(node)
+        return node
+    
+    def _index_node(self, node: SystemTreeNode):
+        """Recursively index a node and its children by IFC ID."""
+        self._id_map[node.ifc_definition_id] = node
+        for child in node.children:
+            self._index_node(child)
+    
+    def find_by_id(self, ifc_id: int) -> SystemTreeNode | None:
+        """Find a node by IFC entity ID using the index."""
+        return self._id_map.get(ifc_id)
+    
+    def flatten(self) -> list[SystemTreeNode]:
+        """Flatten entire tree to a list."""
+        result = []
+        for root in self.roots:
+            root.flatten_to_list(result)
+        return result
+    
+    def rebuild_index(self):
+        """Rebuild the ID index after tree modifications."""
+        self._id_map.clear()
+        for root in self.roots:
+            self._index_node(root)
+

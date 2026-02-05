@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Union
+from typing import Any, Union, Optional, List, Literal
 
 import bpy
 import ifcopenshell
@@ -314,3 +314,143 @@ class ActiveObjectZonesData:
             }
             for z in ifcopenshell.util.system.get_element_zones(element)
         ]
+
+
+# Tree structure for system/group hierarchy representation
+
+NodeType = Literal["system", "connection_group", "branch_group", "element"]
+
+
+class SystemTreeNode:
+    """Represents a node in the system hierarchy tree.
+    
+    This separates the tree structure from the UI representation,
+    making it easier to navigate and manipulate the hierarchy.
+    """
+    
+    def __init__(
+        self,
+        node_type: NodeType,
+        ifc_entity: Optional[ifcopenshell.entity_instance] = None,
+        synthetic_id: Optional[int] = None,
+        name: str = "",
+        is_expanded: bool = False,
+    ):
+        """Initialize a tree node.
+        
+        Args:
+            node_type: Type of node (system, connection_group, branch_group, element)
+            ifc_entity: The IFC entity this node represents (None for synthetic groups)
+            synthetic_id: Negative ID for connection/branch groups
+            name: Display name for the node
+            is_expanded: Whether this node's children are visible
+        """
+        self.node_type: NodeType = node_type
+        self.ifc_entity: Optional[ifcopenshell.entity_instance] = ifc_entity
+        self.synthetic_id: Optional[int] = synthetic_id
+        self.name: str = name
+        self.is_expanded: bool = is_expanded
+        
+        self.parent: Optional[SystemTreeNode] = None
+        self.children: List[SystemTreeNode] = []
+        self.depth: int = 0
+        
+        # Additional metadata
+        self.connection_group_index: Optional[int] = None
+        self.is_connection_group: bool = node_type == "connection_group"
+        self.is_branch_group: bool = node_type == "branch_group"
+        self.is_element: bool = node_type == "element"
+    
+    @property
+    def ifc_definition_id(self) -> int:
+        """Get the IFC ID or synthetic ID for this node."""
+        if self.synthetic_id is not None:
+            return self.synthetic_id
+        if self.ifc_entity:
+            return self.ifc_entity.id()
+        return 0
+    
+    def add_child(self, child: "SystemTreeNode") -> "SystemTreeNode":
+        """Add a child node and set parent/depth relationships."""
+        child.parent = self
+        child.depth = self.depth + 1
+        self.children.append(child)
+        return child
+    
+    def find_ancestor_system(self) -> Optional["SystemTreeNode"]:
+        """Find the nearest ancestor that is a system node."""
+        current = self.parent
+        while current:
+            if current.node_type == "system":
+                return current
+            current = current.parent
+        return None
+    
+    def find_by_ifc_id(self, ifc_id: int) -> Optional["SystemTreeNode"]:
+        """Recursively find a node by IFC entity ID."""
+        if self.ifc_definition_id == ifc_id:
+            return self
+        for child in self.children:
+            result = child.find_by_ifc_id(ifc_id)
+            if result:
+                return result
+        return None
+    
+    def flatten_to_list(self, result: Optional[List["SystemTreeNode"]] = None) -> List["SystemTreeNode"]:
+        """Flatten the tree to a list in display order (depth-first, respecting expanded state).
+        
+        This generates the order that should appear in the UIList.
+        """
+        if result is None:
+            result = []
+        
+        result.append(self)
+        
+        # Only include children if this node is expanded
+        if self.is_expanded:
+            for child in self.children:
+                child.flatten_to_list(result)
+        
+        return result
+    
+    def __repr__(self) -> str:
+        entity_info = f"#{self.ifc_entity.id()}" if self.ifc_entity else f"synthetic:{self.synthetic_id}"
+        return f"<SystemTreeNode {self.node_type} {entity_info} '{self.name}' depth={self.depth} children={len(self.children)}>"
+
+
+class SystemTree:
+    """Container for the entire system tree structure."""
+    
+    def __init__(self):
+        self.roots: List[SystemTreeNode] = []
+        self._id_map: dict[int, SystemTreeNode] = {}
+    
+    def add_root(self, node: SystemTreeNode) -> SystemTreeNode:
+        """Add a root-level node."""
+        self.roots.append(node)
+        self._index_node(node)
+        return node
+    
+    def _index_node(self, node: SystemTreeNode):
+        """Recursively index a node and its children by IFC ID."""
+        self._id_map[node.ifc_definition_id] = node
+        for child in node.children:
+            self._index_node(child)
+    
+    def find_by_id(self, ifc_id: int) -> Optional[SystemTreeNode]:
+        """Find a node by IFC entity ID using the index."""
+        return self._id_map.get(ifc_id)
+    
+    def flatten(self) -> List[SystemTreeNode]:
+        """Flatten entire tree to a list."""
+        result = []
+        for root in self.roots:
+            root.flatten_to_list(result)
+        return result
+    
+    def rebuild_index(self):
+        """Rebuild the ID index after tree modifications."""
+        self._id_map.clear()
+        for root in self.roots:
+            self._index_node(root)
+

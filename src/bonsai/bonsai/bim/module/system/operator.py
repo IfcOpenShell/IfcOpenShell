@@ -52,7 +52,7 @@ class DisableSystemEditingUI(bpy.types.Operator):
 class RefreshSystemUIList(bpy.types.Operator):
     bl_idname = "bim.refresh_system_uilist"
     bl_label = "Refresh System UIList"
-    bl_description = "Update the highlighted item in the system list based on the selected object"
+    bl_description = "Highlight the item in the system list based on the selected object in the 3DViewport."
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -83,18 +83,19 @@ class RebuildSystemFromElement(bpy.types.Operator):
             return {"CANCELLED"}
         
         element = tool.Ifc.get().by_id(ifc_definition_id)
-        if not element or not element.is_a("IfcDistributionElement"):
-            self.report({'WARNING'}, "Selected item is not a valid distribution element")
+        
+        # Find the parent system using tree navigation
+        tree_node = tool.Group.find_node_by_id(element.id())
+        if not tree_node:
+            self.report({'ERROR'}, "Element not found in system tree")
             return {"CANCELLED"}
         
-        # Find which system this element belongs to
-        systems = ifcopenshell.util.system.get_element_systems(element)
-        if not systems:
-            self.report({'WARNING'}, "Element is not assigned to any system")
+        system_node = tree_node.find_ancestor_system()
+        if not system_node or not system_node.ifc_entity:
+            self.report({'ERROR'}, "Could not find parent system in tree")
             return {"CANCELLED"}
         
-        # Use the first system (elements typically belong to one system)
-        system = systems[0]
+        system = system_node.ifc_entity
         
         # Find which connection group this element belongs to
         import json
@@ -680,7 +681,6 @@ class EstablishPathDirection(bpy.types.Operator, tool.Ifc.Operator):
             next_element = tool.System.get_port_relating_element(connected_port)
             
             if not next_element.is_a("IfcFlowSegment"):
-                print(f"DEBUG: next_element is not IfcFlowSegment, stopping")
                 break
             
             ports = tool.System.get_ports(next_element)

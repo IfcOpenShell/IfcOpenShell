@@ -493,127 +493,70 @@ class System(bonsai.core.tool.System):
         return element.AssignedToFlowElement[0].RelatingFlowElement
 
     @classmethod
+    def _expand_to_element_via_tree(cls, element, tree, props):
+        """Expand tree nodes to reveal element using tree navigation"""
+        import json
+        
+        # Find the element's node
+        element_node = tree.find_by_id(element.id())
+        if not element_node:
+            return
+        
+        # Collect all ancestors that need to be expanded
+        expanded_groups = set(json.loads(props.expanded_groups_json))
+        
+        current = element_node.parent
+        while current:
+            if not current.is_expanded:
+                if current.ifc_entity:
+                    expanded_groups.add(current.ifc_entity.id())
+                elif current.synthetic_id:
+                    expanded_groups.add(current.synthetic_id)
+            current = current.parent
+        # Save and refresh
+        props.expanded_groups_json = json.dumps(list(expanded_groups))
+        tool.Group.import_groups("IfcSystem")
+        
+        # Find and highlight the element in the UIList
+        for idx, item in enumerate(props.systems):
+            if item.ifc_definition_id == element.id() and item.is_element:
+                props.active_group_index = idx
+                break
+    
+    @classmethod
     def update_system_uilist_indices(cls) -> None:
         """Update active indices based on the currently selected object"""
         from bonsai.bim.module.system.data import SystemData
         
         # Only update if the systems panel is loaded
         if not SystemData.is_loaded:
-            print("[DEBUG] SystemData not loaded, skipping index update")
             return
         
         obj = bpy.context.active_object
-        print(f"[DEBUG] update_system_uilist_indices: active_object = {obj}")
         if not obj:
-            print("[DEBUG] No active object, returning")
             return
         
         element = tool.Ifc.get_entity(obj)
-        print(f"[DEBUG] element = {element}, is_a = {element.is_a() if element else 'None'}")
         if not element or not element.is_a("IfcDistributionElement"):
-            print("[DEBUG] Element is not IfcDistributionElement, returning")
             return
         
         props = cls.get_system_props()
-        print(f"[DEBUG] Element ID: {element.id()}, Name: {element.Name or 'Unnamed'}")
         
         # Check if element belongs to any system
         systems = ifcopenshell.util.system.get_element_systems(element)
-        print(f"[DEBUG] Element systems: {systems}")
         if systems:
-            # Ensure parent systems are expanded and refresh to get connection groups data
-            import json
-            expanded_groups: set[int] = set(json.loads(props.expanded_groups_json))
-            initial_expanded = expanded_groups.copy()
-            print(f"[DEBUG] Currently expanded groups: {expanded_groups}")
-            
-            # Expand all parent systems
-            for system in systems:
-                print(f"[DEBUG] Processing system {system.id()}: {system.Name}")
-                if system.id() not in expanded_groups:
-                    expanded_groups.add(system.id())
-                    print(f"[DEBUG] Added system {system.id()} to expanded groups")
-            
-            # If we expanded any systems, refresh first to populate connection_groups_data
-            if expanded_groups != initial_expanded:
-                print(f"[DEBUG] Refreshing UIList to populate connection groups...")
-                props.expanded_groups_json = json.dumps(list(expanded_groups))
-                tool.Group.import_groups("IfcSystem")
-                # Re-read the expanded groups after refresh
-                expanded_groups = set(json.loads(props.expanded_groups_json))
-            
-            # Now check connection_groups_data which should be populated after refresh
-            connection_groups_json = props.connection_groups_json
-            connection_groups_data: dict[str, list[list[int]]] = json.loads(connection_groups_json)
-            print(f"[DEBUG] Connection groups data: {connection_groups_data}")
-            
-            # Find and expand connection groups that contain this element
-            needs_refresh = False
-            for system_id_str, conn_groups in connection_groups_data.items():
-                for group_idx, conn_group in enumerate(conn_groups):
-                    if element.id() in conn_group:
-                        # Calculate the connection group ID
-                        system_id = int(system_id_str)
-                        conn_group_id = -((system_id * 1000) + group_idx + 1)
-                        print(f"[DEBUG] Element found in connection group {group_idx} of system {system_id_str}, ID: {conn_group_id}")
-                        if conn_group_id not in expanded_groups:
-                            expanded_groups.add(conn_group_id)
-                            needs_refresh = True
-                            print(f"[DEBUG] Added connection group {conn_group_id} to expanded groups")
-            
-            # Refresh if we expanded any connection groups
-            if needs_refresh:
-                print(f"[DEBUG] Refreshing after expanding connection groups")
-                props.expanded_groups_json = json.dumps(list(expanded_groups))
-                tool.Group.import_groups("IfcSystem")
-            
-            # Now iteratively expand branch groups until we find the element
-            # We need to loop because new branch groups are created during each refresh
-            max_iterations = 10  # Prevent infinite loops
-            for iteration in range(max_iterations):
-                print(f"[DEBUG] Iteration {iteration + 1}: Looking for branch groups to expand")
-                found_new_branches = False
-                
-                for system_item in props.systems:
-                    synthetic_type = system_item.synthetic_group_type if hasattr(system_item, 'synthetic_group_type') else ""
-                    
-                    # Check subConnectedPaths (branch) groups
-                    if synthetic_type == "subConnectedPaths":
-                        item_id = system_item.ifc_definition_id
-                        if item_id not in expanded_groups:
-                            expanded_groups.add(item_id)
-                            found_new_branches = True
-                            print(f"[DEBUG] Added branch group {item_id} to expanded groups")
-                
-                # If we found new branches, refresh and continue
-                if found_new_branches:
-                    print(f"[DEBUG] Iteration {iteration + 1}: Refreshing with newly expanded branches")
-                    props.expanded_groups_json = json.dumps(list(expanded_groups))
-                    tool.Group.import_groups("IfcSystem")
-                else:
-                    # No new branches found, we're done
-                    print(f"[DEBUG] No new branches found in iteration {iteration + 1}, stopping")
-                    break
-            
-            # Find the index of the element in the systems UI list
-            print(f"[DEBUG] Searching for element {element.id()} in systems UIList ({len(props.systems)} items)")
-            for i, system_item in enumerate(props.systems):
-                if system_item.ifc_definition_id == element.id():
-                    new_index = tool.Blender.get_valid_uilist_index(i, props.systems)
-                    print(f"[DEBUG] FOUND in systems at index {i}! Setting active_group_index to {new_index}")
-                    props.active_group_index = new_index
-                    return
-            print(f"[DEBUG] Element NOT FOUND in systems UIList after expanding groups")
+            # Use tree-based expansion
+            tree = tool.Group.get_system_tree()
+            if not tree:
+                return
+            cls._expand_to_element_via_tree(element, tree, props)
         else:
             # Element is unassigned, find it in unassigned list
-            print(f"[DEBUG] Element is unassigned. Searching in unassigned elements list ({len(props.unassigned_distribution_elements)} items)")
             for i, unassigned_item in enumerate(props.unassigned_distribution_elements):
                 if unassigned_item.ifc_definition_id == element.id():
                     new_index = tool.Blender.get_valid_uilist_index(i, props.unassigned_distribution_elements)
-                    print(f"[DEBUG] FOUND in unassigned at index {i}! Setting active_unassigned_element_index to {new_index}")
                     props.active_unassigned_element_index = new_index
                     return
-            print(f"[DEBUG] Element NOT FOUND in unassigned elements list")
 
     @classmethod
     def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
