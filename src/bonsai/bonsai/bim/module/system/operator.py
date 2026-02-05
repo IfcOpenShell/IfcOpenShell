@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.system
 import ifcopenshell.util.system
 
@@ -445,6 +446,7 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
         return "Cycle through flow directions: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED → SOURCE..."
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
         port = tool.Ifc.get().by_id(self.port_id)
         if not port or not port.is_a("IfcDistributionPort"):
             return {"CANCELLED"}
@@ -459,7 +461,7 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
         }
         next_direction = flow_cycle_map.get(current_direction, "SOURCE")
 
-        tool.Ifc.run("attribute.edit_attributes", product=port, attributes={"FlowDirection": next_direction})
+        ifcopenshell.api.attribute.edit_attributes(ifc_file, product=port, attributes={"FlowDirection": next_direction})
 
         connected_port = tool.System.get_connected_port(port)
         if connected_port:
@@ -470,8 +472,8 @@ class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
                 "NOTDEFINED": "NOTDEFINED",
             }
             connected_direction = connected_direction_map.get(next_direction, "NOTDEFINED")
-            tool.Ifc.run(
-                "attribute.edit_attributes", product=connected_port, attributes={"FlowDirection": connected_direction}
+            ifcopenshell.api.attribute.edit_attributes(
+                ifc_file, product=connected_port, attributes={"FlowDirection": connected_direction}
             )
 
         PortData.is_loaded = False
