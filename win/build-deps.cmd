@@ -249,8 +249,9 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :proj
 
-IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
-    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+set PROJ_VERSION=9.4.1
+IF EXIST "%INSTALL_DIR%\proj-%PROJ_VERSION%" (
+    echo Found existing "%INSTALL_DIR%\proj-%PROJ_VERSION%", skipping
     goto :mpir
 )
 
@@ -269,13 +270,13 @@ copy sqlite3.h %INSTALL_DIR%\sqlite3\include
 popd
 
 set DEPENDENCY_NAME=proj
-set DEPENDENCY_DIR=%DEPS_DIR%\proj-9.2.1
-call :DownloadFile https://download.osgeo.org/proj/proj-9.2.1.zip "%DEPS_DIR%" proj-9.2.1.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\proj-%PROJ_VERSION%
+call :DownloadFile https://download.osgeo.org/proj/proj-%PROJ_VERSION%.zip "%DEPS_DIR%" proj-%PROJ_VERSION%.zip
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive proj-9.2.1.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-9.2.1"
+call :ExtractArchive proj-%PROJ_VERSION%.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-%PROJ_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-%PROJ_VERSION%" ^
     -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
     -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
     -DENABLE_TIFF=Off -DENABLE_CURL=Off -DBUILD_PROJSYNC=Off ^
