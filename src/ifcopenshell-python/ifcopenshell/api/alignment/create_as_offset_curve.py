@@ -39,7 +39,7 @@ def create_as_offset_curve(
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
-    :param offsets: offsets from the basis curve that defines the offset curve, expected to be IfcOffsetCurveByDistances.
+    :param offsets: offsets from the basis curve that defines the offset curve, expected to be IfcPointByDistanceExpression.
     :param start_station: station value at the start of the alignment
     :return: Returns an IfcAlignment
     """

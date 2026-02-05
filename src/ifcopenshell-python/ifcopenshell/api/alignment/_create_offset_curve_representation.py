@@ -28,7 +28,7 @@ def _create_offset_curve_representation(
     file: ifcopenshell.file, alignment: entity_instance, offsets: Sequence[entity_instance]
 ) -> None:
     """
-    Create geometric representation for the alignment based on an IfcPolyline
+    Create geometric representation for the alignment based on an IfcOffsetByDistances curve
 
     :param alignment: The alignment for which the representation is being created
     :return: None
@@ -36,6 +36,11 @@ def _create_offset_curve_representation(
     expected_type = "IfcAlignment"
     if not alignment.is_a(expected_type):
         raise TypeError(f"Expected {expected_type} but got {alignment.is_a()}")
+    
+    expected_type = "IfcPointByDistaceExpression"
+    for offset in offsets:
+        if not offset.is_a(expected_type):
+            raise TypeError(f"Expected {expected_type} but got {offset.is_a()}")
 
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 
