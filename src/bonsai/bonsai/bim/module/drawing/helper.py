@@ -17,10 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from typing import Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import mathutils.geometry

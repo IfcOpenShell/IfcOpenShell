@@ -22,8 +22,6 @@ from typing import TYPE_CHECKING
 import bpy
 from bpy.types import PropertyGroup
 
-from bonsai.bim.module.model.data import AuthoringData
-
 
 class BIMCadProperties(PropertyGroup):
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)

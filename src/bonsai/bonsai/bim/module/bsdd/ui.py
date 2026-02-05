@@ -24,7 +24,6 @@ import bpy
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
-import bsdd
 from bonsai.bim.module.bsdd.data import BSDDData
 
 if TYPE_CHECKING:

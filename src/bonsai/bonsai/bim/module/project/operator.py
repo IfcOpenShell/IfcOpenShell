@@ -18,7 +18,6 @@
 
 import datetime
 import json
-import math
 import logging
 import os
 import subprocess
@@ -32,7 +31,6 @@ from typing import TYPE_CHECKING, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.attribute
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
@@ -50,12 +48,10 @@ import ifcopenshell.util.unit
 import numpy as np
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
-from ifcopenshell.geom import ShapeElementType
 from mathutils import Matrix, Vector
 
 import bonsai.bim.handler
 import bonsai.bim.helper
-import bonsai.bim.schema
 import bonsai.core.project as core
 import bonsai.tool as tool
 from bonsai.bim import export_ifc, import_ifc
@@ -63,12 +59,11 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.ui import IFCFileSelector
 from bonsai.bim import import_ifc
 from bonsai.bim import export_ifc
-from math import radians, degrees
+from math import radians
 from pathlib import Path
 from collections import defaultdict
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
-from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData

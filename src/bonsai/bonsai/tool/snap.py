@@ -23,10 +23,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.util.unit
-import mathutils
-from lark import Lark, Transformer
 from mathutils import Matrix, Vector
 
 import bonsai.core.tool

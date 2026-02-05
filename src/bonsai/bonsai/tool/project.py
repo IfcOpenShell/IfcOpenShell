@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import os
 import json
-import math
 import shutil
 import numpy as np
 from collections import defaultdict
@@ -33,7 +32,6 @@ import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 
 import bonsai.bim.schema

@@ -31,7 +31,6 @@ import os
 import sys
 from sys import platform
 
-import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 

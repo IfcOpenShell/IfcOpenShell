@@ -19,8 +19,6 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell.api
-import ifcopenshell.util.unit
 
 import bonsai.core.unit as core
 import bonsai.tool as tool

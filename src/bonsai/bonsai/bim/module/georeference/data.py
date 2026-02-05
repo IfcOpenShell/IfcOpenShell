@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.schema

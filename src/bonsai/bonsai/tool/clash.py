@@ -19,12 +19,9 @@
 from __future__ import annotations
 
 import json
-import os
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
-import ifcopenshell
 from ifcclash import ifcclash
 from ifcclash.ifcclash import ClashSource
 from mathutils import Vector

@@ -30,7 +30,6 @@
 
 from __future__ import annotations
 
-import itertools
 import math
 import sys
 from typing import TYPE_CHECKING, Union

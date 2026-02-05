@@ -74,7 +74,7 @@ if TYPE_CHECKING:
         BIMSolarProperties,
         RadianceExporterProperties,
     )
-    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
+    from bonsai.bim.prop import BIMObjectProperties, BIMProperties
 
     T = TypeVar("T")
 

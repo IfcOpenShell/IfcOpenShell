@@ -23,7 +23,7 @@ from functools import cache
 from math import acos, atan, cos, degrees, pi, radians, sin
 from pathlib import Path
 from timeit import default_timer as timer
-from typing import Optional, Union
+from typing import Optional
 
 import blf
 import bmesh
@@ -34,7 +34,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import numpy as np
-import shapely
 from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader

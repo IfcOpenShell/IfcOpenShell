@@ -22,11 +22,9 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.feature
 import ifcopenshell.util.representation
 
-import bonsai.bim.helper
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool

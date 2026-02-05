@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING, Literal, get_args
 
 import bpy
-import ifcopenshell.util.schema
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -27,7 +26,6 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -39,8 +37,6 @@ from bonsai.bim.module.search.data import (
     SelectSimilarData,
 )
 from bonsai.bim.prop import BIMFilterGroup, ObjProperty
-
-from . import operator, prop, ui
 
 
 def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

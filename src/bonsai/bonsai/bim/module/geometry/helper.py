@@ -16,21 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from math import pi, pow
+from math import pi
 from typing import Any, Optional, TypeVar, Union
 
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import mathutils
-import numpy as np
-import shapely
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector, geometry
-
-import bonsai.tool as tool
 
 T = TypeVar("T")
 

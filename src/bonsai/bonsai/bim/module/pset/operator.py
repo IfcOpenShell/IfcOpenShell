@@ -32,7 +32,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import AddEditPropertyEntry, RenamePropertyEntry
+    from bonsai.bim.module.pset.prop import AddEditPropertyEntry
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):

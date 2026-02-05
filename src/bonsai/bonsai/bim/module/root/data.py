@@ -19,7 +19,6 @@
 from collections import defaultdict
 from typing import Union
 
-import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.schema

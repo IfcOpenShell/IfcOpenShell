@@ -32,18 +32,10 @@
 
 from typing import TYPE_CHECKING
 
-import bpy
-
 # Properties have many different data types. We won't use all of them in this
 # demo module, but this is a list for your reference.
 from bpy.props import (
     BoolProperty,
-    CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup

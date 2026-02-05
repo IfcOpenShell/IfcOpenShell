@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import collections
 import collections.abc
 import json
 from collections.abc import Iterable, Sequence
@@ -38,7 +37,6 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset

@@ -20,7 +20,6 @@ import hashlib
 import json
 import multiprocessing
 import os
-import re
 import shutil
 import subprocess
 import time
@@ -42,7 +41,6 @@ import bmesh
 import bpy
 import logging
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
@@ -55,17 +53,14 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
-import shapely.ops
 from bpy_extras.image_utils import load_image
 from bpy_extras.io_utils import ImportHelper
 from lxml import etree
-from mathutils import Color, Matrix, Vector
+from mathutils import Color, Vector
 
 import bonsai.bim.import_ifc
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
-import bonsai.bim.helper
-import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.core.drawing as core

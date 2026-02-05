@@ -26,7 +26,6 @@ import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import numpy as np
 from mathutils import Color
 
 import bonsai.bim.helper

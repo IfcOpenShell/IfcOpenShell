@@ -30,7 +30,6 @@ from bonsai.bim.module.drawing.data import (
     DocumentsData,
     DrawingsData,
     ElementFiltersData,
-    ElementValuesData,
     ProductAssignmentsData,
     SheetsData,
 )

@@ -22,7 +22,6 @@ import string
 from pathlib import Path
 from textwrap import wrap
 
-import bpy
 import openpyxl
 import openpyxl.cell  # Unnecessary, bug in typeshed.
 import openpyxl.utils  # Unnecessary, bug in typeshed.
@@ -33,7 +32,6 @@ from odf.table import Table, TableCell, TableColumn, TableRow
 from odf.text import P
 
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
 
 DEBUG = False

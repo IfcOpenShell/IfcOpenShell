@@ -5,7 +5,6 @@ try:
     if not hasattr(bpy, "context"):
         raise ModuleNotFoundError
     import addon_utils
-    import bl_i18n_utils
 
     BPY_IS_LOADED = True
 except ModuleNotFoundError:

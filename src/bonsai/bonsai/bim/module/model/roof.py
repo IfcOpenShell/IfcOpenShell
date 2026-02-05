@@ -23,14 +23,12 @@ from typing import Any, Literal, Union
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import mathutils.geometry
 import shapely
 from bpypolyskel import bpypolyskel
-from mathutils import Matrix, Quaternion, Vector
+from mathutils import Quaternion, Vector
 
 import bonsai.core.root
 import bonsai.tool as tool

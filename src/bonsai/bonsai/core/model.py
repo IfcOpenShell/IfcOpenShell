@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:
     import bpy
-    import ifcopenshell
     from mathutils import Vector
 
     import bonsai.tool as tool

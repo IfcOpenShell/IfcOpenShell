@@ -19,9 +19,8 @@
 from __future__ import annotations
 
 import math
-from itertools import chain
 from math import cos, radians, sin, tan
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 import blf
 import bmesh

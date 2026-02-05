@@ -20,13 +20,10 @@ import csv
 import os
 import random
 from collections import namedtuple
-from itertools import chain
-from math import cos, pi, sin, tan
-from pathlib import Path
+from math import cos, pi, sin
 from random import uniform
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -36,7 +33,7 @@ import ifcopenshell.api.style
 import ifcopenshell.api.unit
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from mathutils import Matrix, Vector
+from mathutils import Vector
 
 import bonsai.tool as tool
 
