@@ -3181,8 +3181,19 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
     bl_description = "Save changes to the text annotation and\ndisable the text editing options"
-
     bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        core.edit_text(tool.Drawing, obj=tool.Blender.get_active_object())
+        tool.Blender.update_viewport()
+
+
+class CopyTextToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_text_to_selection"
+    bl_label = "Copy Text To Selection"
+    bl_description = "Copy text formatting or literals to selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+    attribute: bpy.props.StringProperty()
 
     def _execute(self, context):
         apply_objs = [
@@ -3191,7 +3202,12 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
             if (element := tool.Ifc.get_entity(obj))
             and tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
         ]
-        core.edit_text(tool.Drawing, attribute_obj=tool.Blender.get_active_object(), apply_objs=apply_objs)
+        core.copy_text_to_selection(
+            tool.Drawing,
+            attribute=self.attribute,
+            attribute_obj=tool.Blender.get_active_object(),
+            apply_objs=apply_objs,
+        )
         tool.Blender.update_viewport()
 
 
@@ -3206,8 +3222,6 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = tool.Drawing.get_text_props(obj)
         core.enable_editing_text(tool.Drawing, obj=obj)
-
-        props.ensure_literal_apply_settings(len(props.literals))
 
         text_element = tool.Ifc.get_entity(obj)
         assigned_product_entity = tool.Drawing.get_assigned_product(text_element) if text_element else None
@@ -3297,9 +3311,6 @@ class AddTextLiteral(bpy.types.Operator):
         box_alignment_mask = [False] * 9
         box_alignment_mask[6] = True  # bottom_left box_alignment
         literal_props.box_alignment = box_alignment_mask
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
         return {"FINISHED"}
 
 
@@ -3318,9 +3329,6 @@ class RemoveTextLiteral(bpy.types.Operator):
         props = tool.Drawing.get_text_props(obj)
         props.literals.remove(self.literal_prop_id)
         tool.Blender.update_viewport()
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
         return {"FINISHED"}
 
 

@@ -334,6 +334,11 @@ class Drawing:
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
+    def edit_text_alignment(cls, obj, alignment): pass
+    def edit_text_font_size(cls, obj, size): pass
+    def edit_text_literals(cls, obj, literals): pass
+    def edit_text_symbol(cls, obj, symbol): pass
+    def edit_text_wrap_length(cls, obj, wrap_length): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
@@ -403,8 +408,6 @@ class Drawing:
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-    def update_text_annotation_properties(cls, obj): pass
-    def update_text_size_pset(cls, obj): pass
 
 
 @interface

@@ -355,8 +355,6 @@ class DecoratorData:
         font_size = FONT_SIZES[font_size_type]
         symbol = tool.Drawing.get_annotation_symbol(element)
         newline_at = pset_data.get("Newline_At", 0)
-        reverse_list = pset_data.get("Reverse_List", False)
-        list_separator = pset_data.get("List_Separator") or ", "
 
         # other attributes
         literals = tool.Drawing.get_text_literal(obj, return_list=True)
@@ -384,8 +382,6 @@ class DecoratorData:
             "FontSize": font_size,
             "Symbol": symbol,
             "Newline_At": newline_at,
-            "Reverse_List": reverse_list,
-            "List_Separator": list_separator,
         }
 
     @classmethod
