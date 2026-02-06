@@ -298,8 +298,9 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 )
 
 set DEPENDENCY_NAME=mpir
+:: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
