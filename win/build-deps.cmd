@@ -511,9 +511,18 @@ cd "%DEPENDENCY_DIR%"
 :: TODO: remove CMAKE_DEBUG_POSTFIX setting later.
 :: Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's perviously being set to `d`.
 :: OCCT don't need it, since it's layout is separating debug and release build by different folders.
+::
+:: OCCT 7.8.1 we're using is becoming old and it was targeting cmake 3.1+.
+::To make it buildable on cmake 4, we override policy version, but it may have some quirks in the future and we may consider version bump.
 call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
-    -DBUILD_MODULE_Draw=0 -DUSE_FREETYPE=OFF ^
-    -DBUILD_USE_PCH=ON
+    -DBUILD_MODULE_Draw=0 ^
+    -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF ^
+    -DUSE_XLIB=OFF ^
+    -DUSE_FREETYPE=OFF ^
+    -DUSE_OPENGL=OFF ^
+    -DUSE_GLES2=OFF ^
+    -DBUILD_USE_PCH=ON ^
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 if not %ERRORLEVEL%==0 goto :Error
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
