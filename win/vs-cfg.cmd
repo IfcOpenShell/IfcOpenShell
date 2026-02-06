@@ -35,6 +35,11 @@
 ::   "vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
 ::
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
+::
+:: Output variables:
+:: - VC_VER - e.g. "14.5"
+:: - VS_VER - e.g. "2026"
+:: - BOOST_BOOTSTRAP_VER - e.g. "vc145"
 
 @if not defined ECHO_ON ( echo off )
 
