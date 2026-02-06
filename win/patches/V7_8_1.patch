@@ -84,3 +84,16 @@ index c9399159f1..0aa55392f9 100644
    endif()
  
    if (BUILD_SHARED_LIBS AND NOT "${BUILD_SHARED_LIBRARY_NAME_POSTFIX}" STREQUAL "")
+diff --git a/adm/cmake/cotire.cmake b/adm/cmake/cotire.cmake
+index acdca71a9f..6c6e29b374 100644
+--- a/adm/cmake/cotire.cmake
++++ b/adm/cmake/cotire.cmake
+@@ -37,7 +37,7 @@ set(__COTIRE_INCLUDED TRUE)
+ if (NOT CMAKE_SCRIPT_MODE_FILE)
+        cmake_policy(PUSH)
+ endif()
+-cmake_minimum_required(VERSION 2.8.12)
++cmake_minimum_required(VERSION 3.5)
+ if (NOT CMAKE_SCRIPT_MODE_FILE)
+        cmake_policy(POP)
+ endif()
