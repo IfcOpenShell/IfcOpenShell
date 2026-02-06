@@ -104,6 +104,9 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
             GOTO :GeneratorValid
         )
     )
+    call utils\cecho.cmd 0 12 ^
+        "Generator is not provided and VisualStudioVersion='%VisualStudioVersion%' is not supported - cannot proceed."
+    exit /b 1
 )
 
 :: Check that the used CMake version supports the chosen generator
