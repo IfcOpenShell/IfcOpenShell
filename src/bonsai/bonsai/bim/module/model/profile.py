@@ -282,24 +282,37 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         selected_objs = context.selected_objects
         joiner = DumbProfileJoiner()
+
+        # Handle unjoin
         if self.join_type == "-":
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
+        
         if not context.active_object:
             return {"FINISHED"}
+        
         for obj in selected_objs:
             tool.Geometry.clear_scale(obj)
 
+        # NEW: Extend all selected objects to cursor
+        if self.join_type == "E":
+            self._extend_to_cursor(selected_objs, context.scene.cursor.location)
+            return {"FINISHED"}
+
+        # Single object - extend to cursor
         if len(selected_objs) == 1:
             joiner.join_E(context.active_object, context.scene.cursor.location)
             return {"FINISHED"}
 
+        # Two objects - L or V joints
         if len(selected_objs) == 2:
             if self.join_type == "L":
                 joiner.join_L(next(o for o in selected_objs if o != context.active_object), context.active_object)
             elif self.join_type == "V":
                 joiner.join_V(next(o for o in selected_objs if o != context.active_object), context.active_object)
+        
+        # Multiple objects - T joints
         if len(selected_objs) < 2:
             return {"FINISHED"}
         if self.join_type == "T":
@@ -309,6 +322,59 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
                 joiner.join_T(obj, context.active_object)
 
         return {"FINISHED"}
+    
+    def _extend_to_cursor(self, objects: list[bpy.types.Object], cursor_location: Vector) -> None:
+        """Extend profiles or basic extrusions to cursor location."""
+        joiner = DumbProfileJoiner()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            
+            usage = tool.Model.get_usage_type(element)
+            
+            if usage == "PROFILE":
+                # Use existing profile logic
+                joiner.join_E(obj, cursor_location)
+            else:
+                # Handle basic extrusions
+                representation = tool.Geometry.get_active_representation(obj)
+                extrusion = tool.Model.get_extrusion(representation) if representation else None
+                
+                if not extrusion:
+                    continue
+                
+                # Get extrusion data
+                if extrusion.Position:
+                    position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
+                    position.translation *= unit_scale
+                else:
+                    position = Matrix()
+                
+                # Get extrusion direction in world space
+                direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
+                extrusion_start = obj.matrix_world @ position.translation
+                extrusion_direction_world = (obj.matrix_world.to_quaternion() @ position.to_quaternion() @ direction).normalized()
+                
+                # Project cursor onto extrusion axis
+                cursor_vector = cursor_location - extrusion_start
+                projection_length = cursor_vector.dot(extrusion_direction_world)
+                
+                if projection_length > 0:
+                    new_depth = projection_length / unit_scale
+                    
+                    # Update extrusion depth directly in IFC
+                    extrusion.Depth = new_depth
+                    
+                    # Regenerate geometry
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=representation,
+                    )
 
 
 class DumbProfileJoiner:

@@ -1453,44 +1453,59 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         cursor_z = bpy.context.scene.cursor.location.z
         layer2_objects = []
         layer2_bases = []
+        other_objects = []
 
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if element and tool.Model.get_usage_type(element) == "LAYER2":
+            if not element:
+                continue
+            
+            usage = tool.Model.get_usage_type(element)
+            if usage == "LAYER2":
                 obj_base_z = obj.matrix_world.translation.z
                 layer2_objects.append(obj)
                 layer2_bases.append(obj_base_z)
+            else:
+                other_objects.append(obj)
 
-        if not layer2_objects:
-            self.report({"ERROR"}, "No LAYER2 objects selected")
-            return
+        # Handle LAYER2 objects - extend height to cursor Z
+        if layer2_objects:
+            tolerance = 1e-5
+            if layer2_bases and (max(layer2_bases) - min(layer2_bases)) > tolerance:
+                min_base = min(layer2_bases)
+                max_base = max(layer2_bases)
+                self.report(
+                    {"ERROR"},
+                    f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). "
+                    f"All objects must be at the exact same base level (tolerance {tolerance}).",
+                )
+                return
 
-        # --- tolerance check ---
-        tolerance = 1e-5  # to provide a little wiggle room
-        if layer2_bases and (max(layer2_bases) - min(layer2_bases)) > tolerance:
-            min_base = min(layer2_bases)
-            max_base = max(layer2_bases)
-            self.report(
-                {"ERROR"},
-                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). "
-                f"All objects must be at the exact same base level (tolerance {tolerance}).",
-            )
-            return
+            common_base = sum(layer2_bases) / len(layer2_bases)
+            new_height = cursor_z - common_base
 
-        # use the mean base as the "common" one to avoid floating-point mismatches
-        common_base = sum(layer2_bases) / len(layer2_bases)
-        new_height = cursor_z - common_base
+            if new_height > 0:
+                props = tool.Model.get_model_props()
+                props.extrusion_depth = new_height
+                bpy.ops.bim.change_extrusion_depth(depth=new_height)
+                self.report({"INFO"}, f"Extended {len(layer2_objects)} LAYER2 object(s) to z: {cursor_z:.2f}m")
+            else:
+                self.report(
+                    {"ERROR"},
+                    f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
+                )
 
-        if new_height > 0:
-            props = tool.Model.get_model_props()
-            props.extrusion_depth = new_height
-            bpy.ops.bim.change_extrusion_depth(depth=new_height)
-            self.report({"INFO"}, f"Extended {len(layer2_objects)} LAYER2 object(s) to z: {cursor_z:.2f}m")
-        else:
-            self.report(
-                {"ERROR"},
-                f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
-            )
+        # Handle PROFILE objects and basic extrusions - extend to 3D cursor
+        if other_objects:
+            # Temporarily deselect layer2 objects
+            for obj in layer2_objects:
+                obj.select_set(False)
+            
+            bpy.ops.bim.extend_profile(join_type="E")
+            
+            # Restore selection
+            for obj in layer2_objects:
+                obj.select_set(True)
 
 
 custom_icon_previews = None
