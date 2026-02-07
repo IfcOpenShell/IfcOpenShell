@@ -353,6 +353,8 @@ class Attribute(Facet):
             if non_empty_values:
                 values = non_empty_values
             else:
+                if self.cardinality == "optional":
+                    return AttributeResult(True)
                 is_pass = False
                 reason = {"type": "FALSEY", "actual": values if len(values) > 1 else values[0]}
 
@@ -519,11 +521,15 @@ class PartOf(Facet):
                     break
                 parent = self.get_parent(parent)
             if not is_pass:
+                if not ancestors and self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELAGGREGATES":
             aggregate = ifcopenshell.util.element.get_aggregate(inst)
             is_pass = aggregate is not None
             if not is_pass:
+                if self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
                 is_pass = False
@@ -550,6 +556,8 @@ class PartOf(Facet):
                     break
             is_pass = group is not None
             if not is_pass:
+                if self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
                 if group.is_a().upper() != self.name:
@@ -564,6 +572,8 @@ class PartOf(Facet):
             container = ifcopenshell.util.element.get_container(inst)
             is_pass = container is not None
             if not is_pass:
+                if self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
                 if container.is_a().upper() != self.name:
@@ -578,6 +588,8 @@ class PartOf(Facet):
             nest = ifcopenshell.util.element.get_nest(inst)
             is_pass = nest is not None
             if not is_pass:
+                if self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
                 is_pass = False
@@ -606,6 +618,8 @@ class PartOf(Facet):
                     building_element = ifcopenshell.util.element.get_voided_element(opening)
             is_pass = building_element is not None
             if not is_pass:
+                if self.cardinality == "optional":
+                    return PartOfResult(True)
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
                 if building_element.is_a().upper() != self.name:
