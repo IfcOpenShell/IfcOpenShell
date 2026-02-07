@@ -334,6 +334,11 @@ class Drawing:
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
+    def edit_text_alignment(cls, obj, alignment): pass
+    def edit_text_font_size(cls, obj, size): pass
+    def edit_text_literals(cls, obj, literals): pass
+    def edit_text_symbol(cls, obj, symbol): pass
+    def edit_text_wrap_length(cls, obj, wrap_length): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
@@ -402,10 +407,7 @@ class Drawing:
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
-    def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-    def update_text_annotation_properties(cls, obj): pass
-    def update_text_size_pset(cls, obj): pass
 
 
 @interface
@@ -951,15 +953,17 @@ class Spatial:
     def get_active_container(cls): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container, recursive): pass
+    def get_decomposition(cls, element): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def get_root_element(cls, element): pass
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_spatial_decomposition(cls): pass
     def import_spatial_element(cls, element, level_index): pass
     def load_contained_elements(cls): pass
     def run_root_copy_class(cls, obj): pass
-    def run_spatial_assign_container(cls, container, element_obj): pass
+    def run_spatial_assign_container(cls, container, objs): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
@@ -1123,15 +1127,15 @@ class Unit:
     def disable_editing_units(cls): pass
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
+    def get_currency_name(cls): pass
+    def get_project_currency_unit(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
     def get_scene_unit_si_prefix(cls, name): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
-    def is_scene_unit_metric(cls): pass
+    def is_si_unit(cls, name): pass
     def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
-    def get_project_currency_unit(cls): pass
-    def get_currency_name(cls): pass
 
 @interface
 class Voider:

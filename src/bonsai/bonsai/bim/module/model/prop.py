@@ -387,11 +387,6 @@ class BIMArrayProperties(PropertyGroup):
         name="Method",
         default="OFFSET",
     )
-    sync_children: bpy.props.BoolProperty(
-        name="Sync Children",
-        description="Regenerate all children based on the parent object",
-        default=False,
-    )
     relating_array_object: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Copy Array Properties",

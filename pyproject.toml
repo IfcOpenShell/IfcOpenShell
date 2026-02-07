@@ -5,7 +5,7 @@ dependencies = [
     "black==26.1.0",
     "ruff==0.14.14",
     "poethepoet",
-    "gersemi==0.25.1",
+    "gersemi==0.25.4",
 ]
 
 [tool.black]

@@ -370,7 +370,7 @@ class BIMProjectProperties(PropertyGroup):
     load_indexed_maps: BoolProperty(
         name="Load Indexed Maps",
         description="Load indexed maps (UV and color maps)",
-        default=True,
+        default=False,  # Very slow and hackishly implemented
     )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")

@@ -144,7 +144,7 @@ format_grammar = lark.Lark(
         | mul_div "*" function  -> multiply
         | mul_div "/" function  -> divide
     
-    function: round | number | int | format_length | lower | upper | title | concat | substr | variable | ESCAPED_STRING | NUMBER | "(" expression ")"
+    function: round | number | int | format_length | lower | upper | title | concat | substr | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
 
     variable: "{{" query_path "}}"
     query_path: /[^}]+/

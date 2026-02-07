@@ -138,6 +138,13 @@ def misc():
 
 
 @pytest.fixture
+def model():
+    prophet = Prophecy(bonsai.core.tool.Model)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def nest():
     prophet = Prophecy(bonsai.core.tool.Nest)
     yield prophet

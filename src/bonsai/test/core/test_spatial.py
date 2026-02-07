@@ -38,16 +38,19 @@ class TestDereferenceStructure:
 
 class TestAssignContainer:
     def test_run(self, ifc, collector, spatial):
-        spatial.can_contain("container", "element_obj").should_be_called().will_return(True)
-        ifc.get_entity("element_obj").should_be_called().will_return("element")
-        ifc.run(
-            "spatial.assign_container", products=["element"], relating_structure="container"
-        ).should_be_called().will_return("rel")
-        spatial.disable_editing("element_obj").should_be_called()
-        collector.assign("element_obj").should_be_called()
-        assert (
-            subject.assign_container(ifc, collector, spatial, container="container", element_obj="element_obj") == "rel"
-        )
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        spatial.get_root_element("element").should_be_called().will_return("aggregate")
+        spatial.get_decomposition("aggregate").should_be_called().will_return(["element", "element2"])
+        spatial.can_contain("container", "aggregate").should_be_called().will_return(True)
+        ifc.run("spatial.assign_container", products=["aggregate"], relating_structure="container").should_be_called()
+        spatial.disable_editing("obj").should_be_called()
+        ifc.get_object("aggregate").should_be_called().will_return("aggregate_obj")
+        ifc.get_object("element").should_be_called().will_return("obj")
+        ifc.get_object("element2").should_be_called().will_return("obj2")
+        collector.assign("aggregate_obj").should_be_called()
+        collector.assign("obj").should_be_called()
+        collector.assign("obj2").should_be_called()
+        subject.assign_container(ifc, collector, spatial, container="container", objs=["obj"])
 
 
 class TestEnableEditingContainer:
@@ -82,7 +85,7 @@ class TestCopyToContainer:
         spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
         spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
         spatial.run_root_copy_class(obj="new_obj").should_be_called()
-        spatial.run_spatial_assign_container(container="to_container", element_obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(container="to_container", objs=["new_obj"]).should_be_called()
 
         spatial.disable_editing("obj").should_be_called()
 
@@ -97,7 +100,7 @@ class TestCopyToContainer:
         spatial.duplicate_object_and_data("obj").should_be_called().will_return("new_obj")
         spatial.set_relative_object_matrix("new_obj", "to_container_obj", "matrix").should_be_called()
         spatial.run_root_copy_class(obj="new_obj").should_be_called()
-        spatial.run_spatial_assign_container(container="to_container", element_obj="new_obj").should_be_called()
+        spatial.run_spatial_assign_container(container="to_container", objs=["new_obj"]).should_be_called()
 
         spatial.disable_editing("obj").should_be_called()
 

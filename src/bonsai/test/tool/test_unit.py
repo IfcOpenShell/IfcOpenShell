@@ -434,18 +434,6 @@ class TestImportUnits(NewFile):
         assert second_prop.ifc_class == "IfcSIUnit"
 
 
-class TestIsSceneUnitMetric(NewFile):
-    def test_run(self):
-        assert bpy.context.scene
-        props = bpy.context.scene.unit_settings
-        props.system = "METRIC"
-        assert subject.is_scene_unit_metric() is True
-        props.system = "IMPERIAL"
-        assert subject.is_scene_unit_metric() is False
-        props.system = "NONE"
-        assert subject.is_scene_unit_metric() is True
-
-
 class TestIsUnitClass:
     def test_run(self):
         ifc = ifcopenshell.file()

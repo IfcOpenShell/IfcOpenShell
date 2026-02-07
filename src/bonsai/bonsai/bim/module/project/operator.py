@@ -2735,17 +2735,27 @@ class IFCFileHandlerOperator(bpy.types.Operator):
         # Keeping code in .invoke() as we'll probably add some
         # popup windows later.
 
+        def clean_up_path(path: str) -> str:
+            # In Blender 4.5.6 there was a bug producing unncesseary double slash prefix
+            # breaking the paths. Issue is not present in 5.0+ and presumably will be solved in 4.5.7 too.
+            # https://projects.blender.org/blender/blender/issues/153822
+            if bpy.app.version == (4, 5, 6):
+                blender_prefix = "//"
+                if path.startswith(blender_prefix):
+                    return path.removeprefix(blender_prefix)
+            return path
+
         # `files` contain only .ifc files.
         filepath = Path(self.directory)
         # If user is just drag'n'dropping a single file -> load it as a new project,
         # if they're holding ALT -> link the file/files to the current project.
         if event.alt:
             # Passing self.files directly results in TypeError.
-            serialized_files = [{"name": f.name} for f in self.files]
+            serialized_files = [{"name": clean_up_path(f.name)} for f in self.files]
             return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
         else:
             if len(self.files) == 1:
-                return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
+                return bpy.ops.bim.load_project(filepath=(filepath / clean_up_path(self.files[0].name)).as_posix())
             else:
                 self.report(
                     {"INFO"},

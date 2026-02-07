@@ -721,13 +721,20 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     chain_filter_with_set_operations: BoolProperty(
         name="NEW Filter mode: Enable chained filters with set operations",
-        description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",
+        description=(
+            "Enable chaining search filters with set operations: "
+            "ADD (union: combine sets), SUBTRACT (difference: remove from set), "
+            "FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values"
+        ),
         default=False,
     )
 
     save_metadata_blend_file: BoolProperty(
         name="Save non ifc data to metadata blend File",
-        description="Save session data (window layout, settings) to a metadata blend file alongside the IFC file. This file is automatically loaded when opening the project.",
+        description=(
+            "Save session data (window layout, settings) to a metadata blend file alongside the IFC file. "
+            "This file is automatically loaded when opening the project."
+        ),
         default=False,
     )
     metadata_blend_file_suffix: StringProperty(

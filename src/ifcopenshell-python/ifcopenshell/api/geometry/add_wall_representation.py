@@ -85,6 +85,7 @@ class Usecase:
     def create_item(self) -> ifcopenshell.entity_instance:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
+        thickness *= 1 / cos(self.settings["x_angle"])
         if self.settings["direction_sense"] == "NEGATIVE":
             thickness *= -1
         points = (
@@ -112,7 +113,7 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             ),
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["height"]),
+            self.convert_si_to_unit(self.settings["height"]) * abs(1 / cos(self.settings["x_angle"])),
         )
         if self.settings["booleans"]:
             extrusion = self.apply_booleans(extrusion)

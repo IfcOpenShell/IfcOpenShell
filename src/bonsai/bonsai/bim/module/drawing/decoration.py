@@ -1762,40 +1762,34 @@ class CutDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def cache_camera_matrix(self):
+    def cache_camera_matrix(self) -> None:
+        assert bpy.context.scene and bpy.context.scene.camera
         obj = bpy.context.scene.camera
-        # Explicit `dtype` for Blender <5.0 compatibility.
         DecoratorData.camera_location_checksum = repr(
-            np.array(obj.matrix_world.translation, dtype=np.float32).tobytes()
+            tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes()
         )
-        DecoratorData.camera_rotation_checksum = repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
+        DecoratorData.camera_rotation_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
-    def is_camera_moved(self):
+    def is_camera_moved(self) -> bool:
         if not DecoratorData.camera_location_checksum:
             self.cache_camera_matrix()
             return True  # Let's be conservative
+
+        assert bpy.context.scene and bpy.context.scene.camera
         obj = bpy.context.scene.camera
 
         # Handle both old float64 and new float32 checksums for version compatibility
-        loc_checksum_bytes = eval(DecoratorData.camera_location_checksum)
-        if len(loc_checksum_bytes) == 24:  # Old format: 3 * 8 bytes (float64)
-            loc_check = np.frombuffer(loc_checksum_bytes, dtype=np.float64).astype(np.float32)
-        else:  # New format: 3 * 4 bytes (float32)
-            loc_check = np.frombuffer(loc_checksum_bytes, dtype=np.float32)
-
-        loc_real = np.array(obj.matrix_world.translation, dtype=np.float32).flatten()
+        loc_checksum_bytes: bytes = eval(DecoratorData.camera_location_checksum)
+        loc_check = tool.Blender.np_frombuffer_legacy(loc_checksum_bytes, 3)
+        loc_real = tool.Blender.np_array_legacy(obj.matrix_world.translation)
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             self.cache_camera_matrix()
             return True
 
         # Handle both old float64 and new float32 checksums for version compatibility
-        rot_checksum_bytes = eval(DecoratorData.camera_rotation_checksum)
-        if len(rot_checksum_bytes) == 72:  # Old format: 9 * 8 bytes (float64)
-            rot_check = np.frombuffer(rot_checksum_bytes, dtype=np.float64).astype(np.float32).reshape(3, 3)
-        else:  # New format: 9 * 4 bytes (float32)
-            rot_check = np.frombuffer(rot_checksum_bytes, dtype=np.float32).reshape(3, 3)
-
-        rot_real = np.array(obj.matrix_world.to_3x3(), dtype=np.float32)
+        rot_checksum_bytes: bytes = eval(DecoratorData.camera_rotation_checksum)
+        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9)
+        rot_real = tool.Blender.np_array_legacy(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
         if angle_rad > 0.0017453292519943296:  # 0.1 degrees

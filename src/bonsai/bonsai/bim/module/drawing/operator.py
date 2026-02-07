@@ -3181,169 +3181,34 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
     bl_description = "Save changes to the text annotation and\ndisable the text editing options"
-
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        props = tool.Drawing.get_text_props(obj)
-
-        captured_apply_settings = {
-            "apply_font_size_to_all": props.apply_font_size_to_all,
-            "apply_newline_to_all": props.apply_newline_to_all,
-            "font_size": props.font_size,
-            "newline_at": props.newline_at,
-            "literals": [],
-        }
-
-        for i, literal in enumerate(props.literals):
-            literal_data = {
-                "attributes": [
-                    (attr.string_value, attr.enum_value if attr.data_type == "enum" else attr.string_value)
-                    for attr in literal.attributes
-                ],
-                "box_alignment": literal.box_alignment[:] if hasattr(literal, "box_alignment") else None,
-                "element_value_rows": [
-                    {
-                        "category": row.category,
-                        "element_key": row.element_key,
-                        "formatted_value": row.formatted_value,
-                        "separator": row.separator,
-                    }
-                    for row in literal.element_value_rows
-                ],
-                "product_used": literal.product_used.name if literal.product_used else None,
-            }
-
-            if i < len(props.literal_apply_settings):
-                apply_settings = props.literal_apply_settings[i]
-                literal_data["apply_text_to_all"] = apply_settings.apply_text_to_all
-                literal_data["apply_path_to_all"] = apply_settings.apply_path_to_all
-                literal_data["apply_box_alignment_to_all"] = apply_settings.apply_box_alignment_to_all
-            else:
-                literal_data["apply_text_to_all"] = False
-                literal_data["apply_path_to_all"] = False
-                literal_data["apply_box_alignment_to_all"] = False
-
-            captured_apply_settings["literals"].append(literal_data)
-
-        obj["_bonsai_element_value_rows_backup"] = json.dumps(captured_apply_settings["literals"])
-
-        core.edit_text(tool.Drawing, obj=obj)
-
-        self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
-
+        core.edit_text(tool.Drawing, obj=tool.Blender.get_active_object())
         tool.Blender.update_viewport()
 
-        return {"FINISHED"}
 
-    def apply_to_selected_objects(self, context, active_obj, active_props):
-        """Apply changes to other selected text objects based on toggle settings"""
-        selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
+class CopyTextToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_text_to_selection"
+    bl_label = "Copy Text To Selection"
+    bl_description = "Copy text formatting or literals to selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+    attribute: bpy.props.StringProperty()
 
-        for obj in selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-
-            obj_props = tool.Drawing.get_text_props(obj)
-            needs_update = False
-
-            if active_props.apply_font_size_to_all:
-                obj_props.font_size = active_props.font_size
-                needs_update = True
-
-            if active_props.apply_newline_to_all:
-                obj_props.newline_at = active_props.newline_at
-                needs_update = True
-
-            for i, active_literal in enumerate(active_props.literals):
-                if i >= len(obj_props.literals):
-                    continue
-
-                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
-                obj_literal = obj_props.literals[i]
-
-                if i < len(active_props.literal_apply_settings):
-                    active_settings = active_props.literal_apply_settings[i]
-
-                    if active_settings.apply_text_to_all:
-                        if len(active_literal.attributes) > 0 and len(obj_literal.attributes) > 0:
-                            obj_literal.attributes[0].string_value = active_literal.attributes[0].string_value
-                            needs_update = True
-
-                    if active_settings.apply_path_to_all:
-                        if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
-                            if (
-                                active_literal.attributes[1].data_type == "enum"
-                                and obj_literal.attributes[1].data_type == "enum"
-                            ):
-                                obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
-                            else:
-                                obj_literal.attributes[1].string_value = active_literal.attributes[1].string_value
-                            needs_update = True
-
-                    if active_settings.apply_box_alignment_to_all:
-                        obj_literal.box_alignment = active_literal.box_alignment[:]
-                        needs_update = True
-
-            if needs_update:
-                core.edit_text(tool.Drawing, obj=obj)
-
-    def apply_to_selected_objects_with_captured_data(self, context, active_obj, captured_data):
-        """Apply changes to other selected text objects using captured apply settings"""
-        selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
-
-        for obj in selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-
-            obj_props = tool.Drawing.get_text_props(obj)
-
-            if len(obj_props.literals) == 0:
-                core.enable_editing_text(tool.Drawing, obj=obj)
-                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
-
-            needs_update = False
-
-            if captured_data["apply_font_size_to_all"]:
-                obj_props.font_size = captured_data["font_size"]
-                needs_update = True
-
-            if captured_data["apply_newline_to_all"]:
-                obj_props.newline_at = captured_data["newline_at"]
-                needs_update = True
-
-            for i, captured_literal in enumerate(captured_data["literals"]):
-                if i >= len(obj_props.literals):
-                    continue
-
-                obj_literal = obj_props.literals[i]
-
-                if captured_literal["apply_text_to_all"]:
-                    if len(captured_literal["attributes"]) > 0 and len(obj_literal.attributes) > 0:
-                        new_value = captured_literal["attributes"][0][0]  # [0] = string_value
-                        obj_literal.attributes[0].string_value = new_value
-                        needs_update = True
-
-                if captured_literal["apply_path_to_all"]:
-                    if len(captured_literal["attributes"]) > 1 and len(obj_literal.attributes) > 1:
-                        new_value = captured_literal["attributes"][1][1]  # [1] = enum_value or string_value
-                        if obj_literal.attributes[1].data_type == "enum":
-                            obj_literal.attributes[1].enum_value = new_value
-                        else:
-                            obj_literal.attributes[1].string_value = new_value
-                        needs_update = True
-
-                if captured_literal["apply_box_alignment_to_all"] and captured_literal["box_alignment"]:
-                    obj_literal.box_alignment = captured_literal["box_alignment"]
-                    needs_update = True
-
-            if needs_update:
-                core.edit_text(tool.Drawing, obj=obj)
+    def _execute(self, context):
+        apply_objs = [
+            obj
+            for obj in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(obj))
+            and tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
+        ]
+        core.copy_text_to_selection(
+            tool.Drawing,
+            attribute=self.attribute,
+            attribute_obj=tool.Blender.get_active_object(),
+            apply_objs=apply_objs,
+        )
+        tool.Blender.update_viewport()
 
 
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
@@ -3357,8 +3222,6 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         props = tool.Drawing.get_text_props(obj)
         core.enable_editing_text(tool.Drawing, obj=obj)
-
-        props.ensure_literal_apply_settings(len(props.literals))
 
         text_element = tool.Ifc.get_entity(obj)
         assigned_product_entity = tool.Drawing.get_assigned_product(text_element) if text_element else None
@@ -3448,9 +3311,6 @@ class AddTextLiteral(bpy.types.Operator):
         box_alignment_mask = [False] * 9
         box_alignment_mask[6] = True  # bottom_left box_alignment
         literal_props.box_alignment = box_alignment_mask
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
         return {"FINISHED"}
 
 
@@ -3469,9 +3329,6 @@ class RemoveTextLiteral(bpy.types.Operator):
         props = tool.Drawing.get_text_props(obj)
         props.literals.remove(self.literal_prop_id)
         tool.Blender.update_viewport()
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
         return {"FINISHED"}
 
 
@@ -5056,7 +4913,7 @@ class ShowCategoryHelp(bpy.types.Operator):
 
 class AddElementValueRow(bpy.types.Operator):
     bl_idname = "bim.add_element_value_row"
-    bl_label = "Add Element"
+    bl_label = "Add Element Value Row"
     bl_description = "Add a new element value row"
     bl_options = {"REGISTER", "UNDO"}
 

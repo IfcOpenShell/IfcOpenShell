@@ -609,6 +609,25 @@ class Drawing(bonsai.core.tool.Drawing):
         return literals
 
     @classmethod
+    def export_font_size(cls, obj: bpy.types.Object) -> str:
+        return float(cls.get_text_props(obj).font_size)
+
+    @classmethod
+    def export_alignment(cls, obj: bpy.types.Object) -> str:
+        props = cls.get_text_props(obj)
+        if (alignment := props.align_vertical + "-" + props.align_horizontal) == "middle-middle":
+            return "center"
+        return alignment
+
+    @classmethod
+    def export_wrap_length(cls, obj: bpy.types.Object) -> str:
+        return cls.get_text_props(obj).newline_at
+
+    @classmethod
+    def export_symbol(cls, obj: bpy.types.Object) -> str:
+        return cls.get_text_props(obj).get_symbol()
+
+    @classmethod
     def create_annotation_context(
         cls, target_view: str, object_type: Optional[str] = None
     ) -> ifcopenshell.entity_instance:
@@ -835,43 +854,12 @@ class Drawing(bonsai.core.tool.Drawing):
         return props.is_editing_sheets
 
     @classmethod
-    def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
+    def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
-
-        old_literals = cls.get_text_literal(obj, return_list=True)
-        assert isinstance(old_literals, list)
-        literals_attributes = cls.export_text_literal_attributes(obj)
-        props = cls.get_text_props(obj)
-        defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
-        ifc_file = tool.Ifc.get()
-
-        added_literals: list[ifcopenshell.entity_instance] = []
-        new_literals: list[ifcopenshell.entity_instance] = []
-        for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
-            # making sure all literals from text edit exist in ifc
-            if ifc_definition_id == 0:
-                literal = cls.add_literal(**attributes)
-                added_literals.append(literal)
-            else:
-                literal = ifc_file.by_id(ifc_definition_id)
-                ifcopenshell.api.drawing.edit_text_literal(
-                    ifc_file,
-                    text_literal=literal,
-                    attributes=attributes,
-                )
-            new_literals.append(literal)
-
-        removed_literals = set(old_literals) - set(new_literals)
-
-        # Add new literals and keep the order as defined in text props.
-        items = [i for i in rep.Items if i not in removed_literals] + added_literals
-        items.sort(key=lambda x: new_literals.index(x) if x in new_literals else -1)
-        rep.Items = items
-
-        # Remove from ifc the literals that were removed during the edit.
-        for literal in removed_literals:
-            ifcopenshell.util.element.remove_deep2(ifc_file, literal)
+        for literal in cls.get_text_literal(obj, return_list=True):
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), literal)
+        rep.Items = [cls.add_literal(**a) for a in literal_attributes]
 
     @classmethod
     def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
@@ -1212,8 +1200,6 @@ class Drawing(bonsai.core.tool.Drawing):
         props.font_size = str(text_data["FontSize"])
         props.newline_at = text_data["Newline_At"]
         props.set_symbol(text_data["Symbol"])
-        props.reverse_list = text_data["Reverse_List"]
-        props.list_separator = text_data["List_Separator"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1310,7 +1296,7 @@ class Drawing(bonsai.core.tool.Drawing):
         props.should_draw_decorations = True
 
     @classmethod
-    def update_text_size_pset(cls, obj: bpy.types.Object) -> None:
+    def edit_text_font_size(cls, obj: bpy.types.Object, font_size: float) -> None:
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
@@ -1320,8 +1306,9 @@ class Drawing(bonsai.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         assert element
         # updating text font size in EPset_Annotation.Classes
-        font_size = float(props.font_size)
+        print("we got", font_size, repr(font_size))
         font_size_str = next((key for key in FONT_SIZES if FONT_SIZES[key] == font_size), None)
+        print("so", font_size_str)
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
         assert isinstance(classes, Union[str, None])
         classes_split = classes.split() if classes else []
@@ -1341,34 +1328,32 @@ class Drawing(bonsai.core.tool.Drawing):
             pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
             if not pset:
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
-            ifcopenshell.api.pset.edit_pset(
-                ifc_file,
-                pset=pset,
-                properties={"Classes": classes},
-            )
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": classes})
 
     @classmethod
-    def update_text_annotation_properties(cls, obj: bpy.types.Object) -> None:
-        """Update all EPset_Annotation properties from the text props"""
-        props = cls.get_text_props(obj)
+    def edit_text_wrap_length(cls, obj: bpy.types.Object, wrap_length: int) -> None:
         element = tool.Ifc.get_entity(obj)
-        assert element
-
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Newline_At": wrap_length})
 
-        ifcopenshell.api.pset.edit_pset(
-            ifc_file,
-            pset=pset,
-            properties={
-                "Newline_At": int(props.newline_at),
-                "Symbol": props.get_symbol(),
-                "Reverse_List": props.reverse_list,
-                "List_Separator": props.list_separator or "",
-            },
-        )
+    @classmethod
+    def edit_text_symbol(cls, obj: bpy.types.Object, symbol: str) -> None:
+        element = tool.Ifc.get_entity(obj)
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Symbol": symbol})
+
+    @classmethod
+    def edit_text_alignment(cls, obj: bpy.types.Object, alignment: str) -> None:
+        ifc_literals = cls.get_text_literal(obj, return_list=True)
+        for ifc_literal in ifc_literals or []:
+            if ifc_literal.is_a("IfcTextLiteralWithExtent"):
+                ifc_literal.BoxAlignment = alignment
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -2112,13 +2097,9 @@ class Drawing(bonsai.core.tool.Drawing):
         cls,
         text: str,
         product: Optional[ifcopenshell.entity_instance] = None,
-        reverse_list: bool = False,
-        list_separator: str = ", ",
     ) -> str:
         if not product:
             return text
-        if list_separator:
-            list_separator = list_separator.encode().decode("unicode_escape")
 
         for command in re.findall("``.*?``", text):
             original_command = command
@@ -2133,10 +2114,7 @@ class Drawing(bonsai.core.tool.Drawing):
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
-                if reverse_list:
-                    value = list_separator.join(str(v) for v in reversed(value))
-                else:
-                    value = list_separator.join(str(v) for v in value)
+                value = ", ".join(str(v) for v in value)
             text = text.replace(variable, str(value))
         return text
 

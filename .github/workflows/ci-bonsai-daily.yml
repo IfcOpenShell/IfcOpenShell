@@ -53,6 +53,11 @@ jobs:
             name: "MacOS ARM Build",
             short_name: macosm1,
           }
+        exclude:
+          # Python 3.13 is needed for Blender 5.1+ and Blender dropped Intel Mac support in 5.0.
+          - pyver: py313
+            config:
+              short_name: macos
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6 # https://github.com/actions/setup-python

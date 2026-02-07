@@ -37,6 +37,7 @@ classes = (
     operator.EditZone,
     operator.EnableEditingSystem,
     operator.EnableEditingZone,
+    operator.EstablishPathDirection,
     operator.HidePorts,
     operator.LoadSystems,
     operator.LoadZones,

@@ -420,11 +420,6 @@ class Unit(bonsai.core.tool.Unit):
             new.ifc_class = unit.is_a()
 
     @classmethod
-    def is_scene_unit_metric(cls) -> bool:
-        assert bpy.context.scene
-        return bpy.context.scene.unit_settings.system in ["METRIC", "NONE"]
-
-    @classmethod
     def is_unit_class(cls, unit: ifcopenshell.entity_instance, ifc_class: str) -> bool:
         return unit.is_a(ifc_class)
 

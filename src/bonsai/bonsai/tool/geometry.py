@@ -1152,9 +1152,8 @@ class Geometry(bonsai.core.tool.Geometry):
     def record_object_position(cls, obj: bpy.types.Object) -> None:
         # These are recorded separately because they have different numerical tolerances
         props = tool.Blender.get_object_bim_props(obj)
-        # Explicit dtype for Blender <5.0 compatibility.
-        props.location_checksum = repr(np.array(obj.matrix_world.translation, dtype=np.float32).tobytes())
-        props.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
+        props.location_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes())
+        props.rotation_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
     def remove_connection(cls, connection: ifcopenshell.entity_instance) -> None:

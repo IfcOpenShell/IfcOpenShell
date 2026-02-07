@@ -23,6 +23,7 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
 
+import aud
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.cost
@@ -143,25 +144,18 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def play_sound(cls) -> None:
-        if tool.Blender.get_addon_preferences().should_play_chaching_sound:
+        # Save ears for those running the tests in background mode.
+        if tool.Blender.get_addon_preferences().should_play_chaching_sound and not bpy.app.background:
             cls.play_chaching_sound()  # lol
 
     @classmethod
     def play_chaching_sound(cls) -> None:
         # TODO: make pitch higher as costs rise
-        try:
-            import aud
-
-            device = aud.Device()
-            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
-            handle = device.play(sound)
-            sound_buffered = aud.Sound.buffer(sound)
-            handle_buffered = device.play(sound_buffered)
-            handle.stop()
-            handle_buffered.stop()
-        except:
-            pass  # ah well
+        device = aud.Device()
+        # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+        filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
+        sound = aud.Sound(filepath)
+        device.play(sound)
 
     @classmethod
     def load_cost_schedule_tree(cls) -> None:

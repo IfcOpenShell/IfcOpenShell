@@ -224,7 +224,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Collector,
                     tool.Spatial,
                     container=current_container,
-                    element_obj=aggregate,
+                    objs=[aggregate],
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
 

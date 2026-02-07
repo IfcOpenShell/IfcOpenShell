@@ -1730,7 +1730,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                         tool.Collector,
                         tool.Spatial,
                         container=original_data[matching_group_id][index]["Container"],
-                        element_obj=obj,
+                        objs=[obj],
                     )
                     for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
                         tool.Collector.assign(tool.Ifc.get_object(part))
