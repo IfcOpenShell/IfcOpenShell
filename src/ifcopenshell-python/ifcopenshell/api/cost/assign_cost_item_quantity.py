@@ -19,6 +19,7 @@
 import ifcopenshell.api.cost
 import ifcopenshell.api.control
 import ast
+import operator
 from typing import Any
 
 import ifcopenshell.api.control
@@ -133,28 +134,28 @@ class Usecase:
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
             if self.settings["formula"]:
-                # not so much elegant, but simple and useful because variables can't have the dot in the name
-                # and Psets have the dot
-                separator = "0"
-                variables = self.extract_variables(self.settings["formula"])
-                variables_modified = {v.replace(".", separator) : None for v in variables}
-                for v in variables_modified:
-                    if separator in v:
-                        variables_modified[v] = self.get_value_from_pset(product, v, separator)
-                    else:
-                        variables_modified[v] = self.get_value_from_qset(product, v)
-                    if variables_modified[v] == 0:
-                        print(f"WARNING: {product.Name} hasn't the variable {v.replace(separator, '.')}")
+                tree = ast.parse(self.settings["formula"], mode = "eval")
+                collector = VariableExtractor()
+                collector.visit(tree)
+                variables = collector.variables
 
-                formula_modified = self.settings["formula"].replace(".", separator)
-                if any(v is None for v in variables_modified.values()):
-                    for k, v in variables_modified.items():
-                        if v == None:
-                            print(f"Property {k.replace(separator, '.')} not found")
-                    print("Formula contains variables that are not found in Psets or Qsets. Please check the output")
-                    result = 0
-                else:
-                    result = eval(formula_modified, {}, variables_modified)
+                for variable in variables:
+                    getter = self.get_value_from_pset if "." in variable else self.get_value_from_qset
+                    value = getter(product, variable)
+
+                if value is None:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"is missing (None). Check Pset/Qset or property name."
+                        )
+                elif value == 0:
+                    print(
+                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                        f"has value 0. Verify if this is correct."
+                    )
+
+                evaluator = FormulaEvaluator(values)
+                result = evaluator.visit(tree.body)
 
                 new_quantity = None
                 for quantity in self.quantities:
@@ -181,6 +182,25 @@ class Usecase:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
         else:
             self.update_cost_item_count()
+
+    def get_value_from_pset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+    ) -> float:
+        pset_name = v.split(".")[0]
+        pset = ifcopenshell.util.element.get_pset(product, pset_name)
+        pset_property_name = v.split(".")[1]
+        return (pset or {}).get(pset_property_name,None)
+
+    def get_value_from_qset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+    ) -> float:
+        qtos = ifcopenshell.util.element.get_psets(product, qtos_only = True)
+        quantities = next(iter(qtos.values()), {})
+        return (quantities or {}).get(v,None)
 
     def assign_cost_control(
         self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
@@ -223,50 +243,54 @@ class Usecase:
                             count += 1
                 quantity[3] = count
 
-    def extract_variables(self, expr: str):
-        tree = ast.parse(expr, mode="eval")
-        extractor = VariableExtractor()
-        extractor.visit(tree)
-        return extractor.variables
+OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+}
 
-    def get_value_from_pset(
-            self,
-            product:ifcopenshell.entity_instance,
-            v: str,
-            separator: str,
-    ) -> float:
-        pset_name = v.split(separator)[0]
-        pset = ifcopenshell.util.element.get_pset(product, pset_name)
-        pset_property_name = v.split(separator)[1]
-        return (pset or {}).get(pset_property_name,0)
+def build_full_name(node):
+    #used for variables with dots
+    parts = []
+    while isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            node = node.value
 
-    def get_value_from_qset(
-            self,
-            product:ifcopenshell.entity_instance,
-            v: str,
-    ) -> float:
-        qtos = ifcopenshell.util.element.get_psets(product, qtos_only = True)
-        quantities = next(iter(qtos.values()), {})
-        return (quantities or {}).get(v,0)
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+
+    return ".".join(reversed(parts))
 
 class VariableExtractor(ast.NodeVisitor):
     def __init__(self):
         self.variables = set()
 
     def visit_Name(self, node):
-        # simple variables wothout dots
         self.variables.add(node.id)
 
     def visit_Attribute(self, node):
-        # for variables with dots (chains)
-        parts = []
-        current = node
-        while isinstance(current, ast.Attribute):
-            parts.append(current.attr)
-            current = current.value
-        if isinstance(current, ast.Name):
-            parts.append(current.id)
+        self.variables.add(build_full_name(node))
 
-        full_name = ".".join(reversed(parts))
-        self.variables.add(full_name)
+class FormulaEvaluator(ast.NodeVisitor):
+    def __init__(self, values):
+        self.values = values
 
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        return OPERATORS[type(node.op)](left, right)
+
+    def visit_Name(self, node):
+        return self.values[node.id]
+
+    def visit_Attribute(self, node):
+        return self.values[build_full_name(node)]
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def generic_visit(self, node):
+        raise ValueError(f"Operation not permitted: {type(node).__name__}")
