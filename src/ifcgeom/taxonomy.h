@@ -178,7 +178,7 @@ typedef item const* ptr;
 					return computed_hash_;
 				}
 
-				item(const IfcUtil::IfcBaseInterface* instance = nullptr) : identity_(counter_++), computed_hash_(0), instance(instance) {}
+				item(const IfcUtil::IfcBaseInterface* instance = nullptr);
 
 				virtual ~item() {}
 
