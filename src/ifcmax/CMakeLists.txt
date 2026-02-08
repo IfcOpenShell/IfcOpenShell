@@ -18,11 +18,11 @@
 ################################################################################
 
 # check for 3ds Max SDK
-set(valid_max_years 2027 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017)
+set(valid_max_years 2028 2027 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017)
 
 # might be dangerous to use tools 143 for all max versions
-set(max_toolset_versions_143 "2017" "2018" "2019" "2020" "2021" "2022" "2023" "2024" "2025" "2026" "2027" )
-# set(max_toolset_versions_143 "2025" "2026" "2027" )
+set(max_toolset_versions_143 "2017" "2018" "2019" "2020" "2021" "2022" "2023" "2024" "2025" "2026" "2027" "2028" )
+# set(max_toolset_versions_143 "2025" "2026" "2027" "2028" )
 # set(max_toolset_versions_142 "2022" "2023" "2024" )
 # set(max_toolset_versions_141 "2020" "2021" )
 # set(max_toolset_versions_140 "2017" "2018" "2019" ) 
