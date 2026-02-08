@@ -144,7 +144,7 @@ format_grammar = lark.Lark(
         | mul_div "*" function  -> multiply
         | mul_div "/" function  -> divide
     
-    function: round | number | int | format_length | lower | upper | title | concat | substr | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
+    function: round | number | int | format_length | lower | upper | title | concat | substr | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
 
     variable: "{{" query_path "}}"
     query_path: /[^}]+/
@@ -160,6 +160,9 @@ format_grammar = lark.Lark(
     title: "title(" expression ")"
     concat: "concat(" expression ("," expression)* ")"
     substr: "substr(" expression "," SIGNED_INT ["," SIGNED_INT] ")"
+    sort: "sort(" expression ")"
+    reverse: "reverse(" expression ")"
+    join: "join(" ESCAPED_STRING "," expression ")"
     boolean: TRUE | FALSE
 
     TRUE: "true" | "True" | "TRUE"
@@ -201,6 +204,8 @@ class FormatTransformer(lark.Transformer):
         self.element = element
 
     def start(self, args):
+        if isinstance(args[0], (list, tuple)):
+            return ", ".join(args[0])
         return args[0]
 
     def expression(self, args):
@@ -208,18 +213,11 @@ class FormatTransformer(lark.Transformer):
 
     def variable(self, args):
         """Handle variable substitution like {{z}} or {{Pset_Wall.FireRating}}"""
-        if self.element is None:
-            return "0"  # Default value if no element context
-
-        query_path = args[0]
-        try:
-            value = get_element_value(self.element, query_path)
-            if value is None:
-                return "0"
-            # Convert to string for further processing
-            return str(value)
-        except:
-            return "0"  # Return default on error
+        if self.element:
+            try:
+                return get_element_value(self.element, args[0])
+            except:
+                pass
 
     def query_path(self, args):
         """Extract the query path from variable"""
@@ -300,6 +298,15 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) : int(args[2])]
         elif len(args) == 2:
             return str(args[0])[int(args[1]) :]
+
+    def sort(self, args):
+        return sorted(args[0])
+
+    def reverse(self, args):
+        return list(reversed(args[0]))
+
+    def join(self, args):
+        return args[0].join(args[1])
 
     def boolean(self, args):
         if not args:

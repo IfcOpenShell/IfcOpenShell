@@ -1306,9 +1306,7 @@ class Drawing(bonsai.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         assert element
         # updating text font size in EPset_Annotation.Classes
-        print("we got", font_size, repr(font_size))
         font_size_str = next((key for key in FONT_SIZES if FONT_SIZES[key] == font_size), None)
-        print("so", font_size_str)
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
         assert isinstance(classes, Union[str, None])
         classes_split = classes.split() if classes else []
@@ -2101,16 +2099,13 @@ class Drawing(bonsai.core.tool.Drawing):
         if not product:
             return text
 
-        for command in re.findall("``.*?``", text):
+        for command in re.findall("``.+?``", text):
             original_command = command
             command_content = command[2:-2]
-            if command_content is None or str(command_content).strip().lower() == "none":
+            try:
+                text = text.replace(original_command, ifcopenshell.util.selector.format(command_content, product))
+            except Exception:
                 text = text.replace(original_command, "")
-            else:
-                try:
-                    text = text.replace(original_command, ifcopenshell.util.selector.format(command_content, product))
-                except Exception:
-                    text = text.replace(original_command, "")
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
