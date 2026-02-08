@@ -74,14 +74,12 @@ def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
                 return
         
         tool.Geometry.lock_object(empty_handle)
-        empty_handle.hide_select = True
         self.position = new_position
         
         if tool.Ifc.get():
             tool.Project.save_linked_models_to_ifc(update_positions=True)
     else:
         tool.Geometry.unlock_object(empty_handle)
-        empty_handle.hide_select = False
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
