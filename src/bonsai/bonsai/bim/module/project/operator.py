@@ -1714,9 +1714,8 @@ except Exception as e:
         # Open linked IFC
         linked_ifc = ifcopenshell.open(self.filepath_)
         
-        # Get CRS information from both models
-        parent_crs = ifcopenshell.util.geolocation.get_projected_crs(parent_ifc)
-        linked_crs = ifcopenshell.util.geolocation.get_projected_crs(linked_ifc)
+        parent_crs = ifcopenshell.util.geolocation.get_crs(parent_ifc)
+        linked_crs = ifcopenshell.util.geolocation.get_crs(linked_ifc)
         
         # If linked model has no georeferencing
         if not linked_crs:
