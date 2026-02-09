@@ -142,9 +142,7 @@ class TestNoClashes:
         # Create a model with a single wall
         f = ifcopenshell.api.project.create_file()
         ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
-        ifcopenshell.api.owner.settings.get_application = lambda ifc: (
-            ifc.by_type("IfcApplication") or [None]
-        )[0]
+        ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
         project = ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="P")
         ifcopenshell.api.unit.assign_unit(f)
         site = ifcopenshell.api.root.create_entity(f, ifc_class="IfcSite", name="S")

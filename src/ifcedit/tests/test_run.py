@@ -1,7 +1,7 @@
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 
-from ifcapi.run import run_api, serialize_result
+from ifcedit.run import run_api, serialize_result
 
 
 class TestRunApi:

@@ -62,9 +62,7 @@ def _get_scope_elements(
     return elements, "all"
 
 
-def _build_tree(
-    model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]
-) -> ifcopenshell.geom.tree | None:
+def _build_tree(model: ifcopenshell.file, elements: set[ifcopenshell.entity_instance]) -> ifcopenshell.geom.tree | None:
     """Build geometry tree for given elements using iterator.
 
     Returns None if iterator fails to initialize (no geometry available).
@@ -72,9 +70,7 @@ def _build_tree(
     geom_settings = ifcopenshell.geom.settings()
     geom_settings.set("use-world-coords", True)
     geom_tree = ifcopenshell.geom.tree()
-    iterator = ifcopenshell.geom.iterator(
-        geom_settings, model, multiprocessing.cpu_count(), include=list(elements)
-    )
+    iterator = ifcopenshell.geom.iterator(geom_settings, model, multiprocessing.cpu_count(), include=list(elements))
     if not iterator.initialize():
         return None
     while True:
@@ -84,9 +80,7 @@ def _build_tree(
     return geom_tree
 
 
-def _format_clash(
-    clash_result, geom_tree: ifcopenshell.geom.tree, model: ifcopenshell.file
-) -> dict[str, Any]:
+def _format_clash(clash_result, geom_tree: ifcopenshell.geom.tree, model: ifcopenshell.file) -> dict[str, Any]:
     """Format a single clash result to dict."""
     # clash result .a/.b are C++ wrapper entity_instances without .Name;
     # look up the Python entity from the model by id for proper serialization
@@ -124,9 +118,7 @@ def clash(
 
     if not scope_elements:
         result["pass"] = True
-        result["checks"] = {
-            "intersection": {"pass": True, "tolerance": tolerance, "clashes": []}
-        }
+        result["checks"] = {"intersection": {"pass": True, "tolerance": tolerance, "clashes": []}}
         if clearance is not None:
             result["checks"]["clearance"] = {"pass": True, "clearance": clearance, "clashes": []}
         return result

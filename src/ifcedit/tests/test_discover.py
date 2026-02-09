@@ -1,4 +1,4 @@
-from ifcapi.discover import function_docs, list_functions, list_modules
+from ifcedit.discover import function_docs, list_functions, list_modules
 
 
 class TestListModules:

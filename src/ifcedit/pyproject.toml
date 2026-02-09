@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ifcapi"
+name = "ifcedit"
 version = "0.0.0"
 authors = [
   { name="Bruno Postle", email="bruno@postle.net" },
@@ -23,7 +23,7 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifcapi*"]
+include = ["ifcedit*"]
 exclude = ["test*"]
 
 [tool.ruff]

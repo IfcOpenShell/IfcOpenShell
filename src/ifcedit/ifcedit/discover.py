@@ -1,20 +1,20 @@
-# IfcApi - CLI wrapper for ifcopenshell.api mutation functions
+# IfcEdit - CLI wrapper for ifcopenshell.api mutation functions
 # Copyright (C) 2025 Bruno Postle <bruno@postle.net>
 #
-# This file is part of IfcApi.
+# This file is part of IfcEdit.
 #
-# IfcApi is free software: you can redistribute it and/or modify
+# IfcEdit is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# IfcApi is distributed in the hope that it will be useful,
+# IfcEdit is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with IfcApi.  If not, see <http://www.gnu.org/licenses/>.
+# along with IfcEdit.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
@@ -55,12 +55,14 @@ def list_modules() -> list[dict]:
         description = ""
         if mod.__doc__:
             description = mod.__doc__.strip().split("\n")[0]
-        modules.append({
-            "module": child.name,
-            "description": description,
-            "functions": list(all_names),
-            "count": len(all_names),
-        })
+        modules.append(
+            {
+                "module": child.name,
+                "description": description,
+                "functions": list(all_names),
+                "count": len(all_names),
+            }
+        )
     return modules
 
 
@@ -80,11 +82,13 @@ def list_functions(module: str) -> list[dict]:
         if fn.__doc__:
             description = fn.__doc__.strip().split("\n")[0]
         params = _extract_params(fn)
-        functions.append({
-            "name": name,
-            "description": description,
-            "params": params,
-        })
+        functions.append(
+            {
+                "name": name,
+                "description": description,
+                "params": params,
+            }
+        )
     return functions
 
 

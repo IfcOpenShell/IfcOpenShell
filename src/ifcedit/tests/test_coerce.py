@@ -5,7 +5,7 @@ import pytest
 
 import ifcopenshell
 
-from ifcapi.coerce import coerce_value
+from ifcedit.coerce import coerce_value
 
 
 class TestStringCoercion:
