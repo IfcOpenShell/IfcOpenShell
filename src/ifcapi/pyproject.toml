@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcapi"
+version = "0.0.0"
+authors = [
+  { name="Bruno Postle", email="bruno@postle.net" },
+]
+description = "CLI wrapper for ifcopenshell.api IFC model mutation functions"
+readme = "README.md"
+keywords = ["IFC", "BIM", "API"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = ["ifcopenshell"]
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifcapi*"]
+exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
