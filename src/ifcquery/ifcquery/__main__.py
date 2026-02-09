@@ -24,6 +24,7 @@ import sys
 
 import ifcopenshell
 
+from ifcquery import clash as clash_mod
 from ifcquery import info, relations, select, summary, tree
 
 
@@ -93,6 +94,14 @@ def main():
     relations_parser.add_argument("element_id", help="Element step ID (e.g. 123 or #123)")
     relations_parser.add_argument("--traverse", choices=["up"], help="Traverse hierarchy (up: walk to IfcProject)")
 
+    clash_parser = subparsers.add_parser("clash", help="Check element placement for clashes")
+    clash_parser.add_argument("element_id", help="Element step ID (e.g. 123 or #123)")
+    clash_parser.add_argument("--clearance", type=float, help="Minimum clearance distance")
+    clash_parser.add_argument("--tolerance", type=float, default=0.002, help="Intersection tolerance (default: 0.002)")
+    clash_parser.add_argument(
+        "--scope", choices=["storey", "all"], default="storey", help="Scope of elements to check (default: storey)"
+    )
+
     args = parser.parse_args()
 
     try:
@@ -131,6 +140,24 @@ def main():
             print(f"Error: Element #{element_id} not found", file=sys.stderr)
             sys.exit(1)
         result = relations.relations(model, element, traverse=args.traverse)
+    elif args.command == "clash":
+        try:
+            element_id = parse_element_id(args.element_id)
+        except ValueError:
+            print(f"Error: Invalid element ID: {args.element_id}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            element = model.by_id(element_id)
+        except RuntimeError:
+            print(f"Error: Element #{element_id} not found", file=sys.stderr)
+            sys.exit(1)
+        try:
+            result = clash_mod.clash(
+                model, element, clearance=args.clearance, tolerance=args.tolerance, scope=args.scope
+            )
+        except ImportError:
+            print("Error: ifcopenshell geometry engine not available (C++ bindings required)", file=sys.stderr)
+            sys.exit(1)
 
     print(format_output(result, args.output_format))
 
