@@ -1411,11 +1411,8 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
             props = tool.Project.get_project_props()
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
             
-            next_id = tool.Project.get_next_link_id()
-            link_name = str(next_id)
-            
             new = props.links.add()
-            new.name = link_name
+            new.name = filepath
             new.filepath = filepath
             new.position = "0.000,0.000,0.000,0.000"
             new.mode = props.false_origin_mode

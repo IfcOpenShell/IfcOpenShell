@@ -60,14 +60,6 @@ class Project(bonsai.core.tool.Project):
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
-    def get_next_link_id(cls) -> int:
-        props = cls.get_project_props()
-        if not props.links:
-            return 1
-        max_id = max((int(link.name) for link in props.links if link.name.isdigit()), default=0)
-        return max_id + 1
-
-    @classmethod
     def get_link_empty_handle(cls, link_name: str) -> bpy.types.Object | None:
         props = cls.get_project_props()
         if link_name not in props.links:
@@ -109,11 +101,8 @@ class Project(bonsai.core.tool.Project):
         x += 0.5  # Offset to avoid duplicate detection
         new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
         
-        next_id = cls.get_next_link_id()
-        new_link_name = str(next_id)
-        
         new_link = props.links.add()
-        new_link.name = new_link_name
+        new_link.name = original_link.filepath
         new_link.filepath = original_link.filepath
         new_link.position = new_position
         new_link.mode = original_link.mode
@@ -121,13 +110,8 @@ class Project(bonsai.core.tool.Project):
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
         new_link.is_locked = False  # Start unlocked, will be locked after loading
         
-        status = bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
-        if status == {"CANCELLED"}:
-            index = props.links.find(new_link_name)
-            if index != -1:
-                props.links.remove(index)
-            return False
-        
+        bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
+        # TODO address this return state
         return True
 
     @classmethod
@@ -353,9 +337,8 @@ class Project(bonsai.core.tool.Project):
                     continue
                 seen_links.add(link_key)
                 
-                next_id = cls.get_next_link_id()
                 link = links.add()
-                link.name = str(next_id)
+                link.name = filepath
                 link.filepath = filepath
                 link.position = ""
                 link.ifc_definition_id = doc.id()
@@ -370,9 +353,8 @@ class Project(bonsai.core.tool.Project):
                         continue
                     seen_links.add(link_key)
                     
-                    next_id = cls.get_next_link_id()
                     link = links.add()
-                    link.name = str(next_id)
+                    link.name = filepath
                     link.filepath = filepath
                     link.position = position
                     link.ifc_definition_id = reference.id()
