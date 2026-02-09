@@ -1833,42 +1833,8 @@ class ReloadLink(bpy.types.Operator):
     link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
-        # Retrieve link information from IFC using UUID
-        ifc_file = tool.Ifc.get()
-        link_id = int(self.link[1:])  # Remove '#' prefix to get entity ID
-        
-        try:
-            doc_reference = ifc_file.by_id(link_id)
-        except:
-            self.report({"ERROR"}, f"Link with UUID {self.link} not found in IFC")
-            return {"CANCELLED"}
-        
-        doc_info = doc_reference.ReferencedDocument
-        if not doc_info:
-            self.report({"ERROR"}, f"Link {self.link} has no referenced document")
-            return {"CANCELLED"}
-        
-        filepath = doc_info.Location
-        position = doc_reference.Location or ""
-        
-        # Unload the link
-        bpy.ops.bim.unload_link(link=self.link)
-        
-        # Update link properties from IFC
-        props = tool.Project.get_project_props()
-        link = props.links[self.link]
-        link.filepath = filepath
-        link.position = position
-        
-        # Load the link directly
-        status = bpy.ops.bim.load_link(link=self.link, use_cache=False)
-        if status == {"CANCELLED"}:
-            self.report({"WARNING"}, f"Could not reload link: failed to load")
-            return {"CANCELLED"}
-        
-        link.is_locked = True
-        
-        return {"FINISHED"}
+        bpy.ops.bim.unload_link(link_index=self.link_index)
+        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False) or {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
