@@ -906,12 +906,12 @@ class OverrideDelete(bpy.types.Operator):
             # Check if this is a link empty handle (check links list, not IFC entity)
             is_link_handle = False
             props = tool.Project.get_project_props()
-            for link in props.links:
+            for i, link in enumerate(props.links):
                 empty_handle = tool.Project.get_link_empty_handle(link.name)
                 if empty_handle == obj:
                     is_link_handle = True
                     # UnlinkIfc handles both unloading and removal for all link types
-                    bpy.ops.bim.unlink_ifc(link=link.name)
+                    bpy.ops.bim.unlink_ifc(link_index=i)
                     break
             
             if is_link_handle:

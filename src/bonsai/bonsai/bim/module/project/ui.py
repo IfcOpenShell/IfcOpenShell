@@ -679,20 +679,19 @@ class BIM_UL_links(UIList):
             display_text = f"{self.get_display_name(item)} {position_text} {item.filepath}"
             row.label(text=display_text)
             
-            op = row.operator(
+            row.operator(
                 "bim.toggle_link_selectability",
                 text="",
                 icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
                 emboss=False,
-            )
-            op.link = item.name
+            ).link_index = index
             op = row.operator(
                 "bim.toggle_link_visibility",
                 text="",
                 icon="CUBE" if item.is_wireframe else "MESH_CUBE",
                 emboss=False,
             )
-            op.link = item.name
+            op.link_index = index
             op.mode = "WIREFRAME"
             op = row.operator(
                 "bim.toggle_link_visibility",
@@ -700,23 +699,18 @@ class BIM_UL_links(UIList):
                 icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
                 emboss=False,
             )
-            op.link = item.name
+            op.link_index = index
             op.mode = "VISIBLE"
-            op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
-            op.index = index
-            op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-            op.link = item.name
-            op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
-            op.link = item.name
+            row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
+            row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
+            row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
             row.prop(item, "is_locked", text="", icon="VIEW_LOCKED" if item.is_locked else "VIEW_UNLOCKED", emboss=False)
         else:
             display_name = self.get_display_name(item)
             display_text = f"{display_name} | {item.filepath}"
             row.label(text=display_text)
-            op = row.operator("bim.load_link", text="", icon="LINKED")
-            op.link = item.name
-            op = row.operator("bim.unlink_ifc", text="", icon="X")
-            op.link = item.name
+            row.operator("bim.load_link", text="", icon="LINKED").link_index = index
+            row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
 
 
 class BIM_PT_purge(Panel):

@@ -121,7 +121,7 @@ class Project(bonsai.core.tool.Project):
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
         new_link.is_locked = False  # Start unlocked, will be locked after loading
         
-        status = bpy.ops.bim.load_link(link=new_link_name, use_cache=True, skip_position_calculation_and_not_locked=True)
+        status = bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
         if status == {"CANCELLED"}:
             index = props.links.find(new_link_name)
             if index != -1:

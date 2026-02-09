@@ -1435,18 +1435,18 @@ class UnlinkIfc(bpy.types.Operator):
     bl_label = "Unlink IFC"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Remove the selected file from the link list"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
         props = tool.Project.get_project_props()
-        link_obj = props.links[self.link]
+        link = props.links[self.link_index]
         
-        bpy.ops.bim.unload_link(link=self.link)
+        bpy.ops.bim.unload_link(link_index=self.link_index)
         
         # If we have a parent IFC and an IFC reference, remove it from IFC
         ifc_file = tool.Ifc.get()
-        if ifc_file and link_obj.ifc_definition_id:
-            reference = ifc_file.by_id(link_obj.ifc_definition_id)
+        if ifc_file and link.ifc_definition_id:
+            reference = ifc_file.by_id(link.ifc_definition_id)
             
             doc_info = reference.ReferencedDocument
             
@@ -1455,7 +1455,7 @@ class UnlinkIfc(bpy.types.Operator):
             if doc_info and not tool.Document.get_document_references(doc_info):
                 ifcopenshell.api.document.remove_information(ifc_file, doc_info)
                 
-                original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link_obj.filepath))
+                original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath))
                 cache_files = [
                     original_filepath.with_suffix(".ifc.cache.blend"),
                     original_filepath.with_suffix(".ifc.cache.h5"),
@@ -1470,10 +1470,7 @@ class UnlinkIfc(bpy.types.Operator):
                         except Exception as e:
                             print(f"Failed to remove cache file {cache_file}: {e}")
 
-        index = props.links.find(self.link)
-        if index != -1:
-            props.links.remove(index)
-        
+        props.links.remove(self.link_index)
         return {"FINISHED"}
 
 
@@ -1482,11 +1479,11 @@ class UnloadLink(bpy.types.Operator):
     bl_label = "Unload Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Unload the selected linked file"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
         props = tool.Project.get_project_props()
-        link = props.links[self.link]  # Direct lookup by UUID
+        link = props.links[self.link_index]
         
         filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath))
         if filepath.suffix.lower() == ".ifc":
@@ -1533,15 +1530,13 @@ class LoadLink(bpy.types.Operator):
     bl_label = "Load Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.IntProperty(name="Link Index")
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     skip_position_calculation_and_not_locked: bpy.props.BoolProperty(name="Skip Position Calculation and Not Locked", default=False)
 
     def execute(self, context):
-        # Look up link by UUID to get filepath and store reference
-        props = tool.Project.get_project_props()
-        self.link_obj = props.links[self.link]  # Store link reference
-        filepath = Path(tool.Ifc.resolve_uri(self.link_obj.filepath))
+        self.link = tool.Project.get_project_props().links[self.link_index]
+        filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
             return {"CANCELLED"}
@@ -1559,7 +1554,7 @@ class LoadLink(bpy.types.Operator):
             data_to.collections = data_from.collections
         
         # Use stored link reference
-        link = self.link_obj
+        link = self.link
         
         # Find the linked collection
         for collection in bpy.data.collections:
@@ -1725,7 +1720,7 @@ except Exception as e:
     def calculate_link_position(self) -> None:
         """Calculate and set the position property of the link based on false_origin_mode."""
         pprops = tool.Project.get_project_props()
-        link = self.link_obj
+        link = self.link
         
         # Determine positioning action based on false_origin_mode and georeferencing compatibility
         positioning_action = "0,0,0,0"  # Default action
@@ -1835,7 +1830,7 @@ class ReloadLink(bpy.types.Operator):
     bl_label = "Reload Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reload the selected file"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
         # Retrieve link information from IFC using UUID
@@ -1881,11 +1876,11 @@ class ToggleLinkSelectability(bpy.types.Operator):
     bl_label = "Toggle Link Selectability"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle selectability"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
         props = tool.Project.get_project_props()
-        link = props.links[self.link]  # Direct lookup by UUID
+        link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath).with_suffix(".ifc.cache.blend"))
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
@@ -1907,12 +1902,12 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    link: bpy.props.StringProperty(name="Linked IFC UUID")
+    link_index: bpy.props.StringProperty(name="Link Index")
     mode: bpy.props.EnumProperty(name="Visibility Mode", items=((i, i, "") for i in ("WIREFRAME", "VISIBLE")))
 
     def execute(self, context):
         props = tool.Project.get_project_props()
-        link = props.links[self.link]  # Direct lookup by UUID
+        link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath).with_suffix(".ifc.cache.blend"))
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
@@ -1951,11 +1946,11 @@ class SelectLinkHandle(bpy.types.Operator):
     bl_label = "Select Link Handle"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select link empty object handle"
-    index: bpy.props.IntProperty(name="Link Index")
+    link_index: bpy.props.IntProperty(name="Link Index")
 
     def execute(self, context):
         props = tool.Project.get_project_props()
-        link = props.links[self.index]
+        link = props.links[self.link_index]
         handle = tool.Project.get_link_empty_handle(link.name)
         if not handle:
             self.report({"ERROR"}, "Link has no empty handle (probably it was deleted).")
