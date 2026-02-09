@@ -414,6 +414,11 @@ if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
     ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
 )
 
+:: As boost 1.90.0 it still includes b2 that doesn't support vc145 (not to mention older boost versions).
+:: So to support vc145 we download b2 separately (only if we do use vc145).
+call :check_boost_vc145_compatibility "%VC_VER%" "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+if NOT %ERRORLEVEL%==0 GOTO :Error
+
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     cd "%DEPS_DIR%"
@@ -927,6 +932,15 @@ exit /b 0
 :: - DEPENDENCY_INSTALL_NAME
 :MarkInstallation
 %PWSH_TOOLS% mark "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
+
+:: Params:
+:: - %1 - VC_VER
+:: - %2 - DEPS_DIR
+:: - %3 - BOOST_ROOT
+:check_boost_vc145_compatibility
+%PWSH_TOOLS% check_boost_vc145_compatibility "%1" "%2" "%3"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 exit /b 0
 

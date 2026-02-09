@@ -219,6 +219,43 @@ function install_cmake_project {
 }
 
 
+function check_boost_vc145_compatibility {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$VC_VER,
+        [Parameter(Mandatory = $true)]
+        [string]$DEPS_DIR,
+        [Parameter(Mandatory = $true)]
+        [string]$BOOST_ROOT
+    )
+
+    $boost_build_path = "$BOOST_ROOT/tools/build"
+
+    if ($VC_VER -ne "14.5") {
+        . $cecho 0 13 "VC_VER is not 14.5, no need to install updated b2."
+        return
+    }
+
+    $res = Select-String -Path "$boost_build_path/src/engine/build.bat" -Pattern 'vc143, vc145' -Quiet;
+    if ($res) {
+        . $cecho 0 13 "vc145 already supported, no need to install updated b2."
+        return
+    }
+
+    $b2_version = "5.4.2"
+    $b2_stem = "b2-$b2_version"
+    $b2_path = "$DEPS_DIR\$b2_stem"
+    $b2_filename = "$b2_stem.zip"
+
+    & download_file "b2" "https://github.com/bfgroup/b2/releases/download/$b2_version/$b2_filename" "$DEPS_DIR" "$b2_filename"
+    & extract_file "b2" "$b2_filename" "$DEPS_DIR" "$b2_path"
+
+    . $cecho 0 13 "Installing b2 with vc145 support..."
+    Remove-Item -Recurse -Path "$boost_build_path"
+    Copy-Item -Path "$b2_path" -Destination "$boost_build_path" -Recurse
+    . $cecho 0 13 "b2 with vc145 support installed."
+}
+
 function main {
     & setup_build_cfg
     # Dispatch command.
