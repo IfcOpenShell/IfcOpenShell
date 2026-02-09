@@ -22,6 +22,18 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
+    if (placement_rel_to_type_ || placement_rel_to_instance_) {
+        // @nb this is not a full solution because we only look for the direct PlacesObject relationships of the current placement,
+        // a more complete solution should track whether this element sits above the element of which the placement is being ignored.
+        auto self_places = inst->PlacesObject();
+        for (auto iter = self_places->begin(); iter != self_places->end(); ++iter) {
+            if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
+                (placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)){
+                return taxonomy::make<taxonomy::matrix4>();
+            }
+        }
+	}
+
 	const IfcSchema::IfcObjectPlacement* relative_to = nullptr;
 	const IfcUtil::IfcBaseInterface* transform;
 
