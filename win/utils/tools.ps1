@@ -2,6 +2,8 @@ Set-PSDebug -Trace 0
 Set-StrictMode -Version 3
 $ErrorActionPreference = "Stop"
 
+$cecho = "$PSScriptRoot\cecho.cmd"
+
 
 # Create marker file to indicate whether Release or Debug build was installed.
 function mark {
@@ -18,7 +20,7 @@ function mark {
     if (Test-Path -Path $marker_filepath) {
         return
     }
-    cecho.cmd 0 13 "Marking installation in '$installation_dir' with '$ENV:MARKER_FILE'."
+    . $cecho 0 13 "Marking installation in '$installation_dir' with '$ENV:MARKER_FILE'."
     New-Item -Path $marker_filepath -ItemType File | Out-Null
 }
 
@@ -76,7 +78,7 @@ function mark_based_on_artifacts {
     if (Test-Path -Path $marker_filepath) {
         return
     }
-    cecho.cmd 0 13 "Found artifact '$artifact' for dependency '$dependency_name' $env:BUILD_CFG."
+    . $cecho 0 13 "Found artifact '$artifact' for dependency '$dependency_name' $env:BUILD_CFG."
     & mark $installation_dir
 }
 
@@ -138,12 +140,11 @@ function extract_file {
         [string]$dir_after_extraction
     )
     if (Test-Path -Path "$dir_after_extraction") {
-        cecho.cmd 0 13 "$dependency_name already extracted into '$dir_after_extraction'. Skipping."
-        exit 0
+        . $cecho 0 13 "$dependency_name already extracted into '$dir_after_extraction'. Skipping."
+        return
     }
-    cecho.cmd 0 13 "Extracting $dependency_name into '$destination_dir' from '$filename'."
+    . $cecho 0 13 "Extracting $dependency_name into '$destination_dir' from '$filename'."
     7za x "$filename" -o"$destination_dir"
-    exit 0
 }
 
 
@@ -161,13 +162,12 @@ function download_file {
     mkdir "$destination_dir" -Force | Out-Null
     pushd "$destination_dir"
     if (Test-Path -Path "$filename") {
-        cecho.cmd 0 13 "$dependency_name already downloaded. Skipping."
-        exit 0
+        . $cecho 0 13 "$dependency_name already downloaded. Skipping."
+        return
     }
 
-    cecho.cmd 0 13 "Downloading $dependency_name into '$destination_dir'"
+    . $cecho 0 13 "Downloading $dependency_name into '$destination_dir'"
     Invoke-WebRequest $url -OutFile $filename
-    exit 0
 }
 
 
@@ -185,21 +185,20 @@ function git_clone_and_checkout_revision {
         [string]$revision
     )
     if (Test-Path -Path "$dest_dir") {
-        cecho.cmd 0 13 "Cloning $dependency_name is already cloned."
-        exit 0
+        . $cecho 0 13 "Cloning $dependency_name is already cloned."
+        return
     }
-    cecho.cmd 0 13 "Cloning $dependency_name into '$dest_dir'."
+    . $cecho 0 13 "Cloning $dependency_name into '$dest_dir'."
     pushd "$env:DEPS_DIR"
     git clone $git_url $dest_dir
     popd
 
     pushd "$dest_dir"
     git fetch
-    cecho.cmd 0 13 "Checking out $dependency_name revision $revision."
+    . $cecho 0 13 "Checking out $dependency_name revision $revision."
     git reset --hard
     git checkout $revision
     popd
-    exit 0
 }
 
 function install_cmake_project {
@@ -212,12 +211,11 @@ function install_cmake_project {
         [string]$configuration
     )
     pushd "$build_dir"
-    cecho.cmd 0 13 "Installing $dependency_name ($configuration). Please be patient, this may take a while."
+    . $cecho 0 13 "Installing $dependency_name ($configuration). Please be patient, this may take a while."
     $command = "cmake --install . --config $configuration"
-    cecho.cmd 0 13 "$command"
+    . $cecho 0 13 "$command"
     Invoke-Expression $command
     popd
-    exit 0
 }
 
 
