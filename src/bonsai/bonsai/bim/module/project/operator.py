@@ -1747,13 +1747,7 @@ except Exception as e:
     def calculate_link_position(self) -> None:
         """Calculate and set the position property of the link based on false_origin_mode."""
         pprops = tool.Project.get_project_props()
-        
-        # Use stored link reference
         link = self.link_obj
-        
-        
-        # Determine georeferencing compatibility
-        self.determine_georeferencing_compatibility()
         
         # Determine positioning action based on false_origin_mode and georeferencing compatibility
         positioning_action = "0,0,0,0"  # Default action
