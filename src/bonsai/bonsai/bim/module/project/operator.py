@@ -1555,17 +1555,8 @@ class LoadLink(bpy.types.Operator):
         return {"FINISHED"}
 
     def link_blend(self, filepath: Path) -> None:
-        # Check if library is already loaded
-        library_already_loaded = False
-        for lib in bpy.data.libraries:
-            if Path(lib.filepath) == filepath:
-                library_already_loaded = True
-                break
-        
-        # Only load the library if it's not already loaded
-        if not library_already_loaded:
-            with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
-                data_to.collections = data_from.collections
+        with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
+            data_to.collections = data_from.collections
         
         # Use stored link reference
         link = self.link_obj

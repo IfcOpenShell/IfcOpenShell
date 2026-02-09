@@ -1189,7 +1189,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
     def execute(self, context):
         if not context.selected_objects:
             return {"FINISHED"}
-        
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):

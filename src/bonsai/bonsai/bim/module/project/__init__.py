@@ -95,7 +95,6 @@ classes = (
 addon_keymaps = []
 
 
-
 def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.ExploreTool, after={"builtin.transform"}, separator=True, group=False)
