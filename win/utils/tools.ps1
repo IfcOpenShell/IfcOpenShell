@@ -223,7 +223,12 @@ function main {
     & setup_build_cfg
     # Dispatch command.
     $command = $Args[0]
-    $command_args = $Args[1..($args.Count - 1)]
+    if ($args.Count -gt 1) {
+        $command_args = $Args[1..($args.Count - 1)]
+    }
+    else {
+        $command_args = @()
+    }
     & $command @command_args
 }
 
