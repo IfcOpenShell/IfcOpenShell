@@ -24,7 +24,7 @@ import sys
 
 import ifcopenshell
 
-from ifcquery import info, select, summary, tree
+from ifcquery import info, relations, select, summary, tree
 
 
 def parse_element_id(raw: str) -> int:
@@ -89,6 +89,10 @@ def main():
     select_parser = subparsers.add_parser("select", help="Filter elements using selector syntax")
     select_parser.add_argument("query", help="Selector query string")
 
+    relations_parser = subparsers.add_parser("relations", help="Show relationships for an element")
+    relations_parser.add_argument("element_id", help="Element step ID (e.g. 123 or #123)")
+    relations_parser.add_argument("--traverse", choices=["up"], help="Traverse hierarchy (up: walk to IfcProject)")
+
     args = parser.parse_args()
 
     try:
@@ -115,6 +119,18 @@ def main():
         result = info.info(model, element)
     elif args.command == "select":
         result = select.select(model, args.query)
+    elif args.command == "relations":
+        try:
+            element_id = parse_element_id(args.element_id)
+        except ValueError:
+            print(f"Error: Invalid element ID: {args.element_id}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            element = model.by_id(element_id)
+        except RuntimeError:
+            print(f"Error: Element #{element_id} not found", file=sys.stderr)
+            sys.exit(1)
+        result = relations.relations(model, element, traverse=args.traverse)
 
     print(format_output(result, args.output_format))
 
