@@ -1614,6 +1614,8 @@ def run():
     import bonsai.tool as tool
     gprops = tool.Georeference.get_georeference_props()
     # Our model origin becomes their host model origin
+    gprops.host_model_is_georeferenced = {gprops.model_is_georeferenced}
+    gprops.host_model_crs = "{gprops.model_crs}"
     gprops.host_model_origin = "{gprops.model_origin}"
     gprops.host_model_origin_si = "{gprops.model_origin_si}"
     gprops.host_model_project_north = "{gprops.model_project_north}"
@@ -1670,7 +1672,7 @@ except Exception as e:
 
             self.set_model_origin_from_link()
         
-        self.determine_georeferencing_compatibility()
+        self.set_georeferencing_indicator()
         
         if not self.link_obj.ifc_definition_id and not self.skip_position_calculation_and_not_locked:
             self.calculate_link_position()
@@ -1701,48 +1703,24 @@ except Exception as e:
             if (value := data.get(prop, None)) is not None:
                 setattr(gprops, prop, value)
 
-    def determine_georeferencing_compatibility(self) -> None:
-        """Determine georeferencing compatibility between host and linked model."""
-        link = self.link_obj
-        
-        # Get parent (host) IFC
-        parent_ifc = tool.Ifc.get()
-        if not parent_ifc:
-            link.georeferenced = "NONE"
+    def set_georeferencing_indicator(self) -> None:
+        if not tool.Ifc.get():
+            self.link.georeferenced = "NONE"
             return
-        
-        # Open linked IFC
-        linked_ifc = ifcopenshell.open(self.filepath_)
-        
-        parent_crs = ifcopenshell.util.geolocation.get_crs(parent_ifc)
-        linked_crs = ifcopenshell.util.geolocation.get_crs(linked_ifc)
-        
-        # If linked model has no georeferencing
-        if not linked_crs:
-            link.georeferenced = "NONE"
+        if not (crs_name := (ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}).get("Name", "")):
+            self.link.georeferenced = "NONE"
             return
-        
-        # If parent has no georeferencing but linked does
-        if not parent_crs:
-            link.georeferenced = "NONE"
+        reference = tool.Ifc.get().by_id(self.link.ifc_definition_id)
+        json_filepath = Path(reference.Location).with_suffix(".ifc.cache.json")
+        if not json_filepath.exists():
+            self.link.georeferenced = "NONE"
             return
-        
-        # Compare CRS name and vertical datum
-        parent_crs_name = parent_crs.get("Name", "")
-        linked_crs_name = linked_crs.get("Name", "")
-        parent_vertical_datum = parent_crs.get("VerticalDatum", "")
-        linked_vertical_datum = linked_crs.get("VerticalDatum", "")
-        
-        crs_match = parent_crs_name == linked_crs_name
-        datum_match = parent_vertical_datum == linked_vertical_datum
-        
-        if crs_match and datum_match:
-            link.georeferenced = "FULL_COMPATIBLE"
-        elif crs_match and not datum_match:
-            link.georeferenced = "PARTIAL_COMPATIBLE"
+        with open(json_filepath, "r") as f:
+            data = json.load(f)
+        if not data["model_is_georeferenced"]:
+            self.link.georeferenced = "NONE"
         else:
-            link.georeferenced = "NOT_COMPATIBLE"
-    
+            self.link.georeferenced = "FULL_COMPATIBLE" if crs_name == data["model_crs"] else "NOT_COMPATIBLE"
 
     def calculate_link_position(self) -> None:
         """Calculate and set the position property of the link based on false_origin_mode."""
@@ -1758,14 +1736,14 @@ except Exception as e:
             positioning_action = "0,0,0,0" #AUTOMATIC has an empty in the world origin
             parent_origin = "PARENT_IFC"
             link.placed_as_per_georeference = True
-            if link.georeferenced in ("FULL_COMPATIBLE", "PARTIAL_COMPATIBLE", "NOT_COMPATIBLE"):
+            if link.georeferenced in ("FULL_COMPATIBLE", "NOT_COMPATIBLE"):
                 child_origin = "CHILD_IFC"
             else:
                 child_origin = "0,0,0,0"
         elif pprops.false_origin_mode == "MANUAL": # We cannot use false_origin_mode=MANUAL as it that would require for a given file a cache file per false origin 
             positioning_action = "HELMERT"
             parent_origin = "FALSE_ORIGIN"
-            if link.georeferenced in ("FULL_COMPATIBLE", "PARTIAL_COMPATIBLE", "NOT_COMPATIBLE"):
+            if link.georeferenced in ("FULL_COMPATIBLE", "NOT_COMPATIBLE"):
                 child_origin = "CHILD_IFC"
                 linked_ifc = ifcopenshell.open(link.filepath)
                 manual_false_origin = [float(v.strip()) for v in pprops.false_origin.split(",")]
@@ -2220,9 +2198,13 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         tool.Georeference.set_model_origin()
         self.json_filepath = self.filepath + ".cache.json"
         data = {
+            "host_model_is_georeferenced": gprops.host_model_is_georeferenced,
+            "host_model_crs": gprops.host_model_crs,
             "host_model_origin": gprops.host_model_origin,
             "host_model_origin_si": gprops.host_model_origin_si,
             "host_model_project_north": gprops.host_model_project_north,
+            "model_is_georeferenced": gprops.model_is_georeferenced,
+            "model_crs": gprops.model_crs,
             "model_origin": gprops.model_origin,
             "model_origin_si": gprops.model_origin_si,
             "model_project_north": gprops.model_project_north,

@@ -385,6 +385,9 @@ class Georeference(bonsai.core.tool.Georeference):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         gprops = tool.Georeference.get_georeference_props()
         e, n, h = cls.xyz2enh((0, 0, 0), should_return_in_map_units=False)
+        crs = ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}
+        gprops.model_is_georeferenced = bool(crs)
+        gprops.model_crs = crs.get("Name", "") or ""
         gprops.model_origin = f"{e},{n},{h}"
         gprops.model_origin_si = f"{e * unit_scale},{n * unit_scale},{h * unit_scale}"
         angle = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get())

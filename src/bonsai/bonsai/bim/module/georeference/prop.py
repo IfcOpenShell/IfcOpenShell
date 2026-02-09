@@ -226,6 +226,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
 
     # These are only for reference to capture data about a host model from a linked model
     # If you relink a model from a new host origin, we can autodetect it in theory with this
+    host_model_is_georeferenced: BoolProperty(name="Host Model Is Georeferenced")
+    host_model_crs: StringProperty(name="Host Model CRS")
     host_model_origin: StringProperty(name="Host Model Origin")
     host_model_origin_si: StringProperty(name="Host Model Origin SI")
     host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
@@ -234,6 +236,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
     # These are only for reference, using tool.Georeference.set_model_origin on
     # project load, project create, and when linking for the first time from an
     # empty Blender session.
+    model_is_georeferenced: BoolProperty(name="Model Is Georeferenced")
+    model_crs: StringProperty(name="Model CRS")
     model_origin: StringProperty(name="Model Origin")
     model_origin_si: StringProperty(name="Model Origin SI")
     model_project_north: StringProperty(name="Model Angle to Grid North")

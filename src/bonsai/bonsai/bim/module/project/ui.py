@@ -625,7 +625,7 @@ class BIM_UL_links(UIList):
 
             placed_as_per_georef = item.placed_as_per_georef
             empty_handle = tool.Project.get_link_empty_handle(item.name)
-            if item.is_loaded and empty_handle and item.georeferenced in ("PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"):
+            if item.is_loaded and empty_handle and item.georeferenced == "FULL_COMPATIBLE":
                 # Get current position and rotation
                 actual_x = round(empty_handle.location.x, 3)
                 actual_y = round(empty_handle.location.y, 3)
@@ -641,11 +641,7 @@ class BIM_UL_links(UIList):
                         expected_z = float(parts[2])
                         expected_angle = float(parts[3])
                         
-                        if item.georeferenced == "PARTIAL_COMPATIBLE":
-                            placed_as_per_georef = (actual_x == expected_x and 
-                                                    actual_y == expected_y and
-                                                    actual_angle == expected_angle)
-                        elif item.georeferenced == "FULL_COMPATIBLE":
+                        if item.georeferenced == "FULL_COMPATIBLE":
                             placed_as_per_georef = (actual_x == expected_x and 
                                                     actual_y == expected_y and 
                                                     actual_z == expected_z and
@@ -659,12 +655,6 @@ class BIM_UL_links(UIList):
             elif item.georeferenced == "NOT_COMPATIBLE":
                 icon_row.alert = True
                 icon_row.label(text="", icon="CANCEL")
-                icon_row.alert = False
-
-            elif item.georeferenced == "PARTIAL_COMPATIBLE":
-                if not placed_as_per_georef:
-                    icon_row.alert = True
-                icon_row.label(text="", icon="INTERNET_OFFLINE")
                 icon_row.alert = False
 
             elif item.georeferenced == "FULL_COMPATIBLE":

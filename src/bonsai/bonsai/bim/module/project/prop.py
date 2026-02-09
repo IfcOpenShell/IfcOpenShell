@@ -289,7 +289,6 @@ class Link(PropertyGroup):
         items=[
             ("NONE", "No Georef", "Linked model has no georeferencing"),
             ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS name and vertical datum differ from host"),
-            ("PARTIAL_COMPATIBLE", "Partial Compatible", "Has geo data, CRS name matches but vertical datum differs"),
             ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host"),
         ],
         default="NONE",
@@ -331,7 +330,7 @@ class Link(PropertyGroup):
         filepath: str
         position: str
         mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
-        georeferenced: Literal["NONE", "NOT_COMPATIBLE", "PARTIAL_COMPATIBLE", "FULL_COMPATIBLE"]
+        georeferenced: Literal["NONE", "NOT_COMPATIBLE", "FULL_COMPATIBLE"]
         is_loaded: bool
         is_locked: bool
         is_selectable: bool

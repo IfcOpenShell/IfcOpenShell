@@ -51,7 +51,7 @@ class RemoveGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Remove the georeferencing"
 
     def _execute(self, context):
-        core.remove_georeferencing(tool.Ifc)
+        core.remove_georeferencing(tool.Ifc, tool.Georeference)
 
 
 class EditGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
