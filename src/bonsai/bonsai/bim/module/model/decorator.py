@@ -1567,7 +1567,7 @@ class ProductDecorator:
                     obj_type,
                     representation,
                 )
-                context.view_layer.update()
+                bpy.context.view_layer.update()
                 break
 
         translate_mouse = Matrix.Translation(mouse_point)
