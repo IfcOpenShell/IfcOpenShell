@@ -257,9 +257,9 @@ class Alignment:
     ) -> Optional[List[Tuple[float, float, float]]]:
         """Get vertices for a single alignment segment using IfcOpenShell's geometry engine.
 
-        Uses the proven IfcOpenShell geometry engine to evaluate points along
-        the segment, supporting all segment types (LINE, CIRCULARARC, CLOTHOID,
-        spirals, etc.).
+        Uses the proven IfcOpenShell C++ geometry engine (create_shape) to generate
+        vertices, supporting all segment types (LINE, CIRCULARARC, CLOTHOID,
+        spirals, etc.) including negative-length curve segments.
 
         Args:
             segment: The IfcAlignmentSegment entity
@@ -270,7 +270,7 @@ class Alignment:
             or None if geometry cannot be generated
         """
         import ifcopenshell.api.alignment as align_api
-        from ifcopenshell.api.alignment import util as align_util
+        import ifcopenshell.geom
         import ifcopenshell.util.unit
         import numpy as np
 
@@ -302,47 +302,37 @@ class Alignment:
             if curve_segment is None:
                 continue
 
-            # Get segment length
+            # Use create_shape to generate vertices - the same proven approach as generate_vertices()
+            # This handles negative-length curve segments correctly at the C++ level
             try:
-                seg_length = abs(curve_segment.SegmentLength.wrappedValue)
-            except (AttributeError, TypeError):
+                s = ifcopenshell.geom.settings()
                 try:
-                    seg_length = abs(float(curve_segment.SegmentLength))
-                except:
+                    s.set("piecewise-step-type", 0)  # step-size is maximum step size
+                except RuntimeError:
+                    pass
+                try:
+                    s.set("piecewise-step-size", distance_interval)
+                except RuntimeError:
+                    pass
+
+                shape = ifcopenshell.geom.create_shape(s, curve_segment)
+                verts = shape.verts
+
+                if len(verts) == 0:
                     continue
 
-            if seg_length < 1e-6:
-                continue
-
-            # Calculate number of sample points
-            num_points = max(int(seg_length / distance_interval) + 1, 2)
-
-            # Sample points along the segment using IfcOpenShell's geometry engine
-            for i in range(num_points):
-                # Calculate distance along segment (don't exceed segment length)
-                if num_points > 1:
-                    dist_along = min(i * distance_interval, seg_length)
-                    # Ensure we get the last point exactly at segment end
-                    if i == num_points - 1:
-                        dist_along = seg_length
-                else:
-                    dist_along = 0.0
-
-                try:
-                    # Use IfcOpenShell's evaluate_segment to get transform matrix
-                    transform_matrix = align_util.evaluate_segment(curve_segment, dist_along)
-
-                    # Extract position from 4x4 matrix
-                    # Matrix is transposed by util.py, so translation is in row 3
-                    x = float(transform_matrix[3, 0]) / unit_scale
-                    y = float(transform_matrix[3, 1]) / unit_scale
-                    z = float(transform_matrix[3, 2]) / unit_scale
-
+                # Reshape to (N, 3) array and apply unit scale
+                vertices_array = np.array(verts).reshape((-1, 3))
+                for v in vertices_array:
+                    # create_shape returns values already in file units, apply scale
+                    x = float(v[0]) / unit_scale
+                    y = float(v[1]) / unit_scale
+                    z = float(v[2]) / unit_scale
                     all_vertices.append((x, y, z))
 
-                except Exception as e:
-                    # If evaluation fails at this point, skip it
-                    continue
+            except Exception as e:
+                print(f"[Alignment] create_shape failed for curve segment: {e}")
+                continue
 
         if len(all_vertices) < 2:
             return None

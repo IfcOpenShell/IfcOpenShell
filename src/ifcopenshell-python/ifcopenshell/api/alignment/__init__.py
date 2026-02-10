@@ -51,6 +51,7 @@ from ._get_segment_start_point_label import register_referent_name_callback
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .add_zero_length_segment import add_zero_length_segment
+from .clear_layout_segments import clear_layout_segments
 from .create import create
 from .create_as_offset_curve import create_as_offset_curve
 from .create_as_polyline import create_as_polyline
@@ -93,6 +94,7 @@ __all__ = [
     "add_stationing_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
+    "clear_layout_segments",
     "create",
     "create_as_offset_curve",
     "create_as_polyline",

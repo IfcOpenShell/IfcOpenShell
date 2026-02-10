@@ -207,22 +207,26 @@ def exit_pi_edit_mode(
     1. If apply=True:
        - Collect new PI positions from empties
        - Validate the new configuration
-       - Regenerate alignment segments
+       - Update alignment segments in-place (preserves alignment ID)
     2. Always:
        - Remove temporary EMPTY objects
        - Return success status
+
+    This function modifies the alignment segments in-place rather than
+    deleting and recreating the alignment. This preserves the alignment's
+    IFC entity ID, preventing stale reference issues.
 
     Args:
         ifc_tool: The IFC tool class
         alignment_tool: The Alignment tool class
         alignment_id: The IFC ID of the alignment being edited
-        apply: If True, regenerate alignment with new PI positions
+        apply: If True, update alignment with new PI positions
 
     Returns:
         True if successful
 
     Raises:
-        ValueError: If alignment doesn't exist or regeneration fails
+        ValueError: If alignment doesn't exist or update fails
     """
     import ifcopenshell
     import ifcopenshell.api.alignment as align_api
@@ -248,45 +252,29 @@ def exit_pi_edit_mode(
         if len(hpoints) < 2:
             raise ValueError("At least 2 PIs are required")
 
-        # Get alignment metadata for recreation
-        alignment_name = alignment.Name or "Alignment"
+        # Get horizontal layout - required for in-place editing
+        h_layout = align_api.get_horizontal_layout(alignment)
+        if h_layout is None:
+            raise ValueError("Alignment has no horizontal layout")
 
-        # Get start station from existing alignment (or default)
-        start_station = 0.0
-        try:
-            h_layout = align_api.get_horizontal_layout(alignment)
-            if h_layout:
-                # Try to get existing start station from referent
-                for rel in getattr(alignment, "IsNestedBy", []) or []:
-                    for child in rel.RelatedObjects or []:
-                        if child.is_a("IfcReferent"):
-                            pos_el = child.ObjectPlacement
-                            if pos_el and hasattr(pos_el, "PlacementRelTo"):
-                                # Extract station value if available
-                                pass
-        except Exception:
-            pass  # Use default start_station
-
-        # Remove empties BEFORE deleting alignment (they're parented to it)
+        # Remove empties before modifying segments
         alignment_tool.remove_pi_edit_empties(alignment_id)
 
-        # Remove old alignment hierarchy from Blender
-        alignment_tool.remove_alignment_hierarchy(alignment)
+        # Remove Blender visualization for segments (not the whole hierarchy)
+        alignment_tool.remove_layout_segment_objects(h_layout)
 
-        # Delete old IFC alignment
-        ifcopenshell.api.run("root.remove_product", ifc_file, product=alignment)
+        # Clear existing IFC segments (preserves layout and zero-length terminator)
+        align_api.clear_layout_segments(ifc_file, h_layout)
 
-        # Create new alignment with updated PI positions
-        new_alignment = alignment_tool.safe_create_alignment_by_pi_method(
-            ifc_file,
-            name=alignment_name,
-            hpoints=hpoints,
-            radii=radii,
-            start_station=start_station,
+        # Add new segments with updated PI positions
+        align_api.layout_horizontal_alignment_by_pi_method(
+            ifc_file, h_layout, hpoints, radii
         )
 
-        # Create new Blender hierarchy
-        alignment_tool.create_hierarchy_for_alignment(new_alignment)
+        # Refresh Blender visualization for new segments
+        layout_obj = ifc_tool.get_object(h_layout)
+        if layout_obj:
+            alignment_tool.create_objects_for_layout_segments(h_layout, layout_obj)
 
         return True
     else:

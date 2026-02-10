@@ -981,15 +981,15 @@ class SAIKEI_OT_recalculate_pis(Operator):
         return True
 
     def execute(self, context):
+        import ifcopenshell.api.alignment as align_api
+
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
         # Recalculate geometry in UI properties
         recalculate_pi_geometry(props)
 
-        # If there's an active alignment, recreate it with updated data
-        # We recreate the entire alignment because modifying segments in place
-        # can leave the IFC layout in an inconsistent state
+        # If there's an active alignment, update it in-place
         if props.active_alignment_id != 0:
             alignment = get_alignment_by_id(ifc, props.active_alignment_id)
             if alignment is None:
@@ -998,37 +998,34 @@ class SAIKEI_OT_recalculate_pis(Operator):
                 self.report({"WARNING"}, "Active alignment no longer exists. Reference cleared.")
                 return {"FINISHED"}
             if alignment:
-                # Save the alignment name
-                alignment_name = alignment.Name or props.new_alignment_name
-
-                # Remove the entire alignment hierarchy (Blender objects)
-                tool.Alignment.remove_alignment_hierarchy(alignment)
-
-                # Remove the IFC alignment entity entirely
-                ifcopenshell.api.run("root.remove_product", ifc, product=alignment)
+                # Get horizontal layout for in-place editing
+                h_layout = align_api.get_horizontal_layout(alignment)
+                if h_layout is None:
+                    self.report({"ERROR"}, "Alignment has no horizontal layout")
+                    return {"CANCELLED"}
 
                 # Collect updated PI data
                 hpoints = [(pi.x, pi.y) for pi in props.pis]
                 radii = [pi.radius for pi in props.pis[1:-1]]
 
-                # Create a fresh alignment with the same name
-                # Use safe wrapper to validate/cleanup before creating
-                new_alignment = tool.Alignment.safe_create_alignment_by_pi_method(
-                    ifc,
-                    name=alignment_name,
-                    hpoints=hpoints,
-                    radii=radii,
-                    start_station=props.start_station,
+                # Remove Blender visualization for segments (not the whole hierarchy)
+                tool.Alignment.remove_layout_segment_objects(h_layout)
+
+                # Clear existing IFC segments (preserves layout and zero-length terminator)
+                align_api.clear_layout_segments(ifc, h_layout)
+
+                # Add new segments with updated PI positions
+                align_api.layout_horizontal_alignment_by_pi_method(
+                    ifc, h_layout, hpoints, radii
                 )
 
-                # Create Blender hierarchy for the new alignment
-                tool.Alignment.create_hierarchy_for_alignment(new_alignment)
+                # Refresh Blender visualization for new segments
+                layout_obj = tool.Ifc.get_object(h_layout)
+                if layout_obj:
+                    tool.Alignment.create_objects_for_layout_segments(h_layout, layout_obj)
 
-                # Update the active alignment ID to reference the new entity
-                props.active_alignment_id = new_alignment.id()
-                props.active_alignment_name = alignment_name
-
-                self.report({"INFO"}, f"Updated alignment '{alignment_name}' with {len(hpoints)} PIs")
+                # Alignment ID stays the same - no need to update props.active_alignment_id
+                self.report({"INFO"}, f"Updated alignment '{alignment.Name}' with {len(hpoints)} PIs")
                 return {"FINISHED"}
 
         # No active alignment - just report geometry recalculation
@@ -1510,7 +1507,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
                 core.exit_pi_edit_mode(
                     tool.Ifc, tool.Alignment, self._alignment_id, apply=True
                 )
-                self.report({"INFO"}, "PI changes applied - alignment regenerated")
+                self.report({"INFO"}, "PI changes applied - alignment updated")
             else:
                 # Just cleanup without regenerating
                 core.exit_pi_edit_mode(
