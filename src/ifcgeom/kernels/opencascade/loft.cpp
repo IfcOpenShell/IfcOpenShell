@@ -82,49 +82,79 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	}
 
 	if (non_polygonal) {
-		if (loft->children.size() == 2) {
-			BRep_Builder BB;
-			TopoDS_Shell comp;
-			BB.MakeShell(comp);
+		if (loft->children.size() < 2) {
+            Logger::Error("Not enough sections to loft");
+            return false;
+        }
 
+		std::vector<std::vector<TopoDS_Wire>> sections;
+        sections.reserve(loft->children.size());
 
-			TopoDS_Shape f0, f1;
-			if (!convert(std::static_pointer_cast<taxonomy::face>(loft->children.front()), f0) ||
-				!convert(std::static_pointer_cast<taxonomy::face>(loft->children.back()), f1))
-			{
+		TopoDS_Shape f0, f1;
+
+        // Convert all children to vectors of wires
+        for (const auto& child : loft->children) {
+            TopoDS_Shape shape;
+            if (!convert(std::static_pointer_cast<taxonomy::face>(child), shape)) {
+                return false;
+            }
+            if (shape.ShapeType() != TopAbs_FACE) {
+                return false;
+            }
+			// At least make sure to have outer wire consistent, but in reality
+			// this is probably not a concern given how to build up these faces
+            auto f = TopoDS::Face(shape);
+
+			if (child == loft->children.front()) {
+                f0 = f;
+            } else if (child == loft->children.back()) {
+				f1 = f;
+            }
+
+            auto outer = BRepTools::OuterWire(f);
+            sections.emplace_back();
+            sections.back().push_back(outer);
+            for (TopoDS_Iterator it(f); it.More(); it.Next()) {
+                if (outer != it.Value()) {
+                    sections.back().push_back(TopoDS::Wire(it.Value()));
+                }
+            }
+        }
+
+		auto first_wire_count = sections.front().size();
+        for (auto& section : sections) {
+			if (section.size() != first_wire_count) {
+				Logger::Error("Inconsistent number of wires in sections");
 				return false;
 			}
-			if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
+        }
+
+		BRep_Builder BB;
+		TopoDS_Shell comp;
+		BB.MakeShell(comp);
+
+        for (size_t i = 0; i < first_wire_count; ++i) {
+            // Rule=True uses linear interpolation.
+            // This is critical for preventing twists in roads/railings.
+            BRepOffsetAPI_ThruSections builder(false, true);
+            for (auto& ws : sections) {
+                builder.AddWire(ws[i]);
+            }
+            builder.Build();
+			if (!builder.IsDone()) {
 				return false;
 			}
-
-			TopExp_Explorer exp1(f0, TopAbs_WIRE);
-			TopExp_Explorer exp2(f1, TopAbs_WIRE);
-			for (; exp1.More() && exp2.More(); exp1.Next(), exp2.Next()) {
-				const auto& w1 = TopoDS::Wire(exp1.Current());
-				const auto& w2 = TopoDS::Wire(exp2.Current());
-				BRepOffsetAPI_ThruSections builder;
-				builder.AddWire(w1);
-				builder.AddWire(w2);
-				builder.Build();
-				if (!builder.IsDone()) {
-					return false;
-				}
-				for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
-					BB.Add(comp, exp.Current());
-				}
+			for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+				BB.Add(comp, exp.Current());
 			}
-
-			BB.Add(comp, f0.Reversed());
-			BB.Add(comp, f1);
-
-			result = BRepBuilderAPI_MakeSolid(comp).Solid();
-
-			return true;
-		} else {
-			Logger::Error("Lofting more than two sections is not supported");
-			return false;
 		}
+
+		BB.Add(comp, f0.Reversed());
+		BB.Add(comp, f1);
+
+		result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+		return true;
 	}
 	
 	TopTools_ListOfShape faces;
