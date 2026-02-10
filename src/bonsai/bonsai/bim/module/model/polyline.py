@@ -211,22 +211,21 @@ class PolylineOperator:
         context.workspace.status_text_set(draw_instructions)
 
     def handle_lock_axis(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
+        angle_snap = tool.Snap.get_angle_snap_value(context)
         if event.value == "PRESS" and event.type == "A":
             self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
             if self.tool_state.lock_axis:
                 self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
-                # Round to the closest 5
-                self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
+                self.tool_state.snap_angle = round(self.tool_state.snap_angle / angle_snap) * angle_snap
 
         if event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.tool_state.lock_axis = True
             self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
-            # Round to the closest 5
-            self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
+            self.tool_state.snap_angle = round(self.tool_state.snap_angle / angle_snap) * angle_snap
             if event.type in {"WHEELUPMOUSE"}:
-                self.tool_state.snap_angle += 5
+                self.tool_state.snap_angle += angle_snap
             else:
-                self.tool_state.snap_angle -= 5
+                self.tool_state.snap_angle -= angle_snap
             self.handle_mouse_move(context, event)
             detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
             self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
