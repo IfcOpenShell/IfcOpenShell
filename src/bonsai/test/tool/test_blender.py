@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell
+import pytest
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import pytest
-from test.bim.bootstrap import NewFile
-from typing import TYPE_CHECKING
 from bonsai.tool.blender import Blender as subject
+from test.bim.bootstrap import NewFile
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums

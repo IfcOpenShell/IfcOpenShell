@@ -17,26 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
-from ifcopenshell.util.doc import get_attribute_doc
-import bonsai.tool as tool
-from bonsai.bim.module.pset_template.data import PsetTemplatesData
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.ifc import IfcStore
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING
+from bpy.types import PropertyGroup
+from ifcopenshell.util.doc import get_attribute_doc
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.pset_template.data import PsetTemplatesData
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def updatePsetTemplateFiles(self, context):

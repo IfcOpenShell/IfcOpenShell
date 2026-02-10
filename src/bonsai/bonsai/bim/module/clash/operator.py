@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
-import tempfile
-import bmesh
 import logging
-import numpy as np
-import ifcopenshell
-import bonsai.tool as tool
-from pathlib import Path
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+import os
+import tempfile
 from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import bmesh
+import bpy
+import ifcopenshell
+import numpy as np
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.clash.decorator import ClashDecorator
-from typing import TYPE_CHECKING
 
 
 class ExportClashSets(bpy.types.Operator, ExportHelper):
@@ -440,6 +442,27 @@ class SelectClash(bpy.types.Operator):
         self.props.p1 = clash["p1"]
         self.props.p2 = clash["p2"]
         self.props.active_clash_text = clash["type"].title() + " " + str(round(clash["distance"] * 1000)) + "mm"
+        return {"FINISHED"}
+
+
+class HideClash(bpy.types.Operator):
+    bl_idname = "bim.hide_clash"
+    bl_label = "Hide Clash"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Hide the clash decorator"
+
+    @classmethod
+    def poll(cls, context):
+        if not ClashDecorator.is_installed:
+            cls.poll_message_set("No clash selected.")
+            return False
+        return True
+
+    def execute(self, context):
+        ClashDecorator.uninstall()
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
         return {"FINISHED"}
 
 

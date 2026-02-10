@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 import textwrap
+from typing import Any
+
 import bpy
 import bsdd
-import bonsai.tool as tool
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
+
+import bonsai.tool as tool
 from bonsai.core import bsdd as core
-from typing import Any
 
 
 class LoadBSDDDictionaries(bpy.types.Operator):

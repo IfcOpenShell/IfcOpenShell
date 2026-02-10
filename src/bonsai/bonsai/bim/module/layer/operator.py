@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.layer
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
 
 
 def get_active_mesh(context: bpy.types.Context, mesh_name: str) -> bpy.types.Mesh:

@@ -16,23 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.type
-from bonsai.bim.module.type.data import TypeData
-import bonsai.tool as tool
-from typing import TYPE_CHECKING, Union
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.type.data import TypeData
+from bonsai.bim.prop import Attribute
 
 
 def get_relating_type_class(self: "BIMTypeProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -90,9 +93,13 @@ class BIMTypeProperties(PropertyGroup):
         update=update_relating_type_from_object,
         poll=is_object_class_applicable,
     )
+    is_editing_type_attributes: BoolProperty(name="Is Editing Type Attributes")
+    type_attributes: CollectionProperty(type=Attribute, name="Type Attributes")
 
     if TYPE_CHECKING:
         is_editing_type: bool
         relating_type_class: str
         relating_type: str
         relating_type_object: Union[bpy.types.Object, None]
+        is_editing_type_attributes: bool
+        type_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

@@ -17,35 +17,51 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
 import platform
-import platformdirs
-import bonsai.bim.helper
+import textwrap
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, Optional
+
+import bpy
+import platformdirs
+from bpy.props import BoolProperty, IntProperty, StringProperty
 from bpy.types import Panel
-from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
+    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
-    get_attribute_doc,
 )
-from . import ifc
-from bonsai import get_debug_info
-import bonsai.bim
-import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from bonsai.bim.prop import Attribute
-from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
-from bonsai.bim.module.pset.prop import IfcProperty
-from typing import Optional, TYPE_CHECKING, Literal
 from natsort import natsorted
-import textwrap
 
+import bonsai.bim
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai import get_debug_info
+from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
+from bonsai.bim.module.model.prop import (
+    BIMDoorProperties,
+    BIMRailingProperties,
+    BIMRoofProperties,
+    BIMStairProperties,
+    BIMWindowProperties,
+)
+from bonsai.bim.module.model.ui import (
+    draw_door_properties,
+    draw_railing_properties,
+    draw_roof_properties,
+    draw_stair_properties,
+    draw_window_properties,
+)
+from bonsai.bim.module.pset.prop import IfcProperty
+from bonsai.bim.prop import Attribute
+
+from . import ifc
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import ObjProperty
     from bonsai.bim.module.project.prop import BIMProjectProperties
+    from bonsai.bim.prop import ObjProperty
 
 
 class IFCFileSelector:
@@ -125,8 +141,8 @@ class IFCFileSelector:
 
 
 class BIM_PT_section_plane(Panel):
-    bl_label = "Temporary Section Cutaways"
     bl_idname = "BIM_PT_section_plane"
+    bl_label = "Temporary Section Cutaways"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "output"
@@ -149,8 +165,8 @@ class BIM_PT_section_plane(Panel):
 
 
 class BIM_PT_section_with_cappings(Panel):
-    bl_label = "Section Cutaways With Cappings"
     bl_idname = "BIM_PT_section_with_cappings"
+    bl_label = "Section Cutaways With Cappings"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "output"
@@ -226,6 +242,165 @@ class BIM_UL_generic(bpy.types.UIList):
             layout.prop(item, "name", text="", emboss=False)
         else:
             layout.label(text="", translate=False)
+
+
+class BIM_UL_tab_visibilities(bpy.types.UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: bpy.types.PropertyGroup,
+        item: bpy.types.PropertyGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        row = layout.row()
+        row.prop(item, "name", text="", emboss=False)
+        row.prop(item, "is_visible", text="", icon="HIDE_OFF" if item.is_visible else "HIDE_ON", emboss=False)
+
+
+class BIM_UL_panel_visibilities(bpy.types.UIList):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: bpy.types.PropertyGroup,
+        item: bpy.types.PropertyGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        row = layout.row()
+        row.prop(item, "label", text="", emboss=False)
+        row.prop(item, "is_visible", text="", icon="HIDE_OFF" if item.is_visible else "HIDE_ON", emboss=False)
+        row.prop(item, "is_bookmarked", text="", icon="SOLO_ON" if item.is_bookmarked else "SOLO_OFF", emboss=False)
+
+
+class GizmoPreferencesDoor(bpy.types.PropertyGroup):
+    """Property group for door gizmo visibility settings."""
+
+    overall_height: BoolProperty(name="Overall Height", default=True)
+    overall_width: BoolProperty(name="Overall Width", default=True)
+    threshold_thickness: BoolProperty(name="Threshold Thickness", default=True)
+    threshold_depth: BoolProperty(name="Threshold Depth", default=True)
+    threshold_offset: BoolProperty(name="Threshold Offset", default=True)
+    lining_offset: BoolProperty(name="Lining Offset", default=True)
+    lining_depth: BoolProperty(name="Lining Depth", default=True)
+    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
+    transom_offset: BoolProperty(name="Transom Offset", default=True)
+    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
+    casing_thickness: BoolProperty(name="Casing Thickness", default=True)
+    casing_depth: BoolProperty(name="Casing Depth", default=True)
+    swing_arc: BoolProperty(name="Swing Arc", default=True, description="Show door swing direction arc")
+    flip_arc: BoolProperty(name="Flip Arc", default=True, description="Show flip door orientation arc")
+
+    if TYPE_CHECKING:
+        overall_height: bool
+        overall_width: bool
+        threshold_thickness: bool
+        threshold_depth: bool
+        threshold_offset: bool
+        lining_offset: bool
+        lining_depth: bool
+        lining_thickness: bool
+        transom_offset: bool
+        transom_thickness: bool
+        casing_thickness: bool
+        casing_depth: bool
+        swing_arc: bool
+        flip_arc: bool
+
+
+class GizmoPreferencesWindow(bpy.types.PropertyGroup):
+    """Property group for window gizmo visibility settings."""
+
+    overall_height: BoolProperty(name="Overall Height", default=True)
+    overall_width: BoolProperty(name="Overall Width", default=True)
+    lining_offset: BoolProperty(name="Lining Offset", default=True)
+    lining_depth: BoolProperty(name="Lining Depth", default=True)
+    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
+    lining_to_panel_offset_x: BoolProperty(name="Lining to Panel Offset X", default=True)
+    lining_to_panel_offset_y: BoolProperty(name="Lining to Panel Offset Y", default=True)
+    frame_depth: BoolProperty(name="Frame Depth", default=True)
+    frame_thickness: BoolProperty(name="Frame Thickness", default=True)
+    mullion_thickness: BoolProperty(name="Mullion Thickness", default=True)
+    first_mullion_offset: BoolProperty(name="First Mullion Offset", default=True)
+    second_mullion_offset: BoolProperty(name="Second Mullion Offset", default=True)
+    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
+    first_transom_offset: BoolProperty(name="First Transom Offset", default=True)
+    second_transom_offset: BoolProperty(name="Second Transom Offset", default=True)
+
+    if TYPE_CHECKING:
+        overall_height: bool
+        overall_width: bool
+        lining_offset: bool
+        lining_depth: bool
+        lining_thickness: bool
+        lining_to_panel_offset_x: bool
+        lining_to_panel_offset_y: bool
+        frame_depth: bool
+        frame_thickness: bool
+        mullion_thickness: bool
+        first_mullion_offset: bool
+        second_mullion_offset: bool
+        transom_thickness: bool
+        first_transom_offset: bool
+        second_transom_offset: bool
+
+
+class GizmoPreferencesStair(bpy.types.PropertyGroup):
+    """Property group for stair gizmo visibility settings."""
+
+    width: BoolProperty(name="Width", default=True)
+    height: BoolProperty(name="Height", default=True)
+    tread_run: BoolProperty(name="Tread Run", default=True)
+    tread_depth: BoolProperty(name="Tread Depth", default=True)
+    riser_height: BoolProperty(name="Riser Height", default=True)
+    nosing_length: BoolProperty(name="Nosing Length", default=True)
+    nosing_depth: BoolProperty(name="Nosing Depth", default=True)
+    total_length_target: BoolProperty(name="Total Length Target", default=True)
+    base_slab_depth: BoolProperty(name="Base Slab Depth", default=True)
+    top_slab_depth: BoolProperty(name="Top Slab Depth", default=True)
+    lock: BoolProperty(name="Total Length Lock", default=True)
+    plus: BoolProperty(name="Add Tread (+)", default=True)
+    minus: BoolProperty(name="Remove Tread (-)", default=True)
+    cycle: BoolProperty(name="Cycle Stair Type", default=True)
+
+    if TYPE_CHECKING:
+        width: bool
+        height: bool
+        tread_run: bool
+        tread_depth: bool
+        riser_height: bool
+        nosing_length: bool
+        nosing_depth: bool
+        total_length_target: bool
+        base_slab_depth: bool
+        top_slab_depth: bool
+        lock: bool
+        plus: bool
+        minus: bool
+        cycle: bool
+
+
+class GizmoPreferences(bpy.types.PropertyGroup):
+    """Property group for all gizmo visibility settings."""
+
+    draw_gizmos_in_3d_viewport: BoolProperty(
+        name="Draw Gizmos In 3D Viewport",
+        default=True,
+        description="Show interactive gizmos in the 3D viewport for parametric elements",
+    )
+    door: bpy.props.PointerProperty(type=GizmoPreferencesDoor)
+    window: bpy.props.PointerProperty(type=GizmoPreferencesWindow)
+    stair: bpy.props.PointerProperty(type=GizmoPreferencesStair)
+
+    if TYPE_CHECKING:
+        draw_gizmos_in_3d_viewport: bool
+        door: GizmoPreferencesDoor
+        window: GizmoPreferencesWindow
+        stair: GizmoPreferencesStair
 
 
 class DocPreferences(bpy.types.PropertyGroup):
@@ -320,29 +495,63 @@ class DocPreferences(bpy.types.PropertyGroup):
         classes_no_cut: str
 
 
+class DefaultParameters(bpy.types.PropertyGroup):
+    door: bpy.props.PointerProperty(type=BIMDoorProperties)
+    window: bpy.props.PointerProperty(type=BIMWindowProperties)
+    railing: bpy.props.PointerProperty(type=BIMRailingProperties)
+    roof: bpy.props.PointerProperty(type=BIMRoofProperties)
+    stair: bpy.props.PointerProperty(type=BIMStairProperties)
+
+
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(
         name="SVG to PDF Command",
-        description='print sheet to pdf together with svg. Leave blank svg is just created, E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]',
+        description=(
+            "print sheet to pdf together with svg. Leave blank svg is just created, "
+            'E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "svg", "-o", "pdf"]]'
+            '\n `"svg"`, `"pdf"` will be replaced automatically.'
+        ),
     )
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
-        description='E.g. [["inkscape", "svg", "-o", "eps"], ["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]',
+        description=(
+            'E.g. `[["inkscape", "svg", "-o", "eps"], '
+            '["pstoedit", "-dt", "-f", "dxf:-polyaslines -mm", "eps", "dxf", "-psarg", "-dNOSAFER"]]`'
+            '\n `"svg"`, `"eps"`, `"dxf"` will be replaced automatically.'
+        ),
     )
     svg_command: StringProperty(
         name="SVG Command",
-        description='Software to open generated drawing and sheets. Leave blank system default for .svg is used E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]',
+        description=(
+            "Software to open generated drawing and sheets. Leave blank system default for .svg is used "
+            'E.g. [["path to application eg. /Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
+        ),
     )
     layout_svg_command: StringProperty(
         name="Layout SVG Command",
-        description='Software to open layouts, before generated. Leave blank system default for .svg is used E.g.  [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open layouts, before generated. Leave blank system default for .svg is used. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .svg file.'
+        ),
     )
     pdf_command: StringProperty(
         name="PDF Command",
-        description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
+        description=(
+            "Software to open .pdf, leave blank uses system default. "
+            'E.g. `[["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]`'
+            '\n `"path"` will be replaced with the path to the generated .pdf file.'
+        ),
     )
-    spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
+    spreadsheet_command: StringProperty(
+        name="Spreadsheet Command",
+        description=(
+            'E.g. [["libreoffice", "path"]]'
+            '\n `"path"` will be replaced with the path to the generated spreadsheet file.'
+        ),
+    )
     should_hide_empty_props: BoolProperty(
         name="Hide Empty Properties",
         default=True,
@@ -351,12 +560,18 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_setup_workspace: BoolProperty(
         name="Setup Workspace Layout for BIM",
         default=True,
-        description="If enabled, this will add a default workspace dedicated to working with BIM models.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will add a default workspace dedicated to working with BIM models.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     activate_workspace: BoolProperty(
         name="Activate BIM Workspace on Startup",
         default=True,
-        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, this will automatically activate the BIM workspace when opening a project.\n"
+            "It is recommended to keep this `Enabled`"
+        ),
     )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
@@ -366,7 +581,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_use_snap: BoolProperty(
         name="Enable Snapping on Startup",
         default=True,
-        description="If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`",
+        description=(
+            "If enabled, snapping will be enabled on new sessions.\n" "It is recommended to keep this `Enabled`"
+        ),
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
@@ -428,7 +645,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         max=100,
         subtype="PERCENTAGE",
         name="Non-Openings Opacity",
-        description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
+        description=(
+            "When modifying openings, other elements of the model will display with some transparency.\n"
+            "0 is fully transparent and 100 is fully opaque"
+        ),
     )
 
     bsdd_load_preview_dictionaries: BoolProperty(
@@ -456,6 +676,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Occurrence Name Function",
         description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
     )
+    gizmos: bpy.props.PointerProperty(type=GizmoPreferences)
 
     def update_data_dir(self, context: bpy.types.Context) -> None:
         import bonsai.bim.schema
@@ -486,6 +707,41 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         subtype="DIR_PATH",
     )
     doc: bpy.props.PointerProperty(type=DocPreferences)
+    default_parameters: bpy.props.PointerProperty(
+        type=DefaultParameters,
+        name="Default Parameters",
+        description="Default parameters for BIM elements",
+    )
+
+    container_hide_show_isolate: BoolProperty(
+        name="Container hide/show/isolate",
+        description="Enable container hide/show/isolate feature in the UI",
+        default=False,
+    )
+
+    chain_filter_with_set_operations: BoolProperty(
+        name="NEW Filter mode: Enable chained filters with set operations",
+        description=(
+            "Enable chaining search filters with set operations: "
+            "ADD (union: combine sets), SUBTRACT (difference: remove from set), "
+            "FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values"
+        ),
+        default=False,
+    )
+
+    save_metadata_blend_file: BoolProperty(
+        name="Save non ifc data to metadata blend File",
+        description=(
+            "Save session data (window layout, settings) to a metadata blend file alongside the IFC file. "
+            "This file is automatically loaded when opening the project."
+        ),
+        default=False,
+    )
+    metadata_blend_file_suffix: StringProperty(
+        name="Metadata File Suffix",
+        description="Custom suffix for the metadata blend file. Will be appended to the filename (without .ifc).",
+        default=".ifc.metadata.blend",
+    )
 
     if TYPE_CHECKING:
         svg2pdf_command: str
@@ -498,6 +754,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_setup_workspace: bool
         activate_workspace: bool
         should_setup_toolbar: bool
+        should_use_snap: bool
         should_play_chaching_sound: bool
         tmp_dir: str
         decorations_colour: tuple[float, float, float, float]
@@ -515,10 +772,16 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
+        gizmos: GizmoPreferences
         data_dir: str
         cache_dir: str
         pset_dir: str
         doc: DocPreferences
+        default_parameters: DefaultParameters
+        container_hide_show_isolate: bool
+        mass_time_units_in_wizard: bool
+        chain_filter_with_set_operations: bool
+        save_metadata_blend_file: bool
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -544,6 +807,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Extras", self.draw_extras_settings)
 
     def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "svg2pdf_command")
@@ -561,10 +825,75 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "should_use_snap")
         layout.prop(self, "should_play_chaching_sound")
 
+        layout.prop(self.gizmos, "draw_gizmos_in_3d_viewport")
+        if self.gizmos.draw_gizmos_in_3d_viewport:
+            bonsai.bim.helper.draw_expandable_panel(
+                layout,
+                context,
+                "Gizmos Parameters",
+                self.draw_gizmo_parameters,
+            )
+
+    def draw_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.label(text="Toggle visibility of gizmos in editing mode")
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Door", self.draw_door_gizmo_parameters)
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Window", self.draw_window_gizmo_parameters)
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Stair", self.draw_stair_gizmo_parameters)
+
+    def draw_door_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.door import GizmoDoorEdition
+
+        door_gizmos = self.gizmos.door
+        gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.dimension_gizmo_props}
+        # Add special gizmos not in dimension_gizmo_props
+        gizmo_prop_names.update(("swing_arc", "flip_arc"))
+        try:
+            annotations = door_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(door_gizmos).__annotations__
+        for prop in annotations:
+            if prop in gizmo_prop_names:
+                layout.prop(door_gizmos, prop)
+
+    def draw_window_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.window import GizmoWindowEdition
+
+        window_gizmos = self.gizmos.window
+        gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.dimension_gizmo_props}
+        try:
+            annotations = window_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(window_gizmos).__annotations__
+        for prop in annotations:
+            if prop in gizmo_prop_names:
+                layout.prop(window_gizmos, prop)
+
+    def draw_stair_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.stair import GizmoStairEdition
+
+        stair_gizmos = self.gizmos.stair
+        gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.dimension_gizmo_props}
+        # Add special gizmos not in dimension_gizmo_props
+        special_gizmo_names = {"lock", "plus", "minus", "cycle"}
+        try:
+            annotations = stair_gizmos.__annotations__
+        except AttributeError:
+            annotations = type(stair_gizmos).__annotations__
+        for prop in annotations:
+            if prop in gizmo_prop_names or prop in special_gizmo_names:
+                layout.prop(stair_gizmos, prop)
+
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")
         if self.occurrence_name_style == "CUSTOM":
             layout.prop(self, "occurrence_name_function")
+        bonsai.bim.helper.draw_expandable_panel(
+            layout,
+            context,
+            "Default Parameters",
+            self.draw_default_parameters,
+        )
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "data_dir")
@@ -601,6 +930,39 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
 
+    def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        box = layout.box()
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Door",
+            lambda _layout, _context: draw_door_properties(_layout, self.default_parameters.door),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Window",
+            lambda _layout, _context: draw_window_properties(_layout, self.default_parameters.window),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Railing",
+            lambda _layout, _context: draw_railing_properties(_layout, self.default_parameters.railing),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Roof",
+            lambda _layout, _context: draw_roof_properties(_layout, self.default_parameters.roof),
+        )
+        bonsai.bim.helper.draw_expandable_panel(
+            box,
+            context,
+            "Stair",
+            lambda _layout, _context: draw_stair_properties(_layout, self.default_parameters.stair),
+        )
+
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
@@ -611,9 +973,42 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_load_inactive_dictionaries")
         layout.prop(self, "bsdd_load_test_dictionaries")
 
+    def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "container_hide_show_isolate")
+        layout.prop(self, "mass_time_units_in_wizard")
+        row = layout.row(align=True)
+        row.prop(self, "chain_filter_with_set_operations")
+        row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"
+        layout.prop(self, "save_metadata_blend_file")
+        if self.save_metadata_blend_file:
+            row = layout.row()
+            row.separator()
+            row.prop(self, "metadata_blend_file_suffix")
+
+            bprops = tool.Blender.get_bim_props()
+            if tab_visibilities := bprops.tab_visibilities:
+                row = layout.row()
+                row.operator("bim.reset_ui_layout", icon="LOOP_BACK")
+                row = layout.row(align=True)
+                row.template_list(
+                    "BIM_UL_tab_visibilities", "", bprops, "tab_visibilities", bprops, "active_tab_visibility_index"
+                )
+                row.template_list(
+                    "BIM_UL_panel_visibilities",
+                    "",
+                    bprops,
+                    "panel_visibilities",
+                    bprops,
+                    "active_panel_visibility_index",
+                )
+            else:
+                row = layout.row()
+                row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+
 
 # Scene panel groups
 class BIM_PT_tabs(Panel):
+    bl_idname = "BIM_PT_tabs"
     bl_label = "Bonsai"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -624,51 +1019,29 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         if not UIData.is_loaded:
             UIData.load()
-        is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
-        ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
+        addon_prefs = tool.Blender.get_addon_preferences()
 
         row = self.layout.row()
         row.alignment = "CENTER"
-        row.operator(
-            "bim.set_tab",
-            text="",
-            emboss=aprops.tab == "PROJECT",
-            icon_value=bonsai.bim.icons[ifc_icon].icon_id,
-        ).tab = "PROJECT"
-        self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-        self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
-        self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
-        self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
-        self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
-        self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-        self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
-        self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+        for tab in UIData.data["tabs"]:
+            self.draw_tab_entry(row, tab[1], tab[0], tab[2], aprops.tab == tab[0])
         row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-        # Yes, that's right.
         row = self.layout.row()
+        # Yes, that's right.
         row.alignment = "CENTER"
         row.scale_y = 0.2
-        for tab in [
-            "PROJECT",
-            "OBJECT",
-            "GEOMETRY",
-            "DRAWINGS",
-            "SERVICES",
-            "STRUCTURE",
-            "SCHEDULING",
-            "FM",
-            "QUALITY",
-            "SWITCH",
-        ]:
+
+        for tab in UIData.data["tabs"]:
             # Draw a little underscore below the active tab icon.
-            if aprops.tab == tab:
+            if aprops.tab == tab[0]:
                 row.prop(aprops, "active_tab", text="", icon="BLANK1")
             else:
                 row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.prop(aprops, "tab", text="")
 
         if bonsai.REINSTALLED_BBIM_VERSION:
@@ -736,19 +1109,24 @@ class BIM_PT_tabs(Panel):
 
     def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
+        if isinstance(icon, int):
+            tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon_value=icon).tab = tab_name
+        else:
+            tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
         tab_entry.enabled = enabled
 
 
 class BIM_PT_tab_new_project_wizard(Panel):
+    bl_idname = "BIM_PT_tab_new_project_wizard"
     bl_label = "New Project Wizard"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        if not tool.Blender.is_tab(context, "PROJECT"):
+        if not tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
             return False
         bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
@@ -763,94 +1141,109 @@ class BIM_PT_tab_new_project_wizard(Panel):
 
 
 class BIM_PT_tab_project_info(Panel):
+    bl_idname = "BIM_PT_tab_project_info"
     bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        if not tool.Blender.is_tab(context, "PROJECT"):
-            return False
-        bim_props = tool.Blender.get_bim_props()
-        pprops = tool.Project.get_project_props()
-        if pprops.is_loading:
-            return True
-        elif tool.Ifc.get() or bim_props.ifc_file:
-            return True
-        return False
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            bim_props = tool.Blender.get_bim_props()
+            pprops = tool.Project.get_project_props()
+            if pprops.is_loading:
+                return True
+            elif tool.Ifc.get() or bim_props.ifc_file:
+                return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_spatial(Panel):
+    bl_idname = "BIM_PT_tab_spatial"
     bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_project_setup(Panel):
+    bl_idname = "BIM_PT_tab_project_setup"
     bl_label = "Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_stakeholders(Panel):
+    bl_idname = "BIM_PT_tab_stakeholders"
     bl_label = "Stakeholders"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_collaboration(Panel):
+    bl_idname = "BIM_PT_tab_collaboration"
     bl_label = "Collaboration"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "QUALITY")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_grouping_and_filtering(Panel):
+    bl_idname = "BIM_PT_tab_grouping_and_filtering"
     bl_label = "Grouping and Filtering"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"HEADER_LAYOUT_EXPAND"}
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
@@ -865,197 +1258,239 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
 
 class BIM_PT_tab_geometry(Panel):
+    bl_idname = "BIM_PT_tab_geometry"
     bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "PROJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_status(Panel):
+    bl_idname = "BIM_PT_tab_status"
     bl_label = "Status"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_qto(Panel):
+    bl_idname = "BIM_PT_tab_qto"
     bl_label = "Quantity Take-off"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_resources(Panel):
+    bl_idname = "BIM_PT_tab_resources"
     bl_label = "Resources"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_cost(Panel):
+    bl_idname = "BIM_PT_tab_cost"
     bl_label = "Cost"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_sequence(Panel):
+    bl_idname = "BIM_PT_tab_sequence"
     bl_label = "Construction Scheduling"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SCHEDULING"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_structural(Panel):
+    bl_idname = "BIM_PT_tab_structural"
     bl_label = "Structural"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "STRUCTURE"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "STRUCTURE") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_services(Panel):
+    bl_idname = "BIM_PT_tab_services"
     bl_label = "Services"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_lighting(Panel):
+    bl_idname = "BIM_PT_tab_lighting"
     bl_label = "Lighting"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_zones(Panel):
+    bl_idname = "BIM_PT_tab_zones"
     bl_label = "Zones"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_solar_analysis(Panel):
+    bl_idname = "BIM_PT_tab_solar_analysis"
     bl_label = "Solar Analysis"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "SERVICES"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_quality_control(Panel):
+    bl_idname = "BIM_PT_tab_quality_control"
     bl_label = "Quality Control"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "QUALITY")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_clash_detection(Panel):
+    bl_idname = "BIM_PT_tab_clash_detection"
     bl_label = "Clash Detection"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "QUALITY")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_sandbox(Panel):
+    bl_idname = "BIM_PT_tab_sandbox"
     bl_label = "Sandbox"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "QUALITY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "QUALITY")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         row = self.layout.row()
@@ -1064,17 +1499,19 @@ class BIM_PT_tab_sandbox(Panel):
 
 # Object panel groups
 class BIM_PT_tab_object_metadata(Panel):
-    bl_label = "Object Metadata"
+    bl_idname = "BIM_PT_tab_object_metadata"
+    bl_label = "Object"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "OBJECT"
 
     @classmethod
     def poll(cls, context):
         props = tool.Project.get_project_props()
-        return (
-            tool.Blender.is_tab(context, "OBJECT")
+        if (
+            tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname)
             and tool.Ifc.get()
             and (obj := context.active_object)
             # Hide links empty handles.
@@ -1083,254 +1520,286 @@ class BIM_PT_tab_object_metadata(Panel):
                 or not obj.instance_collection
                 or not any(l.empty_handle == obj for l in props.links)
             )
-        )
+        ):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_placement(Panel):
+    bl_idname = "BIM_PT_tab_placement"
     bl_label = "Placement"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return (
-            tool.Blender.is_tab(context, "GEOMETRY")
+        if (
+            tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname)
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
-        )
+        ):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_representations(Panel):
+    bl_idname = "BIM_PT_tab_representations"
     bl_label = "Representations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return (
-            tool.Blender.is_tab(context, "GEOMETRY")
-            and tool.Ifc.get()
-            and tool.Geometry.get_active_or_representation_obj()
-        )
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_geometric_relationships(Panel):
+    bl_idname = "BIM_PT_tab_geometric_relationships"
     bl_label = "Geometric Relationships"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_parametric_geometry(Panel):
+    bl_idname = "BIM_PT_tab_parametric_geometry"
     bl_label = "Parametric Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return (
-            tool.Blender.is_tab(context, "GEOMETRY")
-            and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
-        )
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_object_materials(Panel):
+    bl_idname = "BIM_PT_tab_object_materials"
     bl_label = "Object Materials"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return (
-            tool.Blender.is_tab(context, "GEOMETRY")
-            and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
-        )
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_materials(Panel):
+    bl_idname = "BIM_PT_tab_materials"
     bl_label = "Materials"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_styles(Panel):
+    bl_idname = "BIM_PT_tab_styles"
     bl_label = "Styles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_profiles(Panel):
+    bl_idname = "BIM_PT_tab_profiles"
     bl_label = "Profiles"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "GEOMETRY"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_sheets(Panel):
+    bl_idname = "BIM_PT_tab_sheets"
     bl_label = "Sheets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_drawings(Panel):
+    bl_idname = "BIM_PT_tab_drawings"
     bl_label = "Drawings"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_schedules(Panel):
+    bl_idname = "BIM_PT_tab_schedules"
     bl_label = "Schedules"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_references(Panel):
+    bl_idname = "BIM_PT_tab_references"
     bl_label = "References"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "DRAWINGS"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_misc(Panel):
-    bl_label = "Misc."
+    bl_idname = "BIM_PT_tab_misc"
+    bl_label = "Misc"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
     bl_options = {"DEFAULT_CLOSED"}
+    bim_tab_name = "OBJECT"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname) and tool.Ifc.get():
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_handover(Panel):
-    bl_label = "Commissioning and Handover"
+    bl_idname = "BIM_PT_tab_handover"
+    bl_label = "Handover"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 1
+    bim_tab_name = "FM"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
 
 
 class BIM_PT_tab_operations(Panel):
-    bl_label = "Operations and Maintenance"
+    bl_idname = "BIM_PT_tab_operations"
+    bl_label = "Operations"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_order = 2
+    bim_tab_name = "FM"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "FM")
+        if tool.Blender.should_show_panel(context, cls.bim_tab_name, cls.bl_idname):
+            return True
 
     def draw(self, context):
         pass
@@ -1371,8 +1840,8 @@ class UIData:
     def load(cls):
         cls.data = {
             "version": cls.version(),
-            "tabs_icon_color_mode": cls.icon_color_mode("user_interface.wcol_regular.text"),
             "menu_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu.text"),
+            "tabs": cls.tabs(),
         }
         cls.is_loaded = True
 
@@ -1383,6 +1852,28 @@ class UIData:
     @classmethod
     def icon_color_mode(cls, color_path):
         return tool.Blender.detect_icon_color_mode(color_path)
+
+    @classmethod
+    def tabs(cls):
+        hidden_tabs = [t.name for t in tool.Blender.get_bim_props().tab_visibilities if not t.is_visible]
+        color_mode = cls.icon_color_mode("user_interface.wcol_regular.text")
+        is_ifc_project = bool(tool.Ifc.get())
+        return [
+            tab
+            for tab in [
+                ("PROJECT", bonsai.bim.icons[f"{color_mode}_ifc"].icon_id, True),
+                ("OBJECT", "FILE_3D", is_ifc_project),
+                ("GEOMETRY", "MATERIAL", is_ifc_project),
+                ("DRAWINGS", "DOCUMENTS", is_ifc_project),
+                ("SERVICES", "NETWORK_DRIVE", is_ifc_project),
+                ("STRUCTURE", "EDITMODE_HLT", is_ifc_project),
+                ("SCHEDULING", "NLA", is_ifc_project),
+                ("FM", "PACKAGE", True),
+                ("QUALITY", "COMMUNITY", True),
+                ("BOOKMARK", "SOLO_ON", is_ifc_project),
+            ]
+            if tab[0] not in hidden_tabs
+        ]
 
 
 def draw_statusbar(self, context):

@@ -1,3 +1,13 @@
+[project]
+name = "IfcOpenShell"
+version = "0.0.0"
+dependencies = [
+    "black==26.1.0",
+    "ruff==0.15.0",
+    "poethepoet",
+    "gersemi==0.25.4",
+]
+
 [tool.black]
 line-length = 120
 include = '''
@@ -9,10 +19,8 @@ extend-exclude = '''
     |src/ifcopenshell-python/ifcopenshell/mvd/*
     |src/ifcopenshell-python/ifcopenshell/simple_spf/*
     |src/ifc2ca/templates/*
-    |src/ifcconvert/cityjson/*
     |src/svgfill
     |src/exterior-shell-extractor
-    |src/pyodide
 '''
 
 [tool.pyright]
@@ -21,12 +29,11 @@ disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
 
 # Define here general ruff settings,
-# then they will be inherited projects .toml files.
+# then they will be inherited by projects' .toml files.
 # This allows using assuming different Python version for different projects.
 [tool.ruff]
 exclude = [
     # Submodules.
-    "src/ifcconvert/cityjson",
     "src/ifcopenshell-python/ifcopenshell/express",
     "src/ifcopenshell-python/ifcopenshell/mvd",
     "src/ifcopenshell-python/ifcopenshell/simple_spf",
@@ -50,6 +57,7 @@ select = [
     "UP",          # pyupgrade
     "RUF015",      # next() > list_comprehension[0]
     "RUF022",      # sort __all__
+    "I",           # import sorting
 ]
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.
@@ -73,3 +81,5 @@ ruff.sequence = ["ruff-main", "ruff-old"]
 black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
+
+cmake-format = "gersemi . --in-place"

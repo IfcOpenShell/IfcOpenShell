@@ -18,18 +18,20 @@
 
 
 import os
+from functools import partial
+
 import bpy
 import ifcopenshell.api.group
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
+from bpy.types import WorkSpaceTool
+
+import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.core.type
-import bonsai.core.drawing as core
 import bonsai.tool as tool
-import ifcopenshell.util.representation
-from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
 from bonsai.bim.helper import prop_with_search
-from bpy.types import WorkSpaceTool
-from functools import partial
+from bonsai.bim.module.drawing.data import AnnotationData, DecoratorData
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):
@@ -166,7 +168,7 @@ def create_annotation_occurrence(context):
     )
     assert element
 
-    bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+    bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
     ifcopenshell.api.group.assign_group(ifc_file, group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)
@@ -259,6 +261,9 @@ class AnnotationToolUI:
             add_layout_hotkey_operator(
                 cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
             )
+            row = cls.layout.row(align=True)
+            props = tool.Drawing.get_document_props()
+            row.operator("bim.filter_selected_objects_if_intersected_by_camera", text="Filter by Camera")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):

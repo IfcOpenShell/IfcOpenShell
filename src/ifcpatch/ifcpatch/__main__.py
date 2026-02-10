@@ -19,8 +19,10 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
-import ifcpatch
+
 import ifcopenshell
+
+import ifcpatch
 
 parser = argparse.ArgumentParser(description="Patches IFC files to fix badly formatted data")
 parser.add_argument("-i", "--input", type=str, required=True, help="The IFC file to patch")

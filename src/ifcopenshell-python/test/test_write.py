@@ -18,9 +18,10 @@
 
 import tempfile
 from pathlib import Path
-import pytest
-import ifcopenshell
 
+import pytest
+
+import ifcopenshell
 
 TEST_FILE_DIR = Path(__file__).parent / "../../../test/input/"
 

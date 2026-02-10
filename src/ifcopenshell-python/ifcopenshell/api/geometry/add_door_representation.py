@@ -17,18 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
-import ifcopenshell.util.unit
-import ifcopenshell.api.geometry
+
 import dataclasses
-import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
-from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
 from math import cos, radians
-from typing import Any, Optional, Literal, Union, get_args, overload
+from typing import Any, Literal, Optional, Union, get_args, overload
 
-DATACLASS_SLOTS = {} if sys.version_info < (3, 10) else {"slots": True}
+import numpy as np
 
+import ifcopenshell.api.geometry
+import ifcopenshell.util.unit
+from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
+from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 DOOR_TYPE = Literal[
     "SINGLE_SWING_LEFT",
@@ -99,7 +98,7 @@ def create_ifc_box(
 
 # we use dataclass as we need default values for arguments
 # it's okay to use slots since we don't need dynamic attributes
-@dataclasses.dataclass(**DATACLASS_SLOTS)
+@dataclasses.dataclass(slots=True)
 class DoorLiningProperties:
     LiningDepth: Optional[float] = None
     """Optional, defaults to 50mm."""
@@ -173,7 +172,7 @@ class DoorLiningProperties:
             setattr(self, attr, default_value * si_conversion)
 
 
-@dataclasses.dataclass(**DATACLASS_SLOTS)
+@dataclasses.dataclass(slots=True)
 class DoorPanelProperties:
     PanelDepth: Optional[float] = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""

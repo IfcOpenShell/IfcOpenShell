@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.pset
+
 import bonsai.tool as tool
-import bpy
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bpy_restrict_state as bpy_restrict_state

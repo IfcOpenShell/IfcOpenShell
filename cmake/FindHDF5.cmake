@@ -1,13 +1,31 @@
-# To avoid cyclic calls to this file
-list(REMOVE_ITEM CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
+#
+# Input variables:
+# - `HDF5_INCLUDE_DIR`
+# - `HDF5_LIBRARY_DIR`
+# - `HDF5_LIBRARIES`
+# If input variables are not specified, try to find HDF5 config.
+# Input variables could also be provided as environment variables.
+#
+# Output variables:
+# - `HDF5_INCLUDE_DIR`
+# - `HDF5_LIBRARY_DIR`
+# - `HDF5_LIBRARIES`
+#
 
-if("${HDF5_INCLUDE_DIR}" STREQUAL "")
+UNIFY_ENVVARS_AND_CACHE(HDF5_INCLUDE_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARY_DIR)
+UNIFY_ENVVARS_AND_CACHE(HDF5_LIBRARIES)
+
+# To avoid cyclic calls to this file
+list(REMOVE_ITEM CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})
+
+if(NOT HDF5_INCLUDE_DIR)
     message(STATUS "No HDF5 include directory specified")
 else()
     set(HDF5_INCLUDE_DIR "${HDF5_INCLUDE_DIR}" CACHE FILEPATH "HDF5 header files")
 endif()
 
-if("${HDF5_LIBRARY_DIR}" STREQUAL "")
+if(NOT HDF5_LIBRARY_DIR)
     message(STATUS "No HDF5 library directory specified")
 else()
     set(HDF5_LIBRARY_DIR "${HDF5_LIBRARY_DIR}" CACHE FILEPATH "HDF5 library files")
@@ -17,7 +35,7 @@ if(HDF5_LIBRARY_DIR)
     # result of the HDF5 ctest package
     # Find zlib using cmake find_library. How should this be implemented?
     # FIND_LIBRARY(NAMES z libz libz_debug PATHS ... NO_DEFAULT_PATH)
-    if("$ENV{CONDA_BUILD}" STREQUAL "")
+    if(NOT DEFINED ENV{CONDA_BUILD})
         # result of the HDF5 ctest package
         if(WIN32)
             set(zlib_post lib)
@@ -37,7 +55,6 @@ if(HDF5_LIBRARY_DIR)
             "${HDF5_LIBRARY_DIR}/libsz${debug_postfix}.${lib_ext}"
             "${HDF5_LIBRARY_DIR}/libaec${debug_postfix}.${lib_ext}"
         )
-
     else()
         message(STATUS "Packaging hdf5 and zlib for conda distribution")
 
@@ -68,6 +85,7 @@ endif()
 if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
     # First try to find it as a config.
     find_package(HDF5 CONFIG)
+    mark_as_advanced(HDF5_DIR)
     if(HDF5_DIR)
         message(STATUS "HDF5: found config at '${HDF5_DIR}'.")
         set(HDF5_LIBRARIES hdf5_cpp-static)
@@ -86,3 +104,6 @@ if(NOT HDF5_INCLUDE_DIR OR NOT HDF5_LIBRARY_DIR)
         endif()
     endif()
 endif()
+
+# Restore module path.
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR})

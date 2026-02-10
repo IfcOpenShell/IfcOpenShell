@@ -17,13 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
-import bonsai.tool as tool
-import ifcopenshell.util.file
-from bonsai.bim.ifc import IfcStore
-from pathlib import Path
 from collections import defaultdict
-from typing import Union, Any
+from pathlib import Path
+from typing import Any, Union
+
+import bpy
+import ifcopenshell.util.file
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 def refresh():

@@ -9,7 +9,7 @@ from codegen import indent
 
 
 def reverse_compile(s):
-    return re.sub(
+    return re.sub(r'\bself\b', 'SELF', re.sub(
         r"\s*\-\s*EXPRESS_ONE_BASED_INDEXING",
         "",
         re.sub(
@@ -22,11 +22,11 @@ def reverse_compile(s):
                 .replace("len(", "SIZEOF(")
                 .replace("assert ", "")
                 .replace(" is not False", "")
-                .replace("getattr(", "")
+                .replace("express_getattr(", "")
                 .replace("express_getitem(", ""),
             )[::-1],
         )[::-1],
-    )
+    ))
 
 
 @dataclass

@@ -17,8 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
+import collections
+import collections.abc
+import json
+from typing import TYPE_CHECKING, get_args
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -28,20 +33,22 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.geometry
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry as core
 import bonsai.core.root
-from bonsai.bim.module.model.window import create_bm_window, create_bm_box
+import bonsai.tool as tool
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.model.window import create_bm_box, create_bm_window
 
-from mathutils import Vector, Matrix
-from typing import Union, Any, Optional
-
-import json
-import collections
-import collections.abc
+if TYPE_CHECKING:
+    from bonsai.bim.module.model.prop import BIMDoorProperties
 
 V_ = tool.Blender.V_
+
+# Shorthand for gizmo offset constants used in DimensionGizmoConfig lambdas
+_G = gizmo.BaseParametricGizmoGroup
 
 
 def update_door_modifier_representation(obj: bpy.types.Object) -> None:
@@ -140,7 +147,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
             plan_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
             tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
 
-    bonsai.core.geometry.switch_representation(
+    core.switch_representation(
         tool.Ifc,
         tool.Geometry,
         obj=obj,
@@ -192,8 +199,8 @@ def bm_mirror(
 def create_bm_extruded_profile(
     bm: bmesh.types.BMesh,
     points: list[Vector],
-    edges: Optional[list[tuple[int, int]]] = None,
-    faces: Optional[list[list[int]]] = None,
+    edges: list[tuple[int, int]] | None = None,
+    faces: list[list[int]] | None = None,
     position: Vector = V_(0, 0, 0).freeze(),
     magnitude: float = 1.0,
     extrusion_vector: Vector = V_(0, 0, 1).freeze(),
@@ -278,7 +285,7 @@ def create_bm_door_lining(
     new_faces = [bm.faces.new([new_verts[vi] for vi in face[1]]) for face in faces]
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
-    extrusion_vector = Vector((0, 1, 0)) * depth
+    extrusion_vector = V_(0, 1, 0) * depth
     translate_verts = [v for v in extruded["geom"] if isinstance(v, bmesh.types.BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
@@ -291,6 +298,8 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
     assert obj
     props = tool.Model.get_door_props(obj)
+    if not props.is_editing:
+        return
 
     overall_width = props.overall_width
     overall_height = props.overall_height
@@ -408,7 +417,10 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
 
         if door_swing_type == "LEFT":
             bm_mirror(
-                bm, door_handle_verts, mirror_axes=V_(1, 0, 0), mirror_point=panel_position + V_(panel_size.x / 2, 0, 0)
+                bm,
+                door_handle_verts,
+                mirror_axes=V_(1, 0, 0),
+                mirror_point=panel_position + V_(panel_size.x / 2, 0, 0),
             )
 
         door_handle_mirrored_verts = bm_mirror(
@@ -467,6 +479,7 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     lining_offset_verts = lining_verts + door_verts + window_lining_verts + frame_verts + glass_verts
     bmesh.ops.translate(bm, vec=V_(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
     if bpy.context.active_object.mode == "EDIT":
         bmesh.update_edit_mesh(obj.data)
@@ -478,14 +491,14 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
 
 class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_door"
-    bl_label = "Door"
+    bl_label = "Add Door"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return tool.Ifc.get() and context.mode == "OBJECT"
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a door.")
@@ -504,7 +517,7 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         element = bonsai.core.root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
-        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "DOOR"
 
@@ -528,6 +541,8 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         assert element
         props = tool.Model.get_door_props(obj)
 
+        tool.Blender.get_addon_preferences().default_parameters.door.copy_to(props)
+
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
         panel_props = props.get_panel_kwargs(convert_to_project_units=True)
@@ -546,7 +561,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         )
         update_door_modifier_representation(obj)
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
             if not tool.Blender.Modifier.is_eligible_for_door_modifier(obj):
                 continue
@@ -557,6 +572,7 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
 class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_door"
     bl_label = "Cancel Editing Door on Selected Objects"
+    bl_description = "Cancel editing and revert door parameters to their previous values"
     bl_options = {"REGISTER", "UNDO"}
 
     def cancel_editing_door_on_object(self, obj: bpy.types.Object) -> None:
@@ -573,7 +589,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bonsai.core.geometry.switch_representation(
+        core.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -582,7 +598,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
             self.cancel_editing_door_on_object(obj)
         return {"FINISHED"}
@@ -591,9 +607,10 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_door"
     bl_label = "Finish Editing Door on Selected Objects"
+    bl_description = "Apply changes and finish editing door parameters"
     bl_options = {"REGISTER", "UNDO"}
 
-    def finish_editing_door_on_object(self, obj):
+    def finish_editing_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
         if not tool.Blender.Modifier.is_door(element):
@@ -618,7 +635,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_data})
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
             self.finish_editing_door_on_object(obj)
         return {"FINISHED"}
@@ -627,9 +644,10 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_door"
     bl_label = "Enable Editing Door on Selected Objects"
+    bl_description = "Enter edit mode to modify door parameters interactively"
     bl_options = {"REGISTER", "UNDO"}
 
-    def edit_door_on_obj(self, obj):
+    def edit_door_on_obj(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
         if not tool.Blender.Modifier.is_door(element):
@@ -644,7 +662,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = True
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
             self.edit_door_on_obj(obj)
         return {"FINISHED"}
@@ -655,7 +673,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Door on Selected Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    def remove_door_on_object(self, obj):
+    def remove_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
         if not tool.Blender.Modifier.is_door(element):
@@ -666,7 +684,286 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
             self.remove_door_on_object(obj)
         return {"FINISHED"}
+
+
+class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
+    """Toggle door swing direction and optionally flip door geometry.
+
+    Shift+Click (when flip_geometry=True): Flip geometry only without changing door direction"""
+
+    bl_idname = "bim.toggle_door_swing"
+    bl_label = "Toggle Door Swing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    flip_geometry: bpy.props.BoolProperty(name="Flip Geometry", default=False)
+    flip_local_axes: bpy.props.EnumProperty(
+        name="Flip Local Axes", items=(("XY", "XY", ""), ("YZ", "YZ", ""), ("XZ", "XZ", "")), default="XY"
+    )
+    skip_direction_change: bpy.props.BoolProperty(
+        name="Skip Direction Change", default=False, options={"HIDDEN", "SKIP_SAVE"}
+    )
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        self.skip_direction_change = event.shift
+        return self.execute(context)
+
+    def _toggle_swing_direction(self, obj: bpy.types.Object) -> bool:
+        """Toggle door swing direction between LEFT and RIGHT."""
+        props = tool.Model.get_door_props(obj)
+        current_type = props.door_type
+
+        if "LEFT" in current_type:
+            props.door_type = current_type.replace("LEFT", "RIGHT")
+            return True
+        elif "RIGHT" in current_type:
+            props.door_type = current_type.replace("RIGHT", "LEFT")
+            return True
+        return False
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+        obj = tool.Blender.get_active_object()
+        if not obj:
+            return {"CANCELLED"}
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return {"CANCELLED"}
+
+        is_door = tool.Blender.Modifier.is_door(element)
+
+        if self.flip_geometry:
+            tool.Geometry.flip_object(obj, self.flip_local_axes)
+            if not self.skip_direction_change and is_door:
+                self._toggle_swing_direction(obj)
+        elif is_door:
+            self._toggle_swing_direction(obj)
+        else:
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+
+class CycleDoorType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixin):
+    """Cycle through available door types. Shift+click to cycle in reverse."""
+
+    bl_idname = "bim.cycle_door_type"
+    bl_label = "Cycle Door Type"
+    bl_options = {"REGISTER", "UNDO"}
+
+    element_checker = "is_door"
+    props_getter = "get_door_props"
+    type_literal = tool.Model.DoorType
+    type_attr = "door_type"
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        return self._cycle_type(context)
+
+
+class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
+    bl_idname = "OBJECT_GGT_bim_door_edition"
+    bl_label = "Door Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_door"
+    finish_editing_operator = "bim.finish_editing_door"
+    cancel_editing_operator = "bim.cancel_editing_door"
+    cycle_type_operator = "bim.cycle_door_type"
+
+    # Declarative dimension gizmo configuration with visibility and position
+    # matrix_position lambdas replace the get_dimension_matrix_* methods
+    dimension_gizmo_props = [
+        DimensionGizmoConfig(
+            attr_name="overall_width",
+            axis=(1, 0, 0),
+            min_value=0.01,
+            text_offset_sign=-1,
+            # Position set dynamically in _update_dimension_gizmo_positions based on view
+        ),
+        DimensionGizmoConfig(
+            attr_name="overall_height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            text_alignment="start",
+            # Position set dynamically in _update_dimension_gizmo_positions based on view
+        ),
+        DimensionGizmoConfig(
+            attr_name="threshold_thickness",
+            axis=(0, 0, 1),
+            matrix_position=lambda p: V_(p.overall_width / 2, p.threshold_offset + p.threshold_depth, 0),
+        ),
+        DimensionGizmoConfig(
+            attr_name="threshold_depth",
+            axis=(0, 1, 0),
+            visibility_condition=lambda p: p.has_threshold_depth(),
+            matrix_position=lambda p: V_(p.overall_width / 2, p.threshold_offset, p.threshold_thickness),
+        ),
+        DimensionGizmoConfig(
+            attr_name="threshold_offset",
+            axis=(0, 1, 0),
+            matrix_position=lambda p: V_(p.overall_width / 2 - _G.GIZMO_STACK_OFFSET, 0, p.threshold_thickness),
+        ),
+        DimensionGizmoConfig(
+            attr_name="lining_offset",
+            axis=(0, 1, 0),
+            min_value=-10.0,
+            # Position set dynamically in _update_dimension_gizmo_positions based on view
+        ),
+        DimensionGizmoConfig(
+            attr_name="lining_depth",
+            axis=(0, 1, 0),
+            matrix_position=lambda p: V_(p.overall_width, p.lining_offset, p.overall_height),
+        ),
+        DimensionGizmoConfig(
+            attr_name="lining_thickness",
+            axis=(-1, 0, 0),
+            matrix_position=lambda p: V_(p.overall_width, p.lining_depth / 2, p.overall_height / 2),
+        ),
+        DimensionGizmoConfig(
+            attr_name="transom_offset",
+            axis=(0, 0, 1),
+            visibility_condition=lambda p: p.has_transom(),
+            matrix_position=lambda p: V_(p.overall_width / 2, p.lining_offset, 0),
+        ),
+        DimensionGizmoConfig(
+            attr_name="transom_thickness",
+            axis=(0, 0, 1),
+            matrix_position=lambda p: V_(p.overall_width / 2, p.lining_offset, p.transom_offset),
+        ),
+        DimensionGizmoConfig(
+            attr_name="casing_thickness",
+            axis=(-1, 0, 0),
+            visibility_condition=lambda p: p.has_casing(),
+            matrix_position=lambda p: V_(
+                p.lining_thickness, p.lining_depth + p.lining_offset + p.casing_depth / 2, p.overall_height / 2
+            ),
+        ),
+        DimensionGizmoConfig(
+            attr_name="casing_depth",
+            axis=(0, 1, 0),
+            visibility_condition=lambda p: p.has_casing_depth(),
+            matrix_position=lambda p: V_(
+                p.lining_thickness - p.casing_thickness, p.lining_depth + p.lining_offset, p.overall_height / 2
+            ),
+        ),
+        DimensionGizmoConfig(
+            attr_name="panel_depth",
+            axis=(0, 1, 0),
+            matrix_position=lambda p: V_(
+                p.lining_to_panel_offset_x + p.overall_width * p.panel_width_ratio / 2,
+                p.lining_offset + p.lining_to_panel_offset_y,
+                p.threshold_thickness + p.get_panel_center_z(),
+            ),
+        ),
+        DimensionGizmoConfig(
+            attr_name="frame_thickness",
+            axis=(-1, 0, 0),
+            visibility_condition=lambda p: p.has_transom(),
+            matrix_position=lambda p: V_(
+                p.overall_width,
+                p.lining_offset + p.lining_to_panel_offset_y + p.frame_depth / 2,
+                p.get_transom_window_center_z(),
+            ),
+        ),
+        DimensionGizmoConfig(
+            attr_name="frame_depth",
+            axis=(0, 1, 0),
+            visibility_condition=lambda p: p.has_transom(),
+            matrix_position=lambda p: V_(
+                p.overall_width - p.frame_thickness,
+                p.lining_offset + p.lining_to_panel_offset_y,
+                p.get_transom_window_center_z(),
+            ),
+        ),
+    ]
+
+    props_getter = "get_door_props"
+    gizmo_pref_name = "door"
+
+    @classmethod
+    def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
+        return tool.Blender.Modifier.is_door(element)
+
+    def get_icon_y_extent(self, props: "BIMDoorProperties") -> tuple[float, float]:
+        """Get Y extents for door icon positioning.
+
+        Door geometry extends in +Y direction from lining/threshold.
+        Icons are positioned beyond max(threshold_offset + depth, lining_offset + depth).
+        """
+        furthest_y = (
+            max(
+                props.threshold_offset + props.threshold_depth,
+                props.lining_offset + props.lining_depth,
+            )
+            + 2 * self.GIZMO_OFFSET
+        )
+        return (furthest_y, furthest_y)
+
+    def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
+        """Create door-specific swing arc gizmos."""
+        prefs = tool.Blender.get_addon_preferences()
+        inactive_color = prefs.decorator_color_background[:3]
+        special_color = prefs.decorator_color_special[:3]
+
+        self.gizmo_door_type = self.create_arc_gizmo(
+            special_color,
+            "bim.toggle_door_swing",
+            prop_path="BIMDoorProperties.door_type",
+            flip_geometry=False,
+        )
+        self.gizmo_flip_arc = self.create_arc_gizmo(
+            inactive_color,
+            "bim.toggle_door_swing",
+            prop_path="BIMDoorProperties.door_type",
+            flip_geometry=True,
+            flip_local_axes="XY",
+        )
+
+    def _refresh_element_specific(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties"  # noqa: ARG002
+    ) -> None:
+        """Update door-specific swing arc gizmos."""
+        self.update_swing_gizmos(mw, props)
+
+    def get_casing_offset(self, props: "BIMDoorProperties") -> float:
+        """Override to return casing_thickness when lining_offset is 0."""
+        return props.get_casing_offset()
+
+    def _update_dimension_gizmo_positions(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties"
+    ) -> None:
+        """Update dimension gizmo positions based on camera view direction."""
+        self._update_view_dependent_dimensions(context, mw, props)
+
+    def update_swing_gizmos(self, mw: Matrix, props: "BIMDoorProperties") -> None:
+        """Update swing gizmo position and color based on editing state."""
+        prefs = tool.Blender.get_addon_preferences()
+        door_gizmo_prefs = prefs.gizmos.door
+
+        door_type_visible = self.update_gizmo_visibility(
+            self.gizmo_door_type, props.is_editing, door_gizmo_prefs.swing_arc
+        )
+        flip_arc_visible = self.update_gizmo_visibility(
+            self.gizmo_flip_arc, props.is_editing, door_gizmo_prefs.flip_arc
+        )
+
+        if not door_type_visible and not flip_arc_visible:
+            return
+
+        swing_x_offset = props.overall_width if "RIGHT" in props.door_type else 0.0
+        base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(
+            props.overall_width, 4
+        )
+
+        if door_type_visible:
+            self.gizmo_door_type.matrix_basis = mw @ base_swing_transform
+            self.gizmo_door_type.color = prefs.decorations_colour[:3]
+
+        if flip_arc_visible:
+            mirror_y = Matrix.Scale(-1, 4, (0, 1, 0))
+            self.gizmo_flip_arc.matrix_basis = mw @ base_swing_transform @ mirror_y

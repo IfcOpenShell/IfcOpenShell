@@ -19,8 +19,10 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import bonsai.tool as tool
+from ifcopenshell.util.profiler import Profiler
+
 import bonsai.core.qto as core
+import bonsai.tool as tool
 from bonsai.bim.module.qto import helper
 
 
@@ -148,7 +150,8 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
         }
 
         ifc_file = tool.Ifc.get()
-        results = ifc5d.qto.quantify(ifc_file, elements, rules)
+        with Profiler("Quantify function time:"):
+            results = ifc5d.qto.quantify(ifc_file, elements, rules)
         ifc5d.qto.edit_qtos(ifc_file, results)
 
         not_quantified_elements = elements - set(results.keys())
@@ -190,7 +193,8 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
         ) -> set[ifcopenshell.entity_instance]:
             rules = ifc5d.qto.rules[rule]
             ifc_file = tool.Ifc.get()
-            results = ifc5d.qto.quantify(ifc_file, elements, rules)
+            with Profiler("Quantify function time:"):
+                results = ifc5d.qto.quantify(ifc_file, elements, rules)
             ifc5d.qto.edit_qtos(ifc_file, results)
             not_quantified_elements = elements - set(results.keys())
             return not_quantified_elements

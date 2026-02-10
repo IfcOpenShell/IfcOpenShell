@@ -1,10 +1,11 @@
-import sys
-import ifcopenshell
-import ifcopenshell.util.element
-import ifcopenshell.geom
 import multiprocessing
+import sys
 from typing import NamedTuple
+
+import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.element
 
 # W.turn_on_detailed_logging()
 

@@ -16,26 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
+from typing import TYPE_CHECKING
+
 import bpy
+import ifcopenshell
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
 from ifcopenshell.util.doc import get_entity_doc
+
 import bonsai.tool as tool
 from bonsai.bim.module.classification.data import MaterialClassificationsData
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import TYPE_CHECKING
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def get_profile_classes(self, context):

@@ -17,7 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
+
 import bonsai.core.web as core
 import bonsai.tool as tool
 

@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Generator
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.classification
@@ -26,9 +29,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
 from ifcopenshell.util.shape_builder import np_matrix_to_euler
-from typing import Any, Union, Optional
-from collections.abc import Generator
-
 
 # The original BIMServer plugin has a function called ifcToCOBie:
 # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBieShared/src/org/bimserver/cobie/shared/serialization/COBieTabSerializer.java#L54

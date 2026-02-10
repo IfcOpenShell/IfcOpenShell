@@ -17,27 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
+import bonsai.bim.schema
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.schema
-from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
-
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.pset.prop import (
-        PsetProperties,
-        GlobalPsetProperties,
         AddEditPropertyEntry,
-        RenamePropertyEntry,
         DeletePsetEntry,
+        GlobalPsetProperties,
+        PsetProperties,
+        RenamePropertyEntry,
     )
+    from bonsai.bim.prop import Attribute
 
 
 class Pset(bonsai.core.tool.Pset):

@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import xml.etree.ElementTree as ET
 from pathlib import Path
-import numpy as np
+
 import bpy
-import mathutils
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -28,14 +28,15 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
-import bonsai.core.tool
-import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
-from bonsai.tool.drawing import Drawing as subject
-from bonsai.bim.module.drawing.data import DecoratorData
+import mathutils
+import numpy as np
 from mathutils import Vector
 
-import xml.etree.ElementTree as ET
+import bonsai.core.tool
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData
+from bonsai.tool.drawing import Drawing as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -155,6 +156,9 @@ class TestDisableEditingText(NewFile):
         props = tool.Drawing.get_text_props(obj)
         props.is_editing = True
         subject.disable_editing_text(obj)
+
+        # Props might get invalidated, since no properties set.
+        props = tool.Drawing.get_text_props(obj)
         assert props.is_editing == False
 
 
@@ -812,8 +816,9 @@ class TestDrawingMaintainingSheetPosition(NewFile):
     def test_run(self):
         props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         ifc = tool.Ifc.get()
-        sheet_path = Path.cwd() / "layouts" / "A01 - UNTITLED.svg"
+        sheet_path = Path(tool.Ifc.get_path()).parent / "layouts" / "A01 - UNTITLED.svg"
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -867,6 +872,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 class TestDrawingStyles(NewFile):
     def setup_project_with_drawing(self):
         bpy.ops.bim.create_project()
+        tool.Project.save_test_project()
         bpy.ops.bim.load_drawings()
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()
@@ -878,19 +884,13 @@ class TestDrawingStyles(NewFile):
         props = tool.Drawing.get_document_props()
         self.drawing_styles = props.drawing_styles
 
-    def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
+    def test_drawing_styles_are_loaded_even_if_underlay_is_inactive(self):
         self.setup_project_with_drawing()
-        assert len(self.drawing_styles) == 0
-
-    def test_drawing_styles_loaded_on_underlay_enabled(self):
-        self.setup_project_with_drawing()
-        assert (scene := bpy.context.scene) and (camera := scene.camera)
-        props = tool.Drawing.get_camera_props(camera)
-        props.has_underlay = True
         assert len(self.drawing_styles) == 3
 
     def test_drawing_styles_reload(self):
         self.setup_project_with_drawing()
+        self.drawing_styles.clear()
         bpy.ops.bim.reload_drawing_styles()
         assert len(self.drawing_styles) == 3
 
@@ -928,3 +928,71 @@ class TestAddReferenceImage(NewFile):
 
         uv_node = material_nodes["Texture Coordinate"]
         assert len(uv_node.outputs["Generated"].links[:]) == 1
+
+
+class TestAddReference(NewFile):
+    def test_add_single_reference(self):
+        """Test adding a single reference file (backward compatibility)"""
+        bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
+
+        # Create a temporary SVG file
+        svg_path = Path("test/files/temp/reference.svg").absolute()
+        svg_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(svg_path, "w") as f:
+            f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+
+        try:
+            # Add single reference
+            bpy.ops.bim.add_reference(filepath=str(svg_path))
+
+            # Verify reference was added
+            ifc = tool.Ifc.get()
+            references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
+            assert len(references) == 1
+            assert references[0].Name == "reference"
+        finally:
+            # Cleanup
+            if svg_path.exists():
+                svg_path.unlink()
+
+    def test_add_multiple_references(self):
+        """Test adding multiple reference files at once"""
+        bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
+
+        # Create temporary SVG files
+        temp_dir = Path("test/files/temp").absolute()
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        svg_files = []
+        for i in range(3):
+            svg_path = temp_dir / f"reference_{i}.svg"
+            with open(svg_path, "w") as f:
+                f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+            svg_files.append(svg_path)
+
+        try:
+            # Test by directly calling core.add_document multiple times
+            # (simulating what the operator does with multiple files)
+            ifc = tool.Ifc.get()
+            for svg_file in svg_files:
+                uri = tool.Ifc.get_uri(str(svg_file), use_relative_path=True)
+                from bonsai.bim import core
+
+                core.drawing.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
+
+            # Verify all references were added
+            references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
+            assert len(references) == 3
+
+            reference_names = {ref.Name for ref in references}
+            expected_names = {f"reference_{i}" for i in range(3)}
+            assert reference_names == expected_names
+        finally:
+            # Cleanup
+            for svg_file in svg_files:
+                if svg_file.exists():
+                    svg_file.unlink()

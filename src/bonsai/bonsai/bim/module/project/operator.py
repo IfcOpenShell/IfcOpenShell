@@ -16,58 +16,63 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import time
+import datetime
 import json
 import logging
-import tempfile
-import traceback
+import os
 import subprocess
-import datetime
-import ifcopenshell.api.attribute
-import numpy as np
+import tempfile
+import time
+import traceback
+from collections import defaultdict
+from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.element
 import ifcopenshell.util.file
-import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
+import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import numpy as np
+from bpy.app.handlers import persistent
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from ifcopenshell.geom import ShapeElementType
+from mathutils import Matrix, Vector
+
 import bonsai.bim.handler
 import bonsai.bim.helper
 import bonsai.bim.schema
-import bonsai.tool as tool
 import bonsai.core.project as core
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+import bonsai.tool as tool
+from bonsai.bim import export_ifc, import_ifc
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim import import_ifc
-from bonsai.bim import export_ifc
-from math import radians
-from pathlib import Path
-from collections import defaultdict
-from mathutils import Vector, Matrix
-from bpy.app.handlers import persistent
-from ifcopenshell.geom import ShapeElementType
-from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
-from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
-from bonsai.bim.module.project.prop import BreadcrumbType
-from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
+from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, get_args, Literal
+from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
+from bonsai.bim.module.project.decorator import (
+    ClippingPlaneDecorator,
+    MeasureDecorator,
+    ProjectDecorator,
+)
+from bonsai.bim.module.project.prop import BreadcrumbType
+from bonsai.bim.ui import IFCFileSelector
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
+
     from bonsai.bim.module.project.prop import Link
 
 
@@ -611,6 +616,8 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             return {"FINISHED"}
         if element.is_a("IfcTypeProduct"):
+            # Store opening template from library if it exists
+            self.store_opening_template_from_library(element, library_file)
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
             # NOTE: Non-types are not exposed in UI directly
@@ -710,6 +717,53 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         for element in self.file.traverse(material.HasRepresentation[0]):
             if element.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element.id()):
                 ifc_importer.create_style(element)
+
+    def store_opening_template_from_library(
+        self, element: ifcopenshell.entity_instance, library_file: ifcopenshell.file
+    ) -> None:
+        """
+        Find an opening representation in the library and copy it to the current file
+        as a template. Store the template ID on the type for later retrieval.
+        """
+        try:
+            library_element = library_file.by_guid(element.GlobalId)
+        except:
+            return
+
+        # Find occurrences with openings in the library
+        library_occurrences = ifcopenshell.util.element.get_types(library_element)
+
+        for occurrence in library_occurrences:
+            if not getattr(occurrence, "FillsVoids", None):
+                continue
+
+            library_opening = occurrence.FillsVoids[0].RelatingOpeningElement
+            library_opening_rep = ifcopenshell.util.representation.get_representation(
+                library_opening, "Model", "Body", "MODEL_VIEW"
+            )
+
+            if not library_opening_rep:
+                continue
+
+            # Check if mapped representation
+            if (
+                library_opening_rep.RepresentationType == "MappedRepresentation"
+                and len(library_opening_rep.Items) == 1
+                and library_opening_rep.Items[0].is_a("IfcMappedItem")
+            ):
+
+                mapped_rep = library_opening_rep.Items[0].MappingSource.MappedRepresentation
+
+                # Store ALL representation types (Tessellation, SweptSolid, etc.)
+                template_rep = ifcopenshell.util.element.copy_deep(
+                    self.file, mapped_rep, exclude=["IfcGeometricRepresentationContext"]
+                )
+
+                # Store reference in type's Description
+                current_desc = element.Description or ""
+                element.Description = f"{current_desc}||BonsaiOpeningTemplate:{template_rep.id()}"
+                return
+            break
 
 
 class EditProjectLibrary(bpy.types.Operator):
@@ -1005,6 +1059,41 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         return tooltip
 
     def execute(self, context):
+        if (
+            tool.Blender.get_addon_preferences().save_metadata_blend_file
+            and self.should_start_fresh_session
+            and not self.is_advanced
+        ):
+            filepath = self.get_filepath()
+
+            # First, load the IFC file temporarily to check for metadata document
+            temp_ifc = None
+            has_metadata_doc = False
+            try:
+                temp_ifc = ifcopenshell.open(str(filepath))
+                for doc in temp_ifc.by_type("IfcDocumentInformation"):
+                    if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                        has_metadata_doc = True
+                        break
+            except:
+                pass
+            finally:
+                temp_ifc = None
+
+            if has_metadata_doc:
+                suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+                if str(filepath).lower().endswith(".ifc"):
+                    metadata_path = Path(str(filepath)[:-4] + suffix)
+                else:
+                    metadata_path = Path(str(filepath) + suffix)
+                if metadata_path.exists() and metadata_path.is_file():
+                    try:
+                        bpy.ops.bim.load_blend_metadata_and_ifc(filepath=filepath)
+                        self.report({"INFO"}, f"Loaded metadata file: {metadata_path.name}")
+                        return {"FINISHED"}
+                    except Exception as e:
+                        self.report({"WARNING"}, f"Failed to load metadata file, using regular load: {e}")
+
         @persistent
         def load_handler(*args):
             bpy.app.handlers.load_post.remove(load_handler)
@@ -1051,6 +1140,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.is_loading = True
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             props.use_relative_project_path = self.use_relative_path
+
+            metadata_doc = tool.Project.get_metadata_document_information()
+            props.should_save_metadata_for_this_file = metadata_doc is not None
+
             tool.Blender.register_toolbar()
             tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
@@ -1679,6 +1772,22 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         settings.json_version = self.json_version
         settings.json_compact = self.json_compact
 
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if output_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(output_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(output_file) + suffix
+
+            if not tool.Project.get_metadata_document_information():
+                tool.Project.create_metadata_document_information(metadata_filename)
+            else:
+                tool.Project.update_metadata_document_information(metadata_filename)
+        else:
+            if not pprops.should_save_metadata_for_this_file:
+                tool.Project.remove_metadata_document_information()
+
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")
         settings.logger.info("Starting export")
@@ -1693,15 +1802,33 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             tool.Ifc.set_path(output_file)
-        save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
-        if save_blend_file:
-            bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bim_props.is_dirty = False
+
+        pprops = tool.Project.get_project_props()
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file and pprops.should_save_metadata_for_this_file:
+            try:
+                bpy.ops.bim.save_blend_metadata_file()
+                suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+                if output_file.lower().endswith(".ifc"):
+                    blendmetadata_path = output_file[:-4] + suffix
+                else:
+                    blendmetadata_path = output_file + suffix
+                self.report(
+                    {"INFO"},
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                )
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
+        else:
+            save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
+            if save_blend_file:
+                bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+            self.report(
+                {"INFO"},
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+            )
+
         bonsai.bim.handler.refresh_ui_data()
-        self.report(
-            {"INFO"},
-            f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
-        )
 
     @classmethod
     def description(cls, context, properties):
@@ -1726,8 +1853,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
-        import ifcpatch
         import multiprocessing
+
+        import ifcpatch
 
         start = time.time()
 
@@ -2038,7 +2166,11 @@ class QueryLinkedElement(bpy.types.Operator):
 
     def execute(self, context):
         import sqlite3
-        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+
+        from bpy_extras.view3d_utils import (
+            region_2d_to_origin_3d,
+            region_2d_to_vector_3d,
+        )
 
         LinksData.linked_data = {}
         props = tool.Project.get_project_props()
@@ -2383,8 +2515,9 @@ class RefreshClippingPlanes(bpy.types.Operator):
                 break
 
     def refresh_clipping_planes(self, context):
-        import bmesh
         from itertools import cycle
+
+        import bmesh
 
         area = next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")
         region = next(r for r in area.regions if r.type == "WINDOW")
@@ -2445,7 +2578,10 @@ class CreateClippingPlane(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+        from bpy_extras.view3d_utils import (
+            region_2d_to_origin_3d,
+            region_2d_to_vector_3d,
+        )
 
         # Clean up deleted planes
         props = tool.Project.get_project_props()
@@ -2599,17 +2735,27 @@ class IFCFileHandlerOperator(bpy.types.Operator):
         # Keeping code in .invoke() as we'll probably add some
         # popup windows later.
 
+        def clean_up_path(path: str) -> str:
+            # In Blender 4.5.6 there was a bug producing unncesseary double slash prefix
+            # breaking the paths. Issue is not present in 5.0+ and presumably will be solved in 4.5.7 too.
+            # https://projects.blender.org/blender/blender/issues/153822
+            if bpy.app.version == (4, 5, 6):
+                blender_prefix = "//"
+                if path.startswith(blender_prefix):
+                    return path.removeprefix(blender_prefix)
+            return path
+
         # `files` contain only .ifc files.
         filepath = Path(self.directory)
         # If user is just drag'n'dropping a single file -> load it as a new project,
         # if they're holding ALT -> link the file/files to the current project.
         if event.alt:
             # Passing self.files directly results in TypeError.
-            serialized_files = [{"name": f.name} for f in self.files]
+            serialized_files = [{"name": clean_up_path(f.name)} for f in self.files]
             return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
         else:
             if len(self.files) == 1:
-                return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
+                return bpy.ops.bim.load_project(filepath=(filepath / clean_up_path(self.files[0].name)).as_posix())
             else:
                 self.report(
                     {"INFO"},
@@ -2841,4 +2987,242 @@ class ClearMeasurement(bpy.types.Operator):
         polyline_props.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ImageScalingTool(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.image_scaling_tool"
+    bl_label = "Image Scaling Tool"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self.input_options = ["DISTANCE"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
+        self.selected_points = []
+        self.target_object = None
+        self.current_distance_value = ""
+        self.is_typing_distance = False
+        self.calculated_distance = 0.0
+
+        if tool.Ifc.get():
+            self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            self.unit_scale = tool.Blender.get_unit_scale()
+
+    def modal(self, context, event):
+        if not self.target_object or not context.active_object or context.active_object != self.target_object:
+            self.report({"ERROR"}, "Image annotation was deselected. Tool cancelled.")
+            return self.cancel_tool(context)
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_custom_instructions(context)
+        self.handle_mouse_move(context, event)
+        self.choose_axis(event, z=True)
+        self.choose_plane(event)
+        self.handle_snap_selection(context, event)
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            if len(self.selected_points) < 2:
+                snapped_point = self.snapping_points[0]
+                point_3d = snapped_point["point"].copy()
+                self.selected_points.append(point_3d)
+
+                if len(self.selected_points) == 2:
+                    self.calculate_distance()
+                    self.current_distance_value = f"{self.calculated_distance:.3f}"
+                    self.is_typing_distance = False
+                    self.input_ui.set_value("DISTANCE", self.calculated_distance)
+
+        elif len(self.selected_points) == 2:
+            if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
+                return self.apply_scaling(context)
+
+            if event.unicode and event.unicode.isprintable() and event.value == "PRESS":
+                if event.unicode.isdigit() or event.unicode == ".":
+                    if not self.is_typing_distance:
+                        self.current_distance_value = event.unicode
+                        self.is_typing_distance = True
+                    else:
+                        self.current_distance_value += event.unicode
+
+                    distance_value = float(self.current_distance_value)
+                    self.input_ui.set_value("DISTANCE", distance_value)
+
+            elif event.type in {"BACK_SPACE", "DEL"} and event.value == "PRESS":
+                if len(self.current_distance_value) > 0:
+                    self.current_distance_value = self.current_distance_value[:-1]
+                    distance_value = (
+                        float(self.current_distance_value) if self.current_distance_value else self.calculated_distance
+                    )
+                    self.input_ui.set_value("DISTANCE", distance_value)
+
+        self.handle_keyboard_input(context, event)
+
+        result = self.handle_cancelation(context, event)
+        if result is not None:
+            return result
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        active_obj = context.active_object
+        self.target_object = active_obj
+        super().invoke(context, event)
+        return {"RUNNING_MODAL"}
+
+    def cancel_tool(self, context):
+        context.workspace.status_text_set(text=None)
+        if hasattr(self, "tool_state"):
+            self.tool_state.plane_method = None
+        PolylineDecorator.uninstall()
+        tool.Blender.update_viewport()
+        return {"CANCELLED"}
+
+    def handle_custom_instructions(self, context):
+        if len(self.selected_points) == 0:
+            instruction_text = "Click First Point on Image"
+        elif len(self.selected_points) == 1:
+            instruction_text = "Click Second Point on Image"
+        elif len(self.selected_points) == 2:
+            if self.is_typing_distance:
+                instruction_text = f"Distance: {self.current_distance_value} - Press Enter to Apply"
+            else:
+                instruction_text = f"Measured: {self.calculated_distance:.3f} - Type New Distance or Press Enter"
+        else:
+            instruction_text = "Image Scaling Tool"
+
+        context.workspace.status_text_set(text=instruction_text)
+
+    def calculate_distance(self):
+        if len(self.selected_points) == 2:
+            point1 = self.selected_points[0]
+            point2 = self.selected_points[1]
+            distance_3d = (point2 - point1).length
+            self.calculated_distance = distance_3d / self.unit_scale
+
+    def apply_scaling(self, context):
+        if len(self.selected_points) != 2:
+            self.report({"ERROR"}, "Two points must be selected")
+            return {"CANCELLED"}
+
+        target_distance = float(self.current_distance_value)
+
+        if target_distance <= 0:
+            self.report({"ERROR"}, "Distance must be positive")
+            return {"CANCELLED"}
+
+        if self.calculated_distance <= 0:
+            self.report({"ERROR"}, "Selected points are too close together")
+            return {"CANCELLED"}
+
+        scale_factor = target_distance / self.calculated_distance
+
+        if self.target_object:
+            import bmesh
+
+            mesh = self.target_object.data
+
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+
+            bmesh.ops.scale(bm, vec=(scale_factor, scale_factor, 1.0), verts=bm.verts)
+
+            if bm.loops.layers.uv:
+                uv_layer = bm.loops.layers.uv.active
+
+                min_x = min(v.co.x for v in bm.verts)
+                max_x = max(v.co.x for v in bm.verts)
+                min_y = min(v.co.y for v in bm.verts)
+                max_y = max(v.co.y for v in bm.verts)
+
+                width = max_x - min_x
+                height = max_y - min_y
+
+                for face in bm.faces:
+                    for loop in face.loops:
+                        vert = loop.vert
+                        u = (vert.co.x - min_x) / width if width > 0 else 0.5
+                        v = (vert.co.y - min_y) / height if height > 0 else 0.5
+
+                        u = max(0.0, min(1.0, u))
+                        v = max(0.0, min(1.0, v))
+                        loop[uv_layer].uv = (u, v)
+
+            bm.to_mesh(mesh)
+            bm.free()
+            mesh.update()
+
+            element = tool.Ifc.get_entity(self.target_object)
+            if element and element.Representation:
+                for representation in element.Representation.Representations:
+                    for item in representation.Items:
+                        if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
+                            new_coords = []
+                            for vertex in mesh.vertices:
+                                co = self.target_object.matrix_world @ vertex.co
+                                new_coords.append([co.x, co.y, co.z])
+
+                            item.Coordinates.CoordList = new_coords
+
+            self.report({"INFO"}, f"Applied scale factor: {scale_factor:.4f}")
+
+        context.workspace.status_text_set(text=None)
+        self.tool_state.plane_method = None
+        PolylineDecorator.uninstall()
+        tool.Blender.update_viewport()
+
+        return {"FINISHED"}
+
+
+class LoadBlendMetadataAndIFC(bpy.types.Operator):
+    bl_idname = "bim.load_blend_metadata_and_ifc"
+    bl_label = "Load Blend Metadata and IFC"
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
+
+    def execute(self, context):
+        ifc_file = self.filepath
+        if not ifc_file:
+            props = tool.Blender.get_bim_props()
+            ifc_file = getattr(props, "ifc_file", None)
+
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            metadata_path = ifc_file[:-4] + suffix
+        else:
+            metadata_path = ifc_file + suffix
+
+        # Define a handler to load the IFC project after the blend file is loaded and context is restored
+        @persistent
+        def load_handler(*args):
+            bpy.app.handlers.load_post.remove(load_handler)
+            # After loading metadata, clear blend warning (no geometry loaded yet)
+            props = tool.Blender.get_bim_props()
+            props.has_blend_warning = False
+            # Load the IFC file into the current session (preserve layout)
+            bpy.ops.bim.load_project(filepath=ifc_file, should_start_fresh_session=False)
+            # Disable editing styles
+            bpy.ops.bim.disable_editing_styles()
+            self.report({"INFO"}, f"Loaded metadata and IFC: {metadata_path}, {ifc_file}")
+
+        bpy.app.handlers.load_post.append(load_handler)
+        bpy.ops.wm.open_mainfile(filepath=metadata_path)
         return {"FINISHED"}

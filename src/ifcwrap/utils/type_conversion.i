@@ -31,6 +31,7 @@
 
 	bool check_aggregate_of_type(PyObject* aggregate, void* type_obj) {
 		if (!PySequence_Check(aggregate)) return false;
+		if (PySequence_Size(aggregate) == -1) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			// This is equivalent to the PyFloat_CheckExact macro. This means
@@ -46,6 +47,7 @@
 
 	bool check_aggregate_of_aggregate_of_type(PyObject* aggregate, void* type_obj) {
 		if (!PySequence_Check(aggregate)) return false;
+		if (PySequence_Size(aggregate) == -1) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			bool b = check_aggregate_of_type(element, type_obj);

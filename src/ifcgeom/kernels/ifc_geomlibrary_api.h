@@ -22,7 +22,7 @@
 
 #ifdef IFC_SHARED_BUILD
 #ifdef _WIN32
-#ifdef IFC_GEOMLIBRARY_EXPORTS
+#ifdef IFC_GEOM_EXPORTS
 #define IFC_GEOMLIBRARY_API __declspec(dllexport)
 #else
 #define IFC_GEOMLIBRARY_API __declspec(dllimport)

@@ -8,11 +8,10 @@ or unpacks existing archives.
 Usage: python cache_dependencies.py [pack|unpack]
 """
 
-import tarfile
 import sys
+import tarfile
 from pathlib import Path
 from typing import Literal
-
 
 CACHE_PREFIX = "cache-"
 

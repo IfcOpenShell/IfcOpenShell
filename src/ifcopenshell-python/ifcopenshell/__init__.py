@@ -54,13 +54,14 @@ Example:
         print(wall.Name)
 """
 from __future__ import annotations
+
 import os
 import sys
-import zipfile
 import tempfile
+import zipfile
+from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
-from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -88,12 +89,10 @@ except Exception:
 
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
-from .file import file as _file
-from .file import file
-
-from .file import rocksdb_lazy_instance
 from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
+from .file import file, rocksdb_lazy_instance
+from .file import file as _file
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols
@@ -103,6 +102,7 @@ __all__ = [
     "file",
     "guid",
     "ifcopenshell_wrapper",
+    "rocksdb_lazy_instance",
     "sqlite",
     "sqlite_entity",
     "stream",
@@ -110,8 +110,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream as _stream, stream_entity
-    from .stream import stream
+    from .stream import stream, stream_entity
+    from .stream import stream as _stream
 except:
     pass
 
@@ -319,13 +319,11 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
     """Streams the content of a file path from disk, yielding each instance
     as a dictionary.
 
-    Args:
-        path (Union[Path, str]): input file path
-        mmap (bool): open the file contents using memory mapping
-        page_size (int): open file in python and feed chunks to the parser
+    :param path: Input file path
+    :param mmap: Open the file contents using memory mapping
+    :param page_size: Open file in python and feed chunks to the parser.
 
-    Yields:
-        dict: entity instance dictionaries
+    :yield: Entity instance dictionaries
     """
     if page_size:
         import builtins
@@ -355,15 +353,12 @@ def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
                 yield inst
 
 
-def stream2_from_string(data: str):
+def stream2_from_string(data: str) -> Generator[dict]:
     """Streams the content of a file path from string, yielding each instance
     as a dictionary.
 
-    Args:
-        data (str): input data
-
-    Yields:
-        dict: entity instance dictionaries
+    :param data: Input data string
+    :yield: entity instance dictionaries
     """
     streamer = ifcopenshell_wrapper.stream_from_string(data)
     while streamer:
@@ -371,14 +366,13 @@ def stream2_from_string(data: str):
             yield inst
 
 
-def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]):
+def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]) -> None:
     """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
     RocksDB encoding. RocksDB is an embedded key-value store that allows
     partial reads and is therefore more memory efficient with larger files.
 
-    Args:
-        ifcspf_path (Union[Path, str]): Input file path - needs to exist
-        rocksdb_path (Union[Path, str]): RocksDB file path (directory) - may exist, but result may then be invalid
+    :param ifcspf_path: Input file path - needs to exist
+    :param rocksdb_path: RocksDB file path (directory) - may exist, but result may then be invalid
     """
     ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True)
     ser.finalize()

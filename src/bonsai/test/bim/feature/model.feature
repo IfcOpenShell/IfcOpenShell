@@ -755,3 +755,48 @@ Scenario: Generate a space from cursor location
     And I press "bim.generate_space"
     Then the object "IfcSpace/Space" exists
     And the object "IfcSpace/Space" dimensions are "1,0.8,3"
+
+Scenario: Add and edit parametric stair
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcStairFlight"
+    And I click "Assign IFC Class"
+    And I look at the "Stair" panel
+    And I click "ADD"
+    And I look at the "Stair" panel
+    And I click "GREASEPENCIL"
+    And I look at the "Stair" panel
+    And I click "CHECKMARK"
+
+Scenario: Add and edit parametric window
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWindow"
+    And I click "Assign IFC Class"
+    And I look at the "BIM_PT_window" panel
+    And I click "ADD"
+    And I look at the "BIM_PT_window" panel
+    And I click "GREASEPENCIL"
+    And I look at the "BIM_PT_window" panel
+    And I click "CHECKMARK"
+
+Scenario: Add and edit parametric door
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcDoor"
+    And I click "Assign IFC Class"
+    And I look at the "Door" panel
+    And I click "ADD"
+    And I look at the "Door" panel
+    And I click "GREASEPENCIL"
+    And I look at the "Door" panel
+    And I click "CHECKMARK"

@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+
 import bonsai.core.unit as core
-from typing import TYPE_CHECKING
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums

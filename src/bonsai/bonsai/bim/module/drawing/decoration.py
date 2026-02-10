@@ -16,32 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
-import bpy
-import blf
 import math
+import os
+from collections.abc import Generator, Iterator
+from functools import cache
+from math import acos, atan, cos, degrees, pi, radians, sin
+from pathlib import Path
+from timeit import default_timer as timer
+from typing import Optional, Union
+
+import blf
 import bmesh
-import shapely
-import numpy as np
+import bpy
+import gpu
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.helper as helper
-from pathlib import Path
-from math import pi, sin, cos, acos, atan, degrees, radians
+import numpy as np
+import shapely
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
-from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from bonsai.bim.module.drawing.helper import format_distance
-from timeit import default_timer as timer
-from functools import cache
-from typing import Optional, Union
-from collections.abc import Iterator
+from bonsai.bim.module.drawing.shaders import add_offsets, add_verts_sequence
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -172,15 +175,11 @@ class BaseDecorator:
     def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
         # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
-        def is_landscape(render):
-            return render.resolution_x > render.resolution_y
-
         camera = bpy.context.scene.camera
         render = bpy.context.scene.render
-        if is_landscape(render):
-            camera_width_model = camera.data.ortho_scale
-        else:
-            camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
+
+        # Always use the camera's ortho_scale as the width in model space
+        camera_width_model = camera.data.ortho_scale
 
         scale = tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
         camera_width_mm = scale * camera_width_model
@@ -189,29 +188,26 @@ class BaseDecorator:
     def camera_zoom_to_factor(self, zoom):
         return math.pow(((zoom / 50) + math.sqrt(2)) / 2, 2)
 
-    def get_splines(self, obj):
+    def get_splines(self, obj: bpy.types.Object) -> Generator[list[Vector]]:
         """Iterates through splines
-        Args:
-          obj: Blender object with Curve data
 
-        Yields:
-          verts: points of each spline, world coords
+        :param obj: Blender object with Curve data
+        :yield: points of each spline, world coords
         """
+        assert type(obj.data) is bpy.types.Curve
         for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
             if len(spline_points) < 2:
                 continue
             yield [obj.matrix_world @ p.co for p in spline_points]
 
-    def get_path_geom(self, obj, topo=True):
+    def get_path_geom(self, obj: bpy.types.Object, topo: bool = True):
         """Parses path geometry into line segments
 
-        Args:
-          obj: Blender object with data of type Curve
-          topo: bool; if types of vertices are needed
+        :param obj: Blender object with data of type Curve
+        :param topo: if types of vertices are needed
 
-        Returns:
-          vertices: 3-tuples of coords
+        :return: vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
           topology: types of vertices
             0: internal
@@ -242,11 +238,9 @@ class BaseDecorator:
     def get_mesh_geom(self, obj, check_mode=True):
         """Parses mesh geometry into line segments
 
-        Args:
-          obj: Blender object with data of type Mesh
+        :param obj: Blender object with data of type Mesh
 
-        Returns:
-          vertices: 3-tuples of coords
+        :return: vertices: 3-tuples of coords
           indices: 2-tuples of each segment verices' indices
         """
         if check_mode and obj.data.is_editmode:
@@ -377,11 +371,9 @@ class BaseDecorator:
     ):
         """Draw text label
 
-        Args:
-          pos: bottom-center
-          multiline: \n characters will be interpreted as line breaks
-
-        aligned and centered at segment middle
+        :param pos: bottom-center
+        :param multiline: ``\n`` characters will be interpreted as line breaks
+            aligned and centered at segment middle
 
         NOTE: `blf.draw` seems to ignore the \n character, so we have to split the text ourselves
         and use the `line_no` argument of `draw_label`
@@ -499,7 +491,7 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @cache
-    def format_value(self, context, value, custom_unit=None):
+    def format_value(self, context, value, suppress_zero_inches=False, custom_unit=None, in_unit_length=False):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
@@ -510,8 +502,9 @@ class BaseDecorator:
             value,
             precision=precision,
             decimal_places=decimal_places,
-            suppress_zero_inches=True,
+            suppress_zero_inches=suppress_zero_inches,
             custom_unit=custom_unit,
+            in_unit_length=in_unit_length,
         )
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
@@ -753,7 +746,12 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
+                text = self.format_value(
+                    context,
+                    length,
+                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    custom_unit=dimension_data["custom_unit"],
+                )
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -1208,7 +1206,11 @@ class PlanLevelDecorator(BaseDecorator):
                 abs_z = verts[0].z
                 z = helper.get_relative_z(obj, element, abs_z)
 
-                rl = self.format_value(context, z)
+                # Z is in meters (Blender world space), convert to project units (feet)
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                z = z / unit_scale  # Convert meters to feet
+
+                rl = self.format_value(context, z, in_unit_length=True)
                 text = "{}{}".format("" if z < 0 else "+", rl)
                 return text
 
@@ -1281,7 +1283,11 @@ class SectionLevelDecorator(BaseDecorator):
 
             def get_text():
                 z = verts[0].z
-                rl = self.format_value(context, z)
+                # Z is in meters (Blender world space), convert to project units (feet)
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                z = z / unit_scale  # Convert meters to feet
+
+                rl = self.format_value(context, z, in_unit_length=True)
                 text = "RL {}{}".format("" if z < 0 else "+", rl)
                 return text
 
@@ -1617,6 +1623,8 @@ class SymbolDecorator(BaseDecorator):
 class CutDecorator:
     installed = None
     cache = {}
+    local_view_has_annotation = False
+    was_in_local_view = False
 
     @classmethod
     def install(cls, context):
@@ -1639,6 +1647,31 @@ class CutDecorator:
 
     def __call__(self, context):
         if not context.scene.camera:
+            return
+
+        # Check if any viewport is in local view
+        in_local_view = False
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                space = area.spaces.active
+                if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
+                    in_local_view = True
+                    break
+
+        # If just entering local view (transition from False to True)
+        if in_local_view and not self.__class__.was_in_local_view:
+            self.__class__.local_view_has_annotation = False
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcAnnotation"):
+                    self.__class__.local_view_has_annotation = True
+                    break
+
+        # Update the state for next time
+        self.__class__.was_in_local_view = in_local_view
+
+        # Skip decorations if in local view and no IfcAnnotation was selected when entering
+        if in_local_view and not self.__class__.local_view_has_annotation:
             return
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -1729,26 +1762,34 @@ class CutDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def cache_camera_matrix(self):
+    def cache_camera_matrix(self) -> None:
+        assert bpy.context.scene and bpy.context.scene.camera
         obj = bpy.context.scene.camera
-        # Explicit `dtype` for Blender <5.0 compatibility.
         DecoratorData.camera_location_checksum = repr(
-            np.array(obj.matrix_world.translation, dtype=np.float32).tobytes()
+            tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes()
         )
-        DecoratorData.camera_rotation_checksum = repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
+        DecoratorData.camera_rotation_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
-    def is_camera_moved(self):
+    def is_camera_moved(self) -> bool:
         if not DecoratorData.camera_location_checksum:
             self.cache_camera_matrix()
             return True  # Let's be conservative
+
+        assert bpy.context.scene and bpy.context.scene.camera
         obj = bpy.context.scene.camera
-        loc_check = np.frombuffer(eval(DecoratorData.camera_location_checksum), dtype=np.float32)
-        loc_real = np.array(obj.matrix_world.translation).flatten()
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        loc_checksum_bytes: bytes = eval(DecoratorData.camera_location_checksum)
+        loc_check = tool.Blender.np_frombuffer_legacy(loc_checksum_bytes, 3)
+        loc_real = tool.Blender.np_array_legacy(obj.matrix_world.translation)
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             self.cache_camera_matrix()
             return True
-        rot_check = np.frombuffer(eval(DecoratorData.camera_rotation_checksum), dtype=np.float32).reshape(3, 3)
-        rot_real = np.array(obj.matrix_world.to_3x3())
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        rot_checksum_bytes: bytes = eval(DecoratorData.camera_rotation_checksum)
+        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9)
+        rot_real = tool.Blender.np_array_legacy(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
         if angle_rad > 0.0017453292519943296:  # 0.1 degrees
@@ -1953,6 +1994,8 @@ class DecorationsHandler:
 
     installed = None
     handler = None
+    local_view_has_annotation = False
+    was_in_local_view = False
 
     @classmethod
     def install(cls, context):
@@ -1977,20 +2020,75 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
+
         prefs = tool.Blender.get_addon_preferences()
+
         if drawing_font := prefs.doc.drawing_font:
+            # Try Blender addon font folder
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
-            if drawing_font_path.is_file():
-                font_id = blf.load(drawing_font_path.__str__())
-                for decorator in self.decorators.values():
-                    decorator.font_id = font_id
+
+            if not drawing_font_path.is_file():
+                # 2 — Fallback search: Windows font directories
+                # TODO - Linux
+                win_font_dirs = [
+                    Path(os.environ.get("WINDIR", "C:\\Windows")) / "Fonts",
+                    # Add any custom enterprise paths here if needed
+                ]
+
+                found_font = None
+                for font_dir in win_font_dirs:
+                    candidate = font_dir / drawing_font
+                    if candidate.is_file():
+                        found_font = candidate
+                        break
+
+                if found_font:
+                    drawing_font_path = found_font
+                else:
+                    print(f"[BIM] Font '{drawing_font}' not found in addon or Windows fonts.")
+                    return  # Bail out without assigning fonts
+
+            font_id = blf.load(str(drawing_font_path))
+
+            for decorator in self.decorators.values():
+                decorator.font_id = font_id
 
     def __call__(self, context):
+        # Check if any viewport is in local view
+        in_local_view = False
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                space = area.spaces.active
+                if isinstance(space, bpy.types.SpaceView3D) and space.local_view:
+                    in_local_view = True
+                    break
+
+        # If just entering local view (transition from False to True)
+        if in_local_view and not self.__class__.was_in_local_view:
+            self.__class__.local_view_has_annotation = False
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element.is_a("IfcAnnotation"):
+                    self.__class__.local_view_has_annotation = True
+                    break
+
+        # Update the state for next time
+        self.__class__.was_in_local_view = in_local_view
+
+        # Skip decorations if in local view and no IfcAnnotation was selected when entering
+        if in_local_view and not self.__class__.local_view_has_annotation:
+            return
+
+        # disable decorations when not in camera view
+        if context.region_data.view_perspective != "CAMERA":
+            return
+
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
         if not DecoratorData.is_loaded:
             DecoratorData.load(self)
 
-        for obj, decorator in DecoratorData.data["object_decorators"]:
+        object_decorators = DecoratorData.data.get("object_decorators", [])
+        for obj, decorator in object_decorators:
             decorator.decorate(context, obj)

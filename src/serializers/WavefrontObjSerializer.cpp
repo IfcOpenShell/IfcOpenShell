@@ -93,7 +93,9 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 
     const IfcGeom::Representation::Triangulation& mesh = o->geometry();
 
-	const int vcount = (int)mesh.verts().size() / 3;
+	size_t vcount = mesh.verts().size() / 3;
+    size_t ncount = mesh.normals().size() / 3;
+
 	for (auto it = mesh.verts().begin(); it != mesh.verts().end();) {
         const double x = *(it++);
         const double y = *(it++);
@@ -139,22 +141,25 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 			previous_material_id = material_id;
 		}
 
-		const int v1 = *(it++)+vcount_total;
-		const int v2 = *(it++)+vcount_total;
-		const int v3 = *(it++)+vcount_total;
+		const int v1 = *(it++) + vcount_total;
+		const int v2 = *(it++) + vcount_total;
+		const int v3 = *(it++) + vcount_total;
 
-		if (has_normals && has_uvs) {
-			obj_stream.stream << "f " << v1 << "/" << v1 << "/" << v1 << " "
-				<< v2 << "/" << v2 << "/" << v2 << " "
-				<< v3 << "/" << v3 << "/" << v3 << "\n";
+		const int n1 = v1 - vcount_total + ncount_total;
+        const int n2 = v2 - vcount_total + ncount_total;
+        const int n3 = v3 - vcount_total + ncount_total;
+
+        if (has_normals && has_uvs) {
+			obj_stream.stream << "f " << v1 << "/" << n1 << "/" << n1 << " "
+				<< v2 << "/" << n2 << "/" << n2 << " "
+				<< v3 << "/" << n3 << "/" << n3 << "\n";
 		} else if (has_normals) {
-			obj_stream.stream << "f " << v1 << "//" << v1 << " "
-				<< v2 << "//" << v2 << " "
-				<< v3 << "//" << v3 << "\n";
+            obj_stream.stream << "f " << v1 << "//" << n1 << " "
+				<< v2 << "//" << n2 << " "
+				<< v3 << "//" << n3 << "\n";
 		} else {
 			obj_stream.stream << "f " << v1 << " " << v2 << " " << v3 << "\n";
 		}
-
 	}
 
 	std::set<int> faces_set (mesh.faces().begin(), mesh.faces().end());
@@ -189,4 +194,5 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 	}
 
 	vcount_total += vcount;
+    ncount_total += ncount;
 }

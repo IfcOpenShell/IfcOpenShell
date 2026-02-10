@@ -16,13 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.alignment
-import ifcopenshell.api.geometry
-from ifcopenshell import entity_instance
 
-import math
-from collections.abc import Sequence
+import ifcopenshell.api.alignment
+from ifcopenshell import entity_instance
 
 
 def _get_cant_segment(horizontal_segment: entity_instance) -> entity_instance:

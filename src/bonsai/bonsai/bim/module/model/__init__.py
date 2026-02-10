@@ -16,33 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import NamedTuple
+
 import bpy
+
 from . import (
-    handler,
-    prop,
-    ui,
-    grid,
     array,
+    covering,
+    door,
+    external,
+    grid,
+    handler,
+    mep,
+    opening,
     product,
-    wall,
+    profile,
+    prop,
+    railing,
     roof,
     slab,
     space,
-    covering,
     stair,
-    window,
-    opening,
-    mep,
-    workspace,
-    profile,
     sverchok_modifier,
-    door,
-    railing,
-    roof,
-    mep,
-    external,
+    ui,
+    wall,
+    window,
+    workspace,
 )
-from typing import NamedTuple
 
 classes = (
     array.AddArray,
@@ -50,9 +50,10 @@ classes = (
     array.EditArray,
     array.EnableEditingArray,
     array.ApplyArray,
+    array.RegenerateArray,
     array.RemoveArray,
-    array.SelectArrayParent,
     array.SelectAllArrayObjects,
+    array.SelectArrayParent,
     array.Input3DCursorXArray,
     array.Input3DCursorYArray,
     array.Input3DCursorZArray,
@@ -140,7 +141,6 @@ classes = (
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
     prop.BIMPolylineProperties,
-    prop.BIMProductPreviewProperties,
     prop.BIMExternalParametricGeometryProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
@@ -161,6 +161,11 @@ classes = (
     stair.FinishEditingStair,
     stair.EnableEditingStair,
     stair.RemoveStair,
+    stair.ToggleStairProperty,
+    stair.AdjustStairTreads,
+    stair.SetStairTreads,
+    stair.CycleStairType,
+    stair.GizmoStairEdition,
     sverchok_modifier.CreateNewSverchokGraph,
     sverchok_modifier.UpdateDataFromSverchok,
     sverchok_modifier.DeleteSverchokGraph,
@@ -172,12 +177,17 @@ classes = (
     window.FinishEditingWindow,
     window.EnableEditingWindow,
     window.RemoveWindow,
+    window.CycleWindowType,
+    window.GizmoWindowEdition,
     door.BIM_OT_add_door,
     door.AddDoor,
     door.CancelEditingDoor,
     door.FinishEditingDoor,
     door.EnableEditingDoor,
     door.RemoveDoor,
+    door.ToggleDoorSwing,
+    door.CycleDoorType,
+    door.GizmoDoorEdition,
     railing.BIM_OT_add_railing,
     railing.CopyRailingParameters,
     railing.AddRailing,
@@ -253,7 +263,6 @@ def register():
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
-    bpy.types.Scene.BIMProductPreviewProperties = bpy.props.PointerProperty(type=prop.BIMProductPreviewProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
@@ -278,7 +287,6 @@ def unregister():
 
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Scene.BIMPolylineProperties
-    del bpy.types.Scene.BIMProductPreviewProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties

@@ -16,30 +16,31 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.classification
+import ifcopenshell.api.context
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
-import ifcopenshell.api.profile
-import pytest
-import test.bootstrap
+import ifcopenshell.api.document
 import ifcopenshell.api.feature
-import ifcopenshell.api.pset
-import ifcopenshell.api.root
-import ifcopenshell.api.type
-import ifcopenshell.api.nest
-import ifcopenshell.api.style
+import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.library
-import ifcopenshell.api.context
-import ifcopenshell.api.spatial
-import ifcopenshell.api.geometry
-import ifcopenshell.api.sequence
-import ifcopenshell.api.classification
 import ifcopenshell.api.material
-import ifcopenshell.api.document
-import ifcopenshell.api.aggregate
-import ifcopenshell.api.group
+import ifcopenshell.api.nest
+import ifcopenshell.api.profile
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
+import ifcopenshell.api.spatial
+import ifcopenshell.api.style
+import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 

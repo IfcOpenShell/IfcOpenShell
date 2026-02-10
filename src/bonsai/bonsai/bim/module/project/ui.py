@@ -17,19 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import os
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search, draw_attributes
-from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.project.data import ProjectData, LinksData
 from typing import TYPE_CHECKING
 
+import bpy
+import ifcopenshell
+from bpy.types import Menu, Panel, UIList
+
+import bonsai.bim
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import LinksData, ProjectData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        FilterCategory,
+        LibraryElement,
+        Link,
+    )
 
 
 def file_import_menu(self, context):
@@ -331,6 +339,17 @@ class BIM_PT_project(Panel):
         col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if props.ifc_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(props.ifc_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(props.ifc_file) + suffix
+            row = self.layout.row(align=True)
+            row.use_property_split = False
+            pprops = tool.Project.get_project_props()
+            row.prop(pprops, "should_save_metadata_for_this_file", text=f"Save session data to: {metadata_filename}")
+
 
 class BIM_PT_new_project_wizard(Panel):
     bl_label = "New Project Wizard"
@@ -356,8 +375,13 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
+        row = self.layout.row()
+        row.prop(props, "mass_unit", text="Mass Unit")
+        row = self.layout.row()
+        row.prop(props, "time_unit", text="Time Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
+        self.layout.use_property_split = True
         row = self.layout.row()
         row.operator("bim.create_project")
 
@@ -635,6 +659,7 @@ class BIM_PT_purge(Panel):
     bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
+        props = tool.Debug.get_debug_props()
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
@@ -655,3 +680,10 @@ class BIM_PT_purge(Panel):
             row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = object_type
             merge_op = row.operator("bim.merge_identical_objects", text="Merge Identical")
             merge_op.object_type = object_type
+
+        layout.operator("bim.purge_unused_representations")
+
+        row = layout.row(align=True)
+        row.prop(props, "ifc_class_purge", text="")
+        row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
+        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")

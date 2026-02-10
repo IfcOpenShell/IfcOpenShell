@@ -40,7 +40,7 @@ def _has_occ():
         pass
 
     try:
-        import OCC.BRepTools
+        import OCC.BRepTools  # noqa: F401
 
         return True
     except ImportError:
@@ -52,6 +52,6 @@ def _has_occ():
 has_occ = _has_occ()
 
 if has_occ:
-    from . import occ_utils as utils
+    from . import occ_utils as utils  # noqa: F401
 
 from .main import *

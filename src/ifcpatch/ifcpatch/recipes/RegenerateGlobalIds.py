@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from logging import Logger
+
 import ifcopenshell
 import ifcopenshell.guid
-from logging import Logger
 
 
 class Patcher:
@@ -36,7 +37,6 @@ class Patcher:
         :param only_duplicates: If set to True, new GlobalIds will only be
             generated for duplicate IDs. This is a safe thing to run to ensure
             IFCs are valid. If False, all GlobalIds will be regenerated.
-        :type only_duplicates: bool
 
         Example:
 

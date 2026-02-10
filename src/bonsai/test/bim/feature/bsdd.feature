@@ -2,10 +2,10 @@
 Feature: bSDD
 
 Scenario: Load bSDD dictionaries
-    Given an empty Blender session
+    Given an empty IFC project
     And I look at the "buildingSMART Data Dictionary" panel
     When I click "Load bSDD Dictionaries"
-    Then I see "Selected dictionary"
+    Then I see "Selected Dictionary:"
     And I see "LCA" in the "1st" list
 
 Scenario: Add classification from bSDD - add all dictionaries
@@ -15,8 +15,7 @@ Scenario: Add classification from bSDD - add all dictionaries
     When I click "is_active" in the row where I see "LCA" in the "1st" list
     And I click "is_active" in the row where I see "BonsaiTestDict" in the "1st" list
     And I look at the "Classifications" panel
-    And I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "All Dictionaries"
+    And I set the "classification_source" property to "All Active bSDDs"
     And I click "Add Classification From bSDD"
     Then I see "LCA"
     And I see "BonsaiTestDict"
@@ -27,8 +26,7 @@ Scenario: Add classification from bSDD - add single dictionary
     And I click "Load bSDD Dictionaries"
     When I click "is_active" in the row where I see "BonsaiTestDict" in the "1st" list
     And I look at the "Classifications" panel
-    And I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "BonsaiTestDict"
+    And I set the "classification_source" property to "BonsaiTestDict"
     And I click "Add Classification From bSDD"
     Then I see "BonsaiTestDict"
     And I don't see "LCA"
@@ -41,8 +39,7 @@ Scenario: Search bSDD classifications - search all dictionaries
     And I click "is_active" in the row where I see "BonsaiTestDict" in the "1st" list
     And I select the object "IfcSite/My Site"
     And I look at the "Classification References" panel
-    And I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "All Dictionaries"
+    And I set the "classification_source" property to "All Active bSDDs"
     And I click "VIEWZOOM"
     Then I see "Acidification" in the "1st" list
     And I see "BonsaiReferenceA" in the "1st" list
@@ -54,8 +51,7 @@ Scenario: Search bSDD classifications - search single dictionary
     And I click "is_active" in the row where I see "BonsaiTestDict" in the "1st" list
     And I select the object "IfcSite/My Site"
     And I look at the "Classification References" panel
-    When I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "BonsaiTestDict"
+    When I set the "classification_source" property to "BonsaiTestDict"
     And I click "VIEWZOOM"
     Then I see "BonsaiReferenceA" in the "1st" list
     And I don't see "Acidification" in the "1st" list
@@ -68,8 +64,7 @@ Scenario: Add classification reference from bSDD - add classification only
     And I click "is_active" in the row where I see "BonsaiTestDict" in the "1st" list
     And I select the object "IfcSite/My Site"
     And I look at the "Classification References" panel
-    And I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "All Dictionaries"
+    And I set the "classification_source" property to "All Active bSDDs"
     And I click "VIEWZOOM"
     Then I see "Acidification" in the "1st" list
     When I select the row where I see "Acidification" in the "1st" list
@@ -77,29 +72,24 @@ Scenario: Add classification reference from bSDD - add classification only
     Then I see "Acidification"
     And I don't see "BonsaiReferenceA"
 
-Scenario: Get bSDD classification properties - get associated properties then add classification
+Scenario: Get bSDD classification properties - get and add associated properties
     Given an empty IFC project
     And I look at the "buildingSMART Data Dictionary" panel
     And I click "Load bSDD Dictionaries"
     When I click "is_active" in the row where I see "LCA" in the "1st" list
     And I select the object "IfcSite/My Site"
-    And I look at the "Classification References" panel
-    And I set the "classification_source" property to "buildingSMART Data Dictionary"
-    And I set the "active_dictionary" property to "All Dictionaries"
-    And I click "VIEWZOOM"
-    When I select the row where I see "Acidification" in the "1st" list
-    And I click "COPY_ID"
-    Then I see "SizeSet"
-    And I see "Height"
-    And I see "Volume"
-    And I see "No References"
-    When I set the "Height" property to "42"
-    And I click "Add Classification Reference"
-    Then I see "Acidification"
-    And I don't see "No References"
-    When I look at the "Property Sets" panel
-    Then I see "SizeSet"
-    And I see "Height"
-    And I see "42"
-    And I see "Volume"
-    And I see "0"
+    And I look at the "Property Sets" panel
+    And I set the "pset_name" property to "All Data Dictionaries"
+    And I click "FILE_REFRESH"
+    When I select the row where I see "Height" in the "2nd" list
+    And I click "is_selected" in the row where I see "Height" in the "2nd" list
+    And I click "is_selected" in the row where I see "Volume" in the "2nd" list
+    Then I look at the "Property Sets" panel
+    And I set the "height" property to "42"
+    And I set the "volume" property to "23"
+    When I click "Add bSDD Properties"
+    Then I look at the "Property Sets" panel
+    And I see "height"
+    And I see "42.0"
+    And I see "volume"
+    And I see "23.0"

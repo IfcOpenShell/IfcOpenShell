@@ -17,26 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
+import shutil
+from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
+
+import bonsai.bim.schema
 import bonsai.core.aggregate
 import bonsai.core.context
-import bonsai.core.tool
-import bonsai.core.root
-import bonsai.core.unit
 import bonsai.core.owner
-import bonsai.bim.schema
+import bonsai.core.root
+import bonsai.core.tool
+import bonsai.core.unit
 import bonsai.tool as tool
-from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
-from pathlib import Path
-from typing import NamedTuple, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
@@ -502,3 +506,76 @@ class Project(bonsai.core.tool.Project):
             d2 = v3 - v2
             normals.append((v1, d1.cross(d2).normalized()))
         return normals
+
+    TEMP_PROJECT_PATH = Path.cwd() / "test/files/temp/test_project.ifc"
+
+    @classmethod
+    def save_test_project(cls) -> None:
+        tmp = cls.TEMP_PROJECT_PATH.parent
+        # Clean up previous test project to avoid conflicts with non-updated assets.
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        bpy.ops.bim.save_project(filepath=cls.TEMP_PROJECT_PATH.__str__(), should_save_as=True)
+
+    @classmethod
+    def get_metadata_document_information(cls) -> Optional[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+        for doc in ifc_file.by_type("IfcDocumentInformation"):
+            if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                return doc
+        return None
+
+    @classmethod
+    def create_metadata_document_information(cls, metadata_filename: str) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            raise Exception("No IFC file loaded")
+
+        doc = tool.Ifc.run("document.add_information", parent=None)
+
+        if ifc_file.schema == "IFC2X3":
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "DocumentId": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
+        else:
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "Identification": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
+
+        return doc
+
+    @classmethod
+    def update_metadata_document_information(cls, metadata_filename: str) -> None:
+        doc = cls.get_metadata_document_information()
+        if not doc:
+            return
+
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
+
+        tool.Ifc.run("document.edit_information", information=doc, attributes={"Location": metadata_filename})
+
+    @classmethod
+    def remove_metadata_document_information(cls) -> None:
+        doc = cls.get_metadata_document_information()
+        if doc:
+            tool.Ifc.run("document.remove_information", information=doc)

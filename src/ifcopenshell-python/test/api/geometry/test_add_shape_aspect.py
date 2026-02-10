@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.root
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.util.shape_builder
+import test.bootstrap
 
 
 class TestAddShapeAspect(test.bootstrap.IFC4):

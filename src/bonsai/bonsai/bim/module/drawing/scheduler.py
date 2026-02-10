@@ -18,22 +18,23 @@
 
 import os
 import re
-import bpy
 import string
-import svgwrite
+from pathlib import Path
+from textwrap import wrap
+
+import bpy
 import openpyxl
 import openpyxl.cell  # Unnecessary, bug in typeshed.
 import openpyxl.utils  # Unnecessary, bug in typeshed.
-import bonsai.tool as tool
-
-from bonsai.bim.module.drawing.svgwriter import SvgWriter
+import svgwrite
 from odf.opendocument import load as load_ods
-from odf.table import Table, TableRow, TableColumn, TableCell
-from odf.text import P
 from odf.style import Style
-from textwrap import wrap
-from pathlib import Path
+from odf.table import Table, TableCell, TableColumn, TableRow
+from odf.text import P
+
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.drawing.svgwriter import SvgWriter
 
 DEBUG = False
 
@@ -544,11 +545,10 @@ class Scheduler:
         """
         Adds text to svg.
 
-        Args:
-            p_tags: list of cell's P tags from odt file
-            box_alignment: alignment of text in box
-            wrap_text: if True, text will be wrapped to fit in cell
-            cell_width: width of cell, used for wrapping text
+        :param p_tags: list of cell's P tags from odt file
+        :param box_alignment: alignment of text in box
+        :param wrap_text: if True, text will be wrapped to fit in cell
+        :param cell_width: width of cell, used for wrapping text
         """
         text_lines = [str(p) for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)

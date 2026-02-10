@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
-from bpy.types import PropertyGroup
-from bonsai.bim.prop import ObjProperty
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, Union
+from bonsai.bim.prop import ObjProperty
 
 
 def space_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object) -> bool:

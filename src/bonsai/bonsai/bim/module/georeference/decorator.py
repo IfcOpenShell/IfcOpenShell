@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from math import radians
+
 import blf
-import gpu
 import bmesh
+import bpy
+import gpu
 import ifcopenshell
 import ifcopenshell.util.geolocation
-import bonsai.tool as tool
-from math import radians
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
-from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.georeference.data import GeoreferenceData
 
 
@@ -53,12 +55,13 @@ class GeoreferenceDecorator:
                 pass
         cls.is_installed = False
 
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
+    def draw_batch(self, shader_type, content_pos, color, indices=None, should_scale=True):
         if not tool.Blender.validate_shader_batch_data(content_pos, indices):
             return
         props = tool.Georeference.get_georeference_props()
-        self.scale = props.visualization_scale
-        content_pos = [v * self.scale for v in content_pos]
+        if should_scale:
+            scale = tool.Georeference.get_georeference_props().visualization_scale
+            content_pos = [v * scale for v in content_pos]
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -141,12 +144,13 @@ class GeoreferenceDecorator:
 
             if wcs["blender_location"].length < 1000:
                 position = wcs["blender_location"].copy()
+                position -= Vector((0, 0.1, 0))
+                self.draw_text_at_position(context, text, position, should_scale=False)
             else:
                 position = wcs["blender_location"].normalized() * 3
                 text += "\n(Warning: Actual XYZ Not Shown)"
-            position -= Vector((0, 0.1, 0))
-
-            self.draw_text_at_position(context, text, position)
+                position -= Vector((0, 0.1, 0))
+                self.draw_text_at_position(context, text, position)
 
         if props.has_blender_offset:
             text = "IFC Local Origin"
@@ -165,8 +169,10 @@ class GeoreferenceDecorator:
             self.draw_text_at_position(context, text, location)
         blf.disable(self.font_id, blf.SHADOW)
 
-    def draw_text_at_position(self, context, text, position):
-        position = [v * self.scale for v in position]
+    def draw_text_at_position(self, context, text, position, should_scale=True):
+        if should_scale:
+            scale = tool.Georeference.get_georeference_props().visualization_scale
+            position = [v * scale for v in position]
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)
         if not coords_2d:
             return
@@ -309,8 +315,8 @@ class GeoreferenceDecorator:
             if wcs["blender_location"].length < 1000:
                 verts = [Vector((0, 0, 0)), wcs["blender_location"]]
                 edges = [[0, 1]]
-                self.draw_batch("LINES", verts, decorator_color_special, edges)
-                self.draw_batch("POINTS", verts[1:], decorator_color_special)
+                self.draw_batch("LINES", verts, decorator_color_special, edges, should_scale=False)
+                self.draw_batch("POINTS", verts[1:], decorator_color_special, should_scale=False)
             else:
                 location = wcs["blender_location"].normalized()
                 edges = [[0, 1]]
@@ -332,7 +338,7 @@ class GeoreferenceDecorator:
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
 
-    def draw_dashed_line(self, start, end, colour):
+    def draw_dashed_line(self, start, end, colour, should_scale=True):
         direction = (end - start).normalized()
         distance = (end - start).length
         current_distance = Vector((0, 0, 0))
@@ -347,7 +353,7 @@ class GeoreferenceDecorator:
 
         edges = [[i, i + 1] for i in range(0, len(points), 2)]
         verts = points
-        self.draw_batch("LINES", verts, colour, edges)
+        self.draw_batch("LINES", verts, colour, edges, should_scale=should_scale)
 
     def calculate_angles(self, context):
         self.pn_angle = 0.0

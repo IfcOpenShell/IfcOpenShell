@@ -17,10 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.util.unit
-import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
+import ifcopenshell.util.schema
+import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
+
 import bonsai.tool as tool
 
 

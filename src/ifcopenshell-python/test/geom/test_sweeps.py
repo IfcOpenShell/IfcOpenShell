@@ -1,8 +1,9 @@
 import pathlib
 from collections.abc import Sequence
 
-import ifcopenshell
 import pytest
+
+import ifcopenshell
 
 
 def _bbox_from_vertices(verts: list[tuple[float, float, float]]):

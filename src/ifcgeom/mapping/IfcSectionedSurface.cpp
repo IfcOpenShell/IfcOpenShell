@@ -31,19 +31,20 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	std::vector<cross_section> cross_sections;
 
 	auto dir = map(inst->Directrix());
-	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
-	if (!pwf) {
-		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSurface is only implemented for piecewise function Directrix curves", inst);
+    auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
+    if (!fn) {
+        // Only implement on alignment curves
+        Logger::Warning("IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
-	}
+    }
+
 
 	{	
 	auto css = inst->CrossSections();
 	auto csps = inst->CrossSectionPositions();
 	std::vector<taxonomy::geom_item::ptr> faces;
 
-	// The PointByDistanceExpressesions are factored out into (a) a cartesian offset relative to the
+	// The PointByDistanceExpressions are factored out into (a) a cartesian offset relative to the
 	// reference frame along a certain curve location (b) the longitude.
 
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
@@ -109,7 +110,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	}
 	}
 
-	return make_loft(settings_, inst, pwf, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections);
 }
 
 #endif

@@ -18,12 +18,13 @@
 
 from __future__ import annotations
 
-import isodate
+from datetime import datetime, timedelta
+from typing import Any, Union
+
 import bpy
-from dateutil import parser
 import ifcopenshell.util.date
-from datetime import timedelta, datetime
-from typing import Union, Any
+import isodate
+from dateutil import parser
 
 from bonsai.bim.prop import ISODuration
 

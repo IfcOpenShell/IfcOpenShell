@@ -26,7 +26,7 @@ use_step_matcher("parse")
 from bimtester.features.steps.attributes_eleclasses import de, en
 
 use_step_matcher("parse")
-from bimtester.features.steps.attributes_psets import en, de
+from bimtester.features.steps.attributes_psets import de, en
 
 use_step_matcher("parse")
 from bimtester.features.steps.attributes_qsets import en

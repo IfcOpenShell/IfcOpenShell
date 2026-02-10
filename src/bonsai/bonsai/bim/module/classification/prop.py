@@ -16,22 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute
-from bonsai.bim.module.classification.data import ClassificationsData, ObjectClassificationsData
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.classification.data import (
+    ClassificationsData,
+    ObjectClassificationsData,
+)
+from bonsai.bim.prop import Attribute
 
 
 def get_available_classifications(
@@ -95,6 +100,7 @@ class BIMClassificationReferenceProperties(PropertyGroup):
     classifications: EnumProperty(items=get_classifications, name="Classifications")
     reference_attributes: CollectionProperty(name="Reference Attributes", type=Attribute)
     active_reference_id: IntProperty(name="Active Reference Id")
+    classification_system_name: StringProperty(name="Classification System Name")
 
     if TYPE_CHECKING:
         is_adding: bool

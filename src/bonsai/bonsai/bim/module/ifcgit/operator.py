@@ -1,10 +1,12 @@
 import os
 import re
+from typing import TYPE_CHECKING
+
 import bpy
+
 import bonsai.core.ifcgit as core
 import bonsai.tool as tool
 from bonsai.bim.module.ifcgit.data import IfcGitData, refresh
-from typing import TYPE_CHECKING
 
 
 class CreateRepo(bpy.types.Operator):

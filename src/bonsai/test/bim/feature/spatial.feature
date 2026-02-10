@@ -15,6 +15,7 @@ Scenario: Set default container
 Scenario: Select container
     Given an empty IFC project
     And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     When I select the row where I see "My Building" in the "1st" list
     And I click "OBJECT_DATA"
     Then the object "IfcBuilding/My Building" is selected
@@ -73,6 +74,50 @@ Scenario: Assign container
     When I click "CHECKMARK"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
 
+Scenario: Assign container - assign an aggregate which also affects children
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    Then the object "IfcElementAssembly/Default_Name" exists
+    And the object "IfcElementAssembly/Default_Name" is contained in object "IfcBuildingStorey/My Storey"
+    When I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    And the object "IfcWall/Cube" is selected
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
+    And the object "IfcElementAssembly/Default_Name" is in the collection "IfcSite/My Site"
+
+Scenario: Assign container - assign a child which also affects parents
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And the object "IfcWall/Cube" is selected
+    When I press "bim.add_aggregate"
+    Then the object "IfcElementAssembly/Default_Name" exists
+    And the object "IfcElementAssembly/Default_Name" is contained in object "IfcBuildingStorey/My Storey"
+    When I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    And the object "IfcElementAssembly/Default_Name" is selected
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
+    And the object "IfcElementAssembly/Default_Name" is in the collection "IfcSite/My Site"
+
 Scenario: Copy to container
     Given an empty IFC project
     And I add a cube
@@ -81,10 +126,10 @@ Scenario: Copy to container
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And the object "IfcSite/My Site" is selected
-    And additionally the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    When I press "bim.copy_to_container"
+    And I look at the "Spatial Decomposition" panel
+    When I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And the object "IfcWall/Cube" is selected
+    When I click "MOD_DISPLACE"
     Then the object "IfcWall/Cube.001" is in the collection "IfcSite/My Site"
 
 Scenario: Reference structure
@@ -222,6 +267,7 @@ Scenario: Set element visibility - Hide spatial container
 Scenario: Select spatial container
     Given an empty IFC project
     And I look at the "Spatial Decomposition" panel
+    And I set the "is_visible" property to "TRUE"
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
     And I click "OBJECT_DATA"
     Then the object "IfcSite/My Site" is selected

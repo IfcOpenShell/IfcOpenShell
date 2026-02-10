@@ -18,19 +18,21 @@
 
 import os
 import sys
+from functools import partial
+from typing import Any, Optional, Union
+
 import bpy
 import bpy.utils.previews
+from bpy.types import Menu, WorkSpaceTool
+
 import bonsai.bim
-import bonsai.tool as tool
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
-from bonsai.bim.helper import prop_with_search, draw_attribute
-from bpy.types import WorkSpaceTool, Menu
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, prop_with_search
 from bonsai.bim.module.model.data import AuthoringData, ItemData
-from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union, Any
-from functools import partial
+from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
+from bonsai.bim.module.system.data import PortData
 
 
 def load_custom_icons():
@@ -1322,6 +1324,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
+            if len(bpy.context.selected_objects) != 2:
+                self.report(
+                    {"ERROR"},
+                    "Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a merge.",
+                )
+                return
+            for item in bpy.context.selected_objects:
+                element = tool.Ifc.get_entity(item)
+                if tool.Model.get_usage_type(element) != "LAYER2":
+                    self.report(
+                        {"ERROR"},
+                        "Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.",
+                    )
+                    return
             bpy.ops.bim.merge_wall()
         else:
             if len(bpy.context.selected_objects) == 1:

@@ -17,35 +17,37 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import base64
+import json
 import os
 import re
-import bpy
-import json
-import base64
-import ifcopenshell.api.sequence
-import ifcopenshell.util.element
-import pystache
-import mathutils
 import webbrowser
-import isodate
-import ifcopenshell
-import ifcopenshell.api.group
-import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.date
-import ifcopenshell.util.selector
-import ifcopenshell.util.sequence
-import bonsai.core.tool
-import bonsai.tool as tool
-import bonsai.bim.helper
-from dateutil import parser
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import time as datetime_time
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING
-from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.api.group
+import ifcopenshell.api.sequence
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.sequence
+import isodate
+import mathutils
+import pystache
+from dateutil import parser
 from mathutils import Color
 
+import bonsai.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.sequence.prop import (
         BIMAnimationProperties,
         BIMStatusProperties,
@@ -54,6 +56,7 @@ if TYPE_CHECKING:
         BIMWorkPlanProperties,
         BIMWorkScheduleProperties,
     )
+    from bonsai.bim.prop import Attribute
 
 
 class Sequence(bonsai.core.tool.Sequence):
@@ -565,14 +568,6 @@ class Sequence(bonsai.core.tool.Sequence):
         props = cls.get_work_schedule_props()
         if len(tasks) and len(tasks) > props.active_task_index:
             return tool.Ifc.get().by_id(tasks[props.active_task_index].ifc_definition_id)
-
-    @classmethod
-    def get_direct_nested_tasks(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_nested_tasks(task)
-
-    @classmethod
-    def get_direct_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_direct_task_outputs(task)
 
     @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:

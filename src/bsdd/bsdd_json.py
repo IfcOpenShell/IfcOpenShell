@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
-from .type_hints import *
-from typing import Optional, Literal
-from datetime import datetime
-from pydantic import BaseModel, Field, PrivateAttr, model_validator, ConfigDict
 import json
 import weakref
+from datetime import datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+
+from .type_hints import *
 
 
 def _lower_first(s: str) -> str:

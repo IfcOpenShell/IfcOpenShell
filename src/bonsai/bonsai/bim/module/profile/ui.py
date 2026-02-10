@@ -17,13 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import bpy
+from bpy.types import Panel, UIList
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bpy.types import Panel, UIList
 from bonsai.bim.module.profile.data import ProfileData
 from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.profile.prop import BIMProfileProperties, Profile

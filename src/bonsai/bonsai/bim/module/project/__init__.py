@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, workspace, gizmo, decorator
+
+from . import decorator, gizmo, operator, prop, ui, workspace
 
 classes = (
     operator.AddProjectLibrary,
@@ -42,6 +43,7 @@ classes = (
     operator.ExportIFC,
     operator.FlipClippingPlane,
     operator.IFCFileHandlerOperator,
+    operator.ImageScalingTool,
     operator.LinkIfc,
     operator.LoadLink,
     operator.LoadLinkedProject,
@@ -67,6 +69,7 @@ classes = (
     operator.UnassignLibraryDeclaration,
     operator.UnlinkIfc,
     operator.UnloadLink,
+    operator.LoadBlendMetadataAndIFC,
     workspace.ExploreHotkey,
     prop.LibraryBreadcrumb,
     prop.LibraryElement,

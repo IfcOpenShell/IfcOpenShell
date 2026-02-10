@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-import pytest
-import ifcopenshell
 
+import pytest
+
+import ifcopenshell
 
 TEST_FILE_DIR = Path(__file__).parent / "../../../test/input/"
 

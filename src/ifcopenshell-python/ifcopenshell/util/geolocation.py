@@ -17,12 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from decimal import ROUND_HALF_UP, Decimal
+from typing import NamedTuple, Optional, Union
+
 import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import NamedTuple, Optional, Union
-from decimal import Decimal, ROUND_HALF_UP
 
 MatrixType = ifcopenshell.util.placement.MatrixType
 

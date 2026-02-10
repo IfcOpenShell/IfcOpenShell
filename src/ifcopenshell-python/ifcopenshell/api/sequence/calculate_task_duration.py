@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from typing import Union
+
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
-from typing import Union
 
 
 def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:

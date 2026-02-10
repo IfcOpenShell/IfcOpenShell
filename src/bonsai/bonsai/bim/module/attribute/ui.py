@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bonsai.bim.helper
+
+from typing import TYPE_CHECKING
+
 import bpy.types
 from bpy.types import Panel
-from bonsai.bim.module.attribute.data import AttributesData
+
+import bonsai.bim.helper
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
+from bonsai.bim.module.attribute.data import AttributesData
 
 if TYPE_CHECKING:
     from bonsai.bim.module.attribute.prop import BIMExplorerProperties, ExplorerEntity
@@ -58,7 +61,7 @@ def draw_ui(context: bpy.types.Context, layout: bpy.types.UILayout, attributes) 
 
 
 class BIM_PT_object_attributes(Panel):
-    bl_label = "Attributes"
+    bl_label = "Object Attributes"
     bl_idname = "BIM_PT_object_attributes"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"

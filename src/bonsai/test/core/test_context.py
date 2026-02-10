@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.context as subject
-from test.core.bootstrap import ifc, context
+from test.core.bootstrap import context, ifc
 
 
 class TestAddContext:

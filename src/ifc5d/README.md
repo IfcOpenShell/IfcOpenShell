@@ -32,6 +32,13 @@ csv2ifc.execute()
 ```
 
 See example files as a CSV file format reference:
+- Ex1 - BoQ without query.csv (a simple Bill of Quantities)
+- Ex2 - SoR.csv (a simple Schedule of Rates)
+- Ex3 - BoQ with query.csv (a simple BoQ with the query function)
+- Ex4 - BoQ with description.csv (a simple BoQ with description column)
+- Ex5 - SoR_with_description.csv (a simple SoR with description column)
+- Ex6 - BoQ with categories.csv (a simple BoQ with categories columns)
+- Ex7 - BoQ with Rates.csv (a simple BoQ that connect to an existing SoR. It needs an already loaded SoR.)
 - `sample_cost_schedule_house_FR.csv` / `.ods`
 - `schedule.csv`, `rates.csv` (schedule of rates example)
 

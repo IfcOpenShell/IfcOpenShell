@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, get_args
+
 import bpy
-from bonsai.bim.prop import StrProperty, BIMFilterGroup
-from bonsai.bim.module.diff.data import DiffData
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, get_args
+from bpy.types import PropertyGroup
+
+from bonsai.bim.module.diff.data import DiffData
+from bonsai.bim.prop import BIMFilterGroup, StrProperty
 
 
 def update_diff_json_file(self: "DiffProperties", context: bpy.types.Context) -> None:

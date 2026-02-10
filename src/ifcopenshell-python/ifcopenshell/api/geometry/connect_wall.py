@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
-from typing import Optional
 
 
 def connect_wall(

@@ -16,29 +16,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import math
+import multiprocessing
 import os
 import subprocess
 
 import pyradiance as pr
 from datetime import datetime
-import bpy
-import bonsai.tool as tool
+from math import radians
 from pathlib import Path
-from typing import Union, TYPE_CHECKING
-import json
-import math
-import time
+from typing import TYPE_CHECKING, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import webbrowser
 import ifcopenshell.geom
 import multiprocessing
 import requests
-from math import radians
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from mathutils import Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
-from bpy_extras.io_utils import ExportHelper
-from bpy_extras.io_utils import ImportHelper
 
 ifc_materials = []
 

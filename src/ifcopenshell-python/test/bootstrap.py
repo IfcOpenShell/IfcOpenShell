@@ -26,9 +26,10 @@ if os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) == sys.path[0]
 
 
 import pytest
+
 import ifcopenshell
-import ifcopenshell.api.project
 import ifcopenshell.api.owner.settings
+import ifcopenshell.api.project
 
 
 class IFC4X3:

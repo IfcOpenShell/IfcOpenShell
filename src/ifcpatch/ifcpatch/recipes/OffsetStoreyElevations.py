@@ -26,7 +26,6 @@ class Patcher:
         All objects placed relative to the storeys will also be shifted.
 
         :param z: The Z value in project length units to offset storeys by.
-        :type z: typing.Union[str, float]
 
         Example:
 

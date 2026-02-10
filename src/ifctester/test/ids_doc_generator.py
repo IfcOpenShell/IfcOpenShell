@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import os
 import re
 import uuid
-import pytest
-import functools
+from pathlib import Path
+from xml.dom.minidom import parseString
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -32,14 +33,14 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
-import ifctester
+import numpy as np
+import pytest
 import test_facet
 import test_ids
-import numpy as np
-from pathlib import Path
-from xml.dom.minidom import parseString
-from ifctester import ids
 from ifcopenshell import validate
+
+import ifctester
+from ifctester import ids
 
 outdir = "build"
 

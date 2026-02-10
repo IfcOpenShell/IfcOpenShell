@@ -8,7 +8,7 @@ version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
-description = "Compares the differences between two IFC models"
+description = "Compare IFC models for changes to geometry, properties, and structure"
 readme = "README.md"
 keywords = ["IFC", "Diff"]
 classifiers = [

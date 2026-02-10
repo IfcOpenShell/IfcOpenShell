@@ -162,6 +162,10 @@
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
+%ignore SeparateZUpNode;
+
+%ignore XmlSerializerFactory;
+%ignore JsonSerializerFactory;
 
 // Triangulated representation helper struct
 %ignore EdgeKey;
@@ -308,6 +312,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 	#include "../serializers/GltfSerializer.h"
 	#include "../serializers/TtlWktSerializer.h"
 	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/JsonSerializer.h"
 
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"

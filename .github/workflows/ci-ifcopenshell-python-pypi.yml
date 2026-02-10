@@ -35,6 +35,10 @@ jobs:
             short_name: linux64
           }
           - {
+            name: "Linux ARM 64bit",
+            short_name: linuxarm64
+          }
+          - {
             name: "MacOS Intel 64bit",
             short_name: macos64
           }
@@ -43,10 +47,10 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified

@@ -18,7 +18,7 @@
 
 
 import bonsai.core.owner as subject
-from test.core.bootstrap import ifc, owner, Prophecy
+from test.core.bootstrap import Prophecy, ifc, owner
 
 
 class TestAddPerson:

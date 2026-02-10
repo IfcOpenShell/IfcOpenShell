@@ -17,25 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
 import os
 import re
-import json
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, assert_never
+
 import bmesh
 import bpy
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
 import ifcopenshell.api.owner
 import ifcopenshell.express
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from mathutils import Vector
+
 import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from mathutils import Vector
-from collections import defaultdict
-from typing import Literal, TYPE_CHECKING, assert_never, Union
-from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.debug.prop import BIMDebugProperties
@@ -143,12 +146,11 @@ class Debug(bonsai.core.tool.Debug):
 
         Note that Styles UI (or other UI) should be updated manually after using this method.
 
-        Args:
-            object_type: The type of object to merge
-            by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
-                         Strips .XXX suffix patterns (e.g., 'foo.001' matches 'foo', 'foo.002').
-                         For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
-                         For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
+        :param object_type: The type of object to merge
+        :param by_name_or_identification_only: If True, merge based only on Name attribute (or equivalent identifier).
+            Strips .XXX suffix patterns (e.g., 'foo.001' matches 'foo', 'foo.002').
+            For PERSON, uses Identification. For APPLICATION, uses ApplicationFullName.
+            For PERSON_AND_ORGANIZATION, uses combination of person and organization identifiers.
         """
 
         def normalize_name(name: str) -> str:

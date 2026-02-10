@@ -17,7 +17,6 @@
         "IFCXML_SUPPORT": "ON",
         "HDF5_SUPPORT": "ON",
         "SCHEMA_VERSIONS": "4x3_add2",
-        "CITYJSON_SUPPORT": "OFF",
         "CMAKE_GENERATOR_PLATFORM": "",
         "CMAKE_GENERATOR_TOOLSET": ""
       }

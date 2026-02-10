@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import lark
-import ifcopenshell
-from typing import Optional, Union, Literal, Any
 from collections.abc import Generator
+from typing import Any, Literal, Optional, Union
+
+import lark
+
+import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
@@ -189,11 +191,9 @@ def get_cost_items_for_product(product: ifcopenshell.entity_instance) -> list[if
     """
     Returns a list of cost items related to the given product.
 
-    Args:
-        product: An object of class IfcProduct representing a product.
+    :param product: An object of class IfcProduct representing a product.
 
-    Returns:
-        A list of IfcCostItem objects representing the cost items related to the product.
+    :return: A list of IfcCostItem objects representing the cost items related to the product.
     """
     cost_items = []
     for assignment in product.HasAssignments:

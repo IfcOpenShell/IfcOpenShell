@@ -17,16 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from bpy.types import Menu, Panel, UIList
+
 import bonsai.bim
 import bonsai.tool as tool
-from bpy.types import Panel, Menu, UIList
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
-    RepresentationsData,
-    RepresentationItemsData,
     ConnectionsData,
-    PlacementData,
     DerivedCoordinatesData,
+    PlacementData,
+    RepresentationItemsData,
+    RepresentationsData,
 )
 from bonsai.bim.module.layer.data import LayersData
 

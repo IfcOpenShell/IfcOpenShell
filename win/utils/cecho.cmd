@@ -1,3 +1,4 @@
+:: Don't check for `ECHO_ON` or it will get too verbose without any benefit.
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
 
@@ -38,5 +39,6 @@ if defined BGC (
 
 echo|set /p="!STYLE!!TEXT!!ESC![0m"
 echo.
+if defined ECHO_ON ( echo on )
 endlocal
 exit /b 0

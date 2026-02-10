@@ -41,6 +41,7 @@
 #include "../serializers/USDSerializer.h"
 #include "../serializers/TtlWktSerializer.h"
 #include "../serializers/RocksDbSerializer.h"
+#include "../serializers/JsonSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -48,10 +49,6 @@
 #include "../ifcgeom/hybrid_kernel.h"
 
 #include "../ifcparse/utils.h"
-
-#ifdef IFOPSH_WITH_CITYJSON
-#include "./cityjson/geobim.h"
-#endif
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 
@@ -128,13 +125,13 @@ void print_usage(bool suggest_help = true)
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
-		<< "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
+#ifdef WITH_GLTF
+        << "  .json  JSON           Property definitions and decomposition tree in xeokit json format\n"
+#endif
+        << "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
 		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
-#endif
-#ifdef IFOPSH_WITH_CITYJSON
-		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
@@ -654,9 +651,9 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		// @todo this is just temporary as it doesn't make sense to require an extension for a DB
+        JSON = IfcUtil::path::from_utf8(".json"),
+        // @todo this is just temporary as it doesn't make sense to require an extension for a DB
 		RDB = IfcUtil::path::from_utf8(".rdb"),
-		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
@@ -665,15 +662,23 @@ int main(int argc, char** argv) {
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
-	if (output_extension == XML) {
+	if (output_extension == XML || output_extension == JSON) {
 		int exit_code = EXIT_FAILURE;
 		try {
 			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
-				XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
-				Logger::Status("Writing XML output...");
-				s.finalize();
+                if (output_extension == XML) {
+                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
+                    Logger::Status("Writing XML output...");
+                    s.finalize();
+                } else {
+#ifdef WITH_GLTF
+                    JsonSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
+                    Logger::Status("Writing JSON output...");
+                    s.finalize();
+#endif
+                }
 				time(&end);
 				Logger::Status("Done! Conversion took " +  format_duration(start, end));
 
@@ -742,84 +747,6 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 #endif
-#ifdef IFOPSH_WITH_CITYJSON
-	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
-
-		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
-		boost::to_lower(exterior_only_algo);
-
-		if (exterior_only_algo == "halfspace-snapping") {
-			cerr_ << "[Error] halfspace-snapping not implemented yet" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		} else if (exterior_only_algo == "minkowski-triangles") {
-			// 
-		} else if (exterior_only_algo == "convex-decomposition") {
-			// 
-		} else if (exterior_only_algo == "none") {
-			// 
-		} else {
-			cerr_ << "[Error] --exterior-only should be convex-decomposition|minkowski-triangles|halfspace-snapping" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		}
-
-		geobim_settings settings;
-		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
-		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
-		
-		/*
-		// No longer set, because we pass to real serializers now, awaiting a proper iterator adaptor
-		if (output_extension == OBJ) {
-			settings.obj_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-		*/
-	
-		if (output_extension == CITY_JSON) {
-			// we don't have a cityjson serializer though
-			settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-
-		// @todo
-		settings.radii = { "0.05" };
-		settings.apply_openings = false;
-		settings.apply_openings_posthoc = true;
-		settings.debug = false;
-		settings.exact_segmentation = true;
-		settings.minkowski_triangles = exterior_only_algo == "minkowski-triangles";
-		settings.no_erosion = false;
-		settings.spherical_padding = false;
-		if (num_threads != 1) {
-			settings.threads = num_threads;
-		}
-
-		settings.settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		settings.settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = !settings.apply_openings;
-
-		if (include_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = include_filter.values;
-			settings.entity_names_included = true;
-		} else if (exclude_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = exclude_filter.values;
-			settings.entity_names_included = false;
-		} else {
-			settings.entity_names = { { "IfcSpace", "IfcOpeningElement" } };
-			settings.entity_names_included = false;
-		}
-		
-		elems_from_adaptor.emplace();
-		perform(settings, *elems_from_adaptor);
-		
-		if (output_extension == CITY_JSON) {
-			return 0;
-		}
-		// else ... continue on to serialize elems_from_adaptor
-	}
-#endif
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
@@ -867,8 +794,8 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
-		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC && output_extension != GLB) {
+		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
 		/// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
@@ -1359,12 +1286,14 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
         requires_init = true;
     }
 
-	ifc_file->bypass_type("IfcRelDefinesByProperties");
-    ifc_file->bypass_type("IfcPropertySetDefinition");
-    ifc_file->bypass_type("IfcProperty");
-    ifc_file->bypass_type("IfcMaterialProperties");
-    ifc_file->bypass_type("IfcProfileProperties");
-    ifc_file->bypass_type("IfcPhysicalQuantity");
+	if (bypass_properties) {
+        ifc_file->bypass_type("IfcRelDefinesByProperties");
+        ifc_file->bypass_type("IfcPropertySetDefinition");
+        ifc_file->bypass_type("IfcProperty");
+        ifc_file->bypass_type("IfcMaterialProperties");
+        ifc_file->bypass_type("IfcProfileProperties");
+        ifc_file->bypass_type("IfcPhysicalQuantity");
+    }
     
 #ifdef USE_MMAP
     if (mmap) {

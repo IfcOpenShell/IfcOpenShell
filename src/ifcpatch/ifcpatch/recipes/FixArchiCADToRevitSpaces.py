@@ -17,7 +17,6 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import ifcopenshell
 
 
 class Patcher:
@@ -67,11 +66,10 @@ class Patcher:
         self.filepath = filepath
 
     def patch(self) -> None:
-        import bpy
         import bonsai.tool as tool
-        import ifcopenshell
+        import bpy
         import ifcopenshell.util.element
-        from mathutils import Vector, Matrix
+        from mathutils import Matrix, Vector
 
         if len(bpy.data.objects) > 0:
             bpy.data.batch_remove(bpy.data.objects)

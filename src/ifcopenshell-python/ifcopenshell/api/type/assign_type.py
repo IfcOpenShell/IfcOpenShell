@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell
-import ifcopenshell.api.type
-import ifcopenshell.api.owner
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
+import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union
 
 
 def assign_type(

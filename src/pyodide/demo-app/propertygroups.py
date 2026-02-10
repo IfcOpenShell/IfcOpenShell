@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 # From: src\bonsai\bonsai\bim\module\model\prop.py
 # Adapted to use dataclasses instead of bpy props
 
+
 @dataclass
 class BIMWindowProperties:
     non_si_units_props = ("is_editing", "window_type")
@@ -19,6 +20,7 @@ class BIMWindowProperties:
     )
 
     # number of panels and default mullion/transom values
+    # fmt: off
     window_types_panels = {
         "SINGLE_PANEL":            (1, ((0,   0  ), (0,    0  ))),
         "DOUBLE_PANEL_HORIZONTAL": (2, ((0,   0  ), (0.45, 0  ))),
@@ -30,6 +32,7 @@ class BIMWindowProperties:
         "TRIPLE_PANEL_HORIZONTAL": (3, ((0,   0  ), (0.3,  0.6))),
         "TRIPLE_PANEL_VERTICAL":   (3, ((0.2, 0.4), (0,    0  ))),
     }
+    # fmt: on
 
     is_editing: bool = False
     window_type: str = "SINGLE_PANEL"
@@ -50,10 +53,10 @@ class BIMWindowProperties:
     second_transom_offset: float = 0.6
 
     # panel properties
-    frame_depth: list = field(default_factory = lambda: [0.035] * 3)
-    frame_thickness: list = field(default_factory = lambda: [0.035] * 3)
+    frame_depth: list = field(default_factory=lambda: [0.035] * 3)
+    frame_thickness: list = field(default_factory=lambda: [0.035] * 3)
 
-    def to_dict(self, si_conversion=1.):
+    def to_dict(self, si_conversion=1.0):
         di = {
             "partition_type": self.window_type,
             "overall_height": self.overall_height / si_conversion,
@@ -124,7 +127,7 @@ class BIMDoorProperties:
     frame_thickness: float = 0.035
     frame_depth: float = 0.035
 
-    def to_dict(self, si_conversion=1.):
+    def to_dict(self, si_conversion=1.0):
         return {
             "operation_type": self.door_type,
             "overall_height": self.overall_height / si_conversion,

@@ -12,20 +12,16 @@ bl_info = {
 }
 
 
-import bpy
-from bpy.types import Operator, PropertyGroup, Panel
-from mathutils import Vector, Matrix, Euler
 from math import radians
+
+import bpy
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
-    FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    PointerProperty,
 )
+from bpy.types import Operator, Panel, PropertyGroup
+from mathutils import Euler, Vector
 
 
 class SectionCutawayManager:

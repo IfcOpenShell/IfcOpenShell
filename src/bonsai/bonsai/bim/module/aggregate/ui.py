@@ -17,10 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.aggregate.data import AggregateData
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
-from bonsai.bim.ifc import IfcStore
-import bonsai.tool as tool
 
 
 class BIM_PT_aggregate(Panel):

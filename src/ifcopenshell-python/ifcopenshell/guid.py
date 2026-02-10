@@ -47,11 +47,10 @@ cf. <https://technical.buildingsmart.org/resources/ifcimplementationguidance/ifc
 # IMPORTS
 # ----------------------------------------------------------------
 
-from base64 import b64encode
-from base64 import b64decode
-from uuid import uuid4
 import re
 import string
+from base64 import b64decode, b64encode
+from uuid import uuid4
 
 # ----------------------------------------------------------------
 # EXPORTS

@@ -17,6 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import tempfile
+import uuid
+import webbrowser
+from math import atan, cos, degrees, radians, sin, tan
+from pathlib import Path
+
+import bcf
+import bcf.agnostic.topic
+import bcf.agnostic.visinfo
+import bcf.bcfxml
+import bcf.v2.bcfxml
+import bcf.v2.model
+import bcf.v2.topic
+import bcf.v2.visinfo
 import bcf.v3
 import bcf.v3.bcfxml
 import bcf.v3.document
@@ -24,29 +38,17 @@ import bcf.v3.model
 import bcf.v3.topic
 import bcf.v3.visinfo
 import bpy
-import bcf
-import bcf.bcfxml
-import bcf.v2.bcfxml
-import bcf.v2.model
-import bcf.v2.topic
-import bcf.v2.visinfo
-import bcf.agnostic.topic
-import bcf.agnostic.visinfo
-import uuid
-import numpy as np
-import tempfile
-import webbrowser
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.bcf.prop as bcf_prop
-import bonsai.bim.module.bcf.bcfstore as bcfstore
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from math import radians, degrees, atan, tan, cos, sin
-from mathutils import Vector, Matrix, Euler, geometry
+import numpy as np
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from mathutils import Euler, Matrix, Vector, geometry
 from xsdata.models.datatype import XmlDateTime
+
+import bonsai.bim.module.bcf.bcfstore as bcfstore
+import bonsai.bim.module.bcf.prop as bcf_prop
+import bonsai.tool as tool
 
 
 class NewBcfProject(bpy.types.Operator):

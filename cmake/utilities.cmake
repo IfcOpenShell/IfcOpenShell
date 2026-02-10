@@ -19,8 +19,9 @@
 
 # Create a cache entry if absent for environment variables
 macro(UNIFY_ENVVARS_AND_CACHE VAR)
-    if((NOT DEFINED ${VAR}) AND(NOT "$ENV{${VAR}}" STREQUAL ""))
+    if(NOT DEFINED ${VAR} AND DEFINED ENV{${VAR}} AND NOT ENV{${VAR}} STREQUAL "")
         set(${VAR} "$ENV{${VAR}}" CACHE STRING "${VAR}" FORCE)
+        mark_as_advanced(${VAR})
     endif()
 endmacro()
 
@@ -111,6 +112,30 @@ function(add_debug_variants NAME LIBRARIES POSTFIX)
     endforeach()
 
     set(${NAME} ${LIBRARIES} PARENT_SCOPE)
+endfunction()
+
+# E.g.
+# - `get_release_variant(MYLIB "mylibd.lib" "d")` -> `MYLIB = "mylib.lib"`
+# - `get_release_variant(MYLIB "mylib.lib" "d")`  -> `MYLIB = "mylib.lib"`
+function(get_release_variant NAME LIBRARY POSTFIX)
+    set(RELEASE_SUFFIX ".lib")
+    set(DEBUG_SUFFIX "${POSTFIX}${RELEASE_SUFFIX}")
+    if("${LIBRARY}" MATCHES "${DEBUG_SUFFIX}$")
+        string(REPLACE "${DEBUG_SUFFIX}" "${RELEASE_SUFFIX}" LIBRARY ${LIBRARY})
+    endif()
+    set(${NAME} "${LIBRARY}" PARENT_SCOPE)
+endfunction()
+
+# E.g.
+# - `get_debug_variant(MYLIB "mylib.lib" "d")`  -> `MYLIB = "mylibd.lib"`
+# - `get_debug_variant(MYLIB "mylibd.lib" "d")` -> `MYLIB = "mylibd.lib"`
+function(get_debug_variant NAME LIBRARY POSTFIX)
+    set(RELEASE_SUFFIX ".lib")
+    set(DEBUG_SUFFIX "${POSTFIX}${RELEASE_SUFFIX}")
+    if(NOT "${LIBRARY}" MATCHES "${DEBUG_SUFFIX}$" AND "${LIBRARY}" MATCHES "${RELEASE_SUFFIX}$")
+        string(REPLACE "${RELEASE_SUFFIX}" "${DEBUG_SUFFIX}" LIBRARY ${LIBRARY})
+    endif()
+    set(${NAME} "${LIBRARY}" PARENT_SCOPE)
 endfunction()
 
 function(files_for_ifc_version IFC_VERSION RESULT_NAME)

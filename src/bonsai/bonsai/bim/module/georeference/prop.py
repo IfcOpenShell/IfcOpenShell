@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.util.geolocation
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
 from bonsai.bim.module.georeference.data import GeoreferenceData
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from typing import TYPE_CHECKING
+from bonsai.bim.prop import Attribute
 
 
 def get_coordinate_operation_class(
@@ -215,7 +217,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
         description="Affects the georeference decorator size",
         default=1,
         soft_min=0.1,
-        soft_max=50,
+        soft_max=100,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)

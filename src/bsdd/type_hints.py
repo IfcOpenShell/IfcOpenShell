@@ -1,7 +1,4 @@
-from typing import Literal, Annotated
-from datetime import datetime
-from pydantic import BeforeValidator
-
+from typing import Literal
 
 COUNTRY_CODE = Literal[
     "AF",

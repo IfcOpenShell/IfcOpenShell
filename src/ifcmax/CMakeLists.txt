@@ -32,22 +32,32 @@ endforeach()
 if(HAS_MAX)
     # build libraray for each found 3ds Max SDK
     foreach(max_year max_sdk IN ZIP_LISTS FOUND_MAX_YEARS FOUND_MAX_SDKS)
-
         message(STATUS "Building IFCMax library for Autodesk 3ds Max SDK ${max_year}")
 
-        include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS} ${ICU_INCLUDE_DIR}
-            ${Boost_INCLUDE_DIRS} ${max_sdk}/include
+        include_directories(
+            ${INCLUDE_DIRECTORIES}
+            ${OPENCOLLADA_INCLUDE_DIRS}
+            ${ICU_INCLUDE_DIR}
+            ${Boost_INCLUDE_DIRS}
+            ${max_sdk}/include
         )
 
         # All recent versions of 3ds Max (2014 and newer) are 64-bit only so assume lib/x64 directory
-        link_directories(${LINK_DIRECTORIES} ${IfcOpenShell_BINARY_DIR} ${OCC_LIBRARY_DIR} ${OPENCOLLADA_LIBRARY_DIR}
-            ${ICU_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${max_sdk}/lib/x64/Release
+        link_directories(
+            ${LINK_DIRECTORIES}
+            ${IfcOpenShell_BINARY_DIR}
+            ${OPENCOLLADA_LIBRARY_DIR}
+            ${ICU_LIBRARY_DIR}
+            ${Boost_LIBRARY_DIRS}
+            ${max_sdk}/lib/x64/Release
         )
 
         add_library(IfcMax_${max_year} SHARED IfcMax.h IfcMax.cpp)
 
         # TODO: find the minimal subset of 3dsmax libraries to reference
-        target_link_libraries(IfcMax_${max_year} ${IFCOPENSHELL_LIBRARIES}
+        target_link_libraries(
+            IfcMax_${max_year}
+            ${IFCOPENSHELL_LIBRARIES}
             bmm.lib
             Comctl32.lib
             core.lib
@@ -74,14 +84,13 @@ if(HAS_MAX)
             tessint.lib
             viewfile.lib
             zlibdll.lib
-            ${OPENCASCADE_LIBRARIES}
+            ${OpenCASCADE_LIBRARIES}
         )
 
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
 
-        install(TARGETS IfcMax_${max_year} RUNTIME DESTINATION ${BINDIR})
+        install(TARGETS IfcMax_${max_year})
     endforeach()
 else()
     message(STATUS "Autodesk 3ds Max SDK not found, is required to build IFCMax.")
 endif()
-

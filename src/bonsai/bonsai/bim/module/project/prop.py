@@ -17,26 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import bonsai.tool as tool
-import bonsai.bim.helper
-from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty, ObjProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
     IntProperty,
+    PointerProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args, assert_never
-from collections.abc import Generator
+from bpy.types import PropertyGroup
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
+from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -319,7 +321,7 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
         name="Void Limit",
@@ -368,7 +370,7 @@ class BIMProjectProperties(PropertyGroup):
     load_indexed_maps: BoolProperty(
         name="Load Indexed Maps",
         description="Load indexed maps (UV and color maps)",
-        default=True,
+        default=False,  # Very slow and hackishly implemented
     )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
@@ -411,6 +413,11 @@ class BIMProjectProperties(PropertyGroup):
     )
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
+    should_save_metadata_for_this_file: BoolProperty(
+        name="Save Session Data for This File",
+        description="Enable saving session data (window layout, settings) to a metadata blend file for this specific IFC file",
+        default=False,
+    )
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
@@ -504,6 +511,7 @@ class BIMProjectProperties(PropertyGroup):
         parent_library: str
 
         use_relative_project_path: bool
+        should_save_metadata_for_this_file: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]

@@ -21,15 +21,16 @@ from __future__ import annotations
 try:
     import os
     import re
+    from typing import Any, NoReturn, Optional, Union
+
+    from lark import Lark, Transformer
 
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
-    from .file import file
+
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
-
-    from lark import Lark, Transformer
-    from typing import Any, NoReturn, Union, Optional
+    from .file import file
 
     class StreamTransformer(Transformer):
         file: file

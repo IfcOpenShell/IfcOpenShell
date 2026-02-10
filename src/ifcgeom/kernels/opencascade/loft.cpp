@@ -27,11 +27,33 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepOffsetAPI_ThruSections.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
+
+// @todo duplicated
+namespace {
+template <typename T, typename Cmp = std::less<T>>
+bool has_intersection(const std::set<T, Cmp>& A,
+                      const std::set<T, Cmp>& B) {
+    auto itA = A.begin();
+    auto itB = B.begin();
+
+    while (itA != A.end() && itB != B.end()) {
+        if (Cmp()(*itA, *itB)) {
+            ++itA;
+        } else if (Cmp()(*itB, *itA)) {
+            ++itB;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+}
 
 bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& result) {
 	if (loft->children.size() < 2) {
@@ -110,37 +132,125 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	BRep_Builder BB;
 	BB.MakeCompound(comp);
 
-	// @todo this approach is
-	// potentially incorrect as there is no guarantee that the wires for
-	// subsequently placed profiles are traversed from an equivalent start vertex.
+	std::vector<TopoDS_Shape> shps(loft->children.size());
+    std::vector<std::vector<std::set<std::string>>> all_tags;
 
-	for (auto it = loft->children.begin(); it < loft->children.end() - 1; ++it) {
+
+	std::ostringstream oss;
+    loft->children[0]->print(oss);
+    loft->children[1]->print(oss);
+    auto s = oss.str();
+    std::wcout << s.c_str() << std::endl;
+
+	// First convert all taxonomy items to TopoDS_Wire/Face
+    for (auto it = loft->children.begin(); it < loft->children.end(); ++it) {
+		auto i = std::distance(loft->children.begin(), it);
+        if ((*it)->kind() == taxonomy::FACE) {
+            if (!convert(std::static_pointer_cast<taxonomy::face>((*it)), shps[i])) {
+                return false;
+            }
+        }
+        if ((*it)->kind() == taxonomy::LOOP) {
+
+			// @todo duplicated with infra_sweep_helper
+			// I think make_loft() where should just return a shell instead, because
+			// this faceted lofting does not depend on any functionality in the geometry library
+			// and the branching with tags needs to be solved twice otherwise
+			auto loop_to_points = [](const taxonomy::loop::ptr& loop, const boost::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
+                std::vector<taxonomy::point3::ptr> points;
+                std::vector<std::set<std::string>> tags;
+                std::vector<std::string>::const_iterator tag_it;
+
+                if (!loop->closed.get_value_or(false)) {
+                    points = {boost::get<taxonomy::point3::ptr>(loop->children[0]->start)};
+                    if (input_tags) {
+                        tags = {{input_tags->front()}};
+                        tag_it = ++input_tags->begin();
+                    }
+                }
+                for (auto& e : loop->children) {
+                    const auto& p1 = boost::get<taxonomy::point3::ptr>(e->start);
+                    const auto& p2 = boost::get<taxonomy::point3::ptr>(e->end);
+                    if (input_tags && p1->ccomponents() == p2->ccomponents()) {
+                        tags.back().insert(*tag_it);
+                        ++tag_it;
+                    } else {
+                        points.push_back(p2);
+                        if (input_tags) {
+                            tags.emplace_back();
+                            tags.back().insert(*tag_it);
+                            ++tag_it;
+                        }
+                    }
+                }
+                if (!input_tags) {
+                    if (loop->closed.get_value_or(false)) {
+                        // close polygon by referencing first point
+                        points.push_back(points.front());
+                    }
+                }
+                return {points, tags};
+            };
+
+			auto lp = std::static_pointer_cast<taxonomy::loop>(*it);
+            TopoDS_Wire w;
+
+			if (lp->tags) {
+                auto [points, tags] = loop_to_points(lp, lp->tags);
+                BRepBuilderAPI_MakePolygon mp;
+                for (auto& p : points) {
+                    const auto& xyz = p->ccomponents();
+                    mp.Add(gp_Pnt(xyz(0), xyz(1), xyz(2)));
+                }
+                w = mp.Wire();
+
+				if (lp->matrix && !lp->matrix->is_identity()) {
+                    const auto& m = lp->matrix->ccomponents();
+                    gp_Trsf tr;
+                    tr.SetValues(
+                        m(0, 0), m(0, 1), m(0, 2), m(0, 3), m(1, 0), m(1, 1), m(1, 2), m(1, 3), m(2, 0), m(2, 1), m(2, 2), m(2, 3));
+                    w = TopoDS::Wire(BRepBuilderAPI_Transform(w, tr).Shape());
+                }
+
+				all_tags.push_back(tags);
+			} else {
+                if (!convert(std::static_pointer_cast<taxonomy::loop>((*it)), w)) {
+                    return false;
+                }
+			}
+
+            shps[i] = w;
+        }
+        if (shps[i].ShapeType() != TopAbs_FACE && shps[i].ShapeType() != TopAbs_WIRE) {
+            return false;
+        }
+    }
+
+	/*
+	// With --dimensionality CURVES_SURFACES_AND_SOLIDS this will give the interpolated profiles as line geometry
+	{
+        for (auto& f : shps) {
+			BB.Add(comp, f);
+        }
+	}
+	result = comp;
+    return true;
+	*/
+
+	// @todo this approach is
+    // potentially incorrect as there is no guarantee that the wires for
+    // subsequently placed profiles are traversed from an equivalent start vertex.
+	for (auto it = shps.begin(); it < shps.end() - 1; ++it) {
+        auto ii = std::distance(shps.begin(), it);
 		auto jt = it + 1;
-		std::array<taxonomy::item::ptr, 2> fa = { *it, *jt };
-		std::array<TopoDS_Shape, 2> shps;
+		std::array<std::vector<TopoDS_Shape>::const_iterator, 2> fa = { it, jt };
 		std::vector<std::array<TopoDS_Wire, 2>> ws;
 		ws.emplace_back();
 		for (int i = 0; i < 2; ++i) {
-			if (fa[i]->kind() == taxonomy::FACE) {
-				if (!convert(std::static_pointer_cast<taxonomy::face>(fa[i]), shps[i])) {
-					return false;
-				}
-			}
-			if (fa[i]->kind() == taxonomy::LOOP) {
-				TopoDS_Wire w;
-				if (!convert(std::static_pointer_cast<taxonomy::loop>(fa[i]), w)) {
-					return false;
-				}
-				shps[i] = w;
-			}
-			if (shps[i].ShapeType() != TopAbs_FACE && shps[i].ShapeType() != TopAbs_WIRE) {
-				return false;
-			}
-
-			if (shps[i].ShapeType() == TopAbs_FACE) {
-				ws[0][i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
+            if (fa[i]->ShapeType() == TopAbs_FACE) {
+                ws[0][i] = BRepTools::OuterWire(TopoDS::Face(*fa[i]));
 				size_t j = 1;
-				for (TopExp_Explorer exp(shps[i], TopAbs_WIRE); exp.More(); exp.Next()) {
+                for (TopExp_Explorer exp(*fa[i], TopAbs_WIRE); exp.More(); exp.Next()) {
 					if (exp.Current() != ws[0][i]) {
 						while (ws.size() <= j) {
 							ws.emplace_back();
@@ -149,21 +259,109 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 					}
 				}
 			} else {
-				ws[0][i] = TopoDS::Wire(shps[i]);
+                ws[0][i] = TopoDS::Wire(*fa[i]);
 			}
 		}
-		if (shps[0].ShapeType() == TopAbs_FACE) {
+        if (it->ShapeType() == TopAbs_FACE) {
 			// When processing a sectioned *surface* there are no
 			// begin and end caps that need to be added.
-			if (it == loft->children.begin()) {
+			if (it == shps.begin()) {
 				// faces.Append(shps[0]);
 				BB.Add(comp, shps[0]);
 			}
-			if (jt == loft->children.end() - 1) {
+            if (jt == shps.end() - 1) {
 				// faces.Append(shps[1]);
 				BB.Add(comp, shps[1]);
 			}
 		}
+
+		if (!all_tags.empty()) {
+			// only open profiles have tags for now, so there is only one wire, no inner wires
+            const auto& wp = ws[0];
+            std::array<std::vector<gp_Pnt>, 2> profile_points;
+            std::array<std::vector<std::vector<std::set<std::string>>>::const_iterator, 2> tag_pairs = {
+                all_tags.begin() + std::distance(shps.begin(), it),
+                all_tags.begin() + std::distance(shps.begin(), jt)};
+            
+			for (size_t i = 0; i < 2; ++i) {
+                TopTools_IndexedDataMapOfShapeListOfShape ancestors;
+				const auto& wire = wp[i];
+                auto& result = profile_points[i];
+
+				TopExp::MapShapesAndAncestors(
+                    wire,
+                    TopAbs_VERTEX,
+                    TopAbs_EDGE,
+                    ancestors);
+
+                TopoDS_Vertex v0, vn, previous;
+                TopExp::Vertices(wire, v0, vn);
+
+				TopoDS_Vertex curr = v0;
+                result.push_back(BRep_Tool::Pnt(curr));
+
+				while (true) {
+                    if (curr.IsSame(vn)) {
+                        break;
+                    }
+
+                    const TopTools_ListOfShape& incidentEdges = ancestors.FindFromKey(curr);
+
+                    for (TopTools_ListIteratorOfListOfShape it(incidentEdges); it.More(); it.Next()) {
+                        const TopoDS_Edge& e = TopoDS::Edge(it.Value());
+						
+						TopoDS_Vertex ev0, ev1;
+                        TopExp::Vertices(e, ev0, ev1);
+
+						TopoDS_Vertex other_on_edge = curr.IsSame(ev0) ? ev1 : ev0;
+                        if (other_on_edge.IsSame(previous)) {
+                            continue;
+                        } else {
+                            previous = curr;
+                            curr = other_on_edge;
+                            result.push_back(BRep_Tool::Pnt(curr));
+                            break;
+						}
+                    }
+				}
+            }
+
+			auto a = profile_points[0].begin();
+            auto b = profile_points[1].begin();
+            auto c = tag_pairs[0]->begin();
+            auto d = tag_pairs[1]->begin();
+
+			if (!has_intersection(*c, *d)) {
+                throw std::runtime_error("Starting vertices do not have corresponding tags");
+			}
+
+			auto emit_triangle = [&](const gp_Pnt& p1, const gp_Pnt& p2, const gp_Pnt& p3) {
+                BB.Add(comp, BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(p1, p2, p3, true).Wire()).Face());
+            };
+
+			while (c != (tag_pairs[0]->end() - 1) && d != (tag_pairs[0]->end() - 1)) {
+                if (c != (tag_pairs[0]->end() - 1) && has_intersection(*(c + 1), *d)) {
+                    emit_triangle(*a, *(a + 1), *b);
+                    ++a;
+                    ++c;
+                } else if (d != (tag_pairs[1]->end() - 1) && has_intersection(*c, *(d + 1))) {
+                    emit_triangle(*a, *(b + 1), *b);
+                    ++b;
+                    ++d;
+                } else if (c != (tag_pairs[0]->end() - 1) && d != (tag_pairs[1]->end() - 1) && has_intersection(*(c + 1), *(d + 1))) {
+                    emit_triangle(*a, *(a + 1), *b);
+                    emit_triangle(*(a + 1), *(b + 1), *b);
+                    ++a;
+                    ++b;
+                    ++c;
+                    ++d;
+                } else {
+                    throw std::runtime_error("Unable to construct surface");
+				}				
+			}
+
+            continue;
+        }		
 
 		for (auto& wp : ws) {
 			BRepTools_WireExplorer a(wp[0]);

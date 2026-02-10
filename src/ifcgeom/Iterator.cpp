@@ -564,13 +564,19 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 			// We need to find all the parents
 			while (parent_object != NULL && hasParent && parent_object->parent_id() != -1) {
 				// Find the next parent
-				try {
-					parent_object = get_object(parent_object->parent_id());
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-					hasParent = false;
-				}
-
+                auto pid = parent_object->parent_id();
+                auto ifc_product = ifc_file->instance_by_id(pid)->as<IfcUtil::IfcBaseEntity>();
+				if (ifc_product->declaration().name() == "IfcProject") {
+                    hasParent = false;
+                } else {
+					try {
+						parent_object = get_object(pid);
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+						hasParent = false;
+					}
+                }
+				
 				// Add the previously found parent to the vector
 				if (hasParent) parents.insert(parents.begin(), parent_object);
 

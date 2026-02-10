@@ -16,23 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-import bonsai.tool as tool
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
 from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
 from bonsai.bim.module.bsdd.data import BSDDData
 from bonsai.bim.module.classification.data import ClassificationsData
 from bonsai.bim.prop import Attribute, StrProperty
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import Union, TYPE_CHECKING, Literal
 
 
 def get_active_dictionary(self: "BIMBSDDProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:

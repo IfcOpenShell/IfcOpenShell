@@ -19,7 +19,6 @@ edges, and faces, or alternatively an OpenCASCADE BRep.
    applications. See the `Geometry iterator`_ section below after reading this
    to see how to process geometry with multiple threads.
 
-
 Here is a simple example of processing a single wall into a list of vertices and
 faces. In this example, a ``shape`` variable is returned, which holds geometry
 related information in ``shape.geometry``:
@@ -33,8 +32,12 @@ related information in ``shape.geometry``:
     ifc_file = ifcopenshell.open('model.ifc')
     element = ifc_file.by_type('IfcWall')[0]
 
+    # Create a shape using a hybrid of the cgal-simple geometry kernel and opencascade as a fallback
+    # Choosing a geometry kernel has a big impact on speed and capability.
+    # It is recommended to use the "hybrid-cgal-simple-opencascade" kernel.
     settings = ifcopenshell.geom.settings()
-    shape = ifcopenshell.geom.create_shape(settings, element)
+    shape = ifcopenshell.geom.create_shape(
+        settings, element, geometry_library="hybrid-cgal-simple-opencascade")
 
     # The GUID of the element we processed
     print(shape.guid)
@@ -224,7 +227,8 @@ Here is a simple example in Python:
     ifc_file = ifcopenshell.open('model.ifc')
 
     settings = ifcopenshell.geom.settings()
-    iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
+    iterator = ifcopenshell.geom.iterator(
+        settings, ifc_file, multiprocessing.cpu_count(), geometry_library="hybrid-cgal-simple-opencascade")
     if iterator.initialize():
         while True:
             shape = iterator.get()
@@ -252,7 +256,9 @@ only process wall elements.
 .. code-block:: python
 
     walls = ifc.by_type('IfcWall')
-    iterator = ifcopenshell.geom.iterator(settings, ifc, multiprocessing.cpu_count(), include=walls)
+    iterator = ifcopenshell.geom.iterator(
+        settings, ifc, multiprocessing.cpu_count(),
+        include=walls, geometry_library="hybrid-cgal-simple-opencascade")
 
 .. note::
 

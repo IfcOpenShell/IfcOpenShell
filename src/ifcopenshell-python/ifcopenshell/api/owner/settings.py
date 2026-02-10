@@ -19,8 +19,9 @@
 # Note: it is the intent for you to override these with your own functions
 
 
-import ifcopenshell
 from typing import Union
+
+import ifcopenshell
 
 
 def get_application(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:

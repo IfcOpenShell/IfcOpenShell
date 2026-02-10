@@ -1,14 +1,16 @@
-import os
-import pytest
-import weakref
 import itertools
+import os
+import weakref
+
+import pytest
+
 import ifcopenshell
-import ifcopenshell.guid
-import ifcopenshell.api.pset
+import ifcopenshell.api.attribute
+import ifcopenshell.api.material
 import ifcopenshell.api.owner
 import ifcopenshell.api.project
-import ifcopenshell.api.material
-import ifcopenshell.api.attribute
+import ifcopenshell.api.pset
+import ifcopenshell.guid
 import ifcopenshell.template
 
 

@@ -17,6 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -24,16 +27,16 @@ import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.style
-import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import bonsai.core.tool
+import ifcopenshell.util.representation
+
 import bonsai.core.aggregate
 import bonsai.core.geometry
+import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Optional, Any, Literal, TYPE_CHECKING
-from bonsai.bim.module.spatial.decorator import GridDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
+from bonsai.bim.module.spatial.decorator import GridDecorator
 
 if TYPE_CHECKING:
     from bonsai.bim.module.root.prop import BIMRootProperties
@@ -91,16 +94,38 @@ class Root(bonsai.core.tool.Root):
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
                 return copied_entities
-            dest.RepresentationMaps = [
-                ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    m,
-                    exclude=["IfcGeometricRepresentationContext"],
-                    exclude_callback=exclude_callback,
-                    copied_entities=copied_entities,
-                )
-                for m in source.RepresentationMaps
-            ]
+
+            # Copy representation maps while preserving mapped representation structures
+            new_maps = []
+            for i, rep_map in enumerate(source.RepresentationMaps):
+                source_rep = rep_map.MappedRepresentation
+
+                # Copy the map itself
+                new_map = ifcopenshell.util.element.copy(tool.Ifc.get(), rep_map)
+
+                # Handle the mapped representation - preserve mapping structure if present
+                if (
+                    source_rep.RepresentationType == "MappedRepresentation"
+                    and len(source_rep.Items) == 1
+                    and source_rep.Items[0].is_a("IfcMappedItem")
+                ):
+                    # This is a mapped representation - preserve the structure
+                    new_rep = ifcopenshell.util.element.copy(tool.Ifc.get(), source_rep)
+                    new_rep.Items = [ifcopenshell.util.element.copy(tool.Ifc.get(), item) for item in source_rep.Items]
+                    new_map.MappedRepresentation = new_rep
+                else:
+                    # Not a mapped representation - use copy_deep as before
+                    new_map.MappedRepresentation = ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(),
+                        source_rep,
+                        exclude=["IfcGeometricRepresentationContext"],
+                        exclude_callback=exclude_callback,
+                        copied_entities=copied_entities,
+                    )
+
+                new_maps.append(new_map)
+
+            dest.RepresentationMaps = new_maps
         return copied_entities
 
     @classmethod

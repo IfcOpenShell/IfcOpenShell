@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.geom
-from ifcopenshell import entity_instance
-import math
-from ifcopenshell import ifcopenshell_wrapper
-import numpy as np
-from typing import Union
-
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 from ifcopenshell.api.alignment._add_segment_to_layout import _add_segment_to_layout
 
 

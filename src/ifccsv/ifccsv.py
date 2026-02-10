@@ -20,23 +20,21 @@
 
 # This can be packaged with `pyinstaller --onefile --clean --icon=icon.ico ifccsv.py`
 
+import argparse
+import csv
 import os
 import re
-import csv
-import argparse
+from collections.abc import Iterable
+from statistics import mean
+from typing import Literal, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.util.selector
-import ifcopenshell.util.element
-import ifcopenshell.util.schema
-from statistics import mean
-from typing import Optional, Union, Literal
-from collections.abc import Iterable
 
 try:
     from odf.namespaces import OFFICENS
-    from odf.opendocument import OpenDocumentSpreadsheet, load
-    from odf.style import Style, TableCellProperties
-    from odf.table import Table, TableRow, TableCell
+    from odf.opendocument import load
+    from odf.table import Table, TableCell, TableRow
     from odf.text import P
 except:
     pass  # No ODF support
@@ -411,8 +409,7 @@ class IfcCsv:
         concat: str = ", ",
     ) -> None:
         """
-        Args:
-            table: filepath to the table.
+        :param table: filepath to the table.
         """
         ext: FILE_FORMAT = table.split(".")[-1].lower()
 

@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from collections.abc import Generator
+from functools import cache
+from math import floor
+from typing import Literal, Optional, Union
+
 import ifcopenshell.util.date
 import ifcopenshell.util.element
-from math import floor
-from functools import cache
-from typing import Union, Literal, Optional
-from collections.abc import Generator
-
 
 DURATION_TYPE = Literal["ELAPSEDTIME", "WORKTIME", "NOTDEFINED"]
 RECURRENCE_TYPE = Literal[
@@ -367,14 +367,12 @@ def get_tasks_for_product(
     """
     Get all tasks assigned to or referenced by the given product.
 
-    Args:
-        product: An object that is assigned tasks or references tasks.
-        schedule: An optional string representing the schedule name to filter tasks by.
+    :param product: An object that is assigned tasks or references tasks.
+    :param schedule: An optional string representing the schedule name to filter tasks by.
 
-    Returns:
-        A tuple of two lists:
-        - The first list contains all tasks assigned to the product.
-        - The second list contains all tasks referenced by the product that are part of the given schedule.
+    :return: A tuple of two lists:
+    - The first list contains all tasks assigned to the product.
+    - The second list contains all tasks referenced by the product that are part of the given schedule.
     """
     inputs = [
         assignement.RelatingProcess

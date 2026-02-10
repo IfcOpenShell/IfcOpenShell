@@ -16,7 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
+from itertools import chain
+from math import cos, pi, tan
+from pathlib import Path
+from typing import Optional, Union
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
@@ -27,11 +31,8 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.unit
 import ifcopenshell.util.element
-from math import cos, tan, pi
-from pathlib import Path
-from itertools import chain
-from ifcopenshell.util.shape_builder import ShapeBuilder, V, np_to_3d, np_normalized
-from typing import Optional, Union
+import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder, V, np_normalized, np_to_3d
 
 GeneratorOutput = Union[list[ifcopenshell.entity_instance], list[list[ifcopenshell.entity_instance]]]
 

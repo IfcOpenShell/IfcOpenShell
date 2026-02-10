@@ -8,7 +8,7 @@ version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
-description = "IFC patching utility"
+description = "Utility for applying modification recipes to IFC files"
 readme = "README.md"
 keywords = ["IFC", "BIM"]
 classifiers = [
@@ -31,3 +31,11 @@ Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 [tool.setuptools.packages.find]
 include = ["ifcpatch*"]
 exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint]
+select = [
+    "F401", # unused imports
+]

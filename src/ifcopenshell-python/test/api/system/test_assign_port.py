@@ -17,13 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-import test.bootstrap
-import ifcopenshell.api.unit
+
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.system
-import ifcopenshell.api.geometry
+import ifcopenshell.api.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.system
+import test.bootstrap
 
 
 class TestAssignPort(test.bootstrap.IFC4):

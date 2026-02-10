@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
 import math
+from dataclasses import dataclass, field
+from math import cos, degrees, radians, sin, tan
+from typing import Literal, Optional, Union
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
+from lark import Lark, Transformer
+from mathutils import Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from dataclasses import dataclass, field
-from lark import Lark, Transformer
-from math import degrees, radians, sin, cos, tan
-from mathutils import Vector, Matrix
-from typing import Optional, Union, Literal
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -172,23 +174,24 @@ class Polyline(bonsai.core.tool.Polyline):
             angle = tool.Cad.angle_3_vectors(
                 second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
+            angle_round_threshold = 1000  # Avoids rounding when distance is too big
 
             # Round angle to the nearest 0.05
-            angle = round(angle / 0.05) * 0.05
+            angle = round(angle / 0.05) * 0.05 if distance < angle_round_threshold else angle
 
             orientation_angle = tool.Cad.angle_3_vectors(
                 world_second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
 
             # Round angle to the nearest 0.05
-            orientation_angle = round(orientation_angle / 0.05) * 0.05
+            orientation_angle = round(orientation_angle / 0.05) * 0.05 if distance < angle_round_threshold else angle
 
         if distance == 0:
             angle = 0
             orientation_angle = 0
         if input_ui:
             if should_round:
-                angle = 5 * round(angle / 5)
+                angle = 5 * round(angle / 5) if distance < angle_round_threshold else angle
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", mouse_vector.x)

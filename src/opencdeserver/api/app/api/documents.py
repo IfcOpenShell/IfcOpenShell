@@ -1,27 +1,22 @@
 import collections
 import os
 import shutil
-import traceback
 import sys
-
-from fastapi import HTTPException, status, APIRouter, Request, Depends
-from fastapi import UploadFile, Form
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.encoders import jsonable_encoder
-
+import traceback
 from typing import Union
 from uuid import UUID, uuid4
 
-from pydantic import ValidationError
-from security.secure import get_current_active_user
-
-from repository.documents import doc_db
-
-from models.documents_request import *
-from models.documents_response import *
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 from models.documents_common import *
 from models.documents_other import *
+from models.documents_request import *
+from models.documents_response import *
+from pydantic import ValidationError
+from repository.documents import doc_db
+from security.secure import get_current_active_user
 
 from api.logging import LoggingRoute
 

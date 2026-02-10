@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
-import bonsai.bim.handler
-import bonsai.tool as tool
-from bonsai.bim.module.system.data import SystemData
-import bonsai.bim.module.system.decorator as decorator
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Union
+from bpy.types import PropertyGroup
+
+import bonsai.bim.handler
+import bonsai.bim.module.system.decorator as decorator
+import bonsai.tool as tool
+from bonsai.bim.module.system.data import SystemData
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -92,6 +94,28 @@ def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) 
         decorator.SystemDecorator.uninstall()
 
 
+def get_available_ports_for_connection(
+    self: "BIMSystemProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
+    items = []
+    active_object_ports = set(tool.System.get_ports(tool.Ifc.get_entity(context.active_object)))
+
+    ifc_file = tool.Ifc.get()
+    for ifc_port in ifc_file.by_type("IfcDistributionPort"):
+        port = tool.Ifc.get_object(ifc_port)
+        if not port:
+            continue
+
+        if tool.System.get_connected_port(ifc_port) is not None or ifc_port in active_object_ports:
+            continue
+
+        port_object = tool.Ifc.get_object(tool.System.get_port_relating_element(ifc_port))
+        suggestion = f"{port_object.name} > {port.name}"
+        items.append((port.name, suggestion, ""))
+
+    return items if items else [("NONE", "Ports are hidden or not available", "")]
+
+
 class BIMSystemProperties(PropertyGroup):
     system_attributes: CollectionProperty(name="System Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -107,6 +131,11 @@ class BIMSystemProperties(PropertyGroup):
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
     )
+    related_port: EnumProperty(
+        name="Connect To Port",
+        description="Select a port to connect to",
+        items=get_available_ports_for_connection,
+    )
 
     if TYPE_CHECKING:
         system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -119,6 +148,7 @@ class BIMSystemProperties(PropertyGroup):
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+        related_port: str
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:

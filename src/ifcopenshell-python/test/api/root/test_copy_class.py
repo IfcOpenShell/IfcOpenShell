@@ -17,19 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-import test.bootstrap
-import ifcopenshell.api.unit
-import ifcopenshell.api.type
-import ifcopenshell.api.root
-import ifcopenshell.api.feature
-import ifcopenshell.api.pset
-import ifcopenshell.api.group
-import ifcopenshell.api.system
-import ifcopenshell.api.spatial
-import ifcopenshell.api.geometry
+
 import ifcopenshell.api.aggregate
-import ifcopenshell.util
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.group
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.system
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
 import ifcopenshell.util.system
+import test.bootstrap
 
 
 class TestCopyClass(test.bootstrap.IFC4):

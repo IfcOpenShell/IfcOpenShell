@@ -55,6 +55,9 @@ endif
 ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
+ifeq ($(PLATFORM), linuxarm64)
+PLATFORMTAG:=manylinux_2_31_aarch64
+endif
 ifeq ($(PLATFORM), macos64)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
@@ -66,7 +69,7 @@ PLATFORMTAG:=win_amd64
 endif
 
 BINARY_VERSION:=0.8.4
-BUILD_COMMIT:=c9df87f
+BUILD_COMMIT:=e8eb5e4
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 

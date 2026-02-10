@@ -17,10 +17,11 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from typing import Literal, Union
+
+import ifcopenshell
 import numpy as np
 import numpy.typing as npt
-import ifcopenshell
-from typing import Literal, Optional, Union
 
 
 class Patcher:
@@ -68,19 +69,13 @@ class Patcher:
             points used in object placements. Choosing "Both" will replace all
             cartesian points regardless of use (useful if the model has both
             large placement offsets and large geometry offsets).
-        :type mode: str
         :param automatic_offset_point: Choose, whether the offset should be
             determined automatically or specified manually.
-        :type automatic_offset_point: bool
         :param threshold: The threshold for deciding, whether a coordinate is
             treated as a large coordinate.
-        :type threshold: float
         :param x: The x-ordinate of the manually specified offset point.
-        :type x: Union[str, float]
         :param y: The y-ordinate of the manually specified offset point.
-        :type y: Union[str, float]
         :param z: The z-ordinate of the manually specified offset point.
-        :type z: Union[str, float]
 
         Example:
 

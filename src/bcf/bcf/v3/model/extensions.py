@@ -1,11 +1,8 @@
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsPriorities:
     class Meta:
         global_type = False
@@ -22,7 +19,7 @@ class ExtensionsPriorities:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsSnippetTypes:
     class Meta:
         global_type = False
@@ -39,7 +36,7 @@ class ExtensionsSnippetTypes:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsStages:
     class Meta:
         global_type = False
@@ -56,7 +53,7 @@ class ExtensionsStages:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsTopicLabels:
     class Meta:
         global_type = False
@@ -73,7 +70,7 @@ class ExtensionsTopicLabels:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsTopicStatuses:
     class Meta:
         global_type = False
@@ -90,7 +87,7 @@ class ExtensionsTopicStatuses:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsTopicTypes:
     class Meta:
         global_type = False
@@ -107,7 +104,7 @@ class ExtensionsTopicTypes:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ExtensionsUsers:
     class Meta:
         global_type = False
@@ -124,7 +121,7 @@ class ExtensionsUsers:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Extensions:
     topic_types: Optional[ExtensionsTopicTypes] = field(
         default=None,

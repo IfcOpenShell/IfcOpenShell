@@ -16,55 +16,73 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
-import time
-import bmesh
-import shutil
 import hashlib
-import shapely
-import shapely.ops
-import subprocess
-import numpy as np
+import json
 import multiprocessing
+import os
+import re
+import shutil
+import subprocess
+import time
+from math import radians
+from pathlib import Path
+from timeit import default_timer as timer
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypedDict,
+    Union,
+    get_args,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
-import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-import bonsai.bim.helper
+import numpy as np
+import shapely
+import shapely.ops
+from bpy_extras.image_utils import load_image
+from bpy_extras.io_utils import ImportHelper
+from lxml import etree
+from mathutils import Color, Matrix, Vector
+
+import bonsai.bim.export_ifc
 import bonsai.bim.handler
-import bonsai.tool as tool
-import bonsai.core.geometry
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.bim.helper
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
-import bonsai.bim.export_ifc
-from bpy_extras.io_utils import ImportHelper
-from bonsai.bim.module.drawing.decoration import CutDecorator
-from bonsai.bim.module.drawing.data import DecoratorData
-from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
-from lxml import etree
-from math import radians
-from mathutils import Vector, Color, Matrix
-from timeit import default_timer as timer
-from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
+import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.core.drawing as core
+import bonsai.core.geometry
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from pathlib import Path
-from bpy_extras.image_utils import load_image
+from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
+from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.drawing.prop import (
+    RASTER_STYLE_PROPERTIES_EXCLUDE,
+    RasterStyleProperty,
+)
+from bonsai.bim.module.drawing.ui import get_current_product_for_element_values
+from bonsai.bim.prop import StrProperty
 
 if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
     from bonsai.bim.module.drawing.prop import RenderType
     from bonsai.bim.module.project.prop import Link
-    from bpy.stub_internal import rna_enums
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -296,7 +314,15 @@ class CreateDrawing(bpy.types.Operator):
             self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
+                original_cache_setting = self.props.should_use_underlay_cache
+                self.props.should_use_underlay_cache = False
 
+                # Force Blender to process all pending operations
+                for area in context.screen.areas:
+                    area.tag_redraw()
+
+                # Process events to let Blender finish internal cleanup
+                bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
             self.camera = context.scene.camera
             assert (camera_element := tool.Ifc.get_entity(self.camera))
             self.camera_element = camera_element
@@ -339,6 +365,23 @@ class CreateDrawing(bpy.types.Operator):
                                 f"Failed to create drawing '{self.drawing.Name}' - drawing has underlay but there's no active drawing underlay style.",
                             )
                             return {"FINISHED"}
+
+                        # Clear any local camera setup and force viewport to use scene camera
+                        for area in context.screen.areas:
+                            if area.type == "VIEW_3D":
+                                for space in area.spaces:
+                                    if space.type == "VIEW_3D":
+                                        # Clear local camera to ensure we use scene.camera
+                                        space.use_local_camera = False
+                                        space.camera = context.scene.camera
+                                        space.region_3d.view_perspective = "CAMERA"
+                                        print(f"Set viewport camera to: {context.scene.camera.name}")
+                                        break
+
+                        # Force complete scene update
+                        context.view_layer.update()
+                        context.evaluated_depsgraph_get()
+
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
@@ -932,6 +975,31 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
+        # Add target_view and scale classes to the parent group from IFC data
+        if group is not None:
+            existing_classes = group.get("class", "").split()
+
+            # Add target_view class
+            if hasattr(self, "cprops") and getattr(self.cprops, "target_view", None):
+                target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
+                target_view_full_class = f"target-view-{target_view_class}"
+                if target_view_full_class not in existing_classes:
+                    existing_classes.append(target_view_full_class)
+
+            # Add scale class from EPset_Drawing.Scale
+            drawing_pset = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing")
+            if drawing_pset and drawing_pset.get("Scale"):
+                scale_value = drawing_pset["Scale"]
+                # Remove "1/" prefix if it exists
+                if isinstance(scale_value, str) and scale_value.startswith("1/"):
+                    scale_value = scale_value[2:]
+                scale_class = tool.Drawing.canonicalise_class_name(str(scale_value))
+                scale_full_class = f"scale-{scale_class}"
+                if scale_full_class not in existing_classes:
+                    existing_classes.append(scale_full_class)
+
+            group.set("class", " ".join(existing_classes))
+
         if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
@@ -981,8 +1049,8 @@ class CreateDrawing(bpy.types.Operator):
             closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
 
             for polygon in closed_polygons.geoms:
-                # Less than 1mm2 is not worth styling on sheet
-                if polygon.area < 1:
+                # Less than 0.1mm2 is not worth styling on sheet
+                if polygon.area < 0.1:
                     continue
                 centroid = polygon.centroid
                 centroid = centroid if polygon.contains(centroid) else polygon.representative_point()
@@ -1286,11 +1354,6 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append(
                     tool.Drawing.canonicalise_class_name(key) + "-" + tool.Drawing.canonicalise_class_name(str(value))
                 )
-
-        # ─── Target View ───────────────────────────────────────────
-        if getattr(self.cprops, "target_view", None):
-            target_view_class = tool.Drawing.canonicalise_class_name(str(self.cprops.target_view))
-            classes.append(f"target-view-{target_view_class}")
 
         return classes
 
@@ -2701,11 +2764,28 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
         assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
-        style = json.loads(self.drawing_style.raster_style)
+        style: dict[str, Any] = json.loads(self.drawing_style.raster_style)
+
+        VIEWPORT_SHADING_TYPE = "scene.display.shading.type"
 
         def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
             warning = False
             skip = False
+
+            BLENDER_5_REMOVED = (
+                "scene.render.bake_bias",
+                "scene.render.bake_margin",
+                "scene.render.bake_margin_type",
+                "scene.render.bake_samples",
+                "scene.render.bake_type",
+                "scene.render.bake_user_scale",
+                "scene.render.use_bake_clear",
+                "scene.render.use_bake_lores_mesh",
+                "scene.render.use_bake_multires",
+                "scene.render.use_bake_selected_to_active",
+                "scene.render.use_bake_user_scale",
+            )
+
             # 25.11.07, Blender 5+
             if path == "scene.render.engine" and value in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
                 if value == "BLENDER_EEVEE_NEXT":
@@ -2715,8 +2795,28 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     warning = True
                 value = tool.Blender.get_eevee_name()
+            elif tool.Blender.BLENDER_5 and path in BLENDER_5_REMOVED:
+                print(
+                    f"Warning: Property '{path}' is removed "
+                    "since Blender 5.0 and should be also removed from shading_styles.json."
+                )
+                warning = True
+                skip = True
+            # @25.11.11
+            elif (
+                path == "scene.display.shading.studio_light"
+                and value == "Default"
+                and style[VIEWPORT_SHADING_TYPE] in ("RENDERED", "MATERIAL")
+            ):
+                value = "forest.exr"
+                print(
+                    f"Warning: Value 'Default' for property '{path}' and "
+                    f"'{VIEWPORT_SHADING_TYPE}' = '{style[VIEWPORT_SHADING_TYPE]}' is outdated "
+                    "and should be replaced with 'forest.exr' in shading_styles.json."
+                )
+                warning = True
             # @25.05.12
-            if path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
+            elif path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
                 value = "THEME"
                 print(
                     f"Warning: Value 'MATERIAL' is outdated for property '{path}' "
@@ -2750,7 +2850,16 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
             return path, value, warning, skip
 
-        for path, value in style.items():
+        paths = list(style.keys())
+        PRIORITY_PATHS = (
+            # `scene.display.shading.studio_light` values depend on `.type`
+            # so we got to set it first.
+            VIEWPORT_SHADING_TYPE,
+        )
+        paths.sort(key=lambda p: p not in PRIORITY_PATHS)
+
+        for path in paths:
+            value = style[path]
             path, value, warning, skip = preprocess(path, value)
             self.has_warnings_during_activation |= warning
 
@@ -2985,9 +3094,20 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
 
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
+
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
+        # Handle both single and multiple file selection
+        if self.files:
+            for file_elem in self.files:
+                filepath = os.path.join(self.directory, file_elem.name)
+                uri = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
+                core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
+        else:
+            # Fallback for single file (backward compatibility)
+            filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+            core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
 class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
@@ -3061,11 +3181,33 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
     bl_description = "Save changes to the text annotation and\ndisable the text editing options"
-
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_text(tool.Drawing, obj=context.active_object)
+        core.edit_text(tool.Drawing, obj=tool.Blender.get_active_object())
+        tool.Blender.update_viewport()
+
+
+class CopyTextToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_text_to_selection"
+    bl_label = "Copy Text To Selection"
+    bl_description = "Copy text formatting or literals to selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+    attribute: bpy.props.StringProperty()
+
+    def _execute(self, context):
+        apply_objs = [
+            obj
+            for obj in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(obj))
+            and tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
+        ]
+        core.copy_text_to_selection(
+            tool.Drawing,
+            attribute=self.attribute,
+            attribute_obj=tool.Blender.get_active_object(),
+            apply_objs=apply_objs,
+        )
         tool.Blender.update_viewport()
 
 
@@ -3077,7 +3219,44 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.enable_editing_text(tool.Drawing, obj=context.active_object)
+        obj = context.active_object
+        props = tool.Drawing.get_text_props(obj)
+        core.enable_editing_text(tool.Drawing, obj=obj)
+
+        text_element = tool.Ifc.get_entity(obj)
+        assigned_product_entity = tool.Drawing.get_assigned_product(text_element) if text_element else None
+        assigned_product_obj = tool.Ifc.get_object(assigned_product_entity) if assigned_product_entity else None
+
+        if "_bonsai_element_value_rows_backup" in obj:
+            try:
+                literals_backup = json.loads(obj["_bonsai_element_value_rows_backup"])
+                for i, literal_backup in enumerate(literals_backup):
+                    if i < len(props.literals):
+                        literal_props = props.literals[i]
+
+                        if assigned_product_obj:
+                            literal_props.product_used = assigned_product_obj
+                        elif "product_used" in literal_backup and literal_backup["product_used"]:
+                            product_name = literal_backup["product_used"]
+                            if product_name in bpy.data.objects:
+                                literal_props.product_used = bpy.data.objects[product_name]
+
+                        literal_props.element_value_rows.clear()
+                        if "element_value_rows" in literal_backup:
+                            for row_data in literal_backup["element_value_rows"]:
+                                new_row = literal_props.element_value_rows.add()
+                                new_row.category = row_data.get("category", "")
+                                new_row.element_key = row_data.get("element_key", "")
+                                new_row.formatted_value = row_data.get("formatted_value", "")
+                                new_row.separator = row_data.get("separator", "")
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Failed to restore element_value_rows: {e}")
+        else:
+            if assigned_product_obj:
+                for literal_props in props.literals:
+                    literal_props.product_used = assigned_product_obj
+
+        return {"FINISHED"}
 
 
 class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
@@ -3209,15 +3388,31 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
         assert element1 and element2
-        if element1.is_a("IfcAnnotation"):
+
+        # Check if at least one object is an IfcAnnotation
+        is_annotation1 = element1.is_a("IfcAnnotation")
+        is_annotation2 = element2.is_a("IfcAnnotation")
+
+        if not (is_annotation1 or is_annotation2):
+            self.report({"ERROR"}, "At least one of the selected objects must be IfcAnnotation.")
+            return {"CANCELLED"}
+
+        # If both are annotations, use the currently active object as relating product
+        if is_annotation1 and is_annotation2:
+            active_obj = context.active_object
+            if active_obj == obj1:
+                other_selected_object = obj1
+                bpy.context.view_layer.objects.active = obj2
+            else:
+                other_selected_object = obj2
+                bpy.context.view_layer.objects.active = obj1
+        # If only one is an annotation, make it the active object
+        elif is_annotation1:
             other_selected_object = obj2
             bpy.context.view_layer.objects.active = obj1
-        elif element2.is_a("IfcAnnotation"):
+        else:
             other_selected_object = obj1
             bpy.context.view_layer.objects.active = obj2
-        else:
-            self.report({"ERROR"}, "One of the selected objects must be IfcAnnotation.")
-            return {"CANCELLED"}
 
         assert (active_obj := context.active_object)
         props = tool.Drawing.get_object_assigned_product_props(active_obj)
@@ -3414,6 +3609,15 @@ class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Load the saved drawings in this IFC project"
 
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        # Operator is not accessible through UI if IFC project is not saved,
+        # but adding poll check to avoid using Drawings UI in scripts with unsaved project.
+        if tool.Ifc.get_path():
+            return True
+        cls.poll_message_set("IFC project is not saved.")
+        return False
 
     def _execute(self, context):
         core.load_drawings(tool.Drawing)
@@ -3614,18 +3818,100 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         options={"SKIP_SAVE"},
     )
 
+    x_length: bpy.props.FloatProperty(
+        name="X Length",
+        description="Width of the reference image in project units",
+        default=1.0,
+        min=0.001,
+        soft_min=0.01,
+        precision=3,
+    )
+    y_length: bpy.props.FloatProperty(
+        name="Y Length",
+        description="Height of the reference image in project units",
+        default=1.0,
+        min=0.001,
+        soft_min=0.01,
+        precision=3,
+    )
+
+    show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
+
     def draw(self, context):
         layout = self.layout
-        if Path(tool.Ifc.get_path()).is_file():
-            layout.prop(self, "use_relative_path")
+
+        if getattr(self, "show_dimensions_dialog", False):
+            if tool.Ifc.get():
+                length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
+                if length_unit:
+                    unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
+                else:
+                    unit_name = "project units"
+                layout.label(text=f"Set Reference Image Dimensions (in {unit_name}):")
+            else:
+                layout.label(text="Set Reference Image Dimensions (in project units):")
+            layout.separator()
+            layout.prop(self, "x_length")
+            layout.prop(self, "y_length")
         else:
-            self.use_relative_path = False
-            layout.label(text="Save the .ifc file first ")
-            layout.label(text="to use relative paths.")
-        layout.prop(self, "override_existing_image")
-        layout.prop(self, "use_existing_object_by_name")
+            if Path(tool.Ifc.get_path()).is_file():
+                layout.prop(self, "use_relative_path")
+            else:
+                self.use_relative_path = False
+                layout.label(text="Save the .ifc file first ")
+                layout.label(text="to use relative paths.")
+            layout.prop(self, "override_existing_image")
+            layout.prop(self, "use_existing_object_by_name")
+
+    def invoke(self, context, event):
+        if not getattr(self, "show_dimensions_dialog", False):
+            context.window_manager.fileselect_add(self)
+            return {"RUNNING_MODAL"}
+        else:
+            return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        if not getattr(self, "show_dimensions_dialog", False):
+            abs_path = Path(self.filepath).absolute().resolve()
+            if self.override_existing_image:
+                params = {"check_existing": True, "force_reload": True}
+            else:
+                params = {"check_existing": False}
+
+            try:
+                image = load_image(abs_path.name, str(abs_path.parent), **params)
+
+                image_width_px = image.size[0]
+                image_height_px = image.size[1]
+                aspect_ratio = image_width_px / image_height_px
+
+                if aspect_ratio >= 1.0:
+                    self.x_length = 1.0
+                    self.y_length = 1.0 / aspect_ratio
+                else:
+                    self.x_length = aspect_ratio
+                    self.y_length = 1.0
+
+                bpy.data.images.remove(image)
+
+            except Exception as e:
+                self.report({"ERROR"}, f"Failed to load image: {str(e)}")
+                return {"CANCELLED"}
+
+            self.show_dimensions_dialog = True
+            return context.window_manager.invoke_props_dialog(self)
+
+        return self._execute(context)
 
     def _execute(self, context):
+        space = tool.Blender.get_view3d_space()
+        if space.shading.color_type != "TEXTURE":
+            space.shading.color_type = "TEXTURE"
+            self.report(
+                {"WARNING"},
+                '"Object Color" for Viewport Shading: Solid changed to "Texture" to see the reference image properly.',
+            )
+
         abs_path = Path(self.filepath).absolute().resolve()
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
@@ -3634,13 +3920,39 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             params = {"check_existing": True, "force_reload": True}
         else:
             params = {"check_existing": False}
-        image = load_image(abs_path.name, abs_path.parent, **params)
+        image = load_image(abs_path.name, str(abs_path.parent), **params)
 
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
-            plane_scale = (Vector(image.size) / min(image.size)).to_3d()
+
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+
+            if not bm.loops.layers.uv:
+                uv_layer = bm.loops.layers.uv.new()
+            else:
+                uv_layer = bm.loops.layers.uv.active
+
+            min_x = min(v.co.x for v in bm.verts)
+            max_x = max(v.co.x for v in bm.verts)
+            min_y = min(v.co.y for v in bm.verts)
+            max_y = max(v.co.y for v in bm.verts)
+
+            width = max_x - min_x
+            height = max_y - min_y
+
+            for face in bm.faces:
+                for loop in face.loops:
+                    vert = loop.vert
+                    u = (vert.co.x - min_x) / width if width > 0 else 0.5
+                    v = (vert.co.y - min_y) / height if height > 0 else 0.5
+
+                    u = max(0.0, min(1.0, u))
+                    v = max(0.0, min(1.0, v))
+                    loop[uv_layer].uv = (u, v)
+
             tool.Blender.apply_bmesh(mesh, bm)
 
         if self.use_existing_object_by_name:
@@ -3660,6 +3972,23 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 ifc_representation_class=None,
             )
             tool.Blender.remove_data_block(temp_mesh)
+
+        element = tool.Ifc.get_entity(obj)
+        if element and isinstance(obj.data, bpy.types.Mesh):
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if representation and representation.Items:
+                item_id = representation.Items[0].id()
+                num_faces = len(obj.data.polygons)
+                obj.data["ios_item_ids"] = [item_id] * num_faces
+                tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
+
+                for item in representation.Items:
+                    if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
+                        new_coords = []
+                        for vertex in obj.data.vertices:
+                            co = obj.matrix_world @ vertex.co
+                            new_coords.append([co.x, co.y, co.z])
+                        item.Coordinates.CoordList = new_coords
 
         tool.Blender.set_active_object(obj)
 
@@ -3700,6 +4029,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
+
+        return {"FINISHED"}
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
@@ -3785,3 +4116,1319 @@ class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
                 if referenced_element := tool.Drawing.get_annotation_element(element):
                     tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+
+
+class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.activate_drawing_by_annotation"
+    bl_label = "Activate Drawing"
+    bl_description = "Activate the drawing corresponding to the selected annotation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        # Check if an annotation object is selected
+        if not context.selected_objects:
+            cls.poll_message_set("No object selected")
+            return False
+
+        active_obj = context.active_object
+        if not active_obj:
+            cls.poll_message_set("No active object")
+            return False
+
+        element = tool.Ifc.get_entity(active_obj)
+        if not element:
+            cls.poll_message_set("Selected object is not an IFC element")
+            return False
+
+        # Check if it's an IfcAnnotation with ObjectType = "SECTION" or "ELEVATION"
+        if not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
+            cls.poll_message_set("Selected object is not a drawing annotation")
+            return False
+
+        return True
+
+    def _execute(self, context):
+        active_obj = context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+
+        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
+            self.report({"ERROR"}, "Selected object is not a drawing annotation")
+            return {"CANCELLED"}
+
+        # Find the drawing/camera element that this annotation references
+        drawing_element = self.find_drawing_from_annotation(element)
+
+        if not drawing_element:
+            self.report({"ERROR"}, "Could not find drawing element for this annotation")
+            return {"CANCELLED"}
+
+        # Use the existing ActivateDrawing operator with the drawing element's ID
+        bpy.ops.bim.activate_drawing(drawing=drawing_element.id())
+
+        return {"FINISHED"}
+
+    def find_drawing_from_annotation(self, annotation_element):
+        """Find the drawing/camera element that this annotation references."""
+        ifc = tool.Ifc.get()
+
+        # Check IfcRelAssignsToProduct relationships
+        for rel in ifc.get_inverse(annotation_element):
+            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct:
+                if rel.RelatingProduct.is_a("IfcAnnotation"):
+                    # Found the drawing element!
+                    return rel.RelatingProduct
+
+        return None
+
+
+class SelectSimilarTextLiteralValue(bpy.types.Operator):
+    bl_idname = "bim.select_similar_text_literal_value"
+    bl_label = ""
+    bl_description = "Click to select all text annotations with this value\n\nSHIFT+CLICK to remove from selection"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_value: bpy.props.StringProperty()
+    literal_index: bpy.props.IntProperty(default=0)
+    attribute_type: bpy.props.StringProperty(default="text")
+    display_text: bpy.props.StringProperty()
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if hasattr(event, "type") and event.type == "LEFTMOUSE":
+            self.remove_from_selection = event.shift
+        elif hasattr(event, "shift"):
+            self.remove_from_selection = event.shift
+
+        return self.execute(context)
+
+    def execute(self, context):
+        if not self.literal_value and self.attribute_type in ["text", "path", "box_alignment", "font_size"]:
+            return {"CANCELLED"}
+
+        editing_status = {}
+        for obj in context.visible_objects:
+            obj_props = tool.Drawing.get_text_props(obj)
+            editing_status[obj] = obj_props.is_editing if hasattr(obj_props, "is_editing") else False
+
+        count = 0
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                continue
+
+            obj_props = tool.Drawing.get_text_props(obj)
+            should_select = False
+
+            if self.attribute_type in ["text", "path", "box_alignment", "font_size", "literal", "resolved_text"]:
+                was_editing = obj_props.is_editing if hasattr(obj_props, "is_editing") else False
+                if not was_editing:
+                    core.enable_editing_text(tool.Drawing, obj=obj)
+
+                if self.attribute_type == "font_size":
+                    should_select = str(obj_props.font_size) == self.literal_value
+                elif self.attribute_type == "literal":
+                    for idx, literal in enumerate(obj_props.literals):
+                        if len(literal.attributes) > 0:
+                            if literal.attributes[0].string_value == self.literal_value:
+                                should_select = True
+                                break
+                elif self.attribute_type == "resolved_text":
+                    for idx, literal in enumerate(obj_props.literals):
+                        if len(literal.attributes) > 0:
+                            raw_value = literal.attributes[0].string_value
+                            assigned_element = tool.Drawing.get_assigned_product(element) or element
+                            resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
+                            if resolved_value == self.literal_value:
+                                should_select = True
+                                break
+                else:
+                    for idx, literal in enumerate(obj_props.literals):
+                        if self.attribute_type == "text" and len(literal.attributes) > 0:
+                            raw_value = literal.attributes[0].string_value
+                            assigned_element = tool.Drawing.get_assigned_product(element) or element
+                            resolved_value = tool.Drawing.replace_text_literal_variables(raw_value, assigned_element)
+                            if resolved_value == self.literal_value:
+                                should_select = True
+                                break
+                        elif self.attribute_type == "path" and len(literal.attributes) > 1:
+                            attr = literal.attributes[1]
+                            if attr.data_type == "enum":
+                                if attr.enum_value == self.literal_value:
+                                    should_select = True
+                                    break
+                            else:
+                                if attr.string_value == self.literal_value:
+                                    should_select = True
+                                    break
+                        elif self.attribute_type == "box_alignment":
+                            box_alignment_attr = next(
+                                (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
+                            )
+                            if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                                should_select = True
+                                break
+
+            if should_select:
+                obj.select_set(not self.remove_from_selection)
+                count += 1
+
+        for obj, was_editing in editing_status.items():
+            obj_props = tool.Drawing.get_text_props(obj)
+            if hasattr(obj_props, "is_editing"):
+                if was_editing and not obj_props.is_editing:
+                    core.enable_editing_text(tool.Drawing, obj=obj)
+                elif not was_editing and obj_props.is_editing:
+                    core.disable_editing_text(tool.Drawing, obj=obj)
+
+        if self.attribute_type in ["text", "path", "box_alignment"]:
+            result = f'literal[{self.literal_index}].{self.attribute_type} = "{self.literal_value}"'
+        else:
+            result = f'{self.attribute_type} = "{self.literal_value}"'
+
+        verb = "Deselected" if self.remove_from_selection else "Selected"
+        self.report(
+            {"INFO"},
+            f"{verb} {count} objects with {self.attribute_type} '{self.literal_value}'.",
+        )
+
+        return {"FINISHED"}
+
+
+class FilterSelectedObjectsIfIntersectedByCamera(bpy.types.Operator):
+    bl_idname = "bim.filter_selected_objects_if_intersected_by_camera"
+    bl_label = "Filter Selected Objects If Intersected by Camera"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Deselect objects that are not intersected by the active camera view"
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.camera is not None and len(context.selected_objects) > 0
+
+    def execute(self, context):
+        self.filter_selected_objects_if_intersected_by_camera(context)
+        return {"FINISHED"}
+
+    def filter_selected_objects_if_intersected_by_camera(self, context: bpy.types.Context) -> None:
+        camera_obj = context.scene.camera
+        if not camera_obj:
+            return
+
+        camera = camera_obj.data
+        if not isinstance(camera, bpy.types.Camera):
+            return
+
+        cam_matrix = camera_obj.matrix_world
+        cam_origin = cam_matrix.translation
+        cam_direction = cam_matrix.to_quaternion() @ Vector((0.0, 0.0, -1.0))
+        plane_normal = cam_direction.normalized()
+        plane_point = cam_origin
+
+        def point_plane_distance(point):
+            return (point - plane_point).dot(plane_normal)
+
+        selected_objects = [obj for obj in context.selected_objects if obj != camera_obj]
+
+        deselected = 0
+        for obj in selected_objects:
+            bbox_world = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+            distances = [point_plane_distance(p) for p in bbox_world]
+            min_d = min(distances)
+            max_d = max(distances)
+
+            intersects = (min_d <= 0.0 <= max_d) or (max_d <= 0.0 <= min_d)
+
+            if not intersects:
+                obj.select_set(False)
+                deselected += 1
+
+        remaining_selected = len([obj for obj in context.selected_objects if obj != camera_obj])
+        self.report(
+            {"INFO"}, f"Filtered to {remaining_selected} object(s) intersecting camera plane (deselected {deselected})"
+        )
+        return {"FINISHED"}
+
+
+class SelectElementValues(bpy.types.Operator):
+    bl_idname = "bim.select_element_values"
+    bl_label = "Select Element Values"
+    bl_description = "Select a property or quantity from the assigned product to insert into the text literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    expanded_category: bpy.props.StringProperty(default="Basic")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
+
+    def draw(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        assigned_product = tool.Drawing.get_assigned_product(element)
+        if not assigned_product:
+            self.layout.label(text="No product assigned to this annotation", icon="ERROR")
+            return
+
+        if not ElementValuesData.is_loaded:
+            ElementValuesData.load()
+        available_keys = ElementValuesData.get_available_element_value_keys(assigned_product)
+
+        for category_name, keys in available_keys.items():
+            if not keys:
+                continue
+
+            box = self.layout.box()
+            box.label(text=category_name, icon=self.get_category_icon(category_name))
+
+            for key, description in keys:
+                row = box.row()
+                row.label(text=description)
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def get_category_icon(self, category_name):
+        icons = {
+            "Basic": "OBJECT_DATA",
+            "Attributes": "PROPERTIES",
+            "Property Sets": "PROPERTIES",
+            "Quantity Sets": "SNAP_VOLUME",
+            "Type": "OUTLINER_OB_MESH",
+            "Spatial": "HOME",
+            "Parent": "FILE_PARENT",
+            "Classification": "BOOKMARKS",
+            "Groups": "GROUP",
+            "Systems": "SYSTEM",
+            "Zones": "MESH_CIRCLE",
+            "Material": "MATERIAL",
+            "Coordinates": "EMPTY_ARROWS",
+        }
+        return icons.get(category_name, "DOT")
+
+
+class ToggleElementValuesPanel(bpy.types.Operator):
+    bl_idname = "bim.toggle_element_values_panel"
+    bl_label = "Toggle Element Values Panel"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+
+        current_state = getattr(literal_props, "show_element_values", False)
+        literal_props.show_element_values = not current_state
+
+        return {"FINISHED"}
+
+
+class ToggleElementValuesCategory(bpy.types.Operator):
+    bl_idname = "bim.toggle_element_values_category"
+    bl_label = "Toggle Element Values Category"
+    bl_options = {"REGISTER", "UNDO"}
+
+    category_name: bpy.props.StringProperty()
+    literal_prop_id: bpy.props.IntProperty()
+    is_currently_expanded: bpy.props.BoolProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+
+        if self.is_currently_expanded:
+            literal_props.expanded_category = ""
+        else:
+            literal_props.expanded_category = self.category_name
+
+        return {"FINISHED"}
+
+
+class InsertFormattedLiteralPopup(bpy.types.Operator):
+    bl_idname = "bim.insert_formatted_literal_popup"
+    bl_label = "Insert Formatted Element Value"
+    bl_description = "Insert element value with formatting options"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    element_value_key: bpy.props.StringProperty()
+    value_number: bpy.props.IntProperty()
+
+    formatting_type: bpy.props.EnumProperty(
+        name="Formatting",
+        items=[
+            ("NONE", "No Formatting", "Insert value as-is"),
+            ("UPPER", "Uppercase", "Convert to uppercase"),
+            ("LOWER", "Lowercase", "Convert to lowercase"),
+            ("TITLE", "Title Case", "Convert to title case"),
+            ("ROUND", "Round Number", "Round to specified precision"),
+            ("INT", "Integer", "Truncate decimal part"),
+            ("NUMBER", "Format Number", "Format with separators"),
+            ("METRIC_LENGTH", "Metric Length", "Format as metric length"),
+            ("IMPERIAL_LENGTH", "Imperial Length", "Format as imperial length"),
+            ("CUSTOM", "Custom Expression", "Create custom expression with functions"),
+        ],
+        default="NONE",
+    )
+
+    round_precision: bpy.props.StringProperty(
+        name="Precision", description="Rounding precision (e.g. 0.1, 0.01, 0.001, 1, 10, 100)", default="0.01"
+    )
+
+    decimal_separator: bpy.props.StringProperty(
+        name="Decimal Separator", description="Decimal separator character", default=".", maxlen=1
+    )
+
+    thousands_separator: bpy.props.StringProperty(
+        name="Thousands Separator", description="Thousands separator character", default=",", maxlen=1
+    )
+
+    metric_decimals: bpy.props.IntProperty(
+        name="Decimal Places", description="Number of decimal places to show", default=2, min=0, max=10
+    )
+
+    metric_precision: bpy.props.StringProperty(
+        name="Metric Precision",
+        description="Rounding precision for metric length (e.g. 0.1, 0.01, 0.001)",
+        default="0.01",
+    )
+
+    imperial_precision: bpy.props.IntProperty(
+        name="Fraction Precision", description="Imperial fraction precision (1/N)", default=4, min=1, max=64
+    )
+
+    imperial_input_unit: bpy.props.EnumProperty(
+        name="Input Unit",
+        items=[
+            ("foot", "Feet", "Input value is in feet"),
+            ("inch", "Inches", "Input value is in inches"),
+        ],
+        default="foot",
+    )
+
+    imperial_output_unit: bpy.props.EnumProperty(
+        name="Output Format",
+        items=[
+            ("foot", "Feet and Inches", "Display as feet and inches"),
+            ("inch", "Inches Only", "Display as inches only"),
+        ],
+        default="foot",
+    )
+
+    custom_expression: bpy.props.StringProperty(
+        name="Custom Expression",
+        description=(
+            "Custom expression using functions like concat(), upper(), round(), etc.\n"
+            "Use {{value}} as placeholder for the selected element value.\n"
+            "Examples:\n"
+            '- concat("Name: ", {{value}})\n'
+            '- upper(concat("Type: ", {{value}}))'
+        ),
+        default='concat({{value}}, " - additional text")',
+    )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=450)
+
+    def draw(self, context):
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text=f"Element Value: {self.element_value_key}", icon="PROPERTIES")
+
+        layout.prop(self, "formatting_type")
+
+        if self.formatting_type == "ROUND":
+            layout.prop(self, "round_precision")
+        elif self.formatting_type == "NUMBER":
+            col = layout.column()
+            col.prop(self, "decimal_separator")
+            col.prop(self, "thousands_separator")
+        elif self.formatting_type == "METRIC_LENGTH":
+            col = layout.column()
+            col.prop(self, "metric_precision")
+            col.prop(self, "metric_decimals")
+        elif self.formatting_type == "IMPERIAL_LENGTH":
+            col = layout.column()
+            col.prop(self, "imperial_precision")
+            col.prop(self, "imperial_input_unit")
+            col.prop(self, "imperial_output_unit")
+        elif self.formatting_type == "CUSTOM":
+            col = layout.column()
+            col.prop(self, "custom_expression", text="")
+
+            obj = bpy.context.active_object
+            if obj:
+                element = tool.Ifc.get_entity(obj)
+
+                props = tool.Drawing.get_text_props(obj)
+                product = None
+
+                if props.literals:
+                    for literal_props in props.literals:
+                        if hasattr(literal_props, "product_used") and literal_props.product_used:
+                            product = tool.Ifc.get_entity(literal_props.product_used)
+                            break
+
+                if not product:
+                    product = tool.Drawing.get_assigned_product(element)
+
+                if not product:
+                    product = element
+
+                if product:
+                    all_categories = ElementValuesData.get_available_element_value_keys(product)
+
+                    available_keys = []
+                    for cat_name, cat_keys in all_categories.items():
+                        for cat_key, cat_desc in cat_keys:
+                            available_keys.append(
+                                (
+                                    cat_key,
+                                    f"[{cat_name}] {cat_desc.split(': ', 1)[-1] if ': ' in cat_desc else cat_desc}",
+                                )
+                            )
+
+                    if available_keys:
+                        help_box = col.box()
+                        help_box.scale_y = 0.7
+                        help_box.label(text="Available attributes:", icon="INFO")
+
+                        for i, (key, desc) in enumerate(available_keys[:5]):
+                            help_box.label(text="{{value{}}} = {} ({})".format(i + 1, key, desc))
+
+                        if len(available_keys) > 5:
+                            help_box.label(text=f"... and {len(available_keys) - 5} more attributes")
+
+            help_box = col.box()
+            help_box.scale_y = 0.8
+            help_box.label(text="Available functions:", icon="INFO")
+            help_box.label(text="• concat(text1, text2, ...) - combine values")
+            help_box.label(text="• upper(value) - uppercase")
+            help_box.label(text="• lower(value) - lowercase")
+            help_box.label(text="• round(value, precision) - round number")
+            help_box.label(text="• Use {{value}} for current element value")
+
+        preview_box = layout.box()
+        preview_box.label(text="Preview:", icon="PROPERTIES")
+        formatted_syntax = self._generate_formatted_syntax()
+
+        preview_text = formatted_syntax
+        if len(preview_text) > 60:
+            words = preview_text.split()
+            lines = []
+            current_line = ""
+            for word in words:
+                if len(current_line + " " + word) > 60 and current_line:
+                    lines.append(current_line)
+                    current_line = word
+                else:
+                    current_line = (current_line + " " + word).strip()
+            if current_line:
+                lines.append(current_line)
+
+            for line in lines:
+                preview_box.label(text=line)
+        else:
+            preview_box.label(text=preview_text)
+
+    def _get_all_available_keys(self, element):
+        """Get all available element value keys in a flat list with their descriptions"""
+        available_keys = []
+
+        all_categories = ElementValuesData.get_available_element_value_keys(element)
+
+        for category_name, keys in all_categories.items():
+            for key, description in keys:
+                available_keys.append(
+                    (key, f"[{category_name}] {description.split(': ', 1)[-1] if ': ' in description else description}")
+                )
+
+        return available_keys
+
+    def _generate_formatted_syntax(self) -> str:
+        """Generate the formatted selector syntax based on current settings"""
+        base_value = f"{{{{{self.element_value_key}}}}}"
+
+        if self.formatting_type == "NONE":
+            return base_value
+        elif self.formatting_type == "UPPER":
+            return f"``upper({base_value})`` "
+        elif self.formatting_type == "LOWER":
+            return f"``lower({base_value})`` "
+        elif self.formatting_type == "TITLE":
+            return f"``title({base_value})`` "
+        elif self.formatting_type == "ROUND":
+            return f"``round({base_value}, {self.round_precision})`` "
+        elif self.formatting_type == "INT":
+            return f"``int({base_value})`` "
+        elif self.formatting_type == "NUMBER":
+            return f"``number({base_value}, {self.decimal_separator}, {self.thousands_separator})`` "
+        elif self.formatting_type == "METRIC_LENGTH":
+            return f"``metric_length({base_value}, {self.metric_precision}, {self.metric_decimals})`` "
+        elif self.formatting_type == "IMPERIAL_LENGTH":
+            return f'``imperial_length({base_value}, {self.imperial_precision}, "{self.imperial_input_unit}", "{self.imperial_output_unit}")`` '
+        elif self.formatting_type == "CUSTOM":
+            custom_expr = self.custom_expression.replace("{{value}}", base_value)
+            return f"``{custom_expr}``"
+
+        return base_value
+
+    def execute(self, context):
+        obj = context.active_object
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals[self.literal_prop_id]
+
+        formatted_syntax = self._generate_formatted_syntax()
+
+        for attr in literal_props.attributes:
+            if attr.name == "Literal":
+                current_text = attr.string_value or ""
+
+                if current_text:
+                    attr.string_value = f"{current_text} {formatted_syntax}"
+                else:
+                    attr.string_value = formatted_syntax
+                break
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ShowCategoryHelp(bpy.types.Operator):
+    bl_idname = "bim.show_category_help"
+    bl_label = "Category Help"
+    bl_description = "Show help for this element value category"
+    bl_options = {"REGISTER"}
+
+    category_name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=600)
+
+    def draw(self, context):
+        layout = self.layout
+
+        category_help = {
+            "Basic": {
+                "title": "BASIC KEYS",
+                "icon": "DOT",
+                "items": [
+                    ("id", "IFC entity ID", "{{id}} → '12345'"),
+                    ("class", "IFC class name", "{{class}} → 'IfcWall'"),
+                    ("predefined_type", "Predefined type", "{{predefined_type}} → 'SOLIDWALL'"),
+                ],
+            },
+            "Attributes": {
+                "title": "ATTRIBUTES",
+                "icon": "PROPERTIES",
+                "items": [
+                    ("Name", "Element name", "{{Name}} → 'Wall-001'"),
+                    ("Description", "Element description", "{{Description}} → 'Exterior wall'"),
+                    ("Tag", "Element tag", "{{Tag}} → 'W-01'"),
+                    ("ObjectType", "Object type", "{{ObjectType}} → 'Load Bearing'"),
+                ],
+                "note": "All IFC attributes are accessible by their name",
+            },
+            "Property Sets": {
+                "title": "PROPERTY SETS",
+                "icon": "ALIGN_JUSTIFY",
+                "items": [
+                    ("Pset_*.PropertyName", "Property value", "{{Pset_WallCommon.FireRating}} → 'REI 120'"),
+                    ("Pset_*.IsExternal", "Boolean property", "{{Pset_WallCommon.IsExternal}} → 'True'"),
+                ],
+                "note": "Access any property from any property set using Pset_Name.PropertyName syntax",
+            },
+            "Quantity Sets": {
+                "title": "QUANTITY SETS",
+                "icon": "ALIGN_JUSTIFY",
+                "items": [
+                    ("Qto_*.QuantityName", "Quantity value", "{{Qto_WallBaseQuantities.NetArea}} → '45.5'"),
+                    ("Qto_*.NetVolume", "Volume quantity", "{{Qto_WallBaseQuantities.NetVolume}} → '9.1'"),
+                ],
+                "note": "Access any quantity from quantity sets using Qto_Name.QuantityName syntax",
+            },
+            "Type": {
+                "title": "TYPE INFORMATION",
+                "icon": "OUTLINER_OB_MESH",
+                "items": [
+                    ("type.Name", "Type element name", "{{type.Name}} → 'WT-200mm-Concrete'"),
+                    ("types.count", "Number of instances of this type", "{{types.count}} → '15'"),
+                    ("occurrences.count", "Same as types.count", "{{occurrences.count}} → '15'"),
+                ],
+                "example": "Type: {{type.Name}} ({{types.count}} instances)",
+            },
+            "Spatial": {
+                "title": "SPATIAL HIERARCHY",
+                "icon": "HOME",
+                "items": [
+                    ("container.Name", "Immediate spatial container", "{{container.Name}} → 'Level 2'"),
+                    ("space.Name", "Containing space", "{{space.Name}} → 'Office 205'"),
+                    ("storey.Name", "Building storey", "{{storey.Name}} → 'Level 2'"),
+                    ("building.Name", "Building", "{{building.Name}} → 'Building A'"),
+                    ("site.Name", "Site", "{{site.Name}} → 'Main Campus'"),
+                ],
+                "example": "{{building.Name}} / {{storey.Name}} / {{space.Name}}",
+            },
+            "Parent": {
+                "title": "PARENT (AGGREGATION)",
+                "icon": "OUTLINER_DATA_GP_LAYER",
+                "items": [
+                    ("parent.name", "Aggregate parent element", "{{parent.name}} → 'Curtain Wall-01'"),
+                ],
+                "note": "Used for aggregated elements like mullions in curtain walls",
+            },
+            "Material": {
+                "title": "MATERIALS",
+                "icon": "MATERIAL",
+                "items": [
+                    ("material.Name", "Material name", "{{material.Name}} → 'Concrete'"),
+                    ("materials.count", "Number of layers/profiles", "{{materials.count}} → '3'"),
+                    (
+                        "material.item.Material.Name.0",
+                        "First layer material",
+                        "{{material.item.Material.Name.0}} → 'Brick'",
+                    ),
+                    (
+                        "material.item.Material.Name.1",
+                        "Second layer material",
+                        "{{material.item.Material.Name.1}} → 'Insulation'",
+                    ),
+                    ("material.item.0.LayerThickness", "Layer thickness", "{{material.item.0.LayerThickness}} → '0.1'"),
+                ],
+                "example": "{{materials.count}} layers: {{material.item.Material.Name.0}}",
+            },
+            "Styles": {
+                "title": "PRESENTATION STYLES",
+                "icon": "COLOR",
+                "items": [
+                    ("styles.count", "Number of styles", "{{styles.count}} → '1'"),
+                    ("styles.0.Name", "Style name (indexed)", "{{styles.0.Name}} → 'Red'"),
+                    ("styles.0.Color", "RGB color value", "{{styles.0.Color}} → 'RGB(1.00, 0.00, 0.00)'"),
+                ],
+            },
+            "Profiles": {
+                "title": "PROFILES",
+                "icon": "OUTLINER_DATA_CURVES",
+                "items": [
+                    ("profiles.count", "Number of profiles", "{{profiles.count}} → '2'"),
+                    ("profiles.0.ProfileName", "Profile name (indexed)", "{{profiles.0.ProfileName}} → 'HEA200'"),
+                    ("profiles.0.ProfileType", "Profile type (indexed)", "{{profiles.0.ProfileType}} → 'AREA'"),
+                    ("profile.ProfileName", "Single swept profile", "{{profile.ProfileName}} → 'Rectangle'"),
+                ],
+            },
+            "Groups": {
+                "title": "GROUPS",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("group.Name", "Group name", "{{group.Name}} → 'Phase 1'"),
+                    ("groups.count", "Number of group assignments", "{{groups.count}} → '2'"),
+                ],
+            },
+            "Systems": {
+                "title": "SYSTEMS",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("system.Name", "System name", "{{system.Name}} → 'HVAC-01'"),
+                    ("systems.count", "Number of system assignments", "{{systems.count}} → '1'"),
+                ],
+            },
+            "Zones": {
+                "title": "ZONES",
+                "icon": "OUTLINER_OB_GROUP_INSTANCE",
+                "items": [
+                    ("zone.Name", "Zone name", "{{zone.Name}} → 'Fire Zone A'"),
+                    ("zones.count", "Number of zone assignments", "{{zones.count}} → '1'"),
+                ],
+            },
+            "Classification": {
+                "title": "CLASSIFICATION",
+                "icon": "PRESET",
+                "items": [
+                    ("classification.0.Name", "Classification name (indexed)", "{{classification.0.Name}} → 'Walls'"),
+                    (
+                        "classification.0.Identification",
+                        "Classification code (indexed)",
+                        "{{classification.0.Identification}} → 'E20'",
+                    ),
+                    ("classification.count", "Number of classification references", "{{classification.count}} → '2'"),
+                ],
+            },
+            "Coordinates": {
+                "title": "COORDINATES",
+                "icon": "ORIENTATION_VIEW",
+                "items": [
+                    ("x", "Local X coordinate", "{{x}} → '10.5'"),
+                    ("y", "Local Y coordinate", "{{y}} → '5.2'"),
+                    ("z", "Local Z coordinate", "{{z}} → '3.0'"),
+                    ("easting", "Map easting coordinate", "{{easting}} → '500123.45'"),
+                    ("northing", "Map northing coordinate", "{{northing}} → '6750234.56'"),
+                    ("elevation", "Map elevation", "{{elevation}} → '123.45'"),
+                ],
+            },
+        }
+
+        if self.category_name in category_help:
+            info = category_help[self.category_name]
+            layout.label(text=info["title"], icon=info["icon"])
+
+            box = layout.box()
+            for key, desc, example in info["items"]:
+                col = box.column(align=True)
+                col.scale_y = 0.85
+                col.label(text=f"{key} - {desc}")
+                col.label(text=f"  {example}")
+                box.separator(factor=0.3)
+
+            if "note" in info:
+                note_box = layout.box()
+                note_box.label(text="Note:", icon="INFO")
+                note_box.label(text=info["note"])
+
+            if "example" in info:
+                ex_box = layout.box()
+                ex_box.label(text="Example:", icon="SCRIPTPLUGINS")
+                ex_box.label(text=info["example"])
+        else:
+            layout.label(text=f"No help available for '{self.category_name}'")
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+
+class AddElementValueRow(bpy.types.Operator):
+    bl_idname = "bim.add_element_value_row"
+    bl_label = "Add Element Value Row"
+    bl_description = "Add a new element value row"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+        new_row = literal_props.element_value_rows.add()
+        new_row.category = literal_props.category_for_adding
+        new_row.element_key = ""
+        new_row.formatted_value = ""
+
+        if len(literal_props.element_value_rows) == 1:
+            new_row.separator = ""
+        else:
+            new_row.separator = " - "
+
+        return {"FINISHED"}
+
+
+class RemoveElementValueRow(bpy.types.Operator):
+    bl_idname = "bim.remove_element_value_row"
+    bl_label = "Remove Element Value Row"
+    bl_description = "Remove this element value row"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    row_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+        if self.row_index < len(literal_props.element_value_rows):
+            literal_props.element_value_rows.remove(self.row_index)
+
+        return {"FINISHED"}
+
+
+class ElementValueSuggestionsPopup(bpy.types.Operator):
+    bl_idname = "bim.element_value_suggestions_popup"
+    bl_label = "Element Value Suggestions"
+    bl_description = "Show suggestions for element values in the selected category"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    row_index: bpy.props.IntProperty()
+    category: bpy.props.StringProperty()
+    search_query: bpy.props.StringProperty(name="Search", description="Search for element values")
+
+    collection_keys: bpy.props.CollectionProperty(type=StrProperty)
+    collection_descriptions: bpy.props.CollectionProperty(type=StrProperty)
+
+    selected_key: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+        current_product = get_current_product_for_element_values(obj, literal_props)
+
+        if not current_product:
+            self.report({"ERROR"}, "No product selected. Use eyedropper to select an object.")
+            return {"CANCELLED"}
+
+        element = tool.Ifc.get_entity(current_product)
+        if not element:
+            self.report({"ERROR"}, "Selected object has no IFC data")
+            return {"CANCELLED"}
+
+        if not ElementValuesData.is_loaded:
+            ElementValuesData.load()
+
+        available_keys = ElementValuesData.get_available_element_value_keys(element)
+
+        if self.category not in available_keys:
+            self.report({"ERROR"}, f"Category '{self.category}' not found")
+            return {"CANCELLED"}
+
+        keys = available_keys[self.category]
+        if not keys:
+            self.report({"INFO"}, f"No values available for category '{self.category}'")
+            return {"CANCELLED"}
+
+        self.collection_keys.clear()
+        self.collection_descriptions.clear()
+        for key, description in keys:
+            self.collection_keys.add().name = key
+            self.collection_descriptions.add().name = description
+
+        return context.window_manager.invoke_props_dialog(self, width=500)
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.prop_search(self, "selected_key", self, "collection_descriptions", text="Value")
+
+    def execute(self, context):
+        if not self.selected_key:
+            return {"CANCELLED"}
+
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+        if self.row_index >= len(literal_props.element_value_rows):
+            return {"CANCELLED"}
+
+        value_row = literal_props.element_value_rows[self.row_index]
+
+        for idx, desc_item in enumerate(self.collection_descriptions):
+            if desc_item.name == self.selected_key:
+                actual_key = self.collection_keys[idx].name
+                value_row.element_key = actual_key
+                value_row.formatted_value = f"{{{{{actual_key}}}}}"
+                break
+
+        return {"FINISHED"}
+
+
+class FormatElementValueRow(bpy.types.Operator):
+    bl_idname = "bim.format_element_value_row"
+    bl_label = "Format Element Value"
+    bl_description = "Format element value with functions"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+    row_index: bpy.props.IntProperty()
+
+    formatting_type: bpy.props.EnumProperty(
+        name="Formatting",
+        items=[
+            ("NONE", "No Formatting", "Insert value as-is"),
+            ("UPPER", "Uppercase", "Convert to uppercase"),
+            ("LOWER", "Lowercase", "Convert to lowercase"),
+            ("TITLE", "Title Case", "Convert to title case"),
+            ("ROUND", "Round Number", "Round to specified precision"),
+            ("INT", "Integer", "Truncate decimal part"),
+            ("NUMBER", "Format Number", "Format with separators"),
+            ("METRIC_LENGTH", "Metric Length", "Format as metric length"),
+            ("IMPERIAL_LENGTH", "Imperial Length", "Format as imperial length"),
+            ("CUSTOM", "Custom Expression", "Create custom expression with functions"),
+        ],
+        default="NONE",
+    )
+
+    round_precision: bpy.props.StringProperty(
+        name="Precision", description="Rounding precision (e.g. 0.1, 0.01, 0.001, 1, 10, 100)", default="0.01"
+    )
+
+    decimal_separator: bpy.props.StringProperty(
+        name="Decimal Separator", description="Decimal separator character", default=".", maxlen=1
+    )
+
+    thousands_separator: bpy.props.StringProperty(
+        name="Thousands Separator", description="Thousands separator character", default=",", maxlen=1
+    )
+
+    metric_decimals: bpy.props.IntProperty(
+        name="Decimal Places", description="Number of decimal places to show", default=2, min=0, max=10
+    )
+
+    metric_precision: bpy.props.StringProperty(
+        name="Metric Precision",
+        description="Rounding precision for metric length (e.g. 0.1, 0.01, 0.001)",
+        default="0.01",
+    )
+
+    imperial_precision: bpy.props.IntProperty(
+        name="Fraction Precision", description="Imperial fraction precision (1/N)", default=4, min=1, max=64
+    )
+
+    imperial_input_unit: bpy.props.EnumProperty(
+        name="Input Unit",
+        items=[
+            ("foot", "Feet", "Input value is in feet"),
+            ("inch", "Inches", "Input value is in inches"),
+        ],
+        default="foot",
+    )
+
+    imperial_output_unit: bpy.props.EnumProperty(
+        name="Output Format",
+        items=[
+            ("foot", "Feet and Inches", "Display as feet and inches"),
+            ("inch", "Inches Only", "Display as inches only"),
+        ],
+        default="foot",
+    )
+
+    custom_expression: bpy.props.StringProperty(
+        name="Custom Expression",
+        description=("Custom expression using functions\n" "Use {{value}} as placeholder for the current row's value."),
+        default='concat({{value}}, " - additional text")',
+    )
+
+    def invoke(self, context, event):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+        if self.row_index >= len(literal_props.element_value_rows):
+            return {"CANCELLED"}
+
+        row = literal_props.element_value_rows[self.row_index]
+        self._load_formatting_from_row(row)
+
+        return context.window_manager.invoke_props_dialog(self, width=450)
+
+    def _load_formatting_from_row(self, row):
+        """Parse the formatted_value to load existing formatting settings"""
+        import re
+
+        formatted_value = row.formatted_value
+
+        if not formatted_value or formatted_value == f"{{{{{row.element_key}}}}}":
+            self.formatting_type = "NONE"
+            return
+
+        if formatted_value.startswith("``") and formatted_value.endswith("``"):
+            expression = formatted_value[2:-2].strip()
+        else:
+            self.formatting_type = "NONE"
+            return
+
+        if match := re.match(r"upper\(\{\{[^}]+\}\}\)", expression):
+            self.formatting_type = "UPPER"
+
+        elif match := re.match(r"lower\(\{\{[^}]+\}\}\)", expression):
+            self.formatting_type = "LOWER"
+
+        elif match := re.match(r"title\(\{\{[^}]+\}\}\)", expression):
+            self.formatting_type = "TITLE"
+
+        elif match := re.match(r"int\(\{\{[^}]+\}\}\)", expression):
+            self.formatting_type = "INT"
+
+        elif match := re.match(r"round\(\{\{[^}]+\}\},\s*([^)]+)\)", expression):
+            self.formatting_type = "ROUND"
+            self.round_precision = match.group(1).strip()
+
+        elif match := re.match(r"number\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
+            self.formatting_type = "NUMBER"
+            self.decimal_separator = match.group(1).strip()
+            self.thousands_separator = match.group(2).strip()
+
+        elif match := re.match(r"metric_length\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
+            self.formatting_type = "METRIC_LENGTH"
+            self.metric_precision = match.group(1).strip()
+            self.metric_decimals = int(match.group(2).strip())
+
+        elif match := re.match(r'imperial_length\(\{\{[^}]+\}\},\s*(\d+),\s*"([^"]+)",\s*"([^"]+)"\)', expression):
+            self.formatting_type = "IMPERIAL_LENGTH"
+            self.imperial_precision = int(match.group(1).strip())
+            self.imperial_input_unit = match.group(2).strip()
+            self.imperial_output_unit = match.group(3).strip()
+
+        else:
+            self.formatting_type = "CUSTOM"
+            self.custom_expression = expression
+
+    def draw(self, context):
+        layout = self.layout
+        obj = context.active_object
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals[self.literal_prop_id]
+        row = literal_props.element_value_rows[self.row_index]
+
+        box = layout.box()
+        box.label(text=f"Element Value: {row.element_key}", icon="PROPERTIES")
+
+        layout.prop(self, "formatting_type")
+
+        if self.formatting_type == "ROUND":
+            layout.prop(self, "round_precision")
+        elif self.formatting_type == "NUMBER":
+            col = layout.column()
+            col.prop(self, "decimal_separator")
+            col.prop(self, "thousands_separator")
+        elif self.formatting_type == "METRIC_LENGTH":
+            col = layout.column()
+            col.prop(self, "metric_precision")
+            col.prop(self, "metric_decimals")
+        elif self.formatting_type == "IMPERIAL_LENGTH":
+            col = layout.column()
+            col.prop(self, "imperial_precision")
+            col.prop(self, "imperial_input_unit")
+            col.prop(self, "imperial_output_unit")
+        elif self.formatting_type == "CUSTOM":
+            col = layout.column()
+            col.prop(self, "custom_expression", text="")
+
+        preview_box = layout.box()
+        preview_box.label(text="Preview:", icon="PROPERTIES")
+        formatted_syntax = self._generate_formatted_syntax(row.element_key)
+        preview_box.label(text=formatted_syntax)
+
+    def _generate_formatted_syntax(self, element_key: str) -> str:
+        """Generate the formatted selector syntax based on current settings"""
+        base_value = f"{{{{{element_key}}}}}"
+
+        if self.formatting_type == "NONE":
+            return base_value
+        elif self.formatting_type == "UPPER":
+            return f"``upper({base_value})``"
+        elif self.formatting_type == "LOWER":
+            return f"``lower({base_value})``"
+        elif self.formatting_type == "TITLE":
+            return f"``title({base_value})``"
+        elif self.formatting_type == "ROUND":
+            return f"``round({base_value}, {self.round_precision})``"
+        elif self.formatting_type == "INT":
+            return f"``int({base_value})``"
+        elif self.formatting_type == "NUMBER":
+            return f"``number({base_value}, {self.decimal_separator}, {self.thousands_separator})``"
+        elif self.formatting_type == "METRIC_LENGTH":
+            return f"``metric_length({base_value}, {self.metric_precision}, {self.metric_decimals})``"
+        elif self.formatting_type == "IMPERIAL_LENGTH":
+            return f'``imperial_length({base_value}, {self.imperial_precision}, "{self.imperial_input_unit}", "{self.imperial_output_unit}")``'
+        elif self.formatting_type == "CUSTOM":
+            custom_expr = self.custom_expression.replace("{{value}}", base_value)
+            return f"``{custom_expr}``"
+
+        return base_value
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals[self.literal_prop_id]
+        row = literal_props.element_value_rows[self.row_index]
+
+        formatted_syntax = self._generate_formatted_syntax(row.element_key)
+        row.formatted_value = formatted_syntax
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ApplyElementValueRowsToLiteral(bpy.types.Operator):
+    bl_idname = "bim.apply_element_value_rows_to_literal"
+    bl_label = "Apply Element Values to Literal"
+    bl_description = "Concatenate all element value rows and apply to the literal"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Drawing.get_text_props(obj)
+        if self.literal_prop_id >= len(props.literals):
+            return {"CANCELLED"}
+
+        literal_props = props.literals[self.literal_prop_id]
+
+        parts = []
+        for row in literal_props.element_value_rows:
+            if row.element_key:
+                if row.category == "Custom String":
+                    parts.append(row.element_key)
+                else:
+                    if row.formatted_value and row.formatted_value != f"{{{{{row.element_key}}}}}":
+                        updated_formatted = self._update_formatted_value(row.element_key, row.formatted_value)
+                        row.formatted_value = updated_formatted
+                        value_part = updated_formatted
+                    else:
+                        default_format = f"{{{{{row.element_key}}}}}"
+                        row.formatted_value = default_format
+                        value_part = default_format
+
+                    parts.append(row.separator + value_part)
+
+        concatenated_value = "".join(parts)
+
+        for attr in literal_props.attributes:
+            if attr.name == "Literal":
+                attr.string_value = concatenated_value
+                break
+
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+    def _update_formatted_value(self, new_element_key: str, old_formatted_value: str) -> str:
+        """
+        Update formatted value by replacing old element key placeholders with new one.
+        This preserves formatting functions like upper(), round(), etc.
+        """
+        import re
+
+        pattern = r"\{\{[^}]+\}\}"
+
+        new_base_value = f"{{{{{new_element_key}}}}}"
+        updated_value = re.sub(pattern, new_base_value, old_formatted_value)
+
+        return updated_value
+
+
+class ShowElementValuesInstructions(bpy.types.Operator):
+    bl_idname = "bim.show_element_values_instructions"
+    bl_label = "Element Values - Quick Start Guide"
+    bl_description = "Show general tips and formatting instructions for element values"
+    bl_options = {"REGISTER"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=700)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Element Values - Building Custom Literals", icon="INFO")
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Full Documentation:", icon="URL")
+        row.operator("wm.url_open", text="IFC Selector Syntax Guide", icon="URL").url = (
+            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html#getting-element-values"
+        )
+
+        box = layout.box()
+        box.label(text="WORKFLOW: BUILDING LITERALS WITH ROWS", icon="SEQUENCE")
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        col.label(text="1. Select a category from the dropdown (Basic, Property Sets, etc.)")
+        col.label(text="2. Click 'Add Element' to create a new row")
+        col.label(text="3. Use the magnifying glass icon to browse available values for that category")
+        col.label(text="4. Optionally, click the format icon (star) to apply formatting (uppercase, round, etc.)")
+        col.label(text="5. Repeat to add more rows, each with its own separator text")
+        col.label(text="6. Click 'Apply to Literal' to concatenate all rows into the final text")
+
+        box = layout.box()
+        box.label(text="SEPARATORS & CUSTOM TEXT", icon="THREE_DOTS")
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        col.label(text="• Each row has a separator field (shown before the value)")
+        col.label(text="• Default separator is ' - ' but you can change it to spaces, commas, newlines, etc.")
+        col.label(text="• Use 'Custom String' category to add plain text without any element key")
+        col.label(text="• Example: 'Custom String' row with 'Wall: ' → 'Custom String' with 'Type-' → 'Name' key")
+        col.label(text="• Result: 'Wall: Type-WALL-001' (combining custom text with element values)")
+
+        box = layout.box()
+        box.label(text="SELECTING SOURCE ELEMENT", icon="EYEDROPPER")
+        col = box.column(align=True)
+        col.scale_y = 0.85
+        col.label(text="• By default, uses the assigned product (if any) or the text annotation object itself")
+        col.label(text="• Use the eyedropper next to 'Element Values:' to select a different object")
+        col.label(text="• Useful for referencing values from related elements (like types, spaces, storeys)")
+        col.label(text="• The 'Source:' label shows which object is currently being used")
+
+        box = layout.box()
+        box.label(text="FORMATTING FUNCTIONS (click star icon on any row)", icon="SHADERFX")
+        col = box.column(align=True)
+        col.scale_y = 0.8
+
+        col.label(text="Text Case:")
+        col.label(text="  • Uppercase, Lowercase, Title Case")
+        col.label(text="  Example: upper({{Name}}) → 'WALL-001'")
+
+        col.separator(factor=0.5)
+        col.label(text="Numbers:")
+        col.label(text="  • Round - Round to precision (0.01, 0.1, 1, 10, etc.)")
+        col.label(text="  • Integer - Remove decimal part")
+        col.label(text="  • Number - Format with separators (1,234.56)")
+
+        col.separator(factor=0.5)
+        col.label(text="Lengths:")
+        col.label(text="  • Metric Length - Format as metric with units (45.50 m²)")
+        col.label(text="  • Imperial Length - Format as feet-inches (10'-6\")")
+
+        col.separator(factor=0.5)
+        col.label(text="Custom Expression:")
+        col.label(text="  • Write your own using functions: concat(), upper(), round(), etc.")
+        col.label(text="  • Use {{value}} as placeholder for the current row's value")
+
+        box = layout.box()
+        box.label(text="TIPS & ADVANCED USAGE", icon="LIGHTPROBE_VOLUME")
+        col = box.column(align=True)
+        col.scale_y = 0.8
+        col.label(text="• Category counts show available values: 'Property Sets (12)'")
+        col.label(text="• Regex patterns work in property set names: /Pset_.*Common/")
+        col.label(text="• Combine multiple formatted rows for complex labels")
+        col.label(text="• Each row remembers its own formatting when you re-edit it")
+
+    def execute(self, context):
+        return {"FINISHED"}

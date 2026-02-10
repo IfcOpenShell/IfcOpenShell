@@ -16,8 +16,13 @@
 :: along with this program. If not, see <http://www.gnu.org/licenses/>.        ::
 ::                                                                             ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+:: Example usage:
+::   run-cmake.bat vs2022-x64
+::   run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON -DHDF5_SUPPORT=OFF
 
-@echo off
+
+@if not defined ECHO_ON ( echo off )
 echo.
 
 set PROJECT_NAME=IfcOpenShell
@@ -79,14 +84,11 @@ popd
 IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
-:: tfk: todo remove duplication
-set BOOST_VERSION=1.86.0
-set BOOST_VER=%BOOST_VERSION:.=_%
+:: Legacy setup.
+if not defined BOOST_INSTALL_DIR (
+    set BOOST_INSTALL_DIR=%DEPS_DIR%\boost_1_86_0\stage\%GEN_SHORTHAND%
+)
 
-set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%
-set BOOST_LIBRARYDIR=%BOOST_ROOT%\stage\%GEN_SHORTHAND%\lib
-if not defined OCC_INCLUDE_DIR set OCC_INCLUDE_DIR=%INSTALL_DIR%\oce\include\oce
-if not defined OCC_LIBRARY_DIR set OCC_LIBRARY_DIR=%INSTALL_DIR%\oce\Win%ARCH_BITS%\lib
 set OPENCOLLADA_INSTALL_DIR=%INSTALL_DIR%\OpenCOLLADA
 set LIBXML2_INCLUDE_DIR=%DEPS_DIR%\OpenCOLLADA\Externals\LibXML\include
 set LIBXML2_LIBRARIES=%INSTALL_DIR%\OpenCOLLADA\lib\opencollada\xml.lib
@@ -99,21 +101,20 @@ for /f "usebackq delims=" %%v in (`
 set PYTHON_INCLUDE_DIR=%PYTHONHOME%\include
 set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 
-set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
+:: `swigwin` is a legacy installation folder name, before we started using versioned folders.
+:: we can remove it later.
+if not defined SWIG_INSTALL_DIR set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
 if not defined ADD_COMMIT_SHA set ADD_COMMIT_SHA=Off
 
-set CGAL_INCLUDE_DIR=%INSTALL_DIR%\cgal\include
-:: set CGAL_LIBRARY_DIR=%INSTALL_DIR%\cgal\lib
-set GMP_INCLUDE_DIR=%INSTALL_DIR%\mpir
-set GMP_LIBRARY_DIR=%INSTALL_DIR%\mpir
-set MPFR_INCLUDE_DIR=%INSTALL_DIR%\mpfr
-set MPFR_LIBRARY_DIR=%INSTALL_DIR%\mpfr
+set CGAL_INSTALL_DIR=%INSTALL_DIR%\cgal
+set GMP_INSTALL_DIR=%INSTALL_DIR%\mpir
+set MPFR_INSTALL_DIR=%INSTALL_DIR%\mpfr
+:: We don't install Eigen currently,
+:: so there's no Eigen3config.cmake and therefore we provide path explicitly.
 set EIGEN_DIR=%INSTALL_DIR%\Eigen
-set USD_INCLUDE_DIR=%INSTALL_DIR%\usd\include
-set USD_LIBRARY_DIR=%INSTALL_DIR%\usd\lib
-set TBB_INCLUDE_DIR=%INSTALL_DIR%\tbb\include
-set TBB_LIBRARY_DIR=%INSTALL_DIR%\tbb\lib
+set TBB_INSTALL_DIR=%INSTALL_DIR%\tbb
+set USD_INSTALL_DIR=%INSTALL_DIR%\usd
 set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
 set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
 
@@ -125,10 +126,11 @@ echo   Toolset      = %VS_TOOLSET%
 echo   Arguments    = %ARGUMENTS%
 echo.
 call cecho.cmd 0 10 "Dependency Environment Variables for %PROJECT_NAME%:"
-echo    BOOST_ROOT              = %BOOST_ROOT%
-echo    BOOST_LIBRARYDIR        = %BOOST_LIBRARYDIR%
+echo    BOOST_INSTALL_DIR       = %BOOST_INSTALL_DIR%
+:: OCC_INCLUDE_DIR / OCC_LIBRARY_DIR are legacy vars, they're not defined by build-deps.cmd anymore.
 echo    OCC_INCLUDE_DIR         = %OCC_INCLUDE_DIR%
 echo    OCC_LIBRARY_DIR         = %OCC_LIBRARY_DIR%
+echo    OCC_INSTALL_DIR         = %OCC_INSTALL_DIR%
 echo    OPENCOLLADA_INSTALL_DIR = %OPENCOLLADA_INSTALL_DIR%
 echo    LIBXML2_INCLUDE_DIR     = %LIBXML2_INCLUDE_DIR%
 echo    LIBXML2_LIBRARIES       = %LIBXML2_LIBRARIES%
@@ -140,17 +142,13 @@ echo    PYTHON_EXECUTABLE       = %PYTHON_EXECUTABLE%
 echo    SWIG_INSTALL_DIR        = %SWIG_INSTALL_DIR%
 echo    JSON_INCLUDE_DIR        = %JSON_INCLUDE_DIR%
 echo.
-echo    CGAL_INCLUDE_DIR        = %CGAL_INCLUDE_DIR%
+echo    CGAL_INSTALL_DIR        = %CGAL_INSTALL_DIR%
 :: echo    CGAL_LIBRARY_DIR        = %CGAL_LIBRARY_DIR%
-echo    GMP_INCLUDE_DIR         = %GMP_INCLUDE_DIR%
-echo    GMP_LIBRARY_DIR         = %GMP_LIBRARY_DIR%
-echo    MPFR_INCLUDE_DIR        = %MPFR_INCLUDE_DIR%
-echo    MPFR_LIBRARY_DIR        = %MPFR_LIBRARY_DIR%
+echo    GMP_INSTALL_DIR         = %GMP_INSTALL_DIR%
+echo    MPFR_INSTALL_DIR        = %MPFR_INSTALL_DIR%
 echo    EIGEN_DIR               = %EIGEN_DIR%
-echo    USD_INCLUDE_DIR         = %USD_INCLUDE_DIR%
-echo    USD_LIBRARY_DIR         = %USD_LIBRARY_DIR%
-echo    TBB_INCLUDE_DIR         = %TBB_INCLUDE_DIR%
-echo    TBB_LIBRARY_DIR         = %TBB_LIBRARY_DIR%
+echo    TBB_INSTALL_DIR         = %TBB_INSTALL_DIR%
+echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
 echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
 echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
@@ -165,17 +163,31 @@ echo "Running CMake for %PROJECT_NAME%."
 
 set CMAKE_PREFIX_PATH=%HDF5_INSTALL_DIR%;%OPENCOLLADA_INSTALL_DIR%;%SWIG_INSTALL_DIR%
 set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%ROCKSDB_INSTALL_DIR%;%ZSTD_INSTALL_DIR%
-set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_ROOT%;%CCACHE_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%BOOST_INSTALL_DIR%;%CCACHE_INSTALL_DIR%
+set CMake_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%USD_INSTALL_DIR%;%TBB_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%OCC_INSTALL_DIR%;%CGAL_INSTALL_DIR%
+set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%GMP_INSTALL_DIR%;%MPFR_INSTALL_DIR%
+
+:: Not fully supported - not available from install-ifcopenshell
+:: and some logs are still showing Visual Studio generators.
+:: Needed just for debugging.
+if defined USE_NINJA (
+    set GENERATOR=Ninja
+    set ARCH_OPTION=
+) else (
+    set GENERATOR=%GENERATOR%
+    set ARCH_OPTION=-A %VS_PLATFORM%
+)
 
 IF NOT "%VS_TOOLSET_HOST%"=="" (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% -T %VS_TOOLSET_HOST% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% -T %VS_TOOLSET_HOST% ^
+              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
 ) ELSE (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% -A %VS_PLATFORM% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" -DBoost_NO_BOOST_CMAKE=ON ^
+    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% ^
+              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
               -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
               -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
               -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%

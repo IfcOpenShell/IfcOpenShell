@@ -1835,6 +1835,9 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 		CGAL::Polygon_with_holes_2<Kernel_> pwh(p, ++it, loops.end());
 		CGAL::Gps_segment_traits_2<Kernel_> traits;
 		if (!CGAL::are_holes_and_boundary_pairwise_disjoint(pwh, traits)) {
+#ifdef IFOPSH_SIMPLE_KERNEL
+            throw std::runtime_error("Holes are not disjoint - use a different geometry kernel");
+#else
 			// this is very slow.
 			// the check is also slow...
 
@@ -1851,6 +1854,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				result.difference(*it);
 			}
 			result.polygons_with_holes(std::back_inserter(pwhs));
+#endif
 		} else {
 			pwhs.push_back(pwh);
 		}

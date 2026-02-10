@@ -1,6 +1,7 @@
-import re
 import argparse
+import re
 from pathlib import Path
+
 
 def update_version(file_path: str, version: str) -> None:
     """Update the version string in the given __init__.py file."""

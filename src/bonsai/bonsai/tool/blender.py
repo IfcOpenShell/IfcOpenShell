@@ -17,53 +17,64 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
-import bpy
-import bmesh
+
+import contextlib
+import importlib
 import json
 import os
 import platform
 import subprocess
-import contextlib
+import sys
 import tempfile
 import traceback
+import types
+from collections.abc import Callable, Generator, Iterable, Sequence, Sized
+from datetime import datetime
+from functools import cache, lru_cache
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
+import ifcopenshell.api
+import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
-import ifcopenshell.api
-import ifcopenshell.util.element
+from mathutils import Matrix, Vector
+
+import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim
-import types
-import importlib
-from datetime import datetime
-from mathutils import Vector
-from pathlib import Path
-from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import (
-    Any,
-    Optional,
-    Union,
-    Literal,
-    TypeVar,
-    TYPE_CHECKING,
-    assert_never,
-)
-from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
-    from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
-    from bonsai.bim.prop import BIMProperties, BIMObjectProperties, BIMSnapProperties
+    from sun_position.properties import SunPosProperties
+
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
-    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.constraint.prop import (
+        BIMConstraintProperties,
+        BIMObjectConstraintProperties,
+    )
     from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
-    from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
+    from bonsai.bim.module.light.prop import (
+        BIMSolarProperties,
+        RadianceExporterProperties,
+    )
+    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
 
     T = TypeVar("T")
 
@@ -161,11 +172,19 @@ class Blender(bonsai.core.tool.Blender):
                 screen.BIMAreaProperties.add()
 
     @classmethod
-    def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
+    def should_show_panel(cls, context: bpy.types.Context, tab: str, panel: str) -> bool:
         aprops = cls.get_area_props(context)
         if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
-        return aprops.tab == tab
+        if (is_bookmark_tab := aprops.tab == "BOOKMARK") or aprops.tab == tab:
+            bprops = tool.Blender.get_bim_props()
+            if not (panel_visibility := bprops.panel_visibilities.get(panel)):
+                return not is_bookmark_tab
+            if is_bookmark_tab:
+                if panel_visibility.is_bookmarked:
+                    return True
+            elif panel_visibility.is_visible:
+                return True
 
     @classmethod
     def is_default_scene(cls) -> bool:
@@ -382,6 +401,14 @@ class Blender(bonsai.core.tool.Blender):
                     assert isinstance(space, bpy.types.SpaceNodeEditor)
                     if space.tree_type == "ShaderNodeTree":
                         context_override = {"area": area, "space": space, "screen": screen}
+
+                        # Add window if screen differs from current context
+                        context = bpy.context
+                        if context and context.screen != screen:
+                            window = next((w for w in context.window_manager.windows if w.screen == screen), None)
+                            if window:
+                                context_override["window"] = window
+
                         return context_override
 
     @classmethod
@@ -692,13 +719,18 @@ class Blender(bonsai.core.tool.Blender):
         if active_object:
             active_object.select_set(True)
 
+    class ObjectsSelectionArgs(NamedTuple):
+        context: bpy.types.Context
+        active_object: bpy.types.Object | None
+        selected_objects: list[bpy.types.Object]
+
     @classmethod
     def validate_object_selection(
         cls,
         context: bpy.types.Context,
         active_object: Union[bpy.types.Object, None] = None,
         selected_objects: Sequence[bpy.types.Object] = (),
-    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+    ) -> ObjectsSelectionArgs:
         """Validate object selection and return only valid objects.
 
         Can be used before ``set_objects_selection`` to avoid errors
@@ -708,12 +740,15 @@ class Blender(bonsai.core.tool.Blender):
         assert context.view_layer
         view_layer_objects = set(context.view_layer.objects)
 
-        new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
+        def is_selectable(obj: bpy.types.Object) -> bool:
+            return cls.is_valid_data_block(obj) and obj in view_layer_objects
 
-        if active_object and not cls.is_valid_data_block(active_object):
+        new_selected_objects = [o for o in selected_objects if is_selectable(o)]
+
+        if active_object and not is_selectable(active_object):
             active_object = None
 
-        return context, active_object, new_selected_objects
+        return cls.ObjectsSelectionArgs(context, active_object, new_selected_objects)
 
     @classmethod
     def clear_objects_selection(cls) -> None:
@@ -731,7 +766,11 @@ class Blender(bonsai.core.tool.Blender):
         # Yes, accessing items through annotations is a bit hacky
         # but it's the only way to get the dynamic enum items
         # besides providing them to get_enum_safe explicitly.
-        prop_keywords = props.__annotations__[prop_name].keywords
+        try:
+            annotations = props.__annotations__
+        except AttributeError:
+            annotations = type(props).__annotations__
+        prop_keywords = annotations[prop_name].keywords
         items = prop_keywords.get("items")
         if items is None:
             return None
@@ -1065,7 +1104,7 @@ class Blender(bonsai.core.tool.Blender):
             """Tries to validate the current BIM modifier parameters for the active object
             Goes into path editing mode if the modifier supports it
 
-            Returns True if an action was taken, False otherwise
+            :return: True if an action was taken, False otherwise
             """
             if cls.is_roof(element):
                 if cls.is_editing_roof_parameters(obj):
@@ -1089,7 +1128,7 @@ class Blender(bonsai.core.tool.Blender):
         def try_canceling_editing_modifier_parameters_or_path(cls, obj: bpy.types.Object) -> bool:
             """Tries to cancel the current BIM modifier parameters or path edition for the active object
 
-            Returns True if an action was taken, False otherwise
+            :return: True if an action was taken, False otherwise
             """
             if cls.is_editing_railing_path(obj):
                 bpy.ops.bim.cancel_editing_railing_path()
@@ -1203,7 +1242,8 @@ class Blender(bonsai.core.tool.Blender):
 
             @classmethod
             def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                parent_obj = tool.Ifc.get_object(parent_element)
+                if not (parent_obj := tool.Ifc.get_object(parent_element)):
+                    return  # Filtered out, arrayed void, etc
                 assert isinstance(parent_obj, bpy.types.Object)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
@@ -1328,11 +1368,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1360,11 +1400,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def unregister_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1449,7 +1489,10 @@ class Blender(bonsai.core.tool.Blender):
     def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
         @classmethod
         def poll_check_blender_tab(cls, context):
-            return tool.Blender.is_tab(context, "BLENDER")
+            aprops = tool.Blender.get_area_props(context)
+            if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
+                return True
+            return aprops.tab == "BLENDER"
 
         polls = bonsai.bim.original_scene_panels_polls
 
@@ -1672,12 +1715,10 @@ class Blender(bonsai.core.tool.Blender):
             - "user_interface.wcol_menu.text"  (Menu Text)
             - "user_interface.wcol_menu.text_sel"  (Menu Text Selected)
 
-        Args:
-            color_path (str, optional): The attribute path relative to bpy.context.preferences.themes[0].
-            threshold (float, optional): The RGB sum threshold for determining dark mode. Default is 1.671.
+        :param color_path: The attribute path relative to bpy.context.preferences.themes[0].
+        :param threshold: The RGB sum threshold for determining dark mode. Default is 1.671.
 
-        Returns:
-            str: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
+        :return: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
         """
         full_path = f"bpy.context.preferences.themes[0].{color_path}"
 
@@ -1741,8 +1782,8 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     @lru_cache
     def get_list_of_tools(cls) -> tuple[str, ...]:
-        from bonsai.bim.module.model.workspace import BimTool
         from bonsai.bim.module.drawing.workspace import AnnotationTool
+        from bonsai.bim.module.model.workspace import BimTool
 
         return tuple(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool, AnnotationTool]))
 
@@ -2095,3 +2136,32 @@ class Blender(bonsai.core.tool.Blender):
         if cls.BLENDER_5:
             return "BLENDER_EEVEE"
         return "BLENDER_EEVEE_NEXT"
+
+    @classmethod
+    def np_frombuffer_legacy(cls, bytedata: bytes, n: int) -> npt.NDArray[np.float32]:
+        """
+        Read ``n`` float values from ``bytedata``, regardless if they are stored as ``float32`` or ``float64``.
+        Needed to support .blend files saved in Blender <5.0.0.
+        Also allows to work with .blend files from 5.0.0+ in older Blender versions.
+
+        In ``bpy.app.version >= 5.0.0`` ``mathutils`` transitioned to use ``float32`` buffer type,
+        while in previous version they were using ``float64``.
+        In some cases we are storing raw bytes (e.g. object transforms cheksums), so old .blend files
+        might still have ``float64`` data stored.
+
+        See https://projects.blender.org/blender/blender/issues/149283
+        """
+        if len(bytedata) == (n * 2):
+            return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
+        return np.frombuffer(bytedata, dtype=np.float32)
+
+    @classmethod
+    def np_array_legacy(cls, mathutils_type: Union[Vector, Matrix]) -> npt.NDArray[np.float32]:
+        """
+        Converts ``mathutils`` types to ``np.float32`` arrays, regardless of Blender version.
+
+        See ``np_frombuffer_legacy`` for more details.
+        """
+        if cls.BLENDER_5:
+            return np.array(mathutils_type)
+        return np.array(mathutils_type, dtype=np.float32)

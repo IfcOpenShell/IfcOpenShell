@@ -25,6 +25,7 @@ to ensure disable and enable occur in the same Blender session.
 
 
 import bpy
+
 import bonsai.tool as tool
 
 bonsai_name = tool.Blender.get_blender_addon_package_name()

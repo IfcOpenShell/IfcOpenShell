@@ -1,12 +1,13 @@
 """Update ifc5d json files with qtos from the provided pset templates path."""
 
 import json
-import ifcopenshell.util.pset
-import ifcopenshell.util.type
-import ifc5d
 from collections import defaultdict
 from pathlib import Path
 from typing import Union
+
+import ifc5d
+import ifcopenshell.util.pset
+import ifcopenshell.util.type
 
 
 def order_dict(dictionary):

@@ -1,6 +1,6 @@
+import boto3
 import ifcopenshell
 import ifcopenshell.util.element
-import boto3
 
 s3 = boto3.client('s3')
 

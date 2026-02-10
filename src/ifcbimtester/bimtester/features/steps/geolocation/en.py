@@ -17,14 +17,13 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
-
+import ifcopenshell.util.placement
+import numpy as np
 from behave import step
-
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _

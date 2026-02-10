@@ -16,26 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import json
-import shutil
 import logging
+import os
+import shutil
+import sys
 import tempfile
+
 import ifcopenshell
 
 try:
     import ifcopenshell.express
 except:
     pass  # They are using an old version of IfcOpenShell. Gracefully degrade for now.
-import behave.formatter.pretty  # Needed for pyinstaller to package it
-from bimtester.ifc import IfcStore
 from distutils.dir_util import copy_tree
-from behave.__main__ import main as behave_main
-
 
 # TODO: refactor when this isn't super experimental
 from logging import StreamHandler
+
+import behave.formatter.pretty  # Needed for pyinstaller to package it
+from behave.__main__ import main as behave_main
+
+from bimtester.ifc import IfcStore
 
 
 class TestRunner:

@@ -1,7 +1,8 @@
 from typing import Optional
-from pydantic import BaseModel
-from models.documents_common import Document, DocumentVersion
 
+from pydantic import BaseModel
+
+from models.documents_common import Document, DocumentVersion
 
 # This file contains models that are not used at all, at least not yet.
 

@@ -19,21 +19,21 @@
 
 # This can be packaged with `pyinstaller --onefile --hidden-import numpy --collect-all ifcopenshell --clean obj2ifc.py`
 import argparse
-import pywavefront  # pyright: ignore[reportMissingImports]
+from pathlib import Path
+
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import ifcopenshell.api.owner.settings
 import ifcopenshell.guid
-from pathlib import Path
-
 import numpy as np
+import pywavefront  # pyright: ignore[reportMissingImports]
 
 
 class Obj2Ifc:

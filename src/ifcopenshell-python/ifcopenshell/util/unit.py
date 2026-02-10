@@ -16,14 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Generator
 from fractions import Fraction
 from math import pi
 from typing import Literal, Optional, Union
-from collections.abc import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import ifcopenshell.api.unit
 
 prefixes = {
     "EXA": 1e18,
@@ -209,6 +208,7 @@ si_conversions = {
     "pound": 0.454,
     "ton UK": 1016.0469088,
     "ton US": 907.18474,
+    "tonne": 1000.0,
     "lbf": 4.4482216153,
     "kip": 4448.2216153,
     "psi": 6894.7572932,
@@ -253,6 +253,7 @@ imperial_types = {
     "pound": "MASSUNIT",
     "ton UK": "MASSUNIT",
     "ton US": "MASSUNIT",
+    "tonne": "MASSUNIT",
     "lbf": "FORCEUNIT",
     "kip": "FORCEUNIT",
     "psi": "PRESSUREUNIT",
@@ -323,6 +324,7 @@ unit_symbols = {
     "pound": "lb",
     "ton UK": "ton",
     "ton US": "ton",
+    "tonne": "t",
     "lbf": "lbf",
     "kip": "kip",
     "psi": "psi",
@@ -773,8 +775,9 @@ def format_length(
             if output_unit == "foot":
                 return f"{feet}' - {whole} {remainder}/{frac.denominator}\""
             return f'{(feet * 12) + whole} {remainder}/{frac.denominator}"'
+        # When we have a proper fraction (numerator < denominator), show "0 frac"
         if output_unit == "foot":
-            return f"{feet}' - {frac.numerator}/{frac.denominator}\""
+            return f"{feet}' - 0 {frac.numerator}/{frac.denominator}\""
         return f'{feet * 12} {frac.numerator}/{frac.denominator}"'
     elif unit_system == "metric":
         rounded_val = round(value / precision) * precision
@@ -865,10 +868,10 @@ def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_
 
 def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "METER") -> ifcopenshell.file:
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
-    import ifcopenshell.util.element
-    import ifcopenshell.util.geolocation
     import ifcopenshell.api.georeference
     import ifcopenshell.api.unit
+    import ifcopenshell.util.element
+    import ifcopenshell.util.geolocation
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)

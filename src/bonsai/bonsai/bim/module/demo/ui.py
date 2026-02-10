@@ -27,6 +27,7 @@
 # panels, buttons, labels, and input fields are laid out.
 
 import bpy
+
 import bonsai.tool as tool
 from bonsai.bim.module.demo.data import DemoData
 

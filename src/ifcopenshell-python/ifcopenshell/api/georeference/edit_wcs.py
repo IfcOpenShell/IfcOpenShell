@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import cos, radians, sin
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from math import sin, cos, radians
 
 
 def edit_wcs(

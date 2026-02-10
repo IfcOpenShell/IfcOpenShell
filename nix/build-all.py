@@ -56,8 +56,6 @@ Used environment variables:
     `SIDE_MODULE_CFLAGS`, `SIDE_MODULE_LDFLAGS`.
     Allows to build wasm without pyodide build environment, which can be useful for debugging build issues.
     Example value: 'pyodide/cpython/installs/python-3.13.2'
-    - ``WASM_TOOLCHAIN_FILE`` - path to emscripten toolchain file from pyodide ('Emscripten.cmake')
-    needed only if ``WASM_PYTHON_PATH`` is provided.
     - ``ADD_COMMIT_SHA`` - if defined with any non-empty value then
     `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` will be set to `ON` while configuring IfcOpenShell
 
@@ -101,35 +99,36 @@ Used environment variables:
 
 """
 
-import logging
-import os
-import re
-import sys
 import glob
-import subprocess as sp
-import shutil
-import tarfile
+import logging
 import multiprocessing
+import os
 import platform
-import threading
-import sysconfig
-from datetime import datetime
+import re
+import shutil
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
 import ssl
+import subprocess as sp
+import sys
+import sysconfig
+import tarfile
+import threading
+from datetime import datetime
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 import time
-from urllib.request import urlretrieve
 from collections.abc import Generator, Sequence
 from pathlib import Path
+from urllib.request import urlretrieve
 
 try:
-    from typing import Union, Literal
+    from typing import Literal, Union
 except:
     # python 3.6 compatibility for rocky 8
     from typing import Union
+
     from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
@@ -141,7 +140,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -243,7 +242,9 @@ if WASM:
     # Pyodide still in transition from `FLAGS` to `FLAGS_INIT`.
     # `FLAGS_INIT` allow us to provide flags using environment variables
     # and providing `FLAGS` directly would break pyodide toolchain.
-    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (0, 30, 8)
+    # NOTE: changes in pyodide-build currently got postponed:
+    # https://github.com/pyodide/pyodide-build/pull/249
+    WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (99, 0, 0)
 
     # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
     # which is used by OCCT.
@@ -348,14 +349,13 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "boost": (),
     "libxml2": (),
     "python": (),
-    "occ": ("freetype",),
+    "occ": (),
     "pcre": (),
     "pcre2": (),
     "json": (),
     "hdf5": (),
     "cgal": (),
     "eigen": (),
-    "freetype": (),
     "rocksdb": ("zstd",),
     "zstd": (),
     # 'usd': ('boost', 'oneTBB')
@@ -404,8 +404,6 @@ if any(f.startswith("py-") for f in flags):
 
 if any(f.startswith("occt-") for f in flags):
     OCCT_VERSION = next(f.split("-", 1)[1] for f in flags if f.startswith("occt-"))
-
-print(OCCT_VERSION)
 
 if explicit_targets:
     targets = {dep for target in explicit_targets for dep in gather_dependencies(target)}
@@ -941,28 +939,15 @@ if "pcre2" in targets:
         download_name=f"pcre2-{PCRE2_VERSION}.tar.bz2",
     )
 
-# An issue exists with swig-1.3 and python >= 3.2
-# Therefore, build a recent copy from source
 if "swig" in targets:
     build_dependency(
-        name="swig",
+        name=f"swig-{SWIG_VERSION}",
         mode="autoconf",
         build_tool_args=["--disable-ccache", f"--with-pcre2-prefix={DEPS_DIR}/install/pcre2-{PCRE2_VERSION}"],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
         revision=f"v{SWIG_VERSION}",
-    )
-
-if "freetype" in targets:
-    build_dependency(
-        name=f"freetype",
-        mode="cmake",
-        build_tool_args=[f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/freetype"],
-        download_url="https://github.com/freetype/freetype",
-        download_name="freetype2",
-        download_tool=download_tool_git,
-        revision="VER-2-14-0",
     )
 
 if USE_OCCT and "occ" in targets:
@@ -999,7 +984,6 @@ if USE_OCCT and "occ" in targets:
             f"-DUSE_FREETYPE=OFF",
             f"-DUSE_OPENGL=OFF",
             f"-DUSE_GLES2=OFF",
-            f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype",
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
         ],
@@ -1193,6 +1177,8 @@ if "cgal" in targets:
         # Disable assembly, otherwise `emcc -c conftest.s` will crash due to assembly mismatch.
         gmp_args.extend(("--disable-assembly", "--enable-cxx"))
         mpfr_args.extend(("--host", "none"))
+    elif "x86" in arch:
+        gmp_args.append("--enable-fat")  # See issues #7458 #7556
 
     OLD_CC = None
     if MAC_CROSS_COMPILE_INTEL:
@@ -1334,7 +1320,6 @@ os.makedirs(executables_dir, exist_ok=True)
 
 
 cmake_args = [
-    "-DCMAKE_CXX_STANDARD=17",
     "-DUSE_MMAP=OFF",
     "-DBUILD_EXAMPLES=OFF",
     "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
@@ -1378,6 +1363,7 @@ if "cgal" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/cgal-{CGAL_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/gmp-{GMP_VERSION}")
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/mpfr-{MPFR_VERSION}")
+    cmake_args.append(f"-DCGAL_WITH_GMPXX=Off")
 
 if "occ" in targets and USE_OCCT:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/occt-{OCCT_VERSION}")
@@ -1408,11 +1394,11 @@ else:
     cmake_args.append("-DHDF5_SUPPORT=Off")
 
 if "usd" in targets:
-    cmake_args.extend(
+    cmake_args.append("-DUSD_SUPPORT=ON")
+    cmake_args_prefix_path.extend(
         [
-            f"-DUSD_SUPPORT=" "On",
-            f"-DUSD_INCLUDE_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/include",
-            f"-DUSD_LIBRARY_DIR={DEPS_DIR}/install/usd-{USD_VERSION}/lib",
+            f"{DEPS_DIR}/install/tbb-{TBB_VERSION}",
+            f"{DEPS_DIR}/install/usd-{USD_VERSION}",
         ]
     )
 
@@ -1429,6 +1415,9 @@ if "rocksdb" in targets:
             f"{DEPS_DIR}/install/zstd-{ZSTD_VERSION}",
         ]
     )
+
+if "swig" in targets:
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
 
 if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
     logger.info("\rConfiguring executables...")
@@ -1482,9 +1471,6 @@ if "IfcOpenShell-Python" in targets:
         if os.path.exists(cache_path):
             os.remove(cache_path)
 
-        prefix_paths: list[str] = []
-        if "swig" in targets:
-            prefix_paths.append(f"{DEPS_DIR}/install/swig")
         if python_path:
             # We couldn't just prefix PATH and have to provide all variables explicitly,
             # see ifcwrap/cmake for the details.
@@ -1501,7 +1487,7 @@ if "IfcOpenShell-Python" in targets:
         run_cmake(
             "",
             cmake_args
-            + get_cmake_args_prefix_path(prefix_paths)
+            + get_cmake_args_prefix_path()
             + [
                 *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
                 # Needed because pyodide is expecting setup.py to be in the root.

@@ -16,25 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.cost
-import bonsai.tool as tool
-from bonsai.bim.module.classification.data import CostClassificationsData
-from bonsai.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.classification.data import CostClassificationsData
+from bonsai.bim.module.cost.data import (
+    CostItemQuantitiesData,
+    CostItemRatesData,
+    CostSchedulesData,
+)
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def get_schedule_of_rates(self: "BIMCostProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:

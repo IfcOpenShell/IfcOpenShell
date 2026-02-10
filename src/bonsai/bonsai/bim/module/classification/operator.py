@@ -19,13 +19,14 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.api.pset
 import ifcopenshell.api.classification
+import ifcopenshell.api.pset
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy_extras.io_utils import ImportHelper
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 
@@ -257,7 +258,9 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     def execute(self, context):
         props = tool.Classification.get_classification_reference_props()
         props.reference_attributes.clear()
-        bonsai.bim.helper.import_attributes(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
+        ifc_reference = tool.Ifc.get().by_id(self.reference)
+        bonsai.bim.helper.import_attributes(ifc_reference, props.reference_attributes)
+        props.classification_system_name = ifc_reference.ReferencedSource.Name or ""
         props.active_reference_id = self.reference
         return {"FINISHED"}
 
@@ -324,9 +327,13 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Classification.get_classification_reference_props()
         attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
         ifc_file = tool.Ifc.get()
+        reference_entity = ifc_file.by_id(props.active_reference_id)
+        referenced_source = reference_entity.ReferencedSource
+        if props.classification_system_name:
+            referenced_source.Name = props.classification_system_name
         ifcopenshell.api.classification.edit_reference(
             ifc_file,
-            reference=ifc_file.by_id(props.active_reference_id),
+            reference=reference_entity,
             attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification_reference()

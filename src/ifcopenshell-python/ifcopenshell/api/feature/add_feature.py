@@ -17,9 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.owner
-import ifcopenshell.api.geometry
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement

@@ -18,7 +18,6 @@
 
 """Run this test from src/ifcopenshell-python folder: pytest --durations=0 ifcopenshell/util/test_pset.py"""
 from ifcopenshell.util import pset
-from ifcopenshell import util
 from ifcopenshell.util.pset import ApplicableEntity
 
 

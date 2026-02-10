@@ -1,11 +1,6 @@
-import gc
-import sys
 import pytest
-import pprint
-import weakref
-import itertools
+
 import ifcopenshell
-import ifcopenshell.api
 
 
 def test_inverse_indices():

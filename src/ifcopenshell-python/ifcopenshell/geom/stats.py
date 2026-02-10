@@ -1,6 +1,6 @@
 import sys
-from typing import Optional, IO
 from itertools import accumulate
+from typing import IO, Optional
 
 from . import ifcopenshell_wrapper
 
