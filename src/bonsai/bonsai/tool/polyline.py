@@ -191,7 +191,8 @@ class Polyline(bonsai.core.tool.Polyline):
             orientation_angle = 0
         if input_ui:
             if should_round:
-                angle = 5 * round(angle / 5) if distance < angle_round_threshold else angle
+                angle_snap = tool.Snap.get_angle_snap_value(context)
+                angle = angle_snap * round(angle / angle_snap) if distance < angle_round_threshold else angle
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", mouse_vector.x)
