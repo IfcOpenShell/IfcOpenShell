@@ -115,6 +115,15 @@ class Snap(bonsai.core.tool.Snap):
         return increment
 
     @classmethod
+    def get_angle_snap_value(cls, context: bpy.types.Context) -> float:
+        """Get the angle snap increment from Blender's tool settings.
+
+        :param context: Blender context
+        :return: Angle snap increment in degrees
+        """
+        return context.scene.tool_settings.snap_angle_increment
+
+    @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
         matrix = obj.matrix_world.copy()
         face = obj.data.polygons[face_index]
