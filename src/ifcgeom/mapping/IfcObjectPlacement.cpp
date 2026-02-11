@@ -54,7 +54,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
                 }
             }
 #else
-            Logger::Warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues")
+            Logger::Warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
 #endif
         }
 	}
