@@ -1530,11 +1530,6 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             pprops = tool.Project.get_project_props()
             gprops = tool.Georeference.get_georeference_props()
 
-            if pprops.false_origin_mode == "MANUAL": #We cannot use manual mode when files can be repeated as we would need a differente cache per location
-                cache_false_origin_mode = "DISABLED"
-            else:
-                cache_false_origin_mode = pprops.false_origin_mode
-
             code = f"""
 import bpy
 import sys
@@ -1556,7 +1551,7 @@ def run():
     gprops.blender_x_axis_ordinate = "{gprops.blender_x_axis_ordinate}"
     pprops = tool.Project.get_project_props()
     pprops.distance_limit = {pprops.distance_limit}
-    pprops.false_origin_mode = "{cache_false_origin_mode}"
+    pprops.false_origin_mode = "{pprops.false_origin_mode}"
     pprops.false_origin = "{pprops.false_origin}"
     pprops.project_north = "{pprops.project_north}"
     # Use absolute path to be safe from cwd changes.
