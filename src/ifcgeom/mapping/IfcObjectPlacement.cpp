@@ -21,7 +21,41 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include <deque>
+
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
+    if (placement_rel_to_type_ || placement_rel_to_instance_) {
+        using QueueItem = std::pair<const IfcUtil::IfcBaseEntity*, int>;
+        std::deque<QueueItem> q = {{inst, 0}};
+        while (!q.empty()) {
+            auto [placement_entity, depth] = q.front();
+            q.pop_front();
+
+            auto placement = placement_entity->as<typename IfcSchema::IfcObjectPlacement>();
+            if (!placement) {
+                continue;
+            }
+
+            auto self_places = placement->PlacesObject();
+            inst->ReferencedByPlacements();
+            for (auto iter = self_places->begin(); iter != self_places->end(); ++iter) {
+                if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
+                    (placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)) {
+                    return taxonomy::make<taxonomy::matrix4>();
+                }
+            }
+
+			// Look for two levels deep, we want to know if we're at or *above* the 
+			// element we're ignoring, but we don't want to traverse the entire model.
+			if (depth < 2) {
+                auto refs = placement->ReferencedByPlacements();
+                for (auto& ref : *refs) {
+                    q.emplace_back(ref, depth + 1);
+                }
+            }
+        }
+	}
+
 	const IfcSchema::IfcObjectPlacement* relative_to = nullptr;
 	const IfcUtil::IfcBaseInterface* transform;
 
