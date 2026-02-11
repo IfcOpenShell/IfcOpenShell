@@ -387,6 +387,15 @@ class LibraryGenerator:
             as a representation source.
         """
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
+        # Collect materials for shape aspect constituents (used for body representation).
+        materials_for_constituents: dict[str, ifcopenshell.entity_instance] = {}
+
+        # Map Blender material names to parametric window/door constituent names.
+        constituent_name_map = {
+            "Frame": "Framing",
+            "Glass": "Glazing",
+        }
+
         for rep_name, obj_name in representations.items():
             obj = bpy.data.objects[obj_name]
             assert isinstance(obj.data, bpy.types.Mesh)
@@ -399,6 +408,7 @@ class LibraryGenerator:
             )
             assert representation
             styles: list[ifcopenshell.entity_instance] = []
+            constituent_names: list[str] = []
             for slot in obj.material_slots:
                 material = slot.material
                 assert material
@@ -413,11 +423,44 @@ class LibraryGenerator:
                     attributes=attributes,
                 )
                 styles.append(style)
+
+                # For body representation, create IfcMaterial and associate with style.
+                if rep_name == "model_body":
+                    constituent_name = constituent_name_map.get(material.name, material.name)
+                    constituent_names.append(constituent_name)
+                    ifc_material = ifcopenshell.api.material.add_material(self.file, name=constituent_name)
+                    ifcopenshell.api.style.assign_material_style(
+                        self.file, material=ifc_material, style=style, context=self.representations[rep_name]
+                    )
+                    materials_for_constituents[constituent_name] = ifc_material
+
             if styles:
                 ifcopenshell.api.style.assign_representation_styles(
                     self.file, shape_representation=representation, styles=styles
                 )
             ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
+
+            # For body representation, add shape aspects for each item.
+            # Shape aspects are needed for set_shape_aspect_constituents to work.
+            if rep_name == "model_body" and self.file.schema != "IFC2X3":
+                rep_map = next(rm for rm in element.RepresentationMaps if rm.MappedRepresentation == representation)
+                for i, constituent_name in enumerate(constituent_names):
+                    ifcopenshell.api.geometry.add_shape_aspect(
+                        self.file,
+                        name=constituent_name,
+                        items=[representation.Items[i]],
+                        representation=representation,
+                        part_of_product=rep_map,
+                    )
+
+        # Associate materials with shape aspects for windows/doors.
+        if materials_for_constituents and self.file.schema != "IFC2X3":
+            ifcopenshell.api.material.set_shape_aspect_constituents(
+                self.file,
+                element=element,
+                context=self.representations["model_body"],
+                materials=materials_for_constituents,
+            )
 
         if self.file.schema != "IFC2X3":
             ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
