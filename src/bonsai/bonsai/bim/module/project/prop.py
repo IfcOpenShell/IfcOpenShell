@@ -75,9 +75,6 @@ def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
         
         tool.Geometry.lock_object(empty_handle)
         self.position = new_position
-        
-        if tool.Ifc.get():
-            tool.Project.save_linked_models_to_ifc(update_positions=True)
     else:
         tool.Geometry.unlock_object(empty_handle)
 
