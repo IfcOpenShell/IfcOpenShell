@@ -624,7 +624,7 @@ class BIM_UL_links(UIList):
             icon_row.ui_units_x = 1.0
 
             placed_as_per_georef = item.placed_as_per_georef
-            empty_handle = tool.Project.get_link_empty_handle(item.name)
+            empty_handle = tool.Project.get_link_empty_handle(item)
             if item.is_loaded and empty_handle and item.georeferenced == "FULL_COMPATIBLE":
                 # Get current position and rotation
                 actual_x = round(empty_handle.location.x, 3)
@@ -665,7 +665,7 @@ class BIM_UL_links(UIList):
 
             # Display position from the empty handle if loaded
             position_text = "N/A"
-            empty = tool.Project.get_link_empty_handle(item.name)
+            empty = tool.Project.get_link_empty_handle(item)
             if item.is_loaded and empty:
                 loc = empty.location
                 rot = empty.rotation_euler

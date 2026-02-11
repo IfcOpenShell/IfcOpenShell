@@ -60,34 +60,15 @@ class Project(bonsai.core.tool.Project):
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
-    def get_link_empty_handle(cls, link_name: str) -> bpy.types.Object | None:
-        props = cls.get_project_props()
-        if link_name not in props.links:
-            return None
-        
-        link = props.links[link_name]
-        if link.empty_handle:
-            return link.empty_handle
-        
-        ifc_file = tool.Ifc.get()
-        if ifc_file and link.ifc_definition_id:
-            reference = ifc_file.by_id(link.ifc_definition_id)
-            return tool.Ifc.get_object(reference)
-        
-        return None
+    def get_link_empty_handle(cls, link) -> bpy.types.Object | None:
+        if tool.Ifc.get():
+            return tool.Ifc.get_object(tool.Ifc.get().by_id(link.ifc_definition_id))
+        return link.empty_handle
 
     @classmethod
-    def set_link_empty_handle(cls, link_name: str, empty: bpy.types.Object) -> None:
-        props = cls.get_project_props()
-        if link_name not in props.links:
-            return
-        
-        link = props.links[link_name]
-        
-        ifc_file = tool.Ifc.get()
-        if ifc_file and link.ifc_definition_id:
-            reference = ifc_file.by_id(link.ifc_definition_id)
-            tool.Ifc.link(reference, empty)
+    def set_link_empty_handle(cls, link, empty: bpy.types.Object) -> None:
+        if tool.Ifc.get():
+            tool.Ifc.link(tool.Ifc.get().by_id(link.ifc_definition_id), empty)
         else:
             link.empty_handle = empty
 
@@ -374,7 +355,7 @@ class Project(bonsai.core.tool.Project):
         if update_positions:
             for link in links:
                 if link.is_loaded and link.ifc_definition_id:
-                    empty = tool.Project.get_link_empty_handle(link.name)
+                    empty = tool.Project.get_link_empty_handle(link)
                     if empty:
                         # Update position from current empty handle location
                         x = round(empty.location.x, 3)
@@ -436,7 +417,7 @@ class Project(bonsai.core.tool.Project):
                                 if link.name == link_name:
                                     link.ifc_definition_id = reference.id()
                                     
-                                    empty = cls.get_link_empty_handle(link_name)
+                                    empty = cls.get_link_empty_handle(link)
                                     if empty:
                                         cls.set_link_empty_handle(link_name, empty)
                                     break

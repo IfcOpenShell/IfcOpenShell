@@ -43,7 +43,7 @@ from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
-    empty_handle = tool.Project.get_link_empty_handle(self.name)
+    empty_handle = tool.Project.get_link_empty_handle(self)
     if not empty_handle:
         return
     

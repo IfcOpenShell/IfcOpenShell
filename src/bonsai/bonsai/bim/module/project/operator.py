@@ -1666,21 +1666,19 @@ except Exception as e:
         
         self.set_georeferencing_indicator()
         
-        if not self.link_obj.ifc_definition_id and not self.skip_position_calculation_and_not_locked:
+        if not self.link.ifc_definition_id and not self.skip_position_calculation_and_not_locked:
             self.calculate_link_position()
 
         self.link_blend(blend_filepath)
         
-        if tool.Ifc.get() and not self.link_obj.ifc_definition_id and self.link_obj.is_loaded and not self.skip_position_calculation_and_not_locked:
-            self.link_obj.is_locked = True
+        if tool.Ifc.get() and not self.link.ifc_definition_id and self.link.is_loaded and not self.skip_position_calculation_and_not_locked:
+            self.link.is_locked = True
 
     def set_model_origin_from_link(self) -> None:
         if tool.Ifc.get():
             return  # The current model's coordinates always take priority.
 
-        # When no parent IFC exists, the first linked file's false origin becomes the host false origin
-        props = tool.Project.get_project_props()
-        if len(props.links) > 1:
+        if len(tool.Project.get_project_props().links) > 1:
             return  # Only the first link sets the origin
 
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
@@ -1848,7 +1846,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
             collection.hide_select = not is_selectable
-        if handle := tool.Project.get_link_empty_handle(link.name):
+        if handle := tool.Project.get_link_empty_handle(link):
             handle.hide_select = not is_selectable
         return {"FINISHED"}
 
@@ -1865,7 +1863,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    link_index: bpy.props.StringProperty(name="Link Index")
+    link_index: bpy.props.IntProperty(name="Link Index")
     mode: bpy.props.EnumProperty(name="Visibility Mode", items=((i, i, "") for i in ("WIREFRAME", "VISIBLE")))
 
     def execute(self, context):
@@ -1893,7 +1891,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         layer_collections = tool.Blender.get_layer_collections_mapping(linked_collections)
         for layer_collection in layer_collections.values():
             layer_collection.exclude = is_hidden
-        if handle := tool.Project.get_link_empty_handle(link.name):
+        if handle := tool.Project.get_link_empty_handle(link):
             handle.hide_set(is_hidden)
 
     def get_linked_collections(self) -> list[bpy.types.Collection]:
@@ -1914,7 +1912,7 @@ class SelectLinkHandle(bpy.types.Operator):
     def execute(self, context):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
-        handle = tool.Project.get_link_empty_handle(link.name)
+        handle = tool.Project.get_link_empty_handle(link)
         if not handle:
             self.report({"ERROR"}, "Link has no empty handle (probably it was deleted).")
             return {"CANCELLED"}
