@@ -1451,21 +1451,6 @@ class UnlinkIfc(bpy.types.Operator):
             
             if doc_info and not tool.Document.get_document_references(doc_info):
                 ifcopenshell.api.document.remove_information(ifc_file, doc_info)
-                
-                original_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath))
-                cache_files = [
-                    original_filepath.with_suffix(".ifc.cache.blend"),
-                    original_filepath.with_suffix(".ifc.cache.h5"),
-                    original_filepath.with_suffix(".ifc.cache.json"),
-                    original_filepath.with_suffix(".ifc.cache.sqlite"),
-                ]
-                
-                for cache_file in cache_files:
-                    if cache_file.exists():
-                        try:
-                            os.remove(cache_file)
-                        except Exception as e:
-                            print(f"Failed to remove cache file {cache_file}: {e}")
 
         props.links.remove(self.link_index)
         return {"FINISHED"}
