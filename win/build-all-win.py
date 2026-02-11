@@ -6,6 +6,7 @@ but also archives them to '~/outputs'.
 
 import os
 import subprocess
+import zipfile
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -77,7 +78,7 @@ def archive_executables() -> None:
         if file.suffix.lower() != ".exe":
             continue
         zip_name = ZIP_TEMPLATE.format(package_name=file.stem)
-        with ZipFile(OUTPUT_DIR / zip_name, "w") as zipf:
+        with ZipFile(OUTPUT_DIR / zip_name, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(file, arcname=file.name)
         print(f"{file} -> {zip_name}")
 
