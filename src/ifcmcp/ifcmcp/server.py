@@ -4,11 +4,10 @@ import json
 from typing import Any
 
 import ifcopenshell
-
-from ifcquery import clash as clash_mod
-from ifcquery import info, relations, select, summary, tree
 from ifcedit.discover import function_docs, list_functions, list_modules
 from ifcedit.run import run_api
+from ifcquery import clash as clash_mod
+from ifcquery import info, relations, select, summary, tree
 from mcp.server.fastmcp import FastMCP
 
 server = FastMCP(

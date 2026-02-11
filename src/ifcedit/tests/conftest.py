@@ -1,5 +1,3 @@
-import pytest
-
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
@@ -8,6 +6,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
+import pytest
 
 
 @pytest.fixture

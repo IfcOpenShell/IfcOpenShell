@@ -4,9 +4,6 @@ import subprocess
 import sys
 import tempfile
 
-import numpy as np
-import pytest
-
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
@@ -16,6 +13,8 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
+import numpy as np
+import pytest
 
 from ifcquery.clash import clash
 

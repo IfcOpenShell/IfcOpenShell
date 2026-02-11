@@ -78,7 +78,9 @@ class TestRunCommand:
 
     def test_output_to_different_file(self, model_file, tmp_path):
         output = str(tmp_path / "output.ifc")
-        stdout, stderr, rc = run_ifcedit("run", model_file, "root.create_entity", "-o", output, "--ifc_class", "IfcSlab")
+        stdout, stderr, rc = run_ifcedit(
+            "run", model_file, "root.create_entity", "-o", output, "--ifc_class", "IfcSlab"
+        )
         assert rc == 0, f"stderr: {stderr}"
         data = json.loads(stdout)
         assert data["ok"] is True

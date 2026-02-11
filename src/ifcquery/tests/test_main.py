@@ -6,7 +6,6 @@ import tempfile
 
 import ifcopenshell
 import ifcopenshell.api.project
-
 import pytest
 
 

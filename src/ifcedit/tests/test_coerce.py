@@ -1,9 +1,8 @@
 import json
 from typing import Literal, Optional, Union
 
-import pytest
-
 import ifcopenshell
+import pytest
 
 from ifcedit.coerce import coerce_value
 
