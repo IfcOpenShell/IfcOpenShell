@@ -258,10 +258,10 @@ if(WITH_ROCKSDB)
     set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
     target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    target_link_libraries(
-        IFCOPENSHELL_RocksDB
-        INTERFACE $<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>
-    )
+    # Shared binaries for `rocksdb` only support limited API (only `c.h`), but we use `db.h` API.
+    # So rocksdb supported only as a static library.
+    # See https://github.com/facebook/rocksdb/issues/981.
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE RocksDB::rocksdb)
 
     if(WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
