@@ -2075,13 +2075,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
         elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
-            if host_model_origin_si := gprops.host_model_origin_si:
-                host_model_origin_si = [float(o) / self.unit_scale for o in host_model_origin_si.split(",")]
-                tool.Loader.settings.false_origin = host_model_origin_si
-                tool.Loader.settings.project_north = float(gprops.host_model_project_north)
-                tool.Loader.set_manual_blender_offset(self.file)
-            else:
-                tool.Loader.guess_false_origin(self.file)
+            tool.Loader.guess_false_origin(self.file)
 
         tool.Georeference.set_model_origin()
         self.json_filepath = self.filepath + ".cache.json"
