@@ -1331,7 +1331,7 @@ class ToggleFilterCategories(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LinkIfc(bpy.types.Operator, ImportHelper):
+class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.link_ifc"
     bl_label = "Link IFC"
     bl_options = {"REGISTER", "UNDO"}
@@ -1393,7 +1393,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
         
         return super().invoke(context, event)
 
-    def execute(self, context):
+    def _execute(self, context):
         start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
         
@@ -1401,6 +1401,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
             self.report({"ERROR"}, "No file selected")
             return {"CANCELLED"}
         
+        existing_links = tool.Project.get_linked_models_documents() if tool.Ifc.get() else {}
         for filename in files:
             if not filename or not filename.strip():
                 continue
@@ -1412,102 +1413,63 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
             
             new = props.links.add()
+            if tool.Ifc.get():
+                if not (document := existing_links.get(filepath)):
+                    document = ifcopenshell.api.document.add_information(tool.Ifc.get())
+                    document.Name = Path(filepath).name
+                    document.Scope = "LINKED_MODEL"
+                reference = ifcopenshell.api.document.add_reference(tool.Ifc.get(), information=document)
+                reference.Location = filepath.replace("\\", "/")
+                new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
-            new.position = "0.000,0.000,0.000,0.000"
             new.mode = props.false_origin_mode
-            new.is_locked = False
-            status = bpy.ops.bim.load_link(link=link_name, use_cache=self.use_cache)
-            if status == {"CANCELLED"}:
-                index = props.links.find(link_name)
-                if index != -1:
-                    props.links.remove(index)
-                self.report({"ERROR"}, f"Failed to load link: {filepath}")
-                return {"CANCELLED"}
-        return {"FINISHED"}
+            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache)
 
 
-class UnlinkIfc(bpy.types.Operator):
+class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_ifc"
     bl_label = "Unlink IFC"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Remove the selected file from the link list"
     link_index: bpy.props.IntProperty(name="Link Index")
 
-    def execute(self, context):
+    def _execute(self, context):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
-        
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        
-        # If we have a parent IFC and an IFC reference, remove it from IFC
-        ifc_file = tool.Ifc.get()
-        if ifc_file and link.ifc_definition_id:
-            reference = ifc_file.by_id(link.ifc_definition_id)
-            
-            doc_info = reference.ReferencedDocument
-            
-            ifcopenshell.api.document.remove_reference(ifc_file, reference)
-            
-            if doc_info and not tool.Document.get_document_references(doc_info):
-                ifcopenshell.api.document.remove_information(ifc_file, doc_info)
-
+        if tool.Ifc.get():
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            document = tool.Document.get_reference_document(reference)
+            ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference)
+            if document and not tool.Document.get_document_references(document):
+                ifcopenshell.api.document.remove_information(tool.Ifc.get(), document)
         props.links.remove(self.link_index)
-        return {"FINISHED"}
 
 
-class UnloadLink(bpy.types.Operator):
+class UnloadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unload_link"
     bl_label = "Unload Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Unload the selected linked file"
     link_index: bpy.props.IntProperty(name="Link Index")
 
-    def execute(self, context):
-        props = tool.Project.get_project_props()
-        link = props.links[self.link_index]
-        
-        filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath))
-        if filepath.suffix.lower() == ".ifc":
-            filepath = filepath.with_suffix(".ifc.cache.blend")
-
-        # Check if any other links share the same filename
-        other_links_with_same_file = any(
-            l.name != self.link and 
-            tool.Blender.ensure_blender_path_is_abs(Path(l.filepath)) == tool.Blender.ensure_blender_path_is_abs(Path(link.filepath))
-            for l in props.links
-        )
-
-        # Only remove library if no other links share this file
-        if not other_links_with_same_file:
-            for library in list(bpy.data.libraries):
-                if tool.Blender.ensure_blender_path_is_abs(Path(library.filepath)) == filepath:
-                    bpy.data.libraries.remove(library)
-
-            # following lines removes the library also when use_relative_path=True, otherwise it doesn't
-            libraries = bpy.data.libraries
-            for library in libraries:
-                if library.name == link.filepath + ".cache.blend":
-                    bpy.data.libraries.remove(library)
-
-        # Let's assume that user might delete it.
-        if empty_handle := tool.Project.get_link_empty_handle(link.name):
-            bpy.data.objects.remove(empty_handle)
-
+    def _execute(self, context):
+        link = tool.Project.get_project_props().links[self.link_index]
+        if obj := tool.Project.get_link_empty_handle(link):
+            collection = obj.instance_collection
+            library = collection.library
+            tool.Ifc.unlink(obj=obj)
+            bpy.data.objects.remove(obj)
+            if collection.users == 0:
+                bpy.data.collections.remove(collection)
+            if not len([c for c in bpy.data.collections if c.library == library]):
+                bpy.data.libraries.remove(library)
         link.is_loaded = False
-
-        if not any([l.is_loaded for l in props.links]):
-            ProjectDecorator.uninstall()
-        # we make sure we don't draw queried object from the file that was just unlinked
-        elif queried_obj := props.queried_obj:
-            queried_filepath = Path(queried_obj["ifc_filepath"])
-            if queried_filepath == filepath:
-                ProjectDecorator.uninstall()
-
-        return {"FINISHED"}
+        ProjectDecorator.uninstall()
 
 
-class LoadLink(bpy.types.Operator):
+class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_link"
     bl_label = "Load Link"
     bl_options = {"REGISTER", "UNDO"}
@@ -1516,56 +1478,46 @@ class LoadLink(bpy.types.Operator):
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     skip_position_calculation_and_not_locked: bpy.props.BoolProperty(name="Skip Position Calculation and Not Locked", default=False)
 
-    def execute(self, context):
+    def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
         filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
             return {"CANCELLED"}
         self.filepath_ = filepath
-        if filepath.suffix.lower().endswith(".blend"):
-            self.link_blend(filepath)
-        elif filepath.suffix.lower().endswith(".ifc"):
-            status = self.link_ifc()
-            if status:
-                return status
-        return {"FINISHED"}
+        if filepath.suffix.lower().endswith(".ifc"):
+            return self.link_ifc()
 
     def link_blend(self, filepath: Path) -> None:
         with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
-            data_to.collections = data_from.collections
-        
-        # Use stored link reference
-        link = self.link
+            data_to.collections = [c for c in data_from.collections if "IfcProject" in c]
         
         # Find the linked collection
         for collection in bpy.data.collections:
             if not collection.library or Path(collection.library.filepath) != filepath:
                 continue
-            if "IfcProject" not in collection.name:
-                continue
             # Create unique empty instance for this link
-            empty_name = f"{collection.name}_{link.name}"
+            empty_name = f"{collection.name}_{self.link.name}"
             empty = bpy.data.objects.new(empty_name, None)
             empty.instance_type = "COLLECTION"
             empty.instance_collection = collection
             
             # Apply saved position and rotation
-            if link.position and link.position != "0.0,0.0,0.0,0.0":
-                x, y, z, angle = [float(v.strip()) for v in link.position.split(",")]
+            if self.link.position and self.link.position != "0.0,0.0,0.0,0.0":
+                x, y, z, angle = [float(v.strip()) for v in self.link.position.split(",")]
                 empty.location = (x, y, z)
                 empty.rotation_euler = (0, 0, radians(angle))
             
-            tool.Project.set_link_empty_handle(link.name, empty)
+            tool.Project.set_link_empty_handle(self.link, empty)
             bpy.context.scene.collection.objects.link(empty)
-            link.is_loaded = True
+            self.link.is_loaded = True
             if not self.skip_position_calculation_and_not_locked:
-                link.is_locked = True  # Lock all loaded links unless explicitly skipped
+                self.link.is_locked = True  # Lock all loaded links unless explicitly skipped
             tool.Blender.select_and_activate_single_object(bpy.context, empty)
             break
         else:
             print(f"WARNING: No IfcProject collection found in {filepath}")
-            link.is_loaded = False
+            self.link.is_loaded = False
 
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")

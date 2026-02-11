@@ -287,13 +287,12 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
-        ifc_file = tool.Ifc.get()
         linked_docs = {}
-        for doc in ifc_file.by_type("IfcDocumentInformation"):
-            if getattr(doc, "Scope", None) == "LINKED_MODEL":
-                location = doc.Location
-                if location:
-                    linked_docs[Path(location).as_posix()] = doc
+        for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if doc.Scope == "LINKED_MODEL":
+                for reference in tool.Drawing.get_document_references(doc):
+                    linked_docs[Path(reference.Location).as_posix()] = doc
+                    break
         return linked_docs
 
     @classmethod
