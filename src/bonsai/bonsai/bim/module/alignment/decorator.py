@@ -392,7 +392,7 @@ class PIEditDecorator:
             f"PIs: {valid_count}",
             "",
             "G: Move selected PI",
-            "ENTER/SPACE: Apply changes",
+            "ENTER: Apply changes",
             "ESC: Cancel",
         ]
 
