@@ -1475,7 +1475,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
                 self._area.tag_redraw()
 
         # Handle keyboard input
-        if event.type == "RET" and event.value == "PRESS":
+        if event.type in {"RET", "NUMPAD_ENTER"} and event.value == "PRESS":
             return self._cleanup_and_finish(context, apply=True)
 
         if event.type == "ESC" and event.value == "PRESS":
