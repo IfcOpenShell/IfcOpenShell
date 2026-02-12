@@ -19,6 +19,7 @@
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
+import bsdd
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
@@ -72,6 +73,14 @@ def update_active_class_index(self: "BIMBSDDProperties", context: bpy.types.Cont
     tool.Bsdd.import_class_properties()
     BSDDData.data["active_dictionary"] = BSDDData.active_dictionary()
 
+
+def update_bsdd_baseurl(self: "BIMBSDDProperties", context: bpy.types.Context) -> None:
+    try:
+        tool.Bsdd.client = bsdd.Client()
+        if hasattr(tool.Bsdd.client, "baseurl"):
+            tool.Bsdd.client.baseurl = self.bsdd_baseurl
+    except Exception:
+        pass
 
 class BSDDDictionary(PropertyGroup):
     uri: StringProperty(name="URI")
@@ -164,6 +173,13 @@ class BIMBSDDProperties(PropertyGroup):
     )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
 
+    bsdd_baseurl: StringProperty(
+        name="Other URL:",
+        description="URL from another Dictionary with bSDD API",
+        default="",
+        update=update_bsdd_baseurl,
+    )
+    
     if TYPE_CHECKING:
         active_dictionary: str
         active_dictionary: str
@@ -182,7 +198,8 @@ class BIMBSDDProperties(PropertyGroup):
         should_filter_ifc_class: bool
         use_only_ifc_properties: bool
         classification_psets: bpy.types.bpy_prop_collection_idprop[BSDDPset]
-
+        bsdd_baseurl: str
+        
     @property
     def active_class(self) -> Union[BSDDClassification, None]:
         return tool.Blender.get_active_uilist_element(self.classes, self.active_class_index)
