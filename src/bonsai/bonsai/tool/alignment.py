@@ -306,14 +306,6 @@ class Alignment:
             # This handles negative-length curve segments correctly at the C++ level
             try:
                 s = ifcopenshell.geom.settings()
-                try:
-                    s.set("piecewise-step-type", 0)  # step-size is maximum step size
-                except RuntimeError:
-                    pass
-                try:
-                    s.set("piecewise-step-size", distance_interval)
-                except RuntimeError:
-                    pass
 
                 shape = ifcopenshell.geom.create_shape(s, curve_segment)
                 verts = shape.verts
@@ -462,12 +454,7 @@ class Alignment:
             return None
 
         # Generate vertices using IfcOpenShell's geometry engine
-        try:
-            vertices = align_util.generate_vertices(rep_curve, distance_interval=1.0)
-        except (ValueError, NotImplementedError, RuntimeError) as e:
-            # RuntimeError can occur if IfcOpenShell version doesn't support certain settings
-            print(f"[Alignment] generate_vertices failed: {e}")
-            return None
+        vertices = align_util.generate_vertices(rep_curve, distance_interval=1.0)
 
         if len(vertices) < 2:
             print(f"[Alignment] Not enough vertices ({len(vertices)}), need at least 2")
