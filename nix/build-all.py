@@ -1101,23 +1101,15 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
         PYTHON_CONFIGURE_ARGS.extend(["--with-universal-archs=intel-64", "--enable-universalsdk"])
 
     for PYTHON_VERSION in PYTHON_VERSIONS:
-        try:
-            build_dependency(
-                f"python-{PYTHON_VERSION}",
-                "autoconf",
-                PYTHON_CONFIGURE_ARGS,
-                f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
-                f"Python-{PYTHON_VERSION}.tgz",
-            )
-        except RuntimeError as e:
-            # Sometimes setting up modules such as pip/lzma can cause
-            # the python installer script to return a non zero exit
-            # code where actually the headers and dynamic libraries
-            # are installed correctly. This is all we need so we catch
-            # the exception and only reraise if a partially successful
-            # install is not detected.
-            if not os.path.exists(os.path.join(DEPS_DIR, "install", f"python-{PYTHON_VERSION}")):
-                raise e
+        # Don't fail silently on missing Python dependencies (e.g. openssl or zlib),
+        # because later ifcopenshell-python build will fail too but in a more confusing way.
+        build_dependency(
+            f"python-{PYTHON_VERSION}",
+            "autoconf",
+            PYTHON_CONFIGURE_ARGS,
+            f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
+            f"Python-{PYTHON_VERSION}.tgz",
+        )
 
     if MAC_CROSS_COMPILE_INTEL:
         assert original_path
