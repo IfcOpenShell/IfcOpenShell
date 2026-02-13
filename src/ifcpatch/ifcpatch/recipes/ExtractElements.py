@@ -25,7 +25,6 @@ import ifcopenshell.guid
 import ifcopenshell.util.selector
 
 import ifcpatch
-import bpy
 
 class Patcher(ifcpatch.BasePatcher):
     def __init__(
@@ -82,8 +81,6 @@ class Patcher(ifcpatch.BasePatcher):
         self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
 
     def patch(self):
-        wm = bpy.context.window_manager
-        
         self.contained_ins: dict[str, set[ifcopenshell.entity_instance]] = {}
         self.aggregates: dict[str, set[ifcopenshell.entity_instance]] = {}
         self.new = ifcopenshell.file(schema_version=self.file.schema_version)
@@ -94,13 +91,7 @@ class Patcher(ifcpatch.BasePatcher):
             break
         self.add_element(self.file.by_type("IfcProject")[0])
         
-        elements = list(ifcopenshell.util.selector.filter_elements(self.file, self.query))
-        total = len(elements)
-        
-        for idx, element in enumerate(elements):
-            if idx % max(1, total // 20) == 0:
-                percent = int((idx / total) * 100)
-                wm.progress_update(percent)
+        for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
         
         self.create_spatial_tree()
