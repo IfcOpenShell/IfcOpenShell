@@ -26,6 +26,7 @@ import ifcopenshell.util.selector
 
 import ifcpatch
 
+
 class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
@@ -90,10 +91,8 @@ class Patcher(ifcpatch.BasePatcher):
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
-        
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
-        
         self.create_spatial_tree()
         self.file = self.new
 
