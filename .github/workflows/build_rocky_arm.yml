@@ -6,13 +6,13 @@ on:
 jobs:
   build_ifcopenshell:
     runs-on: ubuntu-22.04-arm
-    container: arm64v8/rockylinux:8
+    container: arm64v8/rockylinux:9
 
     steps:
       - name: Install Dependencies
         run: |
           dnf update -y
-          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3  \
+          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
@@ -38,7 +38,7 @@ jobs:
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
-          ref: rockylinux8-arm64
+          ref: rockylinux9-arm64
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
@@ -51,7 +51,7 @@ jobs:
         # TODO: Use tag after 1.2.20 releases.
         uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
         with:
-          key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
+          key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
 
       - name: Run Build Script
         shell: bash
