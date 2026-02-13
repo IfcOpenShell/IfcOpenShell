@@ -93,7 +93,7 @@ Used environment variables:
 #          $ brew install git bison autoconf automake libffi cmake            #
 #                                                                             #
 #     on RHEL-related distros:                                                #
-#          $ yum install git gcc gcc-c++ autoconf bison make cmake            #
+#          $ dnf install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
 #            automake patch byacc xz                                          #
 

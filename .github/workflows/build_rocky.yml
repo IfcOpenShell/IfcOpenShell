@@ -11,8 +11,8 @@ jobs:
     steps:
       - name: Install Dependencies
         run: |
-          yum update -y
-          yum install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3  \
+          dnf update -y
+          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3  \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
