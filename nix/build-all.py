@@ -294,6 +294,7 @@ DEPS_DIR = os.getenv("DEPS_DIR", DEFAULT_DEPS_DIR)
 if not os.path.exists(DEPS_DIR):
     os.makedirs(DEPS_DIR)
 
+INSTALL_DIR = Path(DEPS_DIR) / "install"
 BUILD_CFG = os.getenv("BUILD_CFG", "RelWithDebInfo")
 
 
@@ -1113,6 +1114,10 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
             f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
             f"Python-{PYTHON_VERSION}.tgz",
         )
+        python_bin = INSTALL_DIR / f"python-{PYTHON_VERSION}" / "bin" / "python3"
+        # `_ssl` module is present -> we will be able to install `numpy` later
+        # to verify IfcOpenShell installation
+        run([str(python_bin), "-c", "import _ssl"])
 
     if MAC_CROSS_COMPILE_INTEL:
         assert original_path
@@ -1536,7 +1541,7 @@ if "IfcOpenShell-Python" in targets:
         compile_python_wrapper(platform.python_version(), python_info["include"], sys.executable)
     else:
         for python_version in PYTHON_VERSIONS:
-            python_path = Path(DEPS_DIR) / "install" / f"python-{python_version}"
+            python_path = INSTALL_DIR / f"python-{python_version}"
             module_dir = compile_python_wrapper(python_version, python_path=python_path)
             assert module_dir
             # Not sure why, but added after reading this in the logs
