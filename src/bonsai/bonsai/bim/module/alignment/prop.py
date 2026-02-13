@@ -62,21 +62,8 @@ class AlignmentPI(PropertyGroup):
     """
 
     # Coordinates
-    x: FloatProperty(
-        name="X",
-        description="X coordinate (Easting)",
-        default=0.0,
-        precision=3,
-        unit="LENGTH",
-    )
-
-    y: FloatProperty(
-        name="Y",
-        description="Y coordinate (Northing)",
-        default=0.0,
-        precision=3,
-        unit="LENGTH",
-    )
+    e: StringProperty(name="E", description="Easting", default="0.0")
+    n: StringProperty(name="N", description="Northing", default="0.0")
 
     # PI Type
     pi_type: EnumProperty(
@@ -177,8 +164,8 @@ class AlignmentDisplayRow(PropertyGroup):
     display_type: StringProperty(name="Type", default="")
 
     # Point coordinates (only for POINT rows)
-    x: FloatProperty(name="X", default=0.0, precision=3, unit="LENGTH")
-    y: FloatProperty(name="Y", default=0.0, precision=3, unit="LENGTH")
+    e: StringProperty(name="E", default="0.0")
+    n: StringProperty(name="N", default="0.0")
 
     # Segment properties (only for SEGMENT rows)
     length: FloatProperty(name="Length", default=0.0, precision=2, unit="LENGTH")

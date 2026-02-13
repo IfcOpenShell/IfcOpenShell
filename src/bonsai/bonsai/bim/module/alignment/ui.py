@@ -64,11 +64,11 @@ class SAIKEI_UL_alignment_pis(UIList):
                 pi = data.pis[item.pi_index] if item.pi_index < len(data.pis) else None
                 if pi:
                     sub = row.row(align=True)
-                    sub.prop(pi, "x", text="")
-                    sub.prop(pi, "y", text="")
+                    sub.prop(pi, "e", text="")
+                    sub.prop(pi, "n", text="")
                 else:
-                    row.label(text=f"{item.x:.2f}")
-                    row.label(text=f"{item.y:.2f}")
+                    row.label(text=f"{item.e:.2f}")
+                    row.label(text=f"{item.n:.2f}")
 
                 # Length column - empty for point rows
                 row.label(text="")
@@ -86,8 +86,8 @@ class SAIKEI_UL_alignment_pis(UIList):
                     row.label(text="Curve", icon="SPHERECURVE")
 
                     # Show PI coordinates on curve row
-                    row.label(text=f"{item.x:.2f}")
-                    row.label(text=f"{item.y:.2f}")
+                    row.label(text=f"{item.e:.2f}")
+                    row.label(text=f"{item.n:.2f}")
 
                     # Arc length
                     row.label(text=f"{item.arc_length:.2f}")
@@ -254,8 +254,8 @@ class SAIKEI_PT_pi_editor(Panel):
         header = layout.row(align=True)
         header.label(text="No.")
         header.label(text="Type")
-        header.label(text="X")
-        header.label(text="Y")
+        header.label(text="E")
+        header.label(text="N")
         header.label(text="Length")
         header.label(text="Radius")
 

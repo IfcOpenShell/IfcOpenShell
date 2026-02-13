@@ -199,8 +199,8 @@ def sync_pis_from_ifc(props):
     props.pis.clear()
     for pi_data in extracted_pis:
         pi = props.pis.add()
-        pi.x = pi_data["x"]
-        pi.y = pi_data["y"]
+        pi.e = pi_data["e"]
+        pi.n = pi_data["n"]
         pi.pi_type = pi_data["pi_type"]
         pi.radius = pi_data.get("radius", 0.0)
 
@@ -449,13 +449,13 @@ def compute_deflection_angle(prev_pi, curr_pi, next_pi):
         Deflection angle in radians (signed: positive=left, negative=right)
     """
     # Incoming tangent direction
-    dx1 = curr_pi.x - prev_pi.x
-    dy1 = curr_pi.y - prev_pi.y
+    dx1 = float(curr_pi.e) - float(prev_pi.e)
+    dy1 = float(curr_pi.n) - float(prev_pi.n)
     angle1 = math.atan2(dy1, dx1)
 
     # Outgoing tangent direction
-    dx2 = next_pi.x - curr_pi.x
-    dy2 = next_pi.y - curr_pi.y
+    dx2 = float(next_pi.e) - float(curr_pi.e)
+    dy2 = float(next_pi.n) - float(curr_pi.n)
     angle2 = math.atan2(dy2, dx2)
 
     # Deflection angle
@@ -546,8 +546,8 @@ def compute_segment_length(props, start_pi_index, account_for_curves=True):
     end_pi = pis[start_pi_index + 1]
 
     # Full length between PIs
-    dx = end_pi.x - start_pi.x
-    dy = end_pi.y - start_pi.y
+    dx = float(end_pi.e) - float(start_pi.e)
+    dy = float(end_pi.n) - float(start_pi.n)
     full_length = math.sqrt(dx * dx + dy * dy)
 
     if not account_for_curves:
@@ -588,7 +588,7 @@ def recalculate_pi_geometry(props):
         return
 
     # Extract PI coordinates for calculation
-    pi_coords = [(pi.x, pi.y) for pi in pis]
+    pi_coords = [(float(pi.e), float(pi.n)) for pi in pis]
 
     # Use tool layer for calculation (math belongs in tool, not core)
     result = tool.Alignment.calculate_pi_geometry(pi_coords, props.start_station)
@@ -636,8 +636,8 @@ def rebuild_display_rows(props):
             curve_row.segment_number = segment_num
             curve_row.pi_index = i
             curve_row.display_type = "Curve"
-            curve_row.x = pi.x  # Show PI coordinates on curve row
-            curve_row.y = pi.y
+            curve_row.e = pi.e  # Show PI coordinates on curve row
+            curve_row.n = pi.n
             curve_row.radius = pi.radius
             curve_row.arc_length = compute_arc_length_for_pi(props, i)
         else:
@@ -651,8 +651,8 @@ def rebuild_display_rows(props):
             else:
                 point_row.display_type = "Mid"
 
-            point_row.x = pi.x
-            point_row.y = pi.y
+            point_row.e = pi.e
+            point_row.n = pi.n
 
         # Add tangent segment row after this point/curve (except after last PI)
         if i < len(pis) - 1:
@@ -699,23 +699,23 @@ class SAIKEI_OT_add_pi(Operator):
         # Set default position based on existing PIs
         if len(props.pis) == 1:
             # First PI - start at origin
-            pi.x = 0.0
-            pi.y = 0.0
+            pi.e = str(0.0)
+            pi.n = str(0.0)
             pi.pi_type = "ENDPOINT"
         elif len(props.pis) == 2:
             # Second PI - offset from first
             prev = props.pis[0]
-            pi.x = prev.x + 100.0
-            pi.y = prev.y
+            pi.e = str(float(prev.e) + 100.0)
+            pi.n = prev.n
             pi.pi_type = "ENDPOINT"
         else:
             # Additional PIs - extrapolate from last two
             prev = props.pis[-2]
             prev_prev = props.pis[-3] if len(props.pis) > 2 else prev
-            dx = prev.x - prev_prev.x if len(props.pis) > 2 else 100.0
-            dy = prev.y - prev_prev.y if len(props.pis) > 2 else 0.0
-            pi.x = prev.x + dx
-            pi.y = prev.y + dy
+            de = float(prev.e) - prev_prev.e if len(props.pis) > 2 else 100.0
+            dn = float(prev.n) - prev_prev.n if len(props.pis) > 2 else 0.0
+            pi.e = str(float(prev.e) + de)
+            pi.n = str(float(prev.n) + dn)
             pi.pi_type = "TANGENT"
 
             # Previous endpoint becomes tangent or curve
@@ -918,7 +918,8 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
         points = []
         for pi in props.pis:
             # Convert from IFC to Blender coordinates
-            blender_coord = tool.Alignment.ifc_to_blender_coordinates(pi.x, pi.y, 0.0)
+            blender_coord = tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.0))
+            print(repr(blender_coord))
             points.append(Vector(blender_coord))
         return points
 
@@ -941,11 +942,11 @@ class SAIKEI_OT_pick_pi_from_viewport(Operator):
 
         # Convert Blender coordinates to IFC coordinates
         # PIs are stored in IFC coordinate space (global/map coordinates)
-        ifc_coord = tool.Alignment.blender_to_ifc_coordinates(coord[0], coord[1], 0.0)
+        ifc_coord = tool.Georeference.xyz2enh((coord[0], coord[1], 0.0))
 
         pi = props.pis.add()
-        pi.x = ifc_coord[0]
-        pi.y = ifc_coord[1]
+        pi.e = str(ifc_coord[0])
+        pi.n = str(ifc_coord[1])
 
         # Determine PI type based on position in list
         if len(props.pis) == 1:
@@ -1005,7 +1006,7 @@ class SAIKEI_OT_recalculate_pis(Operator):
                     return {"CANCELLED"}
 
                 # Collect updated PI data
-                hpoints = [(pi.x, pi.y) for pi in props.pis]
+                hpoints = [(float(pi.e), float(pi.n)) for pi in props.pis]
                 radii = [pi.radius for pi in props.pis[1:-1]]
 
                 # Remove Blender visualization for segments (not the whole hierarchy)
@@ -1154,7 +1155,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
         props = context.scene.SaikeiAlignmentProperties
 
         # Collect PI data
-        hpoints = [(pi.x, pi.y) for pi in props.pis]
+        hpoints = [(float(pi.e), float(pi.n)) for pi in props.pis]
         radii = [pi.radius for pi in props.pis[1:-1]]
 
         # Check if there's an active alignment we should add to instead of creating new
