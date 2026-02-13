@@ -1419,6 +1419,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                     document.Name = Path(filepath).name
                     document.Scope = "LINKED_MODEL"
                 reference = ifcopenshell.api.document.add_reference(tool.Ifc.get(), information=document)
+                reference[1] = ",".join([str(o) for o in np.eye(4).flatten().tolist()])
                 reference.Location = filepath.replace("\\", "/")
                 new.ifc_definition_id = reference.id()
             new.name = filepath
@@ -1497,17 +1498,44 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             if not collection.library or Path(collection.library.filepath) != filepath:
                 continue
             # Create unique empty instance for this link
-            empty_name = f"{collection.name}_{self.link.name}"
+            empty_name = collection.name
             empty = bpy.data.objects.new(empty_name, None)
             empty.instance_type = "COLLECTION"
             empty.instance_collection = collection
-            
-            # Apply saved position and rotation
-            if self.link.position and self.link.position != "0.0,0.0,0.0,0.0":
-                x, y, z, angle = [float(v.strip()) for v in self.link.position.split(",")]
-                empty.location = (x, y, z)
-                empty.rotation_euler = (0, 0, radians(angle))
-            
+
+            with open(self.filepath_.with_suffix(".ifc.cache.json"), "r") as f:
+                metadata = json.load(f)
+
+            if tool.Ifc.get():
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+                rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(metadata["model_project_north"])), 4, "Z")
+                global_matrix = rot @ np.eye(4)
+                global_matrix[:, 3][:3] = [float(o) / unit_scale for o in metadata["model_origin_si"].split(",")]
+                local_matrix = tool.Georeference.global2local(global_matrix, is_specified_in_map_units=False)
+            else:
+                unit_scale = 1
+                rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(metadata["model_project_north"])), 4, "Z")
+                global_matrix = rot @ np.eye(4)
+                global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+                gprops = tool.Georeference.get_georeference_props()
+                model_origin_si = [float(o) for o in gprops.model_origin_si.split(",")]
+                rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+                local_matrix = rot @ np.eye(4)
+                local_matrix[:,3][:3] = model_origin_si
+                local_matrix = np.linalg.inv(local_matrix) @ global_matrix
+            if tool.Ifc.get():
+                transformation = tool.Ifc.get().by_id(self.link.ifc_definition_id)[1]  # Identification
+            else:
+                transformation = self.link.transformation
+
+            if transformation:
+                transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+                if not np.allclose(transformation, np.eye(4)):
+                    local_matrix = transformation @ local_matrix
+
+            local_matrix[:, 3][:3] *= unit_scale
+            empty.matrix_world = Matrix(local_matrix)
+
             tool.Project.set_link_empty_handle(self.link, empty)
             bpy.context.scene.collection.objects.link(empty)
             self.link.is_loaded = True
@@ -1594,8 +1622,7 @@ except Exception as e:
                 if not blend_filepath.exists() or blend_filepath.stat().st_mtime < t:
                     return {"CANCELLED"}
 
-            self.set_model_origin_from_link()
-        
+        self.set_model_origin_from_link()
         self.set_georeferencing_indicator()
         
         if not self.link.ifc_definition_id and not self.skip_position_calculation_and_not_locked:

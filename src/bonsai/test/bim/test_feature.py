@@ -1555,10 +1555,19 @@ def the_object_name_has_a_vertex_at_location(name, location):
     is_pass = False
     target = Vector([float(co) for co in location.split(",")])
     verts = []
-    for v in obj.data.vertices:
-        verts.append(obj.matrix_world @ v.co)
-        if (verts[-1] - target).length < 0.001:
-            is_pass = True
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    obj_eval = obj.evaluated_get(depsgraph)
+    mesh = obj_eval.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)
+    try:
+        for inst in depsgraph.object_instances:
+            if inst.object.original is obj:
+                mw = inst.matrix_world
+                for i, v in enumerate(mesh.vertices):
+                    verts.append(mw @ v.co)
+                    if (verts[-1] - target).length < 0.001:
+                        is_pass = True
+    finally:
+        obj_eval.to_mesh_clear()
     assert is_pass, f"No verts found at {location}: {verts}"
 
 

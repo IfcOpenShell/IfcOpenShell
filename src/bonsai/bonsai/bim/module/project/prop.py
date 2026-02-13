@@ -265,6 +265,11 @@ class Link(PropertyGroup):
         name="Filepath",
         description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
     )
+    transformation: StringProperty(
+        name="Transformation",
+        description="4x4 matrix transformation as a flattened comma separated list for the linked model",
+        default="",
+    )
     position: StringProperty(
         name="Position",
         description="Position information (x,y,z,angle) for the linked model",
