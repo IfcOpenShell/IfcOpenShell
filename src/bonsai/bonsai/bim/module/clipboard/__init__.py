@@ -18,6 +18,9 @@
 
 import bpy
 from . import operator, prop, ui
+from bpy.app.handlers import persistent
+import os
+import bonsai.tool as tool
 
 classes = (
     operator.CopyToClipboard,
@@ -28,10 +31,22 @@ classes = (
 )
 
 
+@persistent
+def load_post_handler(dummy):
+    clipboard_json = tool.Blender.get_data_dir_path("bonsai_clipboard.json").__str__()
+    clipboard_ifc = tool.Blender.get_data_dir_path("bonsai_clipboard.ifc").__str__()
+    
+    if os.path.exists(clipboard_json) and os.path.exists(clipboard_ifc):
+        bpy.context.scene.BIMClipboardProperties.ensure_sections()
+
+
 def register():
     bpy.types.Scene.BIMClipboardProperties = bpy.props.PointerProperty(type=prop.BIMClipboardProperties)
+    bpy.app.handlers.load_post.append(load_post_handler)
 
 
 def unregister():
     del bpy.types.Scene.BIMClipboardProperties
+    if load_post_handler in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(load_post_handler)
 

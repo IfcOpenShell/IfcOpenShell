@@ -42,6 +42,8 @@ class BIM_PT_tab_clipboard(Panel):
     def draw(self, context):
         layout = self.layout
         
+        props = context.scene.BIMClipboardProperties
+        
         # Clipboard operations
         row = layout.row(align=True)
         row.operator("bim.copy_to_clipboard", text="Copy", icon="COPYDOWN")
@@ -95,73 +97,83 @@ class BIM_PT_tab_clipboard(Panel):
             box.label(text="Clipboard Contents:", icon="INFO")
             box.label(text=f"Schema: {data.get('schema', 'Unknown')}")
             
-            props = context.scene.BIMClipboardProperties
-            
             # Products summary with dropdown
             section = props.get_section("products")
             prod_box = box.box()
             row = prod_box.row()
-            row.prop(
-                section,
-                "is_expanded",
-                icon="TRIA_DOWN" if section and section.is_expanded else "TRIA_RIGHT",
-                emboss=False,
-                text=f"Products: {len(data.get('elements', []))}",
-            )
-            if section and section.is_expanded:
-                col = prod_box.column(align=True)
-                for elem_class, count in sorted(product_classes.items()):
-                    col.label(text=f"  {elem_class}: {count}")
+            if section:
+                row.prop(
+                    section,
+                    "is_expanded",
+                    icon="TRIA_DOWN" if section.is_expanded else "TRIA_RIGHT",
+                    emboss=False,
+                    text=f"Products: {len(data.get('elements', []))}",
+                )
+                if section.is_expanded:
+                    col = prod_box.column(align=True)
+                    for elem_class, count in sorted(product_classes.items()):
+                        col.label(text=f"  {elem_class}: {count}")
+            else:
+                row.label(text=f"Products: {len(data.get('elements', []))}")
             
             # Product types summary with dropdown
             if product_types:
                 section = props.get_section("product_types")
                 type_box = box.box()
                 row = type_box.row()
-                row.prop(
-                    section,
-                    "is_expanded",
-                    icon="TRIA_DOWN" if section and section.is_expanded else "TRIA_RIGHT",
-                    emboss=False,
-                    text=f"Product Types: {len(product_types)}",
-                )
-                if section and section.is_expanded:
-                    col = type_box.column(align=True)
-                    for product_type in sorted(list(product_types)):
-                        col.label(text=f"  {product_type}")
+                if section:
+                    row.prop(
+                        section,
+                        "is_expanded",
+                        icon="TRIA_DOWN" if section.is_expanded else "TRIA_RIGHT",
+                        emboss=False,
+                        text=f"Product Types: {len(product_types)}",
+                    )
+                    if section.is_expanded:
+                        col = type_box.column(align=True)
+                        for product_type in sorted(list(product_types)):
+                            col.label(text=f"  {product_type}")
+                else:
+                    row.label(text=f"Product Types: {len(product_types)}")
             
             # Materials summary with dropdown
             if materials:
                 section = props.get_section("materials")
                 mat_box = box.box()
                 row = mat_box.row()
-                row.prop(
-                    section,
-                    "is_expanded",
-                    icon="TRIA_DOWN" if section and section.is_expanded else "TRIA_RIGHT",
-                    emboss=False,
-                    text=f"Materials: {len(materials)}",
-                )
-                if section and section.is_expanded:
-                    col = mat_box.column(align=True)
-                    for material in sorted(list(materials)):
-                        col.label(text=f"  {material}")
+                if section:
+                    row.prop(
+                        section,
+                        "is_expanded",
+                        icon="TRIA_DOWN" if section.is_expanded else "TRIA_RIGHT",
+                        emboss=False,
+                        text=f"Materials: {len(materials)}",
+                    )
+                    if section.is_expanded:
+                        col = mat_box.column(align=True)
+                        for material in sorted(list(materials)):
+                            col.label(text=f"  {material}")
+                else:
+                    row.label(text=f"Materials: {len(materials)}")
             
             # Surface styles summary with dropdown
             if surface_styles:
                 section = props.get_section("surface_styles")
                 style_box = box.box()
                 row = style_box.row()
-                row.prop(
-                    section,
-                    "is_expanded",
-                    icon="TRIA_DOWN" if section and section.is_expanded else "TRIA_RIGHT",
-                    emboss=False,
-                    text=f"Surface Styles: {len(surface_styles)}",
-                )
-                if section and section.is_expanded:
-                    col = style_box.column(align=True)
-                    for style in sorted(list(surface_styles)):
-                        col.label(text=f"  {style}")
+                if section:
+                    row.prop(
+                        section,
+                        "is_expanded",
+                        icon="TRIA_DOWN" if section.is_expanded else "TRIA_RIGHT",
+                        emboss=False,
+                        text=f"Surface Styles: {len(surface_styles)}",
+                    )
+                    if section.is_expanded:
+                        col = style_box.column(align=True)
+                        for style in sorted(list(surface_styles)):
+                            col.label(text=f"  {style}")
+                else:
+                    row.label(text=f"Surface Styles: {len(surface_styles)}")
         else:
             layout.label(text="Clipboard is empty", icon="BLANK1")
