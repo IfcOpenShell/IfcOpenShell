@@ -498,7 +498,7 @@ def run(cmds: "Sequence[str]", cwd: "Union[str, None]" = None, can_fail: bool = 
             collector.append(line)
         pipe.close()
 
-    logger.debug(f"running command {' '.join(cmds)} in directory {cwd}")
+    logger.debug(f"running command `{' '.join(cmds)}` in directory '{cwd}'")
     stdout: list[str] = []
     stderr: list[str] = []
 
