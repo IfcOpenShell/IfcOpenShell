@@ -17,19 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import operator, ui
+from . import operator, prop, ui
 
 classes = (
     operator.CopyToClipboard,
     operator.PasteFromClipboard,
+    prop.ClipboardSection,
+    prop.BIMClipboardProperties,
     ui.BIM_PT_tab_clipboard,
 )
 
 
 def register():
-    pass
+    bpy.types.Scene.BIMClipboardProperties = bpy.props.PointerProperty(type=prop.BIMClipboardProperties)
 
 
 def unregister():
-    pass
+    del bpy.types.Scene.BIMClipboardProperties
 

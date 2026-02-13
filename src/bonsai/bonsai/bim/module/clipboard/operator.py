@@ -44,7 +44,7 @@ def strip_georeferencing(ifc_file: ifcopenshell.file) -> None:
         ifc_file.remove(projected_crs)
     
     for context in ifc_file.by_type("IfcGeometricRepresentationContext"):
-        if hasattr(context, "TrueNorth") and context.TrueNorth:
+        if context.TrueNorth:
             context.TrueNorth = None
     
     for project in ifc_file.by_type("IfcProject"):
@@ -91,10 +91,6 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         
         def append_asset(element):
             """Add element to new file, reusing if already added."""
-            try:
-                return new_file.by_guid(element.GlobalId)
-            except:
-                pass
             if element.is_a("IfcProject"):
                 return new_file.add(element)
             return ifcopenshell.api.project.append_asset(
@@ -177,19 +173,20 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             
             if element.is_a("IfcGridAxis"):
                 parent_grid = None
-                if hasattr(element, 'PartOfU') and element.PartOfU:
+                if element.PartOfU:
                     parent_grid = element.PartOfU[0]
-                elif hasattr(element, 'PartOfV') and element.PartOfV:
+                elif element.PartOfV:
                     parent_grid = element.PartOfV[0]
-                elif hasattr(element, 'PartOfW') and element.PartOfW:
+                elif element.PartOfW:
                     parent_grid = element.PartOfW[0]
                 
-                if parent_grid and hasattr(parent_grid, 'GlobalId'):
+                if parent_grid:
                     element = parent_grid
                 else:
                     continue
             
-            if not hasattr(element, 'GlobalId'):
+            # Only entities with GlobalId can be copied
+            if not element.GlobalId:
                 continue
             
             if not any(e.id() == element.id() for obj, e in elements_to_copy):
@@ -214,18 +211,13 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         
         strip_georeferencing(library)
         
-        relationships_removed = 0
         for rel in library.by_type("IfcRelDefinesByProperties"):
             library.remove(rel)
-            relationships_removed += 1
         
-        psets_removed = 0
         for pset in list(library.by_type("IfcPropertySet")):
             library.remove(pset)
-            psets_removed += 1
         for qset in list(library.by_type("IfcElementQuantity")):
             library.remove(qset)
-            psets_removed += 1
         
         clipboard_ifc = get_clipboard_path("bonsai_clipboard.ifc")
         library.write(clipboard_ifc)
@@ -237,11 +229,7 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             "elements": []
         }
         
-        for idx, (obj, element) in enumerate(elements_to_copy):
-            if show_progress and idx % max(1, total // 20) == 0:
-                # Map the remaining 60-100% range for this step
-                percent = 60 + int((idx / total) * 40)
-                bpy.context.window_manager.progress_update(percent)
+        for obj, element in elements_to_copy:
             matrix = obj.matrix_world.copy()
             container_element = ifcopenshell.util.element.get_container(element)
             container_name = container_element.Name if container_element else None
@@ -260,6 +248,9 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         
         if show_progress:
             bpy.context.window_manager.progress_end()
+        
+        # Ensure clipboard UI sections are initialized
+        context.scene.BIMClipboardProperties.ensure_sections()
         
         self.report({"INFO"}, f"Copied {len(clipboard_data['elements'])} element(s)")
         return {"FINISHED"}
