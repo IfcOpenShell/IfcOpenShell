@@ -218,6 +218,9 @@ class BaseDecorator:
         indices = []
         topology = []
 
+        if not obj.data or not hasattr(obj.data, "splines"):
+            return vertices, indices, topology
+
         idx = 0
         for spline in obj.data.splines:
             spline_points = spline.bezier_points if spline.bezier_points else spline.points
@@ -914,6 +917,8 @@ class LeaderDecorator(BaseDecorator):
     objecttype = "TEXT_LEADER"
 
     def get_spline_end(self, obj):
+        if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+            return Vector((0, 0, 0))
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
@@ -933,6 +938,8 @@ class RadiusDecorator(BaseDecorator):
     objecttype = "RADIUS"
 
     def get_spline_points(self, obj):
+        if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+            return [Vector((0, 0, 0)), Vector((0, 0, 0))]
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
@@ -991,6 +998,8 @@ class FallDecorator(BaseDecorator):
         if not (pos := location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))):
             return
 
+        if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+            return
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
 
@@ -1027,6 +1036,8 @@ class FallDecorator(BaseDecorator):
             self.draw_label(context, text, pos, dir, gap=0, center=False, vcenter=False)
 
     def get_spline_end(self, obj):
+        if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+            return Vector((0, 0, 0))
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
         if not spline_points:
@@ -1788,7 +1799,7 @@ class CutDecorator:
 
         # Handle both old float64 and new float32 checksums for version compatibility
         rot_checksum_bytes: bytes = eval(DecoratorData.camera_rotation_checksum)
-        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9)
+        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9).reshape(3, 3)
         rot_real = tool.Blender.np_array_legacy(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
