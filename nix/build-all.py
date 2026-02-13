@@ -433,13 +433,16 @@ print("Building:", *sorted(targets, key=lambda t: len(list(gather_dependencies(t
 
 # Check that required tools are in PATH
 yacc = "yacc"  # Used during swig building process, installed with `bison` on Debian / `byacc` on Red Hat.
+bison = "bison"
+
 missing_commands: "list[str]" = []
-required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz]
+required_commands = [git, bunzip2, tar, cc, cplusplus, autoconf, automake, make, "patch", "cmake", yacc, xz, bison]
 if "wasm" in flags:
     # Skip swig build for WASM.
     required_commands.append("swig")
     required_commands.append("pyodide")
     required_commands.remove(yacc)
+    required_commands.remove(bison)
 
 for cmd in required_commands:
     if shutil.which(cmd) is None:
