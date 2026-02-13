@@ -299,46 +299,14 @@ class Project(bonsai.core.tool.Project):
     def load_linked_models_from_ifc(cls) -> None:
         links = tool.Project.get_project_props().links
         links.clear()
-        
-        linked_docs = cls.get_linked_models_documents()
-        if not linked_docs:
-            return
-
-        seen_links = set()
-
-        for filepath, doc in linked_docs.items():
-            references = tool.Document.get_document_references(doc)
-            
-            if not references:
-                filepath_posix = Path(filepath).as_posix()
-                link_key = (filepath_posix, "")
-                if link_key in seen_links:
-                    print(f"Warning: Skipping duplicate link: {filepath} at default position")
-                    continue
-                seen_links.add(link_key)
-                
-                link = links.add()
-                link.name = filepath
-                link.filepath = filepath
-                link.position = ""
-                link.ifc_definition_id = doc.id()
-            else:
-                for reference in references:
-                    position = reference.Location or ""
-                    filepath_posix = Path(filepath).as_posix()
-                    
-                    link_key = (filepath_posix, position)
-                    if link_key in seen_links:
-                        print(f"Warning: Skipping duplicate link: {filepath} at position {position}")
-                        continue
-                    seen_links.add(link_key)
-                    
+        for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if doc.Scope == "LINKED_MODEL":
+                for reference in tool.Drawing.get_document_references(doc):
+                    filepath = reference.Location
                     link = links.add()
                     link.name = filepath
                     link.filepath = filepath
-                    link.position = position
                     link.ifc_definition_id = reference.id()
-                    print(f"DEBUG: Added link {link.name}: {filepath} at position {position}")
 
     @classmethod
     def save_linked_models_to_ifc(cls, update_positions: bool = True) -> bool:
