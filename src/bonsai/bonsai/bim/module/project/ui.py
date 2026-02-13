@@ -599,13 +599,6 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def get_display_name(self, item: Link) -> str:
-        """Convert link name from #123 format to mode-based prefix (A123, M123, or D123)"""
-        if item.name.startswith("#"):
-            mode_prefix = item.mode[0]
-            return mode_prefix + item.name[1:]
-        return item.name
-
     def draw_item(
         self,
         context,
@@ -675,10 +668,7 @@ class BIM_UL_links(UIList):
                 position_angle = round(math.degrees(rot.z), 1)
                 position_text = f"({position_x}, {position_y}, {position_z}) {position_angle}°"
             
-            # Combine filename and ID
-            display_text = f"{self.get_display_name(item)} {position_text} {item.filepath}"
-            row.label(text=display_text)
-            
+            row.label(text=item.filepath)
             row.operator(
                 "bim.toggle_link_selectability",
                 text="",
@@ -706,9 +696,7 @@ class BIM_UL_links(UIList):
             row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
             row.prop(item, "is_locked", text="", icon="VIEW_LOCKED" if item.is_locked else "VIEW_UNLOCKED", emboss=False)
         else:
-            display_name = self.get_display_name(item)
-            display_text = f"{display_name} | {item.filepath}"
-            row.label(text=display_text)
+            row.label(text=item.filepath)
             row.operator("bim.load_link", text="", icon="LINKED").link_index = index
             row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
 
