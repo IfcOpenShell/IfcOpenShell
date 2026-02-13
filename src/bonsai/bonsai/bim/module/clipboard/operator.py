@@ -19,12 +19,12 @@
 import bpy
 import json
 import os
-import tempfile
 import logging
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.selector
 import ifcopenshell.api.project
-import ifcpatch
+import ifcopenshell.guid
 from mathutils import Matrix
 from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
@@ -65,6 +65,106 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         return tool.Ifc.get() and context.selected_objects
+    
+    def extract_elements(self, source_file: ifcopenshell.file, query: str) -> ifcopenshell.file:
+        """
+        Extract elements from source IFC file into a new library file.
+        
+        Follows the logic from ifcpatch ExtractElements recipe to create a minimal
+        IFC file containing only the queried elements and their dependencies.
+        
+        :param source_file: The source IFC file to extract from
+        :param query: The selector query for elements to extract
+        :return: New IFC file containing only extracted elements
+        """
+        # Initialize new file and tracking structures
+        new_file = ifcopenshell.file(schema_version=source_file.schema_version)
+        contained_ins = {}  # spatial containment relationships
+        aggregates = {}  # decomposition relationships
+        reuse_identities = {}  # identity map for append_asset
+        owner_history = None
+        
+        # Copy owner history if exists
+        for oh in source_file.by_type("IfcOwnerHistory"):
+            owner_history = new_file.add(oh)
+            break
+        
+        def append_asset(element):
+            """Add element to new file, reusing if already added."""
+            try:
+                return new_file.by_guid(element.GlobalId)
+            except:
+                pass
+            if element.is_a("IfcProject"):
+                return new_file.add(element)
+            return ifcopenshell.api.project.append_asset(
+                new_file,
+                library=source_file,
+                element=element,
+                reuse_identities=reuse_identities,
+                assume_asset_uniqueness_by_name=False,  # Preserve distinct assets
+            )
+        
+        def add_spatial_structures(element, new_element):
+            """Track spatial containment for later relationship creation."""
+            for rel in getattr(element, "ContainedInStructure", []):
+                spatial_element = rel.RelatingStructure
+                new_spatial_element = append_asset(spatial_element)
+                contained_ins.setdefault(spatial_element.GlobalId, set()).add(new_element)
+                add_decomposition_parents(spatial_element, new_spatial_element)
+        
+        def add_decomposition_parents(element, new_element):
+            """Track decomposition relationships for later creation."""
+            for rel in element.Decomposes:
+                parent = rel.RelatingObject
+                new_parent = append_asset(parent)
+                aggregates.setdefault(parent.GlobalId, set()).add(new_element)
+                add_decomposition_parents(parent, new_parent)
+                add_spatial_structures(parent, new_parent)
+        
+        def add_element(element):
+            """Add element and all its spatial/decomposition relationships."""
+            new_element = append_asset(element)
+            if not new_element:
+                return
+            add_spatial_structures(element, new_element)
+            add_decomposition_parents(element, new_element)
+        
+        # Add project first
+        add_element(source_file.by_type("IfcProject")[0])
+        
+        # Extract and add all elements matching query with progress reporting
+        elements = list(ifcopenshell.util.selector.filter_elements(source_file, query))
+        total = len(elements)
+        
+        for idx, element in enumerate(elements):
+            if idx % max(1, total // 20) == 0:
+                percent = int((idx / total) * 100)
+                bpy.context.window_manager.progress_update(percent)
+            add_element(element)
+        
+        # Create spatial tree relationships
+        for relating_structure_guid, related_elements in contained_ins.items():
+            new_file.createIfcRelContainedInSpatialStructure(
+                ifcopenshell.guid.new(),
+                owner_history,
+                None,
+                None,
+                list(related_elements),
+                new_file.by_guid(relating_structure_guid),
+            )
+        
+        for relating_object_guid, related_objects in aggregates.items():
+            new_file.createIfcRelAggregates(
+                ifcopenshell.guid.new(),
+                owner_history,
+                None,
+                None,
+                new_file.by_guid(relating_object_guid),
+                list(related_objects),
+            )
+        
+        return new_file
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -108,28 +208,10 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         global_ids = [element.GlobalId for obj, element in elements_to_copy]
         query = f"GlobalId = {', '.join(global_ids)}"
         
-        temp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".ifc")
-        temp_source_path = temp_source.name
-        temp_source.close()
-        ifc_file.write(temp_source_path)
+        # Extract elements into library file using our implementation
+        # This avoids making ifcpatch dependent on Blender
+        library = self.extract_elements(ifc_file, query)
         
-        temp_ifc_file = ifcopenshell.open(temp_source_path)
-        
-        # Execute ExtractElements patch on temp file copy (reports progress internally)
-        # Disable asset deduplication by name to avoid mixing up different assets with the same name
-        args = ifcpatch.ArgumentsDict(
-            recipe="ExtractElements",
-            arguments=[query, False],  # query, assume_asset_uniqueness_by_name
-            log=tool.Blender.get_data_dir_path("process.log").__str__(),
-        )
-        args["file"] = temp_ifc_file
-        
-        library = ifcpatch.execute(args)
-        
-        if show_progress:
-            bpy.context.window_manager.progress_update(50)
-        
-        os.unlink(temp_source_path)
         strip_georeferencing(library)
         
         relationships_removed = 0
@@ -147,9 +229,7 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         
         clipboard_ifc = get_clipboard_path("bonsai_clipboard.ifc")
         library.write(clipboard_ifc)
-        
-        if show_progress:
-            bpy.context.window_manager.progress_update(60)
+       
         
         clipboard_data = {
             "version": 1,
