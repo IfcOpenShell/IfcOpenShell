@@ -47,7 +47,11 @@ class BIM_PT_tab_clipboard(Panel):
         # Clipboard operations
         row = layout.row(align=True)
         row.operator("bim.copy_to_clipboard", text="Copy", icon="COPYDOWN")
-        row.operator("bim.paste_from_clipboard", text="Paste", icon="PASTEDOWN")
+        
+        layout.label(text="Paste mode:")
+        layout.prop(props, "paste_mode", text="")
+        
+        layout.operator("bim.paste_from_clipboard", text="Paste", icon="PASTEDOWN")
         
         # Show clipboard status - files are in shared data directory for cross-file operations
         clipboard_json = tool.Blender.get_data_dir_path("bonsai_clipboard.json").__str__()
