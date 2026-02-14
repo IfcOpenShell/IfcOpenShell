@@ -204,6 +204,7 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             matrix = obj.matrix_world.copy()
             container_element = ifcopenshell.util.element.get_container(element)
             container_name = container_element.Name if container_element else None
+            container_class = container_element.is_a() if container_element else None
             
             clipboard_data["elements"].append({
                 "global_id": element.GlobalId,
@@ -211,6 +212,7 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
                 "name": element.Name or "",
                 "matrix": [float(v) for row in matrix for v in row],
                 "container_name": container_name,
+                "container_class": container_class,
             })
         
         clipboard_json = get_clipboard_path("bonsai_clipboard.json")
@@ -277,7 +279,7 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             # Find element in clipboard library by GUID
             try:
                 library_element = IfcStore.library_file.by_guid(elem_data["global_id"])
-            except Exception as e:
+            except RuntimeError as e:
                 failed_elements.append(f"{elem_data.get('ifc_class', 'Unknown')} (GUID not found: {e})")
                 continue
             
@@ -290,26 +292,25 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
                 library_element.GlobalId = new_guid
                 elem_data["global_id"] = new_guid  # Update the clipboard data too
                 elements_needing_new_guid.append((old_guid, new_guid, library_element.is_a()))
-            except:
-                # No conflict, proceed normally
+            except RuntimeError:
+                # No conflict, proceed normally with original GlobalId
                 pass
         
         # Second pass: append each element from clipboard using the standard library append flow
         pasted_count = 0
+        created_containers = {}  # Cache for created containers: {(class, name): element}
         
         for idx, elem_data in enumerate(clipboard_data["elements"]):
             if show_progress and idx % max(1, total // 10) == 0:
                 percent = int((idx / total) * 100)
                 bpy.context.window_manager.progress_update(percent)
             
-            # Find element in clipboard library by GUID (which may have been regenerated)
             try:
                 library_element = IfcStore.library_file.by_guid(elem_data["global_id"])
-            except Exception as e:
+            except RuntimeError as e:
                 failed_elements.append(f"{elem_data.get('ifc_class', 'Unknown')} (GUID not found after regeneration: {e})")
                 continue
             
-            # Try to append the element - may fail due to broken material relationships etc.
             try:
                 bpy.ops.bim.append_library_element(
                     definition=library_element.id(), 
@@ -317,6 +318,54 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
                     assume_unique_by_name=False
                 )
                 pasted_count += 1
+                
+                container_name = elem_data.get("container_name")
+                container_class = elem_data.get("container_class")
+                
+                if container_name and container_class:
+                    pasted_element = ifc_file.by_guid(elem_data["global_id"])
+                    pasted_obj = tool.Ifc.get_object(pasted_element)
+                    
+                    if not pasted_obj:
+                        continue
+                    
+                    container = None
+                    cache_key = (container_class, container_name)
+                    
+                    if cache_key in created_containers:
+                        container = created_containers[cache_key]
+                    else:
+                        for element in ifc_file.by_type(container_class):
+                            if element.Name == container_name:
+                                container = element
+                                break
+                        
+                        if not container:
+                            parent = self.find_container_parent(ifc_file, container_class)
+                            parent_obj = tool.Ifc.get_object(parent) if parent else None
+                            
+                            if parent_obj:
+                                bpy.ops.bim.add_part_to_object(
+                                    part_class=container_class,
+                                    part_name=container_name,
+                                    element=parent.id()
+                                )
+                                for element in ifc_file.by_type(container_class):
+                                    if element.Name == container_name and element not in created_containers.values():
+                                        container = element
+                                        break
+                        
+                        if container:
+                            created_containers[cache_key] = container
+                    
+                    if container:
+                        for obj in context.selected_objects:
+                            obj.select_set(False)
+                        pasted_obj.select_set(True)
+                        context.view_layer.objects.active = pasted_obj
+                        
+                        bpy.ops.bim.assign_container(container=container.id())
+                    
             except Exception as e:
                 failed_elements.append(f"{library_element.is_a()} {elem_data['global_id']} (Error: {str(e)[:100]})")
                 continue
@@ -336,6 +385,48 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, f"Failed to paste all {len(failed_elements)} element(s) - see console")
         
         return {"FINISHED"}
+    
+    def find_container_parent(self, ifc_file, container_class):
+        """Find appropriate parent for a spatial container based on hierarchy."""
+        hierarchy = {
+            "IfcSpace": "IfcBuildingStorey",
+            "IfcBuildingStorey": "IfcBuilding",
+            "IfcBuilding": "IfcSite",
+            "IfcSite": "IfcProject",
+        }
+        
+        parent_class = hierarchy.get(container_class)
+        if not parent_class:
+            for fallback_class in ["IfcBuildingStorey", "IfcBuilding", "IfcSite"]:
+                parents = ifc_file.by_type(fallback_class)
+                if parents:
+                    return parents[0]
+            return None
+        
+        parents = ifc_file.by_type(parent_class)
+        if parents:
+            return parents[0]
+        
+        if parent_class == "IfcProject":
+            projects = ifc_file.by_type("IfcProject")
+            return projects[0] if projects else None
+        
+        grandparent = self.find_container_parent(ifc_file, parent_class)
+        if not grandparent:
+            return None
+            
+        grandparent_obj = tool.Ifc.get_object(grandparent)
+        if not grandparent_obj:
+            return None
+        
+        bpy.ops.bim.add_part_to_object(
+            part_class=parent_class,
+            part_name=f"Default {parent_class.replace('Ifc', '')}",
+            element=grandparent.id()
+        )
+        
+        parents = ifc_file.by_type(parent_class)
+        return parents[-1] if parents else None  # Return the most recently created one
 
 
 
