@@ -19,9 +19,12 @@
 from __future__ import annotations
 
 import os
+import json
 import math
 import shutil
+import numpy as np
 from collections import defaultdict
+from math import radians
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, Optional
 
@@ -71,6 +74,32 @@ class Project(bonsai.core.tool.Project):
             tool.Ifc.link(tool.Ifc.get().by_id(link.ifc_definition_id), empty)
         else:
             link.empty_handle = empty
+
+    @classmethod
+    def calculate_link_matrix(cls, link) -> None:
+        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
+            metadata = json.load(f)
+
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(metadata["model_project_north"])), 4, "Z")
+        global_matrix = rot @ np.eye(4)
+        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+
+        if transformation:
+            transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+            if not np.allclose(transformation, np.eye(4)):
+                global_matrix = transformation @ global_matrix
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:,3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+        return np.linalg.inv(local_matrix) @ global_matrix
 
     @classmethod
     def duplicate_link(cls, link_name: str) -> bool:
