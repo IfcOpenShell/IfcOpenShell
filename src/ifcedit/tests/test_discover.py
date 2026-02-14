@@ -1,3 +1,4 @@
+# This file was generated with the assistance of an AI coding tool.
 from ifcedit.discover import function_docs, list_functions, list_modules
 
 

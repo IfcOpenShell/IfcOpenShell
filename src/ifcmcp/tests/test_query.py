@@ -1,3 +1,4 @@
+# This file was generated with the assistance of an AI coding tool.
 import pytest
 
 from ifcmcp.server import ifc_info, ifc_relations, ifc_select, ifc_summary, ifc_tree

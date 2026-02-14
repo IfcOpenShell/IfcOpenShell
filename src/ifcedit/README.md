@@ -1,3 +1,4 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
 # ifcedit
 
 A CLI wrapper that exposes all 350+ `ifcopenshell.api` mutation functions as

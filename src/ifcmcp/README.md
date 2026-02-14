@@ -1,3 +1,4 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
 # ifcmcp
 
 An MCP (Model Context Protocol) server that wraps `ifcquery` and `ifcedit`,

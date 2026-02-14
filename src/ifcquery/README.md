@@ -1,3 +1,4 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
 # ifcquery
 
 A CLI tool for querying and inspecting IFC building models. All output is

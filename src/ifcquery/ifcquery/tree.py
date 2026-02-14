@@ -1,5 +1,6 @@
+# This file was generated with the assistance of an AI coding tool.
 # IfcQuery - IFC model interrogation CLI
-# Copyright (C) 2025 Bruno Postle <bruno@postle.net>
+# Copyright (C) 2026 Bruno Postle <bruno@postle.net>
 #
 # This file is part of IfcQuery.
 #
