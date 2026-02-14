@@ -42,43 +42,6 @@ from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
-def update_link_is_locked(self: "Link", context: bpy.types.Context) -> None:
-    empty_handle = tool.Project.get_link_empty_handle(self)
-    if not empty_handle:
-        return
-    
-    if self.is_locked:
-        x = round(empty_handle.location.x, 3)
-        y = round(empty_handle.location.y, 3)
-        z = round(empty_handle.location.z, 3)
-        angle = round(math.degrees(empty_handle.rotation_euler.z), 3)
-        # Normalize -0.0 to 0.0 to avoid string comparison issues
-        x = 0.0 if x == 0.0 else x
-        y = 0.0 if y == 0.0 else y
-        z = 0.0 if z == 0.0 else z
-        angle = 0.0 if angle == 0.0 else angle
-        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-        
-        props = tool.Project.get_project_props()
-        filepath_posix = Path(self.filepath).as_posix()
-        for existing_link in props.links:
-            existing_filepath_posix = Path(existing_link.filepath).as_posix()
-            if existing_link.name == self.name:
-                continue
-            if existing_filepath_posix == filepath_posix and existing_link.position == new_position:
-                self.is_locked = False
-                def draw_error(self, context):
-                    self.layout.label(text=f"Cannot lock link: A link to this file")
-                    self.layout.label(text=f"already exists at position {new_position}")
-                context.window_manager.popup_menu(draw_error, title="Duplicate Link", icon='ERROR')
-                return
-        
-        tool.Geometry.lock_object(empty_handle)
-        self.position = new_position
-    else:
-        tool.Geometry.unlock_object(empty_handle)
-
-
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
@@ -306,12 +269,6 @@ class Link(PropertyGroup):
         default="0.0,0.0,0.0,0.0",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
-    is_locked: BoolProperty(
-        name="Is Locked",
-        description="Prevent this linked model from being moved, rotated, or scaled. Lock to save position to IFC",
-        default=False,
-        update=update_link_is_locked,
-    )
     is_editing: BoolProperty(name="Is Editing", description="Whether the link is being transformed", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
@@ -335,7 +292,6 @@ class Link(PropertyGroup):
         mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
         georeferenced: Literal["NONE", "NOT_COMPATIBLE", "FULL_COMPATIBLE"]
         is_loaded: bool
-        is_locked: bool
         is_editing: bool
         is_selectable: bool
         is_wireframe: bool

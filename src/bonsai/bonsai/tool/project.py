@@ -118,7 +118,6 @@ class Project(bonsai.core.tool.Project):
         new_link.mode = original_link.mode
         new_link.georeferenced = original_link.georeferenced
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
-        new_link.is_locked = False  # Start unlocked, will be locked after loading
         
         bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
         # TODO address this return state
@@ -336,94 +335,6 @@ class Project(bonsai.core.tool.Project):
                     link.name = filepath
                     link.filepath = filepath
                     link.ifc_definition_id = reference.id()
-
-    @classmethod
-    def save_linked_models_to_ifc(cls, update_positions: bool = True) -> bool:
-        """Save linked models to IFC. Returns True if successful, False if duplicate link found.
-        
-        Args:
-            update_positions: If True, update positions from empty handles. Set to False during link loading.
-        """
-        ifc_file = tool.Ifc.get()
-        links = tool.Project.get_project_props().links
-
-        # Update positions from empty handles for all loaded links (only when saving, not during linking)
-        if update_positions:
-            for link in links:
-                if link.is_loaded and link.ifc_definition_id:
-                    empty = tool.Project.get_link_empty_handle(link)
-                    if empty:
-                        # Update position from current empty handle location
-                        x = round(empty.location.x, 3)
-                        y = round(empty.location.y, 3)
-                        z = round(empty.location.z, 3)
-                        angle = round(math.degrees(empty.rotation_euler.z), 3)
-
-                        x = 0.0 if x == 0.0 else x
-                        y = 0.0 if y == 0.0 else y
-                        z = 0.0 if z == 0.0 else z
-                        angle = 0.0 if angle == 0.0 else angle
-                        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-                        
-                        if link.position != new_position:
-                            link.position = new_position
-                        
-                        reference = ifc_file.by_id(link.ifc_definition_id)
-                        reference.Location = new_position
-
-        seen_links = set()
-        for link in links:
-            link_key = (Path(link.filepath).as_posix(), link.position or "")
-            if link_key in seen_links:
-                return False
-            seen_links.add(link_key)
-
-        links_by_filepath: dict[str, list[tuple[str, str]]] = defaultdict(list)  # filepath -> [(position, link_name), ...]
-        for link in links:
-            filepath = Path(link.filepath).as_posix()
-            position = link.position or ""
-            links_by_filepath[filepath].append((position, link.name))
-
-        existing_docs = cls.get_linked_models_documents()
-
-        for filepath, position_list in links_by_filepath.items():
-            doc = existing_docs.get(filepath)
-            
-            if doc is None:
-                doc = ifcopenshell.api.document.add_information(ifc_file)
-                doc_name = Path(filepath).name
-                doc.Name = doc_name
-                doc.Location = filepath
-                doc.Scope = "LINKED_MODEL"
-                existing_docs[filepath] = doc
-
-            existing_refs = tool.Document.get_document_references(doc)
-            existing_positions = {(ref.Location or ""): ref for ref in existing_refs}
-
-            required_positions = {pos for pos, _ in position_list}
-
-            for position in required_positions:
-                if position not in existing_positions:
-                    reference = ifcopenshell.api.document.add_reference(ifc_file, doc)
-                    reference.Location = position
-                    
-                    for pos, link_name in position_list:
-                        if pos == position:
-                            for link in links:
-                                if link.name == link_name:
-                                    link.ifc_definition_id = reference.id()
-                                    
-                                    empty = cls.get_link_empty_handle(link)
-                                    if empty:
-                                        cls.set_link_empty_handle(link_name, empty)
-                                    break
-
-            # Remove obsolete references (or corrupted by user)
-            for position, ref in existing_positions.items():
-                if position not in required_positions:
-                    ifcopenshell.api.document.remove_reference(ifc_file, ref)
-
-        return True
     
     @classmethod
     def get_project_library_elements(
