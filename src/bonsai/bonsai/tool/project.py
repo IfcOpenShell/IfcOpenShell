@@ -104,26 +104,6 @@ class Project(bonsai.core.tool.Project):
         return np.linalg.inv(local_matrix) @ global_matrix
 
     @classmethod
-    def duplicate_link(cls, link_name: str) -> bool:
-        """Duplicate a link. Returns True if successful, False otherwise."""
-        props = cls.get_project_props()
-        original_link = props.links[link_name]
-
-        x, y, z, angle = [float(v.strip()) for v in original_link.position.split(",")]
-        x += 0.5  # Offset to avoid duplicate detection
-        new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-
-        new_link = props.links.add()
-        new_link.name = original_link.filepath
-        new_link.filepath = original_link.filepath
-        new_link.georeferenced = original_link.georeferenced
-        new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
-
-        bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
-        # TODO address this return state
-        return True
-
-    @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
         filepath = tool.Blender.get_data_dir_path(Path("templates") / "projects" / template)

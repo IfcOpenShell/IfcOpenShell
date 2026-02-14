@@ -903,20 +903,6 @@ class OverrideDelete(bpy.types.Operator):
             if not is_valid_data_block:
                 continue
             
-            # Check if this is a link empty handle (check links list, not IFC entity)
-            is_link_handle = False
-            props = tool.Project.get_project_props()
-            for i, link in enumerate(props.links):
-                empty_handle = tool.Project.get_link_empty_handle(link.name)
-                if empty_handle == obj:
-                    is_link_handle = True
-                    # UnlinkIfc handles both unloading and removal for all link types
-                    bpy.ops.bim.unlink_ifc(link_index=i)
-                    break
-            
-            if is_link_handle:
-                continue
-                
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -926,6 +912,9 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
+                    continue
+                if element.is_a("IfcDocumentReference"):
+                    self.report({"INFO"}, "Linked models cannot be deleted.")
                     continue
                 if element.is_a("IfcGridAxis"):
                     # Deleting the last W axis is OK
@@ -1211,18 +1200,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
-        # Duplicate a linked project empty handle
-        if context.active_object:
-            props = tool.Project.get_project_props()
-            for link in props.links:
-                empty_handle = tool.Project.get_link_empty_handle(link.name)
-                if empty_handle == context.active_object:
-                    if tool.Project.duplicate_link(link.name):
-                        operator.report({"INFO"}, f"Duplicated link to {link.filepath}")
-                    else:
-                        operator.report({"ERROR"}, f"Failed to duplicate link: {link.filepath}")
-                    return {}
-        
         objects_to_remove: set[bpy.types.Object] = set()
 
         for obj in context.selected_objects:
@@ -1233,6 +1210,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 objects_to_remove.add(obj)
                 operator.report({"ERROR"}, f"Drawing '{obj.name}' not duplicated.")
+                continue
+
+            if element.is_a("IfcDocumentReference"):
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, f"Linked model '{obj.name}' not duplicated.")
                 continue
 
             if tool.Geometry.is_locked(element):
