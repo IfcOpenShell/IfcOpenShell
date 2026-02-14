@@ -316,11 +316,10 @@ class Project(bonsai.core.tool.Project):
                 link.name = filepath
                 link.filepath = filepath
                 link.ifc_definition_id = reference.id()
-                link.has_transformation = (
-                    reference[1]
-                    and (m := np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4))
-                    and not np.allclose(m, np.eye(4))
-                )
+                link.has_transformation = False
+                if reference[1]:
+                    m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
+                    link.has_transformation = not np.allclose(m, np.eye(4))
 
     @classmethod
     def get_project_library_elements(
