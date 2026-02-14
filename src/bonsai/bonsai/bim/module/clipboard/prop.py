@@ -31,10 +31,10 @@ class BIMClipboardProperties(PropertyGroup):
     paste_mode: EnumProperty(
         name="Paste Mode",
         items=[
-            ("DUPLICATE", "Duplicate in case of name conflict", "Duplicate names if they exist both in the source and destination"),
-            ("RENAME", "Rename in case of name conflict", "Automatically add _copy suffix to pasted elements when name conflicts occur"),
-            ("DESTINATION", "Destination used in case of name conflict", "Keep destination file elements unchanged when name conflicts occur"),
-            ("SOURCE", "Source used in case of name conflict", "Replace destination file elements with source when name conflicts occur"),
+            ("DUPLICATE", "Duplicate", "Always create new elements with new GUIDs (default)"),
+            ("DESTINATION", "Reuse Destination", "Reuse existing elements from destination file when names match (materials, types, styles)"),
+            # ("SOURCE", "Reuse Source", "Reuse across pastes - requires tracking source file GUIDs (not yet implemented)"),
+            # ("RENAME", "Rename", "Automatically add _copy suffix to pasted elements when name conflicts occur"),
         ],
         default="DUPLICATE",
     )
