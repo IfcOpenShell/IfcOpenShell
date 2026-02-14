@@ -81,7 +81,9 @@ class Project(bonsai.core.tool.Project):
         with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
             metadata = json.load(f)
 
-        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(metadata["model_project_north"])), 4, "Z")
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
+            radians(-float(metadata["model_project_north"])), 4, "Z"
+        )
         global_matrix = rot @ np.eye(4)
         global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
 
@@ -98,7 +100,7 @@ class Project(bonsai.core.tool.Project):
         gprops = tool.Georeference.get_georeference_props()
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
         local_matrix = rot @ np.eye(4)
-        local_matrix[:,3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
         return np.linalg.inv(local_matrix) @ global_matrix
 
     @classmethod
@@ -106,19 +108,17 @@ class Project(bonsai.core.tool.Project):
         """Duplicate a link. Returns True if successful, False otherwise."""
         props = cls.get_project_props()
         original_link = props.links[link_name]
-        
+
         x, y, z, angle = [float(v.strip()) for v in original_link.position.split(",")]
         x += 0.5  # Offset to avoid duplicate detection
         new_position = f"{x:.3f},{y:.3f},{z:.3f},{angle:.3f}"
-        
+
         new_link = props.links.add()
         new_link.name = original_link.filepath
         new_link.filepath = original_link.filepath
-        new_link.position = new_position
-        new_link.mode = original_link.mode
         new_link.georeferenced = original_link.georeferenced
         new_link.geo_pos_in_3dview = original_link.geo_pos_in_3dview
-        
+
         bpy.ops.bim.load_link(link_index=-1, use_cache=True, skip_position_calculation_and_not_locked=True)
         # TODO address this return state
         return True
@@ -328,14 +328,20 @@ class Project(bonsai.core.tool.Project):
         links = tool.Project.get_project_props().links
         links.clear()
         for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
-            if doc.Scope == "LINKED_MODEL":
-                for reference in tool.Drawing.get_document_references(doc):
-                    filepath = reference.Location
-                    link = links.add()
-                    link.name = filepath
-                    link.filepath = filepath
-                    link.ifc_definition_id = reference.id()
-    
+            if doc.Scope != "LINKED_MODEL":
+                continue
+            for reference in tool.Drawing.get_document_references(doc):
+                filepath = reference.Location
+                link = links.add()
+                link.name = filepath
+                link.filepath = filepath
+                link.ifc_definition_id = reference.id()
+                link.has_transformation = (
+                    reference[1]
+                    and (m := np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4))
+                    and not np.allclose(m, np.eye(4))
+                )
+
     @classmethod
     def get_project_library_elements(
         cls, project_library: ifcopenshell.entity_instance

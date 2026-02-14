@@ -1372,13 +1372,13 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         pprops = tool.Project.get_project_props()
-        
+
         # Populate false origin and project north from 3D cursor for user convenience
         cursor = context.scene.cursor
         cursor_loc = cursor.location
         cursor_rot = cursor.rotation_euler
-        angle = - cursor_rot.z
-        
+        angle = -cursor_rot.z
+
         # Calculate false origin based on the provided formulas
         # x = -3Dcursor.x * cos(angle) - 3Dcursor.y * sin(angle)
         # y = 3Dcursor.x * sin(angle) - 3Dcursor.y * cos(angle)
@@ -1386,21 +1386,21 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         false_origin_x = -cursor_loc.x * math.cos(angle) - cursor_loc.y * math.sin(angle)
         false_origin_y = cursor_loc.x * math.sin(angle) - cursor_loc.y * math.cos(angle)
         false_origin_z = -cursor_loc.z
-        
+
         # Set the false_origin value
         pprops.false_origin = f"{false_origin_x:.3f},{false_origin_y:.3f},{false_origin_z:.3f}"
         pprops.project_north = str(round(math.degrees(angle), 1))
-        
+
         return super().invoke(context, event)
 
     def _execute(self, context):
         start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
-        
+
         if not files or all(not f or not f.strip() for f in files):
             self.report({"ERROR"}, "No file selected")
             return {"CANCELLED"}
-        
+
         existing_links = tool.Project.get_linked_models_documents() if tool.Ifc.get() else {}
         for filename in files:
             if not filename or not filename.strip():
@@ -1411,7 +1411,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 continue
             props = tool.Project.get_project_props()
             filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
-            
+
             new = props.links.add()
             if tool.Ifc.get():
                 if not (document := existing_links.get(filepath)):
@@ -1424,7 +1424,6 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
-            new.mode = props.false_origin_mode
             bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache)
 
 
@@ -1477,7 +1476,6 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Load the selected file"
     link_index: bpy.props.IntProperty(name="Link Index")
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
-    skip_position_calculation_and_not_locked: bpy.props.BoolProperty(name="Skip Position Calculation and Not Locked", default=False)
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
@@ -1492,7 +1490,7 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     def link_blend(self, filepath: Path) -> None:
         with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
             data_to.collections = [c for c in data_from.collections if "IfcProject" in c]
-        
+
         # Find the linked collection
         for collection in bpy.data.collections:
             if not collection.library or Path(collection.library.filepath) != filepath:
@@ -1507,8 +1505,7 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             tool.Project.set_link_empty_handle(self.link, empty)
             bpy.context.scene.collection.objects.link(empty)
             self.link.is_loaded = True
-            if not self.skip_position_calculation_and_not_locked:
-                self.link.is_locked = True  # Lock all loaded links unless explicitly skipped
+            tool.Geometry.lock_object(empty)
             tool.Blender.select_and_activate_single_object(bpy.context, empty)
             break
         else:
@@ -1592,14 +1589,7 @@ except Exception as e:
 
         self.set_model_origin_from_link()
         self.set_georeferencing_indicator()
-        
-        if not self.link.ifc_definition_id and not self.skip_position_calculation_and_not_locked:
-            self.calculate_link_position()
-
         self.link_blend(blend_filepath)
-        
-        if tool.Ifc.get() and not self.link.ifc_definition_id and self.link.is_loaded and not self.skip_position_calculation_and_not_locked:
-            self.link.is_locked = True
 
     def set_model_origin_from_link(self) -> None:
         if tool.Ifc.get():
@@ -1662,7 +1652,9 @@ class ToggleLinkSelectability(bpy.types.Operator):
     def execute(self, context):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
-        self.library_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath).with_suffix(".ifc.cache.blend"))
+        self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
+            Path(link.filepath).with_suffix(".ifc.cache.blend")
+        )
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
             collection.hide_select = not is_selectable
@@ -1689,7 +1681,9 @@ class ToggleLinkVisibility(bpy.types.Operator):
     def execute(self, context):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
-        self.library_filepath = tool.Blender.ensure_blender_path_is_abs(Path(link.filepath).with_suffix(".ifc.cache.blend"))
+        self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
+            Path(link.filepath).with_suffix(".ifc.cache.blend")
+        )
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
         elif self.mode == "VISIBLE":
@@ -1786,7 +1780,12 @@ class EditLink(bpy.types.Operator, tool.Ifc.Operator):
 
         transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
         transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
-        transformation = ",".join(map(str, transformation.reshape(-1)))
+        if np.allclose(transformation, np.eye(4)):
+            link.has_transformation = True
+            transformation = ",".join(map(str, np.eye(4).reshape(-1)))
+        else:
+            link.has_transformation = False
+            transformation = ",".join(map(str, transformation.reshape(-1)))
 
         if tool.Ifc.get():
             reference = tool.Ifc.get().by_id(link.ifc_definition_id)
@@ -2001,14 +2000,14 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         print("Processing", self.filepath)
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
-        
+
         try:
             self.file = ifcopenshell.open(self.filepath)
         except Exception as e:
             self.report({"ERROR"}, f"Failed to open IFC file: {str(e)}")
             bpy.data.collections.remove(self.collection)
             return {"CANCELLED"}
-        
+
         tool.Ifc.set(self.file)
         print("Finished opening")
 

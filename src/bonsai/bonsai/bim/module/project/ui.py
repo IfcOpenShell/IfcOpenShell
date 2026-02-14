@@ -479,7 +479,7 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
-        
+
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
@@ -611,64 +611,19 @@ class BIM_UL_links(UIList):
         active_propname,
         index,
     ):
-        if item:
-            row = layout.row(align=True)
+        row = layout.row(align=True)
         if item.is_loaded:
-            icon_row = row.row(align=True)
-            icon_row.ui_units_x = 1.0
-
-            placed_as_per_georef = item.placed_as_per_georef
-            empty_handle = tool.Project.get_link_empty_handle(item)
-            if item.is_loaded and empty_handle and item.georeferenced == "FULL_COMPATIBLE":
-                # Get current position and rotation
-                actual_x = round(empty_handle.location.x, 3)
-                actual_y = round(empty_handle.location.y, 3)
-                actual_z = round(empty_handle.location.z, 3)
-                actual_angle = round(math.degrees(empty_handle.rotation_euler.z), 3)  # Convert to degrees
-                
-                # Parse expected position from geo_pos_in_3dview
-                if item.geo_pos_in_3dview:
-                    parts = item.geo_pos_in_3dview.split(',')
-                    if len(parts) == 4:
-                        expected_x = float(parts[0])
-                        expected_y = float(parts[1])
-                        expected_z = float(parts[2])
-                        expected_angle = float(parts[3])
-                        
-                        if item.georeferenced == "FULL_COMPATIBLE":
-                            placed_as_per_georef = (actual_x == expected_x and 
-                                                    actual_y == expected_y and 
-                                                    actual_z == expected_z and
-                                                    actual_angle == expected_angle)
-
             if item.georeferenced == "NONE":
-                icon_row.enabled = False
-                icon_row.label(text="", icon="CANCEL")
-                icon_row.enabled = True
-
+                row.label(text="", icon="NOT_FOUND")
             elif item.georeferenced == "NOT_COMPATIBLE":
-                icon_row.alert = True
-                icon_row.label(text="", icon="CANCEL")
-                icon_row.alert = False
-
+                row.alert = True
+                row.label(text="", icon="WORLD")
+                row.alert = False
             elif item.georeferenced == "FULL_COMPATIBLE":
-                if not placed_as_per_georef:
-                    icon_row.alert = True
-                icon_row.label(text="", icon="WORLD")
-                icon_row.alert = False
+                row.label(text="", icon="WORLD")
+            if item.has_transformation:
+                row.label(text="", icon="OBJECT_ORIGIN")
 
-            # Display position from the empty handle if loaded
-            position_text = "N/A"
-            empty = tool.Project.get_link_empty_handle(item)
-            if item.is_loaded and empty:
-                loc = empty.location
-                rot = empty.rotation_euler
-                position_x = round(loc.x, 3)
-                position_y = round(loc.y, 3)
-                position_z = round(loc.z, 3)
-                position_angle = round(math.degrees(rot.z), 1)
-                position_text = f"({position_x}, {position_y}, {position_z}) {position_angle}°"
-            
             row.label(text=item.filepath)
             row.operator(
                 "bim.toggle_link_selectability",

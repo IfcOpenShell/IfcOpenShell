@@ -220,10 +220,7 @@ class FilterCategory(PropertyGroup):
 
 
 class Link(PropertyGroup):
-    name: StringProperty(
-        name="Name",
-        description="Unique sequential identifier for the link",
-    )
+    name: StringProperty(name="Name")
     filepath: StringProperty(
         name="Filepath",
         description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
@@ -233,40 +230,20 @@ class Link(PropertyGroup):
         description="4x4 matrix transformation as a flattened comma separated list for the linked model",
         default="",
     )
-    position: StringProperty(
-        name="Position",
-        description="Position information (x,y,z,angle) for the linked model",
-        default="",
-    )
-    mode: EnumProperty(
-        name="Mode",
-        description="How the link was created",
-        items=[
-            ("AUTOMATIC", "Automatic", "Link created automatically with georeferencing"),
-            ("MANUAL", "Manual", "Link created manually with custom position"),
-            ("DISABLED", "Disabled", "Link created with georeferencing disabled"),
-        ],
-        default="AUTOMATIC",
-    )
     georeferenced: EnumProperty(
         name="Georeferenced",
         description="Georeferencing status: compatibility between host and linked model",
         items=[
             ("NONE", "No Georef", "Linked model has no georeferencing"),
-            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS name and vertical datum differ from host"),
+            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS differ from host"),
             ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host"),
         ],
         default="NONE",
     )
-    placed_as_per_georef: BoolProperty(
-        name="Placed As Per Georeference",
-        description="Whether this link was rightly placed using georeferencing when created",
+    has_transformation: BoolProperty(
+        name="Has Transformation",
+        description="Whether there is a transformation from its global coordinates",
         default=False,
-    )
-    geo_pos_in_3dview: StringProperty(
-        name="Position in 3D View when placed_as_per_georef",
-        description="Position and rotation in 3D view when placed_as_per_georef is True (format: x,y,z,angle)",
-        default="0.0,0.0,0.0,0.0",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_editing: BoolProperty(name="Is Editing", description="Whether the link is being transformed", default=False)
@@ -288,9 +265,9 @@ class Link(PropertyGroup):
     if TYPE_CHECKING:
         name: str
         filepath: str
-        position: str
-        mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
+        transformation: str
         georeferenced: Literal["NONE", "NOT_COMPATIBLE", "FULL_COMPATIBLE"]
+        has_transformation: bool
         is_loaded: bool
         is_editing: bool
         is_selectable: bool
