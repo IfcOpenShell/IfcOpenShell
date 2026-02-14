@@ -600,6 +600,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     definition: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
     assume_unique_by_name: bpy.props.BoolProperty(name="Assume Unique By Name", default=True, options={"SKIP_SAVE"})
+    use_geolocation: bpy.props.BoolProperty(name="Use Geolocation", default=True, options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         definition: int
@@ -629,6 +630,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
             library=library_file,
             element=library_file.by_id(self.definition),
             assume_asset_uniqueness_by_name=self.assume_unique_by_name,
+            use_geolocation=self.use_geolocation,
         )
         if not element:
             return {"FINISHED"}
