@@ -483,14 +483,15 @@ class BIM_PT_links(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
-            self.layout.template_list(
-                "BIM_UL_links",
-                "",
-                self.props,
-                "links",
-                self.props,
-                "active_link_index",
-            )
+            if self.props.active_link:
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                if self.props.active_link.is_editing:
+                    row.operator("bim.edit_link", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_link", text="", icon="CANCEL")
+                else:
+                    row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
+            self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
             row = self.layout.row(align=True)
@@ -694,7 +695,6 @@ class BIM_UL_links(UIList):
             row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
             row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
             row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
-            row.prop(item, "is_locked", text="", icon="VIEW_LOCKED" if item.is_locked else "VIEW_UNLOCKED", emboss=False)
         else:
             row.label(text=item.filepath)
             row.operator("bim.load_link", text="", icon="LINKED").link_index = index

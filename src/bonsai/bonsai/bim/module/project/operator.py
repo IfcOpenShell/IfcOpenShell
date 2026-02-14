@@ -1829,6 +1829,82 @@ class ToggleLinkVisibility(bpy.types.Operator):
         ]
 
 
+class EnableEditingLink(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_link"
+    bl_label = "Enable Editing Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Enable editing link location"
+
+    def execute(self, context):
+        link = tool.Project.get_project_props().active_link
+        link.is_editing = True
+        tool.Geometry.unlock_object(tool.Project.get_link_empty_handle(link))
+        return {"FINISHED"}
+
+
+class DisableEditingLink(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_link"
+    bl_label = "Disable Editing Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Disable editing link and restore to previously saved location"
+
+    def execute(self, context):
+        link = tool.Project.get_project_props().active_link
+        link.is_editing = False
+        obj = tool.Project.get_link_empty_handle(link)
+        obj.matrix_world = Matrix(tool.Project.calculate_link_matrix(link))
+        tool.Geometry.lock_object(obj)
+        return {"FINISHED"}
+
+
+class EditLink(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_link"
+    bl_label = "Edit Link"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Disable editing link and restore to previously saved location"
+
+    def _execute(self, context):
+        link = tool.Project.get_project_props().active_link
+        link.is_editing = False
+        obj = tool.Project.get_link_empty_handle(link)
+        new_obj_matrix = obj.matrix_world
+
+        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
+            metadata = json.load(f)
+
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
+            radians(-float(metadata["model_project_north"])), 4, "Z"
+        )
+        global_matrix = rot @ np.eye(4)
+        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+
+        # At this point, a user specified transformation may be applied to
+        # further modify global_matrix. We will calculate this transformation.
+        # global_matrix = transformation @ global_matrix
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+
+        # If we knew the transformation, obj_matrix is typically calculated as:
+        # obj_matrix = np.linalg.inv(local_matrix) @ global_matrix
+
+        transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
+        transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
+        transformation = ",".join(map(str, transformation.reshape(-1)))
+
+        if tool.Ifc.get():
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            reference[1] = transformation
+        else:
+            link.transformation = transformation
+
+        obj.matrix_world = Matrix(tool.Project.calculate_link_matrix(link))
+        tool.Geometry.lock_object(obj)
+
+
 class SelectLinkHandle(bpy.types.Operator):
     bl_idname = "bim.select_link_handle"
     bl_label = "Select Link Handle"

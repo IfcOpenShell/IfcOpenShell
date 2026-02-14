@@ -312,6 +312,7 @@ class Link(PropertyGroup):
         default=False,
         update=update_link_is_locked,
     )
+    is_editing: BoolProperty(name="Is Editing", description="Whether the link is being transformed", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
@@ -335,6 +336,7 @@ class Link(PropertyGroup):
         georeferenced: Literal["NONE", "NOT_COMPATIBLE", "FULL_COMPATIBLE"]
         is_loaded: bool
         is_locked: bool
+        is_editing: bool
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool
@@ -522,6 +524,10 @@ class BIMProjectProperties(PropertyGroup):
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
+
+    @property
+    def active_link(self) -> Union[Link, None]:
+        return tool.Blender.get_active_uilist_element(self.links, self.active_link_index)
 
     @property
     def active_clipping_plane(self) -> ObjProperty | None:
