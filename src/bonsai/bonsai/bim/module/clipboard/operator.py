@@ -19,7 +19,6 @@
 import bpy
 import json
 import os
-import logging
 import bonsai
 import ifcopenshell
 import ifcopenshell.util.element
@@ -88,17 +87,22 @@ class BonsaiGraphClipboardEngine:
             bpy.context.window_manager.progress_begin(0, 100)
             bpy.context.window_manager.progress_update(1)
 
-        new_elements = self._clone_graph(source, roots, show_progress, paste_mode)
+        new_elements, copied_entities = self._clone_graph(source, roots, show_progress, paste_mode)
 
         if show_progress:
             bpy.context.window_manager.progress_update(85)
 
-        self._reattach_to_active_container(new_elements, context)
+        self._reattach_to_containers(source, new_elements, copied_entities, context)
 
         if show_progress:
             bpy.context.window_manager.progress_update(90)
 
         self._import_into_blender(new_elements)
+
+        if show_progress:
+            bpy.context.window_manager.progress_update(95)
+
+        self._preserve_spatial_hierarchy(source, new_elements, copied_entities, context)
 
         if show_progress:
             bpy.context.window_manager.progress_update(100)
@@ -231,56 +235,37 @@ class BonsaiGraphClipboardEngine:
         
         :param existing_by_name: Dictionary to populate with {(class, name): element}
         """
-        import logging
-        logger = logging.getLogger("BIM")
         print("\n=== Building existing elements map for DESTINATION mode ===")
-        logger.info("=== Building existing elements map for DESTINATION mode ===")
         
         # Map type products by (class, Name) - these can be reused
         for product in self.target.by_type("IfcTypeProduct"):
-            try:
-                if hasattr(product, "Name") and product.Name is not None:
-                    key = (product.is_a(), product.Name)
-                    existing_by_name[key] = product
-                    print(f"  Existing TYPE: {product.is_a()} '{product.Name}' (id={product.id()})")
-            except:
-                pass
+            if hasattr(product, "Name") and product.Name is not None:
+                key = (product.is_a(), product.Name)
+                existing_by_name[key] = product
+                print(f"  Existing TYPE: {product.is_a()} '{product.Name}' (id={product.id()})")
         
         # Map materials by ("IfcMaterial", Name)
         for material in self.target.by_type("IfcMaterial"):
-            try:
-                if hasattr(material, "Name") and material.Name is not None:
-                    key = ("IfcMaterial", material.Name)
-                    existing_by_name[key] = material
-                    print(f"  Existing: IfcMaterial '{material.Name}' (id={material.id()})")
-                    logger.info(f"  Existing: IfcMaterial '{material.Name}' (id={material.id()})")
-            except:
-                pass
+            if hasattr(material, "Name") and material.Name is not None:
+                key = ("IfcMaterial", material.Name)
+                existing_by_name[key] = material
+                print(f"  Existing: IfcMaterial '{material.Name}' (id={material.id()})")
         
         # Map profiles by (class, ProfileName)
         for profile in self.target.by_type("IfcProfileDef"):
-            try:
-                if hasattr(profile, "ProfileName") and profile.ProfileName is not None:
-                    key = (profile.is_a(), profile.ProfileName)
-                    existing_by_name[key] = profile
-                    print(f"  Existing: {profile.is_a()} '{profile.ProfileName}' (id={profile.id()})")
-                    logger.info(f"  Existing: {profile.is_a()} '{profile.ProfileName}' (id={profile.id()})")
-            except:
-                pass
+            if hasattr(profile, "ProfileName") and profile.ProfileName is not None:
+                key = (profile.is_a(), profile.ProfileName)
+                existing_by_name[key] = profile
+                print(f"  Existing: {profile.is_a()} '{profile.ProfileName}' (id={profile.id()})")
         
         # Map styles by (class, Name)
         for style in self.target.by_type("IfcPresentationStyle"):
-            try:
-                if hasattr(style, "Name") and style.Name is not None:
-                    key = (style.is_a(), style.Name)
-                    existing_by_name[key] = style
-                    print(f"  Existing: {style.is_a()} '{style.Name}' (id={style.id()})")
-                    logger.info(f"  Existing: {style.is_a()} '{style.Name}' (id={style.id()})")
-            except:
-                pass
+            if hasattr(style, "Name") and style.Name is not None:
+                key = (style.is_a(), style.Name)
+                existing_by_name[key] = style
+                print(f"  Existing: {style.is_a()} '{style.Name}' (id={style.id()})")
         
         print(f"=== Found {len(existing_by_name)} existing elements ===")
-        logger.info(f"=== Found {len(existing_by_name)} existing elements ===")
     
     def _find_existing_element(self, source_element, existing_by_name, paste_mode):
         """
@@ -341,10 +326,7 @@ class BonsaiGraphClipboardEngine:
         :param existing_by_name: Map of existing elements in destination
         :param paste_mode: Current paste mode (should be DESTINATION)
         """
-        import logging
-        logger = logging.getLogger("BIM")
         print(f"\n=== Pre-populating copied_entities for {paste_mode} mode ===")
-        logger.info(f"=== Pre-populating copied_entities for {paste_mode} mode ===")
         
         # Collect all materials, styles, profiles, types referenced by elements
         # We need to use the same logic as _clone_graph to find dependencies
@@ -365,18 +347,15 @@ class BonsaiGraphClipboardEngine:
                     print(f"    Found type material: {type_material.is_a()} '{mat_name}'")
                 
                 # Get all materials from type
-                try:
-                    type_materials_list = ifcopenshell.util.element.get_materials(element_type)
-                    for mat in type_materials_list:
-                        elements_to_check.add(mat)
-                        # Also check for styled representations
-                        for material_rep in getattr(mat, 'HasRepresentation', []):
-                            for rep in getattr(material_rep, 'Representations', []):
-                                for item in getattr(rep, 'Items', []):
-                                    for styled_item in getattr(item, 'Styles', []):
-                                        elements_to_check.add(styled_item)
-                except:
-                    pass
+                type_materials_list = ifcopenshell.util.element.get_materials(element_type)
+                for mat in type_materials_list:
+                    elements_to_check.add(mat)
+                    # Also check for styled representations
+                    for material_rep in getattr(mat, 'HasRepresentation', []):
+                        for rep in getattr(material_rep, 'Representations', []):
+                            for item in getattr(rep, 'Items', []):
+                                for styled_item in getattr(item, 'Styles', []):
+                                    elements_to_check.add(styled_item)
             
             # Get occurrence materials
             occurrence_material = ifcopenshell.util.element.get_material(root)
@@ -386,25 +365,21 @@ class BonsaiGraphClipboardEngine:
                 print(f"  Found occurrence material: {occurrence_material.is_a()} '{mat_name}' for {root.is_a()} '{root.Name}'")
             
             # Get all materials (handles material sets, layers, etc.)
-            try:
-                materials_list = ifcopenshell.util.element.get_materials(root)
-                for mat in materials_list:
-                    elements_to_check.add(mat)
-                    # Check for styled representations of materials
-                    for material_rep in getattr(mat, 'HasRepresentation', []):
-                        for rep in getattr(material_rep, 'Representations', []):
-                            for item in getattr(rep, 'Items', []):
-                                for styled_item in getattr(item, 'Styles', []):
-                                    elements_to_check.add(styled_item)
-            except:
-                pass
+            materials_list = ifcopenshell.util.element.get_materials(root)
+            for mat in materials_list:
+                elements_to_check.add(mat)
+                # Check for styled representations of materials
+                for material_rep in getattr(mat, 'HasRepresentation', []):
+                    for rep in getattr(material_rep, 'Representations', []):
+                        for item in getattr(rep, 'Items', []):
+                            for styled_item in getattr(item, 'Styles', []):
+                                elements_to_check.add(styled_item)
             
             # Also traverse for geometric dependencies (profiles, etc.)
             for element in source.traverse(root):
                 elements_to_check.add(element)
         
         print(f"Checking {len(elements_to_check)} source elements for potential reuse")
-        logger.info(f"  Checking {len(elements_to_check)} source elements")
         
         # Check each element and map to existing destination element if found
         reused_count = 0
@@ -448,14 +423,11 @@ class BonsaiGraphClipboardEngine:
                     elif hasattr(element, "ProfileName"):
                         elem_name = element.ProfileName or ""
                     print(f"  REUSE: {element.is_a()} '{elem_name}' source_id={element.id()} -> dest_id={existing.id()}")
-                    logger.info(f"  REUSE: {element.is_a()} '{elem_name}' source_id={element.id()} -> dest_id={existing.id()}")
             except Exception as e:
-                logger.warning(f"  Error checking element: {e}")
-                pass
+                print(f"  Error checking element: {e}")
         
         print(f"Checked {checked_count} elements (skipped product instances)")
         print(f"=== Pre-populated {reused_count} elements for reuse ===")
-        logger.info(f"=== Pre-populated {reused_count} elements for reuse ===")
 
     # --------------------------------------------------------
 
@@ -469,17 +441,17 @@ class BonsaiGraphClipboardEngine:
         :param show_progress: Whether to show progress indicator
         :param paste_mode: How to handle name conflicts (DUPLICATE, RENAME, DESTINATION, SOURCE)
         """
-        import logging
-        logger = logging.getLogger("BIM")
         print(f"\n=== PASTE OPERATION START ===")
         print(f"Mode: {paste_mode}")
         print(f"Elements to paste: {len(root_elements)}")
-        logger.info(f"=== Starting paste with mode: {paste_mode} ===")
-        logger.info(f"  Pasting {len(root_elements)} root elements")
         
         # Record existing contexts before copying anything
         # These are the "original" contexts we want to use
         original_context_ids = {ctx.id() for ctx in self.target.by_type("IfcGeometricRepresentationContext")}
+        
+        # Track the maximum entity ID before paste - any ID greater than this is newly pasted
+        # This lets us identify new entities without accessing potentially deleted objects
+        max_entity_id_before_paste = max((e.id() for e in self.target), default=0)
 
         copied_entities = {}  # Reuse map for shared dependencies
         guid_map = {}
@@ -507,6 +479,8 @@ class BonsaiGraphClipboardEngine:
         type_materials = {}  # Track type -> material mapping for reconnection
         element_psets = {}  # Track element -> property sets mapping for reconnection
         type_psets = {}  # Track type -> property sets mapping for reconnection
+        
+        pre_existing_entity_ids = {entity.id() for entity in copied_entities.values()} if copied_entities else set()
         
         # Progress: 1-10% for dependency copying
         for idx, root in enumerate(root_elements):
@@ -870,8 +844,14 @@ class BonsaiGraphClipboardEngine:
                             pset=pset_entity,
                             properties={"Data": new_data}
                         )
-                except:
+                except (json.JSONDecodeError, KeyError, RuntimeError):
                     pass
+        
+        if paste_mode == "RENAME":
+            if show_progress:
+                bpy.context.window_manager.progress_update(80.5)
+            print(f"\n=== Applying RENAME mode: adding _copy suffix ===")
+            self._rename_pasted_elements(new_roots, element_types, copied_entities, pre_existing_entity_ids, max_entity_id_before_paste)
         
         # Progress: 81% for context remapping
         if show_progress:
@@ -924,7 +904,7 @@ class BonsaiGraphClipboardEngine:
                         try:
                             self.target.remove(ctx)
                             removed_count += 1
-                        except:
+                        except RuntimeError:
                             pass
                     else:
                         # Check if this parent has any subcontexts still in use
@@ -937,54 +917,445 @@ class BonsaiGraphClipboardEngine:
                             try:
                                 self.target.remove(ctx)
                                 removed_count += 1
-                            except:
+                            except RuntimeError:
                                 pass
         
 # Progress: 84% complete
         if show_progress:
             bpy.context.window_manager.progress_update(84)
 
-        return new_roots
+        return new_roots, copied_entities
+
+    # --------------------------------------------------------
+    
+    def _rename_pasted_elements(self, new_roots, element_types, copied_entities, pre_existing_entity_ids, max_entity_id_before_paste):
+        """
+        Rename pasted types, materials, styles, and profiles that conflict with existing names in the target file.
+        Only renames if there's a name collision - doesn't rename duplicates within the source.
+        Products are NOT renamed as duplicate product names are common practice in IFC.
+        
+        :param new_roots: List of newly pasted root elements
+        :param element_types: Dictionary mapping root element IDs to their types
+        :param copied_entities: Dictionary of all copied entities (source_id -> dest_entity)
+        :param pre_existing_entity_ids: Set of entity IDs that existed before copying (from DESTINATION mode)
+        :param max_entity_id_before_paste: Maximum entity ID before paste operation (used to identify new entities)
+        """
+        print("\n=== Building existing names map for RENAME conflict detection ===")
+        
+        # Build sets of existing names in target file (BEFORE paste)
+        # We identify newly pasted entities by checking if their ID > max_entity_id_before_paste
+        # This avoids calling .id() on potentially deleted entities from copied_entities
+        
+        # Types by (class, Name)
+        existing_type_names = set()
+        for type_product in self.target.by_type("IfcTypeProduct"):
+            # Skip newly pasted types (ID > max from before paste)
+            if type_product.id() > max_entity_id_before_paste:
+                continue
+            if hasattr(type_product, "Name") and type_product.Name is not None:
+                key = (type_product.is_a(), type_product.Name)
+                existing_type_names.add(key)
+                print(f"  Existing type: {type_product.is_a()} '{type_product.Name}'")
+        
+        # Materials by Name
+        existing_material_names = set()
+        for material in self.target.by_type("IfcMaterial"):
+            # Skip newly pasted materials
+            if material.id() > max_entity_id_before_paste:
+                continue
+            if hasattr(material, "Name") and material.Name is not None:
+                existing_material_names.add(material.Name)
+                print(f"  Existing material: '{material.Name}'")
+        
+        # Styles by (class, Name)
+        existing_style_names = set()
+        for style in self.target.by_type("IfcPresentationStyle"):
+            # Skip newly pasted styles
+            if style.id() > max_entity_id_before_paste:
+                continue
+            if hasattr(style, "Name") and style.Name is not None:
+                key = (style.is_a(), style.Name)
+                existing_style_names.add(key)
+                print(f"  Existing style: {style.is_a()} '{style.Name}'")
+        
+        # Profiles by (class, ProfileName)
+        existing_profile_names = set()
+        for profile in self.target.by_type("IfcProfileDef"):
+            # Skip newly pasted profiles
+            if profile.id() > max_entity_id_before_paste:
+                continue
+            if hasattr(profile, "ProfileName") and profile.ProfileName is not None:
+                key = (profile.is_a(), profile.ProfileName)
+                existing_profile_names.add(key)
+                print(f"  Existing profile: {profile.is_a()} '{profile.ProfileName}'")
+        
+        print(f"Found {len(existing_type_names)} types, "
+              f"{len(existing_material_names)} materials, {len(existing_style_names)} styles, "
+              f"{len(existing_profile_names)} profiles")
+        
+        renamed_count = 0
+        
+        # NOTE: We don't rename products - duplicate product names are common practice in IFC
+        
+        # Rename types if they conflict with existing names
+        print("\n=== Checking pasted types for name conflicts ===")
+        renamed_types = set()
+        for copied_type in element_types.values():
+            try:
+                type_id = copied_type.id()
+                if type_id not in renamed_types:
+                    if hasattr(copied_type, "Name") and copied_type.Name:
+                        key = (copied_type.is_a(), copied_type.Name)
+                        if key in existing_type_names:
+                            old_name = copied_type.Name
+                            copied_type.Name = f"{old_name}_copy"
+                            renamed_types.add(type_id)
+                            renamed_count += 1
+                            print(f"  Renamed TYPE: {copied_type.is_a()} '{old_name}' -> '{copied_type.Name}' (id={type_id})")
+            except (RuntimeError, ReferenceError):
+                # Type might have been deleted - skip it
+                continue
+        
+        # Rename materials, styles, profiles if they conflict with existing names
+        # Only rename entities that are NOT in pre_existing_entity_ids (i.e., newly created, not reused)
+        # We iterate over by_type() to avoid accessing deleted entities from copied_entities
+        print("\n=== Checking pasted materials/styles/profiles for name conflicts ===")
+        renamed_entities = set()
+        
+        # Check materials
+        for dest_entity in self.target.by_type("IfcMaterial"):
+            try:
+                entity_id = dest_entity.id()
+                
+                # Skip entities that existed before paste
+                if entity_id <= max_entity_id_before_paste:
+                    continue
+                
+                # Skip if this entity was pre-existing (reused from destination)
+                if entity_id in pre_existing_entity_ids:
+                    continue
+                
+                # Skip if already renamed
+                if entity_id in renamed_entities:
+                    continue
+                
+                if hasattr(dest_entity, "Name") and dest_entity.Name:
+                    if dest_entity.Name in existing_material_names:
+                        old_name = dest_entity.Name
+                        dest_entity.Name = f"{old_name}_copy"
+                        renamed_entities.add(entity_id)
+                        renamed_count += 1
+                        print(f"  Renamed MATERIAL: '{old_name}' -> '{dest_entity.Name}' (id={entity_id})")
+            except (RuntimeError, ReferenceError):
+                continue
+        
+        # Check presentation styles
+        for dest_entity in self.target.by_type("IfcPresentationStyle"):
+            try:
+                entity_id = dest_entity.id()
+                
+                # Skip entities that existed before paste
+                if entity_id <= max_entity_id_before_paste:
+                    continue
+                
+                # Skip if this entity was pre-existing (reused from destination)
+                if entity_id in pre_existing_entity_ids:
+                    continue
+                
+                # Skip if already renamed
+                if entity_id in renamed_entities:
+                    continue
+                
+                if hasattr(dest_entity, "Name") and dest_entity.Name:
+                    key = (dest_entity.is_a(), dest_entity.Name)
+                    if key in existing_style_names:
+                        old_name = dest_entity.Name
+                        dest_entity.Name = f"{old_name}_copy"
+                        renamed_entities.add(entity_id)
+                        renamed_count += 1
+                        print(f"  Renamed STYLE: {dest_entity.is_a()} '{old_name}' -> '{dest_entity.Name}' (id={entity_id})")
+            except (RuntimeError, ReferenceError):
+                continue
+        
+        # Check profiles
+        for dest_entity in self.target.by_type("IfcProfileDef"):
+            try:
+                entity_id = dest_entity.id()
+                
+                # Skip entities that existed before paste
+                if entity_id <= max_entity_id_before_paste:
+                    continue
+                
+                # Skip if this entity was pre-existing (reused from destination)
+                if entity_id in pre_existing_entity_ids:
+                    continue
+                
+                # Skip if already renamed
+                if entity_id in renamed_entities:
+                    continue
+                
+                if hasattr(dest_entity, "ProfileName") and dest_entity.ProfileName:
+                    key = (dest_entity.is_a(), dest_entity.ProfileName)
+                    if key in existing_profile_names:
+                        old_name = dest_entity.ProfileName
+                        dest_entity.ProfileName = f"{old_name}_copy"
+                        renamed_entities.add(entity_id)
+                        renamed_count += 1
+                        print(f"  Renamed PROFILE: {dest_entity.is_a()} '{old_name}' -> '{dest_entity.ProfileName}' (id={entity_id})")
+            except (RuntimeError, ReferenceError):
+                continue
+        
+        print(f"=== Renamed {renamed_count} elements (only conflicts) ===")
+    
+    def _reattach_to_containers(self, source, new_elements, copied_entities, context):
+        """
+        Attach pasted elements to the active spatial container.
+        
+        Note: Spatial structure elements (Building, Storey, etc.) are in UNSAFE_CLASSES
+        and are not copied, so we can't preserve the original spatial hierarchy.
+        Instead, we put everything in the active container.
+        
+        :param source: Source IFC file
+        :param new_elements: List of newly pasted elements (with new GUIDs)
+        :param copied_entities: Dict mapping source entity IDs to target entities
+        :param context: Blender context
+        """
+        print("\n=== Assigning to active spatial container ===")
+        
+        # Get active container from Blender context
+        active_obj = context.active_object
+        if not active_obj or not hasattr(active_obj, "BIMObjectProperties"):
+            print("  No active container, skipping spatial assignment")
+            return
+        
+        element = tool.Ifc.get_entity(active_obj)
+        if not element:
+            print("  Active object has no IFC element, skipping spatial assignment")
+            return
+        
+        # Find the spatial container (active element or its container)
+        container = element if element.is_a("IfcSpatialStructureElement") else ifcopenshell.util.element.get_container(element)
+        
+        if not container:
+            print("  No spatial container found, skipping spatial assignment")
+            return
+        
+        print(f"  Using container: {container.is_a()} '{getattr(container, 'Name', '(unnamed)')}'")
+        
+        # Collect all products to assign
+        products_to_assign = [elem for elem in new_elements if elem.is_a("IfcProduct")]
+        
+        if not products_to_assign:
+            print("  No products to assign")
+            return
+        
+        # Assign all products to the container
+        self.target.create_entity(
+            "IfcRelContainedInSpatialStructure",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatingStructure=container,
+            RelatedElements=products_to_assign,
+        )
+        
+        print(f"  Assigned {len(products_to_assign)} products to container")
+        print(f"=== Spatial container assignment complete ===")
 
     # --------------------------------------------------------
 
-    def _reattach_to_active_container(self, new_elements, context):
+    def _preserve_spatial_hierarchy(self, source, new_elements, copied_entities, context):
         """
-        Attach pasted elements to active spatial container.
-        Does not import old containment relationships.
-        """
-
-        active_container = tool.Spatial.get_active_container()
+        Recreate source spatial container hierarchy and reassign pasted elements.
         
-        # Validate that the container is a proper spatial structure (not IfcProject)
-        if active_container and not active_container.is_a("IfcSpatialStructureElement"):
-            active_container = None
-
-        if not active_container:
-            # Try to find any building storey
-            storeys = self.target.by_type("IfcBuildingStorey")
-            if storeys:
-                active_container = storeys[0]
-            else:
-                # Try building, then site as fallback
-                buildings = self.target.by_type("IfcBuilding")
-                if buildings:
-                    active_container = buildings[0]
-                else:
-                    sites = self.target.by_type("IfcSite")
-                    if sites:
-                        active_container = sites[0]
-
-        if not active_container:
+        This runs AFTER elements are imported to Blender, so we can use Blender operators
+        to create containers and assign elements properly.
+        
+        :param source: Source IFC file
+        :param new_elements: List of newly pasted IFC elements
+        :param copied_entities: Dict mapping source entity IDs to target entities
+        :param context: Blender context
+        """
+        print("\n=== Preserving spatial container hierarchy ===")
+        
+        # TODO: This feature is temporarily disabled due to issues with deleted entities
+        # in copied_entities dictionary. Need to refactor to track the mapping during
+        # _clone_graph instead of trying to rebuild it afterwards.
+        print("  Spatial hierarchy preservation temporarily disabled")
+        return
+        
+        # Build reverse map using new_elements (which are guaranteed valid)
+        # Map: target element -> source element ID
+        target_to_source = {}
+        
+        # Iterate through new_elements which should all be valid
+        for new_element in new_elements:
+            try:
+                new_id = new_element.id()
+                # Find the corresponding source ID in copied_entities
+                for source_id, target_entity in copied_entities.items():
+                    try:
+                        if target_entity.id() == new_id:
+                            target_to_source[new_id] = source_id
+                            break
+                    except:
+                        # Target entity was deleted, skip
+                        continue
+            except:
+                # New element is invalid, skip
+                continue
+        
+        # Build map of source containers needed: {source_container -> [target_elements]}
+        source_containers_needed = {}
+        for new_element in new_elements:
+            try:
+                if not new_element.is_a("IfcProduct"):
+                    continue
+                
+                # Find source element
+                source_id = target_to_source.get(new_element.id())
+                if not source_id:
+                    continue
+                
+                source_element = source.by_id(source_id)
+                source_container = ifcopenshell.util.element.get_container(source_element)
+                
+                if source_container:
+                    if source_container not in source_containers_needed:
+                        source_containers_needed[source_container] = []
+                    source_containers_needed[source_container].append(new_element)
+            except (RuntimeError, AttributeError):
+                # Entity was deleted or invalid
+                continue
+        
+        if not source_containers_needed:
+            print("  No source containers found, skipping")
             return
-
-        for element in new_elements:
-            self.target.create_entity(
-                "IfcRelContainedInSpatialStructure",
-                GlobalId=ifcopenshell.guid.new(),
-                RelatingStructure=active_container,
-                RelatedElements=[element],
-            )
+        
+        print(f"  Found {len(source_containers_needed)} unique source containers")
+        
+        # Build map of existing containers in target: {(class, name) -> element}
+        target_containers = {}
+        for container in self.target.by_type("IfcSpatialStructureElement"):
+            if hasattr(container, "Name") and container.Name:
+                key = (container.is_a(), container.Name)
+                target_containers[key] = container
+                print(f"  Existing target container: {container.is_a()} '{container.Name}'")
+        
+        # Create missing containers and build mapping
+        container_mapping = {}  # source_container -> target_container
+        
+        for source_container in source_containers_needed.keys():
+            key = (source_container.is_a(), source_container.Name)
+            
+            if key in target_containers:
+                # Container already exists
+                container_mapping[source_container] = target_containers[key]
+                print(f"  Reusing existing: {source_container.is_a()} '{source_container.Name}'")
+            else:
+                # Need to create container
+                new_container = self._create_missing_container(source, source_container, target_containers, context)
+                if new_container:
+                    container_mapping[source_container] = new_container
+                    target_containers[key] = new_container
+        
+        # Now reassign products to their proper containers using Blender operator
+        for source_container, target_elements in source_containers_needed.items():
+            target_container = container_mapping.get(source_container)
+            if not target_container:
+                print(f"  WARNING: No target container for {source_container.is_a()} '{source_container.Name}'")
+                continue
+            
+            # Find Blender objects for these IFC elements
+            for target_element in target_elements:
+                obj = tool.Ifc.get_object(target_element)
+                if obj:
+                    # Select the object
+                    obj.select_set(True)
+            
+            # Use Blender operator to assign all selected objects to container
+            # This handles all the IFC relationship complexity properly
+            try:
+                bpy.ops.bim.assign_container(container=target_container.id())
+                print(f"  Assigned {len(target_elements)} products to {target_container.is_a()} '{target_container.Name}'")
+            except Exception as e:
+                print(f"  Error assigning to container: {e}")
+            finally:
+                # Deselect objects
+                for target_element in target_elements:
+                    obj = tool.Ifc.get_object(target_element)
+                    if obj:
+                        obj.select_set(False)
+        
+        print(f"=== Spatial hierarchy preservation complete ===")
+    
+    def _create_missing_container(self, source, source_container, target_containers, context):
+        """
+        Create a missing spatial container in the target file using Blender operators.
+        Recursively creates parent hierarchy as needed.
+        
+        :param source: Source IFC file
+        :param source_container: Container from source to recreate
+        :param target_containers: Map of existing target containers
+        :param context: Blender context
+        :return: Created IFC container element
+        """
+        container_class = source_container.is_a()
+        container_name = source_container.Name
+        
+        print(f"  Creating missing container: {container_class} '{container_name}'")
+        
+        # Check if parent container exists, create it first if needed
+        source_parent = ifcopenshell.util.element.get_aggregate(source_container)
+        parent_element = None
+        
+        if source_parent and source_parent.is_a("IfcSpatialStructureElement"):
+            parent_key = (source_parent.is_a(), source_parent.Name)
+            
+            if parent_key in target_containers:
+                parent_element = target_containers[parent_key]
+            else:
+                # Recursively create parent
+                parent_element = self._create_missing_container(source, source_parent, target_containers, context)
+                if parent_element:
+                    target_containers[parent_key] = parent_element
+        
+        # If no parent, use project
+        if not parent_element:
+            target_project = self.target.by_type("IfcProject")[0] if self.target.by_type("IfcProject") else None
+            parent_element = target_project
+        
+        if not parent_element:
+            print(f"  ERROR: No parent element found for {container_class}")
+            return None
+        
+        # Get Blender object for parent
+        parent_obj = tool.Ifc.get_object(parent_element)
+        if not parent_obj:
+            print(f"  ERROR: No Blender object for parent {parent_element.is_a()}")
+            return None
+        
+        # Use Blender operator to create the container
+        try:
+            # Select parent object
+            bpy.context.view_layer.objects.active = parent_obj
+            
+            # Create container using operator
+            bpy.ops.bim.add_part_to_object(part_class=container_class, element=parent_element.id())
+            
+            # The newly created container should be the last one with this class/name
+            # Find it in the IFC file
+            for container in self.target.by_type(container_class):
+                if hasattr(container, "Name") and not container.Name:
+                    # This is the newly created one (no name yet), set its name
+                    container.Name = container_name
+                    print(f"  Created: {container_class} '{container_name}' (id={container.id()})")
+                    return container
+            
+            print(f"  ERROR: Could not find newly created container")
+            return None
+            
+        except Exception as e:
+            print(f"  ERROR creating container: {e}")
+            return None
 
     # --------------------------------------------------------
 
@@ -1040,12 +1411,10 @@ class BonsaiGraphClipboardEngine:
                         try:
                             tool.Collector.assign(obj, should_clean_users_collection=False)
                         except Exception as e:
-                            import logging
-                            logging.getLogger("BIM").warning(f"Failed to assign object {obj.name} to collection: {e}")
+                            print(f"Failed to assign object {obj.name} to collection: {e}")
                             
         except Exception as e:
-            import logging
-            logging.getLogger("BIM").exception("Error during Blender import")
+            print(f"Error during Blender import: {e}")
             raise
 
     # --------------------------------------------------------
@@ -1274,10 +1643,9 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 if hasattr(context.scene, 'BIMClipboardProperties'):
                     context.scene.BIMClipboardProperties.ensure_sections()
-            except Exception as e:
-                # Non-critical - just log it
-                import logging
-                logging.getLogger("BIM").warning(f"Failed to initialize clipboard sections: {e}")
+            except Exception:
+                # Non-critical - UI sections will initialize on next use
+                pass
             
             # Progress: 100% complete
             if show_progress:
@@ -1287,8 +1655,6 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
             
         except Exception as e:
-            import logging
-            logging.getLogger("BIM").exception("Error during copy operation")
             self.report({"ERROR"}, f"Copy failed: {str(e)}")
             return {"CANCELLED"}
         finally:
@@ -1296,7 +1662,8 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             if show_progress:
                 try:
                     bpy.context.window_manager.progress_end()
-                except:
+                except RuntimeError:
+                    # Progress indicator might already be closed - not critical
                     pass
 
 
@@ -1326,13 +1693,12 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             target = tool.Ifc.get()
             
             # Get paste mode from properties
-            paste_mode = "DUPLICATE"
+            paste_mode = "RENAME"
             try:
                 if hasattr(context.scene, 'BIMClipboardProperties'):
                     paste_mode = context.scene.BIMClipboardProperties.paste_mode
-            except Exception as e:
-                import logging
-                logging.getLogger("BIM").warning(f"Failed to get paste mode, using DUPLICATE: {e}")
+            except Exception:
+                pass
             
             engine = BonsaiGraphClipboardEngine(target)
             
@@ -1354,8 +1720,6 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
             
         except Exception as e:
-            import logging
-            logging.getLogger("BIM").exception("Error during paste operation")
             self.report({"ERROR"}, f"Paste failed: {str(e)}")
             return {"CANCELLED"}
 
