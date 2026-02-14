@@ -31,12 +31,11 @@ class BIMClipboardProperties(PropertyGroup):
     paste_mode: EnumProperty(
         name="Paste Mode",
         items=[
-            ("DUPLICATE", "Duplicate", "Always create new elements with new GUIDs (default)"),
-            ("DESTINATION", "Reuse Destination", "Reuse existing elements from destination file when names match (materials, types, styles)"),
-            # ("SOURCE", "Reuse Source", "Reuse across pastes - requires tracking source file GUIDs (not yet implemented)"),
-            # ("RENAME", "Rename", "Automatically add _copy suffix to pasted elements when name conflicts occur"),
+            ("RENAME", "Rename Copy", "Create new elements with '_copy' suffix to avoid name conflicts (recommended)"),
+            ("DUPLICATE", "Keep Names", "Create new elements keeping original names (may create duplicates)"),
+            ("DESTINATION", "Merge Existing", "Reuse existing materials, types, and styles from destination file when names match"),
         ],
-        default="DUPLICATE",
+        default="RENAME",
     )
     
     def ensure_sections(self):
