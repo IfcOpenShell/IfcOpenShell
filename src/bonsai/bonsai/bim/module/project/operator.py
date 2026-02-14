@@ -1531,11 +1531,6 @@ def run():
     import bonsai.tool as tool
     gprops = tool.Georeference.get_georeference_props()
     # Our model origin becomes their host model origin
-    gprops.host_model_is_georeferenced = {gprops.model_is_georeferenced}
-    gprops.host_model_crs = "{gprops.model_crs}"
-    gprops.host_model_origin = "{gprops.model_origin}"
-    gprops.host_model_origin_si = "{gprops.model_origin_si}"
-    gprops.host_model_project_north = "{gprops.model_project_north}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
     gprops.blender_offset_x = "{gprops.blender_offset_x}"
     gprops.blender_offset_y = "{gprops.blender_offset_y}"
@@ -2043,11 +2038,6 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         tool.Georeference.set_model_origin()
         self.json_filepath = self.filepath + ".cache.json"
         data = {
-            "host_model_is_georeferenced": gprops.host_model_is_georeferenced,
-            "host_model_crs": gprops.host_model_crs,
-            "host_model_origin": gprops.host_model_origin,
-            "host_model_origin_si": gprops.host_model_origin_si,
-            "host_model_project_north": gprops.host_model_project_north,
             "model_is_georeferenced": gprops.model_is_georeferenced,
             "model_crs": gprops.model_crs,
             "model_origin": gprops.model_origin,

@@ -224,14 +224,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
     x_axis_ordinate: StringProperty(name="X Axis Ordinate", update=update_grid_north_vector)
     x_axis_is_null: BoolProperty(name="X Axis Is Null")
 
-    # These are only for reference to capture data about a host model from a linked model
-    # If you relink a model from a new host origin, we can autodetect it in theory with this
-    host_model_is_georeferenced: BoolProperty(name="Host Model Is Georeferenced")
-    host_model_crs: StringProperty(name="Host Model CRS")
-    host_model_origin: StringProperty(name="Host Model Origin")
-    host_model_origin_si: StringProperty(name="Host Model Origin SI")
-    host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
-
     # This is the ENH in project units and SI units of the Blender session's 0,0,0.
     # These are only for reference, using tool.Georeference.set_model_origin on
     # project load, project create, and when linking for the first time from an
@@ -278,10 +270,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
         x_axis_abscissa: str
         x_axis_ordinate: str
         x_axis_is_null: bool
-
-        host_model_origin: str
-        host_model_origin_si: str
-        host_model_project_north: str
 
         model_origin: str
         model_origin_si: str
