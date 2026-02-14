@@ -467,12 +467,12 @@ class DocPreferences(bpy.types.PropertyGroup):
     classes_to_wireframe: StringProperty(
         default="IfcVirtualElement",
         name="Classes to Wireframe",
-        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
+        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualElement, IfcSpace",
     )
     classes_no_cut: StringProperty(
         default="IfcVirtualElement, IfcSpace",
         name="Classes that are not cut",
-        description="The cut decoractor will be turned off for these classes\nEx: IfcVirtualelement, IfcSpace",
+        description="The cut decorator will be turned off for these classes\nEx: IfcVirtualElement, IfcSpace",
     )
 
     if TYPE_CHECKING:
