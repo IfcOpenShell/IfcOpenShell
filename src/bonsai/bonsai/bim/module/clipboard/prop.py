@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.props import BoolProperty, CollectionProperty, StringProperty
+from bpy.props import BoolProperty, CollectionProperty, StringProperty, EnumProperty
 from bpy.types import PropertyGroup
 
 
@@ -28,6 +28,16 @@ class ClipboardSection(PropertyGroup):
 
 class BIMClipboardProperties(PropertyGroup):
     sections: CollectionProperty(type=ClipboardSection, name="Sections")
+    paste_mode: EnumProperty(
+        name="Paste Mode",
+        items=[
+            ("DUPLICATE", "Duplicate in case of name conflict", "Duplicate names if they exist both in the source and destination"),
+            ("RENAME", "Rename in case of name conflict", "Automatically add _copy suffix to pasted elements when name conflicts occur"),
+            ("DESTINATION", "Destination used in case of name conflict", "Keep destination file elements unchanged when name conflicts occur"),
+            ("SOURCE", "Source used in case of name conflict", "Replace destination file elements with source when name conflicts occur"),
+        ],
+        default="DUPLICATE",
+    )
     
     def ensure_sections(self):
         """Ensure all required sections exist in the collection."""

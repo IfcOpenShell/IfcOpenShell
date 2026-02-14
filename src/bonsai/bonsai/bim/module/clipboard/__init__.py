@@ -30,6 +30,8 @@ classes = (
     ui.BIM_PT_tab_clipboard,
 )
 
+addon_keymaps = []
+
 
 @persistent
 def load_post_handler(dummy):
@@ -43,9 +45,21 @@ def load_post_handler(dummy):
 def register():
     bpy.types.Scene.BIMClipboardProperties = bpy.props.PointerProperty(type=prop.BIMClipboardProperties)
     bpy.app.handlers.load_post.append(load_post_handler)
+    
+    wm = bpy.context.window_manager
+    if wm.keyconfigs.addon:
+        km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
+        kmi = km.keymap_items.new("bim.copy_to_clipboard", "C", "PRESS", ctrl=True)
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.paste_from_clipboard", "V", "PRESS", ctrl=True)
+        addon_keymaps.append((km, kmi))
 
 
 def unregister():
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
+    
     del bpy.types.Scene.BIMClipboardProperties
     if load_post_handler in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.remove(load_post_handler)
