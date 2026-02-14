@@ -63,13 +63,14 @@ class BonsaiGraphClipboardEngine:
     def __init__(self, target_model: ifcopenshell.file):
         self.target = target_model
 
-    def paste_from_file(self, clipboard_ifc_path, clipboard_data, context):
+    def paste_from_file(self, clipboard_ifc_path, clipboard_data, context, paste_mode="DUPLICATE"):
         """
         Main entry point.
 
         :param clipboard_ifc_path: path to clipboard.ifc
         :param clipboard_data: loaded JSON metadata
         :param context: Blender context
+        :param paste_mode: How to handle name conflicts (DUPLICATE, RENAME, DESTINATION, SOURCE)
         :return: list of newly created IfcProduct elements
         """
 
@@ -87,7 +88,7 @@ class BonsaiGraphClipboardEngine:
             bpy.context.window_manager.progress_begin(0, 100)
             bpy.context.window_manager.progress_update(1)
 
-        new_elements = self._clone_graph(source, roots, show_progress)
+        new_elements = self._clone_graph(source, roots, show_progress, paste_mode)
 
         if show_progress:
             bpy.context.window_manager.progress_update(85)
@@ -222,12 +223,259 @@ class BonsaiGraphClipboardEngine:
                     return
 
     # --------------------------------------------------------
+    
+    def _build_existing_elements_map(self, existing_by_name):
+        """
+        Build a map of existing elements in target file by name and type.
+        Used for DESTINATION mode to reuse existing elements.
+        
+        :param existing_by_name: Dictionary to populate with {(class, name): element}
+        """
+        import logging
+        logger = logging.getLogger("BIM")
+        print("\n=== Building existing elements map for DESTINATION mode ===")
+        logger.info("=== Building existing elements map for DESTINATION mode ===")
+        
+        # Map type products by (class, Name) - these can be reused
+        for product in self.target.by_type("IfcTypeProduct"):
+            try:
+                if hasattr(product, "Name") and product.Name is not None:
+                    key = (product.is_a(), product.Name)
+                    existing_by_name[key] = product
+                    print(f"  Existing TYPE: {product.is_a()} '{product.Name}' (id={product.id()})")
+            except:
+                pass
+        
+        # Map materials by ("IfcMaterial", Name)
+        for material in self.target.by_type("IfcMaterial"):
+            try:
+                if hasattr(material, "Name") and material.Name is not None:
+                    key = ("IfcMaterial", material.Name)
+                    existing_by_name[key] = material
+                    print(f"  Existing: IfcMaterial '{material.Name}' (id={material.id()})")
+                    logger.info(f"  Existing: IfcMaterial '{material.Name}' (id={material.id()})")
+            except:
+                pass
+        
+        # Map profiles by (class, ProfileName)
+        for profile in self.target.by_type("IfcProfileDef"):
+            try:
+                if hasattr(profile, "ProfileName") and profile.ProfileName is not None:
+                    key = (profile.is_a(), profile.ProfileName)
+                    existing_by_name[key] = profile
+                    print(f"  Existing: {profile.is_a()} '{profile.ProfileName}' (id={profile.id()})")
+                    logger.info(f"  Existing: {profile.is_a()} '{profile.ProfileName}' (id={profile.id()})")
+            except:
+                pass
+        
+        # Map styles by (class, Name)
+        for style in self.target.by_type("IfcPresentationStyle"):
+            try:
+                if hasattr(style, "Name") and style.Name is not None:
+                    key = (style.is_a(), style.Name)
+                    existing_by_name[key] = style
+                    print(f"  Existing: {style.is_a()} '{style.Name}' (id={style.id()})")
+                    logger.info(f"  Existing: {style.is_a()} '{style.Name}' (id={style.id()})")
+            except:
+                pass
+        
+        print(f"=== Found {len(existing_by_name)} existing elements ===")
+        logger.info(f"=== Found {len(existing_by_name)} existing elements ===")
+    
+    def _find_existing_element(self, source_element, existing_by_name, paste_mode):
+        """
+        Find an existing element in the target file that matches the source element.
+        Used for DESTINATION mode.
+        
+        :param source_element: Element from source file
+        :param existing_by_name: Map of existing elements
+        :param paste_mode: Current paste mode
+        :return: Existing element if found and mode is DESTINATION, None otherwise
+        """
+        if paste_mode != "DESTINATION":
+            return None
+        
+        try:
+            ifc_class = source_element.is_a()
+            
+            # Check for products AND types by Name
+            # Note: is_a("IfcProduct") may return False for types from source file due to cross-file inheritance issues
+            # So we explicitly check both IfcProduct and IfcTypeProduct
+            is_product_or_type = source_element.is_a("IfcProduct") or source_element.is_a("IfcTypeProduct")
+            if is_product_or_type:
+                if hasattr(source_element, "Name") and source_element.Name is not None:
+                    key = (ifc_class, source_element.Name)
+                    result = existing_by_name.get(key)
+                    return result
+            
+            # Check for materials by Name
+            elif source_element.is_a("IfcMaterial"):
+                if hasattr(source_element, "Name") and source_element.Name is not None:
+                    key = ("IfcMaterial", source_element.Name)
+                    return existing_by_name.get(key)
+            
+            # Check for profiles by ProfileName
+            elif source_element.is_a("IfcProfileDef"):
+                if hasattr(source_element, "ProfileName") and source_element.ProfileName is not None:
+                    key = (ifc_class, source_element.ProfileName)
+                    return existing_by_name.get(key)
+            
+            # Check for styles by Name
+            elif source_element.is_a("IfcPresentationStyle"):
+                if hasattr(source_element, "Name") and source_element.Name is not None:
+                    key = (ifc_class, source_element.Name)
+                    return existing_by_name.get(key)
+        except Exception as e:
+            pass
+        
+        return None
+    
+    def _prepopulate_copied_entities(self, source, root_elements, copied_entities, existing_by_name, paste_mode):
+        """
+        Pre-scan source elements and populate copied_entities with existing destination elements.
+        This ensures copy_deep reuses existing materials, styles, profiles, and types.
+        
+        :param source: Source IFC file
+        :param root_elements: Elements being copied
+        :param copied_entities: Dictionary to populate with source_id -> destination_element
+        :param existing_by_name: Map of existing elements in destination
+        :param paste_mode: Current paste mode (should be DESTINATION)
+        """
+        import logging
+        logger = logging.getLogger("BIM")
+        print(f"\n=== Pre-populating copied_entities for {paste_mode} mode ===")
+        logger.info(f"=== Pre-populating copied_entities for {paste_mode} mode ===")
+        
+        # Collect all materials, styles, profiles, types referenced by elements
+        # We need to use the same logic as _clone_graph to find dependencies
+        elements_to_check = set()
+        
+        for root in root_elements:
+            # Get the element type
+            element_type = ifcopenshell.util.element.get_type(root)
+            if element_type:
+                elements_to_check.add(element_type)
+                print(f"  Found type: {element_type.is_a()} '{element_type.Name}' for {root.is_a()} '{root.Name}'")
+                
+                # Get type's materials
+                type_material = ifcopenshell.util.element.get_material(element_type)
+                if type_material:
+                    elements_to_check.add(type_material)
+                    mat_name = getattr(type_material, 'Name', None) or '(unnamed)'
+                    print(f"    Found type material: {type_material.is_a()} '{mat_name}'")
+                
+                # Get all materials from type
+                try:
+                    type_materials_list = ifcopenshell.util.element.get_materials(element_type)
+                    for mat in type_materials_list:
+                        elements_to_check.add(mat)
+                        # Also check for styled representations
+                        for material_rep in getattr(mat, 'HasRepresentation', []):
+                            for rep in getattr(material_rep, 'Representations', []):
+                                for item in getattr(rep, 'Items', []):
+                                    for styled_item in getattr(item, 'Styles', []):
+                                        elements_to_check.add(styled_item)
+                except:
+                    pass
+            
+            # Get occurrence materials
+            occurrence_material = ifcopenshell.util.element.get_material(root)
+            if occurrence_material:
+                elements_to_check.add(occurrence_material)
+                mat_name = getattr(occurrence_material, 'Name', None) or '(unnamed)'
+                print(f"  Found occurrence material: {occurrence_material.is_a()} '{mat_name}' for {root.is_a()} '{root.Name}'")
+            
+            # Get all materials (handles material sets, layers, etc.)
+            try:
+                materials_list = ifcopenshell.util.element.get_materials(root)
+                for mat in materials_list:
+                    elements_to_check.add(mat)
+                    # Check for styled representations of materials
+                    for material_rep in getattr(mat, 'HasRepresentation', []):
+                        for rep in getattr(material_rep, 'Representations', []):
+                            for item in getattr(rep, 'Items', []):
+                                for styled_item in getattr(item, 'Styles', []):
+                                    elements_to_check.add(styled_item)
+            except:
+                pass
+            
+            # Also traverse for geometric dependencies (profiles, etc.)
+            for element in source.traverse(root):
+                elements_to_check.add(element)
+        
+        print(f"Checking {len(elements_to_check)} source elements for potential reuse")
+        logger.info(f"  Checking {len(elements_to_check)} source elements")
+        
+        # Check each element and map to existing destination element if found
+        reused_count = 0
+        checked_count = 0
+        for element in elements_to_check:
+            try:
+                # Skip if already mapped
+                if element.id() in copied_entities:
+                    continue
+                
+                # Skip product instances (they always need new GUIDs)
+                # But allow types, materials, profiles, styles to be reused
+                if element.is_a("IfcProduct") and not element.is_a("IfcTypeProduct"):
+                    continue
+                
+                # Log what we're checking (types, materials, styles, profiles)
+                checked_count += 1
+                elem_name = ""
+                if hasattr(element, "Name"):
+                    elem_name = element.Name or "(no name)"
+                elif hasattr(element, "ProfileName"):
+                    elem_name = element.ProfileName or "(no name)"
+                else:
+                    elem_name = "(no name attr)"
+                
+                # Highlight materials, styles, types for easier debugging
+                if element.is_a("IfcMaterial") or element.is_a("IfcTypeProduct") or element.is_a("IfcPresentationStyle") or element.is_a("IfcProfileDef"):
+                    print(f"  Checking: {element.is_a()} '{elem_name}' (source_id={element.id()})")
+                
+                # Try to find existing match
+                existing = self._find_existing_element(element, existing_by_name, paste_mode)
+                if existing:
+                    # Map source ID to destination element
+                    copied_entities[element.id()] = existing
+                    reused_count += 1
+                    
+                    # Log what we're reusing
+                    elem_name = ""
+                    if hasattr(element, "Name"):
+                        elem_name = element.Name or ""
+                    elif hasattr(element, "ProfileName"):
+                        elem_name = element.ProfileName or ""
+                    print(f"  REUSE: {element.is_a()} '{elem_name}' source_id={element.id()} -> dest_id={existing.id()}")
+                    logger.info(f"  REUSE: {element.is_a()} '{elem_name}' source_id={element.id()} -> dest_id={existing.id()}")
+            except Exception as e:
+                logger.warning(f"  Error checking element: {e}")
+                pass
+        
+        print(f"Checked {checked_count} elements (skipped product instances)")
+        print(f"=== Pre-populated {reused_count} elements for reuse ===")
+        logger.info(f"=== Pre-populated {reused_count} elements for reuse ===")
 
-    def _clone_graph(self, source, root_elements, show_progress=False):
+    # --------------------------------------------------------
+
+    def _clone_graph(self, source, root_elements, show_progress=False, paste_mode="DUPLICATE"):
         """
         Clone subgraph safely into target model.
         Regenerates all IfcRoot GUIDs.
+        
+        :param source: Source IFC file
+        :param root_elements: List of root elements to copy
+        :param show_progress: Whether to show progress indicator
+        :param paste_mode: How to handle name conflicts (DUPLICATE, RENAME, DESTINATION, SOURCE)
         """
+        import logging
+        logger = logging.getLogger("BIM")
+        print(f"\n=== PASTE OPERATION START ===")
+        print(f"Mode: {paste_mode}")
+        print(f"Elements to paste: {len(root_elements)}")
+        logger.info(f"=== Starting paste with mode: {paste_mode} ===")
+        logger.info(f"  Pasting {len(root_elements)} root elements")
         
         # Record existing contexts before copying anything
         # These are the "original" contexts we want to use
@@ -235,6 +483,16 @@ class BonsaiGraphClipboardEngine:
 
         copied_entities = {}  # Reuse map for shared dependencies
         guid_map = {}
+        
+        # For DESTINATION mode, build lookup of existing elements by name
+        # and pre-populate copied_entities with them so copy_deep reuses them
+        # For SOURCE mode, skip this - we don't want to reuse destination elements,
+        # just deduplicate within the paste operation itself (handled by copy_deep)
+        existing_by_name = {}
+        if paste_mode == "DESTINATION":
+            self._build_existing_elements_map(existing_by_name)
+            # Pre-scan source elements and map them to existing destination elements
+            self._prepopulate_copied_entities(source, root_elements, copied_entities, existing_by_name, paste_mode)
 
         # Precompute GUID remapping for entire subtree
         for root in root_elements:
@@ -260,47 +518,53 @@ class BonsaiGraphClipboardEngine:
             element_type = ifcopenshell.util.element.get_type(root)
             if element_type:
                 if element_type.id() not in copied_entities:
+                    # Will use copied_entities for reuse (pre-populated in DESTINATION mode)
+                    print(f"Copying type {element_type.is_a()} '{element_type.Name}' (source_id={element_type.id()})")
                     copied_type = copy_deep(
                         self.target, 
                         element_type, 
                         copied_entities=copied_entities,
                     )
                     element_types[root.id()] = copied_type
-                    
-                    # Copy the type's material (types can have materials separate from occurrences)
-                    type_material = ifcopenshell.util.element.get_material(element_type)
-                    if type_material and type_material.id() not in copied_entities:
-                        copy_deep(self.target, type_material, copied_entities=copied_entities)
-                    
-                    # Copy type material's styled representations
-                    type_materials_list = ifcopenshell.util.element.get_materials(element_type)
-                    for mat in type_materials_list:
-                        for material_rep in getattr(mat, 'HasRepresentation', []):
-                            if material_rep.id() not in copied_entities:
-                                copy_deep(self.target, material_rep, copied_entities=copied_entities)
-                    
-                    # Track the type's material associations for reconnection
-                    for association in getattr(element_type, 'HasAssociations', []):
-                        if association.is_a('IfcRelAssociatesMaterial'):
-                            type_materials[element_type.id()] = association.RelatingMaterial
-                    
-                    # Copy and track the type's property sets
-                    type_psets_list = []
-                    for rel in getattr(element_type, 'IsDefinedBy', []):
-                        if rel.is_a('IfcRelDefinesByProperties'):
-                            pset = rel.RelatingPropertyDefinition
-                            if pset.id() not in copied_entities:
-                                copied_pset = copy_deep(self.target, pset, copied_entities=copied_entities)
-                                type_psets_list.append(copied_pset)
-                            else:
-                                type_psets_list.append(copied_entities[pset.id()])
-                    
-                    if type_psets_list:
-                        type_psets[element_type.id()] = type_psets_list
+                    print(f"  -> Created new type dest_id={copied_type.id()}")
                 else:
-                    element_types[root.id()] = copied_entities[element_type.id()]
+                    # Type was pre-populated (reused from destination)
+                    existing_type = copied_entities[element_type.id()]
+                    element_types[root.id()] = existing_type
+                    
+                # Copy the type's material (types can have materials separate from occurrences)
+                type_material = ifcopenshell.util.element.get_material(element_type)
+                if type_material and type_material.id() not in copied_entities:
+                    copy_deep(self.target, type_material, copied_entities=copied_entities)
+                
+                # Copy type material's styled representations
+                type_materials_list = ifcopenshell.util.element.get_materials(element_type)
+                for mat in type_materials_list:
+                    for material_rep in getattr(mat, 'HasRepresentation', []):
+                        if material_rep.id() not in copied_entities:
+                            copy_deep(self.target, material_rep, copied_entities=copied_entities)
+                
+                # Track the type's material associations for reconnection
+                for association in getattr(element_type, 'HasAssociations', []):
+                    if association.is_a('IfcRelAssociatesMaterial'):
+                        type_materials[element_type.id()] = association.RelatingMaterial
+                
+                # Copy and track the type's property sets
+                type_psets_list = []
+                for rel in getattr(element_type, 'IsDefinedBy', []):
+                    if rel.is_a('IfcRelDefinesByProperties'):
+                        pset = rel.RelatingPropertyDefinition
+                        if pset.id() not in copied_entities:
+                            copied_pset = copy_deep(self.target, pset, copied_entities=copied_entities)
+                            type_psets_list.append(copied_pset)
+                        else:
+                            type_psets_list.append(copied_entities[pset.id()])
+                
+                if type_psets_list:
+                    type_psets[element_type.id()] = type_psets_list
             
             # Get materials and copy them along with their styles
+            # Materials will be reused from copied_entities if in DESTINATION mode
             material = ifcopenshell.util.element.get_material(root)
             if material:
                 if material.id() not in copied_entities:
@@ -359,16 +623,47 @@ class BonsaiGraphClipboardEngine:
                 progress = 10 + int(60 * idx / len(root_elements))
                 bpy.context.window_manager.progress_update(progress)
             
+            # Log what we're copying
+            try:
+                element_name = getattr(root, "Name", None) or "(unnamed)"
+                print(f"Copying [{idx+1}/{len(root_elements)}]: {root.is_a()} '{element_name}' (source_id={root.id()})")
+                if root.id() in copied_entities:
+                    print(f"  -> PRE-MAPPED to dest_id={copied_entities[root.id()].id()}")
+            except:
+                pass
+            
             new_root = copy_deep(
                 self.target,
                 root,
                 copied_entities=copied_entities,
             )
             
+            # Check if type was already assigned by copy_deep
+            try:
+                print(f"  -> Result: dest_id={new_root.id()}")
+                existing_type = ifcopenshell.util.element.get_type(new_root)
+                if existing_type:
+                    print(f"  -> copy_deep already assigned type: {existing_type.is_a()} '{existing_type.Name}' (id={existing_type.id()})")
+                else:
+                    print(f"  -> copy_deep did NOT assign a type")
+            except Exception as e:
+                print(f"  -> Error checking type: {e}")
+            
             # Collect reconnection data instead of calling API immediately
             if root.id() in element_types:
                 copied_type = element_types[root.id()]
-                type_reconnections.append((new_root, copied_type))
+                # Only reconnect if copy_deep didn't already assign the type
+                try:
+                    existing_type_after_copy = ifcopenshell.util.element.get_type(new_root)
+                    if existing_type_after_copy:
+                        print(f"  -> Skipping type reconnection (already has type id={existing_type_after_copy.id()})")
+                    else:
+                        print(f"  -> Will reconnect type {copied_type.is_a()} (id={copied_type.id()})")
+                        type_reconnections.append((new_root, copied_type))
+                except Exception as e:
+                    print(f"  -> Error during type reconnection check: {e}")
+                    # If error checking, assume we need to reconnect
+                    type_reconnections.append((new_root, copied_type))
                 
                 # Collect type's material associations
                 original_type = ifcopenshell.util.element.get_type(root)
@@ -414,14 +709,28 @@ class BonsaiGraphClipboardEngine:
         
         # Reconnect types
         if type_reconnections:
+            print(f"\n=== Reconnecting {len(type_reconnections)} type relationships ===")
             for new_root, copied_type in type_reconnections:
-                ifcopenshell.api.run(
-                    "type.assign_type",
-                    self.target,
-                    should_run_listeners=False,
-                    related_objects=[new_root],
-                    relating_type=copied_type,
-                )
+                try:
+                    # Check if the product already has this type assigned
+                    current_type = ifcopenshell.util.element.get_type(new_root)
+                    if current_type and current_type.id() == copied_type.id():
+                        print(f"Product {new_root.is_a()} '{new_root.Name}' (id={new_root.id()}) already has type {copied_type.is_a()} (id={copied_type.id()}) - skipping")
+                        continue
+                    
+                    print(f"Assigning type {copied_type.is_a()} '{copied_type.Name}' (id={copied_type.id()}) to {new_root.is_a()} '{new_root.Name}' (id={new_root.id()})")
+                    ifcopenshell.api.run(
+                        "type.assign_type",
+                        self.target,
+                        should_run_listeners=False,
+                        related_objects=[new_root],
+                        relating_type=copied_type,
+                    )
+                    # Verify it worked
+                    assigned_type = ifcopenshell.util.element.get_type(new_root)
+                    print(f"  -> Assigned type id={assigned_type.id() if assigned_type else 'None'}")
+                except Exception as e:
+                    print(f"  -> ERROR: {e}")
         
         # Progress: 72-74% for type materials
         if show_progress:
@@ -630,6 +939,10 @@ class BonsaiGraphClipboardEngine:
                                 removed_count += 1
                             except:
                                 pass
+        
+# Progress: 84% complete
+        if show_progress:
+            bpy.context.window_manager.progress_update(84)
 
         return new_roots
 
@@ -683,44 +996,57 @@ class BonsaiGraphClipboardEngine:
         if not new_elements:
             return
         
-        # Create importer with factory settings
-        ifc_import_settings = import_ifc.IfcImportSettings.factory()
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-        
-        # Set up importer for the target file
-        ifc_importer.file = self.target
-        ifc_importer.calculate_unit_scale()
-        ifc_importer.process_context_filter()
-        
-        # Load any existing materials first (for reuse)
-        ifc_importer.material_creator.load_existing_materials()
-        
-        # Create Blender materials/styles from IFC styles
-        ifc_importer.create_styles()
-        
-        # Collect element types from the pasted products
-        element_types = set()
-        for element in new_elements:
-            if element.is_a("IfcProduct"):
-                element_type = ifcopenshell.util.element.get_type(element)
-                if element_type:
-                    element_types.add(element_type)
-        
-        # Import element types first
-        if element_types:
-            ifc_importer.element_types = element_types
-            ifc_importer.create_element_types()
-        
-        # Import all products
-        products = set(e for e in new_elements if e.is_a("IfcProduct"))
-        if products:
-            ifc_importer.create_generic_elements(products)
-            ifc_importer.setup_arrays()
+        try:
+            # Create importer with factory settings
+            ifc_import_settings = import_ifc.IfcImportSettings.factory()
+            ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
             
-            # Assign all created objects to their collections (filter out materials)
-            for obj in ifc_importer.added_data.values():
-                if isinstance(obj, bpy.types.Object):
-                    tool.Collector.assign(obj, should_clean_users_collection=False)
+            # Set up importer for the target file
+            ifc_importer.file = self.target
+            ifc_importer.calculate_unit_scale()
+            ifc_importer.process_context_filter()
+            
+            # Load any existing materials first (for reuse)
+            ifc_importer.material_creator.load_existing_materials()
+            
+            # Create Blender materials/styles from IFC styles
+            ifc_importer.create_styles()
+            
+            # Collect element types from the pasted products
+            element_types = set()
+            for element in new_elements:
+                if element.is_a("IfcProduct"):
+                    element_type = ifcopenshell.util.element.get_type(element)
+                    if element_type:
+                        # Only import types that don't already have Blender objects
+                        # (reused types from DESTINATION mode already have objects)
+                        if not tool.Ifc.get_object(element_type):
+                            element_types.add(element_type)
+            
+            # Import element types first
+            if element_types:
+                ifc_importer.element_types = element_types
+                ifc_importer.create_element_types()
+            
+            # Import all products
+            products = set(e for e in new_elements if e.is_a("IfcProduct"))
+            if products:
+                ifc_importer.create_generic_elements(products)
+                ifc_importer.setup_arrays()
+                
+                # Assign all created objects to their collections (filter out materials)
+                for obj in ifc_importer.added_data.values():
+                    if isinstance(obj, bpy.types.Object):
+                        try:
+                            tool.Collector.assign(obj, should_clean_users_collection=False)
+                        except Exception as e:
+                            import logging
+                            logging.getLogger("BIM").warning(f"Failed to assign object {obj.name} to collection: {e}")
+                            
+        except Exception as e:
+            import logging
+            logging.getLogger("BIM").exception("Error during Blender import")
+            raise
 
     # --------------------------------------------------------
 
@@ -891,67 +1217,87 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         # Show progress for large operations
         total = len(elements_to_copy)
         show_progress = total > 20
-        if show_progress:
-            bpy.context.window_manager.progress_begin(0, 100)
-            bpy.context.window_manager.progress_update(1)
         
-        # Use clipboard engine for extraction
-        engine = BonsaiGraphClipboardEngine(ifc_file)
-        clipboard_ifc = get_clipboard_path("bonsai_clipboard.ifc")
-        
-        if show_progress:
-            bpy.context.window_manager.progress_update(5)
-        
-        elements = [element for obj, element in elements_to_copy]
-        engine.copy_to_file(ifc_file, elements, clipboard_ifc, show_progress)
-        
-        # Build metadata for clipboard
-        # Progress: 95-97% for metadata building (fast)
-        if show_progress:
-            bpy.context.window_manager.progress_update(95)
-        
-        clipboard_data = {
-            "version": 1,
-            "schema": ifc_file.schema,
-            "elements": []
-        }
-        
-        for idx, (obj, element) in enumerate(elements_to_copy):
-            matrix = obj.matrix_world.copy()
-            container_element = ifcopenshell.util.element.get_container(element)
+        try:
+            if show_progress:
+                bpy.context.window_manager.progress_begin(0, 100)
+                bpy.context.window_manager.progress_update(1)
             
-            clipboard_data["elements"].append({
-                "global_id": element.GlobalId,
-                "ifc_class": element.is_a(),
-                "name": element.Name or "",
-                "matrix": [float(v) for row in matrix for v in row],
-                "container_name": container_element.Name if container_element else None,
-                "container_class": container_element.is_a() if container_element else None,
-            })
-        
-        # Progress: 97% complete metadata
-        if show_progress:
-            bpy.context.window_manager.progress_update(97)
-        
-        # Write metadata
-        clipboard_json = get_clipboard_path("bonsai_clipboard.json")
-        with open(clipboard_json, "w") as f:
-            json.dump(clipboard_data, f, indent=2)
-        
-        # Progress: 98% after writing
-        if show_progress:
-            bpy.context.window_manager.progress_update(98)
-        
-        # Ensure clipboard UI sections are initialized
-        context.scene.BIMClipboardProperties.ensure_sections()
-        
-        # Progress: 100% complete
-        if show_progress:
-            bpy.context.window_manager.progress_update(100)
-            bpy.context.window_manager.progress_end()
-        
-        self.report({"INFO"}, f"Copied {len(clipboard_data['elements'])} element(s)")
-        return {"FINISHED"}
+            # Use clipboard engine for extraction
+            engine = BonsaiGraphClipboardEngine(ifc_file)
+            clipboard_ifc = get_clipboard_path("bonsai_clipboard.ifc")
+            
+            if show_progress:
+                bpy.context.window_manager.progress_update(5)
+            
+            elements = [element for obj, element in elements_to_copy]
+            engine.copy_to_file(ifc_file, elements, clipboard_ifc, show_progress)
+            
+            # Build metadata for clipboard
+            # Progress: 95-97% for metadata building (fast)
+            if show_progress:
+                bpy.context.window_manager.progress_update(95)
+            
+            clipboard_data = {
+                "version": 1,
+                "schema": ifc_file.schema,
+                "elements": []
+            }
+            
+            for idx, (obj, element) in enumerate(elements_to_copy):
+                matrix = obj.matrix_world.copy()
+                container_element = ifcopenshell.util.element.get_container(element)
+                
+                clipboard_data["elements"].append({
+                    "global_id": element.GlobalId,
+                    "ifc_class": element.is_a(),
+                    "name": element.Name or "",
+                    "matrix": [float(v) for row in matrix for v in row],
+                    "container_name": container_element.Name if container_element else None,
+                    "container_class": container_element.is_a() if container_element else None,
+                })
+            
+            # Progress: 97% complete metadata
+            if show_progress:
+                bpy.context.window_manager.progress_update(97)
+            
+            # Write metadata
+            clipboard_json = get_clipboard_path("bonsai_clipboard.json")
+            with open(clipboard_json, "w") as f:
+                json.dump(clipboard_data, f, indent=2)
+            
+            # Progress: 98% after writing
+            if show_progress:
+                bpy.context.window_manager.progress_update(98)
+            
+            # Ensure clipboard UI sections are initialized
+            try:
+                if hasattr(context.scene, 'BIMClipboardProperties'):
+                    context.scene.BIMClipboardProperties.ensure_sections()
+            except Exception as e:
+                # Non-critical - just log it
+                import logging
+                logging.getLogger("BIM").warning(f"Failed to initialize clipboard sections: {e}")
+            
+            # Progress: 100% complete
+            if show_progress:
+                bpy.context.window_manager.progress_update(100)
+            
+            self.report({"INFO"}, f"Copied {len(clipboard_data['elements'])} element(s)")
+            return {"FINISHED"}
+            
+        except Exception as e:
+            import logging
+            logging.getLogger("BIM").exception("Error during copy operation")
+            self.report({"ERROR"}, f"Copy failed: {str(e)}")
+            return {"CANCELLED"}
+        finally:
+            # Always clean up progress indicator
+            if show_progress:
+                try:
+                    bpy.context.window_manager.progress_end()
+                except:
+                    pass
 
 
 class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
@@ -973,25 +1319,45 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Clipboard IFC not found")
             return {"CANCELLED"}
         
-        with open(clipboard_json, "r") as f:
-            clipboard_data = json.load(f)
-        
-        target = tool.Ifc.get()
-        
-        engine = BonsaiGraphClipboardEngine(target)
-        
-        new_elements = engine.paste_from_file(
-            clipboard_ifc,
-            clipboard_data,
-            context
-        )
-        
-        if new_elements:
-            self.report({"INFO"}, f"Pasted {len(new_elements)} element(s)")
-        else:
-            self.report({"WARNING"}, "Nothing pasted")
-        
-        return {"FINISHED"}
+        try:
+            with open(clipboard_json, "r") as f:
+                clipboard_data = json.load(f)
+            
+            target = tool.Ifc.get()
+            
+            # Get paste mode from properties
+            paste_mode = "DUPLICATE"
+            try:
+                if hasattr(context.scene, 'BIMClipboardProperties'):
+                    paste_mode = context.scene.BIMClipboardProperties.paste_mode
+            except Exception as e:
+                import logging
+                logging.getLogger("BIM").warning(f"Failed to get paste mode, using DUPLICATE: {e}")
+            
+            engine = BonsaiGraphClipboardEngine(target)
+            
+            new_elements = engine.paste_from_file(
+                clipboard_ifc,
+                clipboard_data,
+                context,
+                paste_mode
+            )
+            
+            # Ensure all Blender data is properly updated before returning
+            bpy.context.view_layer.update()
+            
+            if new_elements:
+                self.report({"INFO"}, f"Pasted {len(new_elements)} element(s)")
+            else:
+                self.report({"WARNING"}, "Nothing pasted")
+            
+            return {"FINISHED"}
+            
+        except Exception as e:
+            import logging
+            logging.getLogger("BIM").exception("Error during paste operation")
+            self.report({"ERROR"}, f"Paste failed: {str(e)}")
+            return {"CANCELLED"}
 
 
 
