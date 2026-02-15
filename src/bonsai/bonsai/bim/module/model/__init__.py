@@ -22,6 +22,7 @@ import bpy
 
 from . import (
     array,
+    construction_lines,
     covering,
     door,
     external,
@@ -57,6 +58,8 @@ classes = (
     array.Input3DCursorXArray,
     array.Input3DCursorYArray,
     array.Input3DCursorZArray,
+    construction_lines.BIM_OT_construction_lines_add,
+    construction_lines.BIM_OT_construction_lines_clear,
     product.AddDefaultType,
     product.AddEmptyType,
     product.AddOccurrence,
@@ -277,7 +280,18 @@ def register():
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
+    bpy.types.Scene.conlinesequence = []
+    
     workspace.load_custom_icons()
+
+    if not bpy.app.background:
+        wm = bpy.context.window_manager
+        if wm.keyconfigs.addon:
+            km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
+            kmi = km.keymap_items.new("bim.construction_lines_add", "L", "PRESS")
+            addon_keymaps.append((km, kmi))
+            kmi = km.keymap_items.new("bim.construction_lines_clear", "L", "PRESS", alt=True)
+            addon_keymaps.append((km, kmi))
 
 
 def unregister():
@@ -299,4 +313,15 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
 
+    if hasattr(bpy.types.Scene, 'conlinesequence'):
+        del bpy.types.Scene.conlinesequence
+    
     workspace.unload_custom_icons()
+
+    if not bpy.app.background:
+        wm = bpy.context.window_manager
+        kc = wm.keyconfigs.addon
+        if kc:
+            for km, kmi in addon_keymaps:
+                km.keymap_items.remove(kmi)
+        addon_keymaps.clear()

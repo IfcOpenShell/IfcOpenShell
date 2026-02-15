@@ -393,6 +393,21 @@ class Snap(bonsai.core.tool.Snap):
                     point["group"] = "Measure"
                     detected_snaps.append(point)
 
+        # Construction Lines Intersections
+        model_props = getattr(context.scene, 'BIMModelProperties', None)
+        if model_props and model_props.show_construction_lines:
+            from bonsai.bim.module.model import construction_lines
+            conlines_obj = bpy.data.objects.get(construction_lines.CONLINES_OBJECT_NAME)
+            if conlines_obj and conlines_obj.children:
+                for empty in conlines_obj.children:
+                    if empty.name.startswith(construction_lines.INTERSECTION_MARKER_NAME):
+                        snap_points = tool.Raycast.ray_cast_by_proximity(context, event, empty)
+                        if snap_points:
+                            for point in snap_points:
+                                point["group"] = "Construction Lines"
+                                point["distance"] = 0
+                                detected_snaps.append(point)
+
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
         # Wireframes

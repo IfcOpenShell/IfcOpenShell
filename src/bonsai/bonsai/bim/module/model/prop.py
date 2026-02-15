@@ -38,6 +38,7 @@ from bonsai.bim.module.model.decorator import (
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
 from bonsai.bim.prop import ObjProperty
+from bonsai.bim.module.model import construction_lines
 
 if TYPE_CHECKING:
     import sverchok.node_tree
@@ -139,6 +140,65 @@ def update_cut_decorator(self: "BIMModelProperties", context: bpy.types.Context)
         CutDecorator.install(bpy.context)
     else:
         CutDecorator.uninstall()
+
+
+def update_construction_lines(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    import bpy
+    if self.show_construction_lines:
+        construction_lines.ensure_construction_lines_object()
+        if self.show_bounding_box:
+            self.show_bounding_box = False
+        obj = bpy.data.objects.get(construction_lines.CONLINES_OBJECT_NAME)
+        if obj:
+            obj.hide_viewport = False
+            obj.hide_set(False)
+        
+        if context.scene and hasattr(context.scene, 'tool_settings'):
+            tool_settings = context.scene.tool_settings
+            if not hasattr(context.scene, 'conlines_saved_snap_settings'):
+                context.scene['conlines_saved_snap_settings'] = {
+                    'use_snap': tool_settings.use_snap,
+                    'snap_elements': list(tool_settings.snap_elements),  # Convert set to list
+                }
+            tool_settings.use_snap = True
+            tool_settings.snap_elements = {'VERTEX'}
+        
+        if hasattr(bpy.context.scene, 'BIMSnapProperties'):
+            snap_props = bpy.context.scene.BIMSnapProperties
+            if not hasattr(context.scene, 'conlines_saved_bim_snap_settings'):
+                context.scene['conlines_saved_bim_snap_settings'] = {
+                    'vertex': snap_props.vertex,
+                }
+            snap_props.vertex = True
+            if hasattr(snap_props, 'intersection'):
+                snap_props.intersection = True
+        
+        if context.area and context.area.type == 'VIEW_3D':
+            for space in context.area.spaces:
+                if space.type == 'VIEW_3D':
+                    space.overlay.show_relationship_lines = False
+    else:
+        obj = bpy.data.objects.get(construction_lines.CONLINES_OBJECT_NAME)
+        if obj:
+            obj.hide_viewport = True
+            obj.hide_set(True)
+        
+        if context.scene and hasattr(context.scene, 'tool_settings'):
+            if 'conlines_saved_snap_settings' in context.scene:
+                saved = context.scene['conlines_saved_snap_settings']
+                tool_settings = context.scene.tool_settings
+                tool_settings.use_snap = saved['use_snap']
+                tool_settings.snap_elements = set(saved['snap_elements'])  # Convert list back to set
+                del context.scene['conlines_saved_snap_settings']
+        
+        if hasattr(bpy.context.scene, 'BIMSnapProperties'):
+            if 'conlines_saved_bim_snap_settings' in context.scene:
+                saved = context.scene['conlines_saved_bim_snap_settings']
+                snap_props = bpy.context.scene.BIMSnapProperties
+                snap_props.vertex = saved['vertex']
+                del context.scene['conlines_saved_bim_snap_settings']
+            if hasattr(snap_props, 'intersection'):
+                snap_props.intersection = False
 
 
 def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -329,6 +389,12 @@ class BIMModelProperties(PropertyGroup):
         default=True,
         description="Show Cut Decorator Fill",
     )
+    show_construction_lines: bpy.props.BoolProperty(
+        name="Construction Lines",
+        default=False,
+        update=update_construction_lines,
+        description="Enable construction lines tool for creating temporary reference geometry from selected edges",
+    )
 
     if TYPE_CHECKING:
         ifc_class: str
@@ -367,6 +433,7 @@ class BIMModelProperties(PropertyGroup):
         show_bounding_box: bool
         show_cut_decorator: bool
         show_cut_decorator_fill: bool
+        show_construction_lines: bool
 
 
 class BIMArrayProperties(PropertyGroup):
