@@ -1505,7 +1505,8 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             tool.Project.set_link_empty_handle(self.link, empty)
             bpy.context.scene.collection.objects.link(empty)
             self.link.is_loaded = True
-            tool.Geometry.lock_object(empty)
+            if tool.Ifc.get():  # For non-IFC projects, locking has no meaning
+                tool.Geometry.lock_object(empty)
             tool.Blender.select_and_activate_single_object(bpy.context, empty)
             break
         else:
@@ -1761,17 +1762,14 @@ class EditLink(bpy.types.Operator, tool.Ifc.Operator):
         global_matrix = rot @ np.eye(4)
         global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
 
-        # At this point, a user specified transformation may be applied to
-        # further modify global_matrix. We will calculate this transformation.
-        # global_matrix = transformation @ global_matrix
-
         gprops = tool.Georeference.get_georeference_props()
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
         local_matrix = rot @ np.eye(4)
         local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
 
-        # If we knew the transformation, obj_matrix is typically calculated as:
-        # obj_matrix = np.linalg.inv(local_matrix) @ global_matrix
+        # obj_matrix is typically calculated as:
+        # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
+        # So let's calculate the transformation
 
         transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
         transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)

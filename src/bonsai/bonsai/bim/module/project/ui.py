@@ -622,11 +622,9 @@ class BIM_UL_links(UIList):
         row = layout.row(align=True)
         if item.is_loaded:
             if item.georeferenced == "NONE":
-                row.label(text="", icon="NOT_FOUND")
+                row.label(text="", icon="QUESTION")
             elif item.georeferenced == "NOT_COMPATIBLE":
-                row.alert = True
-                row.label(text="", icon="WORLD")
-                row.alert = False
+                row.label(text="", icon="ERROR")
             elif item.georeferenced == "FULL_COMPATIBLE":
                 row.label(text="", icon="WORLD")
             if item.has_transformation:
