@@ -1370,29 +1370,6 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             row = self.layout.row()
             row.prop(pprops, "project_north")
 
-    def invoke(self, context, event):
-        pprops = tool.Project.get_project_props()
-
-        # Populate false origin and project north from 3D cursor for user convenience
-        cursor = context.scene.cursor
-        cursor_loc = cursor.location
-        cursor_rot = cursor.rotation_euler
-        angle = -cursor_rot.z
-
-        # Calculate false origin based on the provided formulas
-        # x = -3Dcursor.x * cos(angle) - 3Dcursor.y * sin(angle)
-        # y = 3Dcursor.x * sin(angle) - 3Dcursor.y * cos(angle)
-        # z = -3Dcursor.z
-        false_origin_x = -cursor_loc.x * math.cos(angle) - cursor_loc.y * math.sin(angle)
-        false_origin_y = cursor_loc.x * math.sin(angle) - cursor_loc.y * math.cos(angle)
-        false_origin_z = -cursor_loc.z
-
-        # Set the false_origin value
-        pprops.false_origin = f"{false_origin_x:.3f},{false_origin_y:.3f},{false_origin_z:.3f}"
-        pprops.project_north = str(round(math.degrees(angle), 1))
-
-        return super().invoke(context, event)
-
     def _execute(self, context):
         start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
