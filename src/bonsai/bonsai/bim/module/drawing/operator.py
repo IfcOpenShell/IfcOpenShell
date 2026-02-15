@@ -928,7 +928,7 @@ class CreateDrawing(bpy.types.Operator):
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.name] = self.get_linked_file(link)
+            files[link.filepath] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1374,7 +1374,7 @@ class CreateDrawing(bpy.types.Operator):
         return True
 
     def get_linked_file(self, link: "Link") -> ifcopenshell.file:
-        link_path = link.name
+        link_path = link.filepath
         ifc_file = IfcStore.session_files.get(link_path, None)
         if ifc_file is not None:
             return ifc_file

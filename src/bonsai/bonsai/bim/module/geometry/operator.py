@@ -902,6 +902,7 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
+            
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -911,6 +912,9 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
+                    continue
+                if element.is_a("IfcDocumentReference"):
+                    self.report({"INFO"}, "Linked models cannot be deleted.")
                     continue
                 if element.is_a("IfcGridAxis"):
                     # Deleting the last W axis is OK
@@ -1206,6 +1210,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 objects_to_remove.add(obj)
                 operator.report({"ERROR"}, f"Drawing '{obj.name}' not duplicated.")
+                continue
+
+            if element.is_a("IfcDocumentReference"):
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, f"Linked model '{obj.name}' not duplicated.")
                 continue
 
             if tool.Geometry.is_locked(element):

@@ -251,10 +251,18 @@ class Document(bonsai.core.tool.Document):
     def get_document_references(
         cls, document: ifcopenshell.entity_instance
     ) -> tuple[ifcopenshell.entity_instance, ...]:
+        # TODO: migrate to util.document and replace all instances
         """Get IfcDocumentReference.ReferencedDocuments, compatible with IFC2X3."""
         if document.file.schema == "IFC2X3":
             return document.DocumentReferences or ()
         return document.HasDocumentReferences
+
+    @classmethod
+    def get_reference_document(cls, reference: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        # TODO: migrate to util.document and replace all instances
+        if reference.file.schema == "IFC2X3":
+            return (reference.ReferenceToDocument or (None))[0]
+        return reference.ReferencedDocument
 
     @classmethod
     def clear_active_document(cls) -> None:
