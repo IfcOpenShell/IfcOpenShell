@@ -57,6 +57,9 @@ CONLINES_SCALE_FACTOR = 200
 # Tolerance for intersection detection (larger = prevents near-duplicate intersections)
 INTERSECTION_TOLERANCE = 0.001
 
+# Tolerance for coplanarity detection (distance between closest points on two lines)
+COPLANARITY_TOLERANCE = 0.001
+
 # Visual properties for intersection marker empties
 INTERSECTION_MARKER_NAME = "ConLine_Intersection"
 INTERSECTION_MARKER_SIZE = 0.1
@@ -89,6 +92,28 @@ def ensure_construction_lines_object():
         root_coll.objects.link(obj)
         obj.hide_select = True
         obj.color = CONLINES_COLOR
+
+
+def calculate_shortest_distance_points(line1_p1, line1_p2, line2_p1, line2_p2):
+    """
+    Calculate the two closest points between two 3D line segments.
+    
+    This function finds the points on each line that are closest to each other,
+    which represents the shortest distance between the two lines.
+    
+    For coplanar lines that intersect, both points will be at the same location.
+    For non-coplanar (skew) lines, the two points will be different.
+    
+    Args:
+        line1_p1: First point of line 1 (Vector)
+        line1_p2: Second point of line 1 (Vector)
+        line2_p1: First point of line 2 (Vector)
+        line2_p2: Second point of line 2 (Vector)
+        
+    Returns:
+        tuple: (point_on_line1, point_on_line2) or None if lines are parallel
+    """
+    return mathutils.geometry.intersect_line_line(line1_p1, line1_p2, line2_p1, line2_p2)
 
 
 class BIM_OT_construction_lines_clear(bpy.types.Operator):
@@ -232,6 +257,10 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
         """
         Find intersections between new construction line and existing ones.
         Creates geometry and visual markers for each valid intersection.
+        
+        For coplanar lines: Creates one marker at the intersection point
+        For non-coplanar lines: Creates two markers at the points of shortest distance
+        
         Only creates markers if there isn't already one at that location.
         
         Args:
@@ -256,60 +285,95 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
             # Get the two points of the existing edge
             v1, v2 = [vertex.co for vertex in edge.verts]
 
-            # Calculate intersection point (returns tuple of closest points on each line)
-            iv = mathutils.geometry.intersect_line_line(u1, u2, v1, v2)
+            # Calculate closest points between the two lines using dedicated function
+            closest_points = calculate_shortest_distance_points(u1, u2, v1, v2)
             
-            if iv is not None:
-                # Average the two closest points for final intersection
-                iv = (iv[0] + iv[1]) / 2
+            if closest_points is not None:
+                point_on_new_line, point_on_existing_line = closest_points
                 
-                # Validate that intersection is actually on both line segments
-                # (not just on infinite lines)
-                a = iv - u1
-                b = iv - u2
-                c = u1 - u2
-                d = iv - v1
-                e = iv - v2
-                f = v1 - v2
+                # Calculate distance between the two closest points to check coplanarity
+                distance_between_points = (point_on_new_line - point_on_existing_line).length
                 
-                # Check if point is on both segments using distance formula:
-                # If point is on segment, distance(a) + distance(b) ≈ distance(c)
-                on_segment_1 = a.length + b.length - c.length < INTERSECTION_TOLERANCE
-                on_segment_2 = d.length + e.length - f.length < INTERSECTION_TOLERANCE
+                # Check if lines are coplanar (distance between closest points is negligible)
+                is_coplanar = distance_between_points < COPLANARITY_TOLERANCE
                 
-                if on_segment_1 and on_segment_2:
-                    # Valid intersection found!
+                if is_coplanar:
+                    # Lines are coplanar - create one intersection marker
+                    # Use average of the two points (they should be nearly identical)
+                    iv = (point_on_new_line + point_on_existing_line) / 2
                     
-                    # Check if there's already an intersection marker at this location
-                    duplicate = False
-                    for child in obj.children:
-                        distance = (child.location - iv).length
-                        if distance < INTERSECTION_TOLERANCE:
-                            duplicate = True
-                            break
+                    # Validate that intersection is actually on both line segments
+                    a = iv - u1
+                    b = iv - u2
+                    c = u1 - u2
+                    d = iv - v1
+                    e = iv - v2
+                    f = v1 - v2
                     
-                    # Only create marker if it's not a duplicate
-                    if not duplicate:
-                        # Add vertex to container mesh
-                        intersection_verts.append(bm.verts.new(iv))
-
-                        # Create visual marker (empty object)
-                        empty = bpy.data.objects.new(INTERSECTION_MARKER_NAME, None)
-                        # Link to the ConstructionLines root collection
-                        root_coll = bpy.data.collections.get(CONLINES_COLLECTION_NAME)
-                        if not root_coll:
-                            root_coll = bpy.data.collections.new(CONLINES_COLLECTION_NAME)
-                            bpy.context.scene.collection.children.link(root_coll)
-                        root_coll.objects.link(empty)
+                    # Check if point is on both segments using distance formula
+                    on_segment_1 = a.length + b.length - c.length < INTERSECTION_TOLERANCE
+                    on_segment_2 = d.length + e.length - f.length < INTERSECTION_TOLERANCE
+                    
+                    if on_segment_1 and on_segment_2:
+                        # Check if there's already an intersection marker at this location
+                        duplicate = False
+                        for child in obj.children:
+                            distance = (child.location - iv).length
+                            if distance < INTERSECTION_TOLERANCE:
+                                duplicate = True
+                                break
                         
-                        # Configure marker
-                        empty.location = iv
-                        empty.parent = obj  # Parent to container for organization
-                        empty.empty_display_size = INTERSECTION_MARKER_SIZE
-                        empty.show_in_front = INTERSECTION_SHOW_IN_FRONT
-                        empty.hide_select = True  # Prevent selection
+                        if not duplicate:
+                            # Add vertex to container mesh
+                            intersection_verts.append(bm.verts.new(iv))
+                            # Create visual marker
+                            self._create_intersection_marker(obj, iv)
+                
+                else:
+                    # Lines are NOT coplanar (skew lines) - create markers at both shortest distance points
+                    points_to_mark = [point_on_new_line, point_on_existing_line]
+                    
+                    for point in points_to_mark:
+                        # Check if there's already an intersection marker at this location
+                        duplicate = False
+                        for child in obj.children:
+                            distance = (child.location - point).length
+                            if distance < INTERSECTION_TOLERANCE:
+                                duplicate = True
+                                break
+                        
+                        if not duplicate:
+                            # Add vertex to container mesh
+                            intersection_verts.append(bm.verts.new(point))
+                            # Create visual marker
+                            self._create_intersection_marker(obj, point)
                         
         return intersection_verts
+    
+    def _create_intersection_marker(self, parent_obj, location):
+        """
+        Create a visual marker (empty object) at the given location.
+        
+        Args:
+            parent_obj: The parent object (ConstructionLines container)
+            location: The 3D location for the marker (Vector)
+        """
+        # Create visual marker (empty object)
+        empty = bpy.data.objects.new(INTERSECTION_MARKER_NAME, None)
+        
+        # Link to the ConstructionLines root collection
+        root_coll = bpy.data.collections.get(CONLINES_COLLECTION_NAME)
+        if not root_coll:
+            root_coll = bpy.data.collections.new(CONLINES_COLLECTION_NAME)
+            bpy.context.scene.collection.children.link(root_coll)
+        root_coll.objects.link(empty)
+        
+        # Configure marker
+        empty.location = location
+        empty.parent = parent_obj  # Parent to container for organization
+        empty.empty_display_size = INTERSECTION_MARKER_SIZE
+        empty.show_in_front = INTERSECTION_SHOW_IN_FRONT
+        empty.hide_select = True  # Prevent selection
     
     def _create_construction_line_from_points(self, v1_co, v2_co, world_matrix):
         """
