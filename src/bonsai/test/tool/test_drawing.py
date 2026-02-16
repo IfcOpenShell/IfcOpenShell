@@ -21,6 +21,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import bpy
+import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -31,6 +32,7 @@ import ifcopenshell.util.element
 import mathutils
 import numpy as np
 from mathutils import Vector
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -148,6 +150,34 @@ class TestDisableEditingSheets(NewFile):
         props.is_editing_sheets = True
         subject.disable_editing_sheets()
         assert props.is_editing_sheets == False
+
+
+class TestEditTextLiterals(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcAnnotation()
+        element.Representation = ifc.createIfcProductDefinitionShape()
+        context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
+        builder = ShapeBuilder(tool.Ifc.get())
+        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
+        element.Representation.Representations = [representation]
+        tool.Ifc.link(element, obj)
+        literal_attributes = [
+            {
+                "Literal": "Foo",
+                "Path": "RIGHT",
+                "BoxAlignment": "bottom-left",
+            }
+        ]
+        subject.edit_text_literals(obj, literal_attributes)
+        assert len(ifc.by_type("IfcTextLiteralWithExtent")) == 1
+        literal = ifc.by_type("IfcTextLiteralWithExtent")[0]
+        assert literal in representation.Items
+        assert literal.Literal == "Foo"
 
 
 class TestDisableEditingText(NewFile):
