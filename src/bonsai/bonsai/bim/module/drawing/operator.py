@@ -3165,6 +3165,7 @@ class EditTextPopup(bpy.types.Operator):
         bpy.ops.bim.disable_editing_text()
 
     def execute(self, context):
+        # TODO: check for possible subtle undo bug here
         # can't use invoke() because this operator
         # will be run indirectly by hotkey
         # so we use execute() and track whether it's the first run of the operator
