@@ -955,21 +955,18 @@ if "swig" in targets:
     )
 
 if USE_OCCT and "occ" in targets:
-    patches = []
+    occt_args: "list[str]" = []
+    patches: "list[str]" = []
     if OCCT_VERSION < "7.4":
         patches.append("./patches/occt/enable-exception-handling.patch")
 
-    if OCCT_VERSION == "7.7.1":
+    # Skip ExpToCasExe as we don't need it and it requires additional dependencies.
+    # Before 7.7.2 ExpToCasExe is part of DataExchange, DETools doesn't exist yet.
+    # Since we do need DataExchange (used for IgesSerializer), we use a patch to skip only ExpToCasExe.
+    if "7.7.2" > OCCT_VERSION >= "7.7":
         patches.append("./patches/occt/no_ExpToCasExe.patch")
-
-    if OCCT_VERSION == "7.7.2":
-        patches.append("./patches/occt/no_ExpToCasExe_7_7_2.patch")
-
-    if OCCT_VERSION == "7.8.1":
-        patches.append("./patches/occt/no_ExpToCasExe_7_8_1.patch")
-
-    if OCCT_VERSION == "7.9.1":
-        patches.append("./patches/occt/no_ExpToCasExe_7_9_1.patch")
+    elif OCCT_VERSION >= "7.7.2":
+        occt_args.append("-DBUILD_MODULE_DETools=OFF")
 
     if "wasm" in flags:
         patches.append("./patches/occt/no_em_js.patch")
@@ -990,6 +987,7 @@ if USE_OCCT and "occ" in targets:
             f"-DUSE_GLES2=OFF",
             f"-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
             *MAC_CROSS_COMPILE_INTEL_ARGS,
+            *occt_args,
         ],
         download_url="https://github.com/Open-Cascade-SAS/OCCT",
         download_name="occt",
