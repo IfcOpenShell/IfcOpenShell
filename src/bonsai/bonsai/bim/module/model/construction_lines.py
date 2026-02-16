@@ -68,6 +68,9 @@ INTERSECTION_SHOW_IN_FRONT = True
 # Name of the custom transform orientation
 CUSTOM_ORIENTATION_NAME = "Cons_Line"
 
+# Property name for storing construction line registry
+CONLINES_REGISTRY_PROP = "conlines_registry"
+
 
 def ensure_construction_lines_object():
     """
@@ -77,6 +80,7 @@ def ensure_construction_lines_object():
     - Cannot be selected (hide_select = True)
     - Orange-red color for visibility
     - Acts as parent for intersection marker empties
+    - Stores registry of lines and their intersection points
     """
     if not bpy.context.scene:
         return
@@ -92,6 +96,8 @@ def ensure_construction_lines_object():
         root_coll.objects.link(obj)
         obj.hide_select = True
         obj.color = CONLINES_COLOR
+        # Initialize empty registry for tracking lines
+        obj[CONLINES_REGISTRY_PROP] = []
 
 
 def calculate_shortest_distance_points(line1_p1, line1_p2, line2_p1, line2_p2):
@@ -155,6 +161,10 @@ class BIM_OT_construction_lines_clear(bpy.types.Operator):
             for child in children_to_remove:
                 child.parent = None
                 bpy.data.objects.remove(child)
+            
+            # Clear the registry
+            if CONLINES_REGISTRY_PROP in obj:
+                obj[CONLINES_REGISTRY_PROP] = []
 
         try:
             context.scene.transform_orientation_slots[0].type = CUSTOM_ORIENTATION_NAME
@@ -241,13 +251,23 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
         bm1 = bmesh.new()
         bm1.from_mesh(me)
         
+        # Store edge index before adding
+        edge_index_before = len(bm1.edges)
+        
         # Find and create intersections with existing lines
-        self.intersector(bm1, newedges)
+        # Returns list of (marker, existing_edge_index) tuples
+        intersection_data = self.intersector(bm1, newedges)
         
         # Add the new edge to the container
         newedge_coords = [newedges.verts[0].co, newedges.verts[1].co]
         newedge_verts = [bm1.verts.new(newedge_coords[0]), bm1.verts.new(newedge_coords[1])]
-        bm1.edges.new(newedge_verts)
+        new_edge = bm1.edges.new(newedge_verts)
+        
+        # Register this line with its intersection points (bidirectional tracking)
+        self.register_construction_line(obj, newedge_coords, intersection_data)
+        
+        # Enforce max line count limit
+        self.enforce_max_line_count(bm1, obj)
         
         # Update mesh
         bm1.to_mesh(me)
@@ -268,20 +288,21 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
             newedge: The new edge to check for intersections
             
         Returns:
-            List of created intersection vertices
+            List of (marker, existing_edge_index) tuples for bidirectional tracking
         """
         obj = bpy.data.objects.get(CONLINES_OBJECT_NAME)
         if not obj:
             return []
             
         edges = [e for e in bm.edges]
-        intersection_verts = []
+        intersection_data = []  # List of (marker, edge_index) tuples
+        intersection_verts = []  # For adding vertices to mesh
 
         # Get the two points of the new edge
         u1, u2 = [vertex.co for vertex in newedge.verts]
         
         # Check intersection with each existing edge
-        for edge in edges:
+        for edge_index, edge in enumerate(edges):
             # Get the two points of the existing edge
             v1, v2 = [vertex.co for vertex in edge.verts]
 
@@ -326,8 +347,9 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
                         if not duplicate:
                             # Add vertex to container mesh
                             intersection_verts.append(bm.verts.new(iv))
-                            # Create visual marker
-                            self._create_intersection_marker(obj, iv)
+                            # Create visual marker and track it
+                            marker = self._create_intersection_marker(obj, iv)
+                            intersection_data.append((marker, edge_index))
                 
                 else:
                     # Lines are NOT coplanar (skew lines) - create markers at both shortest distance points
@@ -345,10 +367,126 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
                         if not duplicate:
                             # Add vertex to container mesh
                             intersection_verts.append(bm.verts.new(point))
-                            # Create visual marker
-                            self._create_intersection_marker(obj, point)
+                            # Create visual marker and track it
+                            marker = self._create_intersection_marker(obj, point)
+                            intersection_data.append((marker, edge_index))
                         
-        return intersection_verts
+        return intersection_data
+    
+    def register_construction_line(self, obj, edge_coords, intersection_data):
+        """
+        Register a construction line with its associated intersection markers.
+        Updates both the new line and existing lines with bidirectional marker tracking.
+        
+        Args:
+            obj: The construction lines container object
+            edge_coords: List of two vectors representing the line endpoints
+            intersection_data: List of (marker, existing_edge_index) tuples
+        """
+        # Initialize registry if it doesn't exist
+        if CONLINES_REGISTRY_PROP not in obj:
+            obj[CONLINES_REGISTRY_PROP] = []
+        
+        # Get registry as list
+        registry = list(obj[CONLINES_REGISTRY_PROP])
+        
+        # Extract markers from intersection_data
+        marker_names = [marker.name for marker, _ in intersection_data]
+        
+        # Add new line entry
+        line_entry = {
+            "start": [edge_coords[0].x, edge_coords[0].y, edge_coords[0].z],
+            "end": [edge_coords[1].x, edge_coords[1].y, edge_coords[1].z],
+            "markers": marker_names
+        }
+        registry.append(line_entry)
+        
+        # Update existing lines' registries to include the shared markers (bidirectional tracking)
+        for marker, edge_index in intersection_data:
+            if edge_index < len(registry) - 1:  # -1 because we just added the new line
+                # Add this marker to the existing line's marker list
+                # Convert to list first (IDPropertyArray is immutable)
+                existing_markers = list(registry[edge_index]["markers"])
+                if marker.name not in existing_markers:
+                    existing_markers.append(marker.name)
+                    registry[edge_index]["markers"] = existing_markers
+        
+        # Save back to object
+        obj[CONLINES_REGISTRY_PROP] = registry
+    
+    def enforce_max_line_count(self, bm, obj):
+        """
+        Enforce the maximum construction line count.
+        Removes oldest lines and their associated intersection markers when limit is exceeded.
+        
+        Args:
+            bm: BMesh data of the container object
+            obj: The construction lines container object
+        """
+        model_props = bpy.context.scene.BIMModelProperties
+        max_count = model_props.construction_lines_max_count if hasattr(model_props, 'construction_lines_max_count') else 10
+        
+        # 0 means no limit
+        if max_count == 0:
+            return
+        
+        # Get registry
+        if CONLINES_REGISTRY_PROP not in obj:
+            return
+        
+        registry = list(obj[CONLINES_REGISTRY_PROP])
+        current_count = len(registry)
+        
+        if current_count > max_count:
+            # Calculate how many to remove
+            to_remove_count = current_count - max_count
+            
+            # Get edges list
+            edges = [e for e in bm.edges]
+            
+            # Remove the oldest lines
+            for i in range(to_remove_count):
+                line_entry = registry[i]
+                
+                # Remove the edge that matches this line's coordinates
+                start = mathutils.Vector(line_entry["start"])
+                end = mathutils.Vector(line_entry["end"])
+                
+                for edge in edges:
+                    v1 = edge.verts[0].co
+                    v2 = edge.verts[1].co
+                    
+                    # Check if this edge matches the registered line
+                    if ((v1 - start).length < INTERSECTION_TOLERANCE and (v2 - end).length < INTERSECTION_TOLERANCE) or \
+                       ((v1 - end).length < INTERSECTION_TOLERANCE and (v2 - start).length < INTERSECTION_TOLERANCE):
+                        # Remove the edge
+                        bm.edges.remove(edge)
+                        edges.remove(edge)
+                        break
+                
+                # Remove associated intersection markers
+                markers_to_remove = set(line_entry["markers"])
+                for marker_name in markers_to_remove:
+                    marker = bpy.data.objects.get(marker_name)
+                    if marker:
+                        marker.parent = None
+                        bpy.data.objects.remove(marker)
+                
+                # Remove these markers from other lines' registries (cleanup bidirectional references)
+                for other_line_entry in registry:
+                    if other_line_entry != line_entry:
+                        other_line_entry["markers"] = [
+                            m for m in other_line_entry["markers"] if m not in markers_to_remove
+                        ]
+            
+            # Update registry - remove the oldest entries
+            registry = registry[to_remove_count:]
+            obj[CONLINES_REGISTRY_PROP] = registry
+            
+            # Clean up orphaned vertices
+            verts_to_remove = [v for v in bm.verts if len(v.link_edges) == 0]
+            for vert in verts_to_remove:
+                bm.verts.remove(vert)
     
     def _create_intersection_marker(self, parent_obj, location):
         """
@@ -357,6 +495,9 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
         Args:
             parent_obj: The parent object (ConstructionLines container)
             location: The 3D location for the marker (Vector)
+            
+        Returns:
+            The created empty object marker
         """
         # Create visual marker (empty object)
         empty = bpy.data.objects.new(INTERSECTION_MARKER_NAME, None)
@@ -374,6 +515,8 @@ class BIM_OT_construction_lines_add(bpy.types.Operator):
         empty.empty_display_size = INTERSECTION_MARKER_SIZE
         empty.show_in_front = INTERSECTION_SHOW_IN_FRONT
         empty.hide_select = True  # Prevent selection
+        
+        return empty
     
     def _create_construction_line_from_points(self, v1_co, v2_co, world_matrix):
         """

@@ -2050,6 +2050,7 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_construction_lines", text="Construction Lines")
         if model_props.show_construction_lines:
+            row.prop(model_props, "construction_lines_max_count", text="Max")
             if context.mode == "EDIT_MESH":
                 row.operator("bim.construction_lines_add", text="", icon="ADD")
             row.operator("bim.construction_lines_clear", text="", icon="TRASH")

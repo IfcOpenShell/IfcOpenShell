@@ -395,6 +395,13 @@ class BIMModelProperties(PropertyGroup):
         update=update_construction_lines,
         description="Enable construction lines tool for creating temporary reference geometry from selected edges",
     )
+    construction_lines_max_count: bpy.props.IntProperty(
+        name="Max Lines",
+        default=10,
+        min=0,
+        max=1000,
+        description="Maximum number of construction lines to keep (0 = no limit). Oldest lines are removed when exceeded",
+    )
 
     if TYPE_CHECKING:
         ifc_class: str
@@ -434,6 +441,7 @@ class BIMModelProperties(PropertyGroup):
         show_cut_decorator: bool
         show_cut_decorator_fill: bool
         show_construction_lines: bool
+        construction_lines_max_count: int
 
 
 class BIMArrayProperties(PropertyGroup):
