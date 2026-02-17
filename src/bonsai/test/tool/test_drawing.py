@@ -957,4 +957,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["Generated"].links[:]) == 1
+        assert len(uv_node.outputs["UV"].links[:]) == 1
