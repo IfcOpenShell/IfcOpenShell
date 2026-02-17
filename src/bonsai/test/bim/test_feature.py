@@ -280,6 +280,8 @@ def create_ui_name_cache():
         try:
             panel_type = getattr(bpy.types, bl_idname)
             if panel_type.bl_rna.base.name == "Panel":
+                if "_tab_" in panel_type.bl_idname:
+                    continue  # Tab panels are just groups and not relevant in testing
                 ui_name_cache[panel_type.bl_label] = panel_type.bl_idname
             elif panel_type.bl_rna.base.name == "Operator":
                 ui_name_cache[panel_type.bl_label] = bl_idname
