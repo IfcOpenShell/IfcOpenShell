@@ -938,7 +938,7 @@ class TestAddReferenceImage(NewFile):
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
-        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((1.0, 0.565, 0.0)))
+        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
 
         material = obj.active_material
         assert material
