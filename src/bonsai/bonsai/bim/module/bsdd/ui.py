@@ -51,17 +51,6 @@ class BIM_PT_bsdd(Panel):
         props = tool.Bsdd.get_bsdd_props()
         assert self.layout
         layout = self.layout
-        try:
-            if not props.bsdd_baseurl:
-                try:
-                    props.bsdd_baseurl = tool.Bsdd.client.baseurl
-                except Exception:
-                    props.bsdd_baseurl = bsdd.Client().baseurl
-        except Exception:
-            pass
-        row = layout.row(align=True)
-        row.prop(props, "bsdd_baseurl", text="Other URL", emboss=True)
-        row.operator("bim.bsdd_reset_baseurl", icon="LOOP_BACK", text="")
         if len(props.dictionaries):
             row = self.layout.row()
             row.operator("bim.load_bsdd_dictionaries", icon="FILE_REFRESH")
@@ -94,24 +83,6 @@ class BIM_PT_bsdd(Panel):
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_dictionaries")
-
-class BIM_OT_bsdd_reset_baseurl(bpy.types.Operator):
-    bl_idname = "bim.bsdd_reset_baseurl"
-    bl_label = "Reset bSDD Base URL"
-    bl_description = "Resets the bSDD base URL to the default value"
-
-    def execute(self, context):
-        import bsdd
-        props = tool.Bsdd.get_bsdd_props()
-        props.bsdd_baseurl = ""
-        try:
-            tool.Bsdd.client = bsdd.Client()
-            if hasattr(tool.Bsdd.client, "baseurl"):
-                tool.Bsdd.client.baseurl = default_url
-        except Exception:
-            pass
-        self.report({'INFO'}, "bSDD base URL reset.")
-        return {'FINISHED'}
 
 class BIM_UL_bsdd_dictionaries(UIList):
     def draw_item(

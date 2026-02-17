@@ -37,7 +37,6 @@ classes = (
     ui.BIM_UL_bsdd_classes,
     ui.BIM_UL_bsdd_properties,
     ui.BIM_PT_bsdd,
-    ui.BIM_OT_bsdd_reset_baseurl,
 )
 
 

@@ -660,6 +660,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bsdd_load_test_dictionaries: BoolProperty(
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
+    bsdd_baseurl: StringProperty(
+        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        default="https://api.bsdd.buildingsmart.org/api/",
+    )
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
@@ -972,6 +976,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")
         layout.prop(self, "bsdd_load_test_dictionaries")
+        layout.prop(self, "bsdd_baseurl")
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
