@@ -3817,19 +3817,21 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     )
     x_length: bpy.props.FloatProperty(
         name="X Length",
-        description="Width of the reference image in project units",
+        description="Width of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
     )
     y_length: bpy.props.FloatProperty(
         name="Y Length",
-        description="Height of the reference image in project units",
+        description="Height of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
     )
 
     def invoke(self, context, event):
@@ -3877,15 +3879,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         
         # Dimension settings
         layout.separator()
-        if tool.Ifc.get():
-            length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
-            if length_unit:
-                unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
-            else:
-                unit_name = "project units"
-            layout.label(text=f"Dimensions (in {unit_name}):")
-        else:
-            layout.label(text="Dimensions (in project units):")
         layout.prop(self, "x_length")
         layout.prop(self, "y_length")
 
@@ -3911,8 +3904,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
 
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
+            plane_scale = Vector((self.x_length / 2.0, self.y_length / 2.0, 1.0))
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
 
