@@ -3813,20 +3813,21 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     )
     
     def get_existing_reference_images(self, context):
-        items = [("NEW", "Create New", "Create a new reference image object")]
-        
         ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            return items
-        
-        for obj in context.scene.objects:
-            element = tool.Ifc.get_entity(obj)
-            if element and element.is_a("IfcAnnotation"):
-                predefined_type = ifcopenshell.util.element.get_predefined_type(element)
-                if predefined_type == "IMAGE":
-                    items.append((obj.name, obj.name, f"Update existing reference image: {obj.name}"))
-        
-        return items
+
+        items = [
+            (
+                f"IfcAnnotation/{obj.Name}",
+                f"{obj.Name} ({obj.GlobalId})",
+                f"Update existing reference image: {obj.Name}",
+            )
+            for obj in ifcopenshell.util.selector.filter_elements(
+                ifc_file,
+                "IfcAnnotation, PredefinedType=IMAGE"
+            )
+        ]
+
+        return [("NEW", "Create New", "Create a new reference image object"), *items]
     
     existing_object_by_name: bpy.props.EnumProperty(
         name="",
