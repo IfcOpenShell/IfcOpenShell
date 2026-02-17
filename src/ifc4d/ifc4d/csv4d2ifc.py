@@ -18,13 +18,13 @@
 
 
 import csv
-import locale
-import re
-
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
+import locale
+import re
 
 
 class Csv2Ifc:
@@ -48,7 +48,7 @@ class Csv2Ifc:
         with open(self.csv, "r", encoding="ISO-8859-1") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
-                if not row[0]:
+                if not row or not row[0]:
                     continue
                 if row[0] == "Hierarchy":
                     for i, col in enumerate(row):
@@ -57,80 +57,88 @@ class Csv2Ifc:
                         self.headers[col] = i
                     continue
                 task = self.get_row_task(row)
-                hierarchy_key = int(row[0])
+                hierarchy_key = int(float(row[0]))
                 if hierarchy_key == 1:
                     self.tasks.append(task)
                 else:
-                    self.parents[hierarchy_key - 1]["children"].append(task)
+                    if hierarchy_key - 1 in self.parents:
+                        self.parents[hierarchy_key - 1]["children"].append(task)
                 self.parents[hierarchy_key] = task
 
     def parse_task_rel(self, task_relationships_str):
         rels = []
         if task_relationships_str:
             for rel_str in task_relationships_str.split(";"):
-                rel_parts = re.split(r"(\d+)", rel_str)
-                task_1 = rel_parts[1]
-                rel_type = rel_parts[2]
-                task_2 = rel_parts[3]
-                rels.append(
-                    {
+                rel_str = rel_str.strip()
+                match = re.search(r"([A-Z]{2})", rel_str)
+                if not match:
+                    continue
+
+                rel_type = match.group(1)
+                parts = rel_str.split(rel_type)
+                task_1 = parts[0]
+                remaining_part = parts[1]
+
+                lag_match = re.match(r"([+\-]\w+)(.*)", remaining_part)
+                if lag_match:
+                    lag = lag_match.group(1)
+                    task_2 = lag_match.group(2)
+                else:
+                    lag = None
+                    task_2 = remaining_part
+                
+                if task_1 and task_2 and rel_type:
+                    rels.append({
                         "rel_type": rel_type,
                         "task_1": task_1,
                         "task_2": task_2,
-                    }
-                )
+                        "lag": lag
+                    })
         return rels
 
     def get_row_task(self, row):
-        hours_per_day = 8
-        hierarchy = row[self.headers["Hierarchy"]]
-        identification = row[self.headers["Identification"]]
-        task_name = row[self.headers["Name"]]
+        task_relationships = self.parse_task_rel(row[self.headers.get("Relationships", -1)] if "Relationships" in self.headers else "")
 
-        task_relationships = self.parse_task_rel(row[self.headers["Relationships"]])
+        def get_date(col_name):
+            if col_name in self.headers and row[self.headers[col_name]]:
+                return ifcopenshell.util.date.string_to_date(row[self.headers[col_name]])
+            return None
 
-        scheduled_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleStart"]])
-            if row[self.headers["ScheduleStart"]]
-            else None
-        )
-        scheduled_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleFinish"]])
-            if row[self.headers["ScheduleFinish"]]
-            else None
-        )
-        scheduled_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]])
-            if row[self.headers["ScheduleDuration"]]
-            else None
-        )
-        actual_start_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualStart"]])
-            if row[self.headers["ActualStart"]]
-            else None
-        )
-        actual_finish_date = (
-            ifcopenshell.util.date.string_to_date(row[self.headers["ActualFinish"]])
-            if row[self.headers["ActualFinish"]]
-            else None
-        )
-        actual_duration = (
-            ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]])
-            if row[self.headers["ActualDuration"]]
-            else None
-        )
+        def get_duration(col_name):
+            if col_name in self.headers and row[self.headers[col_name]]:
+                return ifcopenshell.util.date.string_to_duration(row[self.headers[col_name]])
+            return None
+        
+        def get_bool(col_name):
+            if col_name in self.headers and row[self.headers[col_name]]:
+                return row[self.headers[col_name]].upper() == 'TRUE'
+            return False
+
+        def get_float(col_name):
+            if col_name in self.headers and row[self.headers[col_name]]:
+                try:
+                    return float(row[self.headers[col_name]])
+                except (ValueError, TypeError):
+                    return None
+            return None
 
         return {
-            "Hierarchy": hierarchy,
-            "Identification": identification,
-            "Name": task_name,
+            "Hierarchy": row[self.headers["Hierarchy"]],
+            "Identification": row[self.headers["Identification"]],
+            "Name": row[self.headers["Name"]],
             "Relationships": task_relationships,
-            "ScheduleStart": scheduled_start_date,
-            "ScheduleFinish": scheduled_finish_date,
-            "ScheduleDuration": scheduled_duration,
-            "ActualStart": actual_start_date,
-            "ActualFinish": actual_finish_date,
-            "ActualDuration": actual_duration,
+            "ScheduleStart": get_date("ScheduleStart"),
+            "ScheduleFinish": get_date("ScheduleFinish"),
+            "ScheduleDuration": get_duration("ScheduleDuration"),
+            "ActualStart": get_date("ActualStart"),
+            "ActualFinish": get_date("ActualFinish"),
+            "ActualDuration": get_duration("ActualDuration"),
+            "EarlyStart": get_date("EarlyStart"),
+            "EarlyFinish": get_date("EarlyFinish"),
+            "LateStart": get_date("LateStart"),
+            "LateFinish": get_date("LateFinish"),
+            "IsCritical": get_bool("IsCritical"),
+            "Completion": get_float("Completion"),
             "children": [],
         }
 
@@ -141,7 +149,16 @@ class Csv2Ifc:
             self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         self.work_schedule = self.create_work_schedule()
         self.create_tasks(self.tasks)
-        self.create_rel_sequences(self.tasks)
+
+        self.sequence_type_map = {
+            "FF": "FINISH_FINISH",
+            "FS": "FINISH_START",
+            "SF": "START_FINISH",
+            "SS": "START_START",
+        }
+        all_tasks = self.get_all_tasks_flat()
+        for task in all_tasks:
+            self.create_relationships_for_task(task)
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
@@ -151,16 +168,6 @@ class Csv2Ifc:
     def create_tasks(self, tasks, parent=None):
         for task in tasks:
             self.create_task(task, parent)
-
-    def create_rel_sequences(self, tasks=None):
-        self.sequence_type_map = {
-            "FF": "FINISH_FINISH",
-            "FS": "FINISH_START",
-            "SF": "START_FINISH",
-            "SS": "START_START",
-        }
-        for task in tasks:
-            self.create_rel_sequence(task)
 
     def create_work_schedule(self):
         return ifcopenshell.api.sequence.add_work_schedule(self.file, name="import", work_plan=self.work_plan)
@@ -177,10 +184,10 @@ class Csv2Ifc:
             attributes={
                 "Name": task["Name"],
                 "Identification": task["Identification"],
-                # "IsMilestone": task["ScheduleStart"] == task["ScheduleFinish"],
             },
         )
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task["ifc"])
+        
         ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
@@ -192,35 +199,59 @@ class Csv2Ifc:
                 "ActualStart": task["ActualStart"],
                 "ActualFinish": task["ActualFinish"],
                 "ActualDuration": task["ActualDuration"],
+                "EarlyStart": task["EarlyStart"],
+                "EarlyFinish": task["EarlyFinish"],
+                "LateStart": task["LateStart"],
+                "LateFinish": task["LateFinish"],
+                "IsCritical": task["IsCritical"],
+                "Completion": task["Completion"],
             },
         )
         self.create_tasks(task["children"], task["ifc"])
 
-    def get_entity_by_identification(self, tasks, task_identification):
-        for task in tasks or []:
-            if task["Identification"].replace(".", "").replace(" ", "") == task_identification.replace(" ", ""):
-                return task["ifc"]
-            else:
-                entity = self.get_entity_by_identification(task["children"], task_identification)
-                if entity:
-                    return entity
+    def get_all_tasks_flat(self, tasks=None):
+        if tasks is None:
+            tasks = self.tasks
+        flat_list = []
+        for task in tasks:
+            flat_list.append(task)
+            flat_list.extend(self.get_all_tasks_flat(task["children"]))
+        return flat_list
+
+    def get_entity_by_identification(self, task_id):
+        all_tasks = self.get_all_tasks_flat()
+        for task in all_tasks:
+            if task["Identification"].replace(".", "").replace(" ", "") == task_id.replace(".", "").replace(" ", ""):
+                return task.get("ifc")
         return None
 
-    def create_rel_sequence(self, task=None):
-        for rel in task["Relationships"] or []:
-            task_1 = self.get_entity_by_identification(self.tasks, rel["task_1"])
-            task_2 = self.get_entity_by_identification(self.tasks, rel["task_2"])
-            rel_type = self.sequence_type_map[rel["rel_type"]]
-            rel_sequence = ifcopenshell.api.sequence.assign_sequence(
-                self.file,
-                related_process=task_2,
-                relating_process=task_1,
-                sequence_type=rel_type,
-            )
+    def create_relationships_for_task(self, task):
+        for rel in task.get("Relationships", []) or []:
+            task_1_ifc = self.get_entity_by_identification(rel.get("task_1"))
+            task_2_ifc = self.get_entity_by_identification(rel.get("task_2"))
+            if not task_1_ifc or not task_2_ifc:
+                continue
+
+            time_lag = None
+            if rel.get("lag"):
+                try:
+                    duration_str = rel["lag"].replace("+", "")
+                    duration = ifcopenshell.util.date.string_to_duration(duration_str)
+                    time_lag = self.file.create_entity(
+                        "IfcLagTime",
+                        LagValue=duration,
+                        DurationType="WORKTIME"
+                    )
+                except Exception as e:
+                    print(f"Advertencia: No se pudo analizar el tiempo de retraso '{rel['lag']}': {e}")
+                    pass
+
+            rel_type = self.sequence_type_map.get(rel.get("rel_type"))
             if rel_type:
-                ifcopenshell.api.sequence.edit_sequence(
+                ifcopenshell.api.sequence.assign_sequence(
                     self.file,
-                    rel_sequence=rel_sequence,
-                    attributes={"SequenceType": rel_type},
+                    related_process=task_2_ifc,
+                    relating_process=task_1_ifc,
+                    sequence_type=rel_type
                 )
-        self.create_rel_sequences(task["children"])
+

@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>, Yassine Oualid <yassine@sigmadimensions.com>
+# Copyright (C) 2021, 2022 Dion Moult <dion@thinkmoult.com>, Yassine Oualid <yassine@sigmadimensions.com>, Federico Eraso <feraso@svisuals.net
 #
 # This file is part of Bonsai.
 #
@@ -17,13 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-
     import bonsai.tool as tool
 
 
@@ -53,9 +51,101 @@ def edit_work_plan(ifc: type[tool.Ifc], sequence: type[tool.Sequence], work_plan
 def edit_work_schedule(
     ifc: type[tool.Ifc], sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance
 ) -> None:
-    attributes = sequence.get_work_schedule_attributes()
-    ifc.run("sequence.edit_work_schedule", work_schedule=work_schedule, attributes=attributes)
-    sequence.disable_editing_work_schedule()
+    try:
+        # Validate that the work_schedule exists before editing
+        if not work_schedule or not hasattr(work_schedule, 'is_a'):
+            print("ERROR: WorkSchedule is invalid or doesn't exist")
+            return
+            
+        # Get ID for debug
+        schedule_id = work_schedule.id()
+        schedule_name = getattr(work_schedule, 'Name', 'Unnamed')
+        print(f"DEBUG: Editing WorkSchedule ID {schedule_id} - Name: {schedule_name}")
+        
+        # Get attributes
+        attributes = sequence.get_work_schedule_attributes()
+        print(f"DEBUG: Attributes to update: {attributes}")
+        
+        # Validate that we have valid attributes
+        if not attributes:
+            print("WARNING: No attributes to update")
+            sequence.disable_editing_work_schedule()
+            return
+            
+        # Execute the edit
+        ifc.run("sequence.edit_work_schedule", work_schedule=work_schedule, attributes=attributes)
+        
+        # Verify that the work_schedule still exists after editing
+        try:
+            # Try to access the work_schedule to verify that it was not deleted
+            test_id = work_schedule.id()
+            test_name = getattr(work_schedule, 'Name', 'Unnamed')
+            print(f"DEBUG: WorkSchedule still exists after edit - ID {test_id} - Name: {test_name}")
+        except:
+            print("ERROR: WorkSchedule was deleted during edit operation!")
+            sequence.disable_editing_work_schedule()
+            return
+
+        # SMART SOLUTION: Preserve original schedule instead of resetting automatically
+        try:
+            # Refresh ALL schedule-related data
+            from bonsai.bim.module.sequence.data import SequenceData, WorkScheduleData
+            SequenceData.load()
+            WorkScheduleData.load()
+            
+            props = sequence.get_work_schedule_props()
+            current_active_id = props.active_work_schedule_id
+            
+            # CRITICAL: Only reset if NO other schedules are available
+            # Instead of resetting automatically, look for a fallback schedule
+            ifc_file = tool.Ifc.get()
+            all_schedules = ifc_file.by_type("IfcWorkSchedule")
+            
+            if all_schedules:
+                # If schedules are available, prefer originals over copies
+                original_schedules = [ws for ws in all_schedules 
+                                    if not (ws.Name and ws.Name.startswith("Copy of "))]
+                
+                if original_schedules:
+                    # Use the first original schedule found
+                    fallback_id = original_schedules[0].id()
+                    props.active_work_schedule_id = fallback_id
+                    props.editing_type = "TASKS"
+                    print(f"[INFO] EDIT_WORK_SCHEDULE: Preserving original schedule ID {fallback_id} - '{original_schedules[0].Name}'")
+                elif all_schedules:
+                    # If there are no originals, use any available schedule
+                    fallback_id = all_schedules[0].id()
+                    props.active_work_schedule_id = fallback_id
+                    props.editing_type = "TASKS"
+                    print(f"[INFO] EDIT_WORK_SCHEDULE: Using available schedule ID {fallback_id} - '{all_schedules[0].Name}'")
+                else:
+                    # Only reset if there are really no schedules
+                    props.active_work_schedule_id = 0
+                    props.editing_type = ""
+                    print("[INFO] EDIT_WORK_SCHEDULE: No schedules available, resetting")
+            else:
+                # Only reset if there are really no schedules
+                props.active_work_schedule_id = 0
+                props.editing_type = ""
+                print("[INFO] EDIT_WORK_SCHEDULE: No schedules available, resetting")
+            
+            # Force UI update
+            import bpy
+            for area in bpy.context.screen.areas:
+                if area.type in ['PROPERTIES', 'OUTLINER']:
+                    area.tag_redraw()
+            
+            print(f"INFO: WorkSchedule {work_schedule.id()} - UI reset completed successfully")
+            
+        except Exception as refresh_error:
+            print(f"WARNING: Failed to reset UI after edit: {refresh_error}")
+            sequence.disable_editing_work_schedule()
+            
+    except Exception as e:
+        print(f"ERROR in edit_work_schedule: {e}")
+        import traceback
+        traceback.print_exc()
+        sequence.disable_editing_work_schedule()
 
 
 def enable_editing_work_plan_schedules(
@@ -65,8 +155,14 @@ def enable_editing_work_plan_schedules(
 
 
 def add_work_schedule(ifc: type[tool.Ifc], sequence: type[tool.Sequence], name: str) -> ifcopenshell.entity_instance:
-    predefined_type, object_type = sequence.get_user_predefined_type()
+    res = sequence.get_user_predefined_type()
+    if not isinstance(res, tuple) or len(res) != 2:
+        # User cancelled or UI not available: use defaults
+        predefined_type, object_type = "NOTDEFINED", ""
+    else:
+        predefined_type, object_type = res
     return ifc.run("sequence.add_work_schedule", name=name, predefined_type=predefined_type, object_type=object_type)
+
 
 
 def remove_work_schedule(ifc: type[tool.Ifc], work_schedule: ifcopenshell.entity_instance) -> None:
@@ -96,9 +192,9 @@ def enable_editing_work_schedule(sequence: type[tool.Sequence], work_schedule: i
 def enable_editing_work_schedule_tasks(
     sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance
 ) -> None:
+    # Only set active schedule, DO NOT load task tree immediately
+    # The operator will handle the correct sequence: callback → load_task_tree → restore
     sequence.enable_editing_work_schedule_tasks(work_schedule)
-    sequence.load_task_tree(work_schedule)
-    sequence.load_task_properties()
 
 
 def load_task_tree(sequence: type[tool.Sequence], work_schedule) -> None:
@@ -172,10 +268,53 @@ def enable_editing_task_attributes(sequence: type[tool.Sequence], task: ifcopens
     sequence.enable_editing_task_attributes(task)
 
 
+def _auto_sync_task_predefined_type(task_id: int, predefined_type: str) -> None:
+    """
+    Synchronizes the PredefinedType with the task's DEFAULT ColorType AND FORCES UI REDRAW.
+    """
+    try:
+        import bpy
+        import bonsai.tool as tool
+        from bonsai.bim.module.sequence.prop import UnifiedColorTypeManager
+
+        # 1. Find the task in UI properties (task_pg)
+        tprops = tool.Sequence.get_task_tree_props()
+        task_pg = next((t for t in tprops.tasks if t.ifc_definition_id == task_id), None)
+
+        if task_pg:
+            # 2. Call central logic to update the data
+            UnifiedColorTypeManager.sync_default_group_to_predefinedtype(bpy.context, task_pg)
+            print(f"[INFO] Auto-Sync: Task {task_id} updated to DEFAULT ColorType '{predefined_type}'.")
+
+            # 3. THE KEY PART! Force Properties UI redraw.
+            # Blender doesn't always detect changes in nested collections, so we force it.
+            for window in bpy.context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'PROPERTIES':
+                        area.tag_redraw()
+
+    except Exception as e:
+        print(f"[ERROR] ERROR in _auto_sync_task_predefined_type: {e}")
+
+
 def edit_task(ifc: type[tool.Ifc], sequence: type[tool.Sequence], task: ifcopenshell.entity_instance) -> None:
+    """Edits a task, reloads data, and triggers DEFAULT ColorType synchronization."""
     attributes = sequence.get_task_attributes()
+    old_predefined = getattr(task, "PredefinedType", "NOTDEFINED") or "NOTDEFINED"
+
+    # 1. Save changes to the IFC file
     ifc.run("sequence.edit_task", task=task, attributes=attributes)
+
+    # 2. Reload data from IFC so cache is updated
+    from bonsai.bim.module.sequence.data import SequenceData
+    SequenceData.load() # Complete reload to ensure consistency
     sequence.load_task_properties(task=task)
+
+    # 3. Trigger synchronization if PredefinedType changed
+    new_predefined = attributes.get("PredefinedType", old_predefined)
+    if new_predefined != old_predefined:
+        _auto_sync_task_predefined_type(task.id(), new_predefined)
+
     sequence.disable_editing_task()
 
 
@@ -424,7 +563,7 @@ def edit_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.assign_control", relating_control=work_calendar, related_objects=[task])
+    ifc.run("control.assign_control", relating_control=work_calendar, related_object=task)
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
@@ -435,7 +574,7 @@ def remove_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.unassign_control", relating_control=work_calendar, related_objects=[task])
+    ifc.run("control.unassign_control", relating_control=work_calendar, related_object=task)
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
@@ -584,43 +723,167 @@ def setup_default_task_columns(sequence: type[tool.Sequence]) -> None:
     sequence.setup_default_task_columns()
 
 
-def add_task_bars(sequence: type[tool.Sequence]) -> None:
-    tasks = sequence.get_animation_bar_tasks()
-    if tasks:
-        sequence.create_bars(tasks)
+
+def add_task_bars(sequence: "type[tool.Sequence]") -> set[str]:
+    """Generates the visual bars for the selected tasks.
+
+    - Synchronizes `has_bar_visual` from the tree with `props.task_bars` (JSON).
+    - Calls `sequence.refresh_task_bars()` to create/delete bars in the viewport.
+    - Returns {'FINISHED'} to maintain operator-style semantics.
+    """
+    # Update has_bar_visual synchronization with task_bars
+    task_tree = sequence.get_task_tree_props()
+    selected_tasks = []
+
+    for task in getattr(task_tree, "tasks", []):
+        try:
+            tid = int(task.ifc_definition_id)
+        except Exception:
+            continue
+
+        if getattr(task, "has_bar_visual", False):
+            selected_tasks.append(tid)
+            sequence.add_task_bar(tid)
+        else:
+            sequence.remove_task_bar(tid)
+
+    # Generate/update visual bars
+    sequence.refresh_task_bars()
+
+    return {"FINISHED"}
+
 
 
 def load_default_animation_color_scheme(sequence: type[tool.Sequence]) -> None:
     sequence.load_default_animation_color_scheme()
 
 
+
 def visualise_work_schedule_date_range(
     sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance
 ) -> None:
-    sequence.clear_objects_animation(include_blender_objects=False)
-    settings = sequence.get_animation_settings()
-    if settings:
-        product_frames = sequence.get_animation_product_frames(work_schedule, settings)
-        if not sequence.has_animation_colors():
-            sequence.load_default_animation_color_scheme()
-        load_animation_color_scheme(sequence, scheme=sequence.get_animation_color_scheme())
-        sequence.animate_objects(settings, product_frames, "date_range")
-        sequence.add_text_animation_handler(settings)
-        add_task_bars(sequence)
-        sequence.set_object_shading()
+    """
+    Creates 4D animation using ONLY the Animation Color Schemes system.
+    No fallback to old system - if no ColorTypes exist, creates DEFAULT.
+    
+    Process:
+    1. Clears previous animations
+    2. Calculates time configuration
+    3. Verifies/creates DEFAULT group if necessary
+    4. Generates frames with state information
+    5. Applies animation with ColorTypes
+    6. Adds additional elements (timeline, bars)
+    """
 
+    # Clear any previous animation
+    sequence.clear_objects_animation(include_blender_objects=False)
+
+    # Get time configuration (dates, frames, speed)
+    settings = sequence.get_animation_settings()
+    if not settings:
+        print("[ERROR] Error: Could not calculate animation configuration")
+        return
+
+
+    # NEW: Validate date range
+    import ifcopenshell.util.sequence
+    all_tasks = []
+    for root_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
+        all_tasks.extend(ifcopenshell.util.sequence.get_all_nested_tasks(root_task))
+
+    # Check for out-of-range tasks
+    out_of_range_count = 0
+    earliest_task_date = None
+    latest_task_date = None
+    
+    for task in all_tasks:
+        start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
+        finish = ifcopenshell.util.sequence.derive_date(task, "ScheduleFinish", is_latest=True)
+        
+        if start and finish:
+            if not earliest_task_date or start < earliest_task_date:
+                earliest_task_date = start
+            if not latest_task_date or finish > latest_task_date:
+                latest_task_date = finish
+                
+            if finish < settings["start"] or start > settings["finish"]:
+                out_of_range_count += 1
+    
+    # Warn if there are discrepancies
+    if earliest_task_date and earliest_task_date < settings["start"]:
+        print(f"[WARNING] Warning: Earliest task starts {(settings['start'] - earliest_task_date).days} days before visualization range")
+    if latest_task_date and latest_task_date > settings["finish"]:
+        print(f"[WARNING] Warning: Latest task ends {(latest_task_date - settings['finish']).days} days after visualization range")
+    if out_of_range_count > 0:
+        print(f"[WARNING] {out_of_range_count} tasks are completely outside the visualization range")
+    # Get animation properties
+    animation_props = sequence.get_animation_props()
+
+    # If no groups configured, create and use DEFAULT
+    if not animation_props.animation_group_stack:
+        print("[WARNING] No ColorType groups configured")
+        print("   Creating DEFAULT group automatically...")
+
+        # Create DEFAULT group with basic ColorTypes
+        sequence.create_default_ColorType_group()
+
+        # Add DEFAULT to the animation stack
+        item = animation_props.animation_group_stack.add()
+        item.group = "DEFAULT"
+        item.enabled = True
+
+        print("[INFO] DEFAULT group added to the stack")
+
+    # Generate frame information with states
+    print(f"[INFO] Processing schedule tasks...")
+    product_frames = sequence.get_animation_product_frames_enhanced(
+        work_schedule, settings
+    )
+
+    if not product_frames:
+        print("[WARNING] No products found to animate")
+        return
+
+    print(f"[INFO] {len(product_frames)} products found")
+
+    # ALWAYS use ColorType system (no fallback)
+    print(f"[INFO] Applying animation with Animation Color Schemes...")
+    sequence.animate_objects_with_ColorTypes(settings, product_frames)
+
+    # Add additional elements
+    sequence.add_text_animation_handler(settings)  # Timeline with date
+    add_task_bars(sequence)  # Gantt bars (optional)
+    sequence.set_object_shading()  # Configure view for colors
+
+    print(f"[INFO] Animation created: {settings['total_frames']:.0f} frames")
+    print(f"   From: {settings['start'].strftime('%Y-%m-%d')}")
+    print(f"   To: {settings['finish'].strftime('%Y-%m-%d')}")
 
 def visualise_work_schedule_date(sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance) -> None:
-    sequence.clear_objects_animation(include_blender_objects=False)
-    start_date = sequence.get_start_date()
-    product_states = sequence.process_construction_state(work_schedule, start_date)
+    """Visualizes the schedule state at a specific date.
+    CORRECTION: Processes ALL visible elements, not just active ones."""
+    # Clear keyframes and previous visual states is crucial for clean snapshot.
+    sequence.clear_objects_animation(include_blender_objects=True)
+
+    # Parse the visualization date
+    props = sequence.get_work_schedule_props()
+    date_text = props.visualisation_start
+    if not date_text:
+        return
+    try:
+        from dateutil import parser
+        current_date = parser.parse(date_text, yearfirst=True, fuzzy=True)
+    except Exception:
+        return
+
+    # Process ALL states up to current date
+    product_states = sequence.process_construction_state(work_schedule, current_date)
+
+    # Apply snapshot with correct ColorTypes
     sequence.show_snapshot(product_states)
+
+    # Ensure colors are visible
     sequence.set_object_shading()
-
-
-def generate_gantt_chart(sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance) -> None:
-    json = sequence.create_tasks_json(work_schedule)
-    sequence.generate_gantt_browser_chart(json, work_schedule)
 
 
 def load_product_related_tasks(
@@ -672,3 +935,129 @@ def add_animation_camera(sequence: type[tool.Sequence]) -> None:
 
 def save_animation_color_scheme(sequence: type[tool.Sequence], name: str) -> None:
     sequence.save_animation_color_scheme(name)
+
+
+def generate_gantt_chart(sequence: type[tool.Sequence], work_schedule: ifcopenshell.entity_instance) -> None:
+    """Generates the task data and sends it to the web UI for Gantt chart rendering."""
+    json_data = sequence.create_tasks_json(work_schedule)
+    sequence.generate_gantt_browser_chart(json_data, work_schedule)
+
+
+def save_ColorTypes_to_ifc_core(ifc_file: "ifcopenshell.file", work_schedule: "ifcopenshell.entity_instance", ColorType_data: dict) -> None:
+    """
+    (Core) Saves 4D ColorTypes configuration to an IfcPropertySet associated with the active IfcWorkSchedule.
+    """
+    import json
+    import ifcopenshell.api
+    from datetime import datetime
+
+    pset_name = "Pset_Bonsai4DColorTypeConfig"
+    prop_name = "ColorTypeDataJSON"
+
+    # 1. Serialize all configuration to a JSON string
+    ColorType_json = json.dumps(ColorType_data, ensure_ascii=False, indent=2)
+
+    # 2. Create properties that will go in the Pset
+    try:
+        properties_to_add = {
+            prop_name: ifc_file.create_entity(
+                "IfcPropertySingleValue",
+                Name=prop_name,
+                NominalValue=ifc_file.create_entity("IfcText", ColorType_json),
+            ),
+            "Version": ifc_file.create_entity(
+                "IfcPropertySingleValue",
+                Name="Version",
+                NominalValue=ifc_file.create_entity("IfcLabel", "1.0"),
+            ),
+            "LastModified": ifc_file.create_entity(
+                "IfcPropertySingleValue",
+                Name="LastModified",
+                NominalValue=ifc_file.create_entity("IfcText", datetime.now().isoformat()),
+            ),
+        }
+
+        # 3. Use ifcopenshell API to create or edit Pset robustly
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            ifc_file,
+            product=work_schedule,
+            name=pset_name,
+            properties=properties_to_add,
+        )
+    except Exception:
+        # Robust fallback: use simple values instead of entities
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            ifc_file,
+            product=work_schedule,
+            name=pset_name,
+            properties={
+                prop_name: ColorType_json,
+                "Version": "1.0",
+                "LastModified": datetime.now().isoformat(),
+            },
+        )
+    print(f"Bonsai INFO: 4D ColorTypes automatically saved to WorkSchedule Pset '{pset_name}'.")
+
+
+def load_ColorTypes_from_ifc_core(work_schedule: "ifcopenshell.entity_instance") -> dict | None:
+    """
+    (Core) Loads 4D ColorTypes configuration from the IfcPropertySet associated with the IfcWorkSchedule.
+    """
+    import json
+
+    pset_name = "Pset_Bonsai4DColorTypeConfig"
+    prop_name = "ColorTypeDataJSON"
+
+    if not getattr(work_schedule, "IsDefinedBy", None):
+        return None
+
+    for rel in work_schedule.IsDefinedBy:
+        # Ensure the relationship is for properties
+        if not rel.is_a("IfcRelDefinesByProperties"):
+            continue
+
+        pset = rel.RelatingPropertySet
+        if getattr(pset, "Name", None) == pset_name:
+            for prop in getattr(pset, "HasProperties", []) or []:
+                if getattr(prop, "Name", None) == prop_name and prop.is_a("IfcPropertySingleValue"):
+                    try:
+                        nominal = getattr(prop, "NominalValue", None)
+                        # Robust handling of the nominal value (wrappedValue or direct value)
+                        if hasattr(nominal, "wrappedValue"):
+                            raw = nominal.wrappedValue
+                        else:
+                            raw = nominal
+                        data = json.loads(raw) if isinstance(raw, str) else None
+                        if isinstance(data, dict):
+                            print(f"Bonsai INFO: 4D ColorTypes loaded from IFC for WorkSchedule '{getattr(work_schedule, 'Name', '')}'.")
+                            return data
+                    except Exception as e:
+                        print(f"Bonsai ERROR: Could not decode ColorTypes JSON from IFC: {e}")
+                        return None
+    return None
+
+def refresh_task_output_counts(SequenceTool, work_schedule=None):
+    """
+    Safely recalculates the 'Outputs' counters per task.
+    This is a shim to avoid AttributeError if the real logic lives in tool.Sequence.
+    """
+    try:
+        ws = work_schedule or SequenceTool.get_active_work_schedule()
+    except Exception:
+        ws = None
+    try:
+        # If the tool already has the native method, use it
+        if hasattr(SequenceTool, "refresh_task_output_counts"):
+            if ws is not None:
+                SequenceTool.refresh_task_output_counts(ws)
+            else:
+                SequenceTool.refresh_task_output_counts()
+        else:
+            # Reasonable fallback: reload tree and properties
+            if ws is not None:
+                SequenceTool.load_task_tree(ws)
+            SequenceTool.load_task_properties()
+    except Exception as e:
+        print(f"Bonsai WARNING: refresh_task_output_counts shim failed: {e}")

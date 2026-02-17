@@ -17,46 +17,43 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-
-import json
-from collections import defaultdict
-from collections.abc import Generator, Iterable
-from math import pi
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
-
-import bmesh
 import bpy
+import bmesh
+import shapely
+import shapely.ops
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.api.type
 import ifcopenshell.geom
-import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.classification
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import numpy as np
-import shapely
-import shapely.ops
-from mathutils import Matrix, Vector
-from natsort import natsorted
-from shapely import Polygon
-
-import bonsai.core.geometry
+import bonsai.core.type
+import bonsai.core.tool
 import bonsai.core.root
 import bonsai.core.spatial
-import bonsai.core.tool
-import bonsai.core.type
+import bonsai.core.geometry
 import bonsai.core.unit
 import bonsai.tool as tool
+import json
+import numpy as np
+from math import pi
+from mathutils import Vector, Matrix
+from shapely import Polygon
+from typing import Optional, Union, Literal, Any, TYPE_CHECKING
+from collections.abc import Generator, Iterable
+from collections import defaultdict
+from natsort import natsorted
 
 if TYPE_CHECKING:
     from bonsai.bim.module.spatial.prop import (
         BIMGridProperties,
-        BIMObjectSpatialProperties,
         BIMSpatialDecompositionProperties,
+        BIMObjectSpatialProperties,
     )
 
 
@@ -74,25 +71,9 @@ class Spatial(bonsai.core.tool.Spatial):
         return bpy.context.scene.BIMGridProperties
 
     @classmethod
-    def get_decomposition(cls, element: ifcopenshell.entity_instance) -> list(ifcopenshell.entity_instance):
-        return ifcopenshell.util.element.get_decomposition(element)
-
-    @classmethod
-    def get_root_element(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        while True:
-            if parent := (
-                ifcopenshell.util.element.get_aggregate(element)
-                or ifcopenshell.util.element.get_nest(element)
-                or ifcopenshell.util.element.get_filled_void(element)
-                or ifcopenshell.util.element.get_voided_element(element)
-            ):
-                element = parent
-            else:
-                break
-        return element
-
-    @classmethod
-    def can_contain(cls, container: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
+    def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
+        if not (element := tool.Ifc.get_entity(element_obj)):
+            return False
         if tool.Ifc.get_schema() == "IFC2X3":
             if not container.is_a("IfcSpatialStructureElement"):
                 return False
@@ -163,15 +144,15 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def run_spatial_assign_container(
-        cls, container: ifcopenshell.entity_instance, objs: list[bpy.types.Object]
+        cls, container: ifcopenshell.entity_instance, element_obj: bpy.types.Object
     ) -> Union[ifcopenshell.entity_instance, None]:
         return bonsai.core.spatial.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=objs
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
         )
 
     @classmethod
     def run_spatial_import_spatial_decomposition(cls) -> None:
-        return bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
+        return cls.import_spatial_decomposition()
 
     @classmethod
     def select_object(cls, obj: bpy.types.Object) -> None:
@@ -194,15 +175,54 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
-        assert (view_layer := bpy.context.view_layer)
-        # Update view layer, otherwise `objects` might be missing just created objects.
-        view_layer.update()
-        for product in products:
-            obj = tool.Ifc.get_object(product)
-            if obj and view_layer.objects.get(obj.name):
-                if unhide:
-                    obj.hide_set(False)
-                obj.select_set(True)
+        """
+        Selecciona productos en el viewport de Blender.
+
+        Args:
+            products: Iterable de productos IFC (puede ser None)
+            unhide: Si debe mostrar objects ocultos
+        """
+        try:
+            # Security validation: handle None and non-iterable types
+            if products is None:
+                print("Warning: products is None in select_products")
+                return
+
+            # Convertir a lista si no es iterable
+            try:
+                product_list = list(products)
+            except TypeError:
+                print(f"Warning: products is not iterable: {type(products)}")
+                return
+
+            # Deseleccionar todos los objects primero
+            bpy.ops.object.select_all(action="DESELECT")
+
+            selected_count = 0
+            for product in product_list:
+                if product is None:
+                    continue
+
+                try:
+                    obj = tool.Ifc.get_object(product)
+                    if obj and bpy.context.view_layer.objects.get(obj.name):
+                        if unhide:
+                            obj.hide_set(False)
+                        obj.select_set(True)
+                        selected_count += 1
+                except Exception as e:
+                    # Obtener ID seguro del producto para el log
+                    try:
+                        product_id = product.id() if hasattr(product, 'id') else 'unknown'
+                    except Exception:
+                        product_id = 'unknown'
+                    print(f"Error selecting object for product {product_id}: {e}")
+                    continue
+
+            print(f"Selected {selected_count} objects")
+
+        except Exception as e:
+            print(f"Error in select_products: {e}")
 
     @classmethod
     def filter_products(
@@ -515,9 +535,7 @@ class Spatial(bonsai.core.tool.Spatial):
         new.long_name = element.LongName or ""
         if not element.is_a("IfcProject"):
             elevation = ifcopenshell.util.placement.get_storey_elevation(element)
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            elevation_in_meters = elevation * unit_scale
-            new.elevation = tool.Unit.format_distance(elevation_in_meters)
+            new["elevation"] = tool.Unit.format_value(elevation)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
@@ -1193,7 +1211,6 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
-        # TODO this code looks in the wrong spot and suspicious
         props = tool.Model.get_model_props()
         ifc_file = tool.Ifc.get()
         relating_type_id = props.relating_type_id
@@ -1213,7 +1230,7 @@ class Spatial(bonsai.core.tool.Spatial):
         element: ifcopenshell.entity_instance,
         relating_type: ifcopenshell.entity_instance,
     ) -> None:
-        bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(ifc, type, element=element, type=relating_type)
 
     @classmethod
     def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:
@@ -1222,29 +1239,10 @@ class Spatial(bonsai.core.tool.Spatial):
             tool.Geometry,
             obj=obj,
             representation=body,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
         )
-
-    @classmethod
-    def set_space_visibility(cls, is_visible: bool) -> None:
-        if tool.Ifc.get().schema == "IFC2X3":
-            elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-        else:
-            elements = tool.Ifc.get().by_type("IfcSpatialElement")
-        for element in elements:
-            if obj := tool.Ifc.get_object(element):
-                if obj.hide_viewport is True and is_visible:
-                    obj.hide_viewport = False
-                elif obj.hide_viewport is False and not is_visible:
-                    obj.hide_viewport = True
-
-    @classmethod
-    def set_grid_visibility(cls, is_visible: bool) -> None:
-        for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
-            if obj := tool.Ifc.get_object(element):
-                if obj.hide_viewport is True and is_visible:
-                    obj.hide_viewport = False
-                elif obj.hide_viewport is False and not is_visible:
-                    obj.hide_viewport = True
 
     @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:

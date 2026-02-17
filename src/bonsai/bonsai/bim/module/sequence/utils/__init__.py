@@ -17,10 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-External helper proxy for sequence module.
-This file provides access to helper functions for external modules while
-keeping the actual implementation in utils/helper_utils.py for internal use.
+Bonsai utilities package for shared common functionality.
 """
 
-# Import all functions from the internal helper_utils module
-from .utils.helper_utils import *
+# Export all utility modules for external access
+from . import helper_utils
+from . import colortype_cache
+from . import performance_cache
+from . import ifc_lookup
+from . import batch_processor
+from . import color_schemes_utils

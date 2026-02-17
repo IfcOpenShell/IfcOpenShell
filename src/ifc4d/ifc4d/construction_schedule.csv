@@ -1,14 +1,14 @@
-Hierarchy,Identification,Name,ScheduleStart,ScheduleFinish,ScheduleDuration,ActualStart,ActualFinish,ActualDuration,Relationships
-1,1,Demolition,,,,,,,
-,,,,,,,,,
-2,1.1,Building A,,,,,,,
-,,,,,,,,,
-3,1.1.1,Soft strip,01/01/23,,5d,07/01/23,10/01/23,,111FS112
-3,1.1.2,Hard Strip,,,5d,,,,112FS113
-3,1.1.3,Hazmat,,,7d,,,,113FS121
-,,,,,,,,,
-2,1.2,Building B,,,,,,,
-,,,,,,,,,
-3,1.2.1,Soft strip,,,3d,,,,121FS122
-3,1.2.2,Hard Strip,,,4h,,,,122FS123
-3,1.2.3,Hazmat,,,2d16h,,,,
+Hierarchy,Identification,Name,ScheduleStart,ScheduleFinish,ScheduleDuration,ActualStart,ActualFinish,ActualDuration,EarlyStart,EarlyFinish,LateStart,LateFinish,IsCritical,Completion,Relationships
+1.0,1,Demolition,,,,,,,,,,,False,0.0,
+,,,,,,,,,,,,,False,0.0,
+2.0,1.1,Building A,,,,,,,,,,,False,0.0,
+,,,,,,,,,,,,,False,0.0,
+3.0,1.1.1,Soft strip,01/01/23,,5d,07/01/23,10/01/23,,,,,,False,0.0,111FS112
+3.0,1.1.2,Hard Strip,,,5d,,,,,,,,False,0.0,112FS113
+3.0,1.1.3,Hazmat,,,7d,,,,,,,,False,0.0,113FS121
+,,,,,,,,,,,,,False,0.0,
+2.0,1.2,Building B,,,,,,,,,,,False,0.0,
+,,,,,,,,,,,,,False,0.0,
+3.0,1.2.1,Soft strip,,,3d,,,,,,,,False,0.0,121FS122
+3.0,1.2.2,Hard Strip,,,4h,,,,,,,,False,0.0,122FS123
+3.0,1.2.3,Hazmat,,,2d16h,,,,,,,,False,0.0,
