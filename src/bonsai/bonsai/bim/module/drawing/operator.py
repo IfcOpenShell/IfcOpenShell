@@ -3969,7 +3969,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
 
                 for item in representation.Items:
-                    if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
+                    if tool.Ifc.get_schema() != "IFC2X3" and item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
                         new_coords = []
                         for vertex in obj.data.vertices:
                             co = obj.matrix_world @ vertex.co
@@ -4004,16 +4004,41 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             ifc_class="IfcSurfaceStyleRendering",
             attributes=shading_attributes,
         )
-        texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
-        textures = [texture]
-        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")  # UV map
-        ifcopenshell.api.style.add_surface_style(
-            ifc_file,
-            style=style,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-        tool.Style.reload_material_from_ifc(material)
+        
+        if tool.Ifc.get_schema() == "IFC2X3":
+            texture = ifc_file.create_entity("IfcImageTexture", RepeatS=True, RepeatT=True, TextureType="TEXTURE", UrlReference=image_filepath.as_posix())
+            textures = [texture]
+            ifcopenshell.api.style.add_surface_style(
+                ifc_file,
+                style=style,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
+            tool.Style.set_use_nodes(material, True)
+            tool.Loader.restart_material_node_tree(material)
+            bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
+            bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+            
+            node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+            node.image = image
+            node.location = bsdf.location - Vector((400, 0))
+            material.node_tree.links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
+            
+            coord = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+            coord.location = node.location - Vector((200, 0))
+            material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+        else:
+            texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+            ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
+            textures = [texture]
+            ifcopenshell.api.style.add_surface_style(
+                ifc_file,
+                style=style,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
+            tool.Style.reload_material_from_ifc(material)
+        
         tool.Geometry.record_object_materials(obj)
 
 
