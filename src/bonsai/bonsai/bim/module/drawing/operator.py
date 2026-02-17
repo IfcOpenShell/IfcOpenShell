@@ -50,6 +50,7 @@ import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
@@ -3884,10 +3885,10 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         layout.prop(self, "override_existing_image")
         layout.prop(self, "use_existing_object_by_name")
         
-        # Dimension settings
-        layout.separator()
-        layout.prop(self, "x_length")
-        layout.prop(self, "y_length")
+        if not self.use_existing_object_by_name:
+            layout.separator()
+            layout.prop(self, "x_length")
+            layout.prop(self, "y_length")
 
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
@@ -3942,97 +3943,111 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         if self.use_existing_object_by_name:
             obj = bpy.data.objects[self.use_existing_object_by_name]
-            bm_add_image_plane(obj.data)
-            bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
+            element = tool.Ifc.get_entity(obj)
+            representation = element.Representation.Representations[0] if element.Representation else None
+            
+            tool.Blender.set_active_object(obj)
+            
+            material = obj.data.materials[0]
+            style = tool.Ifc.get_entity(material)
+            
+            texture_style = next(s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures"))
+            existing_texture = texture_style.Textures[0]
+            if tool.Ifc.get_schema() == "IFC2X3":
+                existing_texture.UrlReference = image_filepath.as_posix()
+            else:
+                existing_texture.URLReference = image_filepath.as_posix()
+            
+            tool.Style.set_use_nodes(material, True)
+            image_node = next(node for node in material.node_tree.nodes if node.type == 'TEX_IMAGE')
+            image_node.image = image
+            image.reload()
         else:
-            temp_mesh = bpy.data.meshes.new("temp_mesh")
-            bm_add_image_plane(temp_mesh)
-            obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
+            mesh = bpy.data.meshes.new(image_filepath.stem)
+            bm_add_image_plane(mesh)
+            obj = bpy.data.objects.new(image_filepath.stem, mesh)
             tool.Drawing.run_root_assign_class(
                 obj=obj,
                 ifc_class="IfcAnnotation",
                 predefined_type="IMAGE",
-                should_add_representation=True,
+                should_add_representation=False,
                 context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
                 ifc_representation_class=None,
             )
-            tool.Blender.remove_data_block(temp_mesh)
-
-        element = tool.Ifc.get_entity(obj)
-        if element and isinstance(obj.data, bpy.types.Mesh):
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if representation and representation.Items:
-                item_id = representation.Items[0].id()
-                num_faces = len(obj.data.polygons)
-                obj.data["ios_item_ids"] = [item_id] * num_faces
-                tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
-
-                for item in representation.Items:
-                    if tool.Ifc.get_schema() != "IFC2X3" and item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
-                        new_coords = []
-                        for vertex in obj.data.vertices:
-                            co = obj.matrix_world @ vertex.co
-                            new_coords.append([co.x, co.y, co.z])
-                        item.Coordinates.CoordList = new_coords
-
-        tool.Blender.set_active_object(obj)
-
-        material = bpy.data.materials.new(name=image_filepath.stem)
-        obj.data.materials.append(None)  # new slot
-        obj.material_slots[0].material = material
-        bpy.ops.bim.add_style()
-
-        style = tool.Ifc.get_entity(material)
-        assert style
-        tool.Style.assign_style_to_object(style, obj)
-
-        # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
-        # we don't support IfcSurfaceStyleWithTextures without Rendering yet
-        shading_attributes = {
-            "SurfaceColour": {
-                "Red": 1.0,
-                "Green": 1.0,
-                "Blue": 1.0,
-            },
-            "Transparency": 0.0,
-            "ReflectanceMethod": "NOTDEFINED",
-        }
-        ifcopenshell.api.style.add_surface_style(
-            tool.Ifc.get(),
-            style=style,
-            ifc_class="IfcSurfaceStyleRendering",
-            attributes=shading_attributes,
-        )
-        
-        if tool.Ifc.get_schema() == "IFC2X3":
-            texture = ifc_file.create_entity("IfcImageTexture", RepeatS=True, RepeatT=True, TextureType="TEXTURE", UrlReference=image_filepath.as_posix())
-        else:
-            texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
-            ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
-        
-        textures = [texture]
-        ifcopenshell.api.style.add_surface_style(
-            ifc_file,
-            style=style,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-        
-        tool.Style.set_use_nodes(material, True)
-        tool.Loader.restart_material_node_tree(material)
-        bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
-        bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
-        
-        node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
-        node.image = image
-        node.location = bsdf.location - Vector((400, 0))
-        material.node_tree.links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
-        
-        coord = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-        coord.location = node.location - Vector((200, 0))
-        material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
-        
-        tool.Geometry.record_object_materials(obj)
+            
+            element = tool.Ifc.get_entity(obj)
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+            
+            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+            verts = [v.co / unit_scale for v in bm.verts]
+            faces = [[v.index for v in p.verts] for p in bm.faces]
+            item = builder.mesh(verts, faces)
+            bm.free()
+            
+            ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            representation = builder.get_representation(ifc_context, [item])
+            ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
+            
+            mesh["ios_item_ids"] = str(item.id())
+            tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
+            
+            tool.Blender.set_active_object(obj)
+            
+            material = bpy.data.materials.new(name=image_filepath.stem)
+            obj.data.materials.append(material)
+            bpy.ops.bim.add_style()
+            
+            style = tool.Ifc.get_entity(material)
+            assert style
+            
+            ifcopenshell.api.style.assign_representation_styles(ifc_file, shape_representation=representation, styles=[style])
+            
+            # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
+            # we don't support IfcSurfaceStyleWithTextures without Rendering yet
+            shading_attributes = {
+                "SurfaceColour": {
+                    "Red": 1.0,
+                    "Green": 1.0,
+                    "Blue": 1.0,
+                },
+                "Transparency": 0.0,
+                "ReflectanceMethod": "NOTDEFINED",
+            }
+            ifcopenshell.api.style.add_surface_style(
+                tool.Ifc.get(),
+                style=style,
+                ifc_class="IfcSurfaceStyleRendering",
+                attributes=shading_attributes,
+            )
+            
+            if tool.Ifc.get_schema() == "IFC2X3":
+                texture = ifc_file.create_entity("IfcImageTexture", RepeatS=True, RepeatT=True, TextureType="TEXTURE", UrlReference=image_filepath.as_posix())
+            else:
+                texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+                ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
+            
+            textures = [texture]
+            ifcopenshell.api.style.add_surface_style(
+                ifc_file,
+                style=style,
+                ifc_class="IfcSurfaceStyleWithTextures",
+                attributes={"Textures": textures},
+            )
+            
+            tool.Style.set_use_nodes(material, True)
+            tool.Loader.restart_material_node_tree(material)
+            bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
+            bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+            
+            node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
+            node.image = image
+            node.location = bsdf.location - Vector((400, 0))
+            material.node_tree.links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
+            
+            coord = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
+            coord.location = node.location - Vector((200, 0))
+            material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
