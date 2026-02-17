@@ -3834,6 +3834,13 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         unit="LENGTH",
     )
 
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project is loaded.")
+            return False
+        return True
+
     def invoke(self, context, event):
         self._last_filepath = ""
         return super().invoke(context, event)
