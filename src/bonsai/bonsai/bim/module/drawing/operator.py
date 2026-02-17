@@ -139,7 +139,7 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
         if props.create_representation_for_type and object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class EnableAddAnnotationType(bpy.types.Operator):
@@ -1760,7 +1760,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             enable_editing=True,
         )
         if props.object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
@@ -3811,10 +3811,27 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
         ),
     )
-    use_existing_object_by_name: bpy.props.StringProperty(
-        name="Use Existing Object By Name",
-        description="Existing object name to add a style with reference image to. If not provided will create a new object.",
-        options={"SKIP_SAVE"},
+    
+    def get_existing_reference_images(self, context):
+        items = [("NEW", "Create New", "Create a new reference image object")]
+        
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return items
+        
+        for obj in context.scene.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcAnnotation"):
+                predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+                if predefined_type == "IMAGE":
+                    items.append((obj.name, obj.name, f"Update existing reference image: {obj.name}"))
+        
+        return items
+    
+    existing_object_by_name: bpy.props.EnumProperty(
+        name="",
+        description="Select an existing reference image object to update, or create a new one",
+        items=get_existing_reference_images,
     )
     x_length: bpy.props.FloatProperty(
         name="X Length",
@@ -3844,6 +3861,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     def invoke(self, context, event):
         self._last_filepath = ""
+        self.existing_object_by_name = "NEW"
         return super().invoke(context, event)
 
     def check(self, context):
@@ -3883,9 +3901,9 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             layout.label(text="Save the .ifc file first ")
             layout.label(text="to use relative paths.")
         layout.prop(self, "override_existing_image")
-        layout.prop(self, "use_existing_object_by_name")
+        layout.prop(self, "existing_object_by_name")
         
-        if not self.use_existing_object_by_name:
+        if self.existing_object_by_name == "NEW":
             layout.separator()
             layout.prop(self, "x_length")
             layout.prop(self, "y_length")
@@ -3941,8 +3959,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
             tool.Blender.apply_bmesh(mesh, bm)
 
-        if self.use_existing_object_by_name:
-            obj = bpy.data.objects[self.use_existing_object_by_name]
+        if self.existing_object_by_name != "NEW":
+            obj = bpy.data.objects[self.existing_object_by_name]
             element = tool.Ifc.get_entity(obj)
             representation = element.Representation.Representations[0] if element.Representation else None
             
