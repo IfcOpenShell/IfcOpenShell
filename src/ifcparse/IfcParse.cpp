@@ -746,7 +746,7 @@ namespace {
         static std::string format_double(const double& d) {
             std::ostringstream oss;
             oss.imbue(std::locale::classic());
-            oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
+            oss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
             const std::string str = oss.str();
             oss.str("");
             std::string::size_type e = str.find('e');

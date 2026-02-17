@@ -1239,6 +1239,7 @@ void fuse_corridor_halves_with_input(Arrangement_2& arr, Graph2D<K>& G, SegmentL
 }
 
 class timer {
+  public:
     class entry {
       public:
         entry(std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it)
@@ -1253,9 +1254,8 @@ class timer {
         std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it;
     };
 
-  public:
     entry start(const std::string& name) {
-        return timings_.insert({name, std::chrono::high_resolution_clock::now()}).first;
+        return entry(timings_.insert({name, std::chrono::high_resolution_clock::now()}).first);
     }
 
   private:
