@@ -2896,12 +2896,16 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
+            core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
 
 
 class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -3090,13 +3094,17 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_description = "Import a .svg file to the project as a reference"
     bl_options = {"REGISTER", "UNDO"}
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
+            core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
 class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
