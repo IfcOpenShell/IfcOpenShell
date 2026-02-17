@@ -3815,14 +3815,79 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         description="Existing object name to add a style with reference image to. If not provided will create a new object.",
         options={"SKIP_SAVE"},
     )
-    size: bpy.props.FloatProperty(name="Size", description="Size of the reference image", default=1.0, unit="LENGTH")
+    x_length: bpy.props.FloatProperty(
+        name="X Length",
+        description="Width of the reference image in project units",
+        default=1.0,
+        min=0.001,
+        soft_min=0.01,
+        precision=3,
+    )
+    y_length: bpy.props.FloatProperty(
+        name="Y Length",
+        description="Height of the reference image in project units",
+        default=1.0,
+        min=0.001,
+        soft_min=0.01,
+        precision=3,
+    )
+
+    def invoke(self, context, event):
+        self._last_filepath = ""
+        return super().invoke(context, event)
+
+    def check(self, context):
+        if not hasattr(self, '_last_filepath'):
+            self._last_filepath = ""
+        
+        if self.filepath and self.filepath != self._last_filepath:
+            self._last_filepath = self.filepath
+            
+            abs_path = Path(self.filepath).absolute().resolve()
+            if abs_path.exists() and abs_path.is_file():
+                image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
+                image_width_px = image.size[0]
+                image_height_px = image.size[1]
+                aspect_ratio = image_width_px / image_height_px
+                
+                if aspect_ratio >= 1.0:
+                    self.x_length = 1.0
+                    self.y_length = 1.0 / aspect_ratio
+                else:
+                    self.x_length = aspect_ratio
+                    self.y_length = 1.0
+                
+                bpy.data.images.remove(image)
+                return True
+        
+        return False
 
     def draw(self, context):
+        layout = self.layout
+        
+        # File path settings
         if Path(tool.Ifc.get_path()).is_file():
-            self.layout.prop(self, "use_relative_path")
-        self.layout.prop(self, "override_existing_image")
-        self.layout.prop(self, "use_existing_object_by_name")
-        self.layout.prop(self, "size")
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+            layout.label(text="Save the .ifc file first ")
+            layout.label(text="to use relative paths.")
+        layout.prop(self, "override_existing_image")
+        layout.prop(self, "use_existing_object_by_name")
+        
+        # Dimension settings
+        layout.separator()
+        if tool.Ifc.get():
+            length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
+            if length_unit:
+                unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
+            else:
+                unit_name = "project units"
+            layout.label(text=f"Dimensions (in {unit_name}):")
+        else:
+            layout.label(text="Dimensions (in project units):")
+        layout.prop(self, "x_length")
+        layout.prop(self, "y_length")
 
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
@@ -3843,19 +3908,11 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             params = {"check_existing": False}
         image = load_image(abs_path.name, str(abs_path.parent), **params)
 
-        aspect_ratio = image.size[0] / image.size[1]
-        if aspect_ratio >= 1.0:  # Landscape
-            x_length = self.size
-            y_length = self.size / aspect_ratio
-        else:
-            x_length = self.size / aspect_ratio
-            y_length = self.size
-
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
 
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            plane_scale = Vector((x_length / 2.0, y_length / 2.0, 1.0))
+            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
 
@@ -3958,6 +4015,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
+
+        return {"FINISHED"}
 
 
 class ConvertSVGToDXF(bpy.types.Operator):

@@ -934,7 +934,7 @@ class TestAddReferenceImage(NewFile):
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
-        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=3.53982, y_length=2.0)
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
