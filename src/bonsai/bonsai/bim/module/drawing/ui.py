@@ -89,7 +89,7 @@ class BIM_PT_camera(Panel):
                     for link in links:
                         row = panel.row(align=True)
                         split = row.split(factor=0.9)
-                        split.label(text=link.name, icon="FILE")
+                        split.label(text=link.filepath, icon="FILE")
                         split.prop(link, "include_in_drawings", text="")
                 else:
                     panel.label(text="No IFC projects linked and loaded.")

@@ -316,6 +316,21 @@ class Georeference(bonsai.core.tool.Georeference):
         return coordinates
 
     @classmethod
+    def global2local(cls, matrix, is_specified_in_map_units: bool) -> tuple[float, float, float]:
+        matrix = ifcopenshell.util.geolocation.auto_global2local(tool.Ifc.get(), matrix, is_specified_in_map_units=is_specified_in_map_units)
+        props = cls.get_georeference_props()
+        if props.has_blender_offset:
+            matrix = ifcopenshell.util.geolocation.global2local(
+                matrix,
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            )
+        return matrix
+
+    @classmethod
     def import_plot(cls, filepath: str) -> None:
         import bmesh
 
@@ -385,6 +400,9 @@ class Georeference(bonsai.core.tool.Georeference):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         gprops = tool.Georeference.get_georeference_props()
         e, n, h = cls.xyz2enh((0, 0, 0), should_return_in_map_units=False)
+        crs = ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}
+        gprops.model_is_georeferenced = bool(crs)
+        gprops.model_crs = crs.get("Name", "") or ""
         gprops.model_origin = f"{e},{n},{h}"
         gprops.model_origin_si = f"{e * unit_scale},{n * unit_scale},{h * unit_scale}"
         angle = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get())
