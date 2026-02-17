@@ -1,0 +1,108 @@
+name: Build IfcOpenShell Windows ARM64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ifcopenshell:
+    runs-on: windows-11-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ['ARM64']
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Checkout Build Repository
+        uses: actions/checkout@v6
+        with:
+          repository: IfcOpenShell/build-outputs
+          path: _deps-vs2022-ARM64-installed
+          ref: windows-${{ matrix.arch }}
+          lfs: true
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Install Dependencies
+        run: |
+          choco install -y sed 7zip.install awscli
+
+      - name: Unpack Dependencies
+        run: |
+          cd _deps-vs2022-ARM64-installed
+          Get-ChildItem -Path . -Filter 'cache-*.zip' | ForEach-Object {
+            7z x $_.FullName
+          }
+
+      - name: Setup Python Environment
+        run: |
+          echo "IFCOS_INSTALL_PYTHON=FALSE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
+        with:
+          key: win-${{ matrix.arch }}
+          max-size: 5000MB
+
+      - name: Build Dependencies
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+          set CMAKE_POLICY_VERSION_MINIMUM=3.5
+          cd win
+          build-deps.cmd vs2022-ARM64 Release
+
+      - name: Run CMake
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+          cd win
+          run-cmake.bat vs2022-ARM64 -DBUILD_IFCPYTHON=0
+
+      - name: Install IfcOpenShell
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+          cd win
+          install-ifcopenshell.bat vs2022-ARM64 Release
+
+      - name: Pack Dependencies
+        run: |
+          cd _deps-vs2022-ARM64-installed
+          Get-ChildItem -Path . -Directory | ForEach-Object {
+            $cacheFile = "cache-$($_.Name).zip"
+            echo $cacheFile
+            if (!(Test-Path $cacheFile)) {
+              7z a $cacheFile $_.FullName
+            }
+          }
+            
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd _deps-vs2022-ARM64-installed
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add *.zip
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload .zip Archives to S3
+        env:
+          AWS_DEBUG: 1
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 3
+        run: |
+          dir "$env:USERPROFILE\output"
+          foreach ($zip in Get-ChildItem -Path "$env:USERPROFILE\output" -Filter *.zip) {
+              aws s3 cp "$($zip.FullName)" s3://ifcopenshell-builds/ --debug
+              Start-Sleep -Seconds 5
+          }
