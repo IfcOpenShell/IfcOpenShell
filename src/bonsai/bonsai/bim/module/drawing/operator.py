@@ -4016,8 +4016,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
 
-        return {"FINISHED"}
-
 
 class ConvertSVGToDXF(bpy.types.Operator):
     bl_idname = "bim.convert_svg_to_dxf"
