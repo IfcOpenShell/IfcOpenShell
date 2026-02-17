@@ -30,6 +30,9 @@ from bpy.types import Operator
 from bpy.props import StringProperty, FloatProperty, IntProperty
 from mathutils import Vector
 from . import decorator as alignment_decorator
+from bonsai.bim.module.model.polyline import PolylineOperator
+from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.ifc import IfcStore
 
 
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
@@ -787,180 +790,168 @@ class SAIKEI_OT_remove_pi(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_pick_pi_from_viewport(Operator):
-    """Add PI points by clicking in the 3D viewport"""
+class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    """Add PI points by clicking in the 3D viewport using polyline tools"""
 
     bl_idname = "saikei.pick_pi_from_viewport"
     bl_label = "Pick PI from Viewport"
-    bl_description = "Click in the viewport to add PI points. Right-click or Escape to finish."
+    bl_description = "Click in the viewport to add PI points with snapping and numeric input. RMB/Enter to finish, ESC to cancel."
     bl_options = {"REGISTER", "UNDO"}
-
-    # Store reference to 3D view for modal
-    _area = None
-    _region = None
-    _rv3d = None
 
     @classmethod
     def poll(cls, context):
         return poll_ifc4x3(cls, context)
 
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        # Remove instructions that don't apply to alignments
+        self.instructions.pop("Close Polyline", None)
+        self.instructions.pop("Offset", None)
+
     def invoke(self, context, event):
-        # Find the 3D viewport area, region, and region_data
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        # Find the 3D viewport — the operator is invoked from the Properties
+        # panel, so we need to override context for PolylineOperator.invoke()
+        # which requires bpy.context.space_data to be SpaceView3D.
+        area_3d = None
+        region_3d = None
         for area in context.screen.areas:
             if area.type == "VIEW_3D":
-                self._area = area
+                area_3d = area
                 for region in area.regions:
                     if region.type == "WINDOW":
-                        self._region = region
-                        break
-                for space in area.spaces:
-                    if space.type == "VIEW_3D":
-                        self._rv3d = space.region_3d
+                        region_3d = region
                         break
                 break
 
-        if not self._region or not self._rv3d:
+        if not area_3d or not region_3d:
             self.report({"ERROR"}, "No 3D Viewport found")
             return {"CANCELLED"}
 
-        # Install the PI picker decorator for visual feedback
-        alignment_decorator.PIPickerDecorator.install(context, self._region, self._rv3d)
+        with context.temp_override(area=area_3d, region=region_3d):
+            super().invoke(context, event)
 
-        # Initialize decorator with any existing PIs
-        alignment_decorator.PIPickerDecorator.update(
-            pi_points_blender=self._get_pi_points_blender(context),
-            mouse_3d=None,
-        )
-
-        context.window.cursor_set("CROSSHAIR")
-        context.window_manager.modal_handler_add(self)
-        self.report({"INFO"}, "Click to add PIs. Right-click or Escape to finish.")
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = "XY"
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
-        # Update rubber band position on mouse move
-        if event.type == "MOUSEMOVE":
-            coord = self.get_ground_intersection(context, event)
-            if coord:
-                mouse_3d = Vector((coord[0], coord[1], 0.0))
-                alignment_decorator.PIPickerDecorator.update(
-                    pi_points_blender=self._get_pi_points_blender(context),
-                    mouse_3d=mouse_3d,
-                )
-                if self._area:
-                    self._area.tag_redraw()
-            return {"RUNNING_MODAL"}
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
 
-        if event.type == "LEFTMOUSE" and event.value == "PRESS":
-            # Raycast to ground plane (Z=0)
-            coord = self.get_ground_intersection(context, event)
-            if coord:
-                self.add_pi_at_location(context, coord)
-                # Update decorator with new PI
-                mouse_3d = Vector((coord[0], coord[1], 0.0))
-                alignment_decorator.PIPickerDecorator.update(
-                    pi_points_blender=self._get_pi_points_blender(context),
-                    mouse_3d=mouse_3d,
-                )
-                if self._area:
-                    self._area.tag_redraw()
-            return {"RUNNING_MODAL"}
+    def _modal(self, context, event):
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
 
-        elif event.type in {"RIGHTMOUSE", "ESC"}:
-            self._finish_modal(context)
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+        self.handle_mouse_move(context, event, should_round=True)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+        self.handle_keyboard_input(context, event)
+        self._handle_inserting_polyline_no_close(context, event)
+
+        # Finish: transfer polyline points to PI table
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self._transfer_polyline_to_pis(context)
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
             return {"FINISHED"}
 
-        # Allow viewport navigation
-        elif event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
-            return {"PASS_THROUGH"}
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            return cancel
 
         return {"RUNNING_MODAL"}
 
-    def get_ground_intersection(self, context, event):
-        """Raycast from mouse to Z=0 ground plane"""
-        from bpy_extras.view3d_utils import region_2d_to_origin_3d, region_2d_to_vector_3d
+    def _handle_inserting_polyline_no_close(self, context, event):
+        """Insert polyline points without close-polyline (C key) behavior.
 
-        region = self._region
-        rv3d = self._rv3d
+        Alignments are open curves, so the C key (close polyline) is suppressed.
+        All other insertion behavior is preserved: LEFTMOUSE, BACKSPACE, and
+        RET/ENTER with numeric input active.
+        """
+        # LEFTMOUSE: insert point at current snap/cursor position
+        if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type == "LEFTMOUSE":
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+            if result:
+                self.report({"WARNING"}, result)
+            tool.Blender.update_viewport()
 
-        # Guard against None context
-        if region is None or rv3d is None:
-            return None
+        # RET/ENTER with numeric input: validate and insert
+        if (
+            self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            is_valid = self.recalculate_inputs(context)
+            if is_valid:
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                if result:
+                    self.report({"WARNING"}, result)
 
-        # Use absolute mouse coordinates and convert to the 3D viewport region's local coords
-        # event.mouse_region_x/y are relative to whatever region received the event,
-        # which may not be the 3D viewport region we stored
-        region_x = event.mouse_x - region.x
-        region_y = event.mouse_y - region.y
-        coord = (region_x, region_y)
+            self.tool_state.mode = "Mouse"
+            self.tool_state.is_input_on = False
+            self.input_type = None
+            self.tool_state.input_type = None
+            self.number_input = []
+            self.number_output = ""
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
 
-        origin = region_2d_to_origin_3d(region, rv3d, coord)
-        direction = region_2d_to_vector_3d(region, rv3d, coord)
+        # BACKSPACE: remove last point (when not typing numeric input)
+        if not self.tool_state.is_input_on:
+            if event.value == "RELEASE" and event.type == "BACK_SPACE":
+                tool.Polyline.remove_last_polyline_point()
+                tool.Blender.update_viewport()
 
-        # Intersect with Z=0 plane
-        if direction.z != 0:
-            t = -origin.z / direction.z
-            if t > 0:  # In front of camera
-                hit = origin + direction * t
-                return (hit.x, hit.y)
-        return None
+    def _transfer_polyline_to_pis(self, context):
+        """Transfer collected polyline points to the PI Editor table.
 
-    def _get_pi_points_blender(self, context):
-        """Get all PI points converted to Blender coordinates.
-
-        PI coordinates are stored in IFC space; this converts them
-        to Blender local coordinates for visualization.
-
-        Returns:
-            List of Vector - PI positions in Blender coordinates
+        Polyline points are in Blender coordinate space. This method converts
+        each point to IFC coordinate space before storing in props.pis.
         """
         props = context.scene.SaikeiAlignmentProperties
-        points = []
-        for pi in props.pis:
-            # Convert from IFC to Blender coordinates
-            blender_coord = tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.0))
-            print(repr(blender_coord))
-            points.append(Vector(blender_coord))
-        return points
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        if not polyline_data:
+            return
 
-    def _finish_modal(self, context):
-        """Clean up modal state and uninstall decorator."""
-        context.window.cursor_set("DEFAULT")
-        alignment_decorator.PIPickerDecorator.uninstall()
-        if self._area:
-            self._area.tag_redraw()
-        self.report({"INFO"}, "Finished adding PIs")
+        polyline_points = polyline_data[0].polyline_points
+        if not polyline_points:
+            return
 
-    def add_pi_at_location(self, context, coord):
-        """Add a new PI at the given (x, y) coordinate.
+        num_points = len(polyline_points)
+        for i, point in enumerate(polyline_points):
+            # Convert Blender space -> IFC easting/northing
+            ifc_coord = tool.Georeference.xyz2enh((point.x, point.y, 0.0))
 
-        The coordinate is in Blender world space. If there's a Blender offset
-        configured (for geospatial coordinates), we convert to IFC global
-        coordinates before storing.
-        """
-        props = context.scene.SaikeiAlignmentProperties
+            pi = props.pis.add()
+            pi.e = str(ifc_coord[0])
+            pi.n = str(ifc_coord[1])
 
-        # Convert Blender coordinates to IFC coordinates
-        # PIs are stored in IFC coordinate space (global/map coordinates)
-        ifc_coord = tool.Georeference.xyz2enh((coord[0], coord[1], 0.0))
-
-        pi = props.pis.add()
-        pi.e = str(ifc_coord[0])
-        pi.n = str(ifc_coord[1])
-
-        # Determine PI type based on position in list
-        if len(props.pis) == 1:
-            pi.pi_type = "ENDPOINT"
-        elif len(props.pis) == 2:
-            pi.pi_type = "ENDPOINT"
-        else:
-            pi.pi_type = "TANGENT"
-            # Previous endpoint becomes tangent
-            if len(props.pis) >= 2:
-                props.pis[-2].pi_type = "TANGENT"
+            # Determine PI type based on position
+            if i == 0 or i == num_points - 1:
+                pi.pi_type = "ENDPOINT"
+            else:
+                pi.pi_type = "TANGENT"
 
         props.active_pi_index = len(props.pis) - 1
         recalculate_pi_geometry(props)
+        rebuild_display_rows(props)
 
 
 class SAIKEI_OT_recalculate_pis(Operator):

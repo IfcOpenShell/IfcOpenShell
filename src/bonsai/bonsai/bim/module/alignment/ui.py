@@ -67,8 +67,8 @@ class SAIKEI_UL_alignment_pis(UIList):
                     sub.prop(pi, "e", text="")
                     sub.prop(pi, "n", text="")
                 else:
-                    row.label(text=f"{item.e:.2f}")
-                    row.label(text=f"{item.n:.2f}")
+                    row.label(text=f"{float(item.e):.2f}")
+                    row.label(text=f"{float(item.n):.2f}")
 
                 # Length column - empty for point rows
                 row.label(text="")
@@ -86,8 +86,8 @@ class SAIKEI_UL_alignment_pis(UIList):
                     row.label(text="Curve", icon="SPHERECURVE")
 
                     # Show PI coordinates on curve row
-                    row.label(text=f"{item.e:.2f}")
-                    row.label(text=f"{item.n:.2f}")
+                    row.label(text=f"{float(item.e):.2f}")
+                    row.label(text=f"{float(item.n):.2f}")
 
                     # Arc length
                     row.label(text=f"{item.arc_length:.2f}")
