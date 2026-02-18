@@ -540,6 +540,33 @@ class Loader(bonsai.core.tool.Loader):
             cls.load_indexed_map(colour, mesh)
 
     @classmethod
+    def load_generated_uv_map(cls, mesh: bpy.types.Mesh) -> None:
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+
+        all_verts = [v.co for v in bm.verts]
+        if not all_verts:
+            bm.free()
+            return
+
+        min_x = min(v.x for v in all_verts)
+        max_x = max(v.x for v in all_verts)
+        min_y = min(v.y for v in all_verts)
+        max_y = max(v.y for v in all_verts)
+        width = max_x - min_x
+        height = max_y - min_y
+
+        for face in bm.faces:
+            for loop in face.loops:
+                u = (loop.vert.co.x - min_x) / width if width > 0 else 0.5
+                v = (loop.vert.co.y - min_y) / height if height > 0 else 0.5
+                loop[uv_layer].uv = (max(0.0, min(1.0, u)), max(0.0, min(1.0, v)))
+
+        bm.to_mesh(mesh)
+        bm.free()
+
+    @classmethod
     def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
         """Add data from index map as blender mesh attribute.
 

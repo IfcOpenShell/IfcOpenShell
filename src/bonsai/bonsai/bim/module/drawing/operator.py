@@ -3934,30 +3934,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
 
-            if not bm.loops.layers.uv:
-                uv_layer = bm.loops.layers.uv.new()
-            else:
-                uv_layer = bm.loops.layers.uv.active
-
-            min_x = min(v.co.x for v in bm.verts)
-            max_x = max(v.co.x for v in bm.verts)
-            min_y = min(v.co.y for v in bm.verts)
-            max_y = max(v.co.y for v in bm.verts)
-
-            width = max_x - min_x
-            height = max_y - min_y
-
-            for face in bm.faces:
-                for loop in face.loops:
-                    vert = loop.vert
-                    u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                    v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                    u = max(0.0, min(1.0, u))
-                    v = max(0.0, min(1.0, v))
-                    loop[uv_layer].uv = (u, v)
-
             tool.Blender.apply_bmesh(mesh, bm)
+            tool.Loader.load_generated_uv_map(mesh)
 
         if self.existing_object_by_name != "NEW":
             obj = bpy.data.objects[self.existing_object_by_name]
