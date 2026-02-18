@@ -3813,7 +3813,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
         ),
     )
-    
+
     def get_existing_reference_images(self, context):
         ifc_file = tool.Ifc.get()
 
@@ -3823,14 +3823,11 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 f"{obj.Name} ({obj.GlobalId})",
                 f"Update existing reference image: {obj.Name}",
             )
-            for obj in ifcopenshell.util.selector.filter_elements(
-                ifc_file,
-                "IfcAnnotation, PredefinedType=IMAGE"
-            )
+            for obj in ifcopenshell.util.selector.filter_elements(ifc_file, "IfcAnnotation, PredefinedType=IMAGE")
         ]
 
         return [("NEW", "Create New", "Create a new reference image object"), *items]
-    
+
     existing_object_by_name: bpy.props.EnumProperty(
         name="",
         description="Select an existing reference image object to update, or create a new one",
@@ -3868,34 +3865,34 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return super().invoke(context, event)
 
     def check(self, context):
-        if not hasattr(self, '_last_filepath'):
+        if not hasattr(self, "_last_filepath"):
             self._last_filepath = ""
-        
+
         if self.filepath and self.filepath != self._last_filepath:
             self._last_filepath = self.filepath
-            
+
             abs_path = Path(self.filepath).absolute().resolve()
             if abs_path.exists() and abs_path.is_file():
                 image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
                 image_width_px = image.size[0]
                 image_height_px = image.size[1]
                 aspect_ratio = image_width_px / image_height_px
-                
+
                 if aspect_ratio >= 1.0:
                     self.x_length = 1.0
                     self.y_length = 1.0 / aspect_ratio
                 else:
                     self.x_length = aspect_ratio
                     self.y_length = 1.0
-                
+
                 bpy.data.images.remove(image)
                 return True
-        
+
         return False
 
     def draw(self, context):
         layout = self.layout
-        
+
         # File path settings
         if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
@@ -3905,7 +3902,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             layout.label(text="to use relative paths.")
         layout.prop(self, "override_existing_image")
         layout.prop(self, "existing_object_by_name")
-        
+
         if self.existing_object_by_name == "NEW":
             layout.separator()
             layout.prop(self, "x_length")
@@ -3966,21 +3963,21 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             obj = bpy.data.objects[self.existing_object_by_name]
             element = tool.Ifc.get_entity(obj)
             representation = element.Representation.Representations[0] if element.Representation else None
-            
+
             tool.Blender.set_active_object(obj)
-            
+
             material = obj.data.materials[0]
             style = tool.Ifc.get_entity(material)
-            
+
             texture_style = next(s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures"))
             existing_texture = texture_style.Textures[0]
             if tool.Ifc.get_schema() == "IFC2X3":
                 existing_texture.UrlReference = image_filepath.as_posix()
             else:
                 existing_texture.URLReference = image_filepath.as_posix()
-            
+
             tool.Style.set_use_nodes(material, True)
-            image_node = next(node for node in material.node_tree.nodes if node.type == 'TEX_IMAGE')
+            image_node = next(node for node in material.node_tree.nodes if node.type == "TEX_IMAGE")
             image_node.image = image
             image.reload()
         else:
@@ -3990,22 +3987,20 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             element = tool.Drawing.run_root_assign_class(
                 obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
             )
-            
+
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            
             bm = tool.Blender.get_bmesh_for_mesh(mesh)
             verts = [v.co / unit_scale for v in bm.verts]
             faces = [[v.index for v in p.verts] for p in bm.faces]
             item = builder.mesh(verts, faces)
             bm.free()
-            
+
             ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
 
             style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
-
             ifcopenshell.api.style.assign_representation_styles(
                 ifc_file, shape_representation=representation, styles=[style]
             )
@@ -4027,13 +4022,21 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 ifc_class="IfcSurfaceStyleRendering",
                 attributes=shading_attributes,
             )
-            
+
             if tool.Ifc.get_schema() == "IFC2X3":
-                texture = ifc_file.create_entity("IfcImageTexture", RepeatS=True, RepeatT=True, TextureType="TEXTURE", UrlReference=image_filepath.as_posix())
+                texture = ifc_file.create_entity(
+                    "IfcImageTexture",
+                    RepeatS=True,
+                    RepeatT=True,
+                    TextureType="TEXTURE",
+                    UrlReference=image_filepath.as_posix(),
+                )
             else:
-                texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+                texture = ifc_file.create_entity(
+                    "IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix()
+                )
                 ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
-            
+
             textures = [texture]
             ifcopenshell.api.style.add_surface_style(
                 ifc_file,
