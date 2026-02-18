@@ -997,7 +997,7 @@ class SAIKEI_OT_recalculate_pis(Operator):
                     return {"CANCELLED"}
 
                 # Collect updated PI data
-                hpoints = [(float(pi.e), float(pi.n)) for pi in props.pis]
+                hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
                 radii = [pi.radius for pi in props.pis[1:-1]]
 
                 # Remove Blender visualization for segments (not the whole hierarchy)
@@ -1142,68 +1142,38 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
         return True
 
     def execute(self, context):
-        ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
+        if not props.active_alignment_id:
+            return {"FINISHED"}
 
-        # Collect PI data
-        hpoints = [(float(pi.e), float(pi.n)) for pi in props.pis]
+        hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
         radii = [pi.radius for pi in props.pis[1:-1]]
 
-        # Check if there's an active alignment we should add to instead of creating new
-        if props.active_alignment_id != 0:
-            existing_alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-            if existing_alignment:
-                h_layout = ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)
-                if h_layout:
-                    # Check if horizontal layout is empty (only has zero-length terminal or no segments)
-                    segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
-                    has_real_segments = False
-                    for seg in segments:
-                        if hasattr(seg, "DesignParameters") and seg.DesignParameters:
-                            if seg.DesignParameters.SegmentLength > 0.0001:
-                                has_real_segments = True
-                                break
+        existing_alignment = get_alignment_by_id(tool.Ifc.get(), props.active_alignment_id)
+        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)
+        if h_layout:
+            # Check if horizontal layout is empty (only has zero-length terminal or no segments)
+            segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
+            has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(seg)])
 
-                    if not has_real_segments:
-                        # Use existing alignment - add segments to it
-                        # Use safe wrapper to validate layout has parent alignment
-                        tool.Alignment.safe_layout_horizontal_by_pi_method(ifc, h_layout, hpoints, radii)
+            if not has_real_segments:
+                # Use existing alignment - add segments to it
+                # Use safe wrapper to validate layout has parent alignment
+                tool.Alignment.safe_layout_horizontal_by_pi_method(tool.Ifc.get(), h_layout, hpoints, radii)
 
-                        # Create/update Blender objects for the segments
-                        alignment_obj = tool.Ifc.get_object(existing_alignment)
-                        h_layout_obj = tool.Ifc.get_object(h_layout)
+                # Create/update Blender objects for the segments
+                alignment_obj = tool.Ifc.get_object(existing_alignment)
+                h_layout_obj = tool.Ifc.get_object(h_layout)
 
-                        if not h_layout_obj and alignment_obj:
-                            h_layout_obj = tool.Alignment.create_object_for_layout(h_layout, alignment_obj)
+                if not h_layout_obj and alignment_obj:
+                    h_layout_obj = tool.Alignment.create_object_for_layout(h_layout, alignment_obj)
 
-                        if h_layout_obj:
-                            tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
+                if h_layout_obj:
+                    tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
 
-                        self.report(
-                            {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
-                        )
-                        return {"FINISHED"}
-
-        # No suitable existing alignment - create a new one
-        # Use safe wrapper to validate/cleanup before creating
-        alignment = tool.Alignment.safe_create_alignment_by_pi_method(
-            ifc,
-            name=props.new_alignment_name,
-            hpoints=hpoints,
-            radii=radii,
-            start_station=props.start_station,
-        )
-
-        # Create full Blender hierarchy (alignment + layouts + segments)
-        obj = tool.Alignment.create_hierarchy_for_alignment(alignment)
-
-        props.active_alignment_name = props.new_alignment_name
-        props.active_alignment_id = alignment.id()
-
-        if obj:
-            self.report({"INFO"}, f"Created new alignment '{props.new_alignment_name}' with {len(hpoints)} PIs")
-        else:
-            self.report({"WARNING"}, f"Created IFC alignment but could not create Blender object")
+                self.report(
+                    {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
+                )
         return {"FINISHED"}
 
 
