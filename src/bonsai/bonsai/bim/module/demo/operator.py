@@ -28,8 +28,9 @@
 # "Operators", since they correlate to a single user operation.
 
 import bpy
-import bonsai.tool as tool
+
 import bonsai.core.demo as core
+import bonsai.tool as tool
 
 
 # Each button correlates to a class like the one below. In this case, we're

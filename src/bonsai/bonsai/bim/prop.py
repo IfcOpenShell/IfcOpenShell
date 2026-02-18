@@ -16,35 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
+import os
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
-from ifcopenshell.util.doc import (
-    get_entity_doc,
-    get_attribute_doc,
-    get_property_set_doc,
-    get_property_doc,
-    get_predefined_type_doc,
-)
-import bonsai.bim
-import bonsai.bim.schema
-import bonsai.bim.handler
-import bonsai.tool as tool
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
+from bpy.types import PropertyGroup
+from ifcopenshell.util.doc import (
+    get_attribute_doc,
+    get_entity_doc,
+    get_predefined_type_doc,
+    get_property_doc,
+    get_property_set_doc,
+)
+
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.bim.schema
+import bonsai.tool as tool
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -590,6 +592,7 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/SQUARE_METRE", "Square Nanometre", ""),
             ("MICRO/SQUARE_METRE", "Square Micrometre", ""),
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
@@ -607,6 +610,7 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         default="CUBIC_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/CUBIC_METRE", "Cubic Nanometre", ""),
             ("MICRO/CUBIC_METRE", "Cubic Micrometre", ""),
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
@@ -620,31 +624,28 @@ class BIMProperties(PropertyGroup):
         ],
         name="IFC Volume Unit",
     )
-    add_mass_time_units: bpy.props.BoolProperty(
-        name="Add Mass and Time Units",
-        description="Enable to define mass and time units for the project",
-        default=False,
-    )
     mass_unit: EnumProperty(
         items=[
-            ("KILOGRAM", "Kilogram", "Kilograms"),
+            ("NONE", "None", ""),
             ("GRAM", "Gram", "Grams"),
-            ("POUND", "Pound", "Pounds"),
-            ("OUNCE", "Ounce", "Ounces"),
-            ("TONNE", "Tonne", "Metric Tons"),
+            ("KILO/GRAM", "Kilogram", "Kilograms"),
+            ("MEGA/GRAM", "Tonne", "Metric Tons"),
+            ("pound", "Pound", "Pounds"),
+            ("ounce", "Ounce", "Ounces"),
         ],
         name="Mass Unit",
-        default="KILOGRAM",
+        default="NONE",
     )
     time_unit: EnumProperty(
         items=[
+            ("NONE", "None", ""),
             ("SECOND", "Second", "Seconds"),
-            ("MINUTE", "Minute", "Minutes"),
-            ("HOUR", "Hour", "Hours"),
-            ("DAY", "Day", "Days"),
+            ("minute", "Minute", "Minutes"),
+            ("hour", "Hour", "Hours"),
+            ("day", "Day", "Days"),
         ],
         name="Time Unit",
-        default="HOUR",
+        default="NONE",
     )
     tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
     active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")

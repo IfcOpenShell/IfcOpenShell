@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.document
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import json
-from test.bim.bootstrap import NewFile
 from bonsai.tool.document import Document as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

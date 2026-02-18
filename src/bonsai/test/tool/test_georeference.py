@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+from mathutils import Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from mathutils import Vector
-from test.bim.bootstrap import NewFile
 from bonsai.tool.georeference import Georeference as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

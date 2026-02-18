@@ -17,31 +17,34 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
-import types
-import bpy
-import pytest
-import shutil
 import pprint
+import shutil
 import traceback
+import types
 import webbrowser
-import numpy as np
-import test.bim.stub
+from collections.abc import Generator
+from inspect import signature
+from math import radians
+from pathlib import Path
+from typing import Any, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.bim.handler
-from collections.abc import Generator
-from bonsai.bim.ifc import IfcStore
-from bonsai.tool.brick import BrickStore
-from bonsai.bim.module.model.data import AuthoringData
-from pytest_bdd import scenarios, given, when, then, parsers
-from inspect import signature
+import numpy as np
+import pytest
 from mathutils import Vector
-from math import radians
-from pathlib import Path
-from typing import Union, Any
+from pytest_bdd import given, parsers, scenarios, then, when
+
+import bonsai.bim.handler
+import bonsai.tool as tool
+import test.bim.stub
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.tool.brick import BrickStore
 
 scenarios("feature")
 
@@ -67,10 +70,7 @@ Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
 as resets the ``bpy.context`` and some it's members become `None`.
 """
 
-TMP = Path.cwd() / "test/files/temp"
-TEST_FILES_DIR = Path.cwd() / "test/files"
-
-CLEAN_LINKED_FILES_CACHE = False
+TMP = Path(f"{variables['cwd']}/test/files/temp")
 
 EPSET_DRAWING = Path.cwd() / "bonsai/bim/data/pset/EPset_Drawing.ifc"
 EPSET_DRAWING_BYTES = EPSET_DRAWING.read_bytes()
@@ -280,6 +280,8 @@ def create_ui_name_cache():
         try:
             panel_type = getattr(bpy.types, bl_idname)
             if panel_type.bl_rna.base.name == "Panel":
+                if "_tab_" in panel_type.bl_idname:
+                    continue  # Tab panels are just groups and not relevant in testing
                 ui_name_cache[panel_type.bl_label] = panel_type.bl_idname
             elif panel_type.bl_rna.base.name == "Operator":
                 ui_name_cache[panel_type.bl_label] = bl_idname
@@ -308,25 +310,6 @@ def vectors_are_equal(v1, v2):
     return all(is_x(v1[i], v2[i]) for i in range(len(v1)))
 
 
-@pytest.fixture(scope="function", autouse=True)
-def run_for_each_test() -> Generator[None]:
-    # Code before this runs before each test
-    yield
-    # Code after this runs after each test
-
-    global CLEAN_LINKED_FILES_CACHE
-    if CLEAN_LINKED_FILES_CACHE:
-        for filepath in TEST_FILES_DIR.glob("*.ifc.cache.*"):
-            filepath.unlink()
-        CLEAN_LINKED_FILES_CACHE = False
-
-    # pset_template tests are editing EPset_Drawing.ifc, so we need to restore it.
-    global RELOAD_EPSET_DRAWING
-    if RELOAD_EPSET_DRAWING:
-        EPSET_DRAWING.write_bytes(EPSET_DRAWING_BYTES)
-        RELOAD_EPSET_DRAWING = False
-
-
 @given("an untestable scenario")
 def an_untestable_scenario():
     pass
@@ -337,7 +320,7 @@ def an_untestable_scenario():
 def an_empty_blender_session():
     IfcStore.purge()
     if not PYTEST_BLENDER_NO_BACKGROUND:
-        bpy.ops.wm.read_homefile(app_template="")
+        bpy.ops.wm.read_homefile(app_template="", use_factory_startup=True)
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
@@ -379,16 +362,6 @@ def load_previously_saved_ifc_project() -> None:
 @then(parsers.parse("I save IFC project"))
 def saving_ifc_project() -> None:
     tool.Project.save_test_project()
-
-
-@given(parsers.parse('I link IFC project from "{filepath}"'))
-@when(parsers.parse('I link IFC project from "{filepath}"'))
-@then(parsers.parse('I link IFC project from "{filepath}"'))
-def i_link_ifc_project_from_filepath(filepath: str) -> None:
-    global CLEAN_LINKED_FILES_CACHE
-    filepath = replace_variables(filepath)
-    CLEAN_LINKED_FILES_CACHE = True
-    bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False)
 
 
 @given("the Brickschema is stubbed")
@@ -1584,10 +1557,19 @@ def the_object_name_has_a_vertex_at_location(name, location):
     is_pass = False
     target = Vector([float(co) for co in location.split(",")])
     verts = []
-    for v in obj.data.vertices:
-        verts.append(obj.matrix_world @ v.co)
-        if (verts[-1] - target).length < 0.001:
-            is_pass = True
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    obj_eval = obj.evaluated_get(depsgraph)
+    mesh = obj_eval.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)
+    try:
+        for inst in depsgraph.object_instances:
+            if inst.object.original is obj:
+                mw = inst.matrix_world
+                for i, v in enumerate(mesh.vertices):
+                    verts.append(mw @ v.co)
+                    if (verts[-1] - target).length < 0.001:
+                        is_pass = True
+    finally:
+        obj_eval.to_mesh_clear()
     assert is_pass, f"No verts found at {location}: {verts}"
 
 

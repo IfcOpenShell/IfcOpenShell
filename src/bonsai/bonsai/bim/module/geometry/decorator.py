@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from collections.abc import Sequence
+
 import blf
-import gpu
 import bmesh
+import bpy
+import gpu
 import ifcopenshell
-import bonsai.tool as tool
 import numpy as np
 from bpy.types import SpaceView3D
-from mathutils import Vector, Matrix
-from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from collections.abc import Sequence
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 
 
 class ItemDecorator:
@@ -75,27 +77,8 @@ class ItemDecorator:
         special_edges = []
 
         if (total_triangles := len(obj.data.loop_triangles)) > 0:
-            # TODO: this is a far too small threshold.
-            # This is just a stopgap optimisation until other slowdowns are solved.
-            if total_triangles > 500:
-                vert_map = {}
-                i = 0
-                verts = []
-                tris = []
-                for tri in obj.data.loop_triangles[:500]:
-                    new_tri = []
-                    for vert in tri.vertices:
-                        if vert in vert_map:
-                            new_tri.append(vert_map[vert])
-                        else:
-                            vert_map[vert] = i
-                            new_tri.append(i)
-                            i += 1
-                            verts.append(tuple(obj.matrix_world @ obj.data.vertices[vert].co))
-                    tris.append(new_tri)
-            else:
-                verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
-                tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
+            verts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
+            tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
 
         i = len(verts)
         matrix_world = obj.matrix_world

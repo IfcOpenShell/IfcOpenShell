@@ -16,25 +16,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
-from bonsai.tool.numeric_input import IntegerInputState, run_integer_input_modal, update_header
-from mathutils import Vector, Matrix
+from bonsai.tool.numeric_input import (
+    IntegerInputState,
+    run_integer_input_modal,
+    update_header,
+)
 
 V_ = tool.Blender.V_
+from typing import TYPE_CHECKING, get_args
+
 from bmesh.types import BMVert
 from bpy.props import IntProperty
-from typing import get_args, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import BIMStairProperties

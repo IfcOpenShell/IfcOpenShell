@@ -17,26 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, Optional, assert_never
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.helper import prop_with_search, get_display_value, draw_attribute
+
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, get_display_value, prop_with_search
+from bonsai.bim.module.material.data import ObjectMaterialData
 from bonsai.bim.module.pset.data import (
-    ObjectPsetsData,
-    ObjectQtosData,
+    GroupPsetData,
+    GroupQtosData,
     MaterialPsetsData,
     MaterialSetItemPsetsData,
-    TaskQtosData,
-    ResourceQtosData,
-    ResourcePsetsData,
-    GroupQtosData,
-    GroupPsetData,
+    ObjectPsetsData,
+    ObjectQtosData,
     ProfilePsetsData,
+    ResourcePsetsData,
+    ResourceQtosData,
+    TaskQtosData,
     WorkSchedulePsetsData,
     ZonePsetsData,
 )
-from bonsai.bim.module.material.data import ObjectMaterialData
-from typing import Any, Optional, TYPE_CHECKING, assert_never, Literal
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import IfcProperty, PsetProperties

@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
 import bmesh
-import bonsai.tool as tool
+import gpu
 from bpy.types import SpaceView3D
-from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
+from mathutils import Vector
+
+import bonsai.tool as tool
 
 
 class BoundaryDecorator:

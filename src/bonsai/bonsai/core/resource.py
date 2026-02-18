@@ -19,12 +19,14 @@
 # ############################################################################ #
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+
 from collections.abc import Iterable
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 

@@ -17,14 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.tool as tool
-from bonsai.bim.module.bsdd.data import BSDDData
-from bpy.types import Panel, UIList
+
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
+import bsdd
+from bonsai.bim.module.bsdd.data import BSDDData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary, BSDDClassification, BSDDProperty
+    from bonsai.bim.module.bsdd.prop import (
+        BIMBSDDProperties,
+        BSDDClassification,
+        BSDDDictionary,
+        BSDDProperty,
+    )
 
 
 class BIM_PT_bsdd(Panel):
@@ -74,7 +83,6 @@ class BIM_PT_bsdd(Panel):
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_dictionaries")
-
 
 class BIM_UL_bsdd_dictionaries(UIList):
     def draw_item(

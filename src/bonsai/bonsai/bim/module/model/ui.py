@@ -17,24 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
 import bpy
+from bpy.types import Menu, Panel
+
 import bonsai.bim
-from bonsai.bim import module
 import bonsai.tool as tool
-from bpy.types import Panel, Menu
+from bonsai.bim import module
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
-    AuthoringData,
     ArrayData,
-    StairData,
-    SverchokData,
-    WindowData,
+    AuthoringData,
     DoorData,
     RailingData,
     RoofData,
+    StairData,
+    SverchokData,
+    WindowData,
 )
-from collections.abc import Iterable
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
     import _bl_ui_utils.layout as bl_ui_utils_layout
@@ -226,6 +229,7 @@ class BIM_PT_array(bpy.types.Panel):
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
             row.label(text=ArrayData.data["parameters"]["parent_name"], icon="CON_CHILDOF")
+            row.operator("bim.regenerate_array", icon="FILE_REFRESH", text="")
             row.operator("bim.select_array_parent", icon="OBJECT_DATA", text="")
             row.operator("bim.select_all_array_objects", icon="RESTRICT_SELECT_OFF", text="")
 
@@ -243,7 +247,6 @@ class BIM_PT_array(bpy.types.Panel):
                     row.prop(props, "method")
                     row = box.row(align=True)
                     row.prop(props, "use_local_space")
-                    row.prop(props, "sync_children")
                     col = box.column()
                     row = col.row(align=True)
                     row.prop(props, "x")
@@ -691,8 +694,16 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
                 # should find a way to update only on graph changes.
                 res = tool.Model.update_mesh_from_sverchok(obj, props.sverchok_nodes)
                 if res is not None:
-                    print(res)
                     layout.label(text=f"Error Updating from Graph, See System Console", icon="ERROR")
+
+                layout.label(text="Parameters:")
+                box = layout.box()
+
+                group_node = tool.Model.get_ifcsverchok_group_node(props.sverchok_nodes)
+                node_tree = group_node.node_tree
+
+                for socket, interface_socket in zip(group_node.inputs, node_tree.sockets("INPUT")):
+                    socket.draw_group_property(box, socket.name, interface_socket)
 
 
 def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:

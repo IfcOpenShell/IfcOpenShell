@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, workspace, gizmo, decorator
+
+from . import decorator, gizmo, operator, prop, ui, workspace
 
 classes = (
     operator.AddProjectLibrary,
@@ -30,27 +31,31 @@ classes = (
     operator.BIM_OT_load_clipping_planes,
     operator.BIM_OT_save_clipping_planes,
     operator.ChangeLibraryElement,
+    operator.ClearMeasurement,
     operator.ClearRecentIFCProjects,
     operator.CreateClippingPlane,
     operator.CreateProject,
     operator.DisableCulling,
     operator.DisableEditingHeader,
+    operator.DisableEditingLink,
     operator.EditHeader,
+    operator.EditLink,
     operator.EditProjectLibrary,
     operator.EnableCulling,
     operator.EnableEditingHeader,
+    operator.EnableEditingLink,
     operator.ExportIFC,
     operator.FlipClippingPlane,
     operator.IFCFileHandlerOperator,
     operator.ImageScalingTool,
     operator.LinkIfc,
+    operator.LoadBlendMetadataAndIFC,
     operator.LoadLink,
     operator.LoadLinkedProject,
     operator.LoadProject,
     operator.LoadProjectElements,
-    operator.MeasureTool,
     operator.MeasureFaceAreaTool,
-    operator.ClearMeasurement,
+    operator.MeasureTool,
     operator.NewProject,
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,
@@ -68,7 +73,6 @@ classes = (
     operator.UnassignLibraryDeclaration,
     operator.UnlinkIfc,
     operator.UnloadLink,
-    operator.LoadBlendMetadataAndIFC,
     workspace.ExploreHotkey,
     prop.LibraryBreadcrumb,
     prop.LibraryElement,

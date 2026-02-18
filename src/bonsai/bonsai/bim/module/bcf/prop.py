@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
-from . import bcfstore
-from bonsai.bim.prop import StrProperty
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from bcf.agnostic.extensions import get_extensions_attributes
 from typing import TYPE_CHECKING, Union
 
+import bpy
+from bcf.agnostic.extensions import get_extensions_attributes
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.prop import StrProperty
+
+from . import bcfstore
 
 bcfviewpoints_enum = None
 

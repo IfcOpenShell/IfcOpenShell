@@ -100,15 +100,10 @@ class Usecase:
         size = self.convert_si_to_unit(1)
         points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
         if self.polyline:
-            # Only scale polyline if we have actual slope
-            if self.x_angle and abs(self.x_angle) > 1e-6:
-                points = [
-                    (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * abs(1 / cos(self.x_angle))))
-                    for p in self.polyline
-                ]
-            else:
-                points = [(self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1])) for p in self.polyline]
-
+            points = [
+                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * abs(1 / cos(self.x_angle))))
+                for p in self.polyline
+            ]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
@@ -119,23 +114,21 @@ class Usecase:
         else:
             direction_ratios = (0.0, 0.0, 1.0)
 
+        offset_direction = direction_ratios  # offset direction doesn't change if direction_sense is negative
         extrusion_direction = self.file.createIfcDirection(direction_ratios)
+        if self.direction_sense == "NEGATIVE":
+            direction_ratios = tuple(-n for n in direction_ratios)
+            extrusion_direction = self.file.createIfcDirection(direction_ratios)
 
-        # Calculate depth based on extrusion angle
-        extrusion_angle = abs(self.x_angle) if self.x_angle else 0
-        if extrusion_angle > 1e-6:
-            perpendicular_depth = self.convert_si_to_unit(self.depth) * abs(1 / cos(extrusion_angle))
-            perpendicular_offset = self.convert_si_to_unit(self.offset) * abs(1 / cos(extrusion_angle))
-        else:
-            perpendicular_depth = self.convert_si_to_unit(self.depth)
-            perpendicular_offset = self.convert_si_to_unit(self.offset)
-
+        perpendicular_offset = self.convert_si_to_unit(self.offset) * abs(1 / cos(self.x_angle))
+        perpendicular_depth = self.convert_si_to_unit(self.depth) * abs(1 / cos(self.x_angle))
         position = None
+        # default position for IFC2X3 where .Position is not optional
         if self.file.schema == "IFC2X3" or self.offset != 0:
             position_vector = (
-                direction_ratios[0] * perpendicular_offset,
-                direction_ratios[1] * perpendicular_offset,
-                direction_ratios[2] * perpendicular_offset,
+                offset_direction[0] * perpendicular_offset,
+                offset_direction[1] * perpendicular_offset,
+                offset_direction[2] * perpendicular_offset,
             )
             position = self.file.createIfcAxis2Placement3D(
                 self.file.createIfcCartesianPoint(position_vector),

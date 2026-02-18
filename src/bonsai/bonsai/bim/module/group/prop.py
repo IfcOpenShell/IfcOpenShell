@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.pset.data import refresh as refresh_pset
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Union
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.pset.data import refresh as refresh_pset
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def update_active_group_index(self, context):

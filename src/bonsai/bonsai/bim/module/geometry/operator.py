@@ -17,17 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import bpy
+from collections.abc import Sequence
+from time import time
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Union,
+    assert_never,
+    get_args,
+)
+
 import bmesh
-import numpy as np
-import numpy.typing as npt
+import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.api.drawing
-import ifcopenshell.api.group
-import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
+import ifcopenshell.api.grid
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.element
@@ -35,26 +48,23 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import ifcopenshell.api
-import ifcopenshell.api.boundary
-import ifcopenshell.api.grid
+import numpy as np
+import numpy.typing as npt
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Matrix, Quaternion, Vector
+
+import bonsai.bim.handler
+import bonsai.core.aggregate
+import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.geometry as core
-import bonsai.core.aggregate
 import bonsai.core.nest
+import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
-import bonsai.core.root
-import bonsai.core.drawing
 import bonsai.tool as tool
-import bonsai.bim.handler
-from bonsai.bim.module.model.data import AuthoringData
-from mathutils import Vector, Matrix, Quaternion
-from time import time
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.util.shape_builder import ShapeBuilder
-from collections.abc import Sequence
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
+from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -892,6 +902,7 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
+            
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -901,6 +912,9 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
+                    continue
+                if element.is_a("IfcDocumentReference"):
+                    self.report({"INFO"}, "Linked models cannot be deleted.")
                     continue
                 if element.is_a("IfcGridAxis"):
                     # Deleting the last W axis is OK
@@ -1196,6 +1210,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
             if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                 objects_to_remove.add(obj)
                 operator.report({"ERROR"}, f"Drawing '{obj.name}' not duplicated.")
+                continue
+
+            if element.is_a("IfcDocumentReference"):
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, f"Linked model '{obj.name}' not duplicated.")
                 continue
 
             if tool.Geometry.is_locked(element):
@@ -1715,40 +1734,19 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 # Only assign container if element is not already aggregated under another element
                 # Aggregated elements should not be in the spatial structure
                 if not ifcopenshell.util.element.get_aggregate(element):
-                    container = original_data[matching_group_id][index]["Container"]
                     bonsai.core.spatial.assign_container(
                         tool.Ifc,
                         tool.Collector,
                         tool.Spatial,
-                        container=container,
-                        element_obj=obj,
+                        container=original_data[matching_group_id][index]["Container"],
+                        objs=[obj],
                     )
+                    for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                        tool.Collector.assign(tool.Ifc.get_object(part))
 
-                    # Get the container's collection for moving parts in the outliner
-                    container_obj = tool.Ifc.get_object(container)
-                    container_collection = container_obj.BIMObjectProperties.collection if container_obj else None
-
-                    # Move all parts to the container's collection in the outliner
-                    if container_collection:
-                        for part in ifcopenshell.util.element.get_parts(element):
-                            part_obj = tool.Ifc.get_object(part)
-                            if part_obj:
-                                # Remove from all previous collections
-                                for col in part_obj.users_collection[:]:
-                                    col.objects.unlink(part_obj)
-
-                                # Link to container collection
-                                if part_obj.name not in container_collection.objects:
-                                    container_collection.objects.link(part_obj)
-
-                                # Recursively handle nested parts
-                                for nested_part in ifcopenshell.util.element.get_parts(part):
-                                    nested_part_obj = tool.Ifc.get_object(nested_part)
-                                    if nested_part_obj:
-                                        for col in nested_part_obj.users_collection[:]:
-                                            col.objects.unlink(nested_part_obj)
-                                        if nested_part_obj.name not in container_collection.objects:
-                                            container_collection.objects.link(nested_part_obj)
+                assignments = original_data[matching_group_id][index]["Assignment"]
+                if assignments:
+                    assign_to_annotations(obj, assignments)
             else:
                 try:
                     obj.name = original_data[matching_group_id][index]["Name"]
@@ -2053,6 +2051,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 return position
 
             items = list(representation.Items)
+            skipped_objects = []
             for obj in context.selected_editable_objects:
                 if obj == self.target:
                     continue
@@ -2072,12 +2071,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 assert obj_rep
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    self.report(
-                        {"ERROR"},
-                        f"IFC join failed - object '{obj.name}' has a different representation type "
-                        f"({obj_rep.RepresentationType})\nthan target '{self.target.name}' ({representation_type}).",
-                    )
-                    return
+                    skipped_objects.append((obj.name, obj_rep.RepresentationType))
+                    continue
 
                 placement = np.array(obj.matrix_world)
                 placement[M_TRANSLATION] /= si_conversion
@@ -2157,6 +2152,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                     items.append(copied_item)
                 ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            if skipped_objects:
+                skipped_info = ", ".join(f"'{name}' ({rep_type})" for name, rep_type in skipped_objects)
+                self.report({"INFO"}, f"Skipped incompatible objects: {skipped_info}")
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(

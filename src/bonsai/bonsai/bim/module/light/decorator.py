@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from math import degrees, radians
+
 import blf
-import gpu
 import bmesh
-import bonsai.tool as tool
+import bpy
+import gpu
 from bpy.types import SpaceView3D
-from math import radians, degrees
-from mathutils import Vector, Matrix
-from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
+from gpu_extras.batch import batch_for_shader
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 
 

@@ -18,6 +18,7 @@
 
 # See bug #1300. Dodgy quick results that we should rebuild later.
 import json
+
 import ifcopenshell
 import ifcopenshell.util.schema
 

@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, cast, Any
+from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
+    from bonsai.bim.module.spatial.prop import (
+        BIMContainer,
+        BIMSpatialDecompositionProperties,
+        Element,
+    )
 
 
 class BIM_PT_spatial(Panel):

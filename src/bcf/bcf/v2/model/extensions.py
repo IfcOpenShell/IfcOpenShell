@@ -14,7 +14,7 @@
 # Currently extensions support for v2 is only read-only.
 
 
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from typing import Optional
 
 

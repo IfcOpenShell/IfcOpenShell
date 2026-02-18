@@ -21,10 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.api.feature
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import bonsai.tool as tool
+
+import bonsai.bim.handler
 import bonsai.core.geometry
 import bonsai.core.root
-import bonsai.bim.handler
+import bonsai.tool as tool
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
 

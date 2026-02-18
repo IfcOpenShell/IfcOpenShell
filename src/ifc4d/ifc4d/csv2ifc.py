@@ -24,7 +24,6 @@ import datetime
 from typing import Any, Literal, NamedTuple, Optional, Union, cast, get_args
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.cost
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
@@ -33,7 +32,6 @@ import ifcopenshell.api.unit
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.resource
-import ifcopenshell.util.unit
 import isodate
 
 SUPPORTED_COLUMN = Literal[

@@ -120,6 +120,8 @@ def nodes_index() -> list[tuple[str, list[tuple[str, str]]]]:
                 ("ifc.shape_builder.representation", "SvIfcSbRepresentation"),
                 ("ifc.shape_builder.test", "SvIfcSbTest"),
                 ("ifc.shape_builder.shape_output", "SvSbShapeOutput"),
+                ("ifc.shape_builder.mesh", "SvSbMesh"),
+                ("ifc.shape_builder.polyline", "SvSbPolyline"),
             ],
         ),
     ]

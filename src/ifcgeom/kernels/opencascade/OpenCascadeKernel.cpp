@@ -29,6 +29,7 @@
 #include "base_utils.h"
 
 #include <BRepPrimAPI_MakeRevol.hxx>
+#include <BOPAlgo_MakerVolume.hxx>
 
 namespace {
 	struct opening_sorter {
@@ -132,11 +133,24 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			parts.push_back(it3_shape);
 		}
 
-		for (auto& entity_part : parts) {
+		for (auto entity_part : parts) {
 			bool is_manifold = util::is_manifold(entity_part);
 
 			if (!is_manifold) {
-				Logger::Warning("Non-manifold first operand");
+                if (settings_.get<settings::MakeVolume>().get()) {
+                    BOPAlgo_MakerVolume mv;
+                    mv.AddArgument(entity_part);
+                    mv.SetAvoidInternalShapes(true);
+                    try {
+                        mv.Perform();
+                        entity_part = mv.Shape();
+                        Logger::Warning("Sucessfully detected exterior volume to non-manifold first operand");
+                    } catch (const Standard_Failure& e) {
+						Logger::Warning("MakeVolume failed: " + std::string(e.GetMessageString()), entity);
+                    }
+                } else {
+                    Logger::Warning("Non-manifold first operand, use --make-volume to try and make manifold");
+				}
 			}
 
 			TopoDS_Shape entity_part_result;

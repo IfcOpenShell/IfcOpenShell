@@ -2,10 +2,10 @@
 name = "IfcOpenShell"
 version = "0.0.0"
 dependencies = [
-    "black==25.12",
-    "ruff==0.14.13",
+    "black==26.1.0",
+    "ruff==0.15.1",
     "poethepoet",
-    "gersemi==0.25.1",
+    "gersemi==0.25.4",
 ]
 
 [tool.black]
@@ -82,4 +82,4 @@ black = "black ."
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
 
-cmake-format = "gersemi cmake src --in-place"
+cmake-format = "gersemi . --in-place"

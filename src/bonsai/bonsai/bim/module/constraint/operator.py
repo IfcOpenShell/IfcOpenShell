@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.constraint
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
 
 
 def get_active_object(context: bpy.types.Context, obj_name: str) -> bpy.types.Object:

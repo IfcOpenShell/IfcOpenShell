@@ -17,11 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 from bonsai.bim.module.void.data import BooleansData, VoidsData
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums

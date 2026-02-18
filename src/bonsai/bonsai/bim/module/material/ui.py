@@ -17,19 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bonsai.bim.helper
-import bonsai.tool as tool
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from bpy.types import Panel, UIList
-from bonsai.bim.helper import draw_attributes
-from bonsai.bim.helper import prop_with_search
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
-from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.material.prop import Material, BIMMaterialProperties
+    from bonsai.bim.module.material.prop import BIMMaterialProperties, Material
 
 
 class BIM_PT_materials(Panel):

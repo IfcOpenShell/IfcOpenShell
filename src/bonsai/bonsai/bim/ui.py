@@ -17,49 +17,51 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
 import platform
-import platformdirs
-import bonsai.bim.helper
+import textwrap
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, Optional
+
+import bpy
+import platformdirs
+from bpy.props import BoolProperty, IntProperty, StringProperty
 from bpy.types import Panel
-from bpy.props import StringProperty, IntProperty, BoolProperty
 from ifcopenshell.util.doc import (
+    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
-    get_attribute_doc,
 )
-from . import ifc
-from bonsai import get_debug_info
-import bonsai.bim
-import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from bonsai.bim.prop import Attribute
+from natsort import natsorted
+
+import bonsai.bim
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai import get_debug_info
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
-from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
-    BIMWindowProperties,
     BIMRailingProperties,
     BIMRoofProperties,
     BIMStairProperties,
+    BIMWindowProperties,
 )
 from bonsai.bim.module.model.ui import (
     draw_door_properties,
-    draw_window_properties,
     draw_railing_properties,
     draw_roof_properties,
     draw_stair_properties,
+    draw_window_properties,
 )
-from typing import Optional, TYPE_CHECKING, Literal
-from natsort import natsorted
-import textwrap
+from bonsai.bim.module.pset.prop import IfcProperty
+from bonsai.bim.prop import Attribute
 
+from . import ifc
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import ObjProperty
     from bonsai.bim.module.project.prop import BIMProjectProperties
+    from bonsai.bim.prop import ObjProperty
 
 
 class IFCFileSelector:
@@ -465,12 +467,12 @@ class DocPreferences(bpy.types.PropertyGroup):
     classes_to_wireframe: StringProperty(
         default="IfcVirtualElement",
         name="Classes to Wireframe",
-        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
+        description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualElement, IfcSpace",
     )
     classes_no_cut: StringProperty(
         default="IfcVirtualElement, IfcSpace",
         name="Classes that are not cut",
-        description="The cut decoractor will be turned off for these classes\nEx: IfcVirtualelement, IfcSpace",
+        description="The cut decorator will be turned off for these classes\nEx: IfcVirtualElement, IfcSpace",
     )
 
     if TYPE_CHECKING:
@@ -658,6 +660,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bsdd_load_test_dictionaries: BoolProperty(
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
+    bsdd_baseurl: StringProperty(
+        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        default="https://api.bsdd.buildingsmart.org/api/",
+    )
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
@@ -717,21 +723,22 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=False,
     )
 
-    mass_time_units_in_wizard: BoolProperty(
-        name="Mass and time units in project wizard",
-        description="Show mass and time units section in the new project wizard panel",
-        default=False,
-    )
-
     chain_filter_with_set_operations: BoolProperty(
         name="NEW Filter mode: Enable chained filters with set operations",
-        description="Enable chaining search filters with set operations: ADD (union: combine sets), SUBTRACT (difference: remove from set), FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values",
+        description=(
+            "Enable chaining search filters with set operations: "
+            "ADD (union: combine sets), SUBTRACT (difference: remove from set), "
+            "FILTER (intersection: only elements in both sets), with autocomplete suggestions for filter values"
+        ),
         default=False,
     )
 
     save_metadata_blend_file: BoolProperty(
         name="Save non ifc data to metadata blend File",
-        description="Save session data (window layout, settings) to a metadata blend file alongside the IFC file. This file is automatically loaded when opening the project.",
+        description=(
+            "Save session data (window layout, settings) to a metadata blend file alongside the IFC file. "
+            "This file is automatically loaded when opening the project."
+        ),
         default=False,
     )
     metadata_blend_file_suffix: StringProperty(
@@ -969,6 +976,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")
         layout.prop(self, "bsdd_load_test_dictionaries")
+        layout.prop(self, "bsdd_baseurl")
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")

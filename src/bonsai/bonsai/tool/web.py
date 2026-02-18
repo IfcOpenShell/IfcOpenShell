@@ -17,37 +17,40 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from ifcopenshell.util.classification import get_classification_data, get_references
-from ifcopenshell.util.selector import filter_elements
-import ifcopenshell.util.cost
+
+import asyncio
+import errno
+import json
+import os
+import queue
+import socket
+import subprocess
+import sys
+import threading
+import time
+import webbrowser
+from pathlib import Path
+from time import sleep
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
-from bonsai.bim.module.web.data import WebData
-from ifcopenshell.util.element import get_psets, get_type, has_property
-import bonsai.core.tool
-import bonsai.tool as tool
-import ifcopenshell.api.sequence
 import ifcopenshell.api.classification
 import ifcopenshell.api.cost
-from typing import Any, Optional, TYPE_CHECKING, Union
-from mathutils import Color
-import time
-import socket
-import sys
-import os
-import errno
-import subprocess
-import webbrowser
-import asyncio
+import ifcopenshell.api.sequence
+import ifcopenshell.util.cost
 import socketio
-import threading
-import queue
-import json
-from time import sleep
-from pathlib import Path
-import bonsai.core.sequence
-import bonsai.core.cost
 from ifc5d.ifc2json import ifc5D2json
+from ifcopenshell.util.classification import get_classification_data, get_references
+from ifcopenshell.util.element import get_psets, get_type, has_property
+from ifcopenshell.util.selector import filter_elements
+from mathutils import Color
+
+import bonsai.core.cost
+import bonsai.core.sequence
+import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.web.data import WebData
 
 if TYPE_CHECKING:
     from bonsai.bim.module.web.prop import WebProperties

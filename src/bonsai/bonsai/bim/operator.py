@@ -16,39 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import contextlib
-import bpy
-import bmesh
-import time
 import logging
-import textwrap
-import shutil
+import os
 import platform
+import shutil
 import subprocess
 import tempfile
+import textwrap
+import time
 import webbrowser
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-import bonsai.bim.handler
+from collections import namedtuple
+from collections.abc import Iterable
 from enum import Enum
-from bpy_extras.io_utils import ImportHelper
-from bonsai.bim import import_ifc
-from bonsai.bim.prop import StrProperty
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim.helper import get_enum_items
-from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
-from collections import namedtuple
-from typing import Union, TYPE_CHECKING, Literal, get_args
-from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bmesh
+import bpy
+import ifcopenshell
+from bpy_extras.io_utils import ImportHelper
+from mathutils import Euler, Vector
 from natsort import natsorted
 
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim import import_ifc
+from bonsai.bim.helper import get_enum_items
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.ui import IFCFileSelector
+
 if TYPE_CHECKING:
-    from bonsai.bim.prop import MultipleFileSelect, Attribute
     from bpy.stub_internal import rna_enums
+
+    from bonsai.bim.prop import Attribute, MultipleFileSelect
 
 
 class SetTab(bpy.types.Operator):
@@ -265,63 +268,45 @@ class SaveBlendMetadataFile(bpy.types.Operator):
 import bpy
 
 # Ensure all styles are loaded before attempting to remove them
-try:
-    bpy.ops.bim.load_styles()
-except Exception:
-    pass
+bpy.ops.bim.load_styles()
 
 # 1. Collect all IfcStyle material names
 ifcstyle_material_names = []
-try:
-    styles_props = getattr(bpy.context.scene, "BIMStylesProperties", None)
-    if styles_props is None and bpy.data.scenes:
-        styles_props = getattr(bpy.data.scenes[0], "BIMStylesProperties", None)
-    if styles_props:
-        for style in list(styles_props.styles):
-            material = getattr(style, "blender_material", None)
-            if material and material.name:
-                ifcstyle_material_names.append(material.name)
-except Exception:
-    pass
+styles_props = getattr(bpy.context.scene, "BIMStylesProperties", None)
+if styles_props is None and bpy.data.scenes:
+    styles_props = getattr(bpy.data.scenes[0], "BIMStylesProperties", None)
+if styles_props:
+    for style in list(styles_props.styles):
+        material = getattr(style, "blender_material", None)
+        if material and material.name:
+            ifcstyle_material_names.append(material.name)
 
 # 2. Purge IfcStore
-try:
-    from bonsai.bim.ifc import IfcStore
-except ImportError:
-    IfcStore = None
-
-if IfcStore:
-    try:
-        IfcStore.purge()
-    except Exception:
-        pass
+from bonsai.bim.ifc import IfcStore
+IfcStore.purge()
 
 # 3. Remove all collections named IfcProject*
 for collection in list(bpy.data.collections):
     if collection.name.startswith('IfcProject'):
-        try:
-            bpy.data.collections.remove(collection, do_unlink=True)
-        except Exception:
-            pass
+        bpy.data.collections.remove(collection, do_unlink=True)
 
-# 4. Purge orphaned data blocks after removing IfcProject collections
-try:
-    bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
-except Exception:
-    pass
+# 4.1 Remove all collections from linked libraries (they will be recreated by bonsai)
+for collection in list(bpy.data.collections):
+    if collection.library:
+        bpy.data.collections.remove(collection, do_unlink=True)
 
-# 5. Remove all materials corresponding to the IfcStyles we collected
-materials_removed = 0
-try:
-    for mat_name in ifcstyle_material_names:
-        if mat_name in bpy.data.materials:
-            try:
-                bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
-                materials_removed += 1
-            except Exception:
-                pass
-except Exception:
-    pass
+# 4.2. Remove all empty objects that are collection instances for linked models
+for obj in list(bpy.data.objects):
+    if obj.type == 'EMPTY' and obj.instance_type == 'COLLECTION' and obj.name.startswith('IfcProject/'):
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+# 5. Purge orphaned data blocks after removing IfcProject collections
+bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+# 6. Remove all materials corresponding to the IfcStyles we collected
+for mat_name in ifcstyle_material_names:
+    if mat_name in bpy.data.materials:
+        bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
 
 bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
 """

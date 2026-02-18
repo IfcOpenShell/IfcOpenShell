@@ -19,9 +19,7 @@
 
 import csv
 import os
-from itertools import cycle
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.document

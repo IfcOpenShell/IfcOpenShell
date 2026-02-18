@@ -28,3 +28,9 @@ Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 [tool.setuptools.packages.find]
 include = ["ifc4d"]
 exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+lint.select = [
+  "F401",  # unused imports
+]

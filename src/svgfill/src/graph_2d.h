@@ -2,7 +2,9 @@
 #define GRAPH_2D_H
 
 #ifdef SVGFILL_DEBUG
+#if 0
 #include <nlohmann/json.hpp>
+#endif
 #endif
 
 template <typename Kernel>
@@ -332,6 +334,16 @@ public:
         }
 
         return Graph2D(input_adjacency_list);
+    }
+
+    template <typename T>
+    void to_arrangement(T& arr) {
+        for (auto it = edges_begin(); it != edges_end(); ++it) {
+            if (it->first == it->second) {
+                continue;
+            }
+            CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
+        }
     }
 
     void assert_symmetric() {

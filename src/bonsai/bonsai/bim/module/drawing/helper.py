@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import ifcopenshell.util.element
-import mathutils.geometry
-import ifcopenshell
-import ifcopenshell.util.unit
-import bonsai.tool as tool
-from mathutils import Vector
 from typing import Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
+import mathutils.geometry
+from mathutils import Vector
+
+import bonsai.tool as tool
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 

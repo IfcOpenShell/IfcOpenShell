@@ -17,14 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import bonsai.core.tool
+
 import bonsai.core.geometry
+import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.type.prop import BIMTypeProperties
@@ -74,11 +77,13 @@ class Type(bonsai.core.tool.Type):
     def get_model_types(cls) -> list[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         types = ifc_file.by_type("IfcElementType")
-        types += ifc_file.by_type("IfcSpatialElementType")
-        types += ifc_file.by_type("IfcTypeProduct", include_subtypes=False)
-        if not tool.Ifc.get_schema().startswith("IFC4X3"):
+        if tool.Ifc.get_schema() == "IFC2X3":
             types += ifc_file.by_type("IfcWindowStyle")
             types += ifc_file.by_type("IfcDoorStyle")
+            types += ifc_file.by_type("IfcSpatialStructureElementType")
+        else:
+            types += ifc_file.by_type("IfcSpatialElementType")
+        types += ifc_file.by_type("IfcTypeProduct", include_subtypes=False)
         return types
 
     @classmethod
@@ -138,3 +143,20 @@ class Type(bonsai.core.tool.Type):
             obj=obj,
             representation=representation,
         )
+
+    @classmethod
+    def record_material_usage_attributes(cls, element: ifcopenshell.entity_instance) -> dict | None:
+        if (material := ifcopenshell.util.element.get_material(element)) and "Usage" in material.is_a():
+            return material.get_info()
+
+    @classmethod
+    def restore_material_usage_attributes(cls, element: ifcopenshell.entity_instance, usage_attributes: dict) -> None:
+        if (material := ifcopenshell.util.element.get_material(element)) and material.is_a() == usage_attributes[
+            "type"
+        ]:
+            if usage_attributes["type"] == "IfcMaterialLayerSetUsage":
+                for attr in ("LayerSetDirection", "DirectionSense", "OffsetFromReferenceLine", "ReferenceExtent"):
+                    setattr(material, attr, usage_attributes.get(attr))
+            elif usage_attributes["type"] == "IfcMaterialProfileSetUsage":
+                for attr in ("CardinalPoint", "ReferenceExtent"):
+                    setattr(material, attr, usage_attributes.get(attr))

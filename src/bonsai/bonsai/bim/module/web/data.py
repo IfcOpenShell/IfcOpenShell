@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
 import os
+
+import bpy
+
+import bonsai.tool as tool
 
 
 def refresh():

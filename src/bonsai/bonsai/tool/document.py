@@ -17,14 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, Any, Union
+
 import bpy
 import ifcopenshell.util.system
+from natsort import natsorted
+
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-import json
-from natsort import natsorted
-from typing import Any, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.document.prop import BIMDocumentProperties
@@ -248,10 +251,18 @@ class Document(bonsai.core.tool.Document):
     def get_document_references(
         cls, document: ifcopenshell.entity_instance
     ) -> tuple[ifcopenshell.entity_instance, ...]:
+        # TODO: migrate to util.document and replace all instances
         """Get IfcDocumentReference.ReferencedDocuments, compatible with IFC2X3."""
         if document.file.schema == "IFC2X3":
             return document.DocumentReferences or ()
         return document.HasDocumentReferences
+
+    @classmethod
+    def get_reference_document(cls, reference: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        # TODO: migrate to util.document and replace all instances
+        if reference.file.schema == "IFC2X3":
+            return (reference.ReferenceToDocument or (None))[0]
+        return reference.ReferencedDocument
 
     @classmethod
     def clear_active_document(cls) -> None:

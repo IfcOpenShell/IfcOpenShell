@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from . import ui, prop, operator
-from bpy.app.handlers import persistent
-import ifcopenshell.util.element
 import math
+
+import bpy
+import ifcopenshell.util.element
+from bpy.app.handlers import persistent
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddCurvelikeItem,

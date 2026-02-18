@@ -17,13 +17,26 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import json
-import bmesh
-import shapely
+
 import collections
 import collections.abc
-import numpy as np
+import json
+from collections.abc import Iterable, Sequence
+from copy import deepcopy
+from math import atan, cos, degrees, pi, radians
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -37,36 +50,35 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import mathutils
+import numpy as np
+import shapely
+from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
-import mathutils
-from math import atan, cos, degrees, pi, radians
-from mathutils import Matrix, Vector
-from copy import deepcopy
 from bonsai.bim import import_ifc
-
-from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
-from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
-    import sverchok.node_tree
     import ifcsverchok.nodes.ifc.shape_builder.shape_output
+    import sverchok.node_tree
+    from sverchok.core.node_group import SvGroupTreeNode
+
     from bonsai.bim.module.model.prop import (
-        BIMModelProperties,
-        BIMDoorProperties,
         BIMArrayProperties,
-        BIMRoofProperties,
-        BIMWindowProperties,
-        BIMStairProperties,
-        BIMRailingProperties,
+        BIMDoorProperties,
         BIMExternalParametricGeometryProperties,
+        BIMModelProperties,
         BIMPolylineProperties,
-        BIMProductPreviewProperties,
+        BIMRailingProperties,
+        BIMRoofProperties,
+        BIMStairProperties,
+        BIMWindowProperties,
     )
 
 
@@ -107,11 +119,6 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
-        assert (scene := bpy.context.scene)
-        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -1044,6 +1051,7 @@ class Model(bonsai.core.tool.Model):
 
             tool.Model.regenerate_array(obj, array_data)
 
+            array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
             json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
@@ -1056,23 +1064,17 @@ class Model(bonsai.core.tool.Model):
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
     ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
-        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
+        parent_element = tool.Ifc.get_entity(parent_obj)
+
+        if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
+            ifcopenshell.api.pset.remove_pset(
+                tool.Ifc.get(), product=parent_element, pset=tool.Ifc.get().by_id(pset["id"])
+            )
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent_obj]
 
         for array_i, array in enumerate(data):
-            # for `sync_children` we remove all previously generated children to regenerate them again
-            # to assure they are in complete sync (psets, etc) with the array parent
-            if array["sync_children"]:
-                removed_children = set(array["children"])
-                for removed_child in removed_children:
-                    element = tool.Ifc.get().by_guid(removed_child)
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
-                        tool.Geometry.delete_ifc_object(obj)
-                array["children"].clear()
-
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
@@ -1092,29 +1094,27 @@ class Model(bonsai.core.tool.Model):
                 offset = base_offset * i
 
                 for obj in obj_stack:
-                    # get currently proccesed array element and it's object
-                    if child_i >= total_existing_children:
-                        child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                        child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
-                    else:
+                    try:
                         global_id = array["children"][child_i]
-                        try:
-                            child_element = tool.Ifc.get().by_guid(global_id)
-                            child_obj = tool.Ifc.get_object(child_element)
-                            assert child_obj
-                        except:
-                            child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                            child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+                        child_element = tool.Ifc.get().by_guid(global_id)
+                        child_obj = tool.Ifc.get_object(child_element)
+                        assert child_obj
+                    except:
+                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
+                        child_element = next(iter(old_to_new.values()))[0]
+                        child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
-                    child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
-                    if child_pset:
-                        ifcopenshell.api.pset.edit_pset(
-                            tool.Ifc.get(),
-                            pset=child_pset,
-                            properties={"Data": None},
-                            should_purge=False,
+                    if not (child_pset := tool.Pset.get_element_pset(child_element, "BBIM_Array")):
+                        child_pset = ifcopenshell.api.pset.add_pset(
+                            tool.Ifc.get(), product=child_element, name="BBIM_Array"
                         )
+                    ifcopenshell.api.pset.edit_pset(
+                        tool.Ifc.get(),
+                        pset=child_pset,
+                        properties={"Data": None, "Parent": parent_element.GlobalId},
+                        should_purge=False,
+                    )
 
                     # set child object position
                     new_matrix = obj.matrix_world.copy()
@@ -1149,6 +1149,12 @@ class Model(bonsai.core.tool.Model):
                 array["count"] = 1
 
             bpy.context.view_layer.update()
+
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=parent_element, name="BBIM_Array")
+        json_data = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.pset.edit_pset(
+            tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
+        )
 
     @classmethod
     def replace_object_ifc_representation(
@@ -1188,6 +1194,7 @@ class Model(bonsai.core.tool.Model):
             return
 
         from PIL import Image, ImageDraw
+
         from bonsai.bim.module.model.data import AuthoringData
 
         obj = tool.Ifc.get_object(element)
@@ -2572,12 +2579,20 @@ class Model(bonsai.core.tool.Model):
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
 
     @classmethod
+    def get_ifcsverchok_group_node(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> SvGroupTreeNode:
+        from sverchok.core.node_group import SvGroupTreeNode
+
+        return next(n for n in node_tree.nodes if isinstance(n, SvGroupTreeNode) and n.label == "BBIM_EPG")
+
+    @classmethod
     def get_ifcsverchok_shape_output(
         cls, node_tree: sverchok.node_tree.SverchCustomTree
     ) -> ifcsverchok.nodes.ifc.shape_builder.shape_output.SvSbShapeOutput:
         from ifcsverchok.nodes.ifc.shape_builder.shape_output import SvSbShapeOutput
 
-        return next(n for n in node_tree.nodes if isinstance(n, SvSbShapeOutput))
+        group_node = cls.get_ifcsverchok_group_node(node_tree)
+        subtree = group_node.node_tree
+        return next(n for n in subtree.nodes if isinstance(n, SvSbShapeOutput))
 
     @classmethod
     def update_mesh_from_sverchok(
@@ -2730,6 +2745,21 @@ class Model(bonsai.core.tool.Model):
                 cls.recreate_wall(element, wall)
 
     @classmethod
+    def regenerate_slab(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        element = tool.Ifc.get_entity(obj)
+        material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
+        DumbSlabPlaner().change_thickness(element, new_thickness)
+
+    @classmethod
+    def regenerate_profile(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.profile import DumbProfileRecalculator
+
+        DumbProfileRecalculator().recalculate([obj])
+
+    @classmethod
     def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:
         from ifcsverchok.ifcstore import SvIfcStore
         from sverchok.core.update_system import UpdateTree
@@ -2750,3 +2780,20 @@ class Model(bonsai.core.tool.Model):
             list(nodes_to_update)
         finally:
             SvIfcStore.use_bonsai_file = False
+
+    @classmethod
+    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        if is_closed:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            new_edges.append(
+                bm.edges.new((new_verts[-1], new_verts[0]))
+            )  # Add an edge between the last an first point to make it closed.
+        else:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        return bm

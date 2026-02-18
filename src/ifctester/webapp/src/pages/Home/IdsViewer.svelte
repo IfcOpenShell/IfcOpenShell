@@ -50,13 +50,7 @@
     function getSpecificationStatus(specIndex, auditData) {
         const spec = auditData.specifications[specIndex];
         if (!spec) return null;
-        
-        // If no applicable elements and no checks, and it passed, it's actually skipped
-        if (spec.total_applicable === 0 && spec.total_checks === 0 && spec.status === true) {
-            return 'skipped';
-        }
-        
-        return spec.status;
+        return spec.is_skipped ? 'skipped' : spec.status;
     }
 
     function getSpecificationStats(specIndex, auditData) {
@@ -79,11 +73,13 @@
         const status = getSpecificationStatus(specIndex, auditData);
         
         if (status === 'skipped') {
-            return "Skipped because no applicable entities were found and the cardinality is OPTIONAL or PROHIBITED";
+            return "Skipped because no applicable entities were found and the cardinality is OPTIONAL";
         }
         
         if (status === false) { // Failed
-            if (spec.total_applicable === 0) {
+            if (spec.cardinality === 'prohibited') {
+                return `Failed because ${spec.total_applicable} prohibited entities were found`;
+            } else if (spec.total_applicable === 0) {
                 return "Failed because no applicable entities were found but the cardinality is REQUIRED";
             } else {
                 const failedChecks = spec.total_checks - spec.total_checks_pass;
@@ -240,18 +236,29 @@
                             {#if "@description" in spec}
                                 <p class="spec-description">{spec["@description"]}</p>
                             {/if}
+                            <div class="spec-stats">
+                                {#if spec.applicability["@minOccurs"] === 1 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                    <span class="stat-item">Required</span>
+                                {/if}
+                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                    <span class="stat-item">Optional</span>
+                                {/if}
+                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 0}
+                                    <span class="stat-item">Prohibited</span>
+                                {/if}
+                                {#if auditReport}
+                                    {@const stats = getSpecificationStats(index, auditReport.data)}
+                                    {@const status = getSpecificationStatus(index, auditReport.data)}
+                                    {#if stats && spec.applicability["@maxOccurs"] !== 0 && status !== 'skipped'}
+                                        <span class="stat-item">Checks: {stats.checksPassed}/{stats.checksTotal}</span>
+                                        <span class="stat-item">Requirements: {stats.requirementsPassed}/{stats.requirements}</span>
+                                    {/if}
+                                {/if}
+                            </div>
                             {#if auditReport}
                                 {@const reason = getSpecificationReason(index, auditReport.data)}
                                 {#if reason}
                                     <p class="spec-reason">{reason}</p>
-                                {/if}
-                                {@const stats = getSpecificationStats(index, auditReport.data)}
-                                {@const status = getSpecificationStatus(index, auditReport.data)}
-                                {#if stats && status !== 'skipped'}
-                                    <div class="spec-stats">
-                                        <span class="stat-item">Checks: {stats.checksPassed}/{stats.checksTotal}</span>
-                                        <span class="stat-item">Requirements: {stats.requirementsPassed}/{stats.requirements}</span>
-                                    </div>
                                 {/if}
                             {/if}
                         </div>
@@ -292,9 +299,105 @@
                                         {/if}
                                     {/each}
                                 </div>
+
+                                {#if auditReport}
+                                    {@const status = getSpecificationStatus(index, auditReport.data)}
+                                    {#if ! status && spec.applicability["@maxOccurs"] == 0}
+                                        {@const specReport = auditReport.data.specifications[index]}
+                                        <div class="entity-tables">
+                                            {#if specReport.applicable_entities && specReport.applicable_entities.length > 0}
+                                                <div class="entity-table-section fail">
+                                                    <h4>Failed Elements ({specReport.applicable_entities.length})</h4>
+                                                    <div class="entity-table-container">
+                                                        <Tooltip.Provider>
+                                                            <table class="entity-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Class</th>
+                                                                    <th>PredefinedType</th>
+                                                                    <th>Name</th>
+                                                                    <th>Description</th>
+                                                                    <th>Warning</th>
+                                                                    <th>GlobalId</th>
+                                                                    <th>Tag</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {#each specReport.applicable_entities.slice(0, 10) as entity}
+                                                                    <tr>
+                                                                        <td>{entity.class}</td>
+                                                                        <td>{entity.predefined_type || '-'}</td>
+                                                                        <td>
+                                                                            <Tooltip.Root>
+                                                                                <Tooltip.Trigger>
+                                                                                    <div class="truncated-text">{entity.name || '-'}</div>
+                                                                                </Tooltip.Trigger>
+                                                                                <Tooltip.Content>
+                                                                                    <p>{entity.name || '-'}</p>
+                                                                                </Tooltip.Content>
+                                                                            </Tooltip.Root>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Tooltip.Root delayDuration={0}>
+                                                                                <Tooltip.Trigger>
+                                                                                    <div class="truncated-text">{entity.description || '-'}</div>
+                                                                                </Tooltip.Trigger>
+                                                                                <Tooltip.Content>
+                                                                                    <p>{entity.description || '-'}</p>
+                                                                                </Tooltip.Content>
+                                                                            </Tooltip.Root>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Tooltip.Root delayDuration={0}>
+                                                                                <Tooltip.Trigger>
+                                                                                    <div class="truncated-text">{entity.reason || '-'}</div>
+                                                                                </Tooltip.Trigger>
+                                                                                <Tooltip.Content>
+                                                                                    <p>{entity.reason || '-'}</p>
+                                                                                </Tooltip.Content>
+                                                                            </Tooltip.Root>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Tooltip.Root>
+                                                                                <Tooltip.Trigger>
+                                                                                    <div class="truncated-text">{entity.global_id || '-'}</div>
+                                                                                </Tooltip.Trigger>
+                                                                                <Tooltip.Content>
+                                                                                    <p>{entity.global_id || '-'}</p>
+                                                                                </Tooltip.Content>
+                                                                            </Tooltip.Root>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Tooltip.Root>
+                                                                                <Tooltip.Trigger>
+                                                                                    <div class="truncated-text">{entity.tag || '-'}</div>
+                                                                                </Tooltip.Trigger>
+                                                                                <Tooltip.Content>
+                                                                                    <p>{entity.tag || '-'}</p>
+                                                                                </Tooltip.Content>
+                                                                            </Tooltip.Root>
+                                                                        </td>
+                                                                    </tr>
+                                                                {/each}
+                                                                {#if specReport.applicable_entities.length > 10}
+                                                                    <tr class="more-row">
+                                                                        <td colspan="7">... {specReport.applicable_entities.length - 10} more failing elements not shown ...</td>
+                                                                    </tr>
+                                                                {/if}
+                                                            </tbody>
+                                                            </table>
+                                                        </Tooltip.Provider>
+                                                    </div>
+                                                </div>
+                                            {/if}
+                                        </div>
+
+                                    {/if}
+                                {/if}
                             </div>
 
                             <!-- Requirements Section -->
+                            {#if Array.isArray(spec.requirements) && spec.requirements.length > 0}
                             <div class="facet-section">
                                 <h3>Requirements</h3>
                                 
@@ -497,6 +600,7 @@
                                     {/each}
                                 </div>
                             </div>
+                            {/if}
                         </div>
                     {/if}
                 </div>

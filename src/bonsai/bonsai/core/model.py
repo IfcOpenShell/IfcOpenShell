@@ -17,15 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Literal
+
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import bonsai.tool as tool
-
     from mathutils import Vector
-    from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
+
+    import bonsai.tool as tool
+    from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
 
     AlignType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
     OffsetType = Literal["CENTER", "EXTERIOR", "INTERIOR"]

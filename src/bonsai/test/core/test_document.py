@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.document as subject
-from test.core.bootstrap import ifc, document
+from test.core.bootstrap import document, ifc
 
 
 class TestLoadProjectDocuments:

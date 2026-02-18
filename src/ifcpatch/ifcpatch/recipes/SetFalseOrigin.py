@@ -18,7 +18,6 @@
 
 import typing
 
-import ifcopenshell
 import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 

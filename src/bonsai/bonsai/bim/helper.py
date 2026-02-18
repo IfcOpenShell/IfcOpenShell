@@ -17,24 +17,31 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import importlib
-import bpy
 import json
+from collections.abc import Callable, Iterable, Sequence
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
+from ifcopenshell.util.doc import (
+    get_attribute_doc,
+    get_predefined_type_doc,
+    get_property_doc,
+)
+
 import bonsai.tool as tool
-from types import EllipsisType
-from typing import Optional, Any, Union, TYPE_CHECKING
-from collections.abc import Callable, Iterable, Sequence
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.search.prop import BIMFilterGroup
+    from bonsai.bim.prop import Attribute
 
     # ImportCallback return values:
     # - None  - property should be imported by default workflow

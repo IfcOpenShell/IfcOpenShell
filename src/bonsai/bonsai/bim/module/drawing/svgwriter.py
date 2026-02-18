@@ -16,33 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
 import os
 import re
-import bpy
-import math
-import bmesh
 import shutil
-from bpy.types import SplineBezierPoints, SplinePoints
-import mathutils
 import xml.etree.ElementTree as ET
-import svgwrite
-import svgwrite.container
-import svgwrite.text
+from collections.abc import Callable, Sequence
+from math import acos, atan, ceil, degrees, pi
+from pathlib import Path
+from typing import Optional, Self, Union
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.helper as helper
-from bonsai.bim.module.drawing.data import DrawingsData
-from bonsai.bim.module.drawing.data import DecoratorData
-from math import pi, ceil, atan, degrees, acos
-from mathutils import geometry, Vector
-from typing import Optional, Self, Union
-from collections.abc import Callable, Sequence
-from pathlib import Path
+import mathutils
+import svgwrite
+import svgwrite.container
+import svgwrite.text
+from bpy.types import SplineBezierPoints, SplinePoints
 from markdown_it import MarkdownIt
+from mathutils import Vector, geometry
+
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 
 
 class External(svgwrite.container.Group):
@@ -988,11 +989,6 @@ class SvgWriter:
         symbol = tool.Drawing.get_annotation_symbol(element)
         newline_at = tool.Drawing.get_newline_at(element)
 
-        # Get reverse_list and list_separator from EPset_Annotation
-        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
-        reverse_list = pset_data.get("Reverse_List", False)
-        list_separator = pset_data.get("List_Separator") or ", "
-
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
@@ -1009,7 +1005,7 @@ class SvgWriter:
                     # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(
-                            text_literal.Literal, product or element, reverse_list, list_separator
+                            text_literal.Literal, product or element
                         )
                         field.attrib["class"] = classes_str
 
@@ -1029,9 +1025,7 @@ class SvgWriter:
         line_number = 0
 
         for text_literal in text_literals:
-            text = tool.Drawing.replace_text_literal_variables(
-                text_literal.Literal, product or element, reverse_list, list_separator
-            )
+            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
 
             text_segments = parse_markdown_it(text)
 

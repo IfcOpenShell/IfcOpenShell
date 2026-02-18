@@ -1,12 +1,11 @@
-import json
 import os
 import zipfile
 from pathlib import Path
 
+from xsdata.models.datatype import XmlDateTime
+
 import bcf.v3.model as mdl
 from bcf.v3.bcfxml import BcfXml
-from bcf.v3.topic import TopicHandler
-from xsdata.models.datatype import XmlDateTime
 
 
 def test_doc_ref_internal() -> None:

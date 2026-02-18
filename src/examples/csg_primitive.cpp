@@ -27,9 +27,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
@@ -101,7 +101,7 @@ public:
 		return operate(OP_INTERSECT, p);
 	}
 
-	IfcSchema::IfcRepresentationItem* serialize(IfcHierarchyHelper& file) const {
+	IfcSchema::IfcRepresentationItem* serialize(IfcHierarchyHelper<IfcSchema>& file) const {
 		IfcSchema::IfcRepresentationItem* my;
 		if (op == OP_TERMINAL) {
 			IfcSchema::IfcAxis2Placement3D* place = file.addPlacement3d(x,y,z,zx,zy,zz,xx,xy,xz);
@@ -117,7 +117,7 @@ public:
 				my = new IfcSchema::IfcRightCircularCone(place, b, a);
 			}
 		} else {
-			IfcSchema::IfcBooleanOperator::IfcBooleanOperator o;
+			IfcSchema::IfcBooleanOperator o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION;
 			if (op == OP_ADD) {
 				o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION;
 			} else if (op == OP_SUBTRACT) {
@@ -125,7 +125,7 @@ public:
 			} else if (op == OP_INTERSECT) {
 				o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION;
 			}
-			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file), right->serialize(file));
+			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file)->as<IfcSchema::IfcBooleanOperand>(), right->serialize(file)->as<IfcSchema::IfcBooleanOperand>());
 		}
 		file.addEntity(my);
 		return my;
@@ -133,9 +133,9 @@ public:
 };
 
 int main(int argc, char** argv) {
-	const char filename[] = "IfcCsgPrimitive.ifc";
-	IfcHierarchyHelper file;
-	file.header().file_name().name(filename);
+	const char filename[] = "csg_primitive.ifc";
+	IfcHierarchyHelper<IfcSchema> file;
+	file.header().file_name()->setname(filename);
 
 	IfcSchema::IfcRepresentationItem* csg1 = Node::Box(8000.,6000.,3000.).subtract(
 		Node::Box(7600.,5600.,2800.).move(200.,200.,200.)
@@ -186,7 +186,8 @@ int main(int argc, char** argv) {
 		
 	product->setRepresentation(shape);
 
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef");
+	using namespace std::string_literals;
+	file.getSingle<IfcSchema::IfcProject>()->setName("csg_primitive"s);
 
 	std::ofstream f(filename);
 	f << file;

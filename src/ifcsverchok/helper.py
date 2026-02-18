@@ -75,7 +75,18 @@ def get_socket_value(
     *,
     value_type: Literal["SINGLE_VALUE", "CONTAINER", "FLATTEN"] = "SINGLE_VALUE",
 ) -> Any:
-    value = sockets[name].sv_get()
+    """
+    :param value_type:
+
+     - ``SINGLE_VALUE`` - e.g. ``[[x]]`` -> ``x``.
+
+     - ``CONTAINER`` - e.g. ``[ [ [x, y, z], [x,y, z] ] ]`` -> ``[ [x1, y1, z1], [x2, y2, z2] ]``.
+
+     - ``FLATTEN`` - e.g. `` [ [ [x1], [x2] ] ] `` -> `` [x1, x2] ``.
+    """
+    socket = sockets[name]
+    assert isinstance(socket, sverchok.core.sockets.SvSocketCommon)
+    value = socket.sv_get()
     if value_type == "FLATTEN":
         return flatten_data(value)
     value = value[0]
@@ -91,10 +102,19 @@ def set_socket_value(
     *,
     value_type: Literal["SINGLE_VALUE", "FINAL_VALUE"] = "SINGLE_VALUE",
 ) -> None:
+    """
+    :param value_type:
+
+        - ``SINGLE_VALUE`` - e.g. ``x`` -> ``[[x]]``.
+
+        - ``FINAL_VALUE`` - keep value as is.
+    """
+    socket = sockets[name]
+    assert isinstance(socket, sverchok.core.sockets.SvSocketCommon)
     if value_type == "SINGLE_VALUE":
-        sockets[name].sv_set([[value]])
+        socket.sv_set([[value]])
         return
-    sockets[name].sv_set(value)
+    socket.sv_set(value)
 
 
 def create_socket(

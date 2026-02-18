@@ -18,22 +18,23 @@
 
 import os
 import re
-import bpy
 import string
-import svgwrite
+from pathlib import Path
+from textwrap import wrap
+
+import bpy
 import openpyxl
 import openpyxl.cell  # Unnecessary, bug in typeshed.
 import openpyxl.utils  # Unnecessary, bug in typeshed.
-import bonsai.tool as tool
-
-from bonsai.bim.module.drawing.svgwriter import SvgWriter
+import svgwrite
 from odf.opendocument import load as load_ods
-from odf.table import Table, TableRow, TableColumn, TableCell
-from odf.text import P
 from odf.style import Style
-from textwrap import wrap
-from pathlib import Path
+from odf.table import Table, TableCell, TableColumn, TableRow
+from odf.text import P
+
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.drawing.svgwriter import SvgWriter
 
 DEBUG = False
 

@@ -17,8 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
+import collections
+import collections.abc
+import json
+from typing import TYPE_CHECKING, get_args
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
@@ -28,19 +33,14 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry as core
 import bonsai.core.root
-from bonsai.bim.module.model.window import create_bm_window, create_bm_box
+import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
-
-from mathutils import Vector, Matrix
-
-import json
-import collections
-import collections.abc
-from typing import get_args, TYPE_CHECKING
+from bonsai.bim.module.model.window import create_bm_box, create_bm_window
 
 if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import BIMDoorProperties

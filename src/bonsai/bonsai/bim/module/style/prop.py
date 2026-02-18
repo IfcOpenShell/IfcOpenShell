@@ -16,25 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import gettext
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.style.data import StylesData
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
 
-import gettext
-from typing import Literal, Union, TYPE_CHECKING, get_args
-
+import bonsai.tool as tool
+from bonsai.bim.module.style.data import StylesData
+from bonsai.bim.prop import Attribute, StrProperty
 
 _ = gettext.gettext
 

@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.grid
-import bonsai.tool as tool
+from bpy.props import FloatProperty, IntProperty
+from bpy.types import Operator
+from mathutils import Vector
+
 import bonsai.core.geometry
 import bonsai.core.root
-from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty
-from mathutils import Vector
-from typing import TYPE_CHECKING
+import bonsai.tool as tool
 
 
 def add_object(self: "BIM_OT_add_object", context: bpy.types.Context) -> None:

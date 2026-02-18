@@ -17,10 +17,9 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from sverchok.node_tree import SverchCustomTreeNode
-
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
+from sverchok.node_tree import SverchCustomTreeNode
 
 
 class SvIfcSbTest(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

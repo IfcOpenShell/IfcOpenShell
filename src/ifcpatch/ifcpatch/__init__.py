@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 import importlib
 import importlib.util
 import inspect

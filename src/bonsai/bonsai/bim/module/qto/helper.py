@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
-import bonsai.tool as tool
 from collections.abc import Callable
+
+import bmesh
+import bpy
+
+import bonsai.tool as tool
 
 
 def calculate_height(obj: bpy.types.Object) -> float:

@@ -20,7 +20,6 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-
 import ifcopenshell.util.file as subject
 import test.bootstrap
 

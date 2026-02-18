@@ -17,15 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, decorator
+
+from . import decorator, operator, prop, ui
 
 classes = (
     operator.AddPort,
+    operator.AddRelatedPortConnection,
     operator.AddSystem,
     operator.AddZone,
     operator.AssignSystem,
     operator.AssignUnassignFlowControl,
     operator.ConnectPort,
+    operator.CycleFlowDirection,
     operator.DisableEditingSystem,
     operator.DisableEditingZone,
     operator.DisableSystemEditingUI,
@@ -34,6 +37,7 @@ classes = (
     operator.EditZone,
     operator.EnableEditingSystem,
     operator.EnableEditingZone,
+    operator.EstablishPathDirection,
     operator.HidePorts,
     operator.LoadSystems,
     operator.LoadZones,

@@ -16,32 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import copy
+from math import atan2, degrees, pi, radians
+from typing import Any, Literal, Optional, Union
+
 import bmesh
-import mathutils.geometry
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.type
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.core.type
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
+import mathutils.geometry
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
+import bonsai.core.type
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, degrees, atan2
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, Any, Optional, Literal
-
 
 ProfileFrom2PointsReturn = Union[dict[str, Any], None]
 
@@ -190,8 +195,8 @@ class DumbProfileGenerator:
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
-            # Round to nearest 5 degrees
-            nearest_degree = (pi / 180) * 5
+            angle_snap = tool.Snap.get_angle_snap_value(bpy.context)
+            nearest_degree = radians(angle_snap)
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()
@@ -261,22 +266,6 @@ class DumbProfileRegenerator:
                     continue
                 results.extend(inverse.RelatedObjects)
         return results
-
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
-            return
-
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
-
-    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-        DumbProfileRecalculator().recalculate([obj])
 
 
 class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -1142,8 +1131,13 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
                         MEPGenerator().setup_ports(profile1["obj"])
                 else:
+                    connect_IfcFlowSegments = tool.Ifc.get_entity(profiles[0]["obj"]).is_a("IfcFlowSegment")
                     for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
                         DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                        if connect_IfcFlowSegments:
+                            bpy.ops.bim.mep_connect_elements(
+                                obj1_name=profile1["obj"].name, obj2_name=profile2["obj"].name
+                            )
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
@@ -1189,10 +1183,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
-
         self.handle_inserting_polyline(context, event)
-
-        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:

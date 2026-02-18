@@ -17,14 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import json
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
 
-import bpy
-import bmesh
-import json
+import bonsai.tool as tool
 
 # Below is the code for
 # prototype for geonodes modifier (similar to ifc sverchok modifier)

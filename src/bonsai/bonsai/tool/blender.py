@@ -17,53 +17,64 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
-import bpy
-import bmesh
+
+import contextlib
+import importlib
 import json
 import os
 import platform
 import subprocess
-import contextlib
+import sys
 import tempfile
 import traceback
+import types
+from collections.abc import Callable, Generator, Iterable, Sequence, Sized
+from datetime import datetime
+from functools import cache, lru_cache
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
+import ifcopenshell.api
+import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
-import ifcopenshell.api
-import ifcopenshell.util.element
+from mathutils import Matrix, Vector
+
+import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim
-import types
-import importlib
-from datetime import datetime
-from mathutils import Vector
-from pathlib import Path
-from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import (
-    Any,
-    Optional,
-    Union,
-    Literal,
-    TypeVar,
-    TYPE_CHECKING,
-    assert_never,
-)
-from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
-    from sun_position.properties import SunPosProperties
     import bpy.stub_internal.rna_enums as rna_enums
-    from bonsai.bim.prop import BIMProperties, BIMObjectProperties, BIMSnapProperties
+    from sun_position.properties import SunPosProperties
+
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
-    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.constraint.prop import (
+        BIMConstraintProperties,
+        BIMObjectConstraintProperties,
+    )
     from bonsai.bim.module.covetool.prop import CoveToolProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
     from bonsai.bim.module.fm.prop import BIMFMProperties
-    from bonsai.bim.module.light.prop import BIMSolarProperties, RadianceExporterProperties
+    from bonsai.bim.module.light.prop import (
+        BIMSolarProperties,
+        RadianceExporterProperties,
+    )
+    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
 
     T = TypeVar("T")
 
@@ -708,13 +719,18 @@ class Blender(bonsai.core.tool.Blender):
         if active_object:
             active_object.select_set(True)
 
+    class ObjectsSelectionArgs(NamedTuple):
+        context: bpy.types.Context
+        active_object: bpy.types.Object | None
+        selected_objects: list[bpy.types.Object]
+
     @classmethod
     def validate_object_selection(
         cls,
         context: bpy.types.Context,
         active_object: Union[bpy.types.Object, None] = None,
         selected_objects: Sequence[bpy.types.Object] = (),
-    ) -> tuple[bpy.types.Context, Union[bpy.types.Object, None], list[bpy.types.Object]]:
+    ) -> ObjectsSelectionArgs:
         """Validate object selection and return only valid objects.
 
         Can be used before ``set_objects_selection`` to avoid errors
@@ -724,12 +740,15 @@ class Blender(bonsai.core.tool.Blender):
         assert context.view_layer
         view_layer_objects = set(context.view_layer.objects)
 
-        new_selected_objects = [o for o in selected_objects if cls.is_valid_data_block(o) and o in view_layer_objects]
+        def is_selectable(obj: bpy.types.Object) -> bool:
+            return cls.is_valid_data_block(obj) and obj in view_layer_objects
 
-        if active_object and not cls.is_valid_data_block(active_object):
+        new_selected_objects = [o for o in selected_objects if is_selectable(o)]
+
+        if active_object and not is_selectable(active_object):
             active_object = None
 
-        return context, active_object, new_selected_objects
+        return cls.ObjectsSelectionArgs(context, active_object, new_selected_objects)
 
     @classmethod
     def clear_objects_selection(cls) -> None:
@@ -1223,7 +1242,8 @@ class Blender(bonsai.core.tool.Blender):
 
             @classmethod
             def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                parent_obj = tool.Ifc.get_object(parent_element)
+                if not (parent_obj := tool.Ifc.get_object(parent_element)):
+                    return  # Filtered out, arrayed void, etc
                 assert isinstance(parent_obj, bpy.types.Object)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
@@ -1348,11 +1368,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1380,11 +1400,11 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def unregister_toolbar(cls):
-        import bonsai.bim.module.model.workspace as ws_model
+        import bonsai.bim.module.covering.workspace as ws_covering
         import bonsai.bim.module.drawing.workspace as ws_drawing
+        import bonsai.bim.module.model.workspace as ws_model
         import bonsai.bim.module.spatial.workspace as ws_spatial
         import bonsai.bim.module.structural.workspace as ws_structural
-        import bonsai.bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1762,8 +1782,8 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     @lru_cache
     def get_list_of_tools(cls) -> tuple[str, ...]:
-        from bonsai.bim.module.model.workspace import BimTool
         from bonsai.bim.module.drawing.workspace import AnnotationTool
+        from bonsai.bim.module.model.workspace import BimTool
 
         return tuple(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool, AnnotationTool]))
 
@@ -2116,3 +2136,42 @@ class Blender(bonsai.core.tool.Blender):
         if cls.BLENDER_5:
             return "BLENDER_EEVEE"
         return "BLENDER_EEVEE_NEXT"
+
+    @classmethod
+    def np_frombuffer_legacy(cls, bytedata: bytes, n: int) -> npt.NDArray[np.float32]:
+        """
+        Read ``n`` float values from ``bytedata``, regardless if they are stored as ``float32`` or ``float64``.
+        Needed to support .blend files saved in Blender <5.0.0.
+        Also allows to work with .blend files from 5.0.0+ in older Blender versions.
+
+        In ``bpy.app.version >= 5.0.0`` ``mathutils`` transitioned to use ``float32`` buffer type,
+        while in previous version they were using ``float64``.
+        In some cases we are storing raw bytes (e.g. object transforms cheksums), so old .blend files
+        might still have ``float64`` data stored.
+
+        See https://projects.blender.org/blender/blender/issues/149283
+        """
+        if len(bytedata) == (n * 2):
+            return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
+        return np.frombuffer(bytedata, dtype=np.float32)
+
+    @classmethod
+    def np_array_legacy(cls, mathutils_type: Union[Vector, Matrix]) -> npt.NDArray[np.float32]:
+        """
+        Converts ``mathutils`` types to ``np.float32`` arrays, regardless of Blender version.
+
+        See ``np_frombuffer_legacy`` for more details.
+        """
+        if cls.BLENDER_5:
+            return np.array(mathutils_type)
+        return np.array(mathutils_type, dtype=np.float32)
+
+    @classmethod
+    def get_selected_files(
+        cls, directory: str, files: bpy.types.OperatorFileListElement, use_relative_path=False
+    ) -> list[Path]:
+        return [
+            tool.Ifc.get_uri(Path(directory) / f.name, use_relative_path=use_relative_path)
+            for f in files
+            if (Path(directory) / f.name).is_file()
+        ]

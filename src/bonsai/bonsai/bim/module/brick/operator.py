@@ -17,12 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell.api
-import bonsai.tool as tool
-import bonsai.core.brick as core
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 import bonsai.bim.handler
-from bpy_extras.io_utils import ImportHelper, ExportHelper
+import bonsai.core.brick as core
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 

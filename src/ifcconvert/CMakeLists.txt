@@ -15,6 +15,7 @@ target_link_libraries(
         IfcGeom
         IfcParse
         Serializers
+        ${kernel_libraries}
         ${OpenCASCADE_LIBRARIES}
         ${Boost_LIBRARIES}
         ${HDF5_LIBRARIES}

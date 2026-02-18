@@ -18,8 +18,9 @@
 
 
 import bpy
-import bonsai.tool as tool
+
 import bonsai.core.spatial as core
+import bonsai.tool as tool
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):

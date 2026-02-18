@@ -1,7 +1,7 @@
 """BCF XML V3 Documents handler."""
 
 import zipfile
-from typing import Any, Optional
+from typing import Optional
 
 import bcf.v3.model as mdl
 from bcf.inmemory_zipfile import ZipFileInterface

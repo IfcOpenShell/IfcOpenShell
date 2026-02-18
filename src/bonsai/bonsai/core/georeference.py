@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
 def add_georeferencing(georeference: type[tool.Georeference]) -> None:
     georeference.add_georeferencing()
+    georeference.set_model_origin()
 
 
 def enable_editing_georeferencing(georeference: type[tool.Georeference]) -> None:
@@ -35,8 +38,9 @@ def enable_editing_georeferencing(georeference: type[tool.Georeference]) -> None
     georeference.enable_editing()
 
 
-def remove_georeferencing(ifc: type[tool.Ifc]) -> None:
+def remove_georeferencing(ifc: type[tool.Ifc], georeference: type[tool.Georeference]) -> None:
     ifc.run("georeference.remove_georeferencing")
+    georeference.set_model_origin()
 
 
 def disable_editing_georeferencing(georeference: type[tool.Georeference]) -> None:

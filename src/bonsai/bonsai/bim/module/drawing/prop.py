@@ -16,39 +16,45 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
 import enum
+import json
+import os
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.decoration as decoration
-from mathutils import Matrix
-from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData, ElementValuesData
-from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from pathlib import Path
-from bonsai.bim.prop import Attribute, StrProperty
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    BoolVectorProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
-    BoolVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, get_args, Union
-from collections.abc import Callable
+from bpy.types import PropertyGroup
+from mathutils import Matrix
 
+import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.core.drawing as core
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import (
+    AnnotationData,
+    DecoratorData,
+    DrawingsData,
+    ElementValuesData,
+    SheetsData,
+)
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
+from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
 
 diagram_scales_enum = []
 
@@ -866,22 +872,20 @@ class LiteralProps(PropertyGroup):
         category_for_adding: str
 
 
-class LiteralApplySettings(PropertyGroup):
-    literal_index: IntProperty(name="Literal Index")
-    apply_text_to_all: BoolProperty(name="Apply Text to All", default=False)
-    apply_path_to_all: BoolProperty(name="Apply Path to All", default=False)
-    apply_box_alignment_to_all: BoolProperty(name="Apply Box Alignment to All", default=False)
-
-    if TYPE_CHECKING:
-        literal_index: int
-        apply_text_to_all: bool
-        apply_path_to_all: bool
-        apply_box_alignment_to_all: bool
-
-
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
+    newline_at: IntProperty(name="Newline At")
+    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Symbol",
+        description="Symbol from symbols.svg to use for this text.",
+        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
+        default="NO SYMBOL",
+    )
+    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Custom Symbol",
+        description="Non-default symbol to use for this text.",
+    )
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -893,52 +897,34 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
-    newline_at: IntProperty(name="Newline At")
-    reverse_list: BoolProperty(name="Reverse List", description="Reverses the order of any list.", default=False)
-    list_separator: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="List Separator",
-        description="Text used to separate lists. Uses a comma (, ) if empty.",
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
     )
-    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
-        name="Symbol",
-        description="Symbol from symbols.svg to use for this text.",
-        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
-        default="NO SYMBOL",
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
     )
-    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="Custom Symbol",
-        description="Non-default symbol to use for this text.",
-    )
-
-    apply_font_size_to_all: BoolProperty(
-        name="Apply Font Size to All", description="Apply font size changes to all selected text objects", default=False
-    )
-    apply_newline_to_all: BoolProperty(
-        name="Apply Newline to All", description="Apply newline changes to all selected text objects", default=False
-    )
-
-    literal_apply_settings: CollectionProperty(name="Literal Apply Settings", type=LiteralApplySettings)
-
-    def ensure_literal_apply_settings(self, literal_count: int):
-        """Ensure we have apply settings for all literals"""
-        while len(self.literal_apply_settings) > literal_count:
-            self.literal_apply_settings.remove(len(self.literal_apply_settings) - 1)
-
-        while len(self.literal_apply_settings) < literal_count:
-            setting = self.literal_apply_settings.add()
-            setting.literal_index = len(self.literal_apply_settings) - 1
 
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
-        font_size: str
         newline_at: int
-        reverse_list: bool
-        list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
-        apply_font_size_to_all: bool
-        apply_newline_to_all: bool
+        font_size: str
+        align_horizontal: str
+        align_vertical: str
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":
@@ -973,8 +959,6 @@ class BIMTextProperties(PropertyGroup):
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
             "Symbol": self.get_symbol(),
-            "Reverse_List": self.reverse_list,
-            "List_Separator": self.list_separator or ", ",
         }
         return text_data
 

@@ -3,12 +3,6 @@ Feature: Drawing
 
 Scenario: Duplicate drawing
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I look at the "Class" panel
-    And I set the "Products" property to "IfcElement"
-    And I set the "Class" property to "IfcWall"
-    And I click "Assign IFC Class"
     And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
@@ -315,3 +309,10 @@ Scenario: Create sheet - with a drawing added to it
     And I click "IMAGE_PLANE"
     When I click "OUTPUT"
     Then the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should contain "IfcWall"
+
+Scenario: Add reference image
+    Given an empty IFC project
+    And I save IFC project
+    When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg')"
+    Then the object "IfcAnnotation/image" exists
+    And the object "IfcAnnotation/image" dimensions are "1.0,0.565,0."

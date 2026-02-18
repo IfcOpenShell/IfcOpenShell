@@ -24,7 +24,6 @@ from pathlib import Path
 from xml.dom.minidom import parseString
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry

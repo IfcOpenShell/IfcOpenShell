@@ -17,11 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
-import bonsai.tool as tool
 from natsort import natsorted
+
+import bonsai.tool as tool
 
 
 def refresh():

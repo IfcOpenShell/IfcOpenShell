@@ -18,13 +18,15 @@
 
 
 import os
+from functools import partial
+
 import bpy
 import ifcopenshell
+from bpy.types import WorkSpaceTool
+
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import AuthoringData
-from bpy.types import WorkSpaceTool
-from functools import partial
 
 
 class CoveringTool(WorkSpaceTool):

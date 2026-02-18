@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
+import bpy
+
 import bonsai.bim.handler
-import bonsai.tool as tool
 import bonsai.core.document as core
+import bonsai.tool as tool
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
 
@@ -264,8 +266,8 @@ class OpenIFCDocument(bpy.types.Operator):
     uri: bpy.props.StringProperty(name="URI")
 
     def execute(self, context):
-        import subprocess
         import os
+        import subprocess
 
         if not self.uri or not self.uri.lower().startswith("file://"):
             self.report({"ERROR"}, "Only local file:// URIs are supported")

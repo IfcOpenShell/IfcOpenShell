@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.pset
-import ifcopenshell.geom
 import ifcopenshell.util.element
 
 import ifcpatch

@@ -17,14 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
-    import bonsai.tool as tool
-    from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
     from ifcopenshell.api.owner.add_actor import ACTOR_TYPE
+    from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
+
+    import bonsai.tool as tool
 
 
 def add_person(ifc: type[tool.Ifc]) -> ifcopenshell.entity_instance:

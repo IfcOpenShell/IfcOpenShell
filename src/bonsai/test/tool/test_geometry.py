@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import numpy as np
+from typing import Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import numpy as np
+from mathutils import Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from mathutils import Vector
-from test.bim.bootstrap import NewFile
 from bonsai.tool.geometry import Geometry as subject
-from typing import Union
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -321,8 +323,8 @@ class TestRecordObjectPosition(NewFile):
         obj = bpy.data.objects.new("Object", None)
         props = tool.Blender.get_object_bim_props(obj)
         subject.record_object_position(obj)
-        assert props.location_checksum == repr(np.array(obj.matrix_world.translation, dtype=np.float32).tobytes())
-        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3(), dtype=np.float32).tobytes())
+        assert props.location_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes())
+        assert props.rotation_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
 
 class TestRemoveConnection(NewFile):

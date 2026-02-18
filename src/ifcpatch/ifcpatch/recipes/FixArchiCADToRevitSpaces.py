@@ -18,8 +18,6 @@
 
 import logging
 
-import ifcopenshell
-
 
 class Patcher:
     def __init__(self, file: None, logger: logging.Logger, filepath: str):
@@ -70,7 +68,6 @@ class Patcher:
     def patch(self) -> None:
         import bonsai.tool as tool
         import bpy
-        import ifcopenshell
         import ifcopenshell.util.element
         from mathutils import Matrix, Vector
 

@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
-import tempfile
-import bmesh
 import logging
-import numpy as np
-import ifcopenshell
-import bonsai.tool as tool
-from pathlib import Path
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+import os
+import tempfile
 from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import bmesh
+import bpy
+import ifcopenshell
+import numpy as np
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.clash.decorator import ClashDecorator
-from typing import TYPE_CHECKING
 
 
 class ExportClashSets(bpy.types.Operator, ExportHelper):

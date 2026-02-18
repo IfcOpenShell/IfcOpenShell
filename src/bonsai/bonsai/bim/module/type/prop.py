@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.type
-from bonsai.bim.module.type.data import TypeData
-from bonsai.bim.prop import Attribute
-import bonsai.tool as tool
-from typing import TYPE_CHECKING, Union
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.type.data import TypeData
+from bonsai.bim.prop import Attribute
 
 
 def get_relating_type_class(self: "BIMTypeProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

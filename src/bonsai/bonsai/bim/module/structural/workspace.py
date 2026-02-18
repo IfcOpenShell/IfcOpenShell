@@ -18,10 +18,12 @@
 
 
 import os
-import bpy
-import bonsai.tool as tool
-from bpy.types import WorkSpaceTool
 from functools import partial
+
+import bpy
+from bpy.types import WorkSpaceTool
+
+import bonsai.tool as tool
 
 
 class StructuralTool(WorkSpaceTool):

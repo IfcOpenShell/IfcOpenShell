@@ -22,7 +22,6 @@ import locale
 import re
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date

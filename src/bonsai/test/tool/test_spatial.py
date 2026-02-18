@@ -16,17 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import numpy as np
+from mathutils import Matrix
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.spatial import Spatial as subject
 from test.bim.bootstrap import NewFile
-from mathutils import Matrix
 
 
 class TestImplementsTool(NewFile):
@@ -42,9 +43,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcWall()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is True
+        assert subject.can_contain(structure, element) is True
 
     def test_a_spatial_structure_element_can_contain_an_element_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
@@ -53,9 +52,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcWall()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is True
+        assert subject.can_contain(structure, element) is True
 
     def test_a_spatial_zone_element_cannot_contain_an_element(self):
         ifc = ifcopenshell.file()
@@ -64,14 +61,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcWall()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is False
-
-    def test_unlinked_elements_cannot_contain_anything(self):
-        structure_obj = bpy.data.objects.new("Object", None)
-        element_obj = bpy.data.objects.new("Object", None)
-        assert subject.can_contain(structure_obj, element_obj) is False
+        assert subject.can_contain(structure, element) is False
 
     def test_a_non_spatial_element_cannot_contain_anything(self):
         ifc = ifcopenshell.file()
@@ -80,9 +70,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcWall()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is False
+        assert subject.can_contain(structure, element) is False
 
     def test_a_non_element_cannot_be_contained(self):
         ifc = ifcopenshell.file()
@@ -91,9 +79,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcTask()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is False
+        assert subject.can_contain(structure, element) is False
 
     def test_other_non_elements_that_have_a_contained_in_structure_attribute_can_be_contained(self):
         ifc = ifcopenshell.file()
@@ -102,9 +88,7 @@ class TestCanContain(NewFile):
         structure_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(structure, structure_obj)
         element = ifc.createIfcGrid()
-        element_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure, element_obj) is True
+        assert subject.can_contain(structure, element) is True
 
 
 class TestCanReference(NewFile):
