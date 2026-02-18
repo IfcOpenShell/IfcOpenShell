@@ -91,6 +91,9 @@ Used environment variables:
 #                                                                             #
 #     on OS X El Capitan with homebrew:                                       #
 #          $ brew install git bison autoconf automake libffi cmake            #
+#          $ # `bison` shipped with Mac is too old for swig build,            #
+#          $ # so we use `brew`.                                              #
+#          $ export PATH=$(brew --prefix bison)/bin:$PATH                     #
 #                                                                             #
 #     on RHEL-related distros:                                                #
 #          $ dnf install git gcc gcc-c++ autoconf bison make cmake            #
