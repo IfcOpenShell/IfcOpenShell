@@ -40,6 +40,8 @@ jobs:
           # preinstalled: xz, cmake
           brew install git bison autoconf automake libffi findutils
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+          # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
       - name: Install aws cli
         run: |
