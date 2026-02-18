@@ -3805,26 +3805,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
-
-    def get_existing_reference_images(self, context):
-        ifc_file = tool.Ifc.get()
-
-        items = [
-            (
-                f"IfcAnnotation/{obj.Name}",
-                f"{obj.Name} ({obj.GlobalId})",
-                f"Update existing reference image: {obj.Name}",
-            )
-            for obj in ifcopenshell.util.selector.filter_elements(ifc_file, "IfcAnnotation, PredefinedType=IMAGE")
-        ]
-
-        return [("NEW", "Create New", "Create a new reference image object"), *items]
-
-    existing_object_by_name: bpy.props.EnumProperty(
-        name="",
-        description="Select an existing reference image object to update, or create a new one",
-        items=get_existing_reference_images,
-    )
     x_length: bpy.props.FloatProperty(
         name="X Length",
         description="Width of the reference image",
@@ -3853,7 +3833,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     def invoke(self, context, event):
         self._last_filepath = ""
-        self.existing_object_by_name = "NEW"
         return super().invoke(context, event)
 
     def check(self, context):
@@ -3884,20 +3863,12 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     def draw(self, context):
         layout = self.layout
-
-        # File path settings
         if Path(tool.Ifc.get_path()).is_file():
             layout.prop(self, "use_relative_path")
         else:
             self.use_relative_path = False
-            layout.label(text="Save the .ifc file first ")
-            layout.label(text="to use relative paths.")
-        layout.prop(self, "existing_object_by_name")
-
-        if self.existing_object_by_name == "NEW":
-            layout.separator()
-            layout.prop(self, "x_length")
-            layout.prop(self, "y_length")
+        layout.prop(self, "x_length")
+        layout.prop(self, "y_length")
 
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
@@ -3925,99 +3896,65 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             tool.Blender.apply_bmesh(mesh, bm)
             tool.Loader.load_generated_uv_map(mesh)
 
-        if self.existing_object_by_name != "NEW":
-            obj = bpy.data.objects[self.existing_object_by_name]
-            element = tool.Ifc.get_entity(obj)
-            representation = element.Representation.Representations[0] if element.Representation else None
+        mesh = bpy.data.meshes.new(image_filepath.stem)
+        bm_add_image_plane(mesh)
+        obj = bpy.data.objects.new(image_filepath.stem, mesh)
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
+        )
 
-            tool.Blender.set_active_object(obj)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        bm = tool.Blender.get_bmesh_for_mesh(mesh)
+        verts = [v.co / unit_scale for v in bm.verts]
+        faces = [[v.index for v in p.verts] for p in bm.faces]
+        item = builder.mesh(verts, faces)
+        bm.free()
 
-            material = obj.data.materials[0]
-            style = tool.Ifc.get_entity(material)
+        ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = builder.get_representation(ifc_context, [item])
+        ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
 
-            texture_style = next(s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures"))
-            existing_texture = texture_style.Textures[0]
-            if tool.Ifc.get_schema() == "IFC2X3":
-                existing_texture.UrlReference = image_filepath.as_posix()
-            else:
-                existing_texture.URLReference = image_filepath.as_posix()
+        style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
+        ifcopenshell.api.style.assign_representation_styles(
+            ifc_file, shape_representation=representation, styles=[style]
+        )
 
-            tool.Style.set_use_nodes(material, True)
-            image_node = next(node for node in material.node_tree.nodes if node.type == "TEX_IMAGE")
-            image_node.image = image
-            image.reload()
+        # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
+        # we don't support IfcSurfaceStyleWithTextures without Rendering yet
+        shading_attributes = {
+            "SurfaceColour": {"Red": 1.0, "Green": 1.0, "Blue": 1.0},
+            "Transparency": 0.0,
+            "ReflectanceMethod": "NOTDEFINED",
+        }
+        ifcopenshell.api.style.add_surface_style(
+            tool.Ifc.get(), style=style, ifc_class="IfcSurfaceStyleRendering", attributes=shading_attributes
+        )
+
+        if tool.Ifc.get_schema() == "IFC2X3":
+            texture = ifc_file.create_entity(
+                "IfcImageTexture",
+                RepeatS=True,
+                RepeatT=True,
+                TextureType="TEXTURE",
+                UrlReference=image_filepath.as_posix(),
+            )
         else:
-            mesh = bpy.data.meshes.new(image_filepath.stem)
-            bm_add_image_plane(mesh)
-            obj = bpy.data.objects.new(image_filepath.stem, mesh)
-            element = tool.Drawing.run_root_assign_class(
-                obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
-            )
+            texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+            ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
 
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            bm = tool.Blender.get_bmesh_for_mesh(mesh)
-            verts = [v.co / unit_scale for v in bm.verts]
-            faces = [[v.index for v in p.verts] for p in bm.faces]
-            item = builder.mesh(verts, faces)
-            bm.free()
+        textures = [texture]
+        ifcopenshell.api.style.add_surface_style(
+            ifc_file, style=style, ifc_class="IfcSurfaceStyleWithTextures", attributes={"Textures": textures}
+        )
 
-            ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-            representation = builder.get_representation(ifc_context, [item])
-            ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.create_style(style)
 
-            style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
-            ifcopenshell.api.style.assign_representation_styles(
-                ifc_file, shape_representation=representation, styles=[style]
-            )
-
-            # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
-            # we don't support IfcSurfaceStyleWithTextures without Rendering yet
-            shading_attributes = {
-                "SurfaceColour": {
-                    "Red": 1.0,
-                    "Green": 1.0,
-                    "Blue": 1.0,
-                },
-                "Transparency": 0.0,
-                "ReflectanceMethod": "NOTDEFINED",
-            }
-            ifcopenshell.api.style.add_surface_style(
-                tool.Ifc.get(),
-                style=style,
-                ifc_class="IfcSurfaceStyleRendering",
-                attributes=shading_attributes,
-            )
-
-            if tool.Ifc.get_schema() == "IFC2X3":
-                texture = ifc_file.create_entity(
-                    "IfcImageTexture",
-                    RepeatS=True,
-                    RepeatT=True,
-                    TextureType="TEXTURE",
-                    UrlReference=image_filepath.as_posix(),
-                )
-            else:
-                texture = ifc_file.create_entity(
-                    "IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix()
-                )
-                ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
-
-            textures = [texture]
-            ifcopenshell.api.style.add_surface_style(
-                ifc_file,
-                style=style,
-                ifc_class="IfcSurfaceStyleWithTextures",
-                attributes={"Textures": textures},
-            )
-
-            logger = logging.getLogger("ImportIFC")
-            ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-            ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
-            ifc_importer.file = tool.Ifc.get()
-            ifc_importer.create_style(style)
-
-            bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
