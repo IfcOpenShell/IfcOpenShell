@@ -179,7 +179,8 @@ class Loader(bonsai.core.tool.Loader):
     def surface_texture_to_dict(cls, surface_texture):
         if isinstance(surface_texture, dict):
             return surface_texture
-        mappings = surface_texture.IsMappedBy or []
+        # IsMappedBy is an IFC4+ inverse attribute, not available in IFC2X3.
+        mappings = getattr(surface_texture, "IsMappedBy", None) or []
         surface_texture = surface_texture.get_info()
         uv_mode = None
         if mappings:
@@ -188,7 +189,7 @@ class Loader(bonsai.core.tool.Loader):
                 uv_mode = "Generated"
             elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
                 uv_mode = "Camera"
-        surface_texture["uv_mode"] = uv_mode or "UV"
+        surface_texture["uv_mode"] = uv_mode or "Generated"
         return surface_texture
 
     @classmethod
@@ -286,6 +287,9 @@ class Loader(bonsai.core.tool.Loader):
 
         for texture in textures:
             mode = texture.get("Mode", None)
+            # IFC2X3 IfcImageTexture has no Mode attribute; default to DIFFUSE.
+            if mode is None and texture["type"] == "IfcImageTexture":
+                mode = "DIFFUSE"
             node = None
 
             image_url = None
@@ -293,7 +297,8 @@ class Loader(bonsai.core.tool.Loader):
             def get_image() -> Union[bpy.types.Image, None]:
                 # TODO: orphaned textures after shader recreated?
                 if texture["type"] == "IfcImageTexture":
-                    original_image_url = texture["URLReference"]
+                    # IFC2X3 uses UrlReference, IFC4+ uses URLReference.
+                    original_image_url = texture.get("URLReference") or texture.get("UrlReference", "")
                     is_relative = not os.path.isabs(original_image_url)
                     nonlocal image_url
                     image_url = Path(original_image_url)
