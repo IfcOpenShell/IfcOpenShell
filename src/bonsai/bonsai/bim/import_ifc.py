@@ -117,7 +117,6 @@ class MaterialCreator:
         for texture in texture_style.Textures or []:
             if coords := getattr(texture, "IsMappedBy", None):
                 coords = coords[0]
-                # IfcTextureCoordinateGenerator handled in the style shader graph
                 if coords.is_a("IfcIndexedTextureMap"):
                     return coords
                 # TODO: support IfcTextureMap
@@ -135,6 +134,10 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
+            elif tool.Style.get_texture_style(material):
+                # No explicit coordinate mapping (e.g. IFC4 COORD relies on
+                # generated UVs). Bake XY→UV so Solid Texture mode works.
+                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
