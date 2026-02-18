@@ -150,7 +150,6 @@ OCCT_VERSION = "7.8.1"
 BOOST_VERSION = "1.86.0"
 EIGEN_VERSION = "3.4.0"
 PCRE_VERSION = "8.41"
-PCRE2_VERSION = "10.32"
 LIBXML2_VERSION = "2.13.8"
 SWIG_VERSION = "4.2.1"
 OPENCOLLADA_VERSION = "v1.6.68"
@@ -349,13 +348,12 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
     "IfcOpenShell-Python": ("python", "swig", "IfcGeom"),
-    "swig": ("pcre2",),
+    "swig": (),
     "boost": (),
     "libxml2": (),
     "python": (),
     "occ": (),
     "pcre": (),
-    "pcre2": (),
     "json": (),
     "hdf5": (),
     "cgal": (),
@@ -422,7 +420,6 @@ if WASM:
         "opencollada",
         "swig",
         "pcre",
-        "pcre2",
         "IfcGeom",
         "IfcConvert",
         "IfcGeomServer",
@@ -551,14 +548,14 @@ BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BO
 # Helper functions
 
 
-def run_autoconf(arg1: str, configure_args: "list[str]", cwd: str) -> None:
+def run_autoconf(dependency_name: str, configure_args: "list[str]", cwd: str) -> None:
     configure_path = os.path.realpath(os.path.join(cwd, "..", "configure"))
     if not os.path.exists(configure_path):
         run(
             [bash, "./autogen.sh"], cwd=os.path.realpath(os.path.join(cwd, ".."))
         )  # only run autogen.sh in the directory it is located and use cwd to achieve that in order to not mess up things
     # Using `sh` over `bash` fixes issues with building swig
-    prefix = os.path.realpath(f"{DEPS_DIR}/install/{arg1}")
+    prefix = os.path.realpath(f"{DEPS_DIR}/install/{dependency_name}")
 
     wasm = []
     if "wasm" in flags:
@@ -937,20 +934,15 @@ if "pcre" in targets:
         restore_env("CC", OLD_CC)
         restore_env("CXX", OLD_CXX)
 
-if "pcre2" in targets:
-    build_dependency(
-        name=f"pcre2-{PCRE2_VERSION}",
-        mode="autoconf",
-        build_tool_args=[DISABLE_FLAG],
-        download_url=f"https://downloads.sourceforge.net/project/pcre/pcre2/{PCRE2_VERSION}/",
-        download_name=f"pcre2-{PCRE2_VERSION}.tar.bz2",
-    )
-
 if "swig" in targets:
+    dependency_name = f"swig-{SWIG_VERSION}"
     build_dependency(
-        name=f"swig-{SWIG_VERSION}",
-        mode="autoconf",
-        build_tool_args=["--disable-ccache", f"--with-pcre2-prefix={DEPS_DIR}/install/pcre2-{PCRE2_VERSION}"],
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            "-DWITH_PCRE=OFF",
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+        ],
         download_url="https://github.com/swig/swig.git",
         download_name="swig",
         download_tool=download_tool_git,
