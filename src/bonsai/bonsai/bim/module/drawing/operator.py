@@ -3985,16 +3985,10 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             mesh = bpy.data.meshes.new(image_filepath.stem)
             bm_add_image_plane(mesh)
             obj = bpy.data.objects.new(image_filepath.stem, mesh)
-            tool.Drawing.run_root_assign_class(
-                obj=obj,
-                ifc_class="IfcAnnotation",
-                predefined_type="IMAGE",
-                should_add_representation=False,
-                context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
-                ifc_representation_class=None,
+            element = tool.Drawing.run_root_assign_class(
+                obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
             )
             
-            element = tool.Ifc.get_entity(obj)
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             
