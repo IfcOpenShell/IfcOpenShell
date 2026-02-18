@@ -3806,14 +3806,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
 
-    override_existing_image: bpy.props.BoolProperty(
-        name="Override Existing Image",
-        default=True,
-        description=(
-            "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
-        ),
-    )
-
     def get_existing_reference_images(self, context):
         ifc_file = tool.Ifc.get()
 
@@ -3900,7 +3892,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             self.use_relative_path = False
             layout.label(text="Save the .ifc file first ")
             layout.label(text="to use relative paths.")
-        layout.prop(self, "override_existing_image")
         layout.prop(self, "existing_object_by_name")
 
         if self.existing_object_by_name == "NEW":
@@ -3921,10 +3912,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
 
-        if self.override_existing_image:
-            params = {"check_existing": True, "force_reload": True}
-        else:
-            params = {"check_existing": False}
+        params = {"check_existing": False}
         image = load_image(abs_path.name, str(abs_path.parent), **params)
 
         def bm_add_image_plane(mesh):
