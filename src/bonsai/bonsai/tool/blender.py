@@ -2165,3 +2165,13 @@ class Blender(bonsai.core.tool.Blender):
         if cls.BLENDER_5:
             return np.array(mathutils_type)
         return np.array(mathutils_type, dtype=np.float32)
+
+    @classmethod
+    def get_selected_files(
+        cls, directory: str, files: bpy.types.OperatorFileListElement, use_relative_path=False
+    ) -> list[Path]:
+        return [
+            tool.Ifc.get_uri(Path(directory) / f.name, use_relative_path=use_relative_path)
+            for f in files
+            if (Path(directory) / f.name).is_file()
+        ]

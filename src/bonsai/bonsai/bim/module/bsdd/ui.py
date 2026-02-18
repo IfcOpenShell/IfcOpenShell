@@ -24,6 +24,7 @@ import bpy
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
+import bsdd
 from bonsai.bim.module.bsdd.data import BSDDData
 
 if TYPE_CHECKING:
@@ -82,7 +83,6 @@ class BIM_PT_bsdd(Panel):
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_dictionaries")
-
 
 class BIM_UL_bsdd_dictionaries(UIList):
     def draw_item(

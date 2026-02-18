@@ -928,7 +928,7 @@ class CreateDrawing(bpy.types.Operator):
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.name] = self.get_linked_file(link)
+            files[link.filepath] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1374,7 +1374,7 @@ class CreateDrawing(bpy.types.Operator):
         return True
 
     def get_linked_file(self, link: "Link") -> ifcopenshell.file:
-        link_path = link.name
+        link_path = link.filepath
         ifc_file = IfcStore.session_files.get(link_path, None)
         if ifc_file is not None:
             return ifc_file
@@ -2896,12 +2896,16 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
+            core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
 
 
 class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -3090,23 +3094,16 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_description = "Import a .svg file to the project as a reference"
     bl_options = {"REGISTER", "UNDO"}
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
 
-    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
-    directory: bpy.props.StringProperty(subtype="DIR_PATH")
-
     def _execute(self, context):
-        # Handle both single and multiple file selection
-        if self.files:
-            for file_elem in self.files:
-                filepath = os.path.join(self.directory, file_elem.name)
-                uri = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
-                core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
-        else:
-            # Fallback for single file (backward compatibility)
-            filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
             core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
@@ -3165,6 +3162,7 @@ class EditTextPopup(bpy.types.Operator):
         bpy.ops.bim.disable_editing_text()
 
     def execute(self, context):
+        # TODO: check for possible subtle undo bug here
         # can't use invoke() because this operator
         # will be run indirectly by hotkey
         # so we use execute() and track whether it's the first run of the operator
@@ -3817,91 +3815,14 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         description="Existing object name to add a style with reference image to. If not provided will create a new object.",
         options={"SKIP_SAVE"},
     )
-
-    x_length: bpy.props.FloatProperty(
-        name="X Length",
-        description="Width of the reference image in project units",
-        default=1.0,
-        min=0.001,
-        soft_min=0.01,
-        precision=3,
-    )
-    y_length: bpy.props.FloatProperty(
-        name="Y Length",
-        description="Height of the reference image in project units",
-        default=1.0,
-        min=0.001,
-        soft_min=0.01,
-        precision=3,
-    )
-
-    show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
+    size: bpy.props.FloatProperty(name="Size", description="Size of the reference image", default=1.0, unit="LENGTH")
 
     def draw(self, context):
-        layout = self.layout
-
-        if getattr(self, "show_dimensions_dialog", False):
-            if tool.Ifc.get():
-                length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
-                if length_unit:
-                    unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
-                else:
-                    unit_name = "project units"
-                layout.label(text=f"Set Reference Image Dimensions (in {unit_name}):")
-            else:
-                layout.label(text="Set Reference Image Dimensions (in project units):")
-            layout.separator()
-            layout.prop(self, "x_length")
-            layout.prop(self, "y_length")
-        else:
-            if Path(tool.Ifc.get_path()).is_file():
-                layout.prop(self, "use_relative_path")
-            else:
-                self.use_relative_path = False
-                layout.label(text="Save the .ifc file first ")
-                layout.label(text="to use relative paths.")
-            layout.prop(self, "override_existing_image")
-            layout.prop(self, "use_existing_object_by_name")
-
-    def invoke(self, context, event):
-        if not getattr(self, "show_dimensions_dialog", False):
-            context.window_manager.fileselect_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        if not getattr(self, "show_dimensions_dialog", False):
-            abs_path = Path(self.filepath).absolute().resolve()
-            if self.override_existing_image:
-                params = {"check_existing": True, "force_reload": True}
-            else:
-                params = {"check_existing": False}
-
-            try:
-                image = load_image(abs_path.name, str(abs_path.parent), **params)
-
-                image_width_px = image.size[0]
-                image_height_px = image.size[1]
-                aspect_ratio = image_width_px / image_height_px
-
-                if aspect_ratio >= 1.0:
-                    self.x_length = 1.0
-                    self.y_length = 1.0 / aspect_ratio
-                else:
-                    self.x_length = aspect_ratio
-                    self.y_length = 1.0
-
-                bpy.data.images.remove(image)
-
-            except Exception as e:
-                self.report({"ERROR"}, f"Failed to load image: {str(e)}")
-                return {"CANCELLED"}
-
-            self.show_dimensions_dialog = True
-            return context.window_manager.invoke_props_dialog(self)
-
-        return self._execute(context)
+        if Path(tool.Ifc.get_path()).is_file():
+            self.layout.prop(self, "use_relative_path")
+        self.layout.prop(self, "override_existing_image")
+        self.layout.prop(self, "use_existing_object_by_name")
+        self.layout.prop(self, "size")
 
     def _execute(self, context):
         space = tool.Blender.get_view3d_space()
@@ -3922,11 +3843,19 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             params = {"check_existing": False}
         image = load_image(abs_path.name, str(abs_path.parent), **params)
 
+        aspect_ratio = image.size[0] / image.size[1]
+        if aspect_ratio >= 1.0:  # Landscape
+            x_length = self.size
+            y_length = self.size / aspect_ratio
+        else:
+            x_length = self.size / aspect_ratio
+            y_length = self.size
+
         def bm_add_image_plane(mesh):
             bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
 
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
+            plane_scale = Vector((x_length / 2.0, y_length / 2.0, 1.0))
             matrix = Matrix.LocRotScale(None, None, plane_scale)
             bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
 
@@ -4029,8 +3958,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
-
-        return {"FINISHED"}
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
