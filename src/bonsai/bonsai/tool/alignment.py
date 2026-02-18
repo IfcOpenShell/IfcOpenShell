@@ -29,7 +29,10 @@ All methods are classmethods following Bonsai's tool pattern.
 from __future__ import annotations
 import bpy
 import math
+import logging
 import bonsai.tool as tool
+import bonsai.bim.import_ifc
+import ifcopenshell.api.alignment
 from typing import TYPE_CHECKING, Optional, List, Tuple
 from dataclasses import dataclass
 
@@ -563,44 +566,21 @@ class Alignment:
         name = f"Segment {index + 1} ({seg_type})"
 
         # Get vertices for this segment using IfcOpenShell's geometry engine
-        vertices = cls.get_segment_vertices(segment, distance_interval=1.0)
-        if not vertices or len(vertices) < 2:
-            # Fall back to empty if geometry fails
-            obj = bpy.data.objects.new(name, None)
-            obj.empty_display_type = "PLAIN_AXES"
-            obj.empty_display_size = 0.5
-        else:
-            # Transform vertices from IFC to Blender coordinates
-            # TODO: I think this is wrong, this is probably from Local to Blender, not Global to Blender
-            blender_vertices = [tool.Georeference.enh2xyz((v[0], v[1], v[2])) for v in vertices]
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
 
-            # Create Blender curve from vertices
-            curve_data = bpy.data.curves.new(name, type="CURVE")
-            curve_data.dimensions = "3D"
-
-            spline = curve_data.splines.new("POLY")
-            spline.points.add(len(blender_vertices) - 1)
-
-            for i, vert in enumerate(blender_vertices):
-                spline.points[i].co = (vert[0], vert[1], vert[2], 1.0)
-
-            obj = bpy.data.objects.new(name, curve_data)
-            obj.show_in_front = True
-            curve_data.bevel_depth = 0.0
-
-        # Link to IFC element
-        tool.Ifc.link(segment, obj)
-
-        # Set parent relationship
-        if parent_obj:
-            obj.parent = parent_obj
-
-        # Assign to same collection as parent
-        if parent_obj and parent_obj.users_collection:
-            parent_obj.users_collection[0].objects.link(obj)
-        else:
-            tool.Collector.assign(obj)
-
+        mapped_segments = ifcopenshell.api.alignment.get_mapped_segments(segment)
+        tool.Loader.load_settings()
+        for curve_segment in mapped_segments:
+            if curve_segment is not None:
+                geometry = tool.Loader.create_generic_shape(curve_segment)
+                # Currently, there may be potentially two IfcCurveSegments, for Helmert
+                mesh = ifc_importer.create_mesh(curve_segment, geometry)
+                obj = bpy.data.objects.new(tool.Loader.get_name(curve_segment), mesh)
+                tool.Ifc.link(curve_segment, obj)
+                tool.Collector.assign(obj)
         return obj
 
     @classmethod
@@ -665,9 +645,6 @@ class Alignment:
         for rel in getattr(layout, "IsNestedBy", []) or []:
             for segment in rel.RelatedObjects or []:
                 if segment.is_a() == "IfcAlignmentSegment":
-                    # Skip zero-length segments (they are invisible terminators)
-                    if cls.is_zero_length_segment(segment):
-                        continue
                     seg_obj = cls._create_segment_curve(segment, visible_index, layout_obj)
                     if seg_obj:
                         result_objs.append(seg_obj)

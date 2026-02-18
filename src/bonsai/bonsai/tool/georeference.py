@@ -296,10 +296,10 @@ class Georeference(bonsai.core.tool.Georeference):
         )
 
     @classmethod
-    def enh2xyz(cls, coordinates: tuple[float, float, float]) -> tuple[float, float, float]:
+    def enh2xyz(cls, coordinates: tuple[float, float, float], to_blender: bool = True) -> tuple[float, float, float]:
         coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *coordinates)
         props = cls.get_georeference_props()
-        if props.has_blender_offset:
+        if to_blender and props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.enh2xyz(
                 coordinates[0],
                 coordinates[1],
