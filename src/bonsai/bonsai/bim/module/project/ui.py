@@ -487,12 +487,12 @@ class BIM_PT_links(Panel):
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 index = self.props.active_link_index
-                if self.props.active_link.is_editing:
-                    row.operator("bim.edit_link", text="", icon="CHECKMARK")
-                    row.operator("bim.disable_editing_link", text="", icon="CANCEL")
-                else:
-                    row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
                 if self.props.active_link.is_loaded:
+                    if self.props.active_link.is_editing:
+                        row.operator("bim.edit_link", text="", icon="CHECKMARK")
+                        row.operator("bim.disable_editing_link", text="", icon="CANCEL")
+                    else:
+                        row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
                     row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
                     row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
                     row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
