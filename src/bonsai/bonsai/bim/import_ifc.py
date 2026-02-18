@@ -85,7 +85,7 @@ class MaterialCreator:
         if element.is_a("IfcTypeProduct"):
             self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        if not self.ifc_import_settings.load_indexed_maps:
+        if self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
