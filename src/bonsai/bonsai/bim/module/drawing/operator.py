@@ -3992,7 +3992,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             
-            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+            bm = tool.Blender.get_bmesh_for_mesh(mesh)
             verts = [v.co / unit_scale for v in bm.verts]
             faces = [[v.index for v in p.verts] for p in bm.faces]
             item = builder.mesh(verts, faces)
