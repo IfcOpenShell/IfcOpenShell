@@ -3886,18 +3886,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         params = {"check_existing": False}
         image = load_image(abs_path.name, str(abs_path.parent), **params)
 
-        def bm_add_image_plane(mesh):
-            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
-
-            plane_scale = Vector((self.x_length / 2.0, self.y_length / 2.0, 1.0))
-            matrix = Matrix.LocRotScale(None, None, plane_scale)
-            bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
-
-            tool.Blender.apply_bmesh(mesh, bm)
-            tool.Loader.load_generated_uv_map(mesh)
-
         mesh = bpy.data.meshes.new(image_filepath.stem)
-        bm_add_image_plane(mesh)
         obj = bpy.data.objects.new(image_filepath.stem, mesh)
         element = tool.Drawing.run_root_assign_class(
             obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
@@ -3905,11 +3894,10 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        bm = tool.Blender.get_bmesh_for_mesh(mesh)
-        verts = [v.co / unit_scale for v in bm.verts]
-        faces = [[v.index for v in p.verts] for p in bm.faces]
-        item = builder.mesh(verts, faces)
-        bm.free()
+        hx = self.x_length * 0.5 / unit_scale
+        hy = self.y_length * 0.5 / unit_scale
+        verts = [(-hx, -hy, 0.0), ( hx, -hy, 0.0), ( hx,  hy, 0.0), (-hx,  hy, 0.0)]
+        item = builder.mesh(verts, [[0, 1, 2, 3]])
 
         ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         representation = builder.get_representation(ifc_context, [item])
