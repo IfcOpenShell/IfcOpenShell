@@ -40,6 +40,7 @@ from typing import (
 
 import bmesh
 import bpy
+import logging
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.document
@@ -60,6 +61,7 @@ from bpy_extras.io_utils import ImportHelper
 from lxml import etree
 from mathutils import Color, Matrix, Vector
 
+import bonsai.bim.import_ifc
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
 import bonsai.bim.helper
@@ -4001,21 +4003,13 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             representation = builder.get_representation(ifc_context, [item])
             ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
-            
-            mesh["ios_item_ids"] = str(item.id())
-            tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
-            
-            tool.Blender.set_active_object(obj)
-            
-            material = bpy.data.materials.new(name=image_filepath.stem)
-            obj.data.materials.append(material)
-            bpy.ops.bim.add_style()
-            
-            style = tool.Ifc.get_entity(material)
-            assert style
-            
-            ifcopenshell.api.style.assign_representation_styles(ifc_file, shape_representation=representation, styles=[style])
-            
+
+            style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
+
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file, shape_representation=representation, styles=[style]
+            )
+
             # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
             # we don't support IfcSurfaceStyleWithTextures without Rendering yet
             shading_attributes = {
@@ -4047,20 +4041,14 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                 ifc_class="IfcSurfaceStyleWithTextures",
                 attributes={"Textures": textures},
             )
-            
-            tool.Style.set_use_nodes(material, True)
-            tool.Loader.restart_material_node_tree(material)
-            bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
-            bsdf.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
-            
-            node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
-            node.image = image
-            node.location = bsdf.location - Vector((400, 0))
-            material.node_tree.links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
-            
-            coord = material.node_tree.nodes.new(type="ShaderNodeTexCoord")
-            coord.location = node.location - Vector((200, 0))
-            material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
+
+            logger = logging.getLogger("ImportIFC")
+            ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+            ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+            ifc_importer.file = tool.Ifc.get()
+            ifc_importer.create_style(style)
+
+            bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
