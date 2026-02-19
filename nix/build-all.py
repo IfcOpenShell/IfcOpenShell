@@ -248,15 +248,8 @@ if WASM:
     # https://github.com/pyodide/pyodide-build/pull/249
     WASM_CMAKE_IS_USING_INIT_VARS = get_pyodide_build_version() >= (99, 0, 0)
 
-    # pyodide provide empty `CXXFLAGS`, leading to issues using C++ files compiled with `-fexceptions`
-    # which is used by OCCT.
-    # https://github.com/pyodide/pyodide-build/issues/251
-    side_module_cxx_flags = os.environ.get("SIDE_MODULE_CXXFLAGS", "")
-    if side_module_cxx_flags.strip():
-        print(f"SIDE_MODULE_CXXFLAGS are already passed from pyodide build ('{side_module_cxx_flags}').")
-        print("Maybe it's time to stop overriding them in the script?")
-
-    os.environ["SIDE_MODULE_CXXFLAGS"] = os.environ["SIDE_MODULE_CFLAGS"]
+    # 0.31 is required for SIDE_MODULE_CXXFLAGS to be provided.
+    assert get_pyodide_build_version() >= (0, 31)
 
 # Set defaults for missing empty environment variables
 
