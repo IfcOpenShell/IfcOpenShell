@@ -3823,6 +3823,11 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         precision=3,
         unit="LENGTH",
     )
+    show_texture_solid_mode: bpy.props.BoolProperty(
+        name="Show Texture in Solid mode (slow)",
+        description="Show Texture in Solid mode (slow)",
+        default=False,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -3867,10 +3872,14 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
             layout.prop(self, "use_relative_path")
         else:
             self.use_relative_path = False
+        layout.prop(self, "show_texture_solid_mode")
         layout.prop(self, "x_length")
         layout.prop(self, "y_length")
 
+
     def _execute(self, context):
+        project_props = tool.Project.get_project_props()
+        project_props.load_indexed_maps = self.show_texture_solid_mode
         space = tool.Blender.get_view3d_space()
         if space.shading.color_type != "TEXTURE":
             space.shading.color_type = "TEXTURE"
