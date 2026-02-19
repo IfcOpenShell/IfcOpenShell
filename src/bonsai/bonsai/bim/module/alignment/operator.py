@@ -20,7 +20,6 @@
 
 
 import bpy
-import math
 import time
 import bonsai.core.alignment as core
 import bonsai.tool as tool
@@ -28,8 +27,7 @@ import ifcopenshell.api.alignment
 import ifcopenshell.api.spatial
 from bpy_extras.io_utils import ImportHelper
 from bpy.types import Operator
-from bpy.props import StringProperty, FloatProperty, IntProperty
-from mathutils import Vector
+from bpy.props import StringProperty, FloatProperty
 from . import decorator as alignment_decorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.decorator import PolylineDecorator
@@ -192,7 +190,7 @@ def sync_pis_from_ifc(props):
 
     # Extract PIs from segment data
     # This reconstructs approximate PIs from the IFC segment geometry
-    extracted_pis = _extract_pis_from_segments(segments)
+    extracted_pis = tool.Alignment.extract_pis_from_segments(segments)
 
     if not extracted_pis:
         # Couldn't extract - keep current props.pis
@@ -203,8 +201,8 @@ def sync_pis_from_ifc(props):
     props.pis.clear()
     for pi_data in extracted_pis:
         pi = props.pis.add()
-        pi.e = pi_data["e"]
-        pi.n = pi_data["n"]
+        pi.e = str(pi_data["e"])
+        pi.n = str(pi_data["n"])
         pi.pi_type = pi_data["pi_type"]
         pi.radius = pi_data.get("radius", 0.0)
 
@@ -213,359 +211,6 @@ def sync_pis_from_ifc(props):
     # Recalculate geometry and rebuild display
     recalculate_pi_geometry(props)
     return True
-
-
-def _extract_pis_from_segments(segments):
-    """Extract PI data from IFC alignment segments.
-
-    This reconstructs PI coordinates and types from the horizontal segment
-    design parameters. It handles:
-    - LINE segments (tangent lines)
-    - CIRCULARARC segments (horizontal curves)
-
-    Args:
-        segments: List of IfcAlignmentSegment entities
-
-    Returns:
-        List of dicts with keys: x, y, pi_type, radius (optional)
-    """
-    pis = []
-
-    # Filter out zero-length terminal segments
-    real_segments = []
-    for seg in segments:
-        if hasattr(seg, "DesignParameters") and seg.DesignParameters:
-            dp = seg.DesignParameters
-            if dp.SegmentLength > 0.0001:
-                real_segments.append(seg)
-
-    if not real_segments:
-        return []
-
-    # Track which segments are curves and their indices
-    curve_indices = set()
-    for i, seg in enumerate(real_segments):
-        dp = seg.DesignParameters
-        if dp.PredefinedType == "CIRCULARARC":
-            curve_indices.add(i)
-
-    # First PI: start of first segment
-    first_dp = real_segments[0].DesignParameters
-    start_coords = first_dp.StartPoint.Coordinates
-    pis.append(
-        {
-            "x": float(start_coords[0]),
-            "y": float(start_coords[1]),
-            "pi_type": "ENDPOINT",
-            "radius": 0.0,
-        }
-    )
-
-    # Process interior points
-    i = 0
-    while i < len(real_segments):
-        dp = real_segments[i].DesignParameters
-
-        if dp.PredefinedType == "CIRCULARARC":
-            # This is a curve - calculate PI from curve geometry
-            # PI is at the intersection of incoming and outgoing tangents
-            pi_data = _calculate_pi_from_curve(real_segments, i)
-            if pi_data:
-                pis.append(pi_data)
-            i += 1
-        elif dp.PredefinedType == "LINE":
-            # Check if next segment is also a LINE (sharp angle, no curve)
-            if i < len(real_segments) - 1:
-                next_dp = real_segments[i + 1].DesignParameters
-                if next_dp.PredefinedType == "LINE":
-                    # End of this LINE is a PI with no curve
-                    end_coords = _calculate_segment_endpoint(dp)
-                    pis.append(
-                        {
-                            "x": float(end_coords[0]),
-                            "y": float(end_coords[1]),
-                            "pi_type": "TANGENT",
-                            "radius": 0.0,
-                        }
-                    )
-            i += 1
-        else:
-            # Other segment type - skip for now
-            i += 1
-
-    # Last PI: end of last segment
-    last_dp = real_segments[-1].DesignParameters
-    end_coords = _calculate_segment_endpoint(last_dp)
-    # Only add if it's different from the last PI we added
-    if pis:
-        last_pi = pis[-1]
-        dist = math.sqrt((end_coords[0] - last_pi["x"]) ** 2 + (end_coords[1] - last_pi["y"]) ** 2)
-        if dist > 0.001:  # More than 1mm apart
-            pis.append(
-                {
-                    "x": float(end_coords[0]),
-                    "y": float(end_coords[1]),
-                    "pi_type": "ENDPOINT",
-                    "radius": 0.0,
-                }
-            )
-
-    return pis
-
-
-def _calculate_segment_endpoint(design_params):
-    """Calculate the endpoint of a horizontal segment.
-
-    Args:
-        design_params: IfcAlignmentHorizontalSegment
-
-    Returns:
-        Tuple (x, y) of endpoint coordinates
-    """
-    start = design_params.StartPoint.Coordinates
-    start_x = float(start[0])
-    start_y = float(start[1])
-
-    # StartDirection is in radians (counter-clockwise from east)
-    direction = float(design_params.StartDirection)
-    length = float(design_params.SegmentLength)
-
-    if design_params.PredefinedType == "LINE":
-        # Simple line endpoint
-        end_x = start_x + length * math.cos(direction)
-        end_y = start_y + length * math.sin(direction)
-        return (end_x, end_y)
-
-    elif design_params.PredefinedType == "CIRCULARARC":
-        # Arc endpoint calculation
-        radius = abs(float(design_params.StartRadiusOfCurvature or design_params.EndRadiusOfCurvature or 0))
-        if radius == 0:
-            # Fallback to line calculation
-            end_x = start_x + length * math.cos(direction)
-            end_y = start_y + length * math.sin(direction)
-            return (end_x, end_y)
-
-        # Determine curve direction (clockwise or counter-clockwise)
-        start_radius = design_params.StartRadiusOfCurvature
-        is_clockwise = start_radius is not None and start_radius < 0
-
-        # Arc length to angle: theta = L / R
-        theta = length / radius
-
-        if is_clockwise:
-            # Center is to the right of start direction
-            center_dir = direction - math.pi / 2
-            end_dir = direction - theta
-        else:
-            # Center is to the left of start direction
-            center_dir = direction + math.pi / 2
-            end_dir = direction + theta
-
-        # Calculate center
-        center_x = start_x + radius * math.cos(center_dir)
-        center_y = start_y + radius * math.sin(center_dir)
-
-        # Calculate endpoint
-        if is_clockwise:
-            end_x = center_x + radius * math.cos(end_dir + math.pi / 2)
-            end_y = center_y + radius * math.sin(end_dir + math.pi / 2)
-        else:
-            end_x = center_x + radius * math.cos(end_dir - math.pi / 2)
-            end_y = center_y + radius * math.sin(end_dir - math.pi / 2)
-
-        return (end_x, end_y)
-
-    else:
-        # Unknown type - linear approximation
-        end_x = start_x + length * math.cos(direction)
-        end_y = start_y + length * math.sin(direction)
-        return (end_x, end_y)
-
-
-def _calculate_pi_from_curve(segments, curve_index):
-    """Calculate the PI point from a curve segment.
-
-    The PI is at the intersection of the incoming and outgoing tangents.
-    For a circular arc: PI = PC + T * incoming_tangent = PT + T * (-outgoing_tangent)
-    where T = R * tan(delta/2).
-
-    Args:
-        segments: List of all segments
-        curve_index: Index of the curve segment
-
-    Returns:
-        Dict with PI data, or None if can't calculate
-    """
-    curve_seg = segments[curve_index]
-    curve_dp = curve_seg.DesignParameters
-
-    if curve_dp.PredefinedType != "CIRCULARARC":
-        return None
-
-    # Get curve parameters
-    pc_coords = curve_dp.StartPoint.Coordinates
-    pc_x = float(pc_coords[0])
-    pc_y = float(pc_coords[1])
-
-    start_dir = float(curve_dp.StartDirection)  # Incoming tangent direction
-    arc_length = float(curve_dp.SegmentLength)
-
-    radius = abs(float(curve_dp.StartRadiusOfCurvature or curve_dp.EndRadiusOfCurvature or 0))
-    if radius == 0:
-        return None
-
-    # Determine if clockwise
-    start_radius = curve_dp.StartRadiusOfCurvature
-    is_clockwise = start_radius is not None and start_radius < 0
-
-    # Calculate deflection angle from arc length: delta = L / R
-    delta = arc_length / radius
-
-    # Calculate tangent length: T = R * tan(delta/2)
-    tangent_length = radius * math.tan(delta / 2)
-
-    # PI = PC + T * incoming_tangent_unit_vector
-    pi_x = pc_x + tangent_length * math.cos(start_dir)
-    pi_y = pc_y + tangent_length * math.sin(start_dir)
-
-    return {
-        "x": pi_x,
-        "y": pi_y,
-        "pi_type": "CURVE",
-        "radius": radius,
-    }
-
-
-# =============================================================================
-# Curve Geometry Helper Functions
-# =============================================================================
-
-
-def compute_deflection_angle(prev_pi, curr_pi, next_pi):
-    """Compute the deflection angle at a PI point.
-
-    Args:
-        prev_pi: Previous PI (with x, y attributes)
-        curr_pi: Current PI (with x, y attributes)
-        next_pi: Next PI (with x, y attributes)
-
-    Returns:
-        Deflection angle in radians (signed: positive=left, negative=right)
-    """
-    # Incoming tangent direction
-    dx1 = float(curr_pi.e) - float(prev_pi.e)
-    dy1 = float(curr_pi.n) - float(prev_pi.n)
-    angle1 = math.atan2(dy1, dx1)
-
-    # Outgoing tangent direction
-    dx2 = float(next_pi.e) - float(curr_pi.e)
-    dy2 = float(next_pi.n) - float(curr_pi.n)
-    angle2 = math.atan2(dy2, dx2)
-
-    # Deflection angle
-    deflection = angle2 - angle1
-
-    # Normalize to [-pi, pi]
-    while deflection > math.pi:
-        deflection -= 2 * math.pi
-    while deflection < -math.pi:
-        deflection += 2 * math.pi
-
-    return deflection
-
-
-def compute_arc_length_for_pi(props, pi_index):
-    """Compute arc length for a curve at the given PI.
-
-    Arc length L = R * |delta| where delta is the deflection angle.
-
-    Args:
-        props: SaikeiAlignmentProperties
-        pi_index: Index of the PI with the curve
-
-    Returns:
-        Arc length in same units as radius (meters)
-    """
-    pis = props.pis
-    if pi_index <= 0 or pi_index >= len(pis) - 1:
-        return 0.0
-
-    prev_pi = pis[pi_index - 1]
-    curr_pi = pis[pi_index]
-    next_pi = pis[pi_index + 1]
-
-    if curr_pi.radius <= 0:
-        return 0.0
-
-    deflection = compute_deflection_angle(prev_pi, curr_pi, next_pi)
-    return curr_pi.radius * abs(deflection)
-
-
-def compute_tangent_length_at_pi(props, pi_index):
-    """Compute the tangent length T at a PI with a curve.
-
-    Tangent length T = R * tan(|delta|/2)
-
-    Args:
-        props: SaikeiAlignmentProperties
-        pi_index: Index of the PI with the curve
-
-    Returns:
-        Tangent length (distance from PI to PC or PT)
-    """
-    pis = props.pis
-    if pi_index <= 0 or pi_index >= len(pis) - 1:
-        return 0.0
-
-    prev_pi = pis[pi_index - 1]
-    curr_pi = pis[pi_index]
-    next_pi = pis[pi_index + 1]
-
-    if curr_pi.radius <= 0:
-        return 0.0
-
-    deflection = compute_deflection_angle(prev_pi, curr_pi, next_pi)
-    return curr_pi.radius * math.tan(abs(deflection) / 2)
-
-
-def compute_segment_length(props, start_pi_index, account_for_curves=True):
-    """Compute the length of a tangent segment between two PIs.
-
-    If curves exist at the start or end PI, the segment is shortened
-    to PC (Point of Curvature) or PT (Point of Tangency).
-
-    Args:
-        props: SaikeiAlignmentProperties
-        start_pi_index: Index of the starting PI
-        account_for_curves: If True, subtract tangent lengths for adjacent curves
-
-    Returns:
-        Segment length in meters
-    """
-    pis = props.pis
-    if start_pi_index < 0 or start_pi_index >= len(pis) - 1:
-        return 0.0
-
-    start_pi = pis[start_pi_index]
-    end_pi = pis[start_pi_index + 1]
-
-    # Full length between PIs
-    dx = float(end_pi.e) - float(start_pi.e)
-    dy = float(end_pi.n) - float(start_pi.n)
-    full_length = math.sqrt(dx * dx + dy * dy)
-
-    if not account_for_curves:
-        return full_length
-
-    # Subtract tangent length if start PI has a curve (segment starts at PT)
-    if start_pi_index > 0 and start_pi.radius > 0:
-        full_length -= compute_tangent_length_at_pi(props, start_pi_index)
-
-    # Subtract tangent length if end PI has a curve (segment ends at PC)
-    if start_pi_index + 1 < len(pis) - 1 and end_pi.radius > 0:
-        full_length -= compute_tangent_length_at_pi(props, start_pi_index + 1)
-
-    return max(0.0, full_length)
 
 
 def on_radius_changed(pi, context):
@@ -626,6 +271,9 @@ def rebuild_display_rows(props):
     segment_num = 0
     i = 0
 
+    # Pre-compute coordinate tuples for tool method calls
+    pi_coords = [(float(pi.e), float(pi.n)) for pi in pis]
+
     while i < len(pis):
         pi = pis[i]
         is_interior = i > 0 and i < len(pis) - 1
@@ -633,17 +281,18 @@ def rebuild_display_rows(props):
 
         if has_curve:
             # Interior PI with curve: becomes a CURVE SEGMENT row
-            # This replaces what would have been a Mid point row
             segment_num += 1
             curve_row = props.display_rows.add()
             curve_row.row_type = "SEGMENT"
             curve_row.segment_number = segment_num
             curve_row.pi_index = i
             curve_row.display_type = "Curve"
-            curve_row.e = pi.e  # Show PI coordinates on curve row
+            curve_row.e = pi.e
             curve_row.n = pi.n
             curve_row.radius = pi.radius
-            curve_row.arc_length = compute_arc_length_for_pi(props, i)
+            curve_row.arc_length = tool.Alignment.arc_length_at_pi(
+                pi_coords[i - 1], pi_coords[i], pi_coords[i + 1], pi.radius
+            )
         else:
             # Regular point row (End or Mid without curve)
             point_row = props.display_rows.add()
@@ -660,10 +309,6 @@ def rebuild_display_rows(props):
 
         # Add tangent segment row after this point/curve (except after last PI)
         if i < len(pis) - 1:
-            # Check if next PI also has a curve (affects segment length calculation)
-            next_pi = pis[i + 1]
-            next_has_curve = (i + 1 < len(pis) - 1) and next_pi.radius > 0
-
             segment_num += 1
             seg_row = props.display_rows.add()
             seg_row.row_type = "SEGMENT"
@@ -671,8 +316,24 @@ def rebuild_display_rows(props):
             seg_row.pi_index = i
             seg_row.display_type = "Tan"
 
-            # Compute segment length accounting for curves at either end
-            seg_row.length = compute_segment_length(props, i, account_for_curves=True)
+            # Compute tangent lengths at each end to subtract from full distance
+            start_t = 0.0
+            end_t = 0.0
+            if has_curve:
+                start_t = tool.Alignment.tangent_length_at_pi(
+                    pi_coords[i - 1], pi_coords[i], pi_coords[i + 1], pi.radius
+                )
+            next_pi = pis[i + 1]
+            next_is_interior = (i + 1 > 0) and (i + 1 < len(pis) - 1)
+            next_has_curve = next_is_interior and next_pi.radius > 0
+            if next_has_curve:
+                end_t = tool.Alignment.tangent_length_at_pi(
+                    pi_coords[i], pi_coords[i + 1], pi_coords[i + 2], next_pi.radius
+                )
+
+            seg_row.length = tool.Alignment.tangent_segment_length(
+                pi_coords[i], pi_coords[i + 1], start_t, end_t
+            )
 
         i += 1
 
@@ -716,8 +377,8 @@ class SAIKEI_OT_add_pi(Operator):
             # Additional PIs - extrapolate from last two
             prev = props.pis[-2]
             prev_prev = props.pis[-3] if len(props.pis) > 2 else prev
-            de = float(prev.e) - prev_prev.e if len(props.pis) > 2 else 100.0
-            dn = float(prev.n) - prev_prev.n if len(props.pis) > 2 else 0.0
+            de = float(prev.e) - float(prev_prev.e) if len(props.pis) > 2 else 100.0
+            dn = float(prev.n) - float(prev_prev.n) if len(props.pis) > 2 else 0.0
             pi.e = str(float(prev.e) + de)
             pi.n = str(float(prev.n) + dn)
             pi.pi_type = "TANGENT"
@@ -955,7 +616,7 @@ class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool
         rebuild_display_rows(props)
 
 
-class SAIKEI_OT_recalculate_pis(Operator):
+class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
     """Recalculate PI geometry and update IFC/visualization"""
 
     bl_idname = "saikei.recalculate_pis"
@@ -973,7 +634,7 @@ class SAIKEI_OT_recalculate_pis(Operator):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         import ifcopenshell.api.alignment as align_api
 
         ifc = tool.Ifc.get()
@@ -1027,7 +688,7 @@ class SAIKEI_OT_recalculate_pis(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_clear_pis(Operator):
+class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
     """Clear all PI points and optionally remove visualization/IFC data"""
 
     bl_idname = "saikei.clear_pis"
@@ -1048,7 +709,7 @@ class SAIKEI_OT_clear_pis(Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_confirm(self, event)
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
@@ -1089,7 +750,7 @@ class SAIKEI_OT_clear_pis(Operator):
 # =============================================================================
 
 
-class SAIKEI_OT_create_alignment(Operator):
+class SAIKEI_OT_create_alignment(Operator, tool.Ifc.Operator):
     """Create a new IFC alignment"""
 
     bl_idname = "saikei.create_alignment"
@@ -1101,7 +762,7 @@ class SAIKEI_OT_create_alignment(Operator):
     def poll(cls, context):
         return poll_ifc4x3(cls, context)
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
@@ -1124,7 +785,7 @@ class SAIKEI_OT_create_alignment(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_create_alignment_by_pi(Operator):
+class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
     """Create alignment using the PI (Point of Intersection) method"""
 
     bl_idname = "saikei.create_alignment_by_pi"
@@ -1142,7 +803,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         props = context.scene.SaikeiAlignmentProperties
         if not props.active_alignment_id:
             return {"FINISHED"}
@@ -1155,7 +816,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
         if h_layout:
             # Check if horizontal layout is empty (only has zero-length terminal or no segments)
             segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
-            has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(seg)])
+            has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(s)])
 
             if not has_real_segments:
                 # Use existing alignment - add segments to it
@@ -1178,7 +839,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_import_alignment_csv(Operator, ImportHelper):
+class SAIKEI_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
     """Import alignment from CSV file"""
 
     bl_idname = "saikei.import_alignment_csv"
@@ -1193,7 +854,7 @@ class SAIKEI_OT_import_alignment_csv(Operator, ImportHelper):
     def poll(cls, context):
         return poll_ifc4x3(cls, context)
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
@@ -1214,7 +875,7 @@ class SAIKEI_OT_import_alignment_csv(Operator, ImportHelper):
 # =============================================================================
 
 
-class SAIKEI_OT_add_stationing_referent(Operator):
+class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
     """Add a stationing referent to the alignment"""
 
     bl_idname = "saikei.add_stationing_referent"
@@ -1258,7 +919,7 @@ class SAIKEI_OT_add_stationing_referent(Operator):
         station_str = format_station(self.station)
         layout.label(text=f"Station notation: {station_str}")
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
@@ -1304,7 +965,7 @@ def format_station(station_value):
         return f"{main}+{offset:05.2f}"
 
 
-class SAIKEI_OT_name_segments(Operator):
+class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
     """Auto-name segments based on station values"""
 
     bl_idname = "saikei.name_segments"
@@ -1322,7 +983,7 @@ class SAIKEI_OT_name_segments(Operator):
             return False
         return True
 
-    def execute(self, context):
+    def _execute(self, context):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 

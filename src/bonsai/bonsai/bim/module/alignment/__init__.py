@@ -54,7 +54,6 @@ def on_undo_redo(scene):
 classes = (
     # Property groups (must be registered before classes that use them)
     prop.AlignmentPI,
-    prop.AlignmentSegmentItem,
     prop.AlignmentDisplayRow,
     prop.SaikeiAlignmentProperties,
     # UILists

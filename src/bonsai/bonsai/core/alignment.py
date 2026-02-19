@@ -20,113 +20,23 @@
 """Core alignment business logic - Orchestration only, NO bpy imports.
 
 This module contains alignment-related business logic and workflow
-orchestration. All calculations and algorithms are in the tool layer.
-Functions receive tool classes as parameters following Bonsai's
-dependency injection pattern.
+orchestration. All calculations, algorithms, and IFC operations are
+in the tool layer. Functions receive tool classes as parameters
+following Bonsai's dependency injection pattern.
 
-NOTE: Math, calculations, and algorithms belong in tool/alignment.py.
-This module only handles:
+NOTE: Math, calculations, algorithms, and IFC API calls belong in
+tool/alignment.py. This module only handles:
 - Business rules and validation
 - Workflow orchestration (calling tool methods in sequence)
 - Decision-making about what should happen
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import ifcopenshell
     from .. import tool
-
-
-# =============================================================================
-# Data Classes for Pure Python PI Handling
-# =============================================================================
-
-
-@dataclass
-class PIPoint:
-    """Pure Python representation of a PI (Point of Intersection).
-
-    This mirrors the Blender PropertyGroup but without bpy dependencies,
-    allowing for testing and core logic operations.
-    """
-
-    x: float
-    y: float
-    pi_type: str = "TANGENT"  # ENDPOINT, TANGENT, or CURVE
-    radius: float = 0.0
-    length_to_next: float = 0.0
-    direction_to_next: float = 0.0
-    station: float = 0.0
-
-
-# =============================================================================
-# Alignment Visualization Logic (Business Logic Orchestration)
-# =============================================================================
-
-
-def create_alignment_hierarchy(
-    ifc_tool: type[tool.Ifc],
-    alignment_tool: type[tool.Alignment],
-    alignment: ifcopenshell.entity_instance,
-) -> object:
-    """Create the Blender object hierarchy for an IFC alignment.
-
-    This is a core function that orchestrates the creation process
-    by calling tool methods. It contains the business logic but
-    delegates actual Blender operations to the tool layer.
-
-    Args:
-        ifc_tool: The IFC tool class for IFC operations
-        alignment_tool: The Alignment tool class for Blender operations
-        alignment: The IFC alignment entity
-
-    Returns:
-        The root Blender object for the alignment
-    """
-    # Create the alignment object
-    alignment_obj = alignment_tool.create_object_for_alignment(alignment)
-    if not alignment_obj:
-        return None
-
-    # Get nested layouts via IfcRelNests
-    layouts = []
-    for rel in getattr(alignment, "IsNestedBy", []) or []:
-        for obj in rel.RelatedObjects or []:
-            if obj.is_a() in ("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"):
-                layouts.append(obj)
-
-    # Create Blender objects for each layout and its segments
-    for layout in layouts:
-        layout_obj = alignment_tool.create_object_for_layout(layout, alignment_obj)
-        if layout_obj:
-            create_layout_segment_objects(alignment_tool, layout, layout_obj)
-
-    return alignment_obj
-
-
-def create_layout_segment_objects(
-    alignment_tool: type[tool.Alignment],
-    layout: ifcopenshell.entity_instance,
-    layout_obj: object,
-) -> list:
-    """Create Blender objects for all segments in a layout.
-
-    Delegates to the tool layer which creates both:
-    - A curve from the IFC representation (for visualization)
-    - Empty objects for each segment (for selection/editing)
-
-    Args:
-        alignment_tool: The Alignment tool class
-        layout: The IFC layout entity
-        layout_obj: The parent Blender object
-
-    Returns:
-        List of created Blender objects (curve + segment empties)
-    """
-    return alignment_tool.create_objects_for_layout_segments(layout, layout_obj)
 
 
 # =============================================================================
@@ -159,8 +69,6 @@ def enter_pi_edit_mode(
         ValueError: If alignment doesn't exist, has no horizontal layout,
                    or has no real segments
     """
-    import ifcopenshell.api.alignment as align_api
-
     # Validate alignment exists
     ifc_file = ifc_tool.get()
     if ifc_file is None:
@@ -174,8 +82,8 @@ def enter_pi_edit_mode(
     if not alignment.is_a("IfcAlignment"):
         raise ValueError(f"Entity {alignment_id} is not an IfcAlignment")
 
-    # Validate alignment has horizontal layout
-    h_layout = align_api.get_horizontal_layout(alignment)
+    # Validate alignment has horizontal layout (delegated to tool)
+    h_layout = alignment_tool.get_horizontal_layout(alignment)
     if h_layout is None:
         raise ValueError(f"Alignment '{alignment.Name}' has no horizontal layout")
 
@@ -228,9 +136,6 @@ def exit_pi_edit_mode(
     Raises:
         ValueError: If alignment doesn't exist or update fails
     """
-    import ifcopenshell
-    import ifcopenshell.api.alignment as align_api
-
     ifc_file = ifc_tool.get()
     if ifc_file is None:
         # No file loaded, just clean up empties
@@ -252,8 +157,8 @@ def exit_pi_edit_mode(
         if len(hpoints) < 2:
             raise ValueError("At least 2 PIs are required")
 
-        # Get horizontal layout - required for in-place editing
-        h_layout = align_api.get_horizontal_layout(alignment)
+        # Get horizontal layout (delegated to tool)
+        h_layout = alignment_tool.get_horizontal_layout(alignment)
         if h_layout is None:
             raise ValueError("Alignment has no horizontal layout")
 
@@ -263,13 +168,9 @@ def exit_pi_edit_mode(
         # Remove Blender visualization for segments (not the whole hierarchy)
         alignment_tool.remove_layout_segment_objects(h_layout)
 
-        # Clear existing IFC segments (preserves layout and zero-length terminator)
-        align_api.clear_layout_segments(ifc_file, h_layout)
-
-        # Add new segments with updated PI positions
-        align_api.layout_horizontal_alignment_by_pi_method(
-            ifc_file, h_layout, hpoints, radii
-        )
+        # Clear existing IFC segments and add new ones (delegated to tool)
+        alignment_tool.clear_layout_segments(h_layout)
+        alignment_tool.layout_by_pi_method(h_layout, hpoints, radii)
 
         # Refresh Blender visualization for new segments
         layout_obj = ifc_tool.get_object(h_layout)

@@ -31,17 +31,6 @@ from bpy.props import (
 )
 
 
-def get_pi_type_items(self, context):
-    """Get available PI types based on position in list"""
-    # First and last PIs are always endpoints (no curve)
-    # Interior PIs can have curves
-    return [
-        ("ENDPOINT", "Endpoint", "Start or end point (no curve)"),
-        ("TANGENT", "Tangent", "Pass-through point (no curve)"),
-        ("CURVE", "Curve", "Point of intersection with curve"),
-    ]
-
-
 def _on_radius_update(self, context):
     """Callback when radius property changes.
 
@@ -112,22 +101,6 @@ class AlignmentPI(PropertyGroup):
         default=0.0,
         precision=2,
     )
-
-    # Selection state
-    is_selected: BoolProperty(
-        name="Selected",
-        description="Whether this PI is selected for editing",
-        default=False,
-    )
-
-
-class AlignmentSegmentItem(PropertyGroup):
-    """Property group for displaying alignment segments in a UIList"""
-
-    name: StringProperty(name="Name", default="")
-    segment_type: StringProperty(name="Type", default="LINE")
-    length: FloatProperty(name="Length", default=0.0, unit="LENGTH")
-    ifc_id: IntProperty(name="IFC ID", default=0)
 
 
 class AlignmentDisplayRow(PropertyGroup):
@@ -207,20 +180,9 @@ class SaikeiAlignmentProperties(PropertyGroup):
     pis: CollectionProperty(type=AlignmentPI)
     active_pi_index: IntProperty(name="Active PI", default=0)
 
-    # Segment display
-    segments: CollectionProperty(type=AlignmentSegmentItem)
-    active_segment_index: IntProperty(name="Active Segment", default=0)
-
     # Combined point/segment display rows (for Civil 3D-style table)
     display_rows: CollectionProperty(type=AlignmentDisplayRow)
     active_display_row_index: IntProperty(name="Active Display Row", default=0)
-
-    # Editing state
-    is_editing: BoolProperty(
-        name="Is Editing",
-        description="Whether alignment is being edited",
-        default=False,
-    )
 
     # PI Edit Mode state (for moving PIs with G key)
     is_pi_edit_mode: BoolProperty(
@@ -236,12 +198,6 @@ class SaikeiAlignmentProperties(PropertyGroup):
     )
 
     # Display options
-    show_pi_markers: BoolProperty(
-        name="Show PI Markers",
-        description="Show PI markers in viewport",
-        default=True,
-    )
-
     show_station_labels: BoolProperty(
         name="Show Station Labels",
         description="Show station labels along alignment",
