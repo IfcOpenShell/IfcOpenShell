@@ -253,7 +253,7 @@ if WASM:
     # https://github.com/pyodide/pyodide-build/issues/251
     side_module_cxx_flags = os.environ.get("SIDE_MODULE_CXXFLAGS", "")
     if side_module_cxx_flags.strip():
-        print("SIDE_MODULE_CXXFLAGS are already passed from pyodide build ('{side_module_cxx_flags}').")
+        print(f"SIDE_MODULE_CXXFLAGS are already passed from pyodide build ('{side_module_cxx_flags}').")
         print("Maybe it's time to stop overriding them in the script?")
 
     os.environ["SIDE_MODULE_CXXFLAGS"] = os.environ["SIDE_MODULE_CFLAGS"]
