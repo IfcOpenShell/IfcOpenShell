@@ -179,7 +179,8 @@ class Loader(bonsai.core.tool.Loader):
     def surface_texture_to_dict(cls, surface_texture):
         if isinstance(surface_texture, dict):
             return surface_texture
-        mappings = surface_texture.IsMappedBy or []
+        # IsMappedBy is an IFC4+ inverse attribute, not available in IFC2X3.
+        mappings = getattr(surface_texture, "IsMappedBy", None) or []
         surface_texture = surface_texture.get_info()
         uv_mode = None
         if mappings:
@@ -188,7 +189,7 @@ class Loader(bonsai.core.tool.Loader):
                 uv_mode = "Generated"
             elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
                 uv_mode = "Camera"
-        surface_texture["uv_mode"] = uv_mode or "UV"
+        surface_texture["uv_mode"] = uv_mode or "Generated"
         return surface_texture
 
     @classmethod
@@ -286,6 +287,9 @@ class Loader(bonsai.core.tool.Loader):
 
         for texture in textures:
             mode = texture.get("Mode", None)
+            # IFC2X3 IfcImageTexture has no Mode attribute; default to DIFFUSE.
+            if mode is None and texture["type"] == "IfcImageTexture":
+                mode = "DIFFUSE"
             node = None
 
             image_url = None
@@ -293,7 +297,8 @@ class Loader(bonsai.core.tool.Loader):
             def get_image() -> Union[bpy.types.Image, None]:
                 # TODO: orphaned textures after shader recreated?
                 if texture["type"] == "IfcImageTexture":
-                    original_image_url = texture["URLReference"]
+                    # IFC2X3 uses UrlReference, IFC4+ uses URLReference.
+                    original_image_url = texture.get("URLReference") or texture.get("UrlReference", "")
                     is_relative = not os.path.isabs(original_image_url)
                     nonlocal image_url
                     image_url = Path(original_image_url)
@@ -538,6 +543,33 @@ class Loader(bonsai.core.tool.Loader):
 
         for colour in colours:
             cls.load_indexed_map(colour, mesh)
+
+    @classmethod
+    def load_generated_uv_map(cls, mesh: bpy.types.Mesh) -> None:
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+
+        all_verts = [v.co for v in bm.verts]
+        if not all_verts:
+            bm.free()
+            return
+
+        min_x = min(v.x for v in all_verts)
+        max_x = max(v.x for v in all_verts)
+        min_y = min(v.y for v in all_verts)
+        max_y = max(v.y for v in all_verts)
+        width = max_x - min_x
+        height = max_y - min_y
+
+        for face in bm.faces:
+            for loop in face.loops:
+                u = (loop.vert.co.x - min_x) / width if width > 0 else 0.5
+                v = (loop.vert.co.y - min_y) / height if height > 0 else 0.5
+                loop[uv_layer].uv = (max(0.0, min(1.0, u)), max(0.0, min(1.0, v)))
+
+        bm.to_mesh(mesh)
+        bm.free()
 
     @classmethod
     def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
