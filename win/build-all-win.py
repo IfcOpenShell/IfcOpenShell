@@ -9,9 +9,18 @@ import subprocess
 from pathlib import Path
 from zipfile import ZipFile
 
+def is_arm64() -> bool:
+    arch = os.environ.get("TARGET_ARCH", "").lower()
+    if arch in ("arm64", "aarch64"):
+        return True
+    if arch in ("x64", "amd64", "x86_64"):
+        return False
+    return platform.machine().lower() in ("arm64", "aarch64")
+
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
+# PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
+PYTHON_VERSIONS = ["3.11.8", "3.12.1", "3.13.0", "3.14.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 VERSION = (REPO_PATH / "VERSION").read_text().strip()
@@ -22,7 +31,7 @@ else:
 OUTPUT_DIR = Path.home() / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 print("Output directory:", OUTPUT_DIR)
-ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-win64.zip"
+ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-{'win-arm64' if is_arm64() else 'win64'}.zip"
 
 
 def run(command: list[str]) -> None:
@@ -35,7 +44,7 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [str(REPO_WIN / "build-deps.cmd"), "vs2022-x64", "Release"],
+            [str(REPO_WIN / "build-deps.cmd"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"],
             check=True,
             text=True,
             input="y\n",
@@ -43,14 +52,14 @@ def build() -> None:
         run(
             [
                 str(REPO_WIN / "run-cmake.bat"),
-                "vs2022-x64",
+                "vs2022-ARM64" if is_arm64() else "vs2022-x64",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
                 "-DADD_COMMIT_SHA=ON",
                 "-DVERSION_OVERRIDE=ON",
             ]
         )
-        run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-x64", "Release"])
+        run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"])
 
 
 def archive_executables() -> None:

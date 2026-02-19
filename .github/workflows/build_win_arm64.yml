@@ -5,11 +5,36 @@ on:
 
 jobs:
   build_ifcopenshell:
-    runs-on: windows-11-arm
     strategy:
       fail-fast: false
       matrix:
-        arch: ['ARM64']
+        include:
+          - arch: x64
+            runs_on: windows-2022
+            deps_dir: _deps-vs2022-x64-installed
+            cmake_triplet: vs2022-x64
+            vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
+            build_repo: qcom-eng-691/IfcOpenShell-build-outputs
+            build_branch: windows-x64
+            zip_suffix: win64
+            do_s3: false
+            git_name: tsomanna_QCOM
+            git_email: tsomanna@qti.qualcomm.com
+
+          - arch: ARM64
+            runs_on: windows-11-arm     # your self-hosted label
+            deps_dir: _deps-vs2022-ARM64-installed
+            cmake_triplet: vs2022-ARM64
+            vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"'
+            build_repo: qcom-eng-691/IfcOpenShell-build-outputs
+            build_branch: windows-arm64
+            zip_suffix: win-arm64
+            do_s3: false
+            git_name: tsomanna_QCOM
+            git_email: tsomanna@qti.qualcomm.com
+
+    runs-on: ${{ matrix.runs_on }}
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -19,9 +44,9 @@ jobs:
       - name: Checkout Build Repository
         uses: actions/checkout@v6
         with:
-          repository: IfcOpenShell/build-outputs
-          path: _deps-vs2022-ARM64-installed
-          ref: windows-${{ matrix.arch }}
+          repository: ${{ matrix.build_repo }}
+          path: ${{ matrix.deps_dir }}
+          ref: ${{ matrix.build_branch }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
@@ -31,33 +56,27 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
-          cd _deps-vs2022-ARM64-installed
+          cd ${{ matrix.deps_dir }}
           Get-ChildItem -Path . -Filter 'cache-*.zip' | ForEach-Object {
             7z x $_.FullName
           }
-        
-      - name: ccache
-        # TODO: Use tag after 1.2.20 releases.
-        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
-        with:
-          key: win-${{ matrix.arch }}
-          # Windows ccache needs ~1GB
-          # and with default 500MB some cache gets deleted, leading to misses.
-          max-size: 5000MB
 
       - name: Run Build Script And Pack .zip Archives
         shell: cmd
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}  # lets the Python script know which arch to target (optional override)
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
-          set CMAKE_POLICY_VERSION_MINIMUM=3.5          
+          call ${{ matrix.vcvars }}
+          set CMAKE_POLICY_VERSION_MINIMUM=3.5
           set CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
           set CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=ProgramDatabase
           cd win
-          python build-win-arm64.py
+          rem Unified script that autodetects arch or uses TARGET_ARCH
+          python build-all-win.py
 
       - name: Pack Dependencies
         run: |
-          cd _deps-vs2022-ARM64-installed
+          cd ${{ matrix.deps_dir }}
           Get-ChildItem -Path . -Directory | ForEach-Object {
             $cacheFile = "cache-$($_.Name).zip"
             echo $cacheFile
@@ -68,28 +87,17 @@ jobs:
 
       - name: Commit and Push Changes to Build Repository
         run: |
-          cd _deps-vs2022-x64-installed
-          git config user.name "IfcOpenBot"
-          git config user.email "ifcopenbot@ifcopenshell.org"
+          cd _deps-vs2022-ARM64-installed
+          git lfs install
+          git lfs track "*.zip"
+          git add .gitattributes
+          git commit -m "Track cache ZIPs with LFS" 2>$null || echo "gitattributes unchanged"
+          git add --renormalize .
+          git lfs ls-files || echo "No LFS-tracked files yet"
+          git config user.name "tsomanna_QCOM"
+          git config user.email "tsomanna@qti.qualcomm.com"
+          git checkout -B windows-arm64
           git add *.zip
-          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
-          git push || echo "Push failed"
+          git commit -m "Update ARM64 build caches [skip ci]" || echo "No changes to commit"
+          git push --set-upstream origin windows-arm64 || echo "Push failed"
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Upload .zip Archives to S3
-        env:
-          AWS_DEBUG: 1
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 3
-        run: |
-          dir "$env:USERPROFILE\output"
-          foreach ($zip in Get-ChildItem -Path "$env:USERPROFILE\output" -Filter *.zip) {
-              aws s3 cp "$($zip.FullName)" s3://ifcopenshell-builds/ --debug
-              Start-Sleep -Seconds 5
-          }
