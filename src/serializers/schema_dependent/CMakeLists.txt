@@ -9,9 +9,9 @@ foreach(schema ${SCHEMA_VERSIONS})
         Serializers_ifc${schema}
         PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}"
     )
-    target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES} ${GLTF_LIBRARIES})
+    target_link_libraries(Serializers_ifc${schema} IfcGeom ${HDF5_LIBRARIES} ${GLTF_LIBRARIES})
     if(NOT WASM_BUILD)
-        target_link_libraries(Serializers_ifc${schema} IfcGeom ${OpenCASCADE_LIBRARIES})
+        target_link_libraries(Serializers_ifc${schema} ${OpenCASCADE_LIBRARIES})
     endif()
 endforeach()
 
