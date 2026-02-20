@@ -1664,12 +1664,16 @@ class ToggleLinkVisibility(bpy.types.Operator):
         return {"FINISHED"}
 
     def toggle_wireframe(self, link: "Link") -> None:
+        linked_collections = self.get_linked_collections()
+
         link.is_wireframe = not link.is_wireframe
         display_type = "WIRE" if link.is_wireframe else "TEXTURED"
-        for collection in self.get_linked_collections():
+        for collection in linked_collections:
             objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
             for obj in objs:
                 obj.display_type = display_type
+        if handle := tool.Project.get_link_empty_handle(link):
+            handle.display_type = display_type
 
     def toggle_visibility(self, link: "Link") -> None:
         linked_collections = self.get_linked_collections()
@@ -1746,15 +1750,14 @@ class EditLink(bpy.types.Operator, tool.Ifc.Operator):
 
         # obj_matrix is typically calculated as:
         # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
-        # So let's calculate the transformation
-
-        transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
-        transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
-        if np.allclose(transformation, np.eye(4)):
-            link.has_transformation = True
+        identity_blender_matrix = np.linalg.inv(local_matrix) @ global_matrix
+        if np.allclose(np.array(new_obj_matrix), identity_blender_matrix, atol=1e-5):
+            link.has_transformation = False
             transformation = ",".join(map(str, np.eye(4).reshape(-1)))
         else:
-            link.has_transformation = False
+            transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
+            transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
+            link.has_transformation = True
             transformation = ",".join(map(str, transformation.reshape(-1)))
 
         if tool.Ifc.get():
@@ -3245,29 +3248,9 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
             bmesh.ops.scale(bm, vec=(scale_factor, scale_factor, 1.0), verts=bm.verts)
 
-            if bm.loops.layers.uv:
-                uv_layer = bm.loops.layers.uv.active
-
-                min_x = min(v.co.x for v in bm.verts)
-                max_x = max(v.co.x for v in bm.verts)
-                min_y = min(v.co.y for v in bm.verts)
-                max_y = max(v.co.y for v in bm.verts)
-
-                width = max_x - min_x
-                height = max_y - min_y
-
-                for face in bm.faces:
-                    for loop in face.loops:
-                        vert = loop.vert
-                        u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                        v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                        u = max(0.0, min(1.0, u))
-                        v = max(0.0, min(1.0, v))
-                        loop[uv_layer].uv = (u, v)
-
             bm.to_mesh(mesh)
             bm.free()
+            tool.Loader.load_generated_uv_map(mesh)
             mesh.update()
 
             element = tool.Ifc.get_entity(self.target_object)

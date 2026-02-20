@@ -934,11 +934,11 @@ class TestAddReferenceImage(NewFile):
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
-        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=3.53982, y_length=2.0)
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
-        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((1.0, 0.565, 0.0)))
+        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
 
         material = obj.active_material
         assert material
@@ -957,4 +957,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["Generated"].links[:]) == 1
+        assert len(uv_node.outputs["UV"].links[:]) == 1
