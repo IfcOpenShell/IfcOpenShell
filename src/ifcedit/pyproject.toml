@@ -17,6 +17,9 @@ classifiers = [
 ]
 dependencies = ["ifcopenshell"]
 
+[project.scripts]
+ifcedit = "ifcedit.__main__:main"
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"

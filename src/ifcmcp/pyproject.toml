@@ -19,6 +19,9 @@ dependencies = ["ifcopenshell", "ifcquery", "ifcedit"]
 [project.optional-dependencies]
 mcp = ["mcp"]
 
+[project.scripts]
+ifcmcp = "ifcmcp.__main__:main"
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
