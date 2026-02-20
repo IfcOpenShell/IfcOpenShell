@@ -82,6 +82,9 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         op.hotkey = "S_S"
         op.description = "Scale Image Annotation. Allows to scale an IfcReferenceImage. Select image, select tool. Check lower left corner instructions to select two points and provide real distance between them"
 
+        op = row.operator("bim.generate_uv_map", text="Generate UV Map", icon="UV")
+        op.description = "Generate UV map for selected mesh."
+
 
 class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
@@ -138,3 +141,19 @@ class ExploreHotkey(bpy.types.Operator):
             return
 
         bpy.ops.bim.image_scaling_tool("INVOKE_DEFAULT")
+
+class GenerateUVMap(bpy.types.Operator):
+    bl_idname = "bim.generate_uv_map"
+    bl_label = "Generate UV Map"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    description: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj or not hasattr(obj, "data") or not hasattr(obj.data, "polygons"):
+            self.report({"ERROR"}, "No valid mesh selected.")
+            return {"CANCELLED"}
+        tool.Loader.load_generated_uv_map(obj.data)
+        self.report({"INFO"}, "Generated UV map for selected mesh.")
+        return {"FINISHED"}
