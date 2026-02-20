@@ -95,7 +95,7 @@ Used environment variables:
 #     on RHEL-related distros:                                                #
 #          $ dnf install git gcc gcc-c++ autoconf bison make cmake            #
 #            mesa-libGL-devel libffi-devel fontconfig-devel bzip2             #
-#            automake patch byacc xz                                          #
+#            automake patch byacc xz zlib-devel openssl-devel                 #
 
 """
 
