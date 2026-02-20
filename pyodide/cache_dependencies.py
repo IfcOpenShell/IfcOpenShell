@@ -5,6 +5,8 @@ This script is finding common install directory and either
 packs each folder into a tar.gz archive, if it wasn't packed before,
 or unpacks existing archives.
 
+Expected to be executed from 'build' directory (e.g. that might contain 'Linux/x86_64/install').
+
 Usage: python cache_dependencies.py [pack|unpack]
 """
 
