@@ -33,6 +33,7 @@ def select(model: ifcopenshell.file, query: str) -> list[dict[str, Any]]:
         entry: dict[str, Any] = {
             "id": element.id(),
             "type": element.is_a(),
+            "repr": str(element),
         }
         if hasattr(element, "Name"):
             entry["name"] = element.Name

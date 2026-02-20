@@ -113,11 +113,14 @@ def _is_entity_type(hint) -> bool:
     return False
 
 
-def _coerce_entity(value_str: str, model: ifcopenshell.file | None) -> ifcopenshell.entity_instance:
+def _coerce_entity(value_str: str | int, model: ifcopenshell.file | None) -> ifcopenshell.entity_instance:
     """Resolve a step ID string like '123' or '#123' to an entity instance."""
     if model is None:
         raise ValueError("Cannot resolve entity reference without an IFC model")
-    entity_id = int(value_str.strip().lstrip("#"))
+    if isinstance(value_str, int):
+        entity_id = value_str
+    else:
+        entity_id = int(value_str.strip().lstrip("#"))
     try:
         return model.by_id(entity_id)
     except RuntimeError:

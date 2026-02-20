@@ -14,7 +14,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "ifcquery", "ifcedit", "mcp"]
+dependencies = ["ifcopenshell", "ifcquery", "ifcedit"]
+
+[project.optional-dependencies]
+mcp = ["mcp"]
 
 [project.urls]
 Homepage = "http://ifcopenshell.org"
