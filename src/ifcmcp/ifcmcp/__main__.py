@@ -1,4 +1,5 @@
-# This file was generated with the assistance of an AI coding tool.
-from ifcmcp.server import server
+# ifc_cli/src/ifcmcp/ifcmcp/__main__.py
+from ifcmcp.server import build_server
 
+server = build_server()
 server.run(transport="stdio")
