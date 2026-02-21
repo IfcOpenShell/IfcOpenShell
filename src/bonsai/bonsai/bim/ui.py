@@ -661,7 +661,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     bsdd_baseurl: StringProperty(
-        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        name="bSDD API Base URL",
+        description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
         default="https://api.bsdd.buildingsmart.org/api/",
     )
     should_disable_undo_on_save: BoolProperty(

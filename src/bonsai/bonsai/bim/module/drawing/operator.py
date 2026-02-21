@@ -3876,7 +3876,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         layout.prop(self, "x_length")
         layout.prop(self, "y_length")
 
-
     def _execute(self, context):
         project_props = tool.Project.get_project_props()
         project_props.load_indexed_maps = self.show_texture_solid_mode
@@ -3905,7 +3904,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         hx = self.x_length * 0.5 / unit_scale
         hy = self.y_length * 0.5 / unit_scale
-        verts = [(-hx, -hy, 0.0), ( hx, -hy, 0.0), ( hx,  hy, 0.0), (-hx,  hy, 0.0)]
+        verts = [(-hx, -hy, 0.0), (hx, -hy, 0.0), (hx, hy, 0.0), (-hx, hy, 0.0)]
         item = builder.mesh(verts, [[0, 1, 2, 3]])
 
         ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
