@@ -20,9 +20,9 @@
 // TODO: Multiple schemas
 #define IfcSchema Ifc2x3
 
-#include "../ifcparse/IfcFile.h"
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcFile.h"
+#include "ifcparse/IfcLogger.h"
+#include "ifcparse/Ifc2x3.h"
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>

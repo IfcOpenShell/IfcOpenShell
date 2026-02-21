@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
+from math import pi
+
 import numpy as np
+
 import ifcopenshell.api.context
-import ifcopenshell.api.unit
-import ifcopenshell.api.root
 import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from math import pi
 
 
 class TestCacheUnits(test.bootstrap.IFC4):

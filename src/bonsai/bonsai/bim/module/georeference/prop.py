@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.util.geolocation
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
 from bonsai.bim.module.georeference.data import GeoreferenceData
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from typing import TYPE_CHECKING
+from bonsai.bim.prop import Attribute
 
 
 def get_coordinate_operation_class(
@@ -215,23 +217,19 @@ class BIMGeoreferenceProperties(PropertyGroup):
         description="Affects the georeference decorator size",
         default=1,
         soft_min=0.1,
-        soft_max=50,
+        soft_max=100,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
     x_axis_ordinate: StringProperty(name="X Axis Ordinate", update=update_grid_north_vector)
     x_axis_is_null: BoolProperty(name="X Axis Is Null")
 
-    # These are only for reference to capture data about a host model from a linked model
-    # If you relink a model from a new host origin, we can autodetect it in theory with this
-    host_model_origin: StringProperty(name="Host Model Origin")
-    host_model_origin_si: StringProperty(name="Host Model Origin SI")
-    host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
-
     # This is the ENH in project units and SI units of the Blender session's 0,0,0.
     # These are only for reference, using tool.Georeference.set_model_origin on
     # project load, project create, and when linking for the first time from an
     # empty Blender session.
+    model_is_georeferenced: BoolProperty(name="Model Is Georeferenced")
+    model_crs: StringProperty(name="Model CRS")
     model_origin: StringProperty(name="Model Origin")
     model_origin_si: StringProperty(name="Model Origin SI")
     model_project_north: StringProperty(name="Model Angle to Grid North")
@@ -272,10 +270,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
         x_axis_abscissa: str
         x_axis_ordinate: str
         x_axis_is_null: bool
-
-        host_model_origin: str
-        host_model_origin_si: str
-        host_model_project_north: str
 
         model_origin: str
         model_origin_si: str

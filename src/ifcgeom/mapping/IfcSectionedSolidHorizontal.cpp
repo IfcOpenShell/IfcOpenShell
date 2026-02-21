@@ -61,33 +61,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 
 		longitudes.push_back(*pbde->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>(true) * length_unit_);
 
-		// Corresponds to the profile X, Y directions (hopefully).
-		Eigen::Vector3d po(
-			pbde->OffsetLateral().get_value_or(0.),
-			// @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
-			pbde->OffsetVertical().get_value_or(0.),
-			0.
-		);
-
-		profile_offsets.push_back(po);
-
-		boost::optional<Eigen::Matrix3d> rot;
-		if (csp->Axis() && csp->RefDirection()) {
-			rot = taxonomy::matrix4(
-				Eigen::Vector3d(0, 0, 0),
-				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents(),
-				taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents()).ccomponents().block<3,3>(0,0);
-		} else if (csp->Axis()) {
-			rot = taxonomy::matrix4(
-				Eigen::Vector3d(0, 0, 0),
-				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
-        } else if (csp->RefDirection()) {
-            rot = taxonomy::matrix4(
-                Eigen::Vector3d(0, 0, 0),
-                Eigen::Vector3d(0, 0, 1),
-                taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents()
-			).ccomponents().block<3, 3>(0, 0);
-        }
+		auto linear_placement = taxonomy::cast<taxonomy::matrix4>(map(csp));
+      profile_offsets.push_back(linear_placement->ccomponents().block<3, 1>(0, 3));
+		boost::optional<Eigen::Matrix3d> rot(linear_placement->ccomponents().block<3,3>(0,0));
 		profile_rotations.push_back(rot);
 	}
 	if (faces.size() != profile_offsets.size()) {

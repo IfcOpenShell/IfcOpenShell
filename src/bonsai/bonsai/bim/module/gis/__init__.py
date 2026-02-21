@@ -17,9 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import prop
-from . import operator
-from . import ui
+
+from . import operator, prop, ui
 
 classes = (
     prop.BIMCityJsonProperties,

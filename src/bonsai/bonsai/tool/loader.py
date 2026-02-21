@@ -17,11 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import logging
 import os
 import re
-import bpy
+from math import atan, radians
+from pathlib import Path
+from typing import Any, Optional, Union, cast
+
 import bmesh
-import logging
+import bpy
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
@@ -30,17 +35,15 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import bonsai.core.tool
-import bonsai.tool as tool
-import bonsai.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.util.shape_builder import np_to_4d
-from math import atan, radians
-from mathutils import Vector, Matrix
-from pathlib import Path
-from typing import Union, Any, Optional, cast
+from mathutils import Matrix, Vector
+from mathutils.kdtree import KDTree
 
+import bonsai.bim.import_ifc
+import bonsai.core.tool
+import bonsai.tool as tool
 
 # Progressively we'll refactor loading elements into Blender objects into this
 # class. This will break down the monolithic import_ifc module and allow us to
@@ -176,7 +179,8 @@ class Loader(bonsai.core.tool.Loader):
     def surface_texture_to_dict(cls, surface_texture):
         if isinstance(surface_texture, dict):
             return surface_texture
-        mappings = surface_texture.IsMappedBy or []
+        # IsMappedBy is an IFC4+ inverse attribute, not available in IFC2X3.
+        mappings = getattr(surface_texture, "IsMappedBy", None) or []
         surface_texture = surface_texture.get_info()
         uv_mode = None
         if mappings:
@@ -185,7 +189,7 @@ class Loader(bonsai.core.tool.Loader):
                 uv_mode = "Generated"
             elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
                 uv_mode = "Camera"
-        surface_texture["uv_mode"] = uv_mode or "UV"
+        surface_texture["uv_mode"] = uv_mode or "Generated"
         return surface_texture
 
     @classmethod
@@ -283,6 +287,9 @@ class Loader(bonsai.core.tool.Loader):
 
         for texture in textures:
             mode = texture.get("Mode", None)
+            # IFC2X3 IfcImageTexture has no Mode attribute; default to DIFFUSE.
+            if mode is None and texture["type"] == "IfcImageTexture":
+                mode = "DIFFUSE"
             node = None
 
             image_url = None
@@ -290,7 +297,8 @@ class Loader(bonsai.core.tool.Loader):
             def get_image() -> Union[bpy.types.Image, None]:
                 # TODO: orphaned textures after shader recreated?
                 if texture["type"] == "IfcImageTexture":
-                    original_image_url = texture["URLReference"]
+                    # IFC2X3 uses UrlReference, IFC4+ uses URLReference.
+                    original_image_url = texture.get("URLReference") or texture.get("UrlReference", "")
                     is_relative = not os.path.isabs(original_image_url)
                     nonlocal image_url
                     image_url = Path(original_image_url)
@@ -313,6 +321,7 @@ class Loader(bonsai.core.tool.Loader):
                     # https://blender.stackexchange.com/questions/173206/how-to-efficiently-convert-a-pil-image-to-bpy-types-image
                     # https://blender.stackexchange.com/questions/62072/does-blender-have-a-method-to-a-get-png-formatted-bytearray-for-an-image-via-pyt
                     import io
+
                     from PIL import Image
 
                     value = texture["RasterCode"]
@@ -536,6 +545,33 @@ class Loader(bonsai.core.tool.Loader):
             cls.load_indexed_map(colour, mesh)
 
     @classmethod
+    def load_generated_uv_map(cls, mesh: bpy.types.Mesh) -> None:
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+
+        all_verts = [v.co for v in bm.verts]
+        if not all_verts:
+            bm.free()
+            return
+
+        min_x = min(v.x for v in all_verts)
+        max_x = max(v.x for v in all_verts)
+        min_y = min(v.y for v in all_verts)
+        max_y = max(v.y for v in all_verts)
+        width = max_x - min_x
+        height = max_y - min_y
+
+        for face in bm.faces:
+            for loop in face.loops:
+                u = (loop.vert.co.x - min_x) / width if width > 0 else 0.5
+                v = (loop.vert.co.y - min_y) / height if height > 0 else 0.5
+                loop[uv_layer].uv = (max(0.0, min(1.0, u)), max(0.0, min(1.0, v)))
+
+        bm.to_mesh(mesh)
+        bm.free()
+
+    @classmethod
     def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
         """Add data from index map as blender mesh attribute.
 
@@ -559,7 +595,18 @@ class Loader(bonsai.core.tool.Loader):
 
         bm_verts = np.array([v.co for v in bm.verts])
         coords_scaled = np.array(faceset.Coordinates.CoordList) * si_conversion
-        coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
+        # See #2824. IfcIndexedColourMap is not natively handled by IfcOpenShell
+        # As a result, we map IFC coords to Blender coords (highly wasteful but...)
+        # coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
+        # Because this is O(N*M), here is a faster KDTree implementation.
+        kd = KDTree(len(bm_verts))
+        for i, v in enumerate(bm_verts):
+            kd.insert((float(v[0]), float(v[1]), float(v[2])), i)
+        kd.balance()
+        coordinates_remap = np.empty(len(coords_scaled), dtype=np.int32)
+        for j, co in enumerate(coords_scaled):
+            _co, index, _dist = kd.find((float(co[0]), float(co[1]), float(co[2])))
+            coordinates_remap[j] = index
 
         # ifc indices start with 1
         remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]

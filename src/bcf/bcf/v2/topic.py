@@ -1,12 +1,12 @@
 """BCF XML V2 Topic handler."""
 
 from __future__ import annotations
+
 import datetime
-import tempfile
 import uuid
 import zipfile
 from pathlib import Path
-from typing import Any, NoReturn, Optional, Union
+from typing import Any, NoReturn, Optional
 
 import numpy as np
 from ifcopenshell import entity_instance

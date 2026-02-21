@@ -15,8 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
 import ifcopenshell
-from typing import Optional
 
 
 def add_layer(file: ifcopenshell.file, name: str = "Unnamed") -> ifcopenshell.entity_instance:

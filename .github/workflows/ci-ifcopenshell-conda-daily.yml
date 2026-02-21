@@ -21,7 +21,7 @@ jobs:
       date: ${{ steps.date.outputs.date }}
       verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set env
         run: echo ok go
       
@@ -54,8 +54,7 @@ jobs:
         platform: [
           { name: win, distver: windows-latest, pkg_dir: 'win-64' },
           { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
-          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' },
-          { name: macOS-x86, distver: macos-13, pkg_dir: 'osx-64' }
+          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' }
         ]
     steps:
       - name: Set Swap Space
@@ -76,7 +75,7 @@ jobs:
             echo "ARTIFACTS_DIR=/home/runner/work/artifacts" >> $GITHUB_ENV
           fi
       
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 

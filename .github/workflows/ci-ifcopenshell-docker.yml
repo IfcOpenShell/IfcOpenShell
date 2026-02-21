@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: activate
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -42,9 +42,6 @@ jobs:
       run: |
         mkdir build && cd build
         cmake \
-         -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-         -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-         -DCMAKE_CXX_STANDARD=17 \
          -DCMAKE_INSTALL_PREFIX=$PWD/install/ \
          -DCMAKE_BUILD_TYPE=Release \
          -DCMAKE_PREFIX_PATH=/usr \
@@ -76,7 +73,7 @@ jobs:
         make package
       working-directory: build
     - name: Upload 
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         # Artifact name
         name: ifcos-artifacts
@@ -89,12 +86,12 @@ jobs:
     name: Docker Build, Tag, Push
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
     
     - name: Download 
-      uses: actions/download-artifact@v6.0.0
+      uses: actions/download-artifact@v7.0.0
       with:
         # Artifact name
         name: ifcos-artifacts

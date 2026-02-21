@@ -18,19 +18,19 @@
 
 
 from __future__ import annotations
+
 import functools
 import importlib
-import numbers
 import itertools
+import numbers
 import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, TypeVar, overload, TYPE_CHECKING, cast, NoReturn
 from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, Union, cast, overload
 
-from . import ifcopenshell_wrapper
-from . import settings
+from . import ifcopenshell_wrapper, settings
 
 if TYPE_CHECKING:
     import ifcopenshell

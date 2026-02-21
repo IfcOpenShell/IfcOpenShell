@@ -17,10 +17,10 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import numpy as np
-import ifcopenshell
-import ifcopenshell.util.placement
 import typing
+
+import ifcopenshell.util.placement
+import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 

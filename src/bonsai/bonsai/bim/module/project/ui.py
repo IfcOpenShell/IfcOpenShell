@@ -17,19 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import os
+from typing import TYPE_CHECKING
+
+import bpy
+import math
 import ifcopenshell
+from bpy.types import Menu, Panel, UIList
+
 import bonsai.bim
 import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search, draw_attributes
-from bpy.types import Panel, Menu, UIList
+from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.project.data import ProjectData, LinksData
+from bonsai.bim.module.project.data import LinksData, ProjectData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        FilterCategory,
+        LibraryElement,
+        Link,
+    )
 
 
 def file_import_menu(self, context):
@@ -331,6 +341,17 @@ class BIM_PT_project(Panel):
         col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
+        if tool.Blender.get_addon_preferences().save_metadata_blend_file:
+            suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+            if props.ifc_file.lower().endswith(".ifc"):
+                metadata_filename = os.path.basename(props.ifc_file)[:-4] + suffix
+            else:
+                metadata_filename = os.path.basename(props.ifc_file) + suffix
+            row = self.layout.row(align=True)
+            row.use_property_split = False
+            pprops = tool.Project.get_project_props()
+            row.prop(pprops, "should_save_metadata_for_this_file", text=f"Save session data to: {metadata_filename}")
+
 
 class BIM_PT_new_project_wizard(Panel):
     bl_label = "New Project Wizard"
@@ -356,8 +377,13 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "area_unit", text="Area Unit")
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
+        row = self.layout.row()
+        row.prop(props, "mass_unit", text="Mass Unit")
+        row = self.layout.row()
+        row.prop(props, "time_unit", text="Time Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
+        self.layout.use_property_split = True
         row = self.layout.row()
         row.operator("bim.create_project")
 
@@ -453,17 +479,27 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
+
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
-            self.layout.template_list(
-                "BIM_UL_links",
-                "",
-                self.props,
-                "links",
-                self.props,
-                "active_link_index",
-            )
+            if self.props.active_link:
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                index = self.props.active_link_index
+                if self.props.active_link.is_loaded:
+                    if self.props.active_link.is_editing:
+                        row.operator("bim.edit_link", text="", icon="CHECKMARK")
+                        row.operator("bim.disable_editing_link", text="", icon="CANCEL")
+                    else:
+                        row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
+                    row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
+                    row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
+                    row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
+                else:
+                    row.operator("bim.load_link", text="", icon="LINKED").link_index = index
+                    row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
+            self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
             row = self.layout.row(align=True)
@@ -583,47 +619,30 @@ class BIM_UL_links(UIList):
         active_propname,
         index,
     ):
-        if item:
-            row = layout.row(align=True)
-            if item.is_loaded:
-                row.label(text=item.name)
-                op = row.operator(
-                    "bim.toggle_link_selectability",
-                    text="",
-                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
-                    emboss=False,
-                )
-                op.link = item.name
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "WIREFRAME"
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "VISIBLE"
-                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
-                op.index = index
-                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-                op.filepath = item.name
-                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
-                op.filepath = item.name
-            else:
-                row.prop(item, "name", text="")
-                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
-                op = row.operator("bim.load_link", text="", icon="LINKED")
-                op.filepath = item.name
-                op = row.operator("bim.unlink_ifc", text="", icon="X")
-                op.filepath = item.name
+        row = layout.row(align=True)
+        if item.is_loaded:
+            if item.georeferenced == "NONE":
+                row.label(text="", icon="QUESTION")
+            elif item.georeferenced == "NOT_COMPATIBLE":
+                row.label(text="", icon="ERROR")
+            elif item.georeferenced == "FULL_COMPATIBLE":
+                row.label(text="", icon="WORLD")
+            if item.has_transformation:
+                row.label(text="", icon="OBJECT_ORIGIN")
+
+            row.label(text=item.filepath)
+            icon = "RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON"
+            row.operator("bim.toggle_link_selectability", text="", icon=icon, emboss=False).link_index = index
+            icon = "CUBE" if item.is_wireframe else "MESH_CUBE"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "WIREFRAME"
+            icon = "HIDE_ON" if item.is_hidden else "HIDE_OFF"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "VISIBLE"
+        else:
+            row.label(text=item.filepath)
 
 
 class BIM_PT_purge(Panel):
@@ -635,6 +654,7 @@ class BIM_PT_purge(Panel):
     bl_parent_id = "BIM_PT_tab_quality_control"
 
     def draw(self, context):
+        props = tool.Debug.get_debug_props()
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
@@ -655,3 +675,10 @@ class BIM_PT_purge(Panel):
             row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = object_type
             merge_op = row.operator("bim.merge_identical_objects", text="Merge Identical")
             merge_op.object_type = object_type
+
+        layout.operator("bim.purge_unused_representations")
+
+        row = layout.row(align=True)
+        row.prop(props, "ifc_class_purge", text="")
+        row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
+        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")

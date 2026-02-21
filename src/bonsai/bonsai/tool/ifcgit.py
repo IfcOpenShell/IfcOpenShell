@@ -17,17 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import logging
 import os
 import re
 import subprocess
-import bpy
-import logging
 import tempfile
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
+
+import bonsai.tool as tool
 from bonsai.bim import import_ifc
 from bonsai.bim.ifc import IfcStore
-import bonsai.tool as tool
-from pathlib import Path
-from typing import TYPE_CHECKING, Union, Literal, Any
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -61,10 +64,13 @@ class IfcGit:
 
     @classmethod
     def clone_repo(cls, remote_url: str, local_folder: str) -> git.Repo:
-        IfcGitRepo.repo = git.Repo.clone_from(
+        repo = git.Repo.clone_from(
             url=remote_url,
             to_path=local_folder,
         )
+        # Close the repo to release stale subprocess
+        repo.close()
+        IfcGitRepo.repo = git.Repo(local_folder)
         cls.config_info_attributes(IfcGitRepo.repo)
         return IfcGitRepo.repo
 

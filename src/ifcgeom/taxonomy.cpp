@@ -822,11 +822,11 @@ namespace {
 
 
 boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
-	boost::optional<function_item::ptr> fi_;
+	boost::optional<function_item::ptr> function_item_;
 	auto loop_ = dcast<loop>(item);
 	if (loop_) {
-		if (loop_->fi.is_initialized()) {
-			fi_ = loop_->fi;
+        if (loop_->function_item.is_initialized()) {
+            function_item_ = loop_->function_item;
 		} else {
          // piecewise_function is a specialization of function_item - callers don't need to know this detail
 			piecewise_function::spans_t spans;
@@ -880,9 +880,9 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 					return boost::none;
 				}
 			}
-			fi_ = make<piecewise_function>(0.0,spans);
-			loop_->fi = fi_;
+            function_item_ = make<piecewise_function>(0.0, spans);
+            loop_->function_item = function_item_;
 		}
 	}
-    return fi_;
+    return function_item_;
 }

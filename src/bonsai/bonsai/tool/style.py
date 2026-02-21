@@ -17,23 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import numpy as np
+from mathutils import Color
+
+import bonsai.bim.helper
 import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-from mathutils import Color
-from typing import Union, Any, Optional, Literal, TYPE_CHECKING
-from collections.abc import Sequence
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.style.prop import (
+        BIMStyleProperties,
+        BIMStylesProperties,
+        ColourRgb,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {

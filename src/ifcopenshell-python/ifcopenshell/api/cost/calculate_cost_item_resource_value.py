@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.cost
-import ifcopenshell.util.date
 import ifcopenshell.util.resource
 
 

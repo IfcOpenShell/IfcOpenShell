@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bonsai.tool as tool
 from bpy.types import Panel
+
+import bonsai.tool as tool
 from bonsai.bim.module.nest.data import NestData
 
 

@@ -19,7 +19,8 @@
 # pyright: reportAttributeAccessIssue=false
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddAnimationCamera,

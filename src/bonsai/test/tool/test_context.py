@@ -18,9 +18,10 @@
 
 import bpy
 import ifcopenshell
-import test.bim.bootstrap
+
 import bonsai.core.tool
 import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool.context import Context as subject
 
 

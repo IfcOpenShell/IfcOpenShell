@@ -9,9 +9,19 @@ endif()
 set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
 add_executable(IfcConvert ${IFCCONVERT_FILES})
 
-target_link_libraries(IfcConvert IfcGeom IfcParse Serializers ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
-if(WITH_RELATIONSHIP_VALIDATION)
-    set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
-endif()
+target_link_libraries(
+    IfcConvert
+    PRIVATE
+        IfcGeom
+        IfcParse
+        Serializers
+        ${kernel_libraries}
+        ${OpenCASCADE_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${HDF5_LIBRARIES}
+        ${USD_LIBRARIES}
+        ${CGAL_LIBRARIES}
+        ${GLTF_LIBRARIES}
+)
 
-install(TARGETS IfcConvert)
+install(TARGETS IfcConvert EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

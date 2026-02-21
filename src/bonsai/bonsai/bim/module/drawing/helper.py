@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import ifcopenshell.util.element
-import mathutils.geometry
-import ifcopenshell
-import ifcopenshell.util.unit
-import bonsai.tool as tool
-from mathutils import Vector
 from typing import Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
+import mathutils.geometry
+from mathutils import Vector
+
+import bonsai.tool as tool
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 
@@ -313,15 +315,13 @@ def format_distance(
             if not feet and not add_inches:
                 tx_dist += str(feet) + "'"
 
-            # Add "0' - " when we have inches but no feet
-            # But only add " - " separator if we actually have inches to show
             if not feet and add_inches:
-                tx_dist += "0' - "
+                if value < 0:
+                    tx_dist += "-0' - "
+                else:
+                    tx_dist += "0' - "
             elif feet and add_inches:
                 tx_dist += " - "
-
-            if not feet and value < 0:
-                tx_dist += "-"
             if add_inches:
                 if feet == 0 and inches == 0 and not frac:
                     # Special case: exactly zero, show "0"
@@ -507,7 +507,7 @@ def ortho_view_frame(
 
 
 def almost_zero(v):
-    return abs(v) < 1e-5
+    return abs(v) < 1e-4
 
 
 def clip_segment(bounds, segm):

@@ -17,26 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from collections.abc import Generator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
+
+import aud
 import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.api.cost
 import ifcopenshell.api.document
 import ifcopenshell.api.nest
-import ifcopenshell.util.element
-import ifcopenshell.util.date
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
+
 import bonsai.bim.helper
-import json
-from pathlib import Path
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
-from collections.abc import Generator
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
+    from bonsai.bim.prop import Attribute
 
 
 class Cost(bonsai.core.tool.Cost):
@@ -140,25 +144,18 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def play_sound(cls) -> None:
-        if tool.Blender.get_addon_preferences().should_play_chaching_sound:
+        # Save ears for those running the tests in background mode.
+        if tool.Blender.get_addon_preferences().should_play_chaching_sound and not bpy.app.background:
             cls.play_chaching_sound()  # lol
 
     @classmethod
     def play_chaching_sound(cls) -> None:
         # TODO: make pitch higher as costs rise
-        try:
-            import aud
-
-            device = aud.Device()
-            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
-            handle = device.play(sound)
-            sound_buffered = aud.Sound.buffer(sound)
-            handle_buffered = device.play(sound_buffered)
-            handle.stop()
-            handle_buffered.stop()
-        except:
-            pass  # ah well
+        device = aud.Device()
+        # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+        filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
+        sound = aud.Sound(filepath)
+        device.play(sound)
 
     @classmethod
     def load_cost_schedule_tree(cls) -> None:
@@ -581,8 +578,9 @@ class Cost(bonsai.core.tool.Cost):
     ) -> ifcopenshell.entity_instance:
         if not file_path:
             return
-        from ifc5d.csv2ifc import Csv2Ifc
         import time
+
+        from ifc5d.csv2ifc import Csv2Ifc
 
         start = time.time()
 
@@ -804,8 +802,8 @@ class Cost(bonsai.core.tool.Cost):
         format: Literal["CSV", "ODS", "XLSX"],
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
-        import subprocess
         import os
+        import subprocess
         import sys
 
         if dirpath:

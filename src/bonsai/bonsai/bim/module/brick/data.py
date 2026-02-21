@@ -17,11 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+
 import bonsai.tool as tool
 from bonsai.tool.brick import BrickStore
 
 try:
-    from rdflib import URIRef, BNode
+    from rdflib import BNode, URIRef
 except:
     # See #1860
     print("Warning: brickschema not available.")

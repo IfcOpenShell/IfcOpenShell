@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.api.group
-import ifcopenshell.util.element
 
 
 def unassign_system(

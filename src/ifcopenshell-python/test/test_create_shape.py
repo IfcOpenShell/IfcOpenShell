@@ -3,8 +3,10 @@ import itertools
 import multiprocessing
 import operator
 import os
+from typing import get_args
+
 import pytest
-import test.bootstrap
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.owner.settings
@@ -14,8 +16,8 @@ import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.shape
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import get_args
 
 fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
 

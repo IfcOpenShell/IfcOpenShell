@@ -18,12 +18,14 @@
 
 
 import os
+from functools import partial
+
 import bpy
+from bpy.types import WorkSpaceTool
+
+import bonsai.core.spatial
 import bonsai.tool as tool
 from bonsai.bim.module.model.data import AuthoringData
-from bpy.types import WorkSpaceTool
-import bonsai.core.spatial
-from functools import partial
 
 
 class SpatialTool(WorkSpaceTool):

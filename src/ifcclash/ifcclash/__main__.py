@@ -18,10 +18,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import argparse
 import json
 import logging
-import argparse
+import sys
+
 from .ifcclash import Clasher, ClashSettings
 
 parser = argparse.ArgumentParser(description="Clashes geometry between two IFC files")

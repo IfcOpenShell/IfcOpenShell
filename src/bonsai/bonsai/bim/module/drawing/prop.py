@@ -16,39 +16,45 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
 import enum
+import json
+import os
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.decoration as decoration
-from mathutils import Matrix
-from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
-from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from pathlib import Path
-from bonsai.bim.prop import Attribute, StrProperty
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    BoolVectorProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
-    BoolVectorProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, get_args, Union
-from collections.abc import Callable
+from bpy.types import PropertyGroup
+from mathutils import Matrix
 
+import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.core.drawing as core
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import (
+    AnnotationData,
+    DecoratorData,
+    DrawingsData,
+    ElementValuesData,
+    SheetsData,
+)
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
+from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
 
 diagram_scales_enum = []
 
@@ -687,6 +693,107 @@ BOX_ALIGNMENT_POSITIONS = [
 ]
 
 
+class ElementValueRow(PropertyGroup):
+    """Represents a single element value row with category, key, and formatted value"""
+
+    category: EnumProperty(
+        name="Category",
+        items=[
+            ("Basic", "Basic", "Basic element information"),
+            ("Attributes", "Attributes", "IFC Attributes"),
+            ("Property Sets", "Property Sets", "Property Sets"),
+            ("Quantity Sets", "Quantity Sets", "Quantity Sets"),
+            ("Type", "Type", "Type information"),
+            ("Spatial", "Spatial", "Spatial relationships"),
+            ("Parent", "Parent", "Parent relationships"),
+            ("Classification", "Classification", "Classifications"),
+            ("Groups", "Groups", "Group assignments"),
+            ("Systems", "Systems", "System assignments"),
+            ("Zones", "Zones", "Zone assignments"),
+            ("Material", "Material", "Material information"),
+            ("Styles", "Styles", "Style information"),
+            ("Profiles", "Profiles", "Profile information"),
+            ("Coordinates", "Coordinates", "Coordinate information"),
+            ("Custom String", "Custom String", "Custom text (no element key)"),
+        ],
+        default="Basic",
+    )
+
+    element_key: StringProperty(
+        name="Element Key",
+        description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')",
+        default="",
+    )
+
+    formatted_value: StringProperty(
+        name="Formatted Value",
+        description="The formatted value string with selector syntax (e.g., '{{id}}' or '``upper({{Name}})``')",
+        default="",
+    )
+
+    separator: StringProperty(
+        name="Separator",
+        description="Text to insert before this value when concatenating (e.g., ' - ', ', ', '\\n')",
+        default=" - ",
+    )
+
+    if TYPE_CHECKING:
+        category: str
+        element_key: str
+        formatted_value: str
+        separator: str
+
+
+def get_category_items_with_counts(self, context):
+    """Generate category items with counts dynamically"""
+    category_metadata = [
+        ("Basic", "Basic", "Basic element information", "OBJECT_DATA"),
+        ("Attributes", "Attributes", "IFC Attributes", "PROPERTIES"),
+        ("Property Sets", "Property Sets", "Property Sets", "ALIGN_JUSTIFY"),
+        ("Quantity Sets", "Quantity Sets", "Quantity Sets", "SNAP_VOLUME"),
+        ("Type", "Type", "Type information", "FILE_VOLUME"),
+        ("Spatial", "Spatial", "Spatial relationships", "HOME"),
+        ("Parent", "Parent", "Parent relationships", "FILE_PARENT"),
+        ("Classification", "Classification", "Classifications", "BOOKMARKS"),
+        ("Groups", "Groups", "Group assignments", "OUTLINER_COLLECTION"),
+        ("Systems", "Systems", "System assignments", "SYSTEM"),
+        ("Zones", "Zones", "Zone assignments", "MESH_CIRCLE"),
+        ("Material", "Material", "Material information", "MATERIAL"),
+        ("Styles", "Styles", "Style information", "COLOR"),
+        ("Profiles", "Profiles", "Profile information", "OUTLINER_DATA_CURVES"),
+        ("Coordinates", "Coordinates", "Coordinate information", "EMPTY_ARROWS"),
+        ("Custom String", "Custom String", "Add custom text (no element key)", "SMALL_CAPS"),
+    ]
+
+    obj = context.active_object
+
+    if obj and tool.Ifc.get_entity(obj):
+        try:
+            element = tool.Ifc.get_entity(obj)
+            text_element = element
+
+            if hasattr(self, "product_used"):
+                if self.product_used:
+                    element = tool.Ifc.get_entity(self.product_used)
+                else:
+                    assigned = tool.Drawing.get_assigned_product(text_element)
+                    if assigned:
+                        element = assigned
+
+            available_keys = ElementValuesData.get_available_element_value_keys(element)
+            items = []
+            for i, (identifier, base_name, description, icon) in enumerate(category_metadata):
+                count = len(available_keys.get(identifier, []))
+                display_name = f"{base_name} ({count})" if count > 0 else base_name
+                items.append((identifier, display_name, description, icon, i))
+
+            return items
+        except Exception as e:
+            pass
+
+    return [(id, name, desc, icon, i) for i, (id, name, desc, icon) in enumerate(category_metadata)]
+
+
 class LiteralProps(PropertyGroup):
     def set_box_alignment(self, new_value):
         markers = new_value.count(True)
@@ -725,16 +832,60 @@ class LiteralProps(PropertyGroup):
         }
         return text_data
 
+    show_element_values: bpy.props.BoolProperty(
+        name="Show Element Values", description="Show/hide the element values panel", default=False
+    )
+
+    expanded_category: bpy.props.StringProperty(
+        name="Expanded Category", description="Currently expanded category in the element values panel", default=""
+    )
+
+    element_values_filter: bpy.props.StringProperty(
+        name="Element Values Filter", description="Search filter for element values", default=""
+    )
+
+    product_used: PointerProperty(
+        name="Product Used",
+        type=bpy.types.Object,
+        description="Object to use for fetching element values. If empty, uses assigned product",
+    )
+
+    element_value_rows: CollectionProperty(
+        name="Element Value Rows",
+        type=ElementValueRow,
+        description="Collection of element value rows for building the literal value",
+    )
+
+    category_for_adding: EnumProperty(
+        name="Category for Adding",
+        items=get_category_items_with_counts,
+        default=0,
+        description="Category to use when adding a new element value row",
+    )
+
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
         box_alignment: tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool]
         ifc_definition_id: int
+        element_value_rows: bpy.types.bpy_prop_collection_idprop[ElementValueRow]
+        category_for_adding: str
 
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
+    newline_at: IntProperty(name="Newline At")
+    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Symbol",
+        description="Symbol from symbols.svg to use for this text.",
+        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
+        default="NO SYMBOL",
+    )
+    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Custom Symbol",
+        description="Non-default symbol to use for this text.",
+    )
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -746,32 +897,34 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
-    newline_at: IntProperty(name="Newline At")
-    reverse_list: BoolProperty(name="Reverse List", description="Reverses the order of any list.", default=False)
-    list_separator: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="List Separator",
-        description="Text used to separate lists. Uses a comma (, ) if empty.",
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
     )
-    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
-        name="Symbol",
-        description="Symbol from symbols.svg to use for this text.",
-        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
-        default="NO SYMBOL",
-    )
-    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="Custom Symbol",
-        description="Non-default symbol to use for this text.",
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
     )
 
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
-        font_size: str
         newline_at: int
-        reverse_list: bool
-        list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
+        font_size: str
+        align_horizontal: str
+        align_vertical: str
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":
@@ -806,8 +959,6 @@ class BIMTextProperties(PropertyGroup):
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
             "Symbol": self.get_symbol(),
-            "Reverse_List": self.reverse_list,
-            "List_Separator": self.list_separator or ", ",
         }
         return text_data
 

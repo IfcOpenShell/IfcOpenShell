@@ -1,13 +1,10 @@
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
 from xsdata.models.datatype import XmlDateTime
 
-DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class BimSnippet:
     reference: str = field(
         metadata={
@@ -47,7 +44,7 @@ class BimSnippet:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class CommentViewpoint:
     class Meta:
         global_type = False
@@ -62,7 +59,7 @@ class CommentViewpoint:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class DocumentReference:
     document_guid: Optional[str] = field(
         default=None,
@@ -103,7 +100,7 @@ class DocumentReference:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class File:
     filename: Optional[str] = field(
         default=None,
@@ -160,7 +157,7 @@ class File:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicLabels:
     class Meta:
         global_type = False
@@ -177,7 +174,7 @@ class TopicLabels:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicReferenceLinks:
     class Meta:
         global_type = False
@@ -194,7 +191,7 @@ class TopicReferenceLinks:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicRelatedTopicsRelatedTopic:
     class Meta:
         global_type = False
@@ -209,7 +206,7 @@ class TopicRelatedTopicsRelatedTopic:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class ViewPoint:
     viewpoint: Optional[str] = field(
         default=None,
@@ -249,7 +246,7 @@ class ViewPoint:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Comment:
     date: XmlDateTime = field(
         metadata={
@@ -315,7 +312,7 @@ class Comment:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class HeaderFiles:
     class Meta:
         global_type = False
@@ -330,7 +327,7 @@ class HeaderFiles:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicDocumentReferences:
     class Meta:
         global_type = False
@@ -345,7 +342,7 @@ class TopicDocumentReferences:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicRelatedTopics:
     class Meta:
         global_type = False
@@ -360,7 +357,7 @@ class TopicRelatedTopics:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicViewpoints:
     class Meta:
         global_type = False
@@ -375,7 +372,7 @@ class TopicViewpoints:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Header:
     files: Optional[HeaderFiles] = field(
         default=None,
@@ -387,7 +384,7 @@ class Header:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class TopicComments:
     class Meta:
         global_type = False
@@ -402,7 +399,7 @@ class TopicComments:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Topic:
     reference_links: Optional[TopicReferenceLinks] = field(
         default=None,
@@ -599,7 +596,7 @@ class Topic:
     )
 
 
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Markup:
     header: Optional[Header] = field(
         default=None,

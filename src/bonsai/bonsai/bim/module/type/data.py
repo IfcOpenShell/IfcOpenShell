@@ -17,9 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.type
 import ifcopenshell.util.element
+import ifcopenshell.util.type
 from ifcopenshell.util.doc import get_entity_doc
+
 import bonsai.tool as tool
 
 
@@ -42,6 +43,7 @@ class TypeData:
                 "is_product": cls.is_product(),
                 "total_instances": cls.total_instances(),
                 "relating_type": cls.relating_type(),
+                "relating_type_attributes": cls.relating_type_attributes(),
             }
         )
 
@@ -92,3 +94,25 @@ class TypeData:
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
             return {"id": element_type.id(), "name": f"{element_type.is_a()}/{element_type.Name or 'Unnamed'}"}
+
+    @classmethod
+    def relating_type_attributes(cls):
+        results = []
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if not element_type:
+            return results
+
+        data = element_type.get_info()
+        if "GlobalId" in data:
+            excluded_keys = ["id", "type"]
+        else:
+            excluded_keys = ["type"]
+        exclude_value_types = (tuple, ifcopenshell.entity_instance)
+        for key, value in data.items():
+            if value is None or isinstance(value, exclude_value_types) or key in excluded_keys:
+                continue
+            if key == "id":
+                key = "STEP ID"
+            results.append({"name": key, "value": str(value)})
+        return results

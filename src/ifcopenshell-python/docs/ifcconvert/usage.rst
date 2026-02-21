@@ -70,7 +70,7 @@ CLI Manual
 
     $ IfcConvert -h
 
-    IfcOpenShell IfcConvert 0.8.1-c49ca69 (OCC 7.8.1)
+    IfcOpenShell IfcConvert 0.8.4-158fe92 (OCC 7.8.1)
     Usage: IfcConvert [options] <input.ifc> [<output>]
 
     Converts (the geometry in) an IFC file into one of the following formats:
@@ -80,6 +80,8 @@ CLI Manual
       .stp   STEP           Standard for the Exchange of Product Data
       .igs   IGES           Initial Graphics Exchange Specification
       .xml   XML            Property definitions and decomposition tree
+      .json  JSON           Property definitions and decomposition tree in xeokit json format
+      .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data
       .svg   SVG            Scalable Vector Graphics (2D floor plan)
       .h5    HDF            Hierarchical Data Format storing positions, normals and indices
       .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry
@@ -108,7 +110,8 @@ CLI Manual
 
     Geometry options:
       --kernel arg (=opencascade)           Geometry kernel to use (opencascade, 
-                                            cgal, cgal-simple).
+                                            cgal, cgal-simple, hybrid-cgal-simple-o
+                                            pencascade).
       -j [ --threads ] arg (=1)             Number of parallel processing threads 
                                             for geometry interpretation.
       --center-model                        Centers the elements by applying the 
@@ -118,6 +121,11 @@ CLI Manual
       --center-model-geometry               Centers the elements by applying the 
                                             center point of all mesh vertices as an
                                             offset.
+      --model-offset arg                    Applies an arbitrary offset of form 
+                                            'x;y;z' to all placements.
+      --model-rotation arg                  Applies an arbitrary quaternion 
+                                            rotation of form 'x;y;z;w' to all 
+                                            placements.
       --include arg                         Specifies that the instances that match
                                             a specific filtering criteria are to be
                                             included in the geometrical output:
@@ -207,13 +215,12 @@ CLI Manual
                                             of surface normals, even if the faces 
                                             are not properly oriented in the IFC 
                                             file.
-      --length-unit arg (= 1)
-      --angle-unit arg (= 1)
-      --precision arg (= 1e-05)
       --dimensionality arg (= 1)            Specifies whether to include curves 
                                             and/or surfaces and solids in the 
                                             output result. Defaults to only 
-                                            surfaces and solids.
+                                            surfaces and solids (SURFACES_AND_SOLID
+                                            S). Other possible values are CURVES, 
+                                            CURVES_SURFACES_AND_SOLIDS.
       --layerset-first                      Assigns the first layer material of the
                                             layerset to the complete product.
       --disable-boolean-result              Specifies whether to disable the 
@@ -262,9 +269,11 @@ CLI Manual
                                             geometrical output back to the unit of 
                                             measure in which it is defined in the 
                                             IFC file. Default is to use meters.
-      --context-ids arg
-      --context-ids arg
-      --context-ids arg
+      --context-ids arg                     List of comma separated context ids to 
+                                            process - e.g. '15,29' (no quotes 
+                                            needed).
+      --context-types arg                   Currently option has no effect.
+      --context-identifiers arg             Currently option has no effect.
       --iterator-output arg (= 0)
       --disable-opening-subtractions        Specifies whether to disable the 
                                             boolean subtraction of 
@@ -304,10 +313,18 @@ CLI Manual
                                             geometry output.
       --circle-segments arg (= 16)          Number of segments to approximate full 
                                             circles in CGAL kernel.
+      --cgal-smooth-angle-degrees arg (= -1)
+                                            Angle in degrees under which adjacent 
+                                            facets will have averaged vertex 
+                                            normals in CGAL output. NB irrespective
+                                            of original IFC geometry types. 
+                                            Defaults to -1 to disable smoothing.
       --keep-bounding-boxes                 Default is to removes IfcBoundingBox 
                                             from model prior to converting 
                                             geometry.Setting this option disables 
                                             that behaviour
+      --compute-curvature                   Specifies whether function_item_evaluat
+                                            or.evaluate() computes curvature.
       --function-step-type arg (= 0)        Indicates the method used for defining 
                                             step size when evaluating 
                                             function-based curves. Provides 
@@ -320,12 +337,24 @@ CLI Manual
                                             parallel. May decrease performance, but
                                             also decrease output size (in the 
                                             future)
-      --model-offset arg                    Applies an arbitrary offset of form 
-                                            'x,y,z' to all placements.
-      --model-rotation arg                  Applies an arbitrary quaternion 
-                                            rotation of form 'x,y,z,w' to all 
-                                            placements.
+      --permissive-shape-reuse              Traverse geometry-level transformations
+                                            and apply to product-level placement in
+                                            order to increase reuse of geometries
       --triangulation-type arg (= 0)        Type of planar facet to be emitted
+      --cgal-original-edges                 Try to emit original edge face boundary
+                                            edges instead of recomputed ones based 
+                                            on face normal. Falls back to 
+                                            triangulated data in case of boolean 
+                                            operands and faces with holes.
+      --cache-shapes                        Experimental as not all topology hash 
+                                            functions fully implemented
+      --max-offset arg                      Maximum translation offset to be 
+                                            observed after which median offset in 
+                                            model gets removed and logged. Requires
+                                            --no-parallel-mapping.
+      --max-offset-deviation arg            To retain field of view, completely 
+                                            remove elements outside of the median 
+                                            offset. Requires --no-parallel-mapping.
 
     Serialization options:
       --bounds arg                          Specifies the bounding rectangle, for 
@@ -421,3 +450,8 @@ CLI Manual
       --wkt-use-section                     Use a geometrical section rather than 
                                             full polyhedral output and footprint in
                                             TTL WKT
+      --separate-z-up-node                  Introduce a separate Z-Up node into the
+                                            GlTF hierarchy instead of multiplying 
+                                            the transform into the root node 
+                                            matrices
+

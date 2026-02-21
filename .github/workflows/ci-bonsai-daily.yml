@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py311, py312]
+        pyver: [py311, py312, py313]
         config:
           - {
             name: "Windows Build",
@@ -53,8 +53,13 @@ jobs:
             name: "MacOS ARM Build",
             short_name: macosm1,
           }
+        exclude:
+          # Python 3.13 is needed for Blender 5.1+ and Blender dropped Intel Mac support in 5.0.
+          - pyver: py313
+            config:
+              short_name: macos
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
@@ -93,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout bonsai_unstable_repo repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/bonsai_unstable_repo
           token: ${{ secrets.IFCOPENBOT_TOKEN }}
@@ -104,7 +109,7 @@ jobs:
           # Ensure Bonsai and ifcsverchok enable/disable works before uploading to extensions repo.
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://download.blender.org/release/Blender4.5/blender-4.5.0-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://download.blender.org/release/Blender5.0/blender-5.0.1-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.

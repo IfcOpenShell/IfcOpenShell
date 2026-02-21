@@ -32,7 +32,7 @@ class SERIALIZERS_API WaveFrontOBJSerializer : public WriteOnlyGeometrySerialize
 private:
 	stream_or_filename obj_stream;
 	stream_or_filename mtl_stream;
-	unsigned int vcount_total;
+	size_t vcount_total, ncount_total;
 	std::set<std::string> materials;
 public:
 	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);

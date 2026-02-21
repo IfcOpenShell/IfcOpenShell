@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
 import math
+from dataclasses import dataclass, field
+from math import cos, degrees, radians, sin, tan
+from typing import Literal, Optional, Union
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
+from lark import Lark, Transformer
+from mathutils import Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from dataclasses import dataclass, field
-from lark import Lark, Transformer
-from math import degrees, radians, sin, cos, tan
-from mathutils import Vector, Matrix
-from typing import Optional, Union, Literal
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -189,7 +191,8 @@ class Polyline(bonsai.core.tool.Polyline):
             orientation_angle = 0
         if input_ui:
             if should_round:
-                angle = 5 * round(angle / 5) if distance < angle_round_threshold else angle
+                angle_snap = tool.Snap.get_angle_snap_value(context)
+                angle = angle_snap * round(angle / angle_snap) if distance < angle_round_threshold else angle
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
             input_ui.set_value("X", mouse_vector.x)

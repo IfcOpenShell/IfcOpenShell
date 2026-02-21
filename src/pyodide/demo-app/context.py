@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.feature
@@ -8,12 +9,9 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.geom
-import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-
 import numpy as np
-
 import propertygroups
 
 O = 0.0, 0.0, 0.0

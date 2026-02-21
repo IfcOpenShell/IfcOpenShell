@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.group.prop import BIMGroupProperties, Group

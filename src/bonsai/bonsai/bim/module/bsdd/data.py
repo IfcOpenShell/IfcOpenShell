@@ -18,8 +18,9 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.util.date
 import ifcopenshell.util.classification
+import ifcopenshell.util.date
+
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 

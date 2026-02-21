@@ -31,11 +31,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.demo.prop import BIMDemoProperties

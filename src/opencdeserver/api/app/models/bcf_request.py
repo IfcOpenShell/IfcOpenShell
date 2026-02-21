@@ -1,7 +1,21 @@
-from pydantic import BaseModel
 from typing import Optional
-from models.bcf_common import BimSnippet, BitmapType, Location, Direction, SnapshotType, Component
-from models.bcf_common import Coloring, OrthogonalCamera, Visibility, PerspectiveCamera, Line, ClippingPlane
+
+from pydantic import BaseModel
+
+from models.bcf_common import (
+    BimSnippet,
+    BitmapType,
+    ClippingPlane,
+    Coloring,
+    Component,
+    Direction,
+    Line,
+    Location,
+    OrthogonalCamera,
+    PerspectiveCamera,
+    SnapshotType,
+    Visibility,
+)
 
 
 class ProjectPUT(BaseModel):

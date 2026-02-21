@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
@@ -23,14 +27,11 @@ import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.alignment
 import ifcopenshell.util.unit
-from ifcopenshell import ifcopenshell_wrapper
-import numpy as np
-import math
-from ifcopenshell import entity_instance
-from collections.abc import Sequence
-
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
-from ifcopenshell.api.alignment._get_segment_start_point_label import _get_segment_start_point_label
+from ifcopenshell.api.alignment._get_segment_start_point_label import (
+    _get_segment_start_point_label,
+)
 
 
 def _add_segment_to_layout(file: ifcopenshell.file, layout: entity_instance, segment: entity_instance) -> None:

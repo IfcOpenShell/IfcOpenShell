@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+import bpy
 import ifcopenshell
 import ifcpatch
-import bonsai.tool as tool
-import bonsai.core.patch as core
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 import bonsai.bim.handler
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from typing import cast, TYPE_CHECKING
+import bonsai.core.patch as core
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import AttributeDataType

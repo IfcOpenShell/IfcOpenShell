@@ -1,6 +1,5 @@
 from typing import Literal
 
-
 COUNTRY_CODE = Literal[
     "AF",
     "AX",

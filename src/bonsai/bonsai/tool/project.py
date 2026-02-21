@@ -17,27 +17,34 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
+import json
+import math
 import shutil
+import numpy as np
+from collections import defaultdict
+from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, Optional
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
+
+import bonsai.bim.schema
 import bonsai.core.aggregate
 import bonsai.core.context
-import bonsai.core.tool
-import bonsai.core.root
-import bonsai.core.unit
 import bonsai.core.owner
-import bonsai.bim.schema
+import bonsai.core.root
+import bonsai.core.tool
+import bonsai.core.unit
 import bonsai.tool as tool
-from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
-from pathlib import Path
-from typing import NamedTuple, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
@@ -54,6 +61,47 @@ class Project(bonsai.core.tool.Project):
     def get_measure_tool_settings(cls) -> MeasureToolSettings:
         assert (scene := bpy.context.scene)
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_link_empty_handle(cls, link) -> bpy.types.Object | None:
+        if tool.Ifc.get():
+            return tool.Ifc.get_object(tool.Ifc.get().by_id(link.ifc_definition_id))
+        return link.empty_handle
+
+    @classmethod
+    def set_link_empty_handle(cls, link, empty: bpy.types.Object) -> None:
+        if tool.Ifc.get():
+            tool.Ifc.link(tool.Ifc.get().by_id(link.ifc_definition_id), empty)
+        else:
+            link.empty_handle = empty
+
+    @classmethod
+    def calculate_link_matrix(cls, link) -> None:
+        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
+            metadata = json.load(f)
+
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
+            radians(-float(metadata["model_project_north"])), 4, "Z"
+        )
+        global_matrix = rot @ np.eye(4)
+        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+
+        if transformation:
+            transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+            if not np.allclose(transformation, np.eye(4)):
+                global_matrix = transformation @ global_matrix
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+        return np.linalg.inv(local_matrix) @ global_matrix
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
@@ -246,68 +294,32 @@ class Project(bonsai.core.tool.Project):
         tool.Root.reload_grid_decorator()
 
     @classmethod
-    def get_linked_models_document(cls) -> Union[ifcopenshell.entity_instance, None]:
-        for document in tool.Ifc.get().by_type("IfcDocumentInformation"):
-            if document.Name == "BBIM_Linked_Models":
-                return document
+    def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
+        linked_docs = {}
+        for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if doc.Scope == "LINKED_MODEL":
+                for reference in tool.Drawing.get_document_references(doc):
+                    linked_docs[Path(reference.Location).as_posix()] = doc
+                    break
+        return linked_docs
 
     @classmethod
     def load_linked_models_from_ifc(cls) -> None:
         links = tool.Project.get_project_props().links
         links.clear()
-        links_document = cls.get_linked_models_document()
-        if not links_document:
-            return
-
-        references = tool.Document.get_document_references(links_document)
-        if not references:
-            return
-
-        for reference in references:
-            link = links.add()
-            link.name = reference.Location
-
-    @classmethod
-    def save_linked_models_to_ifc(cls) -> None:
-        ifc_file = tool.Ifc.get()
-        links = tool.Project.get_project_props().links
-        filepaths: set[Path] = set()
-        for link in links:
-            filepaths.add(Path(link.name))
-
-        links_document = cls.get_linked_models_document()
-
-        if not filepaths and links_document is None:
-            return
-
-        paths_to_add = filepaths.copy()
-        references_to_remove: list[ifcopenshell.entity_instance] = []
-        if links_document:
-            references = tool.Document.get_document_references(links_document)
-            for reference in references:
-                # I guess got corrupted by the user.
-                if not (location := reference.Location):
-                    references_to_remove.remove(reference)
-                    continue
-                path = Path(location)
-                if path in paths_to_add:
-                    paths_to_add.remove(path)
-                else:
-                    references_to_remove.append(reference)
-
-        if paths_to_add:
-            if links_document is None:
-                links_document = ifcopenshell.api.document.add_information(ifc_file)
-                links_document.Name = "BBIM_Linked_Models"
-                links_document.Description = "Bonsai internal document containing references to currently linked models"
-
-            for path in paths_to_add:
-                reference = ifcopenshell.api.document.add_reference(ifc_file, links_document)
-                reference.Location = path.as_posix()
-
-        if references_to_remove:
-            for reference in references_to_remove:
-                ifcopenshell.api.document.remove_reference(ifc_file, reference)
+        for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
+            if doc.Scope != "LINKED_MODEL":
+                continue
+            for reference in tool.Drawing.get_document_references(doc):
+                filepath = reference.Location
+                link = links.add()
+                link.name = filepath
+                link.filepath = filepath
+                link.ifc_definition_id = reference.id()
+                link.has_transformation = False
+                if reference[1]:
+                    m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
+                    link.has_transformation = not np.allclose(m, np.eye(4))
 
     @classmethod
     def get_project_library_elements(
@@ -513,3 +525,66 @@ class Project(bonsai.core.tool.Project):
         if tmp.exists():
             shutil.rmtree(tmp)
         bpy.ops.bim.save_project(filepath=cls.TEMP_PROJECT_PATH.__str__(), should_save_as=True)
+
+    @classmethod
+    def get_metadata_document_information(cls) -> Optional[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return None
+        for doc in ifc_file.by_type("IfcDocumentInformation"):
+            if getattr(doc, "Scope", None) == "BLEND_METADATA":
+                return doc
+        return None
+
+    @classmethod
+    def create_metadata_document_information(cls, metadata_filename: str) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            raise Exception("No IFC file loaded")
+
+        doc = tool.Ifc.run("document.add_information", parent=None)
+
+        if ifc_file.schema == "IFC2X3":
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "DocumentId": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
+        else:
+            tool.Ifc.run(
+                "document.edit_information",
+                information=doc,
+                attributes={
+                    "Identification": "BLEND_METADATA",
+                    "Name": "Blend Metadata",
+                    "Scope": "BLEND_METADATA",
+                    "Description": "References to blend metadata file for this IFC project",
+                    "Location": metadata_filename,
+                },
+            )
+
+        return doc
+
+    @classmethod
+    def update_metadata_document_information(cls, metadata_filename: str) -> None:
+        doc = cls.get_metadata_document_information()
+        if not doc:
+            return
+
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return
+
+        tool.Ifc.run("document.edit_information", information=doc, attributes={"Location": metadata_filename})
+
+    @classmethod
+    def remove_metadata_document_information(cls) -> None:
+        doc = cls.get_metadata_document_information()
+        if doc:
+            tool.Ifc.run("document.remove_information", information=doc)

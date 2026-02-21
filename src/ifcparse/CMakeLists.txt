@@ -17,30 +17,29 @@ foreach(file ${IFCPARSE_CPP_FILES_ALL})
     endif()
 endforeach()
 
-message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
-    list(APPEND IFCPARSE_H_FILES
-        Ifc${schema}.h
-        Ifc${schema}-definitions.h
-    )
-    list(APPEND IFCPARSE_CPP_FILES
-        Ifc${schema}.cpp
-        Ifc${schema}-schema.cpp
-    )
+    list(APPEND IFCPARSE_H_FILES Ifc${schema}.h Ifc${schema}-definitions.h)
+    list(APPEND IFCPARSE_CPP_FILES Ifc${schema}.cpp Ifc${schema}-schema.cpp)
 endforeach()
 
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
-set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+target_compile_definitions(IfcParse PUBLIC ${SCHEMA_DEFINITIONS})
+set_target_properties(
+    IfcParse
+    PROPERTIES
+        COMPILE_FLAGS -DIFC_PARSE_EXPORTS
+        VERSION "${PROJECT_VERSION}"
+        SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        PUBLIC_HEADER "${IFCPARSE_H_FILES}"
+)
 
 if(IFCXML_SUPPORT)
+    find_package(LibXml2 REQUIRED)
+    target_compile_definitions(IfcParse PUBLIC WITH_IFCXML)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML PARENT_SCOPE)
 
-    if(LibXml2_DIR)
-        target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
-    endif()
-
-    add_definitions(-DWITH_IFCXML)
     target_link_libraries(IfcParse LibXml2::LibXml2)
 endif()
 
@@ -50,13 +49,11 @@ else()
     target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
 endif()
 
-# CMake installation targets
-install(FILES ${IFCPARSE_H_FILES}
-    DESTINATION ${INCLUDEDIR}/ifcparse
-)
+target_link_libraries(IfcParse ${ROCKSDB_LIBRARIES})
 
-install(TARGETS IfcParse
-    ARCHIVE DESTINATION ${LIBDIR}
-    LIBRARY DESTINATION ${LIBDIR}
-    RUNTIME DESTINATION ${BINDIR}
+install(
+    TARGETS IfcParse
+    EXPORT ${IFCOPENSHELL_EXPORT_TARGETS}
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ifcparse"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )

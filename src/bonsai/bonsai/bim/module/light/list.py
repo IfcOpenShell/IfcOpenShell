@@ -17,13 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import json
 import os
 from typing import TYPE_CHECKING
 
+import bpy
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial
+    from bonsai.bim.module.light.prop import (
+        RadianceExporterProperties,
+        RadianceMaterial,
+    )
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
     spectraldb = json.load(f)

@@ -17,60 +17,63 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import re
+
 import collections
 import collections.abc
-import bpy
-import math
 import json
-import lark
-import bmesh
-import shutil
 import logging
-import shapely
+import math
+import os
 import platform
-import mathutils
+import re
+import shutil
 import subprocess
-import numpy as np
-import bonsai.core.tool
-import bonsai.core.geometry
-import bonsai.core.type
-import bonsai.tool as tool
+from collections.abc import Iterable, Sequence
+from fractions import Fraction
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Union
+
+import bmesh
+import bpy
 import ifcopenshell.api
-import ifcopenshell.api.geometry
 import ifcopenshell.api.context
-import ifcopenshell.api.drawing
 import ifcopenshell.api.document
+import ifcopenshell.api.drawing
+import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.geom
-import ifcopenshell.util.placement
-import ifcopenshell.util.unit
-import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
+import ifcopenshell.util.unit
+import lark
+import mathutils
+import numpy as np
+import shapely
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from lxml import etree
+from mathutils import Matrix, Vector
+from shapely.ops import unary_union
+
 import bonsai.bim.helper
 import bonsai.bim.import_ifc
+import bonsai.core.geometry
 import bonsai.core.root
-from shapely.ops import unary_union
-from lxml import etree
-from mathutils import Vector, Matrix
-from fractions import Fraction
-from typing import Optional, Union, Any, Literal, TYPE_CHECKING, NamedTuple
-from collections.abc import Iterable, Sequence
-from pathlib import Path
-from ifcopenshell.util.shape_builder import ShapeBuilder
+import bonsai.core.tool
+import bonsai.core.type
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import (
+        BIMAnnotationProperties,
+        BIMAssignedProductProperties,
+        BIMCameraProperties,
+        BIMTextProperties,
         DocProperties,
         Sheet,
-        BIMAnnotationProperties,
-        BIMTextProperties,
-        BIMCameraProperties,
-        BIMAssignedProductProperties,
     )
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
@@ -606,6 +609,25 @@ class Drawing(bonsai.core.tool.Drawing):
         return literals
 
     @classmethod
+    def export_font_size(cls, obj: bpy.types.Object) -> str:
+        return float(cls.get_text_props(obj).font_size)
+
+    @classmethod
+    def export_alignment(cls, obj: bpy.types.Object) -> str:
+        props = cls.get_text_props(obj)
+        if (alignment := props.align_vertical + "-" + props.align_horizontal) == "middle-middle":
+            return "center"
+        return alignment
+
+    @classmethod
+    def export_wrap_length(cls, obj: bpy.types.Object) -> str:
+        return cls.get_text_props(obj).newline_at
+
+    @classmethod
+    def export_symbol(cls, obj: bpy.types.Object) -> str:
+        return cls.get_text_props(obj).get_symbol()
+
+    @classmethod
     def create_annotation_context(
         cls, target_view: str, object_type: Optional[str] = None
     ) -> ifcopenshell.entity_instance:
@@ -832,43 +854,14 @@ class Drawing(bonsai.core.tool.Drawing):
         return props.is_editing_sheets
 
     @classmethod
-    def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
+    def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
-
-        old_literals = cls.get_text_literal(obj, return_list=True)
-        assert isinstance(old_literals, list)
-        literals_attributes = cls.export_text_literal_attributes(obj)
-        props = cls.get_text_props(obj)
-        defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
-        ifc_file = tool.Ifc.get()
-
-        added_literals: list[ifcopenshell.entity_instance] = []
-        new_literals: list[ifcopenshell.entity_instance] = []
-        for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
-            # making sure all literals from text edit exist in ifc
-            if ifc_definition_id == 0:
-                literal = cls.add_literal(**attributes)
-                added_literals.append(literal)
-            else:
-                literal = ifc_file.by_id(ifc_definition_id)
-                ifcopenshell.api.drawing.edit_text_literal(
-                    ifc_file,
-                    text_literal=literal,
-                    attributes=attributes,
-                )
-            new_literals.append(literal)
-
-        removed_literals = set(old_literals) - set(new_literals)
-
-        # Add new literals and keep the order as defined in text props.
-        items = [i for i in rep.Items if i not in removed_literals] + added_literals
-        items.sort(key=lambda x: new_literals.index(x) if x in new_literals else -1)
-        rep.Items = items
-
-        # Remove from ifc the literals that were removed during the edit.
-        for literal in removed_literals:
-            ifcopenshell.util.element.remove_deep2(ifc_file, literal)
+        to_remove = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
+        new_literals = [cls.add_literal(**a) for a in literal_attributes]
+        rep.Items = [i for i in rep.Items if not i.is_a("IfcTextLiteral")] + new_literals
+        for literal in to_remove:
+            ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), literal)
 
     @classmethod
     def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
@@ -1209,8 +1202,6 @@ class Drawing(bonsai.core.tool.Drawing):
         props.font_size = str(text_data["FontSize"])
         props.newline_at = text_data["Newline_At"]
         props.set_symbol(text_data["Symbol"])
-        props.reverse_list = text_data["Reverse_List"]
-        props.list_separator = text_data["List_Separator"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -1276,7 +1267,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
-        return bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        return bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
     @classmethod
     def reload_representation(cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance):
@@ -1307,7 +1298,7 @@ class Drawing(bonsai.core.tool.Drawing):
         props.should_draw_decorations = True
 
     @classmethod
-    def update_text_size_pset(cls, obj: bpy.types.Object) -> None:
+    def edit_text_font_size(cls, obj: bpy.types.Object, font_size: float) -> None:
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
@@ -1317,7 +1308,6 @@ class Drawing(bonsai.core.tool.Drawing):
         element = tool.Ifc.get_entity(obj)
         assert element
         # updating text font size in EPset_Annotation.Classes
-        font_size = float(props.font_size)
         font_size_str = next((key for key in FONT_SIZES if FONT_SIZES[key] == font_size), None)
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
         assert isinstance(classes, Union[str, None])
@@ -1338,34 +1328,32 @@ class Drawing(bonsai.core.tool.Drawing):
             pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
             if not pset:
                 pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
-            ifcopenshell.api.pset.edit_pset(
-                ifc_file,
-                pset=pset,
-                properties={"Classes": classes},
-            )
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Classes": classes})
 
     @classmethod
-    def update_text_annotation_properties(cls, obj: bpy.types.Object) -> None:
-        """Update all EPset_Annotation properties from the text props"""
-        props = cls.get_text_props(obj)
+    def edit_text_wrap_length(cls, obj: bpy.types.Object, wrap_length: int) -> None:
         element = tool.Ifc.get_entity(obj)
-        assert element
-
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Newline_At": wrap_length})
 
-        ifcopenshell.api.pset.edit_pset(
-            ifc_file,
-            pset=pset,
-            properties={
-                "Newline_At": int(props.newline_at),
-                "Symbol": props.get_symbol(),
-                "Reverse_List": props.reverse_list,
-                "List_Separator": props.list_separator or "",
-            },
-        )
+    @classmethod
+    def edit_text_symbol(cls, obj: bpy.types.Object, symbol: str) -> None:
+        element = tool.Ifc.get_entity(obj)
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Symbol": symbol})
+
+    @classmethod
+    def edit_text_alignment(cls, obj: bpy.types.Object, alignment: str) -> None:
+        ifc_literals = cls.get_text_literal(obj, return_list=True)
+        for ifc_literal in ifc_literals or []:
+            if ifc_literal.is_a("IfcTextLiteralWithExtent"):
+                ifc_literal.BoxAlignment = alignment
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -2109,28 +2097,21 @@ class Drawing(bonsai.core.tool.Drawing):
         cls,
         text: str,
         product: Optional[ifcopenshell.entity_instance] = None,
-        reverse_list: bool = False,
-        list_separator: str = ", ",
     ) -> str:
         if not product:
             return text
-        if list_separator:
-            list_separator = list_separator.encode().decode("unicode_escape")
 
-        for command in re.findall("``.*?``", text):
+        for command in re.findall("``.+?``", text):
             original_command = command
-            for variable in re.findall("{{.*?}}", command):
-                value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
-                value = '"' + str(value).replace('"', '\\"') + '"'
-                command = command.replace(variable, value)
-            text = text.replace(original_command, ifcopenshell.util.selector.format(command[2:-2]))
+            command_content = command[2:-2]
+            try:
+                text = text.replace(original_command, ifcopenshell.util.selector.format(command_content, product))
+            except Exception:
+                text = text.replace(original_command, "")
         for variable in re.findall("{{.*?}}", text):
             value = ifcopenshell.util.selector.get_element_value(product, variable[2:-2])
             if isinstance(value, (list, tuple)):
-                if reverse_list:
-                    value = list_separator.join(str(v) for v in reversed(value))
-                else:
-                    value = list_separator.join(str(v) for v in value)
+                value = ", ".join(str(v) for v in value)
             text = text.replace(variable, str(value))
         return text
 
@@ -2277,7 +2258,16 @@ class Drawing(bonsai.core.tool.Drawing):
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
         if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            try:
+                data = json.loads(include)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                elif isinstance(data, dict) and "query" in data:
+                    elements = ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            except (json.JSONDecodeError, ValueError):
+                elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
             if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
@@ -2291,7 +2281,7 @@ class Drawing(bonsai.core.tool.Drawing):
             if not i.is_a("IfcAnnotation"):
                 updated_set.add(i)
                 # add aggregate too, if element is host by one
-                if decomposes := i.Decomposes:
+                if hasattr(i, "Decomposes") and (decomposes := i.Decomposes):
                     aggregate = decomposes[0].RelatingObject
                     # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
                     if aggregate.is_a("IfcProduct"):
@@ -2304,7 +2294,18 @@ class Drawing(bonsai.core.tool.Drawing):
 
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            try:
+                data = json.loads(exclude)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    exclude_elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                    elements -= exclude_elements
+                elif isinstance(data, dict) and "query" in data:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            except (json.JSONDecodeError, ValueError):
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         elements -= set(ifc_file.by_type("IfcOpeningElement"))
         return elements
 
@@ -2318,7 +2319,18 @@ class Drawing(bonsai.core.tool.Drawing):
         # NOTE: EPset_Drawing.Include is not used to avoid adding other elements besides spaces
         exclude = pset.get("Exclude", None)
         if exclude:
-            elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            try:
+                data = json.loads(exclude)
+                if isinstance(data, dict) and "filter_structure" in data:
+                    exclude_elements = tool.Search.execute_filter_groups_from_json(data, ifc_file)
+                    elements -= exclude_elements
+                elif isinstance(data, dict) and "query" in data:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, data["query"])
+                else:
+                    elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+            except (json.JSONDecodeError, ValueError):
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
+                elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
         return elements
 
     @classmethod
@@ -2759,8 +2771,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
-        import ezdxf
         import xml.etree.ElementTree as ET
+
+        import ezdxf
 
         SVG = "{http://www.w3.org/2000/svg}"
         IFC = "{http://www.ifcopenshell.org/ns}"

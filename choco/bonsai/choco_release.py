@@ -13,9 +13,10 @@ import hashlib
 import os
 import pathlib
 import re
-from urllib import request
-from github import Github
 from typing import NoReturn
+from urllib import request
+
+from github import Github
 
 
 def get_repo_tag_names() -> list[str]:

@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.module.resource.data import ResourceData
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.resource.prop import BIMResourceTreeProperties, Resource
     from bonsai.bim.prop import ISODuration
-    from bonsai.bim.module.resource.prop import Resource, BIMResourceTreeProperties
 
 
 class BIM_PT_resources(Panel):

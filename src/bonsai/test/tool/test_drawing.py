@@ -17,10 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import xml.etree.ElementTree as ET
 from pathlib import Path
-import numpy as np
+
 import bpy
-import mathutils
+import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -28,14 +29,16 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
+import mathutils
+import numpy as np
+from mathutils import Vector
+from ifcopenshell.util.shape_builder import ShapeBuilder
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
-from bonsai.tool.drawing import Drawing as subject
 from bonsai.bim.module.drawing.data import DecoratorData
-from mathutils import Vector
-
-import xml.etree.ElementTree as ET
+from bonsai.tool.drawing import Drawing as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -147,6 +150,34 @@ class TestDisableEditingSheets(NewFile):
         props.is_editing_sheets = True
         subject.disable_editing_sheets()
         assert props.is_editing_sheets == False
+
+
+class TestEditTextLiterals(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcAnnotation()
+        element.Representation = ifc.createIfcProductDefinitionShape()
+        context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
+        builder = ShapeBuilder(tool.Ifc.get())
+        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
+        element.Representation.Representations = [representation]
+        tool.Ifc.link(element, obj)
+        literal_attributes = [
+            {
+                "Literal": "Foo",
+                "Path": "RIGHT",
+                "BoxAlignment": "bottom-left",
+            }
+        ]
+        subject.edit_text_literals(obj, literal_attributes)
+        assert len(ifc.by_type("IfcTextLiteralWithExtent")) == 1
+        literal = ifc.by_type("IfcTextLiteralWithExtent")[0]
+        assert literal in representation.Items
+        assert literal.Literal == "Foo"
 
 
 class TestDisableEditingText(NewFile):
@@ -903,7 +934,7 @@ class TestAddReferenceImage(NewFile):
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
-        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=3.53982, y_length=2.0)
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
@@ -926,4 +957,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["Generated"].links[:]) == 1
+        assert len(uv_node.outputs["UV"].links[:]) == 1

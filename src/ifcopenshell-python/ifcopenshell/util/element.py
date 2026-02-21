@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import namedtuple
+from collections.abc import Callable, Generator, Sequence
+from typing import Any, Literal, Optional, Union, overload
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload
-from collections.abc import Generator, Sequence
-from collections import namedtuple
-
 
 MATERIAL_TYPE = Literal[
     "IfcMaterial",
@@ -37,6 +37,7 @@ MATERIAL_TYPE = Literal[
 
 PrioritisedLayer = namedtuple("PrioritisedLayer", "priority material thickness")
 PrioritisedProfile = namedtuple("PrioritisedProfile", "priority material profile")
+
 
 def get_pset(
     element: ifcopenshell.entity_instance,
@@ -1863,7 +1864,10 @@ def get_material_layers(element: ifcopenshell.entity_instance) -> list[Prioritis
     material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
     if not material or not material.is_a("IfcMaterialLayerSet"):
         return []
-    return [PrioritisedLayer(getattr(layer, "Priority", 0) or 0, layer.Material, layer.LayerThickness) for layer in material.MaterialLayers]
+    return [
+        PrioritisedLayer(getattr(layer, "Priority", 0) or 0, layer.Material, layer.LayerThickness)
+        for layer in material.MaterialLayers
+    ]
 
 
 def get_material_profiles(element: ifcopenshell.entity_instance) -> list[PrioritisedProfile]:
@@ -1881,6 +1885,11 @@ def get_material_profiles(element: ifcopenshell.entity_instance) -> list[Priorit
         material_profiles = ifcopenshell.util.element.get_material_profiles(element)
     """
     material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-    if not material or not material.is_a("IfcMaterialProfileSet") :
+    if not material or not material.is_a("IfcMaterialProfileSet"):
         return []
-    return [PrioritisedProfile(getattr(material_profile, "Priority", 0) or 0, material_profile.Material, material_profile.Profile) for material_profile in material.MaterialProfiles]
+    return [
+        PrioritisedProfile(
+            getattr(material_profile, "Priority", 0) or 0, material_profile.Material, material_profile.Profile
+        )
+        for material_profile in material.MaterialProfiles
+    ]

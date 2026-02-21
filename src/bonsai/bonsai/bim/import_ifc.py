@@ -17,32 +17,35 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import time
+
 import json
-import ifcpatch
 import logging
-import traceback
-import mathutils
-import numpy as np
-import numpy.typing as npt
 import multiprocessing
+import time
+import traceback
+from collections.abc import Iterable
+from typing import Any, Literal, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
-import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Union, Optional, Any, Literal
-from collections.abc import Iterable
+import ifcopenshell.util.unit
+import ifcpatch
+import mathutils
+import numpy as np
+import numpy.typing as npt
 from ifcopenshell.util.shape import MatrixType
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE, IfcStore
+from bonsai.tool.loader import OBJECT_DATA_TYPE
 
 
 class MaterialCreator:
@@ -82,7 +85,7 @@ class MaterialCreator:
         if element.is_a("IfcTypeProduct"):
             self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        if not self.ifc_import_settings.load_indexed_maps:
+        if self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
@@ -114,7 +117,6 @@ class MaterialCreator:
         for texture in texture_style.Textures or []:
             if coords := getattr(texture, "IsMappedBy", None):
                 coords = coords[0]
-                # IfcTextureCoordinateGenerator handled in the style shader graph
                 if coords.is_a("IfcIndexedTextureMap"):
                     return coords
                 # TODO: support IfcTextureMap
@@ -132,6 +134,10 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
+            elif tool.Style.get_texture_style(material):
+                # No explicit coordinate mapping (e.g. IFC2X3 has no IsMappedBy,
+                # and IFC4 COORD uses generated UVs). Bake XY→UV as fallback.
+                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -1261,7 +1267,7 @@ class IfcImportSettings:
         self.should_load_geometry = True
         self.should_clean_mesh = False
         self.should_cache = True
-        self.deflection_tolerance = 0.001
+        self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
         self.angular_tolerance = 0.5
         self.void_limit = 30
         self.style_limit = 300

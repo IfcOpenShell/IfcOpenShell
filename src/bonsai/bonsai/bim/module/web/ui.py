@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
+
 import bonsai.tool as tool
 from bonsai.bim.module.web.data import WebData
 

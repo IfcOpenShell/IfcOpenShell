@@ -16,20 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import uuid
-import shutil
 import ntpath
-import pystache
+import os
+import re
+import shutil
 import urllib.parse
+import uuid
 import xml.etree.ElementTree as ET
-import bonsai.tool as tool
-import ifcopenshell.util.geolocation
 from pathlib import Path
 from xml.dom import minidom
+
+import bpy
+import ifcopenshell.util.geolocation
+import pystache
 from mathutils import Vector
-import re
+
+import bonsai.tool as tool
 
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10

@@ -16,24 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
 import bmesh
-import math
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.core.root
 import bonsai.tool as tool
-from bonsai.bim import gizmo
-from bonsai.bim.gizmo import GizmoPropConfig
-from mathutils import Vector, Matrix
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.tool.numeric_input import (
+    IntegerInputState,
+    run_integer_input_modal,
+    update_header,
+)
+
+V_ = tool.Blender.V_
+from typing import TYPE_CHECKING, get_args
+
 from bmesh.types import BMVert
-from bpy.types import Operator
-from bpy.props import FloatProperty, IntProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
+from bpy.props import IntProperty
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.model.prop import BIMStairProperties
 
 
 def regenerate_stair_mesh(obj: bpy.types.Object) -> None:
@@ -138,10 +149,10 @@ class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context: bpy.types.Context) -> bool:
         return tool.Ifc.get() and context.mode == "OBJECT"
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         ifc_file = tool.Ifc.get()
         if not ifc_file:
             self.report({"ERROR"}, "You need to start IFC project first to create a stair.")
@@ -183,7 +194,7 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add Bonsai parametric stair to the active IFC element"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
@@ -212,14 +223,16 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         regenerate_stair_mesh(obj)
         update_ifc_stair_props(obj)
         tool.Model.add_body_representation(obj)
+        return {"FINISHED"}
 
 
 class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_stair"
     bl_label = "Cancel Editing Stair"
+    bl_description = "Cancel editing and revert stair parameters to their previous values"
     bl_options = {"REGISTER"}
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
@@ -238,9 +251,10 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_stair"
     bl_label = "Finish Editing Stair"
+    bl_description = "Apply changes and finish editing stair parameters"
     bl_options = {"REGISTER"}
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
@@ -265,9 +279,10 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_stair"
     bl_label = "Enable Editing Stair"
+    bl_description = "Enter edit mode to modify stair parameters interactively"
     bl_options = {"REGISTER"}
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         props = tool.Model.get_stair_props(obj)
@@ -284,7 +299,7 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Stair"
     bl_options = {"REGISTER"}
 
-    def _execute(self, context):
+    def _execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         assert obj
         props = tool.Model.get_stair_props(obj)
@@ -298,26 +313,44 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ToggleStairTotalLengthLock(bpy.types.Operator):
-    """Toggle the total length lock for stair editing"""
+class ToggleStairProperty(bpy.types.Operator):
+    """Toggle a boolean property on stair properties"""
 
-    bl_idname = "bim.toggle_stair_total_length_lock"
-    bl_label = "Toggle Stair Total Length Lock"
+    bl_idname = "bim.toggle_stair_property"
+    bl_label = "Toggle Stair Property"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    property_name: bpy.props.StringProperty(
+        name="Property Name",
+        description="Name of the boolean property to toggle",
+        options={"HIDDEN", "SKIP_SAVE"},
+    )
+
+    # Map property names to their descriptions
+    PROPERTY_DESCRIPTIONS: dict[str, str] = {
+        "total_length_lock": "Lock/unlock total stair length. When locked, changing treads adjusts tread depth",
+        "custom_tread_lock": "Lock/unlock first and last tread dimensions. When unlocked, they can differ from other treads",
+    }
+
+    @classmethod
+    def description(cls, context: bpy.types.Context, properties: bpy.types.OperatorProperties) -> str:
+        prop_name = properties.property_name
+        return cls.PROPERTY_DESCRIPTIONS.get(prop_name, "Toggle a boolean property on stair properties")
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
-        if not obj:
+        if not obj or not self.property_name:
             return {"CANCELLED"}
 
         props = tool.Model.get_stair_props(obj)
-        props.total_length_lock = not props.total_length_lock
-
-        return {"FINISHED"}
+        if hasattr(props, self.property_name):
+            setattr(props, self.property_name, not getattr(props, self.property_name))
+            return {"FINISHED"}
+        return {"CANCELLED"}
 
 
 class AdjustStairTreads(bpy.types.Operator):
-    """Adjust the number of treads"""
+    """Adjust the number of treads. Shift+click to enter a specific number."""
 
     bl_idname = "bim.adjust_stair_treads"
     bl_label = "Adjust Stair Treads"
@@ -325,7 +358,13 @@ class AdjustStairTreads(bpy.types.Operator):
 
     increment: IntProperty(name="Increment", default=1)
 
-    def execute(self, context):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        if event.shift:
+            bpy.ops.bim.set_stair_treads("INVOKE_DEFAULT")
+            return {"FINISHED"}
+        return self.execute(context)
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
@@ -338,34 +377,81 @@ class AdjustStairTreads(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class CycleStairType(bpy.types.Operator):
+class SetStairTreads(bpy.types.Operator):
+    """Set the number of treads to a specific value."""
+
+    bl_idname = "bim.set_stair_treads"
+    bl_label = "Set Number of Treads"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:  # noqa: ARG002
+        obj = context.active_object
+        if not obj:
+            return {"CANCELLED"}
+
+        props = tool.Model.get_stair_props(obj)
+        self._input = IntegerInputState.from_value(props.number_of_treads, min_value=1)
+        self._original_value = props.number_of_treads
+
+        bpy.ops.ed.undo_push(message="Set Number of Treads")
+        context.window_manager.modal_handler_add(self)
+        update_header(context, self._format_header())
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        return run_integer_input_modal(self, context, event)
+
+    def _apply_value(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if not obj:
+            return
+        value = self._input.get_value()
+        if value is not None:
+            props = tool.Model.get_stair_props(obj)
+            props.number_of_treads = value
+
+    def _restore_value(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if obj:
+            props = tool.Model.get_stair_props(obj)
+            props.number_of_treads = self._original_value
+
+    def _format_header(self) -> str:
+        input_str = self._input.get_input_string()
+        validity = "" if self._input.is_valid else " [must be >= 1]"
+        return f"Number of Treads: {input_str}_{validity}  |  Enter to confirm, Esc to cancel"
+
+
+class CycleStairType(bpy.types.Operator, gizmo.CycleTypeMixin):
     """Cycle through stair types. Shift+click to cycle in reverse."""
 
     bl_idname = "bim.cycle_stair_type"
     bl_label = "Cycle Stair Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    reverse: bpy.props.BoolProperty(name="Reverse", default=False, options={"HIDDEN", "SKIP_SAVE"})
+    props_getter = "get_stair_props"
+    type_literal = tool.Model.StairType
+    type_attr = "stair_type"
+    skip_element_check = True
 
-    def invoke(self, context, event):
-        self.reverse = event.shift
-        return self.execute(context)
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        return self._cycle_type(context)
 
-    def execute(self, context):
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
 
-        props = tool.Model.get_stair_props(obj)
-        types = ["CONCRETE", "WOOD/STEEL", "GENERIC"]
-        try:
-            current_idx = types.index(props.stair_type)
-        except ValueError:
-            current_idx = 0
-        direction = -1 if self.reverse else 1
-        props.stair_type = types[(current_idx + direction) % len(types)]
+# Tread run accessors - callbacks that delegate to BIMStairProperties methods
+_tread_run_accessors = {
+    0: (
+        lambda props: props.get_custom_tread_run(0),
+        lambda props, value: props.set_custom_tread_run(0, value),
+    ),
+    1: (
+        lambda props: props.get_custom_tread_run(1),
+        lambda props, value: props.set_custom_tread_run(1, value),
+    ),
+}
 
-        return {"FINISHED"}
+# Shorthand for gizmo offset constants used in DimensionGizmoConfig lambdas
+_G = gizmo.BaseParametricGizmoGroup
 
 
 class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
@@ -375,230 +461,310 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_region_type = "WINDOW"
     bl_options = {"3D", "PERSISTENT"}
 
+    # === Stair-Specific Icon Layout (meters) ===
+    # Additional icons for stair editing, positioned after standard icons:
+    #   [Validate] [Cancel] [Cycle] [TreadLock] [Plus] [Minus]
+    ICON_TREAD_LOCK_X = 1.24  # X position for tread lock toggle icon
+    ICON_PLUS_X = 1.61  # X position for add tread (+) icon
+    ICON_MINUS_X = 1.98  # X position for remove tread (-) icon
+    ICON_PLUS_MINUS_SCALE = 0.24  # Scale for plus/minus icons (slightly larger)
+    ICON_CYCLE_SCALE = 0.3  # Scale for cycle type icon
+    ICON_Z_OFFSET = 0.5  # Z offset above geometry for editing icons
+
     enable_editing_operator = "bim.enable_editing_stair"
     finish_editing_operator = "bim.finish_editing_stair"
     cancel_editing_operator = "bim.cancel_editing_stair"
+    cycle_type_operator = "bim.cycle_stair_type"
 
-    gizmo_props = [
-        GizmoPropConfig("width", (0, 1, 0)),
-        GizmoPropConfig("height", (0, 0, 1)),
-        GizmoPropConfig("tread_run", (1, 0, 0)),
-        GizmoPropConfig("tread_depth", (0, 0, -1)),
-        GizmoPropConfig("nosing_length", (-1, 0, 0)),
-        GizmoPropConfig("nosing_depth", (0, 0, -1)),
-        GizmoPropConfig("total_length_target", (1, 0, 0)),
-        GizmoPropConfig("base_slab_depth", (0, 0, -1)),
-        GizmoPropConfig("top_slab_depth", (0, 0, -1)),
+    def get_icon_y_extent(self, props: "BIMStairProperties") -> tuple[float, float]:
+        """Get Y extents for stair icon positioning.
+
+        Stair geometry extends from Y=0 to Y=width.
+        Icons are positioned beyond the width on either side.
+        """
+        furthest_y = props.width + 2 * self.GIZMO_OFFSET
+        return (furthest_y, furthest_y)
+
+    dimension_gizmo_props = [
+        DimensionGizmoConfig(
+            attr_name="total_length_target",
+            axis=(1, 0, 0),
+            prop_name="Total Length",
+            min_value=0.01,
+            text_offset_sign=-1,
+            matrix_position=lambda p: V_(0, -_G.GIZMO_OFFSET, -_G.GIZMO_OFFSET),
+        ),
+        DimensionGizmoConfig(
+            attr_name="height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            text_alignment="start",
+            matrix_position=lambda p: V_(p.get_total_run() + _G.GIZMO_OFFSET, -_G.GIZMO_OFFSET, 0),
+        ),
+        DimensionGizmoConfig(
+            attr_name="width",
+            axis=(0, 1, 0),
+            min_value=0.01,
+            matrix_position=lambda p: V_(_G.GIZMO_OFFSET, 0, -_G.GIZMO_OFFSET),
+        ),
+        DimensionGizmoConfig(
+            attr_name="tread_run",
+            axis=(1, 0, 0),
+            min_value=0.01,
+            visibility_condition=lambda p: p.has_tread_run_gizmo(),
+            matrix_position=lambda p: V_(
+                0 if p.custom_tread_lock else p.custom_first_last_tread_run[0],
+                0,
+                p.get_riser_height() if p.custom_tread_lock else p.get_riser_height() * 2,
+            ),
+        ),
+        DimensionGizmoConfig(
+            attr_name="custom_first_tread_run",
+            axis=(1, 0, 0),
+            prop_name="First Tread",
+            min_value=0.01,
+            visibility_condition=lambda p: p.has_custom_treads(),
+            compute_value=_tread_run_accessors[0][0],
+            apply_value=_tread_run_accessors[0][1],
+            matrix_position=lambda p: V_(0, 0, p.get_riser_height()),
+        ),
+        DimensionGizmoConfig(
+            attr_name="custom_last_tread_run",
+            axis=(1, 0, 0),
+            prop_name="Last Tread",
+            min_value=0.01,
+            visibility_condition=lambda p: p.has_custom_treads(),
+            compute_value=_tread_run_accessors[1][0],
+            apply_value=_tread_run_accessors[1][1],
+            matrix_position=lambda p: V_(p.get_total_run() - p.custom_first_last_tread_run[1], 0, p.height),
+        ),
+        DimensionGizmoConfig(
+            attr_name="nosing_length",
+            axis=(-1, 0, 0),
+            matrix_position=lambda p: V_(0, p.width / 2, p.get_riser_height()),
+        ),
+        DimensionGizmoConfig(
+            attr_name="tread_depth",
+            axis=(0, 0, -1),
+            visibility_condition=lambda p: p.has_tread_depth(),
+            matrix_position=lambda p: V_(0, 0, p.get_riser_height()),
+        ),
+        DimensionGizmoConfig(
+            attr_name="riser_height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            text_alignment="start",
+            compute_value=lambda p: p.get_riser_height(),
+            apply_value=lambda p, v: p.set_riser_height(v),
+            matrix_position=lambda p: V_(p.tread_run, p.width, 0),
+        ),
+        DimensionGizmoConfig(
+            attr_name="nosing_depth",
+            axis=(0, 0, -1),
+            visibility_condition=lambda p: p.has_nosing(),
+            matrix_position=lambda p: V_(-p.nosing_length, p.width / 2, p.get_riser_height()),
+        ),
+        DimensionGizmoConfig(
+            attr_name="base_slab_depth",
+            axis=(0, 0, -1),
+            visibility_condition=lambda p: p.is_concrete_stair(),
+            matrix_position=lambda p: V_(0, p.width / 2, 0),
+        ),
+        DimensionGizmoConfig(
+            attr_name="top_slab_depth",
+            axis=(0, 0, -1),
+            visibility_condition=lambda p: p.is_concrete_stair(),
+            matrix_position=lambda p: V_(p.get_total_run(), p.width / 2, p.height),
+        ),
     ]
 
+    # Metadata-driven dispatch for props and preferences
+    props_getter = "get_stair_props"
+    gizmo_pref_name = "stair"
+
     @classmethod
-    def is_element_type(cls, element) -> bool:
+    def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
         return tool.Blender.Modifier.is_stair(element)
 
-    def get_props(self, obj):
-        return tool.Model.get_stair_props(obj)
+    def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
+        """Create stair-specific icon gizmos (lock, plus, minus)."""
+        self.lock_gizmo = self.create_icon_gizmo(
+            "VIEW3D_GT_lock",
+            self.COLOR_BLUE,
+            "bim.toggle_stair_property",
+            prop_path="BIMStairProperties.total_length_lock",
+            property_name="total_length_lock",
+        )
+        self.tread_lock_gizmo = self.create_icon_gizmo(
+            "VIEW3D_GT_lock",
+            (1.0, 1.0, 1.0),
+            "bim.toggle_stair_property",
+            prop_path="BIMStairProperties.custom_tread_lock",
+            property_name="custom_tread_lock",
+        )
+        self.plus_gizmo = self.create_icon_gizmo(
+            "VIEW3D_GT_plus", self.COLOR_GREEN, "bim.adjust_stair_treads", increment=1
+        )
+        self.minus_gizmo = self.create_icon_gizmo(
+            "VIEW3D_GT_minus", self.COLOR_RED, "bim.adjust_stair_treads", increment=-1
+        )
 
-    def get_gizmo_prefs(self):
-        prefs = tool.Blender.get_addon_preferences()
-        return prefs.gizmos.stair
+    def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties") -> None:
+        """Update stair-specific lock and tread count gizmos."""
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        self.update_lock_gizmo(mw, props, billboard_rot)
+        self.update_tread_lock_gizmo(props)
+        self.update_tread_count_gizmos(props)
 
-    def should_hide_gizmo(self, attr_name, props):
-        """Stair-specific visibility rules for gizmos."""
-        if not props.is_editing:
-            return True
-        # Hide concrete-specific gizmos for non-concrete stairs
-        if attr_name in ("base_slab_depth", "top_slab_depth") and props.stair_type != "CONCRETE":
-            return True
-        # Hide tread_depth for generic stairs (has no tread geometry)
-        if attr_name == "tread_depth" and props.stair_type == "GENERIC":
-            return True
-        # Hide nosing_depth when nosing_length is 0 or for Wood/Steel stair types
-        if attr_name == "nosing_depth" and (props.nosing_length == 0.0 or props.stair_type == "WOOD/STEEL"):
-            return True
-        return False
-
-    @staticmethod
-    def _get_stair_total_run(props) -> float:
-        """Calculate the total horizontal run of the stair."""
-        return props.tread_run * props.number_of_treads
-
-    @staticmethod
-    def _get_first_riser_height(props) -> float:
-        """Calculate the height of the first riser."""
-        return props.height / (props.number_of_treads + 1)
-
-    def get_gizmo_matrix_width(self, props):
-        translation = Matrix.Translation(Vector((0, props.width, 0)))
-        rotation = self.get_axis_rotation_matrix((0, 1, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_height(self, props):
-        total_run = self._get_stair_total_run(props)
-        translation = Matrix.Translation(Vector((total_run, props.width / 2, props.height)))
-        rotation = self.get_axis_rotation_matrix((0, 0, 1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_tread_run(self, props):
-        riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((props.tread_run, props.width / 2, riser_height)))
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_tread_depth(self, props):
-        riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((props.tread_run / 2, props.width / 2, riser_height - props.tread_depth)))
-        rotation = self.get_axis_rotation_matrix((0, 0, -1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_nosing_length(self, props):
-        riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((-props.nosing_length, props.width / 2, riser_height)))
-        rotation = self.get_axis_rotation_matrix((-1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_nosing_depth(self, props):
-        riser_height = self._get_first_riser_height(props)
-        translation = Matrix.Translation(Vector((-props.nosing_length, props.width / 2, riser_height - props.nosing_depth)))
-        rotation = self.get_axis_rotation_matrix((0, 0, -1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_total_length_target(self, props):
-        translation = Matrix.Translation(Vector((props.total_length_target, props.width / 2, props.height)))
-        rotation = self.get_axis_rotation_matrix((1, 0, 0))
-        return translation @ rotation
-
-    def get_gizmo_matrix_base_slab_depth(self, props):
-        translation = Matrix.Translation(Vector((0, props.width / 2, -props.base_slab_depth)))
-        rotation = self.get_axis_rotation_matrix((0, 0, -1))
-        return translation @ rotation
-
-    def get_gizmo_matrix_top_slab_depth(self, props):
-        total_run = self._get_stair_total_run(props)
-        translation = Matrix.Translation(Vector((total_run, props.width / 2, props.height - props.top_slab_depth)))
-        rotation = self.get_axis_rotation_matrix((0, 0, -1))
-        return translation @ rotation
-
-    def setup(self, context):
-        self.setup_property_gizmos(context)
-        self.setup_editing_gizmos(context)
-
-        # Stair-specific gizmos
-        prefs = tool.Blender.get_addon_preferences()
-        highlight_color = prefs.decorator_color_selected[:3]
-
-        # Total length lock gizmo
-        self.lock_gizmo = self.gizmos.new("VIEW3D_GT_lock")
-        self.lock_gizmo.use_draw_scale = False
-        self.lock_gizmo.color = self.COLOR_BLUE
-        self.lock_gizmo.color_highlight = highlight_color
-        self.lock_gizmo.alpha = 0.8
-        self.lock_gizmo.prop_path = "BIMStairProperties.total_length_lock"
-        self.lock_gizmo.target_set_operator("bim.toggle_stair_total_length_lock")
-
-        # Plus gizmo for increasing treads
-        self.plus_gizmo = self.gizmos.new("VIEW3D_GT_plus")
-        self.plus_gizmo.use_draw_scale = False
-        self.plus_gizmo.color = self.COLOR_GREEN
-        self.plus_gizmo.color_highlight = highlight_color
-        self.plus_gizmo.alpha = 0.8
-        op = self.plus_gizmo.target_set_operator("bim.adjust_stair_treads")
-        op.increment = 1
-
-        # Minus gizmo for decreasing treads
-        self.minus_gizmo = self.gizmos.new("VIEW3D_GT_minus")
-        self.minus_gizmo.use_draw_scale = False
-        self.minus_gizmo.color = self.COLOR_RED
-        self.minus_gizmo.color_highlight = highlight_color
-        self.minus_gizmo.alpha = 0.8
-        op = self.minus_gizmo.target_set_operator("bim.adjust_stair_treads")
-        op.increment = -1
-
-        # Cycle gizmo for stair type
-        default_color = prefs.decorations_colour[:3]
-        self.cycle_gizmo = self.gizmos.new("VIEW3D_GT_cycle")
-        self.cycle_gizmo.use_draw_scale = False
-        self.cycle_gizmo.color = default_color
-        self.cycle_gizmo.color_highlight = highlight_color
-        self.cycle_gizmo.alpha = 0.8
-        self.cycle_gizmo.target_set_operator("bim.cycle_stair_type")
-
-    def refresh(self, context):
-        obj = context.active_object
-        if not obj:
-            return
-
-        props = self.get_props(obj)
-        mw = obj.matrix_world
-        self.update_property_gizmos(mw, props)
-        self.update_editing_gizmos(mw, props)
-        self.update_lock_gizmo(mw, props)
-        self.update_tread_count_gizmos(mw, props)
-        self.update_cycle_gizmo(mw, props)
-
-    def update_lock_gizmo(self, mw, props):
-        """Update lock gizmo position and visibility."""
+    def update_lock_gizmo(self, mw: Matrix, props: "BIMStairProperties", billboard_rot: Matrix) -> None:
+        """Update lock gizmo visibility, color, and position."""
         gizmo_prefs = self.get_gizmo_prefs()
-        self.lock_gizmo.hide = not props.is_editing or not gizmo_prefs.lock
+        if not self.update_gizmo_visibility(self.lock_gizmo, props.is_editing, gizmo_prefs.lock):
+            return  # Hidden, skip positioning
 
-        if self.lock_gizmo.hide:
-            return
-
-        # Update color based on lock state: red when locked, green when unlocked
         self.lock_gizmo.color = self.COLOR_RED if props.total_length_lock else self.COLOR_GREEN
 
-        total_run = self._get_stair_total_run(props)
-        lock_x = total_run + props.tread_run + 0.5
+        total_run = props.get_total_run()
         local_transform = (
-            Matrix.Translation(Vector((lock_x, props.width / 2, props.height)))
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
-            @ Matrix.Scale(0.2, 4)
+            Matrix.Translation(Vector((total_run + self.ICON_Z_OFFSET, -self.GIZMO_OFFSET, -self.GIZMO_OFFSET)))
+            @ billboard_rot
+            @ Matrix.Scale(self.EDITING_ICON_SCALE, 4)
         )
         self.lock_gizmo.matrix_basis = mw @ local_transform
 
-    def update_tread_count_gizmos(self, mw, props):
-        """Update plus and minus gizmos for tread count adjustment."""
-        gizmo_prefs = self.get_gizmo_prefs()
-
-        # Plus gizmo - always visible when editing (if preference enabled)
-        self.plus_gizmo.hide = not props.is_editing or not gizmo_prefs.plus
-        # Minus gizmo - hidden when number_of_treads is 1 (if preference enabled)
-        self.minus_gizmo.hide = not props.is_editing or props.number_of_treads <= 1 or not gizmo_prefs.minus
-
-        if self.plus_gizmo.hide and self.minus_gizmo.hide:
+    def update_tread_lock_gizmo(self, props: "BIMStairProperties") -> None:
+        """Update visibility of tread lock gizmo. Positioning is handled in _update_editing_icon_positions."""
+        if not hasattr(self, "tread_lock_gizmo"):
             return
-
-        total_run = self._get_stair_total_run(props)
-        base_x = total_run + props.tread_run + 0.5
-
-        if not self.plus_gizmo.hide:
-            plus_local_transform = (
-                Matrix.Translation(Vector((base_x + 0.25, props.width / 2, props.height + 0.15)))
-                @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
-                @ Matrix.Scale(0.2, 4)
-            )
-            self.plus_gizmo.matrix_basis = mw @ plus_local_transform
-
-        if not self.minus_gizmo.hide:
-            minus_local_transform = (
-                Matrix.Translation(Vector((base_x + 0.5, props.width / 2, props.height + 0.15)))
-                @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
-                @ Matrix.Scale(0.2, 4)
-            )
-            self.minus_gizmo.matrix_basis = mw @ minus_local_transform
-
-    def update_cycle_gizmo(self, mw, props):
-        """Update cycle gizmo position - 0.5m above lock gizmo."""
         gizmo_prefs = self.get_gizmo_prefs()
-        self.cycle_gizmo.hide = not props.is_editing or not gizmo_prefs.cycle
+        self.update_gizmo_visibility(self.tread_lock_gizmo, props.is_editing, gizmo_prefs.lock)
 
-        if self.cycle_gizmo.hide:
+    def update_tread_count_gizmos(self, props: "BIMStairProperties") -> None:
+        """Update visibility of +/- tread count gizmos. Positioning is handled in _update_editing_icon_positions."""
+        if not hasattr(self, "plus_gizmo") or not hasattr(self, "minus_gizmo"):
             return
-
-        total_run = self._get_stair_total_run(props)
-        cycle_x = total_run + props.tread_run + 0.5  # Same X as lock
-        local_transform = (
-            Matrix.Translation(Vector((cycle_x, props.width / 2, props.height + 0.5)))  # +0.5m above lock
-            @ Matrix.Rotation(math.radians(90), 4, (1.0, 0.0, 0.0))
-            @ Matrix.Scale(0.2, 4)
+        gizmo_prefs = self.get_gizmo_prefs()
+        self.update_gizmo_visibility(self.plus_gizmo, props.is_editing, gizmo_prefs.plus)
+        # Minus has additional condition: number_of_treads > 1
+        self.update_gizmo_visibility(
+            self.minus_gizmo, props.is_editing and props.number_of_treads > 1, gizmo_prefs.minus
         )
-        self.cycle_gizmo.matrix_basis = mw @ local_transform
+
+    def _update_dimension_gizmo_positions(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"
+    ) -> None:
+        """Update dimension gizmo positions based on camera view direction."""
+        viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        total_run = props.get_total_run()
+        riser_height = props.get_riser_height()
+
+        self._update_overall_dimension_gizmos(mw, props, viewing_from_negative_y, viewing_from_negative_x, total_run)
+        self._update_tread_dimension_gizmos(mw, props, viewing_from_negative_y, total_run, riser_height)
+        self._update_detail_dimension_gizmos(mw, props, viewing_from_negative_y, riser_height)
+        self._update_lock_gizmo_position(mw, props, viewing_from_negative_y, billboard_rot, total_run)
+        self._update_editing_icon_positions(mw, props, viewing_from_negative_y, billboard_rot)
+
+    def _update_overall_dimension_gizmos(
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        viewing_from_negative_x: bool,
+        total_run: float,
+    ) -> None:
+        """Update overall dimension gizmos (total_length, width, height)."""
+        y_pos_offset = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=True)
+        x_pos = total_run + self.GIZMO_OFFSET if viewing_from_negative_x else -self.GIZMO_OFFSET
+
+        self.set_dimension_gizmo_position("total_length_target", mw, V_(0, y_pos_offset, -self.GIZMO_OFFSET), (1, 0, 0))
+        self.set_dimension_gizmo_position("width", mw, V_(x_pos, 0, -self.GIZMO_OFFSET), (0, 1, 0))
+        self.set_dimension_gizmo_position("height", mw, V_(total_run + self.GIZMO_OFFSET, y_pos_offset, 0), (0, 0, 1))
+
+    def _update_tread_dimension_gizmos(
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        total_run: float,
+        riser_height: float,
+    ) -> None:
+        """Update tread-related dimension gizmos (tread_run, custom first/last tread)."""
+        y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=False)
+
+        # tread_run position depends on custom_tread_lock state
+        if props.custom_tread_lock:
+            tread_x, tread_z = 0, riser_height
+        else:
+            tread_x = props.custom_first_last_tread_run[0]
+            tread_z = riser_height * 2
+        self.set_dimension_gizmo_position("tread_run", mw, V_(tread_x, y_pos, tread_z), (1, 0, 0))
+
+        self.set_dimension_gizmo_position("custom_first_tread_run", mw, V_(0, y_pos, riser_height), (1, 0, 0))
+
+        last_x = total_run - props.custom_first_last_tread_run[1]
+        self.set_dimension_gizmo_position("custom_last_tread_run", mw, V_(last_x, y_pos, props.height), (1, 0, 0))
+
+    def _update_detail_dimension_gizmos(
+        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, riser_height: float
+    ) -> None:
+        """Update detail dimension gizmos (nosing, tread depth, riser height)."""
+        y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=False)
+
+        self.set_dimension_gizmo_position("nosing_length", mw, V_(0, props.width / 2, riser_height), (-1, 0, 0))
+        self.set_dimension_gizmo_position("tread_depth", mw, V_(0, y_pos, riser_height), (0, 0, -1))
+        self.set_dimension_gizmo_position("riser_height", mw, V_(props.tread_run, y_pos, 0), (0, 0, 1))
+        self.set_dimension_gizmo_position(
+            "nosing_depth", mw, V_(-props.nosing_length, props.width / 2, riser_height), (0, 0, -1)
+        )
+
+    def _update_lock_gizmo_position(
+        self,
+        mw: Matrix,
+        props: "BIMStairProperties",
+        viewing_from_negative_y: bool,
+        billboard_rot: Matrix,
+        total_run: float,
+    ) -> None:
+        """Update lock gizmo position based on Y view direction."""
+        y_pos = self.get_y_position_for_view(props, viewing_from_negative_y, use_offset=True)
+        self.set_icon_gizmo_position(
+            "lock_gizmo",
+            mw,
+            total_run + self.ICON_Z_OFFSET,
+            y_pos,
+            -self.GIZMO_OFFSET,
+            billboard_rot,
+            scale=self.EDITING_ICON_SCALE,
+        )
+
+    def _update_editing_icon_positions(
+        self, mw: Matrix, props: "BIMStairProperties", viewing_from_negative_y: bool, billboard_rot: Matrix
+    ) -> None:
+        """Update editing icon positions, flipping Y based on viewing angle."""
+        if not props.is_editing:
+            return
+
+        icon_z = props.height + self.ICON_Z_OFFSET
+        y_pos = self.get_icon_y_for_view(props, viewing_from_negative_y)
+
+        self.set_icon_gizmo_position("validate_gizmo", mw, 0, y_pos, icon_z, billboard_rot)
+        self.set_icon_gizmo_position("cancel_gizmo", mw, self.ICON_CANCEL_X, y_pos, icon_z, billboard_rot)
+        self.set_icon_gizmo_position(
+            "cycle_gizmo", mw, self.ICON_CYCLE_X, y_pos, icon_z, billboard_rot, scale=self.ICON_CYCLE_SCALE
+        )
+        self.set_icon_gizmo_position(
+            "tread_lock_gizmo",
+            mw,
+            self.ICON_TREAD_LOCK_X,
+            y_pos,
+            icon_z - self.EDITING_ICON_SCALE / 2,
+            billboard_rot,
+            scale=self.EDITING_ICON_SCALE,
+        )
+        self.set_icon_gizmo_position(
+            "plus_gizmo", mw, self.ICON_PLUS_X, y_pos, icon_z, billboard_rot, scale=self.ICON_PLUS_MINUS_SCALE
+        )
+        self.set_icon_gizmo_position(
+            "minus_gizmo", mw, self.ICON_MINUS_X, y_pos, icon_z, billboard_rot, scale=self.ICON_PLUS_MINUS_SCALE
+        )

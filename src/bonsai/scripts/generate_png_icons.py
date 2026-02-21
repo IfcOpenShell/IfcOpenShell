@@ -5,9 +5,9 @@
 # to run on mac: python3 generate_png_icons.py
 
 import os
+import re
 import subprocess
 import xml.etree.ElementTree as ET
-import re
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SVG_FILE = os.path.join(SCRIPT_DIR, "bonsai_icons.svg")

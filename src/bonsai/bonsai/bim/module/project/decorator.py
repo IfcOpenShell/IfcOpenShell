@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
+from typing import Union
+
 import blf
-import bpy
 import bmesh
-import bonsai.tool as tool
+import bpy
+import gpu
+from bpy.app.handlers import persistent
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
-from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
-from bpy.app.handlers import persistent
-from typing import Union
+from mathutils import Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.model.decorator import PolylineDecorator
 
 

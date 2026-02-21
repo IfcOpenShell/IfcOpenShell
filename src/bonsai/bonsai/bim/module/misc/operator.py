@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, assert_never, get_args
+
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.misc as core
+import numpy as np
+from mathutils import Euler, Matrix, Vector
+
 import bonsai.core.geometry as core_geometry
+import bonsai.core.misc as core
 import bonsai.core.root
-from mathutils import Vector, Matrix, Euler
-from typing import TYPE_CHECKING, Literal, get_args, assert_never
+import bonsai.tool as tool
 
 
 class SetOverrideColour(bpy.types.Operator):
@@ -348,3 +350,24 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
                 )
             )
         return matrix
+
+
+class IfcSverchokUseBonsaiFile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.ifcsverchok_use_bonsai_file"
+    bl_label = "Use Bonsai IFC File"
+    bl_description = "Apply current IfcSverchok tree to the active Bonsai file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        import sverchok.node_tree
+
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"ERROR"}, "No active IFC file.")
+            return {"CANCELLED"}
+
+        space_data = context.space_data
+        assert isinstance(space_data, bpy.types.SpaceNodeEditor)
+        node_tree = space_data.node_tree
+        assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
+        tool.Model.run_ifcsverchok_graph_on_bonsai_file(node_tree)

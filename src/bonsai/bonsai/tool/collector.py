@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import bpy
+import ifcopenshell.util.element
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import ifcopenshell.util.element
-from typing import Union
 
 
 class Collector(bonsai.core.tool.Collector):

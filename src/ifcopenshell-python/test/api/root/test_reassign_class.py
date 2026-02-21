@@ -18,13 +18,13 @@
 
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.geometry
-import ifcopenshell.api.spatial
-import ifcopenshell.util.representation
-import test.bootstrap
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.type
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import test.bootstrap
 
 
 class TestReassignClass(test.bootstrap.IFC4):

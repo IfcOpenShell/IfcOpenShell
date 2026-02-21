@@ -1,7 +1,8 @@
 import os
-import ifcopenshell
-from ifcopenshell.geom.stats import StatsCollector
+
 import pytest
+
+from ifcopenshell.geom.stats import StatsCollector
 
 
 @pytest.mark.parametrize(

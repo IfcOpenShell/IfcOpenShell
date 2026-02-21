@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-
-import bonsai.tool as tool
-import bonsai.core.georeference as core
 from bpy_extras.io_utils import ImportHelper
+
+import bonsai.core.georeference as core
+import bonsai.tool as tool
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
@@ -51,7 +51,7 @@ class RemoveGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Remove the georeferencing"
 
     def _execute(self, context):
-        core.remove_georeferencing(tool.Ifc)
+        core.remove_georeferencing(tool.Ifc, tool.Georeference)
 
 
 class EditGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):

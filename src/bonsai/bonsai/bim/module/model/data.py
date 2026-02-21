@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import math
 import json
+import math
+from math import degrees
+from typing import Any, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
-import bonsai.tool as tool
-from math import degrees
 from natsort import natsorted
-from typing import Union, Optional, Any
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -52,6 +54,11 @@ class AuthoringData:
         cls.is_loaded = True
         cls.props = tool.Model.get_model_props()
         cls.data["default_container"] = cls.default_container()
+        if tool.Ifc.get().schema == "IFC2X3":
+            if ifc_element_type == "IfcDoorType":
+                ifc_element_type = "IfcDoorStyle"
+            elif ifc_element_type == "IfcWindowType":
+                ifc_element_type = "IfcWindowStyle"
         cls.data["ifc_element_type"] = ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()

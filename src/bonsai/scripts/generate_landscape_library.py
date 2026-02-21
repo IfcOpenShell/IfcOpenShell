@@ -16,10 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import csv
+import os
 import random
+from collections import namedtuple
+from itertools import chain
+from math import cos, pi, sin, tan
+from pathlib import Path
+from random import uniform
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
@@ -29,15 +35,10 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.unit
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-from math import cos, sin, tan, pi
-from pathlib import Path
-from itertools import chain
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from collections import namedtuple
-from mathutils import Vector, Matrix
-from random import uniform
+from mathutils import Matrix, Vector
 
+import bonsai.tool as tool
 
 # When run from Blender
 BLEND_DIR = os.path.dirname(bpy.data.filepath)

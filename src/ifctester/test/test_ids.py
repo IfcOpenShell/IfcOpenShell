@@ -17,13 +17,14 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from typing import Optional
+
+import ifcopenshell
+import ifcopenshell.api.material
 import pytest
 import xmlschema
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.material
+
 from ifctester import ids
-from typing import Optional
 
 
 def run(

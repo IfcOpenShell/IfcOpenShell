@@ -16,21 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
+from typing import Literal, Optional, Union, assert_never
+
 import bmesh
-import mathutils
-import bonsai.tool as tool
+import bpy
+import ifc5d.qto
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
-import ifc5d.qto
-from mathutils import Vector, Matrix
+import mathutils
+from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional, assert_never
 
+import bonsai.tool as tool
 
 AxisType = Literal["x", "y", "z"]
 VectorTuple = tuple[float, float, float]

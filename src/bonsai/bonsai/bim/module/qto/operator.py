@@ -19,10 +19,11 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-import bonsai.tool as tool
-import bonsai.core.qto as core
-from bonsai.bim.module.qto import helper
 from ifcopenshell.util.profiler import Profiler
+
+import bonsai.core.qto as core
+import bonsai.tool as tool
+from bonsai.bim.module.qto import helper
 
 
 class CalculateCircleRadius(bpy.types.Operator):

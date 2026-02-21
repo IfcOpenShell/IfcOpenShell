@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import http.client
-from pathlib import Path
 from collections.abc import Sequence
-from typing_extensions import assert_never
+from pathlib import Path
 from urllib.parse import urlparse
+
+from typing_extensions import assert_never
 
 try:
     from bs4 import BeautifulSoup

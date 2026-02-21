@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.prop import Attribute, StrProperty
 
 
 def update_layer_property(self: "Layer", context: bpy.types.Context, *, property: str) -> None:

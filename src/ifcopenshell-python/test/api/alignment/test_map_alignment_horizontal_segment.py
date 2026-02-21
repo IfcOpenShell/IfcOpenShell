@@ -20,9 +20,12 @@
 # for horizontal alignment.
 
 import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import _map_alignment_horizontal_segment
+from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
+    _map_alignment_horizontal_segment,
+)
 
 
 def _BlossCurve_100_0_300_1000_1_Meter(file):

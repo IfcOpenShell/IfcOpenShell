@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, cast, Any
+from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
+    from bonsai.bim.module.spatial.prop import (
+        BIMContainer,
+        BIMSpatialDecompositionProperties,
+        Element,
+    )
 
 
 class BIM_PT_spatial(Panel):
@@ -131,6 +138,17 @@ class BIM_PT_spatial_decomposition(Panel):
             col = row.column(align=True)
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
+
+            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
+                op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
+                op.mode = "ISOLATE"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+                op.mode = "SHOW"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+                op.mode = "HIDE"
+                op.container = ifc_definition_id
 
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)

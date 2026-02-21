@@ -200,6 +200,7 @@ Packaged installation
 
 - **Arch Linux**: `Direct from Git <https://aur.archlinux.org/packages/ifcopenshell-git/>`__.
 - **Chocolatey on Windows**: `Unstable <https://community.chocolatey.org/packages/bonsai-nightly/>`__.
+- **Fedora Linux**: `IfcOpenShell Copr repository <https://copr.fedorainfracloud.org/coprs/bpostle/IfcOpenShell/>`__.
 
 Tips for package managers
 -------------------------

@@ -17,23 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bcf.v2.visinfo
-import bonsai.core.tool
-import bonsai.tool as tool
-import bpy
-import bcf.v2.model
-import bcf.v2.model.visinfo
-import bcf.v2.topic
 
-import bcf.v3.model
-import bcf.v3.model.visinfo
-import bcf.v3.topic
+from typing import TYPE_CHECKING, Any, Optional, TypeGuard, TypeVar, Union
 
 import bcf.agnostic.model
 import bcf.agnostic.topic
 import bcf.agnostic.visinfo
+import bcf.v2.model
+import bcf.v2.model.visinfo
+import bcf.v2.topic
+import bcf.v2.visinfo
+import bcf.v3.model
+import bcf.v3.model.visinfo
+import bcf.v3.topic
+import bpy
 
-from typing import Any, Union, TypeVar, TypeGuard, Optional, TYPE_CHECKING
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.bcf.prop import BCFProperties

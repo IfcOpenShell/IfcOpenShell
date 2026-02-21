@@ -17,24 +17,22 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from mathutils import Matrix
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.util.schema
+from bpy.props import BoolProperty, StringProperty
+from mathutils import Matrix
+from sverchok.data_structure import (
+    ensure_min_nesting,
+    flatten_data,
+    repeat_last_for_length,
+    updateNode,
+)
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
-
-from bpy.props import StringProperty, BoolProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import (
-    updateNode,
-    flatten_data,
-    repeat_last_for_length,
-    ensure_min_nesting,
-)
 
 
 class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):

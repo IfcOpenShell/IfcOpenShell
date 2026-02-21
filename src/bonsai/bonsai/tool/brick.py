@@ -17,28 +17,32 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
+
 import datetime
+import os
+from collections.abc import Generator
+from contextlib import contextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+
 import bonsai.core.brick
 import bonsai.core.tool
 import bonsai.tool as tool
-from pathlib import Path
-from contextlib import contextmanager
-from typing import Any, Union, TYPE_CHECKING
-from collections.abc import Generator
 
 try:
+    import urllib.parse
+
     import brickschema
     import brickschema.persistent
     from brickschema.namespaces import REF, A
-    import urllib.parse
-    from rdflib import Literal, URIRef, Namespace, BNode
+    from rdflib import BNode, Literal, Namespace, URIRef
     from rdflib.namespace import RDF
 except:
     # See #1860
@@ -46,7 +50,8 @@ except:
 
 if TYPE_CHECKING:
     import brickschema
-    from rdflib import Literal, URIRef, Namespace, BNode
+    from rdflib import BNode, Literal, Namespace, URIRef
+
     from bonsai.bim.module.brick.prop import BIMBrickProperties
 
 # silence known rdflib_sqlalchemy TypeError warning

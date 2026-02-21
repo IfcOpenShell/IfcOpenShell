@@ -110,7 +110,7 @@ Scenario: Assign type - assign to a type with a material layer set, which automa
     And the object "IfcWall/Unnamed" has a "100" thick layered material containing the material "Default"
     And the object "IfcWall/Unnamed" dimensions are ".5,.1,.5"
 
-Scenario: Assign type - assign to a different type with a material layer set
+Scenario: Assign type - assign to a different type with a LAYER2 material layer set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -148,6 +148,23 @@ Scenario: Assign type - assign to a different type with a material layer set
     When I press "bim.assign_type(relating_type={type2}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "200" thick layered material containing the material "Default"
     And the object "IfcWall/Cube" dimensions are "1,.2,1"
+
+Scenario: Assign type - assign to a different type with a LAYER3 material layer set
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    When I press "bim.add_occurrence"
+    Then the object "IfcSlab/Slab" is an "IfcSlab"
+    And the object "IfcSlab/Slab" dimensions are "1,1,0.2"
+    And the object "IfcSlab/Slab" bottom left corner is at "0,0,0"
+    And the object "IfcSlab/Slab" top right corner is at "1,1,0.2"
+    When I look at the "Type" panel
+    And I click "GREASEPENCIL"
+    And I set the "relating_type" property to "FLR300"
+    And I click "CHECKMARK"
+    Then the object "IfcSlab/Slab" dimensions are "1,1,0.3"
 
 Scenario: Assign type - assign to a type with a material profile set
     Given an empty IFC project

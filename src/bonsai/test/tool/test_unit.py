@@ -21,15 +21,27 @@ import ifcopenshell
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.unit import Unit as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.Unit)
+
+
+class TestParseDistanceString(NewFile):
+    def test_run(self):
+        assert subject.parse_distance_string("5m") == (True, 5.0)
+        assert subject.parse_distance_string("30cm") == (True, 0.3)
+        assert subject.parse_distance_string("10ft") == (True, 3.048)
+        assert subject.parse_distance_string("12in") == (True, 0.3048)
+        assert subject.parse_distance_string("5'6\"") == (True, 1.6764)
+        assert subject.parse_distance_string("-5'6\"") == (True, -1.6764)
+        assert subject.parse_distance_string("invalid") == (False, 0.0)
 
 
 class TestClearActiveUnit(NewFile):
@@ -130,37 +142,70 @@ class TestGetSceneUnitName(NewFile):
         assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
         assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
 
+    def test_getting_an_si_name(self):
+        props = tool.Blender.get_bim_props()
+        bpy.context.scene.unit_settings.system = "METRIC"
+        bpy.context.scene.unit_settings.length_unit = "METERS"
+        props.area_unit = "SQUARE_METRE"
+        props.volume_unit = "CUBIC_METRE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        assert subject.get_scene_unit_name("AREAUNIT") == "SQUARE_METRE"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "CUBIC_METRE"
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "MILLI/METRE"
+        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+
     def test_getting_a_name_with_no_unit_system(self):
         assert bpy.context.scene
         bpy.context.scene.unit_settings.system = "NONE"
-        assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
+        assert subject.get_scene_unit_name("LENGTHUNIT") == "METRE"
+        assert subject.get_scene_unit_name("AREAUNIT") == "SQUARE_METRE"
+        assert subject.get_scene_unit_name("VOLUMEUNIT") == "CUBIC_METRE"
+
+    def test_getting_mass_unit_names(self):
+        """Test getting mass unit names for different systems"""
+        assert bpy.context.scene
+        props = tool.Blender.get_bim_props()
+        props.mass_unit = "GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "GRAM"
+        props.mass_unit = "KILO/GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "KILO/GRAM"
+        props.mass_unit = "MEGA/GRAM"
+        assert subject.get_scene_unit_name("MASSUNIT") == "MEGA/GRAM"
+        props.mass_unit = "pound"
+        assert subject.get_scene_unit_name("MASSUNIT") == "pound"
+        props.mass_unit = "ounce"
+        assert subject.get_scene_unit_name("MASSUNIT") == "ounce"
+
+    def test_getting_time_unit_names(self):
+        """Test getting time unit names for different systems"""
+        assert bpy.context.scene
+        props = tool.Blender.get_bim_props()
+
+        props.time_unit = "SECOND"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "SECOND"
+        props.time_unit = "minute"
+        assert subject.get_scene_unit_name("TIMEUNIT") == "minute"
+        props.time_unit = "NONE"
+        assert not subject.get_scene_unit_name("TIMEUNIT")
 
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):
         assert bpy.context.scene
-        bpy.context.scene.unit_settings.system = "METRIC"
-        bpy.context.scene.unit_settings.length_unit = "METERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
-        bpy.context.scene.unit_settings.length_unit = "MICROMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MICRO"
-        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "MILLI"
-        bpy.context.scene.unit_settings.length_unit = "CENTIMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "CENTI"
-        bpy.context.scene.unit_settings.length_unit = "KILOMETERS"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "KILO"
-        bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
-        assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
-        props = tool.Blender.get_bim_props()
-        props.area_unit = "SQUARE_METRE"
-        assert subject.get_scene_unit_si_prefix("AREAUNIT") is None
-        props.area_unit = "MILLI/SQUARE_METRE"
-        assert subject.get_scene_unit_si_prefix("AREAUNIT") == "MILLI"
-        props.volume_unit = "CUBIC_METRE"
-        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") is None
-        props.volume_unit = "MILLI/CUBIC_METRE"
-        assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") == "MILLI"
+        assert subject.get_scene_unit_si_prefix("METRE") is None
+        assert subject.get_scene_unit_si_prefix("MICRO/METRE") == "MICRO"
+        assert subject.get_scene_unit_si_prefix("SQUARE_METRE") is None
+        assert subject.get_scene_unit_si_prefix("MILLI/SQUARE_METRE") == "MILLI"
+        assert subject.get_scene_unit_si_prefix("foot") is None
+
+    def test_mass_and_time_unit_prefixes(self):
+        assert subject.get_scene_unit_si_prefix("KILO/GRAM") == "KILO"
+        assert subject.get_scene_unit_si_prefix("MEGA/GRAM") == "MEGA"
+        assert subject.get_scene_unit_si_prefix("GRAM") is None
 
 
 class TestImportUnitAttributes(NewFile):
@@ -298,17 +343,95 @@ class TestImportUnits(NewFile):
         assert props.units[5].unit_type == unit6.UnitType
         assert props.units[5].ifc_class == unit6.is_a()
 
+    def test_importing_mass_and_time_units(self):
+        """Test importing mass and time conversion based units"""
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
 
-class TestIsSceneUnitMetric(NewFile):
-    def test_run(self):
-        assert bpy.context.scene
-        props = bpy.context.scene.unit_settings
-        props.system = "METRIC"
-        assert subject.is_scene_unit_metric() is True
-        props.system = "IMPERIAL"
-        assert subject.is_scene_unit_metric() is False
-        props.system = "NONE"
-        assert subject.is_scene_unit_metric() is True
+        tonne_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="tonne")
+        pound_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="pound")
+        ounce_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="ounce")
+
+        minute_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="minute")
+        hour_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="hour")
+        day_unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="day")
+
+        kg_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT", prefix="KILO")
+        gram_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT")
+        second_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="TIMEUNIT")
+
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[tonne_unit, minute_unit, kg_unit])
+
+        subject.import_units()
+        props = tool.Unit.get_unit_props()
+
+        assert len(props.units) == 15
+
+        unit_ids = [u.ifc_definition_id for u in props.units]
+        assert tonne_unit.id() in unit_ids
+        assert pound_unit.id() in unit_ids
+        assert ounce_unit.id() in unit_ids
+        assert minute_unit.id() in unit_ids
+        assert hour_unit.id() in unit_ids
+        assert day_unit.id() in unit_ids
+        assert kg_unit.id() in unit_ids
+        assert gram_unit.id() in unit_ids
+        assert second_unit.id() in unit_ids
+
+        tonne_prop = next(u for u in props.units if u.ifc_definition_id == tonne_unit.id())
+        assert tonne_prop.name == "tonne"
+        assert tonne_prop.unit_type == "MASSUNIT"
+        assert tonne_prop.is_assigned is True
+        assert tonne_prop.ifc_class == "IfcConversionBasedUnit"
+
+        pound_prop = next(u for u in props.units if u.ifc_definition_id == pound_unit.id())
+        assert pound_prop.name == "pound"
+        assert pound_prop.unit_type == "MASSUNIT"
+        assert pound_prop.is_assigned is False
+        assert pound_prop.ifc_class == "IfcConversionBasedUnit"
+
+        ounce_prop = next(u for u in props.units if u.ifc_definition_id == ounce_unit.id())
+        assert ounce_prop.name == "ounce"
+        assert ounce_prop.unit_type == "MASSUNIT"
+        assert ounce_prop.is_assigned is False
+        assert ounce_prop.ifc_class == "IfcConversionBasedUnit"
+
+        kg_prop = next(u for u in props.units if u.ifc_definition_id == kg_unit.id())
+        assert kg_prop.name == "KILOGRAM"
+        assert kg_prop.unit_type == "MASSUNIT"
+        assert kg_prop.is_assigned is True
+        assert kg_prop.ifc_class == "IfcSIUnit"
+
+        gram_prop = next(u for u in props.units if u.ifc_definition_id == gram_unit.id())
+        assert gram_prop.name == "GRAM"
+        assert gram_prop.unit_type == "MASSUNIT"
+        assert gram_prop.is_assigned is False
+        assert gram_prop.ifc_class == "IfcSIUnit"
+
+        minute_prop = next(u for u in props.units if u.ifc_definition_id == minute_unit.id())
+        assert minute_prop.name == "minute"
+        assert minute_prop.unit_type == "TIMEUNIT"
+        assert minute_prop.is_assigned is True
+        assert minute_prop.ifc_class == "IfcConversionBasedUnit"
+
+        hour_prop = next(u for u in props.units if u.ifc_definition_id == hour_unit.id())
+        assert hour_prop.name == "hour"
+        assert hour_prop.unit_type == "TIMEUNIT"
+        assert hour_prop.is_assigned is False
+        assert hour_prop.ifc_class == "IfcConversionBasedUnit"
+
+        day_prop = next(u for u in props.units if u.ifc_definition_id == day_unit.id())
+        assert day_prop.name == "day"
+        assert day_prop.unit_type == "TIMEUNIT"
+        assert day_prop.is_assigned is False
+        assert day_prop.ifc_class == "IfcConversionBasedUnit"
+
+        second_prop = next(u for u in props.units if u.ifc_definition_id == second_unit.id())
+        assert second_prop.name == "SECOND"
+        assert second_prop.unit_type == "TIMEUNIT"
+        assert second_prop.is_assigned is False
+        assert second_prop.ifc_class == "IfcSIUnit"
 
 
 class TestIsUnitClass:

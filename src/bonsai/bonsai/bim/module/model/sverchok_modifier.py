@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
+import json
+import os.path
+import zipfile
 
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-import json
-import zipfile
-import os.path
-from bpy_extras.io_utils import ImportHelper, ExportHelper
+import bonsai.tool as tool
 
 
 def update_sverchok_modifier(context):

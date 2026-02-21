@@ -17,9 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import calendar
-import bpy
-import bonsai.tool as tool
 from typing import TYPE_CHECKING
+
+import bpy
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 
 

@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import datetime
+
 import ifcopenshell.api.library
 import ifcopenshell.util.date
+import test.bootstrap
 
 
 class TestEditLibrary(test.bootstrap.IFC4):

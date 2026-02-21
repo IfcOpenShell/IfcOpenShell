@@ -16,14 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
-import bpy
-import time
-import random
 import logging
-import subprocess
+import os
 import platform
+import random
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
@@ -32,18 +36,16 @@ import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.bim.handler
+import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.debug as core
 import bonsai.core.profile
 import bonsai.core.type
-import bonsai.bim.handler
-import bonsai.bim.import_ifc as import_ifc
-from collections import defaultdict
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from bonsai import get_debug_info, format_debug_info
+import bonsai.tool as tool
+from bonsai import format_debug_info, get_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute

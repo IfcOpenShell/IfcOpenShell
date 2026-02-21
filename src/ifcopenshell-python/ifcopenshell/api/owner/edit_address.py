@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-import ifcopenshell
 from typing import Any
+
+import ifcopenshell
 
 
 def edit_address(file: ifcopenshell.file, address: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:

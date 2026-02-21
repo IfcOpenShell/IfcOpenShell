@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-from typing import Optional, Union, Any
 
 
 def add_reference(

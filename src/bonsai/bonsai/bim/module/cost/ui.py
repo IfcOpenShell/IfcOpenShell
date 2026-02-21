@@ -17,13 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
+from bpy.types import Panel, UIList
+
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 import bonsai.tool as tool
-from bpy.types import Panel, UIList
 from bonsai.bim.module.cost.data import CostSchedulesData
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity

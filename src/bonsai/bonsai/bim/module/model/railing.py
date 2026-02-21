@@ -17,23 +17,24 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
+import json
+from typing import Any
+
 import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import bonsai.core.root
+from mathutils import Vector
+
 import bonsai.core.geometry
+import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.model.data import RailingData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
-
-from mathutils import Vector
-import json
-from typing import Any
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm

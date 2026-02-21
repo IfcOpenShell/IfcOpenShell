@@ -18,19 +18,28 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.21)
-if (NOT DEFINED CMAKE_CXX_STANDARD)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
 endif()
-if (CMAKE_CXX_STANDARD LESS 17)
+if(CMAKE_CXX_STANDARD LESS 17)
     message(FATAL_ERROR "C++17 or newer is required.")
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(VERSION_OVERRIDE)
+    file(READ "../VERSION" "RELEASE_VERSION_")
+    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+    message(STATUS "Detected version '${RELEASE_VERSION}'")
+else()
+    set(RELEASE_VERSION "0.8.0")
+endif()
+
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
-  cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
+    # Has to be set before `project` to take effect.
+    cmake_policy(SET CMP0141 NEW) # Support for `CMAKE_MSVC_DEBUG_INFORMATION_FORMAT`.
 endif()
 if(POLICY CMP0144) # 3.27
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
@@ -38,6 +47,8 @@ endif()
 if(POLICY CMP0167) # 3.30
     cmake_policy(SET CMP0167 OLD)
 endif()
+
+project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -54,7 +65,11 @@ endif()
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
 
-option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
+option(
+    ENABLE_BUILD_OPTIMIZATIONS
+    "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds."
+    OFF
+)
 option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
@@ -70,6 +85,15 @@ option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is require
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_PACKAGE "" OFF)
+# Most users probably need just common schemas,
+# but we're keeping it `OFF` by default to avoid disruption
+# (e.g. all Python distribution would need to adapt this option to be set).
+option(
+    BUILD_ONLY_COMMON_SCHEMAS
+    "Build only common IFC schemas (2x3, 4, 4x3_add2). By default all schemas will be built."
+    OFF
+)
+option(SCHEMA_VERSIONS "Explicitly specify schemas to build." "")
 
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
@@ -84,24 +108,20 @@ option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcO
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
+option(USE_DEBUG_PYTHON "Use debug binaries when building Debug IfcPython on Windows." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, requires git" OFF)
-option(VERSION_OVERRIDE "Override the version defined in buildinfo.cpp with the file VERSION in the repository root" OFF)
+option(
+    VERSION_OVERRIDE
+    "Override the version defined in buildinfo.cpp with the file VERSION in the repository root"
+    OFF
+)
+option(USE_CCACHE "Enable use of ccache if it's available from PATH." ON)
 
-set(
-    PYTHON_MODULE_INSTALL_DIR
-    "" CACHE PATH
+set(PYTHON_MODULE_INSTALL_DIR
+    ""
+    CACHE PATH
     "Directory to install IfcPython package to. By default package is installed in found Python's site-packages."
 )
-
-if (VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
-    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
-    message(STATUS "Detected version '${RELEASE_VERSION}'")
-else()
-    set(RELEASE_VERSION "0.8.0")
-endif()
-
-project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
@@ -118,13 +138,13 @@ if(MINIMAL_BUILD)
     set(USD_SUPPORT OFF)
 endif()
 
-if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
+if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND (NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)
 endif()
 
 find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
+if(USE_CCACHE AND CCACHE_FOUND)
     message(STATUS "`ccache` is found, using it as a compiler launcher.")
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_FOUND}")
     if(MSVC)
@@ -133,17 +153,15 @@ if(CCACHE_FOUND)
         set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
         # Not needed for Ninja.
         if(CMAKE_GENERATOR MATCHES "Visual Studio")
-            file(COPY_FILE
-                ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe
-                ONLY_IF_DIFFERENT)
-            set(CMAKE_VS_GLOBALS
-                "CLToolExe=cl.exe"
-                "CLToolPath=${CMAKE_BINARY_DIR}"
-                "UseMultiToolTask=true"
-            )
+            file(COPY_FILE ${CCACHE_FOUND} ${CMAKE_BINARY_DIR}/cl.exe ONLY_IF_DIFFERENT)
+            set(CMAKE_VS_GLOBALS "CLToolExe=cl.exe" "CLToolPath=${CMAKE_BINARY_DIR}" "UseMultiToolTask=true")
         endif()
     endif()
 endif()
+mark_as_advanced(CCACHE_FOUND)
+
+# Variable to accumulate swig definitions from various submodules.
+set(SWIG_DEFINES "")
 
 if(MSVC AND MSVC_PARALLEL_BUILD)
     add_definitions("/MP")
@@ -159,47 +177,28 @@ endif()
 
 include(GNUInstallDirs)
 
-# Specify paths to install files
-if(NOT BINDIR)
-    set(BINDIR bin)
-endif()
-if(NOT IS_ABSOLUTE ${BINDIR})
-    set(BINDIR ${CMAKE_INSTALL_BINDIR})
-endif()
-message(STATUS "BINDIR: ${BINDIR}")
+set(IFCOPENSHELL_EXPORT_TARGETS "${PROJECT_NAME}Targets")
 
-if(NOT INCLUDEDIR)
-    set(INCLUDEDIR include)
+# On Windows Release and Debug binaries are not compatible.
+# So we add a postfix to avoid issues and allow release and debug installations to coexist.
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "_d")
 endif()
-if(NOT IS_ABSOLUTE ${INCLUDEDIR})
-    set(INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
-endif()
-message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
-
-if(NOT LIBDIR)
-    set(LIBDIR lib)
-endif()
-if(NOT IS_ABSOLUTE ${LIBDIR})
-    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
-endif()
-message(STATUS "LIBDIR: ${LIBDIR}")
-
-set(IFCOPENSHELL_LIBRARY_DIR "") # for *nix rpaths
 
 if(BUILD_SHARED_LIBS)
     add_definitions(-DIFC_SHARED_BUILD)
     if(MSVC)
-        message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
+        message(
+            WARNING
+            "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed."
+        )
         # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
         # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
         add_definitions(-wd4251)
     endif()
-
-    set(IFCOPENSHELL_LIBRARY_DIR "${LIBDIR}")
 endif()
 
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)
-UNIFY_ENVVARS_AND_CACHE(BOOST_LIBRARYDIR)
 
 if(NOT MINIMAL_BUILD)
     UNIFY_ENVVARS_AND_CACHE(PYTHON_INCLUDE_DIR)
@@ -215,88 +214,71 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
-if(WITH_CGAL)
-    find_package(CGAL REQUIRED)
-    if(TARGET CGAL::CGAL)
-        link_libraries(CGAL::CGAL)
-    endif()
-    add_definitions(-DIFOPSH_WITH_CGAL)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
-    list(APPEND GEOMETRY_KERNELS cgal)
-endif()
-
-if(WITH_OPENCASCADE)
+if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
+    find_package(OpenCASCADE REQUIRED)
     add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
+set(GLTF_LIBRARIES "")
 if(GLTF_SUPPORT)
-    UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    if(NOT JSON_INCLUDE_DIR)
-        find_package(nlohmann_json CONFIG)
-        if(nlohmann_json_DIR)
-            link_libraries(nlohmann_json::nlohmann_json)
-        else()
-            message(STATUS "Unable to find nlohmann_json package, trying to find it as a header-only library.")
-        endif()
-    endif()
-
-    if(NOT nlohmann_json_DIR)
-        find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        set(JSON_INCLUDE_DIR ${json_header_path})
-
-        if(json_header_path)
-            message(STATUS "JSON for Modern C++ header file found in '${JSON_INCLUDE_DIR}'.")
-        else()
-            message(FATAL_ERROR "Unable to find JSON for Modern C++ header file / package, aborting")
-        endif()
-    endif()
-
+    find_package(nlohmann_json REQUIRED)
+    set(GLTF_LIBRARIES nlohmann_json::nlohmann_json)
     add_definitions(-DWITH_GLTF)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
 
 # Add USD support to serializers
+set(USD_LIBRARIES "")
 if(USD_SUPPORT)
     find_package(USD REQUIRED)
+    set(USD_LIBRARIES pxr::USD)
 endif(USD_SUPPORT)
 
-if (WITH_ROCKSDB)
+set(ROCKSDB_LIBRARIES "")
+if(WITH_ROCKSDB)
     # Temporaily mess with CMAKE_FIND_PACKAGE_PREFER_CONFIG to help RocksDB
     # find it's zstd dependency on Windows.
     # Only do it on Windows, otherwise it might create problems as
     # findzstd and zstd-config target names do not match.
+    # https://github.com/facebook/rocksdb/pull/13975
     if(WIN32)
         set(TEMP CMAKE_FIND_PACKAGE_PREFER_CONFIG)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
     endif()
     find_package(RocksDB CONFIG REQUIRED)
+    mark_as_advanced(RocksDB_DIR)
     if(WIN32)
         set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${TEMP})
     endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
-    add_definitions(-DIFOPSH_WITH_ROCKSDB)
+    add_library(IFCOPENSHELL_RocksDB INTERFACE)
+    set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
+    target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    link_libraries(RocksDB::rocksdb)
+    target_link_libraries(
+        IFCOPENSHELL_RocksDB
+        INTERFACE $<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>
+    )
 
-    if (WITH_ZSTD)
+    if(WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
         # the libzstd.a along with the rocksdb library when needed and feature
         # detect based on rocksdb API?
         find_package(zstd CONFIG REQUIRED)
+        mark_as_advanced(zstd_DIR)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
-        link_libraries(zstd::libzstd_static)
-
-        add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB_ZSTD)
+        target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE zstd::libzstd_static)
     endif()
+
+    install(TARGETS IFCOPENSHELL_RocksDB EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
 # runtime, when doing running conda-build we pick what conda prepared for us.
-if(WIN32 AND("$ENV{CONDA_BUILD}" STREQUAL ""))
+if(WIN32 AND NOT DEFINED ENV{CONDA_BUILD})
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
     set(Boost_USE_MULTITHREADED ON)
@@ -327,7 +309,14 @@ if(WASM_BUILD)
 else()
     # @todo review this, shouldn't this be all possible header-only now?
     # ... or rewritten using C++17 features?
-    set(BOOST_COMPONENTS system program_options regex thread date_time iostreams)
+    set(BOOST_COMPONENTS
+        system
+        program_options
+        regex
+        thread
+        date_time
+        iostreams
+    )
 endif()
 
 if(USE_MMAP)
@@ -341,35 +330,27 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+# Handle CGAL after Boost settings are set, since CGAL will use them too.
+# Do `find_package(Boost)` only after this, to make sure `FindBoost` finds correct components.
+# Otherwise it will find components needed for CGAL and we might some libraries.
+if(WITH_CGAL)
+    find_package(CGAL REQUIRED)
+    set(CGAL_LIBRARIES IFCOPENSHELL_CGAL)
+    list(APPEND GEOMETRY_KERNELS cgal)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
-if(NOT MINIMAL_BUILD)
-    # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
-    if(IFCXML_SUPPORT)
-        find_package(LibXml2 REQUIRED)
-    endif()
-endif()
-
-if(IFCXML_SUPPORT)
-    add_definitions(-DWITH_IFCXML)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML)
-endif()
-
-if(BUILD_IFCGEOM)
-    # Open CASCADE
-    if(WITH_OPENCASCADE)
-        find_package(OpenCASCADE REQUIRED)
-    endif(WITH_OPENCASCADE)
-endif(BUILD_IFCGEOM)
-
 if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
+    add_definitions(-DWITH_OPENCOLLADA)
 endif()
 
 if(HDF5_SUPPORT)
     find_package(HDF5 REQUIRED COMPONENTS C CXX)
+    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} hdf5::hdf5_cpp)
 
     add_definitions(-DWITH_HDF5)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
@@ -441,7 +422,7 @@ if(MSVC)
     endif()
 
     # Enforce standards-conformance on VS > 2015, older Boost versions fail to compile with this
-    if(MSVC_VERSION GREATER 1900 AND(Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
+    if(MSVC_VERSION GREATER 1900 AND (Boost_MAJOR_VERSION GREATER 1 OR Boost_MINOR_VERSION GREATER 66))
         add_definitions(-permissive-)
     endif()
 
@@ -460,11 +441,11 @@ if(MSVC)
     #     endforeach()
     # endif()
 
-	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-	# See #5158.
-	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
-		add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
-	endif()
+    add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    # See #5158.
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
+        add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+    endif()
 else()
     add_definitions(-Wall -Wextra)
 
@@ -474,7 +455,10 @@ else()
         add_definitions(-Wno-maybe-uninitialized)
     endif()
 
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 9.0))
+    if(
+        CMAKE_CXX_COMPILER_ID MATCHES "GNU"
+        AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 9.0)
+    )
         # OpenCascade spews a lot of deprecated-copy warnings
         add_definitions(-Wno-deprecated-copy)
     endif()
@@ -485,40 +469,45 @@ else()
     endif()
 endif(MSVC)
 
-
-find_package(Eigen3 REQUIRED)
-link_libraries(Eigen3::Eigen)
-
-include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
-    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
-    ${TBB_INCLUDE_DIR}
-)
+include_directories(${OPENCOLLADA_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
 
 if(NOT SCHEMA_VERSIONS)
-    if(WASM_BUILD)
-        # super arbitrarily try to keep size down at least a little bit
+    # `WASM_BUILD` - super arbitrarily try to keep size down at least a little bit
+    if(BUILD_ONLY_COMMON_SCHEMAS OR WASM_BUILD)
         set(SCHEMA_VERSIONS "2x3" "4" "4x3_add2")
     else()
-        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
+        set(SCHEMA_VERSIONS
+            "2x3"
+            "4"
+            "4x1"
+            "4x2"
+            "4x3"
+            "4x3_tc1"
+            "4x3_add1"
+            "4x3_add2"
+        )
     endif()
 endif()
 
 message(STATUS "IFC SCHEMA_VERSIONS that will be used for the build: ${SCHEMA_VERSIONS}.")
 
+set(SCHEMA_DEFINITIONS "")
 foreach(schema ${SCHEMA_VERSIONS})
-    add_definitions(-DHAS_SCHEMA_${schema})
+    list(APPEND SCHEMA_DEFINITIONS "-DHAS_SCHEMA_${schema}")
 endforeach()
 
 string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
-add_definitions(-DSCHEMA_SEQ=${schema_version_seq})
+list(APPEND SCHEMA_DEFINITIONS "-DSCHEMA_SEQ=${schema_version_seq}")
 
 if(COMPILE_SCHEMA)
     # @todo, this appears to be untested at the moment
     find_package(PythonInterp)
 
     if(NOT PYTHONINTERP_FOUND)
-        message(FATAL_ERROR "A Python interpreter is necessary when COMPILE_SCHEMA is enabled. Disable COMPILE_SCHEMA or fix Python paths to proceed.")
+        message(
+            FATAL_ERROR
+            "A Python interpreter is necessary when COMPILE_SCHEMA is enabled. Disable COMPILE_SCHEMA or fix Python paths to proceed."
+        )
     endif()
 
     set(IFC_RELEASE_NOT_USED ${SCHEMA_VERSIONS})
@@ -538,7 +527,10 @@ if(COMPILE_SCHEMA)
 
     if("${PYPARSING_FOUND}" STREQUAL "-1")
         message(STATUS "Installing pyparsing")
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
+        execute_process(
+            COMMAND ${PYTHON_EXECUTABLE} -m pip "install" --user pyparsing
+            RESULT_VARIABLE SUCCESS
+        )
 
         if(NOT "${SUCCESS}" STREQUAL "0")
             execute_process(COMMAND pip "install" --user pyparsing RESULT_VARIABLE SUCCESS)
@@ -553,19 +545,23 @@ if(COMPILE_SCHEMA)
 
     # Bootstrap the parser
     message(STATUS "Compiling schema, this will take a while...")
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} bootstrap.py express.bnf
         WORKING_DIRECTORY ../src/ifcexpressparser
         OUTPUT_FILE express_parser.py
-        RESULT_VARIABLE SUCCESS)
+        RESULT_VARIABLE SUCCESS
+    )
 
     if(NOT "${SUCCESS}" STREQUAL "0")
         message(FATAL_ERROR "Failed to bootstrap parser. Make sure pyparsing is installed")
     endif()
 
     # Generate code
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} ../ifcexpressparser/express_parser.py ../../${COMPILE_SCHEMA}
         WORKING_DIRECTORY ../src/ifcparse
-        OUTPUT_VARIABLE COMPILED_SCHEMA_NAME)
+        OUTPUT_VARIABLE COMPILED_SCHEMA_NAME
+    )
 
     # Prevent the schema that had just been compiled from being excluded
     foreach(schema ${SCHEMA_VERSIONS})
@@ -584,81 +580,7 @@ add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
 if(BUILD_IFCGEOM)
-	foreach(schema ${SCHEMA_VERSIONS})
-		set(IFCGEOM_SCHEMA_LIBRARIES ${IFCGEOM_SCHEMA_LIBRARIES} geometry_mapping_ifc${schema})
-	endforeach()
-    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
-endif()
-
-if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-	if(WITH_OPENCASCADE)
-        foreach(schema ${SCHEMA_VERSIONS})
-            set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
-
-            add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
-            set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS -DIfcSchema=Ifc${schema}")
-            target_link_libraries(geometry_serializer_ifc${schema} ${OpenCASCADE_LIBRARIES})
-            list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
-        endforeach()
-
-        add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.h ../src/ifcgeom/Serialization/Serialization.cpp)
-        set_target_properties(geometry_serializer PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS")
-        target_link_libraries(geometry_serializer ${geometry_serializer_libraries} IfcParse)
-        set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
-    endif()
-endif()
-
-if(BUILD_IFCGEOM)
-    # CGAL::CGAL target already has dependencies resolved.
-    if(WITH_CGAL AND CGAL_DIR)
-        set(CGAL_LIBRARIES CGAL::CGAL)
-        message(STATUS "Using found CGAL package at '${CGAL_DIR}'")
-    elseif(WITH_CGAL AND NOT CGAL_DIR)
-        find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
-        find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
-        if(NOT libGMP)
-            message(FATAL_ERROR "Unable to find GMP library files, aborting")
-        endif()
-        if(NOT libMPFR)
-            message(FATAL_ERROR "Unable to find MPFR library files, aborting")
-        endif()
-
-        list(APPEND CGAL_LIBRARIES "${libMPFR}")
-        list(APPEND CGAL_LIBRARIES "${libGMP}")
-    endif()
-
     add_subdirectory(../src/ifcgeom ifcgeom)
-    
-    # IfcGeom
-    foreach(schema ${SCHEMA_VERSIONS})
-        file(GLOB IFCGEOM_I_FILES ../src/ifcgeom/mapping/*.i)
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/mapping/*.h)
-        file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/mapping/*.cpp)
-        set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
-
-        add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
-        set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
-        if (NOT BUILD_SHARED_LIBS)
-            target_link_libraries(geometry_mapping_ifc${schema} IfcGeom)
-        endif()
-        list(APPEND mapping_libraries geometry_mapping_ifc${schema})
-    endforeach()
-
-    # IfcGeom (schema agnostic)
-    file(GLOB SCHEMA_AGNOSTIC_H_FILES ../src/ifcgeom/*.h)
-    file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom/*.cpp)
-    set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
-
-    add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
-    set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-
-    if(UNIX)
-        find_package(Threads)
-    endif()
-
-    target_link_libraries(IfcGeom IfcParse ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} ${OpenCASCADE_LIBRARIES})
-
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON)
@@ -683,8 +605,8 @@ if(ADD_COMMIT_SHA)
     endif()
 
     if(GIT_FOUND)
-        if (VERSION_OVERRIDE)
-            set (git_branch ${RELEASE_VERSION})
+        if(VERSION_OVERRIDE)
+            set(git_branch ${RELEASE_VERSION})
         else()
             message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
             execute_process(
@@ -696,8 +618,8 @@ if(ADD_COMMIT_SHA)
             string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 
             foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		        string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
-		        string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
+                string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+                string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
                 if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
                     string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
                     list(GET git_branch_candidate_2_list -1 git_branch)
@@ -715,13 +637,13 @@ if(ADD_COMMIT_SHA)
         message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
         message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
 
-        if ("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
+        if("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
             message(FATAL_ERROR "Unable to determine commit sha and/or branch")
         endif()
 
-        target_compile_definitions(IfcParse PRIVATE
-            -DIFCOPENSHELL_BRANCH=${git_branch}
-            -DIFCOPENSHELL_COMMIT=${git_sha}
+        target_compile_definitions(
+            IfcParse
+            PRIVATE -DIFCOPENSHELL_BRANCH=${git_branch} -DIFCOPENSHELL_COMMIT=${git_sha}
         )
     endif()
 endif(ADD_COMMIT_SHA)
@@ -751,7 +673,7 @@ if(BUILD_IFCMAX)
     add_subdirectory(../src/ifcmax ifcmax)
 endif()
 
-if(WITH_CGAL)
+if(BUILD_IFCPYTHON AND WITH_CGAL)
     add_subdirectory(../src/svgfill svgfill)
 endif()
 
@@ -759,66 +681,28 @@ if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
-if(BUILD_IFCGEOM)
-    # install(FILES ${IFCGEOM_H_FILES}
-    #     DESTINATION ${INCLUDEDIR}/ifcgeom
-    # )
-
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom
-    )
-
-    file(GLOB SERIALIZATION_H_FILES ../src/ifcgeom/serialization/*.h)
-    install(FILES ${SERIALIZATION_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom/serialization
-    )
-
-    foreach(kernel ${GEOMETRY_KERNELS})
-        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
-         install(FILES ${IFCGEOM_H_FILES}
-            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
-        )
-    endforeach()
-
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        RUNTIME DESTINATION ${BINDIR}
-    )
-endif(BUILD_IFCGEOM)
-
-if(BUILD_CONVERT OR BUILD_IFCPYTHON)
-    if(WITH_OPENCASCADE)
-        install(TARGETS geometry_serializer ${geometry_serializer_libraries}
-            ARCHIVE DESTINATION ${LIBDIR}
-            LIBRARY DESTINATION ${LIBDIR}
-            RUNTIME DESTINATION ${BINDIR}
-        )
-    endif()
-endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
-
 # Cmake uninstall target
 if(NOT TARGET uninstall)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-        IMMEDIATE @ONLY)
+        IMMEDIATE
+        @ONLY
+    )
 
-    add_custom_target(uninstall
-        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 endif()
 
 # Packaging
-list(APPEND CPACK_SOURCE_IGNORE_FILES
-    "/\\\\.git"
-    "/build/"
-    "/.pytest_cache/"
-    "/__pycache__/"
-)
+list(APPEND CPACK_SOURCE_IGNORE_FILES "/\\\\.git" "/build/" "/.pytest_cache/" "/__pycache__/")
 set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}/..;/")
-set(CPACK_PACKAGE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_PACKAGE_NAME
+    "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}"
+)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}${EXTRA_VERSION}")
-SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
+set(CPACK_PACKAGE_FILE_NAME
+    "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}"
+)
 set(CPACK_PACKAGE_DIRECTORY "${PROJECT_BINARY_DIR}/assets")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IfcOpenShell")
 set(CPACK_PACKAGE_DESCRIPTION "IfcOpenShell.")
@@ -831,6 +715,7 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
+set(BOOST_DEPS "")
 foreach(COMPONENT IN ITEMS ${BOOST_COMPONENTS})
     string(REPLACE "_" "-" COMP ${COMPONENT})
     set(BOOST_DEPS "${BOOST_DEPS}, libboost-${COMP}-dev")
@@ -838,13 +723,19 @@ endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3-dev, python3-pytest ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3-dev, python3-pytest ${BOOST_DEPS}"
+)
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 set(CPACK_DEBIAN_PACKAGE_SECTION "science")
-set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}")
+set(CPACK_DEBIAN_PACKAGE_VERSION
+    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}${EXTRA_VERSION}"
+)
 set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
 # set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_SOURCE_DIR}/cmake/debian/postinst")
 
 include(CPack)
+
+include(package_export.cmake)

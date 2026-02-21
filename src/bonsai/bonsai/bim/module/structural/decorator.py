@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from mathutils import Vector
-import numpy as np
+from collections.abc import Iterable
+from typing import Union
+
+import blf
 import bpy
 import gpu
-import blf
-import bonsai.tool as tool
+import numpy as np
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
-from typing import Union
-from collections.abc import Iterable
+from mathutils import Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 

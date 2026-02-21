@@ -16,15 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 import pathlib
+import re
+from functools import lru_cache
+from typing import Literal, NamedTuple, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 from ifcopenshell.entity_instance import entity_instance
-from functools import lru_cache
-from typing import Optional, Literal, NamedTuple, Union
 
 templates: dict[ifcopenshell.util.schema.IFC_SCHEMA, "PsetQto"] = {}
 

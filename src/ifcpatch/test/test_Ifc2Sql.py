@@ -17,18 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import tempfile
-import ifcpatch
-import ifcopenshell
-import ifcopenshell.api.context
-import ifcopenshell.api.geometry
-import ifcopenshell.api.georeference
-import ifcopenshell.geom
-import ifcopenshell.util.geolocation
-import ifcopenshell.util.placement
-import ifcopenshell.util.representation
-import ifcopenshell.util.shape
-import ifcopenshell.util.shape_builder
 from pathlib import Path
+
+import ifcopenshell
+
+import ifcpatch
 
 
 class TestIfc2Sql:
