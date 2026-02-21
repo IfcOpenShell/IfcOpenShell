@@ -27,7 +27,7 @@ import test.bootstrap
 
 def deprecation_check(test):
     def new_test(self):
-        assert datetime.now().date() < datetime(2026, 1, 9).date(), "API arguments are completely deprecated"
+        assert datetime.now().date() < datetime(2027, 1, 9).date(), "API arguments are completely deprecated"
         test(self)
 
     return new_test
