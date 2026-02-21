@@ -1,4 +1,4 @@
-# ifc_cli/src/ifcmcp/ifcmcp/embedded.py
+# This file was generated with the assistance of an AI coding tool.
 from __future__ import annotations
 
 from typing import Any, Mapping
