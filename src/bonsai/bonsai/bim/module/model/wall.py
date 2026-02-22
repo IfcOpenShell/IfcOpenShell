@@ -372,7 +372,7 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = tool.Model.get_selected_mesh_ifc_objects()
-        tool.Model.recalculate_walls(objects)
+        tool.Model.recalculate_layer2_elements(objects)
         return {"FINISHED"}
 
 
@@ -420,7 +420,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                 layer2_objs.append(obj)
 
         if layer2_objs:
-            tool.Model.recalculate_walls(layer2_objs)
+            tool.Model.recalculate_layer2_elements(layer2_objs)
         return {"FINISHED"}
 
 
@@ -529,7 +529,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 obj.rotation_euler.z = current_z_rot
 
         if layer2_objs:
-            tool.Model.recalculate_walls(layer2_objs)
+            tool.Model.recalculate_layer2_elements(layer2_objs)
         return {"FINISHED"}
 
 
@@ -641,7 +641,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             # if material.is_a("IfcMaterialLayerSetUsage"):
             attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
             ifcopenshell.api.material.edit_layer_usage(model, usage=material_set_usage, attributes=attributes)
-            tool.Model.recalculate_walls([wall["obj"]])
+            tool.Model.recalculate_layer2_elements([wall["obj"]])
 
         if walls:
             if is_polyline_closed:
@@ -1034,7 +1034,7 @@ class DumbWallGenerator:
         return next(c for c in classes if "StandardCase" not in c)
 
 
-class DumbWallPlaner:
+class Layer2Planer:
     def regenerate_from_layer(self, layer: ifcopenshell.entity_instance) -> None:
         for layer_set in layer.ToMaterialLayerSet:
             self.regenerate_from_layer_set(layer_set)
@@ -1055,7 +1055,7 @@ class DumbWallPlaner:
             else:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
-        tool.Model.recalculate_walls([w for w in set(walls) if w])
+        tool.Model.recalculate_layer2_elements([w for w in set(walls) if w])
 
 
 class DumbWallJoiner:

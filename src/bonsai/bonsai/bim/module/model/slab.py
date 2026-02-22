@@ -199,7 +199,7 @@ class DumbSlabGenerator:
         return obj
 
 
-class DumbSlabPlaner:
+class Layer3Planer:
     def regenerate_from_layer_set_usage(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         obj = bpy.context.active_object
@@ -901,7 +901,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             usage=material_set_usage,
             attributes=attributes,
         )
-        DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
+        Layer3Planer().regenerate_from_occurence(element, material_set_usage)
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
@@ -1003,5 +1003,5 @@ class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
                     if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement.is_a("IfcWall"):
                         walls.append(tool.Ifc.get_object(rel.RelatedElement))
 
-        tool.Model.recalculate_walls(walls)
+        tool.Model.recalculate_layer2_elements(walls)
         return {"FINISHED"}
