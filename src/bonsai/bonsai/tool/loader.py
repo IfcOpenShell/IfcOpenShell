@@ -1063,12 +1063,16 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+        # Always compute unit_scale fresh — cls.unit_scale may be stale (e.g. during live
+        # geometry updates that don't go through the full import pipeline).
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         if not (material := ifcopenshell.util.element.get_material(element)):
             return mesh
         elif material.is_a("IfcMaterialLayerSetUsage"):
             usage = material
             layer_set = material.ForLayerSet
-            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            offset = usage.OffsetFromReferenceLine * unit_scale
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
         elif material.is_a("IfcMaterialLayerSet"):
             usage = None
@@ -1110,7 +1114,7 @@ class Loader(bonsai.core.tool.Loader):
         for i, layer in enumerate(layer_set.MaterialLayers):
             if i != last_i:
                 prev_co = co.copy()
-                co += no * layer.LayerThickness * cls.unit_scale
+                co += no * layer.LayerThickness * unit_scale
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )
@@ -1124,14 +1128,17 @@ class Loader(bonsai.core.tool.Loader):
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) >= 0:
+                        dot = (center - co).dot(no)
+                        if dot >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
             else:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
+                        dot_co = (center - co).dot(no)
+                        dot_prev = (center - prev_co).dot(no)
+                        if dot_co < 0 and dot_prev >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
 
