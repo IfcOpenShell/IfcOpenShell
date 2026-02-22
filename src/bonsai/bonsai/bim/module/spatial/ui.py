@@ -251,7 +251,7 @@ class BIM_PT_grids(Panel):
     bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     def draw(self, context):
-        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
+        self.layout.row().operator("bim.add_grid", icon="ADD", text="Add Grids")
 
     def draw_header(self, context):
         props = tool.Spatial.get_grid_props()

@@ -57,7 +57,7 @@ Scenario: Add one type from the Construction Type Browser
 
 Scenario: Add grid
     Given an empty IFC project
-    When I press "mesh.add_grid"
+    When I press "bim.add_grid"
     Then the object "IfcGrid/Grid" is an "IfcGrid"
     And the object "IfcGridAxis/A" is an "IfcGridAxis"
     And the object "IfcGridAxis/B" is an "IfcGridAxis"
