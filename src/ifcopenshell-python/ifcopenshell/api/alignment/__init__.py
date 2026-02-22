@@ -87,6 +87,7 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .segment_vertices import segment_vertices
 from .update_fallback_position import update_fallback_position
 from .util import *
 
@@ -125,6 +126,7 @@ __all__ = [
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
+    "segment_vertices",
     "register_referent_name_callback",
     "update_fallback_position",
     "get_mapped_segments",
