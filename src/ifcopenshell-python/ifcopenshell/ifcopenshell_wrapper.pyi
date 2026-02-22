@@ -373,9 +373,9 @@ class JsonSerializer:
     def writeHeader(self): ...
 
 class MakeVolume:
-    defaultvalue
-    description
-    name
+    defaultvalue: Any
+    description: Any
+    name: Any
 
 class OpaqueCoordinate_3:
     def get(self, i): ...
