@@ -1081,14 +1081,32 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
+        depth_scale = 1.0
         if usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
             no = cls.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
         elif usage.LayerSetDirection == "AXIS3":
-            co = Vector((0.0, 0.0, offset))
-            no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
+            co = Vector((0.0, 0.0, offset))
+            # Bisect planes are always horizontal (world Z) for AXIS3.
+            # For well-formed IFC data, the mesh local Z span equals total_perp_thickness
+            # (extrusion.Depth is always set to thickness / extrusion_vec.z so that
+            # extrusion.Depth × extrusion_vec.z = thickness). depth_scale is kept as
+            # a safety net for IFC files from other authoring tools where the extrusion
+            # depth may not exactly match the sum of LayerThicknesses.
+            extrusion_vec = cls.get_extrusion_vector(element).normalized()
+            ifc_extrusion_depth = None
+            if body_rep := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
+                for item in ifcopenshell.util.representation.resolve_representation(body_rep).Items:
+                    while item.is_a("IfcBooleanResult"):
+                        item = item.FirstOperand
+                    if item.is_a("IfcExtrudedAreaSolid"):
+                        ifc_extrusion_depth = item.Depth
+                        break
+            total_perp_thickness = sum(l.LayerThickness for l in layer_set.MaterialLayers)
+            if ifc_extrusion_depth and total_perp_thickness:
+                depth_scale = abs(extrusion_vec.z) * (ifc_extrusion_depth / total_perp_thickness)
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
@@ -1105,7 +1123,7 @@ class Loader(bonsai.core.tool.Loader):
         for i, layer in enumerate(layer_set.MaterialLayers):
             if i != last_i:
                 prev_co = co.copy()
-                co += no * layer.LayerThickness * unit_scale
+                co += no * layer.LayerThickness * depth_scale * unit_scale
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )

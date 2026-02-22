@@ -277,8 +277,17 @@ class DumbSlabPlaner:
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
                 direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
                 offset_direction = direction_ratios.copy()
-                perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
-                perpendicular_offset = layer_offset * abs(1 / cos(existing_x_angle)) / self.unit_scale
+                # The extrusion depth needed to achieve a given perpendicular thickness depends on
+                # how much the extrusion direction deviates from the slab face normal (local Z).
+                # For an ObjectPlacement-rotated slab, extrusion_vec.z ≈ 1.0 → no scaling.
+                # For an ExtrudedDirection-tilted slab, extrusion_vec.z < 1.0 → scale up.
+                extrusion_z = abs(direction_ratios.normalized().z)
+                if extrusion_z > 1e-6:
+                    perpendicular_depth = thickness / extrusion_z
+                    perpendicular_offset = layer_offset / extrusion_z / self.unit_scale
+                else:
+                    perpendicular_depth = thickness
+                    perpendicular_offset = layer_offset / self.unit_scale
 
                 ifc_position = extrusion.Position
 
