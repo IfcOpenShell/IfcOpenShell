@@ -614,25 +614,29 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     attributes=attributes,
                 )
 
-                layer_sets_to_regenerate = set()
+                slab_planer = slab.DumbSlabPlaner()
+                wall_objs = []
 
                 for obj in objects:
                     obj_element = tool.Ifc.get_entity(obj)
                     obj_material_usage = ifcopenshell.util.element.get_material(obj_element)
-
                     if obj_material_usage and obj_material_usage.is_a("IfcMaterialLayerSetUsage"):
                         obj_material_usage.OffsetFromReferenceLine = material.OffsetFromReferenceLine
                         obj_material_usage.DirectionSense = material.DirectionSense
                         obj_material_usage.ReferenceExtent = material.ReferenceExtent
 
-                        layer_sets_to_regenerate.add(obj_material_usage.ForLayerSet)
-
                         # Save custom offset to BBIM_MaterialLayer pset
                         tool.Model.save_custom_offset_to_pset(obj_element, obj)
 
-                for layer_set in layer_sets_to_regenerate:
-                    wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
-                    slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
+                        # Targeted regeneration: only update this element's geometry, not
+                        # all elements sharing the layer set (which would corrupt unrelated instances).
+                        if obj_material_usage.LayerSetDirection == "AXIS3":
+                            slab_planer.regenerate_from_occurence(obj_element, obj_material_usage)
+                        elif obj_material_usage.LayerSetDirection == "AXIS2":
+                            wall_objs.append(obj)
+
+                if wall_objs:
+                    tool.Model.recalculate_walls(wall_objs)
 
             if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
                 if "CardinalPoint" in attributes:

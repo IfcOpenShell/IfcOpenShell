@@ -280,6 +280,8 @@ class DumbSlabPlaner:
                 perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
                 perpendicular_offset = layer_offset * abs(1 / cos(existing_x_angle)) / self.unit_scale
 
+                ifc_position = extrusion.Position
+
                 # Check angle and z direction to determine whether the extrusion direction is positive or negative
                 if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
                     abs(existing_x_angle) > (pi / 2) and direction_ratios.z < 0
@@ -301,7 +303,6 @@ class DumbSlabPlaner:
                 extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
                 extrusion.Depth = perpendicular_depth
 
-                ifc_position = extrusion.Position
                 position = offset_direction * perpendicular_offset
                 material = ifcopenshell.util.element.get_material(element)
                 if material:
