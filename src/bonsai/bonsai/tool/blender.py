@@ -1908,29 +1908,14 @@ class Blender(bonsai.core.tool.Blender):
         previously_active = bpy.context.view_layer.objects.active
 
         override = cls.get_viewport_context()
-
-        # Save H-key hide state for globally-restricted objects so we don't change it.
-        # hide_viewport=True means the object is globally hidden via the outliner restriction;
-        # hide_view_clear/hide_view_set should not add or remove an additional H-key hide on them.
-        viewport_restricted = {obj: obj.hide_get() for obj in bpy.context.view_layer.objects if obj.hide_viewport}
-
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_clear(select=False)
 
         bpy.ops.object.select_all(action="DESELECT")
-        hide_select_objs = []
         for obj in objs:
-            if obj.hide_select:
-                hide_select_objs.append(obj)
-                obj.hide_select = False
             obj.select_set(True)
         with bpy.context.temp_override(**override):
             bpy.ops.object.hide_view_set(unselected=True)
-        for obj in hide_select_objs:
-            obj.hide_select = True
-
-        for obj, was_hidden in viewport_restricted.items():
-            obj.hide_set(was_hidden)
 
         bpy.ops.object.select_all(action="DESELECT")
         for name in previously_selected:
