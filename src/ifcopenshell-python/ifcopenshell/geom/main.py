@@ -89,6 +89,7 @@ SETTING = Literal[
     "keep-bounding-boxes",
     "layerset-first",
     "length-unit",
+    "make-volume",
     "max-offset-deviation",
     "max-offset",
     "mesher-angular-deflection",
@@ -122,6 +123,7 @@ SERIALIZER_SETTING = Literal[
     "use-element-types",
     "y-up",
     "ecef",
+    "separate-z-up-node",
     "digits",
     "wkt-use-section",
 ]
