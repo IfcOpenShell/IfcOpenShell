@@ -11,6 +11,7 @@ Usage: python cache_dependencies.py [pack|unpack]
 """
 
 import platform
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -29,6 +30,11 @@ def get_install_dir() -> Path:
     raise Exception("No install dir found")
 
 
+def run(cmd: str) -> None:
+    print(f"Running command: `{cmd}`")
+    subprocess.check_call(cmd, shell=True)
+
+
 def pack_dependencies(install_dir: Path) -> None:
     # Process each install_dir
     for dependency_path in install_dir.iterdir():
@@ -39,8 +45,8 @@ def pack_dependencies(install_dir: Path) -> None:
         if tar_path.exists():
             print(f"Skipping existing cache: '{tar_path}'")
         else:
-            with tarfile.open(tar_path, "w:gz") as tar:
-                tar.add(dependency_path, arcname=dependency_path.name)
+            # Python's `tarfile` is 10x slower than `tar` cli, so we use `tar`.
+            run(f'tar -czf "{tar_path}" -C "{install_dir}" "{dependency_name}"')
             print(f"Created cache: '{tar_path}'")
 
 
