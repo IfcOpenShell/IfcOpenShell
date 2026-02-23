@@ -181,6 +181,45 @@ ifcedit run model.ifc pset.edit_pset --pset 15 \
     --properties '{"IsExternal": true, "FireRating": "2HR"}'
 ```
 
+### quantify
+
+Run quantity take-off (QTO) on an IFC file, computing physical measurements
+(volume, area, length, count, weight) and writing them back as
+`IfcElementQuantity` property sets. Uses `ifc5d` rules.
+
+**List available rules:**
+
+```bash
+ifcedit quantify list
+```
+
+```json
+[
+  {"name": "IFC4QtoBaseQuantities"},
+  {"name": "IFC4X3QtoBaseQuantities"}
+]
+```
+
+**Run QTO on a file:**
+
+```bash
+ifcedit quantify run model.ifc IFC4QtoBaseQuantities
+ifcedit quantify run model.ifc IFC4QtoBaseQuantities --selector IfcWall
+ifcedit quantify run model.ifc IFC4QtoBaseQuantities -o model_qto.ifc
+```
+
+```json
+{"ok": true, "rule": "IFC4QtoBaseQuantities", "elements_quantified": 42}
+```
+
+Options:
+
+- `--selector <query>` -- ifcopenshell selector to restrict elements (default: all `IfcElement`)
+- `-o, --output <path>` -- write to a different file instead of overwriting the input
+
+Note: `quantify run` writes geometry-based measurements and requires the
+IfcOpenShell C++ geometry bindings for elements with computed quantities.
+
 ## Error handling
 
 Errors are reported in the JSON response:
@@ -198,8 +237,8 @@ Exit code is 0 on success, 1 on error.
 
 `ifcedit` and `ifcquery` are complementary tools:
 
-- **ifcquery** reads and inspects IFC models (summary, tree, info, select, relations, clash)
-- **ifcedit** modifies IFC models by wrapping `ifcopenshell.api` functions
+- **ifcquery** reads and inspects IFC models (summary, tree, info, select, relations, clash, validate, schedule, cost, schema)
+- **ifcedit** modifies IFC models by wrapping `ifcopenshell.api` functions, and runs QTO via `quantify`
 
 A typical workflow: inspect with `ifcquery`, look up the right API function
 with `ifcedit docs`, then apply changes with `ifcedit run`.

@@ -197,6 +197,133 @@ ifcquery model.ifc relations 10 --traverse up
 ]
 ```
 
+### validate
+
+Check the model for schema and constraint violations.
+
+```bash
+ifcquery model.ifc validate
+ifcquery model.ifc validate --rules
+```
+
+Options:
+
+- `--rules` -- also run the slower EXPRESS rules check (default: off)
+
+```json
+{
+  "valid": true,
+  "issues": []
+}
+```
+
+On an invalid model:
+
+```json
+{
+  "valid": false,
+  "issues": [
+    {"level": "ERROR", "message": "Entity #42 IfcWall.GlobalId is not a valid IfcGloballyUniqueId"}
+  ]
+}
+```
+
+### schedule
+
+List all work schedules and their task trees from the model.
+
+```bash
+ifcquery model.ifc schedule
+ifcquery model.ifc schedule --depth 1
+```
+
+Options:
+
+- `--depth N` -- expand at most N levels of subtasks (default: unlimited). At the
+  cutoff, `subtasks` is replaced with `{"truncated": true, "count": N}`.
+
+```json
+[
+  {
+    "id": 42,
+    "name": "Construction Schedule",
+    "predefined_type": "BASELINE",
+    "tasks": [
+      {
+        "id": 55,
+        "name": "Phase 1",
+        "start": "2024-01-01T09:00:00",
+        "finish": "2024-06-30T17:00:00",
+        "is_milestone": false,
+        "outputs": [{"id": 10, "type": "IfcWall", "name": "Wall A"}],
+        "subtasks": [
+          {"id": 56, "name": "Foundations", "start": null, "finish": null,
+           "is_milestone": false, "outputs": [], "subtasks": []}
+        ]
+      }
+    ]
+  }
+]
+```
+
+### cost
+
+List all cost schedules and their cost item trees from the model.
+
+```bash
+ifcquery model.ifc cost
+ifcquery model.ifc cost --depth 2
+```
+
+Options:
+
+- `--depth N` -- expand at most N levels of subitems (default: unlimited). At the
+  cutoff, `subitems` is replaced with `{"truncated": true, "count": N}`.
+
+```json
+[
+  {
+    "id": 100,
+    "name": "Bill of Quantities",
+    "predefined_type": "COSTPLAN",
+    "items": [
+      {
+        "id": 110,
+        "name": "Concrete Works",
+        "values": [{"formula": "1200.00 = material(1200.0)", "category": "material"}],
+        "subitems": [
+          {"id": 111, "name": "Formwork", "values": [], "subitems": []}
+        ]
+      }
+    ]
+  }
+]
+```
+
+### schema
+
+Show IFC class documentation for any entity type, using the schema version of
+the loaded model.
+
+```bash
+ifcquery model.ifc schema IfcWall
+ifcquery model.ifc schema IfcBuildingStorey
+```
+
+```json
+{
+  "description": "The wall represents a vertical construction ...",
+  "predefined_types": {"STANDARD": "A standard wall, extruded vertically ..."},
+  "spec_url": "https://standards.buildingsmart.org/...",
+  "attributes": {
+    "Name": "Optional name for use by the participating software systems",
+    "ObjectPlacement": "Placement of the product in space ..."
+  }
+}
+```
+
+Returns `{"error": "Unknown entity: Foo"}` for unrecognised types.
+
 ### clash
 
 Check a single element for geometric intersections and clearance violations

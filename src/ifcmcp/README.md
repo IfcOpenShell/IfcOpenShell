@@ -157,6 +157,74 @@ Parameters:
 - `tolerance` -- intersection tolerance in meters (default: 0.002)
 - `scope` -- `"storey"` or `"all"` (default: `"storey"`)
 
+#### ifc_validate
+
+Check the model for schema and constraint violations.
+
+```
+ifc_validate()
+ifc_validate(express_rules=True)
+```
+
+Returns `{"valid": true, "issues": []}` or `{"valid": false, "issues": [{"level": "ERROR", "message": "..."}]}`.
+
+#### ifc_schedule
+
+List all work schedules and their nested task trees.
+
+```
+ifc_schedule()
+ifc_schedule(max_depth=1)   # top-level phases only
+```
+
+`max_depth` limits subtask expansion. At the cutoff, `subtasks` is replaced
+with `{"truncated": true, "count": N}` so you know children exist without
+fetching them all. Omit for unlimited depth.
+
+#### ifc_cost
+
+List all cost schedules and their nested cost item trees.
+
+```
+ifc_cost()
+ifc_cost(max_depth=2)   # top two levels of the BoQ
+```
+
+`max_depth` limits cost item expansion, same truncation convention as
+`ifc_schedule`.
+
+#### ifc_schema
+
+Return IFC class documentation for any entity type, using the loaded model's
+schema version.
+
+```
+ifc_schema(entity_type="IfcWall")
+ifc_schema(entity_type="IfcBuildingStorey")
+```
+
+Returns description, predefined types, spec URL, and attribute descriptions.
+Returns `{"error": "Unknown entity: Foo"}` for unrecognised types.
+
+#### ifc_quantify
+
+Run quantity take-off (QTO) on the loaded model using an `ifc5d` rule.
+Computes physical measurements (volume, area, length, count, weight) and
+writes them back as `IfcElementQuantity` property sets. Modifies the model
+in-place -- call `ifc_save()` when done.
+
+```
+ifc_quantify(rule="IFC4QtoBaseQuantities")
+ifc_quantify(rule="IFC4QtoBaseQuantities", selector="IfcWall")
+```
+
+Available rules: `IFC4QtoBaseQuantities`, `IFC4X3QtoBaseQuantities`.
+
+`selector` is an optional ifcopenshell selector to restrict which elements
+are quantified (default: all `IfcElement`).
+
+Returns `{"ok": true, "rule": "...", "elements_quantified": 42}`.
+
 ### Edit discovery tools
 
 #### ifc_list
@@ -209,10 +277,14 @@ Does NOT auto-save -- call `ifc_save()` when ready to write changes to disk.
 
 1. **Load** a model: `ifc_load`
 2. **Inspect** with query tools: `ifc_summary`, `ifc_tree`, `ifc_select`, `ifc_info`, `ifc_relations`
-3. **Find** the right API function: `ifc_list`, `ifc_docs`
-4. **Edit** the model: `ifc_edit`
-5. **Verify** changes with query tools
-6. **Save** when satisfied: `ifc_save`
+3. **Validate** if needed: `ifc_validate`
+4. **Browse schedules / costs**: `ifc_schedule`, `ifc_cost` (use `max_depth=1` first on large projects)
+5. **Look up IFC classes**: `ifc_schema`
+6. **Find** the right API function: `ifc_list`, `ifc_docs`
+7. **Edit** the model: `ifc_edit`
+8. **Quantify** elements: `ifc_quantify` (writes QTO psets in-place)
+9. **Verify** changes with query tools
+10. **Save** when satisfied: `ifc_save`
 
 The model stays in memory across all calls, so multi-step editing sessions
 are fast -- no file I/O between operations.
