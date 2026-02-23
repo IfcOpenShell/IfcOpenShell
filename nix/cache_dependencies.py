@@ -10,6 +10,7 @@ Expected to be executed from 'build' directory (e.g. that might contain 'Linux/x
 Usage: python cache_dependencies.py [pack|unpack]
 """
 
+import platform
 import sys
 import tarfile
 from pathlib import Path
@@ -19,7 +20,11 @@ CACHE_PREFIX = "cache-"
 
 
 def get_install_dir() -> Path:
-    for data in Path.cwd().glob("*/*/install"):
+    if platform.system() == "Darwin":
+        pattern = "Darwin/*/*/install"
+    else:
+        pattern = "*/*/install"
+    for data in Path.cwd().glob(pattern):
         return data
     raise Exception("No install dir found")
 
