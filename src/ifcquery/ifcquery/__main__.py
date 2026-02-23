@@ -26,7 +26,9 @@ import sys
 import ifcopenshell
 
 from ifcquery import clash as clash_mod
-from ifcquery import info, relations, select, summary, tree
+from ifcquery import cost as cost_mod
+from ifcquery import info, relations, schedule, schema, select, summary, tree
+from ifcquery import validate as validate_mod
 
 
 def parse_element_id(raw: str) -> int:
@@ -103,6 +105,24 @@ def main():
         "--scope", choices=["storey", "all"], default="storey", help="Scope of elements to check (default: storey)"
     )
 
+    validate_parser = subparsers.add_parser("validate", help="Schema/constraint validation")
+    validate_parser.add_argument(
+        "--rules", action="store_true", help="Also check EXPRESS rules (slower, default: false)"
+    )
+
+    schedule_parser = subparsers.add_parser("schedule", help="List work plans and tasks from the model")
+    schedule_parser.add_argument(
+        "--depth", type=int, default=None, metavar="N", help="Limit subtask expansion to N levels (default: unlimited)"
+    )
+
+    cost_parser = subparsers.add_parser("cost", help="List cost schedules and cost items from the model")
+    cost_parser.add_argument(
+        "--depth", type=int, default=None, metavar="N", help="Limit cost item expansion to N levels (default: unlimited)"
+    )
+
+    schema_parser = subparsers.add_parser("schema", help="IFC class documentation")
+    schema_parser.add_argument("entity_type", help="IFC entity type (e.g. IfcWall)")
+
     args = parser.parse_args()
 
     try:
@@ -159,6 +179,14 @@ def main():
         except ImportError:
             print("Error: ifcopenshell geometry engine not available (C++ bindings required)", file=sys.stderr)
             sys.exit(1)
+    elif args.command == "validate":
+        result = validate_mod.validate(model, express_rules=args.rules)
+    elif args.command == "schedule":
+        result = schedule.schedule(model, max_depth=args.depth)
+    elif args.command == "cost":
+        result = cost_mod.cost(model, max_depth=args.depth)
+    elif args.command == "schema":
+        result = schema.schema(model, args.entity_type)
 
     print(format_output(result, args.output_format))
 

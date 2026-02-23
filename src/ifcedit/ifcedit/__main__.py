@@ -26,6 +26,7 @@ import sys
 import ifcopenshell
 
 from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.quantify import list_rules, run_quantify
 from ifcedit.run import run_api
 
 
@@ -137,6 +138,29 @@ def _parse_extra_args(extra: list[str]) -> dict[str, str]:
     return kwargs
 
 
+def cmd_quantify(args, extra_args):
+    if args.quantify_command == "list":
+        result = list_rules()
+        print(format_output(result, args.output_format))
+    elif args.quantify_command == "run":
+        try:
+            model = ifcopenshell.open(args.ifc_file)
+        except Exception as e:
+            print(f"Error: Could not open IFC file: {e}", file=sys.stderr)
+            sys.exit(1)
+        selector = args.selector or None
+        result = run_quantify(model, args.rule_name, selector=selector)
+        if result["ok"]:
+            output_path = args.output or args.ifc_file
+            model.write(output_path)
+        print(format_output(result, args.output_format))
+        if not result["ok"]:
+            sys.exit(1)
+    else:
+        print("Error: quantify requires a subcommand: list or run", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="ifcedit",
@@ -167,6 +191,16 @@ def main():
     run_parser.add_argument("-o", "--output", help="Output file path (default: overwrite input)")
     run_parser.add_argument("--dry-run", action="store_true", help="Validate without executing or saving")
 
+    # quantify
+    quantify_parser = subparsers.add_parser("quantify", help="Quantity take-off (QTO) using ifc5d rules")
+    quantify_sub = quantify_parser.add_subparsers(dest="quantify_command")
+    quantify_sub.add_parser("list", help="List available QTO rule names")
+    qrun_parser = quantify_sub.add_parser("run", help="Run QTO on an IFC file")
+    qrun_parser.add_argument("ifc_file", help="Path to the IFC file")
+    qrun_parser.add_argument("rule_name", help="QTO rule name (e.g. IFC4QtoBaseQuantities)")
+    qrun_parser.add_argument("--selector", help="ifcopenshell selector to restrict elements (default: all IfcElement)")
+    qrun_parser.add_argument("-o", "--output", help="Output file path (default: overwrite input)")
+
     args, extra = parser.parse_known_args()
 
     if args.command == "list":
@@ -175,6 +209,8 @@ def main():
         cmd_docs(args)
     elif args.command == "run":
         cmd_run(args, extra)
+    elif args.command == "quantify":
+        cmd_quantify(args, extra)
 
 
 if __name__ == "__main__":

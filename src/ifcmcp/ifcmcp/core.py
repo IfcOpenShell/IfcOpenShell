@@ -8,9 +8,12 @@ from typing import Any, Callable
 import ifcopenshell
 
 from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
-from ifcquery import info, relations, select, summary, tree
+from ifcquery import cost as cost_mod
+from ifcquery import info, relations, schedule, schema, select, summary, tree
+from ifcquery import validate as validate_mod
 
 
 # inside ifcmcp/core.py
@@ -182,6 +185,41 @@ class IfcSession:
         return _jsonify(res)
 
     # ------------------------
+    # Extended query + edit tools
+    # ------------------------
+    def ifc_validate(self, express_rules: bool = False) -> dict[str, Any]:
+        """Validate the loaded model. Returns {'valid': bool, 'issues': [...]}."""
+        return validate_mod.validate(self._require_model(), express_rules=express_rules)
+
+    def ifc_schedule(self, max_depth: int | None = None) -> list[dict[str, Any]]:
+        """List work schedules and nested tasks from the model.
+
+        max_depth limits subtask expansion (None = unlimited). At the cutoff,
+        subtasks is replaced with {"truncated": True, "count": N}.
+        """
+        return schedule.schedule(self._require_model(), max_depth=max_depth)
+
+    def ifc_cost(self, max_depth: int | None = None) -> list[dict[str, Any]]:
+        """List cost schedules and nested cost items from the model.
+
+        max_depth limits cost item expansion (None = unlimited). At the cutoff,
+        subitems is replaced with {"truncated": True, "count": N}.
+        """
+        return cost_mod.cost(self._require_model(), max_depth=max_depth)
+
+    def ifc_schema(self, entity_type: str) -> dict[str, Any]:
+        """Return IFC class documentation for entity_type using the model's schema version."""
+        return schema.schema(self._require_model(), entity_type)
+
+    def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
+        """Run quantity take-off on the model using the named rule.
+
+        Modifies the model in-place; call ifc_save() after.
+        """
+        model = self._require_model()
+        return run_quantify(model, rule, selector=selector if selector else None)
+
+    # ------------------------
     # Generic dispatcher + tool specs for LLMs
     # ------------------------
     def dispatch(self, name: str, args: dict[str, Any] | None = None) -> Any:
@@ -297,6 +335,64 @@ class IfcSession:
                     "type": "object",
                     "properties": {"function_path": {"type": "string"}, "params": {"type": "string"}},
                     "required": ["function_path"],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_validate",
+                "description": "Validate the loaded model. Returns valid bool and list of issues.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"express_rules": {"type": "boolean", "description": "Also check EXPRESS rules (slower)"}},
+                    "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_schedule",
+                "description": "List work schedules and nested tasks. Use max_depth=1 for top-level phases only on large projects.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"max_depth": {"type": "integer", "description": "Max levels of subtask expansion (omit for unlimited)"}},
+                    "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_cost",
+                "description": "List cost schedules and nested cost items. Use max_depth=1 for top-level sections only on large BoQs.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"max_depth": {"type": "integer", "description": "Max levels of cost item expansion (omit for unlimited)"}},
+                    "required": [],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_schema",
+                "description": "Return IFC class documentation for an entity type.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"entity_type": {"type": "string", "description": "IFC entity type, e.g. IfcWall"}},
+                    "required": ["entity_type"],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_quantify",
+                "description": "Run quantity take-off (QTO) on the model. Modifies model in-place; call ifc_save() after.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "rule": {"type": "string", "description": "QTO rule name, e.g. IFC4QtoBaseQuantities"},
+                        "selector": {"type": "string", "description": "ifcopenshell selector to restrict elements (default: all IfcElement)"},
+                    },
+                    "required": ["rule"],
                     "additionalProperties": False,
                 },
             },

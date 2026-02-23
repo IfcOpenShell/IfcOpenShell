@@ -95,4 +95,25 @@ def build_server() -> Any:
     def ifc_edit(function_path: str, params: str = "{}") -> dict:
         return session.ifc_edit(function_path=function_path, params=params)
 
+    # ---- Extended query + edit ----
+    @server.tool()
+    def ifc_validate(express_rules: bool = False) -> dict[str, Any]:
+        return session.ifc_validate(express_rules=express_rules)
+
+    @server.tool()
+    def ifc_schedule(max_depth: int | None = None) -> list[dict[str, Any]]:
+        return session.ifc_schedule(max_depth=max_depth)
+
+    @server.tool()
+    def ifc_cost(max_depth: int | None = None) -> list[dict[str, Any]]:
+        return session.ifc_cost(max_depth=max_depth)
+
+    @server.tool()
+    def ifc_schema(entity_type: str) -> dict[str, Any]:
+        return session.ifc_schema(entity_type=entity_type)
+
+    @server.tool()
+    def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
+        return session.ifc_quantify(rule=rule, selector=selector)
+
     return server
