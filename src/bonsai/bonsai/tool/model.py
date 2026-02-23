@@ -1245,6 +1245,9 @@ class Model(bonsai.core.tool.Model):
                 height = 100
 
                 is_horizontal = False
+                if element.is_a("IfcSlabType"):
+                    is_horizontal = True
+
                 parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
                 if parametric:
                     layer_set_direction = parametric.get("LayerSetDirection", None)
@@ -1263,7 +1266,7 @@ class Model(bonsai.core.tool.Model):
                 del thicknesses[-1]
                 for thickness in thicknesses:
                     current_thickness += thickness
-                    if is_horizontal:
+                    if element.is_a("IfcSlabType"):
                         y = (current_thickness / total_thickness) * height
                         line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
                     else:
