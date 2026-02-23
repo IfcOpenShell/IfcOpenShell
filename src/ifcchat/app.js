@@ -124,6 +124,26 @@ const tools = [
         type: "function", name: "ifc_edit", description: "Execute an ifcopenshell.api mutation; params is a JSON string of stringly-typed kwargs.",
         parameters: { type: "object", properties: { function_path: { type: "string" }, params: { type: "string" } }, required: ["function_path"], additionalProperties: false }
     },
+    {
+        type: "function", name: "ifc_validate", description: "Validate the loaded model. Returns valid bool and list of issues.",
+        parameters: { type: "object", properties: { express_rules: { type: "boolean" } }, required: [], additionalProperties: false }
+    },
+    {
+        type: "function", name: "ifc_schedule", description: "List work schedules and nested tasks. Use max_depth=1 for top-level phases only on large projects.",
+        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false }
+    },
+    {
+        type: "function", name: "ifc_cost", description: "List cost schedules and nested cost items. Use max_depth=1 for top-level sections only on large BoQs.",
+        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false }
+    },
+    {
+        type: "function", name: "ifc_schema", description: "Return IFC class documentation for an entity type.",
+        parameters: { type: "object", properties: { entity_type: { type: "string" } }, required: ["entity_type"], additionalProperties: false }
+    },
+    {
+        type: "function", name: "ifc_quantify", description: "Run quantity take-off (QTO) on the model. Modifies model in-place; call ifc_save() after.",
+        parameters: { type: "object", properties: { rule: { type: "string" }, selector: { type: "string" } }, required: ["rule"], additionalProperties: false }
+    },
 ];
 
 const SYSTEM_INSTRUCTIONS = `
