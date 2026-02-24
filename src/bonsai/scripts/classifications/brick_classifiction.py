@@ -22,8 +22,7 @@ class Generator:
             }
         )
 
-        query = self.schema.query(
-            """
+        query = self.schema.query("""
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -49,8 +48,7 @@ class Generator:
                 }
             }
             GROUP BY ?entity
-            """
-        )
+            """)
 
         # create references dictionary
         references = {}
@@ -76,17 +74,13 @@ class Generator:
             )
 
             # get all parents of the entity
-            query = self.schema.query(
-                """
+            query = self.schema.query("""
                 PREFIX brick: <https://brickschema.org/schema/Brick#>
                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
                 SELECT ?parent WHERE {
                     brick:{entity} rdfs:subClassOf ?parent .
                 }
-                """.replace(
-                    "{entity}", location.split("#")[-1]
-                )
-            )
+                """.replace("{entity}", location.split("#")[-1]))
             # filter parents for the brick entity
             for row in query:
                 parent = row.get("parent").toPython()

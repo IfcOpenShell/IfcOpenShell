@@ -36,17 +36,14 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = "AND d.version_index = $version_index"
 
-            cypher = (
-                """
+            cypher = """
                 MATCH (d:Document)
                 WHERE d.document_id = $document_id
                 %s
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """
-                % version_index_criteria
-            )
+            """ % version_index_criteria
 
             result = tx.run(cypher, document_id=document_id, version_index=version_index)
 
@@ -891,8 +888,7 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = ""
 
-            cypher = (
-                """
+            cypher = """
                 MATCH (u:User)-[r3:HAS_ACTIONS_ON]->(p:Project)-[r4:CONTAINS]->(d:Document)
                 WHERE u.username = $username
                 AND d.document_id = $document_id
@@ -900,9 +896,7 @@ class DOCDB(MyDB):
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """
-                % version_index_criteria
-            )
+            """ % version_index_criteria
 
             result = tx.run(
                 cypher, username=current_user.username, document_id=document_id, version_index=version_index
@@ -927,8 +921,7 @@ class DOCDB(MyDB):
             else:
                 version_index_criteria = ""
 
-            cypher = (
-                """
+            cypher = """
                 MATCH (u:User)-[r3:HAS_ACTIONS_ON]->(p:Project)-[r4:CONTAINS]->(d:Document)
                 WHERE u.username = $username
                 AND d.document_id = $document_id
@@ -936,9 +929,7 @@ class DOCDB(MyDB):
                 RETURN d AS document
                 ORDER by d.version_index DESC
                 LIMIT 1
-            """
-                % version_index_criteria
-            )
+            """ % version_index_criteria
 
             result = tx.run(
                 cypher, username=current_user.username, document_id=document_id, version_index=version_index

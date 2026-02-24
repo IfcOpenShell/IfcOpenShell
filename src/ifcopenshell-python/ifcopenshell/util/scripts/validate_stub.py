@@ -25,7 +25,6 @@ Things we do check:
 - class hierarchy
 """
 
-
 import ast
 import difflib
 from pathlib import Path

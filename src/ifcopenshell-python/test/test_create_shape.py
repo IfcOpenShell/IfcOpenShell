@@ -194,7 +194,7 @@ class TestAssignObject:
         assert len(set(vs)) == 12
 
 
-#def test_iterator():
+# def test_iterator():
 #    # just test some permutations of invocation
 #    settings = ifcopenshell.geom.settings()
 #    file_or_filename = [fn, ifcopenshell.open(fn)]

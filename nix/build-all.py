@@ -319,24 +319,18 @@ cecho(f"* Build Directory   = {BUILD_DIR}", MAGENTA)
 cecho(f"* Dependency Directory   = {DEPS_DIR}", MAGENTA)
 cecho(f" - The directory where {PROJECT_NAME} dependencies are installed.")
 cecho(f"* Build Config Type      = {BUILD_CFG}", MAGENTA)
-cecho(
-    """ - The used build configuration type for the dependencies.
-   Defaults to RelWithDebInfo if not specified."""
-)
+cecho(""" - The used build configuration type for the dependencies.
+   Defaults to RelWithDebInfo if not specified.""")
 
 if BUILD_CFG == "MinSizeRel":
     cecho("     WARNING: MinSizeRel build can suffer from a significant performance loss.", RED)
 
 cecho(f"* IFCOS_NUM_BUILD_PROCS  = {IFCOS_NUM_BUILD_PROCS}", MAGENTA)
-cecho(
-    """ - How many compiler processes may be run in parallel.
-"""
-)
+cecho(""" - How many compiler processes may be run in parallel.
+""")
 cecho(f" * IFCOS_SCHEMAS = '{os.environ.get('IFCOS_SCHEMAS')}'", MAGENTA)
-cecho(
-    """ - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
-"""
-)
+cecho(""" - IFC Schemas to compile. If not provided, fallback to default provided in cmake.
+""")
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
