@@ -38,8 +38,7 @@ def _is_zero_length_segment(segment: entity_instance) -> bool:
 def clear_layout_segments(file: ifcopenshell.file, layout: entity_instance) -> None:
     """
     Clear all segments from a layout while preserving the layout entity
-    and zero-length terminator. After calling this, use
-    layout_horizontal_alignment_by_pi_method() to add new segments.
+    and zero-length terminator.
 
     This function removes:
     - All real (non-zero-length) IfcAlignmentSegment entities from the layout
