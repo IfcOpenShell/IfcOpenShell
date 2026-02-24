@@ -63,15 +63,21 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
 
     # Validate dist_along is within segment bounds
     # SegmentLength can be negative (indicates curve direction), so we need to handle both cases
-    seg_len = segment.SegmentLength.wrappedValue if hasattr(segment.SegmentLength, 'wrappedValue') else segment.SegmentLength
+    seg_len = (
+        segment.SegmentLength.wrappedValue if hasattr(segment.SegmentLength, "wrappedValue") else segment.SegmentLength
+    )
     if seg_len >= 0:
         # Positive length: valid range is 0 to seg_len
         if dist_along < 0 or dist_along > seg_len:
-            raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
+            raise ValueError(
+                f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength})."
+            )
     else:
         # Negative length: valid range is seg_len to 0
         if dist_along > 0 or dist_along < seg_len:
-            raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
+            raise ValueError(
+                f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength})."
+            )
 
     s = ifcopenshell.geom.settings()
     function_item = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)

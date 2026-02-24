@@ -71,9 +71,7 @@ def clear_layout_segments(file: ifcopenshell.file, layout: entity_instance) -> N
     """
     expected_types = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
     if layout.is_a() not in expected_types:
-        raise TypeError(
-            f"Expected entity type to be one of {expected_types}, instead received {layout.is_a()}"
-        )
+        raise TypeError(f"Expected entity type to be one of {expected_types}, instead received {layout.is_a()}")
 
     # Get the geometric curve for this layout
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)

@@ -36,7 +36,7 @@ def test_get_alignment_layout():
         parent=geometric_representation_context,
     )
 
-    alignment = ifcopenshell.api.alignment.create(file,"Test",include_vertical=True,include_cant=True)
+    alignment = ifcopenshell.api.alignment.create(file, "Test", include_vertical=True, include_cant=True)
     horiz = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
     vert = ifcopenshell.api.alignment.get_vertical_layout(alignment)
     cant = ifcopenshell.api.alignment.get_cant_layout(alignment)

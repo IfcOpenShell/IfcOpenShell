@@ -152,10 +152,7 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 
     axis_representation = file.createIfcShapeRepresentation(
-        ContextOfItems=axis_geom_subcontext,
-        RepresentationIdentifier="Axis",
-        RepresentationType="Segment",
-        Items = items
+        ContextOfItems=axis_geom_subcontext, RepresentationIdentifier="Axis", RepresentationType="Segment", Items=items
     )
 
     product = file.createIfcProductDefinitionShape(Representations=(axis_representation,))

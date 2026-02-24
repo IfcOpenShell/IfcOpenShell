@@ -32,7 +32,7 @@ def get_alignment_layout(segment: entity_instance) -> entity_instance:
         )
 
     layout = None
-    layouts=["IfcAlignmentHorizontal","IfcAlignmentVertical","IfcAlignmentCant"]
+    layouts = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
     for nest in segment.Nests:
         if nest.RelatingObject.is_a() in layouts:
             layout = nest.RelatingObject
