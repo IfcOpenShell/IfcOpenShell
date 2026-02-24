@@ -571,6 +571,7 @@ class Alignment:
 
         mapped_segments = ifcopenshell.api.alignment.get_mapped_segments(segment)
         tool.Loader.load_settings()
+        obj = None
         for curve_segment in mapped_segments:
             if curve_segment is not None:
                 geometry = tool.Loader.create_generic_shape(curve_segment)
@@ -578,7 +579,16 @@ class Alignment:
                 mesh = ifc_importer.create_mesh(curve_segment, geometry)
                 obj = bpy.data.objects.new(tool.Loader.get_name(curve_segment), mesh)
                 tool.Ifc.link(curve_segment, obj)
-                tool.Collector.assign(obj)
+
+                # Parent to layout object for proper hierarchy
+                if parent_obj:
+                    obj.parent = parent_obj
+
+                # Assign to same collection as parent (avoid "Unsorted")
+                if parent_obj and parent_obj.users_collection:
+                    parent_obj.users_collection[0].objects.link(obj)
+                else:
+                    tool.Collector.assign(obj)
         return obj
 
     @classmethod
