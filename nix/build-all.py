@@ -127,9 +127,7 @@ try:
     from typing import Literal, Union
 except:
     # python 3.6 compatibility for rocky 8
-    from typing import Union
-
-    from typing_extensions import Literal
+    from typing import Literal, Union
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

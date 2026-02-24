@@ -21,7 +21,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import bpy
-import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -31,8 +30,9 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import mathutils
 import numpy as np
-from mathutils import Vector
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool

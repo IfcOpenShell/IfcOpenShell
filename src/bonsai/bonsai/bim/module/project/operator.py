@@ -18,15 +18,15 @@
 
 import datetime
 import json
-import math
 import logging
+import math
 import os
 import subprocess
 import tempfile
 import time
 import traceback
 from collections import defaultdict
-from math import radians
+from math import degrees, radians
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Union, get_args
 
@@ -60,15 +60,6 @@ import bonsai.core.project as core
 import bonsai.tool as tool
 from bonsai.bim import export_ifc, import_ifc
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim import import_ifc
-from bonsai.bim import export_ifc
-from math import radians, degrees
-from pathlib import Path
-from collections import defaultdict
-from mathutils import Vector, Matrix
-from bpy.app.handlers import persistent
-from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
