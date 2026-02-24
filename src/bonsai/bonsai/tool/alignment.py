@@ -67,9 +67,7 @@ class Alignment:
     # =========================================================================
 
     @classmethod
-    def calculate_pi_geometry(
-        cls, pis: List[Tuple[float, float]], start_station: float = 0.0
-    ) -> PIGeometryResult:
+    def calculate_pi_geometry(cls, pis: List[Tuple[float, float]], start_station: float = 0.0) -> PIGeometryResult:
         """Calculate lengths, stations, and directions for a list of PI points.
 
         Args:
@@ -110,9 +108,7 @@ class Alignment:
 
         total_length = cumulative_length - start_station
 
-        return PIGeometryResult(
-            stations=stations, lengths=lengths, directions=directions, total_length=total_length
-        )
+        return PIGeometryResult(stations=stations, lengths=lengths, directions=directions, total_length=total_length)
 
     @classmethod
     def calculate_tangent_length(cls, radius: float, deflection_angle: float) -> float:
@@ -145,7 +141,6 @@ class Alignment:
             Arc length
         """
         return radius * deflection_angle
-
 
     @classmethod
     def deflection_angle_from_points(
@@ -249,11 +244,55 @@ class Alignment:
     # =========================================================================
 
     @classmethod
+    def _get_segment_vertices_in_model_units(
+        cls, ifc_file: "ifcopenshell.file", segment: "ifcopenshell.entity_instance"
+    ):
+        """Get segment control points (Start, End, TI, NI) in model units.
+
+        Wraps ifcopenshell.api.alignment.segment_vertices() with:
+        - Backward-compatible fallback for segments without Axis/Segment
+          representation (falls back to IfcCurveSegment via get_mapped_segments)
+        - Unit conversion (geometry engine returns SI; we need model units)
+
+        Args:
+            ifc_file: The IFC file
+            segment: An IfcAlignmentSegment entity
+
+        Returns:
+            Tuple of (start, end, ti, ni) where each is (x, y) in model units,
+            or None for ti/ni when lines are parallel.
+            Returns None if segment cannot be evaluated.
+        """
+        import ifcopenshell.api.alignment as align_api
+        import ifcopenshell.util.unit
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        def convert(point):
+            if point is None:
+                return None
+            return (point[0] / unit_scale, point[1] / unit_scale)
+
+        try:
+            start, end, ti, ni = align_api.segment_vertices(ifc_file, segment)
+        except Exception:
+            try:
+                mapped = align_api.get_mapped_segments(segment)
+                curve_segment = mapped[0]
+                if curve_segment is None:
+                    return None
+                start, end, ti, ni = align_api.segment_vertices(ifc_file, curve_segment)
+            except Exception:
+                return None
+
+        return (convert(start), convert(end), convert(ti), convert(ni))
+
+    @classmethod
     def extract_pis_from_segments(cls, segments):
         """Extract PI data from IFC alignment segments.
 
-        Reconstructs PI coordinates and types from horizontal segment
-        design parameters. Handles LINE and CIRCULARARC segments.
+        Uses ifcopenshell.api.alignment.segment_vertices() to extract
+        PI (tangent intersection) points from segment geometry.
 
         Args:
             segments: List of IfcAlignmentSegment entities
@@ -261,175 +300,56 @@ class Alignment:
         Returns:
             List of dicts with keys: e, n, pi_type, radius
         """
-        pis = []
+        ifc_file = tool.Ifc.get()
 
         # Filter out zero-length terminal segments
-        real_segments = []
-        for seg in segments:
-            if hasattr(seg, "DesignParameters") and seg.DesignParameters:
-                dp = seg.DesignParameters
-                if dp.SegmentLength > 0.0001:
-                    real_segments.append(seg)
-
+        real_segments = [seg for seg in segments if not cls.is_zero_length_segment(seg)]
         if not real_segments:
             return []
 
+        # Get vertices for all segments
+        seg_vertices = [cls._get_segment_vertices_in_model_units(ifc_file, seg) for seg in real_segments]
+
+        pis = []
+
         # First PI: start of first segment
-        first_dp = real_segments[0].DesignParameters
-        start_coords = first_dp.StartPoint.Coordinates
-        pis.append(
-            {
-                "e": float(start_coords[0]),
-                "n": float(start_coords[1]),
-                "pi_type": "ENDPOINT",
-                "radius": 0.0,
-            }
-        )
+        if seg_vertices[0] is not None:
+            start_pt = seg_vertices[0][0]
+            pis.append({"e": start_pt[0], "n": start_pt[1], "pi_type": "ENDPOINT", "radius": 0.0})
 
-        # Process interior points
-        i = 0
-        while i < len(real_segments):
-            dp = real_segments[i].DesignParameters
+        # Process interior PIs
+        prev_is_line = True
+        for i, (seg, verts) in enumerate(zip(real_segments, seg_vertices)):
+            if verts is None:
+                prev_is_line = False
+                continue
 
-            if dp.PredefinedType == "CIRCULARARC":
-                pi_data = cls._calculate_pi_from_curve(real_segments, i)
-                if pi_data:
-                    pis.append(pi_data)
-                i += 1
-            elif dp.PredefinedType == "LINE":
-                if i < len(real_segments) - 1:
-                    next_dp = real_segments[i + 1].DesignParameters
-                    if next_dp.PredefinedType == "LINE":
-                        end_coords = cls._calculate_segment_endpoint(dp)
-                        pis.append(
-                            {
-                                "e": float(end_coords[0]),
-                                "n": float(end_coords[1]),
-                                "pi_type": "TANGENT",
-                                "radius": 0.0,
-                            }
-                        )
-                i += 1
+            start, end, ti, ni = verts
+            dp = seg.DesignParameters
+
+            if ti is not None:
+                # Curve segment: TI is the PI
+                radius = abs(float(dp.StartRadiusOfCurvature or dp.EndRadiusOfCurvature or 0))
+                pis.append({"e": ti[0], "n": ti[1], "pi_type": "CURVE", "radius": radius})
+                prev_is_line = False
             else:
-                i += 1
+                # Line segment: if previous was also a line, connection = tangent PI
+                if i > 0 and prev_is_line:
+                    pis.append({"e": start[0], "n": start[1], "pi_type": "TANGENT", "radius": 0.0})
+                prev_is_line = True
 
         # Last PI: end of last segment
-        last_dp = real_segments[-1].DesignParameters
-        end_coords = cls._calculate_segment_endpoint(last_dp)
-        if pis:
-            last_pi = pis[-1]
-            dist = math.sqrt((end_coords[0] - last_pi["e"]) ** 2 + (end_coords[1] - last_pi["n"]) ** 2)
-            if dist > 0.001:
-                pis.append(
-                    {
-                        "e": float(end_coords[0]),
-                        "n": float(end_coords[1]),
-                        "pi_type": "ENDPOINT",
-                        "radius": 0.0,
-                    }
-                )
+        if seg_vertices[-1] is not None:
+            end_pt = seg_vertices[-1][1]
+            if pis:
+                last = pis[-1]
+                dist = ((end_pt[0] - last["e"]) ** 2 + (end_pt[1] - last["n"]) ** 2) ** 0.5
+                if dist > 0.001:
+                    pis.append({"e": end_pt[0], "n": end_pt[1], "pi_type": "ENDPOINT", "radius": 0.0})
+            else:
+                pis.append({"e": end_pt[0], "n": end_pt[1], "pi_type": "ENDPOINT", "radius": 0.0})
 
         return pis
-
-    @classmethod
-    def _calculate_segment_endpoint(cls, design_params):
-        """Calculate the endpoint of a horizontal segment.
-
-        Args:
-            design_params: IfcAlignmentHorizontalSegment
-
-        Returns:
-            Tuple (e, n) of endpoint coordinates
-        """
-        start = design_params.StartPoint.Coordinates
-        start_x = float(start[0])
-        start_y = float(start[1])
-
-        direction = float(design_params.StartDirection)
-        length = float(design_params.SegmentLength)
-
-        if design_params.PredefinedType == "LINE":
-            end_x = start_x + length * math.cos(direction)
-            end_y = start_y + length * math.sin(direction)
-            return (end_x, end_y)
-
-        elif design_params.PredefinedType == "CIRCULARARC":
-            radius = abs(float(design_params.StartRadiusOfCurvature or design_params.EndRadiusOfCurvature or 0))
-            if radius == 0:
-                end_x = start_x + length * math.cos(direction)
-                end_y = start_y + length * math.sin(direction)
-                return (end_x, end_y)
-
-            start_radius = design_params.StartRadiusOfCurvature
-            is_clockwise = start_radius is not None and start_radius < 0
-            theta = length / radius
-
-            if is_clockwise:
-                center_dir = direction - math.pi / 2
-                end_dir = direction - theta
-            else:
-                center_dir = direction + math.pi / 2
-                end_dir = direction + theta
-
-            center_x = start_x + radius * math.cos(center_dir)
-            center_y = start_y + radius * math.sin(center_dir)
-
-            if is_clockwise:
-                end_x = center_x + radius * math.cos(end_dir + math.pi / 2)
-                end_y = center_y + radius * math.sin(end_dir + math.pi / 2)
-            else:
-                end_x = center_x + radius * math.cos(end_dir - math.pi / 2)
-                end_y = center_y + radius * math.sin(end_dir - math.pi / 2)
-
-            return (end_x, end_y)
-
-        else:
-            end_x = start_x + length * math.cos(direction)
-            end_y = start_y + length * math.sin(direction)
-            return (end_x, end_y)
-
-    @classmethod
-    def _calculate_pi_from_curve(cls, segments, curve_index):
-        """Calculate the PI point from a curve segment.
-
-        The PI is at the intersection of the incoming and outgoing tangents.
-
-        Args:
-            segments: List of all segments
-            curve_index: Index of the curve segment
-
-        Returns:
-            Dict with PI data, or None if can't calculate
-        """
-        curve_seg = segments[curve_index]
-        curve_dp = curve_seg.DesignParameters
-
-        if curve_dp.PredefinedType != "CIRCULARARC":
-            return None
-
-        pc_coords = curve_dp.StartPoint.Coordinates
-        pc_x = float(pc_coords[0])
-        pc_y = float(pc_coords[1])
-
-        start_dir = float(curve_dp.StartDirection)
-        arc_length = float(curve_dp.SegmentLength)
-
-        radius = abs(float(curve_dp.StartRadiusOfCurvature or curve_dp.EndRadiusOfCurvature or 0))
-        if radius == 0:
-            return None
-
-        delta = arc_length / radius
-        tangent_length = radius * math.tan(delta / 2)
-
-        pi_x = pc_x + tangent_length * math.cos(start_dir)
-        pi_y = pc_y + tangent_length * math.sin(start_dir)
-
-        return {
-            "e": pi_x,
-            "n": pi_y,
-            "pi_type": "CURVE",
-            "radius": radius,
-        }
 
     # =========================================================================
     # IFC API Wrappers (for core layer delegation)
@@ -526,7 +446,6 @@ class Alignment:
                         return True
         return False
 
-
     # =========================================================================
     # Blender Object Creation
     # =========================================================================
@@ -605,7 +524,6 @@ class Alignment:
             tool.Collector.assign(obj)
 
         return obj
-
 
     @classmethod
     def _create_segment_curve(
@@ -869,7 +787,6 @@ class Alignment:
         except Exception:
             return None
 
-
     @classmethod
     def safe_layout_horizontal_by_pi_method(
         cls, ifc_file: "ifcopenshell.file", layout: "ifcopenshell.entity_instance", hpoints: list, radii: list
@@ -909,7 +826,6 @@ class Alignment:
 
         return True
 
-
     # =========================================================================
     # PI Edit Mode Methods
     # =========================================================================
@@ -922,27 +838,12 @@ class Alignment:
     # 4. Collect new positions and regenerate alignment segments
 
     @classmethod
-    def back_calculate_pis_from_alignment(
-        cls, alignment: "ifcopenshell.entity_instance"
-    ) -> List[dict]:
+    def back_calculate_pis_from_alignment(cls, alignment: "ifcopenshell.entity_instance") -> List[dict]:
         """Reverse-engineer PI positions from IFC alignment segments.
 
-        This function analyzes the alignment's horizontal segments and
-        reconstructs the original PI (Point of Intersection) positions
-        that were used to create the alignment.
-
-        Algorithm:
-        1. Get horizontal layout and segments
-        2. First PI = start point of first segment
-        3. For each CIRCULARARC segment:
-           - Extract BC (begin curve) from StartPoint
-           - Calculate deflection: Δ = arc_length / radius
-           - Calculate tangent length: T = R × tan(Δ/2)
-           - PI position = BC + T × direction_vector
-           - Store radius
-        4. For LINE-only transitions (radius=0):
-           - PI = endpoint of LINE segment (becomes a tangent PI)
-        5. Last PI = end point of last real segment
+        Uses ifcopenshell.api.alignment.segment_vertices() to extract
+        the tangent intersection (TI) point for each segment — the TI
+        IS the PI for curve segments.
 
         Args:
             alignment: The IfcAlignment entity
@@ -959,142 +860,64 @@ class Alignment:
         """
         import ifcopenshell.api.alignment as align_api
 
+        ifc_file = tool.Ifc.get()
+
         # Get horizontal layout
         h_layout = align_api.get_horizontal_layout(alignment)
         if h_layout is None:
             raise ValueError(f"Alignment #{alignment.id()} has no horizontal layout")
 
         # Get all segments
-        segments = []
-        for rel in getattr(h_layout, "IsNestedBy", []) or []:
-            for segment in rel.RelatedObjects or []:
-                if segment.is_a("IfcAlignmentSegment"):
-                    segments.append(segment)
-
+        segments = align_api.get_layout_segments(h_layout)
         if not segments:
             raise ValueError(f"Alignment #{alignment.id()} has no segments")
 
         # Filter out zero-length terminator segments
-        real_segments = []
-        for seg in segments:
-            if not cls.is_zero_length_segment(seg):
-                real_segments.append(seg)
-
+        real_segments = [seg for seg in segments if not cls.is_zero_length_segment(seg)]
         if not real_segments:
             raise ValueError(f"Alignment #{alignment.id()} has no real segments (only terminator)")
 
+        # Get vertices for all segments
+        seg_vertices = [cls._get_segment_vertices_in_model_units(ifc_file, seg) for seg in real_segments]
+
         pis = []
 
-        # First PI: start point of first segment
-        first_dp = real_segments[0].DesignParameters
-        first_x = float(first_dp.StartPoint.Coordinates[0])
-        first_y = float(first_dp.StartPoint.Coordinates[1])
-        pis.append({
-            "e": first_x,
-            "n": first_y,
-            "radius": 0.0,
-            "pi_type": "ENDPOINT"
-        })
+        # First PI: start of first segment
+        if seg_vertices[0] is not None:
+            start_pt = seg_vertices[0][0]
+            pis.append({"e": start_pt[0], "n": start_pt[1], "radius": 0.0, "pi_type": "ENDPOINT"})
 
-        # Track current position and direction for LINE segments
-        # This helps us identify tangent PIs (where LINE meets LINE)
-        prev_seg_type = first_dp.PredefinedType
+        # Process each segment for interior PIs
+        prev_is_line = True
+        for i, (seg, verts) in enumerate(zip(real_segments, seg_vertices)):
+            if verts is None:
+                prev_is_line = False
+                continue
 
-        # Process each segment
-        for i, seg in enumerate(real_segments):
+            start, end, ti, ni = verts
             dp = seg.DesignParameters
-            seg_type = dp.PredefinedType
 
-            if seg_type == "CIRCULARARC":
-                # Reconstruct PI from arc segment
-                bc_x = float(dp.StartPoint.Coordinates[0])
-                bc_y = float(dp.StartPoint.Coordinates[1])
-                angle_in = float(dp.StartDirection)
-                radius = abs(float(dp.StartRadiusOfCurvature))
-                arc_length = float(dp.SegmentLength)
-
-                # Deflection angle: Δ = L / R
-                deflection = arc_length / radius
-
-                # Tangent length: T = R × tan(Δ/2)
-                tangent_length = radius * math.tan(deflection / 2)
-
-                # PI position: BC + T × direction_vector
-                pi_x = bc_x + tangent_length * math.cos(angle_in)
-                pi_y = bc_y + tangent_length * math.sin(angle_in)
-
-                pis.append({
-                    "e": pi_x,
-                    "n": pi_y,
-                    "radius": radius,
-                    "pi_type": "CURVE"
-                })
-
-            elif seg_type == "LINE":
-                # For LINE segments, check if this is a transition point
-                # If the previous segment was also LINE and this isn't the first,
-                # we may have a tangent PI at the connection point
-                if i > 0 and prev_seg_type == "LINE":
-                    # There's a tangent PI at the start of this LINE
-                    # (end of previous LINE)
-                    start_x = float(dp.StartPoint.Coordinates[0])
-                    start_y = float(dp.StartPoint.Coordinates[1])
-                    pis.append({
-                        "e": start_x,
-                        "n": start_y,
-                        "radius": 0.0,
-                        "pi_type": "TANGENT"
-                    })
-
-            prev_seg_type = seg_type
-
-        # Last PI: end point of last segment
-        last_dp = real_segments[-1].DesignParameters
-        last_seg_type = last_dp.PredefinedType
-        last_length = float(last_dp.SegmentLength)
-        last_direction = float(last_dp.StartDirection)
-        last_start_x = float(last_dp.StartPoint.Coordinates[0])
-        last_start_y = float(last_dp.StartPoint.Coordinates[1])
-
-        if last_seg_type == "LINE":
-            # End of LINE: simple projection
-            end_x = last_start_x + last_length * math.cos(last_direction)
-            end_y = last_start_y + last_length * math.sin(last_direction)
-        elif last_seg_type == "CIRCULARARC":
-            # End of ARC: use geometry engine or calculate
-            last_radius = abs(float(last_dp.StartRadiusOfCurvature))
-            deflection = last_length / last_radius
-
-            # Determine curve direction (positive radius = counterclockwise)
-            is_ccw = float(last_dp.StartRadiusOfCurvature) > 0
-            if is_ccw:
-                end_direction = last_direction + deflection
+            if ti is not None:
+                # Curve segment: TI is the PI
+                radius = abs(float(dp.StartRadiusOfCurvature or dp.EndRadiusOfCurvature or 0))
+                pis.append({"e": ti[0], "n": ti[1], "radius": radius, "pi_type": "CURVE"})
+                prev_is_line = False
             else:
-                end_direction = last_direction - deflection
+                # Line segment: if previous was also a line, connection = tangent PI
+                if i > 0 and prev_is_line:
+                    pis.append({"e": start[0], "n": start[1], "radius": 0.0, "pi_type": "TANGENT"})
+                prev_is_line = True
 
-            # Calculate EC (end curve) position
-            # For an arc, EC is at BC + arc travel
-            # We need to use the center calculation
-            center_offset_angle = last_direction + (math.pi / 2 if is_ccw else -math.pi / 2)
-            center_x = last_start_x + last_radius * math.cos(center_offset_angle)
-            center_y = last_start_y + last_radius * math.sin(center_offset_angle)
-
-            # EC is at the end of the arc
-            ec_angle = center_offset_angle + math.pi + (deflection if is_ccw else -deflection)
-            end_x = center_x + last_radius * math.cos(ec_angle)
-            end_y = center_y + last_radius * math.sin(ec_angle)
-        else:
-            # For other segment types (CLOTHOID, etc.), use start point as fallback
-            # TODO: Support spiral transitions
-            end_x = last_start_x
-            end_y = last_start_y
-
-        pis.append({
-            "e": end_x,
-            "n": end_y,
-            "radius": 0.0,
-            "pi_type": "ENDPOINT"
-        })
+        # Last PI: end of last segment
+        if seg_vertices[-1] is not None:
+            end_pt = seg_vertices[-1][1]
+            if pis:
+                last = pis[-1]
+                dist = ((end_pt[0] - last["e"]) ** 2 + (end_pt[1] - last["n"]) ** 2) ** 0.5
+                if dist > 0.001:
+                    pis.append({"e": end_pt[0], "n": end_pt[1], "radius": 0.0, "pi_type": "ENDPOINT"})
+            else:
+                pis.append({"e": end_pt[0], "n": end_pt[1], "radius": 0.0, "pi_type": "ENDPOINT"})
 
         return pis
 
@@ -1207,9 +1030,7 @@ class Alignment:
         return removed_count
 
     @classmethod
-    def collect_pis_from_empties(
-        cls, alignment_id: int
-    ) -> Tuple[List[Tuple[float, float]], List[float]]:
+    def collect_pis_from_empties(cls, alignment_id: int) -> Tuple[List[Tuple[float, float]], List[float]]:
         """Gather current PI positions from EMPTY objects.
 
         Reads the current positions of PI empties and converts them
