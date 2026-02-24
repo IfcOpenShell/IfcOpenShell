@@ -223,7 +223,7 @@ class Drawing(bonsai.core.tool.Drawing):
                         return e
 
     @classmethod
-    def exclude_annotation_from_drawing(
+    def exclude_element_from_drawing(
         cls, element: ifcopenshell.entity_instance, drawing: ifcopenshell.entity_instance
     ) -> None:
         ifc_file = tool.Ifc.get()

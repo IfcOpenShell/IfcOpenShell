@@ -4023,20 +4023,24 @@ class OpenDocumentationWebUi(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ExcludeAnnotation(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.exclude_annotation"
-    bl_label = "Exclude Annotation"
-    bl_description = "Excludes the automatic annotation reference from the drawing"
+class ExcludeFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.exclude_from_drawing"
+    bl_label = "Exclude From Drawing"
+    bl_description = "Excludes the selected IFC elements from the drawing"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         if not (obj := bpy.context.scene.camera) or not (drawing := tool.Ifc.get_entity(obj)):
             return
         for obj in tool.Blender.get_selected_objects(include_active=False):
-            if (element := tool.Ifc.get_entity(obj)) and tool.Drawing.is_auto_annotation(element):
-                if referenced_element := tool.Drawing.get_annotation_element(element):
-                    tool.Drawing.exclude_annotation_from_drawing(referenced_element, drawing)
+            if element := tool.Ifc.get_entity(obj):
+                if tool.Drawing.is_auto_annotation(element):
+                    element = tool.Drawing.get_annotation_element(element)
+                if element:
+                    tool.Drawing.exclude_element_from_drawing(element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
+        bpy.ops.bim.enable_editing_element_filter(filter_mode="EXCLUDE")
+        bpy.ops.bim.edit_element_filter(filter_mode="EXCLUDE")
 
 
 class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
