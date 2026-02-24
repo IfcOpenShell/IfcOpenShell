@@ -21,36 +21,6 @@ from bpy.app.handlers import persistent
 from . import ui, prop, operator, decorator
 
 
-@persistent
-def on_undo_redo(scene):
-    """Handler called after undo/redo to sync PI Editor with IFC.
-
-    When Blender undoes, both Blender properties and IFC state may change.
-    This handler syncs the PI Editor to reflect the current IFC state:
-    - If the active alignment still exists, extracts PI data from IFC segments
-    - If the alignment was deleted/invalidated, clears the PI Editor
-    - Rebuilds display_rows to match the synced state
-    - If in PI edit mode and empties are gone, reset edit mode state
-    """
-    if not hasattr(scene, "SaikeiAlignmentProperties"):
-        return
-    props = scene.SaikeiAlignmentProperties
-
-    # Handle orphaned PI edit mode state (empties removed by undo)
-    if props.is_pi_edit_mode:
-        empties = [obj for obj in bpy.data.objects if obj.get("saikei_is_pi_empty")]
-        if not empties:
-            # Empties were undone - reset edit mode state
-            # The modal operator will detect this and clean up
-            props.is_pi_edit_mode = False
-            props.pi_edit_alignment_id = 0
-            # Uninstall decorator if still active
-            decorator.PIEditDecorator.uninstall()
-
-    # Sync PI Editor from IFC to ensure consistency after undo/redo
-    operator.sync_pis_from_ifc(props)
-
-
 classes = (
     # Property groups (must be registered before classes that use them)
     prop.AlignmentPI,
@@ -89,15 +59,8 @@ def menu_func_import(self, context):
 def register():
     bpy.types.Scene.SaikeiAlignmentProperties = bpy.props.PointerProperty(type=prop.SaikeiAlignmentProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    bpy.app.handlers.undo_post.append(on_undo_redo)
-    bpy.app.handlers.redo_post.append(on_undo_redo)
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    # Unregister handlers
-    if on_undo_redo in bpy.app.handlers.undo_post:
-        bpy.app.handlers.undo_post.remove(on_undo_redo)
-    if on_undo_redo in bpy.app.handlers.redo_post:
-        bpy.app.handlers.redo_post.remove(on_undo_redo)
     del bpy.types.Scene.SaikeiAlignmentProperties
