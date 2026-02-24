@@ -19,20 +19,12 @@
 from collections.abc import Sequence
 
 from ifcopenshell import entity_instance
+import ifcopenshell.util.alignment
 
 
+# TODO remove this function, use util directly
 def get_alignment_layouts(alignment: entity_instance) -> Sequence[entity_instance]:
     """
     Returns the layout alignments nested to this alignment
     """
-    layouts = []
-    for rel in alignment.IsNestedBy:
-        for layout in rel.RelatedObjects:
-            if (
-                layout.is_a("IfcAlignmentHorizontal")
-                or layout.is_a("IfcAlignmentVertical")
-                or layout.is_a("IfcAlignmentCant")
-            ):
-                layouts.append(layout)
-
-    return layouts
+    return ifcopenshell.util.alignment.get_alignment_layouts(alignment)

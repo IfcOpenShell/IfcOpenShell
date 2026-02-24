@@ -20,6 +20,7 @@ import math
 
 import ifcopenshell
 import ifcopenshell.util.unit
+from typing import Sequence
 
 
 def add_linear_placement_fallback_position(file: ifcopenshell.file) -> ifcopenshell.file:
@@ -109,3 +110,19 @@ def station_as_string(file: ifcopenshell.file, sta: float):
         station_string = "-" + station_string
 
     return station_string
+
+
+def get_alignment_layouts(alignment: ifcopenshell.entity_instance) -> Sequence[ifcopenshell.entity_instance]:
+    """
+    Returns the layout alignments nested to this alignment
+    """
+    layouts = []
+    for rel in alignment.IsNestedBy:
+        for layout in rel.RelatedObjects:
+            if (
+                layout.is_a("IfcAlignmentHorizontal")
+                or layout.is_a("IfcAlignmentVertical")
+                or layout.is_a("IfcAlignmentCant")
+            ):
+                layouts.append(layout)
+    return layouts
