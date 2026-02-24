@@ -1446,7 +1446,7 @@ class SvgWriter:
             # generate label text
             # same function as in decoration.py
             def get_label_text():
-                B, A = [v.co.xyz for v in points[:2]]
+                B, A = [matrix_world @ v.co.xyz for v in points[:2]]
                 rise = abs(A.z - B.z)
                 O = A.copy()
                 O.z = B.z
