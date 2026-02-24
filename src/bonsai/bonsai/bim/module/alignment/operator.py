@@ -1004,7 +1004,7 @@ class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
 # =============================================================================
 
 
-class SAIKEI_OT_enter_pi_edit_mode(Operator):
+class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
     """Enter PI editing mode - move PIs with G key, press Enter to apply or Escape to cancel"""
 
     bl_idname = "saikei.enter_pi_edit_mode"
@@ -1038,6 +1038,9 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
         return True
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         props = context.scene.SaikeiAlignmentProperties
         self._alignment_id = props.active_alignment_id
 
@@ -1078,6 +1081,9 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
         return {"RUNNING_MODAL"}
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         props = context.scene.SaikeiAlignmentProperties
 
         # Safety: check if empties still exist (handles undo edge case)
@@ -1151,6 +1157,8 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator):
         if self._area:
             self._area.tag_redraw()
 
-        return {"FINISHED"}
+        if apply:
+            return {"FINISHED"}
+        return {"CANCELLED"}
 
 
