@@ -1185,7 +1185,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         ifc_literals = cls.get_text_literal(obj, return_list=True)
         assert isinstance(ifc_literals, list)
-        for ifc_literal in ifc_literals:
+        for i, ifc_literal in enumerate(ifc_literals):
             literal_props = props.literals.add()
             bonsai.bim.helper.import_attributes(ifc_literal, literal_props.attributes)
 
@@ -1195,6 +1195,16 @@ class Drawing(bonsai.core.tool.Drawing):
 
             literal_props.box_alignment = box_alignment_mask  # pyright: ignore[reportAttributeAccessIssue]
             literal_props.ifc_definition_id = ifc_literal.id()
+
+            if i == 0:
+                if position_string == "center":
+                    props.align_vertical = "middle"
+                    props.align_horizontal = "middle"
+                else:
+                    parts = position_string.split("-")
+                    if len(parts) == 2:
+                        props.align_vertical = parts[0]
+                        props.align_horizontal = parts[1]
 
         from bonsai.bim.module.drawing.data import DecoratorData
 
