@@ -48,8 +48,7 @@ jobs:
           python3 ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        # TODO: Use tag after 1.2.20 releases.
-        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
+        uses: hendrikmuhs/ccache-action@v1.2.20
         with:
           key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
 
