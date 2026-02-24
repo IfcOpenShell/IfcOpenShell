@@ -29,7 +29,7 @@ jobs:
           python ../IfcOpenShell/nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.20
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 
