@@ -3185,7 +3185,10 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_text(tool.Drawing, obj=tool.Blender.get_active_object())
+        obj = tool.Blender.get_active_object()
+        if not tool.Drawing.get_text_props(obj).is_editing:
+            return
+        core.edit_text(tool.Drawing, obj=obj)
         tool.Blender.update_viewport()
 
 

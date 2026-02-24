@@ -44,6 +44,7 @@ def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.edit_text_wrap_length(obj, drawing.export_wrap_length(obj))
     drawing.edit_text_symbol(obj, drawing.export_symbol(obj))
     drawing.edit_text_literals(obj, literal_attributes)
+    drawing.edit_text_alignment(obj, drawing.export_alignment(obj))
     drawing.disable_editing_text(obj)
 
 
