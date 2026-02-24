@@ -76,9 +76,10 @@ class TestMergeProjects(test.bootstrap.IFC4):
         assert to_tuple(placement1) == to_tuple(placement2) == to_tuple(matrix)
 
     def test_reusing_geometric_contexts(self):
-        self.file = self.setup_project(self.file)
+        #self.file = self.setup_project(self.file)
+        first_file = self.setup_project()
         second_file = self.setup_project()
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
+        output = ifcpatch.execute({"file": first_file, "recipe": "MergeProjects", "arguments": [second_file]})
         assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
 
     def test_using_the_georeferencing_of_the_original_project(self):
