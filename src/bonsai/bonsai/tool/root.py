@@ -474,10 +474,10 @@ class Root(bonsai.core.tool.Root):
             obj.name = obj.name.split("/", 1)[1]
 
     @classmethod
-    def get_ifc_products(cls) -> tuple[str, ...]:
+    def get_ifc_products(cls) -> list[str]:
         version = tool.Ifc.get_schema()
         if version == "IFC2X3":
-            products = (
+            return [
                 "IfcElementType",
                 "IfcElement",
                 "IfcFeatureElement",
@@ -485,16 +485,17 @@ class Root(bonsai.core.tool.Root):
                 "IfcStructuralItem",
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
-            )
-        else:
-            products = (
-                "IfcElementType",
-                "IfcElement",
-                "IfcFeatureElement",
-                "IfcSpatialElement",
-                "IfcSpatialElementType",
-                "IfcStructuralItem",
-                "IfcAnnotation",
-                "IfcRelSpaceBoundary",
-            )
+            ]
+        products = [
+            "IfcElementType",
+            "IfcElement",
+            "IfcFeatureElement",
+            "IfcSpatialElement",
+            "IfcSpatialElementType",
+            "IfcStructuralItem",
+            "IfcAnnotation",
+            "IfcRelSpaceBoundary",
+        ]
+        if version != "IFC4":
+            products.append("IfcAlignment")
         return products

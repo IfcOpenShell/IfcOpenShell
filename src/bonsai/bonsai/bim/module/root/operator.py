@@ -531,6 +531,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         if props.ifc_product == "IfcFeatureElement" and not props.featured_obj:
             return self.report({"WARNING"}, "A featured element must be nominated.")
 
+        if "Alignment" in props.ifc_product and props.ifc_product != "IfcAlignment" and not props.featured_obj:
+            return self.report({"WARNING"}, "A parent alignment element must be nominated.")
+
         ifc_context = None
         if get_enum_items(props, "contexts", context):
             ifc_context = int(props.contexts or "0") or None
@@ -821,6 +824,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model.purge_scene_openings()
             tool.Collector.assign(obj)
 
+        if props.featured_obj:
+            alignment = tool.Ifc.get_entity(props.featured_obj)
+            if props.ifc_class == "IfcAlignment":
+                ifcopenshell.api.aggregate.assign_object(tool.Ifc.get(), products=[element], relating_object=alignment)
+            elif props.ifc_class in ("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"):
+                ifcopenshell.api.nest.assign_object(tool.Ifc.get(), related_objects=[element], relating_object=alignment)
+
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         tool.Blender.set_active_object(obj)
 
@@ -842,7 +852,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if props.ifc_predefined_type == "USERDEFINED":
                 row = self.layout.row()
                 row.prop(props, "ifc_userdefined_type")
-        if props.ifc_product == "IfcFeatureElement":
+        if props.ifc_product in ("IfcFeatureElement", "IfcAlignment"):
             row = self.layout.row()
             row.prop(props, "featured_obj", text="Featured Object")
         prop_with_search(self.layout, props, "representation_template", text="Representation", should_click_ok=True)

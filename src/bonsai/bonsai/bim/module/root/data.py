@@ -82,6 +82,8 @@ class IfcClassData:
             feature_elements = ifcopenshell.util.schema.get_subtypes(entity)
             for feature_element in feature_elements:
                 names.remove(feature_element.name())
+        if ifc_product == "IfcAlignment":
+            names.extend(("IfcAlignmentHorizontal", "IfcAlignmentHorizontal", "IfcAlignmentCant"))
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
@@ -136,7 +138,9 @@ class IfcClassData:
             ("EMPTY", "No Geometry", "Start with an empty object"),
         ]
 
-        if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
+        if ifc_class == "IfcAlignment":
+            return templates
+        elif ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
             templates.extend([None, ("WINDOW", "Window", "Parametric window")])
         elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
             templates.extend([None, ("DOOR", "Door", "Parametric door")])
