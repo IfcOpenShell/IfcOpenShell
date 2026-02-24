@@ -83,9 +83,23 @@ def test_segment_vertices():
         [(7790.932128312587, 4006.7307645487535), (8480.0, 2010.0000000000002), None, None],
         [(8480.0, 2010.0000000000002), (8480.0, 2010.0000000000002), None, None],
     ]
+
+    layout = ifcopenshell.api.alignment.get_horizontal_layout(alignment)
+    segments = ifcopenshell.api.alignment.get_layout_segments(layout)
+    for segment, expected in zip(segments, expect):
+        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(file, segment)
+        s = unit_convert(unit_scale, s)
+        e = unit_convert(unit_scale, e)
+        ti = unit_convert(unit_scale, ti)
+        ni = unit_convert(unit_scale, ni)
+        assert s == pytest.approx(expected[0])
+        assert e == pytest.approx(expected[1])
+        assert ti == pytest.approx(expected[2])
+        assert ni == pytest.approx(expected[3])
+
     curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     for segment, expected in zip(curve.Segments, expect):
-        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(segment)
+        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(file, segment)
         s = unit_convert(unit_scale, s)
         e = unit_convert(unit_scale, e)
         ti = unit_convert(unit_scale, ti)
@@ -128,9 +142,23 @@ def test_segment_vertices():
         [(10200.0, 103.0), (12800.0, 90.0), None, None],
         [(12800.0, 90.0), (12800.0, 90.0), None, None],
     ]
+
+    layout = ifcopenshell.api.alignment.get_vertical_layout(alignment)
+    segments = ifcopenshell.api.alignment.get_layout_segments(layout)
+    for segment, expected in zip(segments, expect):
+        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(file, segment)
+        s = unit_convert(unit_scale, s)
+        e = unit_convert(unit_scale, e)
+        ti = unit_convert(unit_scale, ti)
+        ni = unit_convert(unit_scale, ni)
+        assert s == pytest.approx(expected[0])
+        assert e == pytest.approx(expected[1])
+        assert ti == pytest.approx(expected[2])
+        assert ni == pytest.approx(expected[3])
+
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     for segment, expected in zip(curve.Segments, expect):
-        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(segment)
+        s, e, ti, ni = ifcopenshell.api.alignment.segment_vertices(file, segment)
         s = unit_convert(unit_scale, s)
         e = unit_convert(unit_scale, e)
         ti = unit_convert(unit_scale, ti)

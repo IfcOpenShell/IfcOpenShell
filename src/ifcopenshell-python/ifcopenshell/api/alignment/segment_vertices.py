@@ -42,7 +42,7 @@ def _intersect_lines(p1, d1, p2, d2):
     return (x, y)
 
 
-def segment_vertices(curve_segment: entity_instance):
+def segment_vertices(file: ifcopenshell.file, segment: entity_instance):
     """
     Generates segment vertices. Segment vertices are at the start and end as well as the points where the tangents
     at the start and end of the segment intersect (the TI point) and where lines
@@ -50,18 +50,36 @@ def segment_vertices(curve_segment: entity_instance):
 
     TI and NI are None if intersection points do not exist, such as in the case of a line.
 
-    :param curve_segment: A curve segment
+    :param curve_segment: A curve segment of type IfcAlignmentSegment or IfcCurveSegment
     :return: tuples for Start, End, TI, NI
     """
-    supported_segment_types = ["IFCCURVESEGMENT"]
-    segment_type = curve_segment.is_a().upper()
+    supported_segment_types = ["IFCALIGNMENTSEGMENT", "IFCCURVESEGMENT"]
+    segment_type = segment.is_a().upper()
     if not segment_type in supported_segment_types:
         raise NotImplementedError(
             f"Expected entity type to be one of {[_ for _ in supported_segment_types]}, got '{segment_type}"
         )
 
+    # in the general case an IfcAlignmentSegment for a Helmert transition curve
+    # maps into two IfcCurveSegment geometric representations.
+    # For that reason, we have a start_segment_curve and and end_segment_curve.
+    # In the more common case, there is only one IfcCurveSegment geometric representation
+    # and start_segment_curve and end_segment_curve are equal
+    if segment_type == "IFCALIGNMENTSEGMENT":
+        representations = ifcopenshell.util.representation.get_representations_iter(segment)
+        for representation in representations:
+            if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Segment":
+                start_segment_curve = representation.Items[0]
+                end_segment_curve = representation.Items[-1]
+                break
+    else:
+        start_segment_curve = segment
+        end_segment_curve = segment
+
     settings = ifcopenshell.geom.settings()
-    segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment.wrapped_data)
+
+    # get parameters at start of start_segment_curve
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, start_segment_curve.wrapped_data)
     segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
 
     s = segment_evaluator.evaluate(segment_fn.start())
@@ -70,6 +88,10 @@ def segment_vertices(curve_segment: entity_instance):
     sy = float(start[1, 3])
     sdx = float(start[0, 0])
     sdy = float(start[1, 0])
+
+    # get parameters at end of end_segment_curve
+    segment_fn = ifcopenshell_wrapper.map_shape(settings, end_segment_curve.wrapped_data)
+    segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
 
     e = segment_evaluator.evaluate(segment_fn.end())
     end = np.array(e)
