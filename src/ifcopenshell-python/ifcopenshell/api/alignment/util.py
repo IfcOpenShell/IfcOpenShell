@@ -60,8 +60,24 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
     segment_type = segment.is_a().upper()
     if not segment_type in supported_segment_types:
         raise NotImplementedError(f"Expected entity type 'IFCCURVESEGMENT', got '{segment_type}")
-    if dist_along > segment.SegmentLength:
-        raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
+
+    # Validate dist_along is within segment bounds
+    # SegmentLength can be negative (indicates curve direction), so we need to handle both cases
+    seg_len = (
+        segment.SegmentLength.wrappedValue if hasattr(segment.SegmentLength, "wrappedValue") else segment.SegmentLength
+    )
+    if seg_len >= 0:
+        # Positive length: valid range is 0 to seg_len
+        if dist_along < 0 or dist_along > seg_len:
+            raise ValueError(
+                f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength})."
+            )
+    else:
+        # Negative length: valid range is seg_len to 0
+        if dist_along > 0 or dist_along < seg_len:
+            raise ValueError(
+                f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength})."
+            )
 
     s = ifcopenshell.geom.settings()
     function_item = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
@@ -90,8 +106,7 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
         )
 
     s = ifcopenshell.geom.settings()
-    s.set("piecewise-step-type", 0)  # 0 = step-size is maximum step size, 1 = step-size is mininimum number of steps
-    s.set("piecewise-step-size", distance_interval)
+    s.set("function-step-param", distance_interval)
     shape = ifcopenshell.geom.create_shape(s, rep_curve)
     vertices = shape.verts
     if len(vertices) == 0:

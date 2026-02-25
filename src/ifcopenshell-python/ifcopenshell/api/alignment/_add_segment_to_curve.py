@@ -109,6 +109,8 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
     at the end of the curve, but before the manditory zero length segment. The IfcCurveSegment.Transition for the segment
     that preceeds the new segment is updated.
 
+    The geometric representation is also added to the IfcCurveSegment based on CT 4.1.7.1.1.4 Alignment Geometry - Segments
+
     :param segment: The segment to be added to the curve
     :param curve: The representation curve receiving the segment
     :return: None
@@ -141,6 +143,23 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
     else:
         assert False
 
+    items = []
     for mapped_segment in mapped_segments:
         if mapped_segment:
             _add_curve_segment_to_composite_curve(file, mapped_segment, curve)
+            items.append(mapped_segment)
+
+    axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
+
+    axis_representation = file.createIfcShapeRepresentation(
+        ContextOfItems=axis_geom_subcontext, RepresentationIdentifier="Axis", RepresentationType="Segment", Items=items
+    )
+
+    product = file.createIfcProductDefinitionShape(Representations=(axis_representation,))
+
+    layout = ifcopenshell.api.alignment.get_alignment_layout(segment)
+    alignment = ifcopenshell.api.alignment.get_alignment(layout)
+
+    if alignment != None:
+        segment.ObjectPlacement = alignment.ObjectPlacement
+        segment.Representation = product

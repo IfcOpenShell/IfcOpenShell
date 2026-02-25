@@ -19,12 +19,23 @@
 from collections.abc import Sequence
 
 from ifcopenshell import entity_instance
-import ifcopenshell.util.alignment
 
 
-# TODO remove this function, use util directly
-def get_alignment_layouts(alignment: entity_instance) -> Sequence[entity_instance]:
+def get_alignment_layout(segment: entity_instance) -> entity_instance:
     """
-    Returns the layout alignments nested to this alignment
+    Returns the layout alignment that the segment is nested into
     """
-    return ifcopenshell.util.alignment.get_alignment_layouts(alignment)
+    expected_types = ["IfcAlignmentSegment"]
+    if not segment.is_a() in expected_types:
+        raise TypeError(
+            f"Expected entity type to be one of {[_ for _ in expected_types]}, instead received '{segment.is_a()}"
+        )
+
+    layout = None
+    layouts = ["IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"]
+    for nest in segment.Nests:
+        if nest.RelatingObject.is_a() in layouts:
+            layout = nest.RelatingObject
+            break
+
+    return layout

@@ -34,6 +34,8 @@ def create_layout_segment(
     Creates a new IfcAlignmentSegment using the IfcAlignmentParameterSegment design parameters.
     The new segment is appended to the layout alignment and the corresponding IfcCurveSegment is created in the geometric representation if it exists.
 
+    Additionally, if the geometric representation of the alignment exists, the segment's geometric representation is added to the IfcCurveSegment based on CT 4.1.7.1.1.4 Alignment Geometry - Segments
+
     :param layout: The layout to receive the new layout segment. This parameter is expected to be IfcAlignmentHorizontal, IfcAlignmentVertical or IfcAlignmentCant
     :param design_parameters: The parameters defining the segment. Expected to be the appropreate subclass of IfcAlignmentParameterSegment
     :return: 4x4 matrix at end of segment as np.array intended to be used as the start point geometry for the next segment or None if there is the geometric representation is not defined.

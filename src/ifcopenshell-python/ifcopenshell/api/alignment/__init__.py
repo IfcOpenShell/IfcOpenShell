@@ -51,6 +51,7 @@ from ._get_segment_start_point_label import register_referent_name_callback
 from .add_stationing_referent import add_stationing_referent
 from .add_vertical_layout import add_vertical_layout
 from .add_zero_length_segment import add_zero_length_segment
+from .clear_layout_segments import clear_layout_segments
 from .create import create
 from .create_as_offset_curve import create_as_offset_curve
 from .create_as_polyline import create_as_polyline
@@ -62,6 +63,7 @@ from .create_segment_representations import create_segment_representations
 from .distance_along_from_station import distance_along_from_station
 from .get_alignment import get_alignment
 from .get_alignment_layout_nest import get_alignment_layout_nest
+from .get_alignment_layout import get_alignment_layout
 from .get_alignment_layouts import get_alignment_layouts
 from .get_alignment_segment_nest import get_alignment_segment_nest
 from .get_alignment_start_station import get_alignment_start_station
@@ -86,13 +88,16 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .segment_vertices import segment_vertices
 from .update_fallback_position import update_fallback_position
+from ._create_geometric_representation import _create_geometric_representation
 from .util import *
 
 __all__ = [
     "add_stationing_referent",
     "add_vertical_layout",
     "add_zero_length_segment",
+    "clear_layout_segments",
     "create",
     "create_as_offset_curve",
     "create_as_polyline",
@@ -101,9 +106,11 @@ __all__ = [
     "create_layout_segment",
     "create_representation",
     "create_segment_representations",
+    "_create_geometric_representation", # TODO I know I know
     "distance_along_from_station",
     "get_alignment",
     "get_alignment_layout_nest",
+    "get_alignment_layout",
     "get_alignment_layouts",
     "get_alignment_segment_nest",
     "get_alignment_start_station",
@@ -123,6 +130,7 @@ __all__ = [
     "layout_horizontal_alignment_by_pi_method",
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
+    "segment_vertices",
     "register_referent_name_callback",
     "update_fallback_position",
     "get_mapped_segments",
