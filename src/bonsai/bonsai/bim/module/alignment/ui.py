@@ -119,59 +119,6 @@ class SAIKEI_UL_alignment_pis(UIList):
 
 
 # =============================================================================
-# Main Status Panel
-# =============================================================================
-
-
-class SAIKEI_PT_alignment_status(Panel):
-    """Status panel showing IFC schema and alignment count"""
-
-    bl_label = "Status"
-    bl_idname = "SAIKEI_PT_alignment_status"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_horizontal_alignment"
-    bl_options = {"HIDE_HEADER"}
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Blender.should_show_panel(context, "CIVIL", cls.bl_idname) and tool.Ifc.get()
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.scene.SaikeiAlignmentProperties
-        ifc = tool.Ifc.get()
-
-        if ifc is None:
-            row = layout.row()
-            row.label(text="No IFC file loaded", icon="ERROR")
-            return
-
-        if ifc.schema != "IFC4X3":
-            row = layout.row()
-            row.label(text=f"Schema: {ifc.schema}", icon="ERROR")
-            row = layout.row()
-            row.label(text="Alignments require IFC4X3")
-            return
-
-        # IFC file is loaded and correct schema
-        row = layout.row()
-        row.label(text="IFC4X3", icon="CHECKMARK")
-
-        # Count alignments
-        alignments = ifc.by_type("IfcAlignment")
-        row.label(text=f"Alignments: {len(alignments)}")
-
-        # Active alignment selector
-        if alignments:
-            row = layout.row()
-            row.label(text="Active Alignment:", icon="CURVE_DATA")
-            row = layout.row()
-            row.prop(props, "active_alignment_name", text="")
-
-
-# =============================================================================
 # Creation Sub-Panel
 # =============================================================================
 

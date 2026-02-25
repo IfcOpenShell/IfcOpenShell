@@ -44,7 +44,6 @@ classes = (
     # Operators - PI Edit Mode
     operator.SAIKEI_OT_enter_pi_edit_mode,
     # UI Panels (appear in Properties sidebar under CIVIL tab)
-    ui.SAIKEI_PT_alignment_status,
     ui.SAIKEI_PT_alignment_creation,
     ui.SAIKEI_PT_pi_editor,
     ui.SAIKEI_PT_alignment_stationing,
