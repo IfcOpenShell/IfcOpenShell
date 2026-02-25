@@ -44,6 +44,17 @@ def get_mapped_segments(layout_segment: entity_instance) -> Sequence[entity_inst
     if not layout_segment.is_a(expected_type):
         raise TypeError(f"Expected to see type '{expected_type}', instead received '{layout_segment.is_a()}'.")
 
+    # if the representation is attached directly to the layout segment, just get the representation curve
+    representations = ifcopenshell.util.representation.get_representations_iter(layout_segment)
+    for representation in representations:
+        if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Segment":
+            if len(representation.Items) == 1:
+                return (representation.Items[0],None)
+            else:
+                return representation.Items
+
+    # representation was not attached directly to the segment, so we have to find
+    # them from the composite curve
     layout = layout_segment.Nests[0].RelatingObject
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
 

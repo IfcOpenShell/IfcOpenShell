@@ -66,12 +66,9 @@ def segment_vertices(file: ifcopenshell.file, segment: entity_instance):
     # In the more common case, there is only one IfcCurveSegment geometric representation
     # and start_segment_curve and end_segment_curve are equal
     if segment_type == "IFCALIGNMENTSEGMENT":
-        representations = ifcopenshell.util.representation.get_representations_iter(segment)
-        for representation in representations:
-            if representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Segment":
-                start_segment_curve = representation.Items[0]
-                end_segment_curve = representation.Items[-1]
-                break
+        segments = ifcopenshell.api.alignment.get_mapped_segments(segment)
+        start_segment_curve = segments[0]
+        end_segment_curve = start_segment_curve if segments[1] == None else segment[1]
     else:
         start_segment_curve = segment
         end_segment_curve = segment
