@@ -466,9 +466,9 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
-        font_size = tool.Blender.scale_font_size(None)
-        offset = tool.Blender.scale_font_size(None) * 1.5
-        line_height = tool.Blender.scale_font_size(None) * 1.25
+        font_size = tool.Blender.scale_font_size()
+        offset = tool.Blender.scale_font_size() * 1.5
+        line_height = tool.Blender.scale_font_size() * 1.25
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -516,7 +516,7 @@ class PolylineDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        font_size = tool.Blender.scale_font_size(None)
+        font_size = tool.Blender.scale_font_size()
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -1937,7 +1937,7 @@ class BoundingBoxDecorator:
 
         addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
-        font_size = tool.Blender.scale_font_size(None)
+        font_size = tool.Blender.scale_font_size()
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
         blf.shadow(font_id, 6, 0, 0, 0, 1)
