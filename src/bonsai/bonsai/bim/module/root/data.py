@@ -83,7 +83,7 @@ class IfcClassData:
             for feature_element in feature_elements:
                 names.remove(feature_element.name())
         if ifc_product == "IfcAlignment":
-            names.extend(("IfcAlignmentHorizontal", "IfcAlignmentHorizontal", "IfcAlignmentCant"))
+            names.extend(("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"))
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
