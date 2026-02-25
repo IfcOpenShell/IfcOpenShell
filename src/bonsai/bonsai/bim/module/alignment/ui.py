@@ -203,7 +203,6 @@ class SAIKEI_PT_alignment_creation(Panel):
 
         # Creation operators
         col = layout.column(align=True)
-        col.operator("saikei.create_alignment", icon="ADD")
         col.operator("saikei.create_alignment_by_pi", icon="CURVE_DATA")
 
 

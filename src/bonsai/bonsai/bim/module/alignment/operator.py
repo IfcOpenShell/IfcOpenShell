@@ -116,31 +116,6 @@ def poll_ifc4x3(cls, context):
     return True
 
 
-def get_alignment_by_id(ifc, alignment_id):
-    """Safely get an alignment by ID, returning None if not found.
-
-    This handles the case where the IFC entity no longer exists
-    (e.g., after undo or external modification).
-    """
-    if alignment_id == 0:
-        return None
-    try:
-        entity = ifc.by_id(alignment_id)
-        # Verify it's actually an alignment
-        if entity and entity.is_a("IfcAlignment"):
-            return entity
-        return None
-    except RuntimeError:
-        # Entity not found in IFC file
-        return None
-
-
-def clear_invalid_alignment_reference(props):
-    """Clear active alignment reference if it's invalid."""
-    props.active_alignment_id = 0
-    props.active_alignment_name = ""
-
-
 def sync_pis_from_ifc(props):
     """Sync PI Editor data from IFC alignment.
 
@@ -157,21 +132,14 @@ def sync_pis_from_ifc(props):
         # No IFC file - clear everything
         props.pis.clear()
         props.active_pi_index = 0
-        clear_invalid_alignment_reference(props)
         rebuild_display_rows(props)
         return False
 
-    if props.active_alignment_id == 0:
-        # No active alignment - just rebuild display
-        rebuild_display_rows(props)
-        return True
-
-    alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-    if alignment is None:
+    alignment = tool.Alignment.get_active_alignment()
+    if not alignment:
         # Alignment no longer exists - clear everything
         props.pis.clear()
         props.active_pi_index = 0
-        clear_invalid_alignment_reference(props)
         rebuild_display_rows(props)
         return False
 
@@ -644,48 +612,40 @@ class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
         recalculate_pi_geometry(props)
 
         # If there's an active alignment, update it in-place
-        if props.active_alignment_id != 0:
-            alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-            if alignment is None:
-                # Alignment no longer exists (e.g., after undo) - clear reference
-                clear_invalid_alignment_reference(props)
-                self.report({"WARNING"}, "Active alignment no longer exists. Reference cleared.")
-                return {"FINISHED"}
-            if alignment:
-                # Get horizontal layout for in-place editing
-                h_layout = align_api.get_horizontal_layout(alignment)
-                if h_layout is None:
-                    self.report({"ERROR"}, "Alignment has no horizontal layout")
-                    return {"CANCELLED"}
+        if alignment := tool.Alignment.get_active_alignment():
+            # Get horizontal layout for in-place editing
+            h_layout = align_api.get_horizontal_layout(alignment)
+            if h_layout is None:
+                self.report({"ERROR"}, "Alignment has no horizontal layout")
+                return
 
-                # Collect updated PI data
-                hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
-                radii = [pi.radius for pi in props.pis[1:-1]]
+            # Collect updated PI data
+            hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
+            radii = [pi.radius for pi in props.pis[1:-1]]
 
-                # Remove Blender visualization for segments (not the whole hierarchy)
-                tool.Alignment.remove_layout_segment_objects(h_layout)
+            # Remove Blender visualization for segments (not the whole hierarchy)
+            tool.Alignment.remove_layout_segment_objects(h_layout)
 
-                # Clear existing IFC segments (preserves layout and zero-length terminator)
-                align_api.clear_layout_segments(ifc, h_layout)
+            # Clear existing IFC segments (preserves layout and zero-length terminator)
+            align_api.clear_layout_segments(ifc, h_layout)
 
-                # Add new segments with updated PI positions
-                align_api.layout_horizontal_alignment_by_pi_method(
-                    ifc, h_layout, hpoints, radii
-                )
+            # Add new segments with updated PI positions
+            align_api.layout_horizontal_alignment_by_pi_method(
+                ifc, h_layout, hpoints, radii
+            )
 
-                # Refresh Blender visualization for new segments
-                layout_obj = tool.Ifc.get_object(h_layout)
-                if layout_obj:
-                    tool.Alignment.create_objects_for_layout_segments(h_layout, layout_obj)
+            # Refresh Blender visualization for new segments
+            layout_obj = tool.Ifc.get_object(h_layout)
+            if layout_obj:
+                tool.Alignment.create_objects_for_layout_segments(h_layout, layout_obj)
 
-                # Alignment ID stays the same - no need to update props.active_alignment_id
-                self.report({"INFO"}, f"Updated alignment '{alignment.Name}' with {len(hpoints)} PIs")
-                return {"FINISHED"}
+            # Alignment ID stays the same - no need to update props.active_alignment_id
+            self.report({"INFO"}, f"Updated alignment '{alignment.Name}' with {len(hpoints)} PIs")
+            return
 
         # No active alignment - just report geometry recalculation
         total_length = sum(pi.length_to_next for pi in props.pis)
         self.report({"INFO"}, f"Recalculated {len(props.pis)} PIs, total length: {total_length:.2f}")
-        return {"FINISHED"}
 
 
 class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
@@ -717,18 +677,12 @@ class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
 
         # If there's an active alignment, remove it entirely (Blender + IFC)
         # This ensures we don't leave the IFC in an inconsistent state
-        if props.active_alignment_id != 0:
-            alignment = get_alignment_by_id(ifc, props.active_alignment_id)
-            if alignment:
-                # Remove all Blender objects for this alignment
-                removed_objects = tool.Alignment.remove_alignment_hierarchy(alignment)
+        if alignment := tool.Alignment.get_active_alignment():
+            # Remove all Blender objects for this alignment
+            removed_objects = tool.Alignment.remove_alignment_hierarchy(alignment)
 
-                # Remove the IFC alignment entity entirely
-                ifcopenshell.api.run("root.remove_product", ifc, product=alignment)
-
-                # Clear the active alignment reference
-                props.active_alignment_id = 0
-                props.active_alignment_name = ""
+            # Remove the IFC alignment entity entirely
+            ifcopenshell.api.run("root.remove_product", ifc, product=alignment)
 
         # Clear the PI list in the UI
         props.pis.clear()
@@ -742,47 +696,11 @@ class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
             self.report({"INFO"}, f"Cleared all PIs and removed {removed_objects} objects")
         else:
             self.report({"INFO"}, "Cleared all PIs")
-        return {"FINISHED"}
 
 
 # =============================================================================
 # Creation Operators
 # =============================================================================
-
-
-class SAIKEI_OT_create_alignment(Operator, tool.Ifc.Operator):
-    """Create a new IFC alignment"""
-
-    bl_idname = "saikei.create_alignment"
-    bl_label = "Create Alignment"
-    bl_description = "Create a new empty IFC alignment"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return poll_ifc4x3(cls, context)
-
-    def _execute(self, context):
-        ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
-
-        alignment = ifcopenshell.api.alignment.create(
-            ifc,
-            name=props.new_alignment_name,
-        )
-
-        # Create full Blender hierarchy (alignment + layouts + segments)
-        obj = tool.Alignment.create_hierarchy_for_alignment(alignment)
-
-        # Update UI
-        props.active_alignment_name = props.new_alignment_name
-        props.active_alignment_id = alignment.id()
-
-        if obj:
-            self.report({"INFO"}, f"Created alignment: {props.new_alignment_name}")
-        else:
-            self.report({"WARNING"}, f"Created IFC alignment but could not create Blender object")
-        return {"FINISHED"}
 
 
 class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
@@ -801,42 +719,44 @@ class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
         if len(props.pis) < 2:
             cls.poll_message_set("Need at least 2 PI points")
             return False
+        if not tool.Alignment.get_active_alignment():
+            cls.poll_message_set("Select an alignment to edit")
+            return False
         return True
 
     def _execute(self, context):
         props = context.scene.SaikeiAlignmentProperties
-        if not props.active_alignment_id:
-            return {"FINISHED"}
 
         hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
         radii = [pi.radius for pi in props.pis[1:-1]]
 
-        existing_alignment = get_alignment_by_id(tool.Ifc.get(), props.active_alignment_id)
-        h_layout = ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)
-        if h_layout:
-            # Check if horizontal layout is empty (only has zero-length terminal or no segments)
-            segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
-            has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(s)])
+        existing_alignment = tool.Alignment.get_active_alignment()
+        if not (h_layout := ifcopenshell.api.alignment.get_horizontal_layout(existing_alignment)):
+            return
+        # Check if horizontal layout is empty (only has zero-length terminal or no segments)
+        segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
+        has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(s)])
 
-            if not has_real_segments:
-                # Use existing alignment - add segments to it
-                # Use safe wrapper to validate layout has parent alignment
-                tool.Alignment.safe_layout_horizontal_by_pi_method(tool.Ifc.get(), h_layout, hpoints, radii)
+        ifcopenshell.api.alignment._create_geometric_representation(tool.Ifc.get(), existing_alignment)
 
-                # Create/update Blender objects for the segments
-                alignment_obj = tool.Ifc.get_object(existing_alignment)
-                h_layout_obj = tool.Ifc.get_object(h_layout)
+        if not has_real_segments:
+            # Use existing alignment - add segments to it
+            # Use safe wrapper to validate layout has parent alignment
+            tool.Alignment.safe_layout_horizontal_by_pi_method(tool.Ifc.get(), h_layout, hpoints, radii)
 
-                if not h_layout_obj and alignment_obj:
-                    h_layout_obj = tool.Alignment.create_object_for_layout(h_layout, alignment_obj)
+            # Create/update Blender objects for the segments
+            alignment_obj = tool.Ifc.get_object(existing_alignment)
+            h_layout_obj = tool.Ifc.get_object(h_layout)
 
-                if h_layout_obj:
-                    tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
+            if not h_layout_obj and alignment_obj:
+                h_layout_obj = tool.Alignment.create_object_for_layout(h_layout, alignment_obj)
 
-                self.report(
-                    {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
-                )
-        return {"FINISHED"}
+            if h_layout_obj:
+                tool.Alignment.create_objects_for_layout_segments(h_layout, h_layout_obj)
+
+            self.report(
+                {"INFO"}, f"Added {len(hpoints)} PIs to existing alignment '{existing_alignment.Name}'"
+            )
 
 
 class SAIKEI_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
@@ -923,9 +843,8 @@ class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        alignment = tool.Alignment.get_active_alignment()
         if alignment is None:
-            clear_invalid_alignment_reference(props)
             self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
             return {"CANCELLED"}
 
@@ -950,7 +869,6 @@ class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
         )
 
         self.report({"INFO"}, f"Added referent '{name}' at station {self.station}")
-        return {"FINISHED"}
 
 
 def format_station(station_value):
@@ -987,16 +905,14 @@ class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
         ifc = tool.Ifc.get()
         props = context.scene.SaikeiAlignmentProperties
 
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        alignment = tool.Alignment.get_active_alignment()
         if alignment is None:
-            clear_invalid_alignment_reference(props)
             self.report({"ERROR"}, "Alignment no longer exists. Reference cleared.")
             return {"CANCELLED"}
 
         ifcopenshell.api.alignment.name_segments(ifc, alignment)
 
         self.report({"INFO"}, "Named alignment segments")
-        return {"FINISHED"}
 
 
 # =============================================================================
@@ -1030,8 +946,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
             cls.poll_message_set("No alignment selected")
             return False
         # Verify alignment still exists
-        ifc = tool.Ifc.get()
-        alignment = get_alignment_by_id(ifc, props.active_alignment_id)
+        alignment = tool.Alignment.get_active_alignment()
         if alignment is None:
             cls.poll_message_set("Selected alignment no longer exists")
             return False

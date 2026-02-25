@@ -90,6 +90,7 @@ from .layout_vertical_alignment_by_pi_method import (
 from .name_segments import name_segments
 from .segment_vertices import segment_vertices
 from .update_fallback_position import update_fallback_position
+from ._create_geometric_representation import _create_geometric_representation
 from .util import *
 
 __all__ = [
@@ -105,6 +106,7 @@ __all__ = [
     "create_layout_segment",
     "create_representation",
     "create_segment_representations",
+    "_create_geometric_representation", # TODO I know I know
     "distance_along_from_station",
     "get_alignment",
     "get_alignment_layout_nest",

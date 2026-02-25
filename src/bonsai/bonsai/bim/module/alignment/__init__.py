@@ -36,7 +36,6 @@ classes = (
     operator.SAIKEI_OT_recalculate_pis,
     operator.SAIKEI_OT_clear_pis,
     # Operators - Creation
-    operator.SAIKEI_OT_create_alignment,
     operator.SAIKEI_OT_create_alignment_by_pi,
     operator.SAIKEI_OT_import_alignment_csv,
     # Operators - Stationing

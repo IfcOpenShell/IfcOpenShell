@@ -1063,3 +1063,9 @@ class Alignment:
                 radii.append(radius)
 
         return (hpoints, radii)
+
+    @classmethod
+    def get_active_alignment(cls) -> ifcopenshell.entity_instance | None:
+        if obj := tool.Blender.get_active_object():
+            if (element := tool.Ifc.get_entity(obj)) and element.is_a("IfcAlignment"):
+                return element
