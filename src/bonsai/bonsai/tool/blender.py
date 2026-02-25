@@ -1562,7 +1562,7 @@ class Blender(bonsai.core.tool.Blender):
         return getattr(scene, "sun_pos_properties", None)
 
     @classmethod
-    def scale_font_size(cls, size):
+    def scale_font_size(cls, size=None):
         default_dpi = 72
         default_pixel_size = 1.0
         ui_style = bpy.context.preferences.ui_styles[0]
