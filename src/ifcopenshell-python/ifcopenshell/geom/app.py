@@ -145,8 +145,7 @@ class configuration:
             config.set(
                 "snippets",
                 "print all wall ids",
-                self.config_encode(
-                    """
+                self.config_encode("""
 ###########################################################################
 # A simple script that iterates over all walls in the current model       #
 # and prints their Globally unique IDs (GUIDS) to the console window      #
@@ -154,15 +153,13 @@ class configuration:
 
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
-""".lstrip()
-                ),
+""".lstrip()),
             )
 
             config.set(
                 "snippets",
                 "print properties of current selection",
-                self.config_encode(
-                    """
+                self.config_encode("""
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
 # selected object and prints them to the console                          #
@@ -180,8 +177,7 @@ if selection:
              for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
                  print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
-""".lstrip()
-                ),
+""".lstrip()),
             )
             with open(conf_file, "w") as configfile:
                 config.write(configfile)

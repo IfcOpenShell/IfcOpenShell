@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
 import contextlib
+import json
 import tempfile
-import numpy as np
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -30,6 +29,7 @@ import ifcopenshell.api.document
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcpatch
+import numpy as np
 from ifcpatch.recipes import Ifc2Sql
 
 import bonsai.core.tool

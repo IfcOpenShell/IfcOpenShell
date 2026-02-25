@@ -349,13 +349,11 @@ class Patcher(ifcpatch.BasePatcher):
             assert cursor is not None
             row = cursor.fetchone()
         elif self.sql_type == "mysql":
-            cursor = self.c.execute(
-                f"""
+            cursor = self.c.execute(f"""
                 SELECT 1 FROM information_schema.tables
                 WHERE table_schema = '{self.database}' AND table_name = 'id_map'
                 LIMIT 1;
-                """
-            )
+                """)
             row = self.c.fetchone()
         else:
             assert_never(self.sql_type)

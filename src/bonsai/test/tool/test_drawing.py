@@ -21,7 +21,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import bpy
-import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -31,8 +30,9 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import mathutils
 import numpy as np
-from mathutils import Vector
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -162,7 +162,7 @@ class TestEditTextLiterals(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         builder = ShapeBuilder(tool.Ifc.get())
-        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        polyline = builder.polyline([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)

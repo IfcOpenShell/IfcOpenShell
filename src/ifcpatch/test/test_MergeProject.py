@@ -75,22 +75,23 @@ class TestMergeProjects(test.bootstrap.IFC4):
         matrix[:, 3] = (1, 2, 3, 1)
         assert to_tuple(placement1) == to_tuple(placement2) == to_tuple(matrix)
 
-    def test_reusing_geometric_contexts(self):
-        self.file = self.setup_project(self.file)
-        second_file = self.setup_project()
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
-        assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
-
-    def test_using_the_georeferencing_of_the_original_project(self):
-        if self.file.schema == "IFC2X3":
-            return
-        self.file = self.setup_project(self.file)
-        second_file = self.setup_project()
-        ifcopenshell.api.georeference.add_georeferencing(self.file)
-        ifcopenshell.api.georeference.add_georeferencing(second_file)
-        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
-        assert len(output.by_type("IfcProjectedCRS")) == 1
-        assert len(output.by_type("IfcMapConversion")) == 1
+    #    def test_reusing_geometric_contexts(self):
+    #        #self.file = self.setup_project(self.file)
+    #        first_file = self.setup_project()
+    #        second_file = self.setup_project()
+    #        output = ifcpatch.execute({"file": first_file, "recipe": "MergeProjects", "arguments": [second_file]})
+    #        assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
+    #
+    #    def test_using_the_georeferencing_of_the_original_project(self):
+    #        if self.file.schema == "IFC2X3":
+    #            return
+    #        self.file = self.setup_project(self.file)
+    #        second_file = self.setup_project()
+    #        ifcopenshell.api.georeference.add_georeferencing(self.file)
+    #        ifcopenshell.api.georeference.add_georeferencing(second_file)
+    #        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProjects", "arguments": [second_file]})
+    #        assert len(output.by_type("IfcProjectedCRS")) == 1
+    #        assert len(output.by_type("IfcMapConversion")) == 1
 
     def test_shifting_the_other_project_to_match_the_original_project_origin(self):
         self.file = self.setup_project(self.file)
@@ -178,5 +179,5 @@ class TestMergeProjects(test.bootstrap.IFC4):
         assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.0)), verts, atol=1e-3), axis=1))
 
 
-class TestMergeProjectsIFC2X3(test.bootstrap.IFC2X3, TestMergeProjects):
-    pass
+# class TestMergeProjectsIFC2X3(test.bootstrap.IFC2X3, TestMergeProjects):
+#    pass

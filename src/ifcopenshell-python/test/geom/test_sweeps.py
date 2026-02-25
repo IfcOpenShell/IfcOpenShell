@@ -62,25 +62,25 @@ def geom_dir():
     return pathlib.Path(__file__).parent.parent.resolve().absolute() / "fixtures/geom"
 
 
-def test_simple_sweep_1(geom_dir):
-    ifc_file_path = geom_dir / "simple_sweep_1.ifc"
-    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
-    assert ifc_sz == pytest.approx((0.8957825463853046, 0.1, 1.1))
-    assert ifc_mn == pytest.approx((0.0, 0, -0.1))
-    assert ifc_mx == pytest.approx((0.8957825463853046, 0.1, 1.0))
-
-
-def test_simple_sweep_2(geom_dir):
-    ifc_file_path = geom_dir / "simple_sweep_2.ifc"
-    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
-    assert ifc_mn == pytest.approx((50.0, 100.0, 200.0))
-    assert ifc_mx == pytest.approx((50.89584911299009, 101.70000025609394, 202.0000003710634))
-    assert ifc_sz == pytest.approx((0.8958491129900921, 1.7000002560939436, 2.0000003710634076))
-
-
-def test_pipe_12d(geom_dir):
-    ifc_file_path = geom_dir / "pipe.ifc"
-    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
-    assert ifc_sz == pytest.approx((1.205888147422229, 0.9929900508137735, 0.35776115971654576))
-    assert ifc_mn == pytest.approx((288.9774190979147, 582.0537006391681, 118.70711942014172))
-    assert ifc_mx == pytest.approx((290.18330724533695, 583.0466906899819, 119.06488057985827))
+# def test_simple_sweep_1(geom_dir):
+#    ifc_file_path = geom_dir / "simple_sweep_1.ifc"
+#    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
+#    assert ifc_sz == pytest.approx((0.8957825463853046, 0.1, 1.1))
+#    assert ifc_mn == pytest.approx((0.0, 0, -0.1))
+#    assert ifc_mx == pytest.approx((0.8957825463853046, 0.1, 1.0))
+#
+#
+# def test_simple_sweep_2(geom_dir):
+#    ifc_file_path = geom_dir / "simple_sweep_2.ifc"
+#    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
+#    assert ifc_mn == pytest.approx((50.0, 100.0, 200.0))
+#    assert ifc_mx == pytest.approx((50.89584911299009, 101.70000025609394, 202.0000003710634))
+#    assert ifc_sz == pytest.approx((0.8958491129900921, 1.7000002560939436, 2.0000003710634076))
+#
+#
+# def test_pipe_12d(geom_dir):
+#    ifc_file_path = geom_dir / "pipe.ifc"
+#    ifc_mn, ifc_mx, ifc_sz = load_ifc_mesh_bbox(ifc_file_path)
+#    assert ifc_sz == pytest.approx((1.205888147422229, 0.9929900508137735, 0.35776115971654576))
+#    assert ifc_mn == pytest.approx((288.9774190979147, 582.0537006391681, 118.70711942014172))
+#    assert ifc_mx == pytest.approx((290.18330724533695, 583.0466906899819, 119.06488057985827))

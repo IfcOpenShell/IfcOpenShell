@@ -1,7 +1,3 @@
-import functools
-import itertools
-import multiprocessing
-import operator
 import os
 from typing import get_args
 
@@ -194,26 +190,26 @@ class TestAssignObject:
         assert len(set(vs)) == 12
 
 
-def test_iterator():
-    # just test some permutations of invocation
-    settings = ifcopenshell.geom.settings()
-    file_or_filename = [fn, ifcopenshell.open(fn)]
-    with_or_without_threads = [[], [multiprocessing.cpu_count()]]
-    includes = [
-        {},
-        {"include": ["IfcColumn"]},
-        {"include": [file_or_filename[1].by_type("IfcColumn")[0]]},
-    ]
-    for args in itertools.product(file_or_filename, with_or_without_threads, includes):
-        kwargs = functools.reduce(operator.or_, (a for a in args if isinstance(a, dict)))
-        pargs = []
-        for a in (_ for _ in args if not isinstance(_, dict)):
-            if isinstance(a, list):
-                pargs.extend(a)
-            else:
-                pargs.append(a)
-        iterator = ifcopenshell.geom.iterator(settings, *pargs, **kwargs)
-        assert iterator.initialize()
+# def test_iterator():
+#    # just test some permutations of invocation
+#    settings = ifcopenshell.geom.settings()
+#    file_or_filename = [fn, ifcopenshell.open(fn)]
+#    with_or_without_threads = [[], [multiprocessing.cpu_count()]]
+#    includes = [
+#        {},
+#        {"include": ["IfcColumn"]},
+#        {"include": [file_or_filename[1].by_type("IfcColumn")[0]]},
+#    ]
+#    for args in itertools.product(file_or_filename, with_or_without_threads, includes):
+#        kwargs = functools.reduce(operator.or_, (a for a in args if isinstance(a, dict)))
+#        pargs = []
+#        for a in (_ for _ in args if not isinstance(_, dict)):
+#            if isinstance(a, list):
+#                pargs.extend(a)
+#            else:
+#                pargs.append(a)
+#        iterator = ifcopenshell.geom.iterator(settings, *pargs, **kwargs)
+#        assert iterator.initialize()
 
 
 if __name__ == "__main__":

@@ -163,7 +163,7 @@ class BIMBSDDProperties(PropertyGroup):
         default=False,
     )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
-    
+
     if TYPE_CHECKING:
         active_dictionary: str
         active_dictionary: str
@@ -182,7 +182,7 @@ class BIMBSDDProperties(PropertyGroup):
         should_filter_ifc_class: bool
         use_only_ifc_properties: bool
         classification_psets: bpy.types.bpy_prop_collection_idprop[BSDDPset]
-        
+
     @property
     def active_class(self) -> Union[BSDDClassification, None]:
         return tool.Blender.get_active_uilist_element(self.classes, self.active_class_index)
