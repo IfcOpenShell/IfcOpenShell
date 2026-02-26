@@ -1581,8 +1581,12 @@ class Blender(bonsai.core.tool.Blender):
         default_scale = default_dpi * default_pixel_size
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
-        return (system_scale / default_scale) * base_size *platform_scale * tool.Blender.get_addon_preferences().decorator_font_scale
-
+        return (
+            (system_scale / default_scale)
+            * base_size
+            * platform_scale
+            * tool.Blender.get_addon_preferences().decorator_font_scale
+        )
 
     @classmethod
     def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:

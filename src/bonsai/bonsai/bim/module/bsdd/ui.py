@@ -83,6 +83,7 @@ class BIM_PT_bsdd(Panel):
             row = self.layout.row()
             row.operator("bim.load_bsdd_dictionaries")
 
+
 class BIM_UL_bsdd_dictionaries(UIList):
     def draw_item(
         self,

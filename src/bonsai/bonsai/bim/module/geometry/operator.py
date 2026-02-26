@@ -897,7 +897,7 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
-            
+
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):

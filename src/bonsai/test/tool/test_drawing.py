@@ -162,7 +162,7 @@ class TestEditTextLiterals(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         builder = ShapeBuilder(tool.Ifc.get())
-        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        polyline = builder.polyline([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)
