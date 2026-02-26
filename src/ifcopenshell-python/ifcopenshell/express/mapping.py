@@ -25,6 +25,7 @@ import schema
 
 from header import USE_VIRTUAL_INHERITANCE
 
+
 class Mapping:
 
     express_to_cpp_typemapping = {
