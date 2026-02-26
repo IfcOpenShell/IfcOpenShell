@@ -466,13 +466,14 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
+        offset = tool.Blender.scale_font_size() * 1.5
+        line_height = tool.Blender.scale_font_size() * 1.25
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
         color_highlight = self.addon_prefs.decorator_color_special
-        offset = 20
         new_line = 0
         for i, (key, field_name) in enumerate(texts.items()):
             formatted_value = None
@@ -480,7 +481,7 @@ class PolylineDecorator:
                 # Controls which options are displayed in the UI
                 if key not in self.input_ui.input_options:
                     continue
-                new_line += 20
+                new_line += line_height
                 if self.tool_state and key != self.tool_state.input_type:
                     formatted_value = self.input_ui.get_formatted_value(key)
                 else:
@@ -515,7 +516,7 @@ class PolylineDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -1936,7 +1937,7 @@ class BoundingBoxDecorator:
 
         addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
         blf.shadow(font_id, 6, 0, 0, 0, 1)

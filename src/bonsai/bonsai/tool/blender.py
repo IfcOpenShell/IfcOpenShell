@@ -1571,13 +1571,18 @@ class Blender(bonsai.core.tool.Blender):
         return getattr(scene, "sun_pos_properties", None)
 
     @classmethod
-    def scale_font_size(cls, size):
+    def scale_font_size(cls, size=None):
         default_dpi = 72
         default_pixel_size = 1.0
+        ui_style = bpy.context.preferences.ui_styles[0]
+        base_size = ui_style.widget.points if size is None else size
+        platform_scale = 0.5 if sys.platform == "darwin" else 1
+
         default_scale = default_dpi * default_pixel_size
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
-        return (system_scale / default_scale) * size
+        return (system_scale / default_scale) * base_size *platform_scale * tool.Blender.get_addon_preferences().decorator_font_scale
+
 
     @classmethod
     def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
