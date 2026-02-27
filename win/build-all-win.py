@@ -93,7 +93,7 @@ def archive_python_package(python_version: str, python_path: Path) -> None:
         file.unlink()
 
     zip_name = ZIP_TEMPLATE.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
-    with ZipFile(OUTPUT_DIR / zip_name, "w") as zipf:
+    with ZipFile(OUTPUT_DIR / zip_name, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
         for file in package_path.rglob("*"):
             arcname = file.relative_to(site_packages)
             zipf.write(file, arcname=arcname)
