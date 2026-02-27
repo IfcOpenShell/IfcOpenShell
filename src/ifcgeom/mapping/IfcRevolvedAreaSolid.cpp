@@ -43,11 +43,20 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
 		angle = ang;
 	}
 
+	taxonomy::direction3::ptr axis;
+    if (inst->Axis()->Axis()) {
+        axis = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()->Axis()));
+    } else {
+        // IfcAxis1Placement.Axis is optional, and defaults to (0, 0, 1) if not provided.
+        axis = taxonomy::make<taxonomy::direction3>(0, 0, 1);
+    }
+
+
 	return taxonomy::make<taxonomy::revolve>(
 		matrix,
 		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
 		taxonomy::cast<taxonomy::point3>(map(inst->Axis()->Location())),
-		taxonomy::cast<taxonomy::direction3>(map(inst->Axis()->Axis())),
+		axis,
 		angle
 	);
 
