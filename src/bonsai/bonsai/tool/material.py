@@ -38,7 +38,6 @@ if TYPE_CHECKING:
         BIMMaterialProperties,
         BIMObjectMaterialProperties,
     )
-    from bonsai.bim.module.material.prop import Material as MaterialItem
 
 
 class Material(bonsai.core.tool.Material):

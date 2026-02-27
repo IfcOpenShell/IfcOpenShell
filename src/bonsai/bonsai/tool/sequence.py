@@ -18,11 +18,8 @@
 
 from __future__ import annotations
 
-import base64
 import json
-import os
 import re
-import webbrowser
 from collections.abc import Iterable
 from datetime import datetime
 from datetime import time as datetime_time
@@ -32,14 +29,12 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.api.sequence
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.sequence
 import isodate
 import mathutils
-import pystache
 from dateutil import parser
 from mathutils import Color
 

@@ -1,8 +1,6 @@
 import os
 import shutil
 
-import bpy
-
 # import tool
 import bonsai.tool as tool
 

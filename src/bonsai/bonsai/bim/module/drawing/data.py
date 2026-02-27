@@ -23,8 +23,6 @@ from typing import Any, Union
 
 import bpy
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.selector
 import ifcopenshell.util.unit
 from natsort import natsorted
 

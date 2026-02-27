@@ -24,10 +24,9 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 import bpy
 import platformdirs
-from bpy.props import BoolProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty
 from bpy.types import Panel
 from ifcopenshell.util.doc import (
-    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
@@ -38,7 +37,6 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai import get_debug_info
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
@@ -56,8 +54,6 @@ from bonsai.bim.module.model.ui import (
 )
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
-
-from . import ifc
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
@@ -661,7 +657,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     bsdd_baseurl: StringProperty(
-        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        name="bSDD API Base URL",
+        description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
         default="https://api.bsdd.buildingsmart.org/api/",
     )
     should_disable_undo_on_save: BoolProperty(

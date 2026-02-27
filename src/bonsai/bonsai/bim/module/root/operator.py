@@ -22,7 +22,6 @@ import bmesh
 import bpy
 import idprop
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -34,7 +33,6 @@ import ifcopenshell.util.type
 import ifcopenshell.util.unit
 from mathutils import Vector
 
-import bonsai.bim.handler
 import bonsai.bim.module.root.prop as root_prop
 import bonsai.core.geometry
 import bonsai.core.root as core

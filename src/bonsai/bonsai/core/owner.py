@@ -18,10 +18,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    import bpy
     import ifcopenshell
     from ifcopenshell.api.owner.add_actor import ACTOR_TYPE
     from ifcopenshell.api.owner.add_address import ADDRESS_TYPE

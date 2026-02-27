@@ -20,7 +20,6 @@ import json
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.profile
 import ifcopenshell.api.style

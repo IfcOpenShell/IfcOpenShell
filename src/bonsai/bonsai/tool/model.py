@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import collections
 import collections.abc
 import json
 from collections.abc import Iterable, Sequence
@@ -38,7 +37,6 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
@@ -2626,7 +2624,7 @@ class Model(bonsai.core.tool.Model):
         reference_obj: bpy.types.Object,
         objs: Iterable[bpy.types.Object],
         align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
-    ):
+    ) -> None:
         if align_type == "CENTER":
             point = reference_obj.matrix_world @ (Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2))
         elif align_type == "POSITIVE":
@@ -2771,7 +2769,7 @@ class Model(bonsai.core.tool.Model):
             SvIfcStore.use_bonsai_file = False
 
     @classmethod
-    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+    def create_bmesh_from_vertices(cls, vertices: list[Vector], is_closed: bool = False) -> bmesh.types.BMesh:
         bm = bmesh.new()
 
         new_verts = [bm.verts.new(v) for v in vertices]

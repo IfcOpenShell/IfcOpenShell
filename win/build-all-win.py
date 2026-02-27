@@ -6,6 +6,7 @@ but also archives them to '~/outputs'.
 
 import os
 import subprocess
+import zipfile
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -27,7 +28,23 @@ ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-win64.zip"
 
 def run(command: list[str]) -> None:
     print("Running:", command)
-    subprocess.check_call(command)  # nosec B603
+    subprocess.check_call(command)
+
+
+def set_env(var_name: str, value: str) -> tuple[str, str | None]:
+    """
+    :return: Tuple of ``(var_name, old_value)`` to be passed to ``restore_env``.
+    """
+    old_value = os.getenv(var_name)
+    os.environ[var_name] = value
+    return var_name, old_value
+
+
+def restore_env(var_name: str, old_value: str | None) -> None:
+    if old_value is None:
+        del os.environ[var_name]
+    else:
+        os.environ[var_name] = old_value
 
 
 def build() -> None:
@@ -40,16 +57,16 @@ def build() -> None:
             text=True,
             input="y\n",
         )
+        OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
         run(
             [
                 str(REPO_WIN / "run-cmake.bat"),
                 "vs2022-x64",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
-                "-DADD_COMMIT_SHA=ON",
-                "-DVERSION_OVERRIDE=ON",
             ]
         )
+        restore_env(*OLD_ADD_COMMIT_SHA)
         run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-x64", "Release"])
 
 
@@ -61,7 +78,7 @@ def archive_executables() -> None:
         if file.suffix.lower() != ".exe":
             continue
         zip_name = ZIP_TEMPLATE.format(package_name=file.stem)
-        with ZipFile(OUTPUT_DIR / zip_name, "w") as zipf:
+        with ZipFile(OUTPUT_DIR / zip_name, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(file, arcname=file.name)
         print(f"{file} -> {zip_name}")
 
@@ -76,7 +93,7 @@ def archive_python_package(python_version: str, python_path: Path) -> None:
         file.unlink()
 
     zip_name = ZIP_TEMPLATE.format(package_name=f"ifcopenshell-python-{python_version_major_minor}")
-    with ZipFile(OUTPUT_DIR / zip_name, "w") as zipf:
+    with ZipFile(OUTPUT_DIR / zip_name, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
         for file in package_path.rglob("*"):
             arcname = file.relative_to(site_packages)
             zipf.write(file, arcname=arcname)

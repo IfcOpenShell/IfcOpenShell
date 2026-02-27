@@ -21,7 +21,6 @@ import os
 from functools import partial
 
 import bpy
-import ifcopenshell
 from bpy.types import WorkSpaceTool
 
 import bonsai.tool as tool

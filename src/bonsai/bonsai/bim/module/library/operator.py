@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
 
 import bonsai.core.library as core
 import bonsai.tool as tool

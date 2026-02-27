@@ -22,18 +22,14 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.pset.data import refresh as refresh_pset
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def update_active_group_index(self, context):

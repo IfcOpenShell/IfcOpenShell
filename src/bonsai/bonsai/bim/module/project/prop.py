@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 from collections.abc import Generator
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
 
 import bpy
@@ -39,7 +37,7 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
-from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
+from bonsai.bim.prop import Attribute, ObjProperty
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

@@ -16,14 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 from typing import Any, Union
 
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import ifcopenshell.util.schema
 from natsort import natsorted
 
 import bonsai.tool as tool

@@ -18,13 +18,11 @@
 
 from typing import Union
 
-import blf
 import bmesh
 import bpy
 import gpu
 from bpy.app.handlers import persistent
 from bpy.types import SpaceView3D
-from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 

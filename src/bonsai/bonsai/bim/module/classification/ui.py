@@ -25,7 +25,6 @@ import ifcopenshell.util.classification
 from bpy.types import Panel, UIList
 
 import bonsai.bim.helper
-import bonsai.bim.module.classification.prop as classification_prop
 import bonsai.tool as tool
 from bonsai.bim.module.classification.data import (
     ClassificationsData,

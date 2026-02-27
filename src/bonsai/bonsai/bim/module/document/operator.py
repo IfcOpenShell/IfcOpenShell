@@ -20,10 +20,9 @@ import json
 
 import bpy
 
-import bonsai.bim.handler
 import bonsai.core.document as core
 import bonsai.tool as tool
-from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
+from bonsai.bim.module.document.data import ObjectDocumentData
 
 
 class LoadProjectDocuments(bpy.types.Operator):

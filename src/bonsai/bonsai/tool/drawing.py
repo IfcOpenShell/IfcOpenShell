@@ -18,8 +18,6 @@
 
 from __future__ import annotations
 
-import collections
-import collections.abc
 import json
 import logging
 import math
@@ -2712,16 +2710,14 @@ class Drawing(bonsai.core.tool.Drawing):
             return float(value)
         except:
             pass  # Perhaps it's imperial?
-        l = lark.Lark(
-            """start: feet? "-"? inches?
+        l = lark.Lark("""start: feet? "-"? inches?
                     feet: NUMBER? "-"? fraction? "'"
                     inches: NUMBER? "-"? fraction? "\\""
                     fraction: NUMBER "/" NUMBER
                     %import common.NUMBER
                     %import common.WS
                     %ignore WS // Disregard spaces in text
-                 """
-        )
+                 """)
 
         try:
             start = l.parse(value)

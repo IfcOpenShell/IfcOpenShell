@@ -217,7 +217,7 @@ const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse:
 %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass_num_attrs)s { %(constructor_implementation)s; populate_derived(); }
 """
 
-# data_ = e; 
+# data_ = e;
 # data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
@@ -255,32 +255,16 @@ get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance:
 
 get_inverse = "if (!file_) { return nullptr; } return file_->getInverse(id_, %(schema_name_upper)s_types[%(type_index)d], %(index)d)->as<%(type)s>();"
 
-set_attr_stmt = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_instance = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-set_attr_stmt_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
+set_attr_stmt = "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_instance = "%(check_optional_set_begin)sset_attribute_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_enum = "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 
-constructor_stmt = (
-    "set_attribute_value(%(index)d, (%(name)s));"
-)
-constructor_stmt_enum = (
-    "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
-)
-constructor_stmt_array = (
-    "set_attribute_value(%(index)d, (%(name)s)->generalize());"
-)
-constructor_stmt_derived = (
-    ""
-)
-constructor_stmt_instance = (
-    "set_attribute_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
-)
+constructor_stmt = "set_attribute_value(%(index)d, (%(name)s));"
+constructor_stmt_enum = "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
+constructor_stmt_array = "set_attribute_value(%(index)d, (%(name)s)->generalize());"
+constructor_stmt_derived = ""
+constructor_stmt_instance = "set_attribute_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
 
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s }"
 

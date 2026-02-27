@@ -22,7 +22,6 @@ import json
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
@@ -317,7 +316,9 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def global2local(cls, matrix, is_specified_in_map_units: bool) -> tuple[float, float, float]:
-        matrix = ifcopenshell.util.geolocation.auto_global2local(tool.Ifc.get(), matrix, is_specified_in_map_units=is_specified_in_map_units)
+        matrix = ifcopenshell.util.geolocation.auto_global2local(
+            tool.Ifc.get(), matrix, is_specified_in_map_units=is_specified_in_map_units
+        )
         props = cls.get_georeference_props()
         if props.has_blender_offset:
             matrix = ifcopenshell.util.geolocation.global2local(

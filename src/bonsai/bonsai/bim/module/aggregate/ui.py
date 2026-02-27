@@ -21,7 +21,6 @@ from bpy.types import Panel
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.aggregate.data import AggregateData
-from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
 
 
 class BIM_PT_aggregate(Panel):

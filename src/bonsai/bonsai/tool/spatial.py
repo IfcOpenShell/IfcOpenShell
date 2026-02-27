@@ -49,7 +49,6 @@ import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.tool
 import bonsai.core.type
-import bonsai.core.unit
 import bonsai.tool as tool
 
 if TYPE_CHECKING:

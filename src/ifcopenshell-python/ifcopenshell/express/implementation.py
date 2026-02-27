@@ -69,7 +69,7 @@ class Implementation(codegen.Base):
                     templates.enum_from_string_stmt % dict(context, **locals()) for value in enum.values
                 ),
             )
-            
+
         if USE_VIRTUAL_INHERITANCE:
             for name, enum in mapping.schema.selects.items():
                 write(
@@ -118,10 +118,7 @@ class Implementation(codegen.Base):
 
                     null_check = ""
                     if arg["is_optional"]:
-                        attr_check = (
-                            "if(get_attribute_value(%d).isNull()) { return %%s; }"
-                            % (arg["index"] - 1,)
-                        )
+                        attr_check = "if(get_attribute_value(%d).isNull()) { return %%s; }" % (arg["index"] - 1,)
                         if "boost::optional" in arg["full_type"]:
                             null_check = attr_check % "boost::none"
                         else:
@@ -157,7 +154,7 @@ class Implementation(codegen.Base):
                             return templates.set_attr_stmt_enum
                         elif arg["is_templated_list"] and not (select or simple or express):
                             return templates.set_attr_stmt_array
-                        elif arg["full_type"].endswith('*'):
+                        elif arg["full_type"].endswith("*"):
                             return templates.set_attr_instance
                         else:
                             return templates.set_attr_stmt
@@ -178,7 +175,9 @@ class Implementation(codegen.Base):
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
                             "check_optional_set_begin": "if (v) {" if "boost::optional" in arg["full_type"] else "",
-                            "check_optional_set_else": "} else {" if "boost::optional" in arg["full_type"] else "if constexpr (false)",
+                            "check_optional_set_else": (
+                                "} else {" if "boost::optional" in arg["full_type"] else "if constexpr (false)"
+                            ),
                             "check_optional_set_end": "}" if "boost::optional" in arg["full_type"] else "",
                         },
                     )
@@ -193,11 +192,15 @@ class Implementation(codegen.Base):
                     tmpl = (
                         templates.constructor_stmt_array
                         if arg["is_templated_list"]
-                        else templates.constructor_stmt_enum
-                        if arg["is_enum"]
-                        else templates.constructor_stmt_instance
-                        if arg["full_type"].endswith('*')
-                        else templates.constructor_stmt
+                        else (
+                            templates.constructor_stmt_enum
+                            if arg["is_enum"]
+                            else (
+                                templates.constructor_stmt_instance
+                                if arg["full_type"].endswith("*")
+                                else templates.constructor_stmt
+                            )
+                        )
                     )
                     impl = tmpl % {
                         "name": deref_name,
@@ -321,7 +324,7 @@ class Implementation(codegen.Base):
                 else templates.simpletype_impl_is_without_supertype
             )
 
-            constructor = templates.constructor_single_initlist#  if superclass else templates.constructor
+            constructor = templates.constructor_single_initlist  #  if superclass else templates.constructor
 
             simpletype_impl_cast = (
                 templates.simpletype_impl_cast_templated
@@ -374,8 +377,21 @@ class Implementation(codegen.Base):
                                 ("IfcEntityInstanceData&& e",),
                                 "",
                             ),
-                            ("", "", constructor, "", ("%s v" % type_str,), ("set_attribute_value(0, v%s);" % ("->generalize()" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
-                            ("v", "", constructor, "", ("%s v" % type_str,), ""),
+                            (
+                                (
+                                    "",
+                                    "",
+                                    constructor,
+                                    "",
+                                    ("%s v" % type_str,),
+                                    (
+                                        "set_attribute_value(0, v%s);"
+                                        % ("->generalize()" if mapping.is_templated_list(type) else "")
+                                    ),
+                                )
+                                if mapping.simple_type_parent(class_name) is None
+                                else ("v", "", constructor, "", ("%s v" % type_str,), "")
+                            ),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),
                     ),

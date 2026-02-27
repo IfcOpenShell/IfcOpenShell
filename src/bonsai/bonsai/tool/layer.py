@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING
 import bpy
 
 import bonsai.core.tool
-import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.layer.prop import BIMLayerProperties

@@ -24,8 +24,6 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -34,7 +32,6 @@ from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
-from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
 
 
 def get_contexts(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

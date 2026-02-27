@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 from itertools import cycle
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell.guid
@@ -51,7 +51,9 @@ class Search(bonsai.core.tool.Search):
 
     @classmethod
     def import_filter_structure(
-        cls, filter_structure: list, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        cls,
+        filter_structure: list[list[dict[str, Any]]],
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
     ) -> None:
         filter_groups.clear()
 
@@ -188,7 +190,9 @@ class Search(bonsai.core.tool.Search):
         return ""
 
     @classmethod
-    def execute_filter_groups(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> set:
+    def execute_filter_groups(
+        cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+    ) -> set[ifcopenshell.entity_instance]:
         """
         Execute filter groups with simplified chaining support.
         Within a single group chain, all filters chain sequentially with ADD/SUBTRACT/FILTER modes.
@@ -196,10 +200,10 @@ class Search(bonsai.core.tool.Search):
         """
         preferences = tool.Blender.get_addon_preferences()
 
-        all_group_results = []
+        all_group_results: list[set[ifcopenshell.entity_instance]] = []
 
-        for group_idx, filter_group in enumerate(filter_groups):
-            group_results = set()
+        for filter_group in filter_groups:
+            group_results: set[ifcopenshell.entity_instance] = set()
 
             for filter_index, ifc_filter in enumerate(filter_group.filters):
                 if not ifc_filter.value:
@@ -245,7 +249,7 @@ class Search(bonsai.core.tool.Search):
             if group_results:
                 all_group_results.append(group_results)
 
-        final_results = set()
+        final_results: set[ifcopenshell.entity_instance] = set()
         for group_results in all_group_results:
             final_results.update(group_results)
 
@@ -262,9 +266,9 @@ class Search(bonsai.core.tool.Search):
         """
         filter_structure = data.get("filter_structure", [])
 
-        all_group_results = []
+        all_group_results: list[set[ifcopenshell.entity_instance]] = []
         for group_data in filter_structure:
-            group_results = set()
+            group_results: set[ifcopenshell.entity_instance] = set()
 
             for filter_data in group_data:
                 filter_mode = filter_data.get("filter_mode", "ADD")
@@ -332,7 +336,7 @@ class Search(bonsai.core.tool.Search):
             if group_results:
                 all_group_results.append(group_results)
 
-        final_results = set()
+        final_results: set[ifcopenshell.entity_instance] = set()
         for group_results in all_group_results:
             final_results.update(group_results)
 

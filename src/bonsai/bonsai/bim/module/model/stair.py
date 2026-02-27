@@ -23,7 +23,6 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from mathutils import Matrix, Vector
 
@@ -38,7 +37,7 @@ from bonsai.tool.numeric_input import (
 )
 
 V_ = tool.Blender.V_
-from typing import TYPE_CHECKING, get_args
+from typing import TYPE_CHECKING
 
 from bmesh.types import BMVert
 from bpy.props import IntProperty

@@ -20,7 +20,6 @@ import json
 from typing import Any
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 from ifcopenshell.util.doc import get_predefined_type_doc

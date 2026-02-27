@@ -22,9 +22,6 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -32,7 +29,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 from bonsai.bim.module.tester.data import TesterData
-from bonsai.bim.prop import MultipleFileSelect, StrProperty
+from bonsai.bim.prop import MultipleFileSelect
 
 
 def update_active_specification_index(self: "IfcTesterProperties", context: bpy.types.Context) -> None:

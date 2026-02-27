@@ -1,9 +1,6 @@
 import csv
-import json
-import os
 
 # import pystache
-import subprocess
 from pathlib import Path
 
 import ifcopenshell
