@@ -51,13 +51,9 @@ def step_impl(context, path_file):
 @then("there must be exactly a number of {ifc_class} equals to the number of distinct row value")
 def step_impl(context, ifc_class):
     try:
-        context.execute_steps(
-            """
+        context.execute_steps("""
             then There must be exactly {number} {ifc_class} elements
-            """.format(
-                ifc_class=ifc_class, number=context.model.get_count_distinct_values()
-            )
-        )
+            """.format(ifc_class=ifc_class, number=context.model.get_count_distinct_values()))
     except AssertionError as error:
         str_error = str(error)
         assert False, str_error[: str_error.find("Traceback")]

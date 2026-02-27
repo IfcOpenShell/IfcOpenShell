@@ -55,7 +55,6 @@ from bonsai.bim.module.model.ui import (
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
 
-
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
     from bonsai.bim.prop import ObjProperty
