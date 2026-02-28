@@ -18,7 +18,7 @@
     "clsx": "^2.1.1",
     "mode-watcher": "^1.1.0",
     "sass-embedded": "^1.89.0",
-    "svelte": "^5.53.0",
+    "svelte": "^5.53.6",
     "svelte-sonner": "^1.0.5",
     "tailwind-merge": "^3.3.0",
     "tailwind-variants": "^1.0.0",
