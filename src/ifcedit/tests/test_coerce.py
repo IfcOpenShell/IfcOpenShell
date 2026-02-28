@@ -3,6 +3,7 @@ import json
 from typing import Literal, Optional, Union
 
 import ifcopenshell
+import ifcopenshell.api.project
 import pytest
 
 from ifcedit.coerce import coerce_value
@@ -123,6 +124,20 @@ class TestEntityCoercion:
     def test_entity_no_model(self):
         with pytest.raises(ValueError, match="without an IFC model"):
             coerce_value("42", ifcopenshell.entity_instance, None)
+
+
+class TestFileCoercion:
+    def test_opens_file_from_path(self, model_file):
+        result = coerce_value(model_file, ifcopenshell.file)
+        assert isinstance(result, ifcopenshell.file)
+
+    def test_entity_from_lookup_file(self, model_file):
+        lib = ifcopenshell.open(model_file)
+        wall = lib.by_type("IfcWall")[0]
+        empty_model = ifcopenshell.api.project.create_file()
+        result = coerce_value(str(wall.id()), ifcopenshell.entity_instance, empty_model, lookup_file=lib)
+        assert result.id() == wall.id()
+        assert result.is_a("IfcWall")
 
 
 class TestFallback:

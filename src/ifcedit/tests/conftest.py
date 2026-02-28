@@ -8,6 +8,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import pytest
+import ifcopenshell.api.material
 
 
 @pytest.fixture
@@ -39,4 +40,24 @@ def model_file(model, tmp_path):
     """Write the model fixture to a temp file and return the path."""
     path = tmp_path / "test.ifc"
     model.write(str(path))
+    return str(path)
+
+
+@pytest.fixture
+def library():
+    """Create an IFC4 library with a single IfcWallType asset."""
+    lib = ifcopenshell.api.project.create_file()
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+    ifcopenshell.api.root.create_entity(lib, ifc_class="IfcProject", name="TestLibrary")
+    ifcopenshell.api.unit.assign_unit(lib)
+    ifcopenshell.api.root.create_entity(lib, ifc_class="IfcWallType", name="WAL01")
+    return lib
+
+
+@pytest.fixture
+def library_file(library, tmp_path):
+    """Write the library fixture to a temp file and return the path."""
+    path = tmp_path / "library.ifc"
+    library.write(str(path))
     return str(path)

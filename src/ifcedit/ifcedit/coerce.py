@@ -25,13 +25,21 @@ import typing
 import ifcopenshell
 
 
-def coerce_value(value_str: str, type_hint, model: ifcopenshell.file | None = None):
+def coerce_value(
+    value_str: str,
+    type_hint,
+    model: ifcopenshell.file | None = None,
+    lookup_file: ifcopenshell.file | None = None,
+):
     """Convert a CLI string argument to the proper Python type based on a type hint.
 
     Args:
         value_str: The raw string from the CLI.
         type_hint: The type annotation from the function signature.
-        model: An open IFC model, needed to resolve entity instance references by ID.
+        model: The main open IFC model, needed to resolve entity instance references by ID.
+        lookup_file: Override file for entity resolution (e.g. a library file for
+            project.append_asset). When provided, entity IDs are looked up here instead
+            of in model.
 
     Returns:
         The converted Python value.
@@ -40,6 +48,9 @@ def coerce_value(value_str: str, type_hint, model: ifcopenshell.file | None = No
         ValueError: If the value cannot be converted.
         TypeError: If the type hint is not supported.
     """
+    # When a library file has been opened, entity IDs are resolved from it, not the main model.
+    effective_lookup = lookup_file if lookup_file is not None else model
+
     if type_hint is None:
         return value_str
 
@@ -55,7 +66,7 @@ def coerce_value(value_str: str, type_hint, model: ifcopenshell.file | None = No
         # Try each non-None type in order
         for t in non_none_types:
             try:
-                return coerce_value(value_str, t, model)
+                return coerce_value(value_str, t, model, lookup_file)
             except (ValueError, TypeError):
                 continue
         raise ValueError(f"Cannot convert '{value_str}' to any of {non_none_types}")
@@ -73,10 +84,10 @@ def coerce_value(value_str: str, type_hint, model: ifcopenshell.file | None = No
     # list types
     if origin is list:
         if args and _is_entity_type(args[0]):
-            return _coerce_entity_list(value_str, model)
+            return _coerce_entity_list(value_str, effective_lookup)
         if args:
             items = _split_list(value_str)
-            return [coerce_value(item.strip(), args[0], model) for item in items]
+            return [coerce_value(item.strip(), args[0], model, lookup_file) for item in items]
         return _split_list(value_str)
 
     # dict types
@@ -93,9 +104,13 @@ def coerce_value(value_str: str, type_hint, model: ifcopenshell.file | None = No
     if type_hint is bool:
         return value_str.lower() in ("true", "1", "yes")
 
+    # ifcopenshell.file — open from path string
+    if type_hint is ifcopenshell.file:
+        return ifcopenshell.open(value_str)
+
     # entity_instance
     if _is_entity_type(type_hint):
-        return _coerce_entity(value_str, model)
+        return _coerce_entity(value_str, effective_lookup)
 
     # Fallback: try json.loads for complex types, then plain string
     try:
@@ -113,24 +128,24 @@ def _is_entity_type(hint) -> bool:
     return False
 
 
-def _coerce_entity(value_str: str | int, model: ifcopenshell.file | None) -> ifcopenshell.entity_instance:
+def _coerce_entity(value_str: str | int, lookup_file: ifcopenshell.file | None) -> ifcopenshell.entity_instance:
     """Resolve a step ID string like '123' or '#123' to an entity instance."""
-    if model is None:
+    if lookup_file is None:
         raise ValueError("Cannot resolve entity reference without an IFC model")
     if isinstance(value_str, int):
         entity_id = value_str
     else:
         entity_id = int(value_str.strip().lstrip("#"))
     try:
-        return model.by_id(entity_id)
+        return lookup_file.by_id(entity_id)
     except RuntimeError:
         raise ValueError(f"Entity #{entity_id} not found in model")
 
 
-def _coerce_entity_list(value_str: str, model: ifcopenshell.file | None) -> list[ifcopenshell.entity_instance]:
+def _coerce_entity_list(value_str: str, lookup_file: ifcopenshell.file | None) -> list[ifcopenshell.entity_instance]:
     """Resolve a comma-separated list of step IDs to entity instances."""
     items = _split_list(value_str)
-    return [_coerce_entity(item.strip(), model) for item in items]
+    return [_coerce_entity(item.strip(), lookup_file) for item in items]
 
 
 def _split_list(value_str: str) -> list[str]:

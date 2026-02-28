@@ -28,6 +28,17 @@ import ifcopenshell
 from ifcedit.coerce import coerce_value
 
 
+def _is_file_type(hint) -> bool:
+    """Check if a type hint refers to ifcopenshell.file (or Optional[ifcopenshell.file])."""
+    if hint is ifcopenshell.file:
+        return True
+    origin = typing.get_origin(hint)
+    args = typing.get_args(hint)
+    if origin is typing.Union and ifcopenshell.file in args:
+        return True
+    return False
+
+
 def run_api(
     model: ifcopenshell.file,
     module: str,
@@ -58,12 +69,36 @@ def run_api(
 
     sig = inspect.signature(fn)
     coerced_kwargs = {}
+
+    # Pass 1: coerce ifcopenshell.file-typed params first (e.g. library= in append_asset).
+    # The opened file is then used as the lookup file for entity resolution in pass 2.
+    opened_files: list[ifcopenshell.file] = []
     for name, value_str in raw_kwargs.items():
         if name not in sig.parameters:
             return {"ok": False, "error": f"Unknown parameter '{name}' for {module}.{function}"}
         hint = hints.get(name)
+        if not _is_file_type(hint):
+            continue
         try:
-            coerced_kwargs[name] = coerce_value(value_str, hint, model)
+            coerced = coerce_value(value_str, hint, model)
+            coerced_kwargs[name] = coerced
+            if isinstance(coerced, ifcopenshell.file):
+                opened_files.append(coerced)
+        except (ValueError, TypeError) as e:
+            return {"ok": False, "error": f"Cannot convert parameter '{name}': {e}"}
+
+    # Pass 2: coerce remaining params. Entity instance IDs are resolved from the opened
+    # library file (if any), since you are always appending from another file, never
+    # from the current model.
+    lookup_file = opened_files[0] if opened_files else None
+    for name, value_str in raw_kwargs.items():
+        if name in coerced_kwargs:
+            continue
+        if name not in sig.parameters:
+            return {"ok": False, "error": f"Unknown parameter '{name}' for {module}.{function}"}
+        hint = hints.get(name)
+        try:
+            coerced_kwargs[name] = coerce_value(value_str, hint, model, lookup_file=lookup_file)
         except (ValueError, TypeError) as e:
             return {"ok": False, "error": f"Cannot convert parameter '{name}': {e}"}
 

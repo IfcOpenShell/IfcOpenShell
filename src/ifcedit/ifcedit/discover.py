@@ -165,10 +165,15 @@ def _extract_params(fn) -> list[dict]:
 
 def _format_type_hint(hint) -> str | None:
     """Format a type hint to a readable string."""
+    import ifcopenshell
+
     if hint is None:
         return None
     if hint is type(None):
         return "None"
+    # ifcopenshell.file params are passed as a file path string
+    if hint is ifcopenshell.file:
+        return "file_path"
     origin = typing.get_origin(hint)
     args = typing.get_args(hint)
 

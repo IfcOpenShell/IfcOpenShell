@@ -1,5 +1,7 @@
 # This file was generated with the assistance of an AI coding tool.
+import ifcopenshell
 import ifcopenshell.api.pset
+import ifcopenshell.api.project
 import ifcopenshell.api.root
 
 from ifcedit.run import run_api, serialize_result
@@ -50,6 +52,21 @@ class TestRunApi:
         result = run_api(model, "pset", "add_pset", {"product": "999999", "name": "Pset_WallCommon"})
         assert result["ok"] is False
         assert "not found" in result["error"]
+
+
+class TestAppendAsset:
+    def test_append_asset_from_library(self, model, library_file):
+        lib = ifcopenshell.open(library_file)
+        wall_type = lib.by_type("IfcWallType")[0]
+        result = run_api(
+            model,
+            "project",
+            "append_asset",
+            {"library": library_file, "element": str(wall_type.id())},
+        )
+        assert result["ok"] is True
+        assert result["result"]["type"] == "IfcWallType"
+        assert model.by_type("IfcWallType"), "wall type should have been appended to the model"
 
 
 class TestSerializeResult:
