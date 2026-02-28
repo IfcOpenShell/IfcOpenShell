@@ -677,6 +677,81 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
+    def ray_cast_and_get_closest_to_camera_snaps(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_to_raycast: list[bpy.types.Object],
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+        closest_length_squared = 1.0
+        closest_obj = None
+        closest_hit = None
+        closest_face_index = None
+
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+
+        closest_snaps = []
+        hit = None
+
+        for snap_obj in objs_to_raycast:
+            if (snap_obj.obj.type in {"EMPTY", "CURVE"}
+                or (hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0)
+            ):
+                # For wireframe objects we have to test all the snaps to see which is closer
+                snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
+                closest_wf_hit = None
+                closest_wf_length_squared = 1.0
+                closest_wf_point = None
+                if snap_points:
+                    for point in snap_points:
+                        point["group"] = "Wireframe"
+                        closest_snaps.append(point)
+                        length = (point["point"] - ray_origin).length_squared
+                        if closest_wf_hit is None or length < closest_wf_length_squared:
+                            closest_wf_length_squared = length
+                            closest_wf_hit = point["point"]
+                            closest_wf_point = point
+
+                    if closest_wf_point:
+                        hit_obj = closest_wf_point["object"]
+                        hit = closest_wf_point["point"]
+                        face_index = None
+
+
+            else:
+                # Solid objects
+                hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, snap_obj.obj)
+
+                if hit:
+                    snap_point = {
+                        "point": hit,
+                        "type": "Face",
+                        "group": "Object",
+                        "object": hit_obj,
+                        "face_index": face_index,
+                        "distance": 9,  # High value so it has low priority
+                    }
+                    closest_snaps.append(snap_point)
+            
+
+            # Here we test which is closer, including wireframe and solid objects
+            if hit is not None:
+                length_squared = (hit - ray_origin).length_squared
+                if closest_obj is None or length_squared < closest_length_squared:
+                    closest_length_squared = length_squared
+                    closest_obj = hit_obj
+                    closest_hit = hit
+                    closest_face_index = face_index
+
+        # Label snaps from the closest object
+        if closest_obj is not None:
+            for snap in closest_snaps:
+                if snap["object"] == closest_obj:
+                    snap["is_closest_to_camera"] = True
+
+        return closest_snaps
+
+    @classmethod
     def calculate_snap_threshold(cls, view_distance):
         snap_threshold = view_distance / 100
         area = tool.Blender.get_view3d_area()

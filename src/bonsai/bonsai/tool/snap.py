@@ -360,6 +360,16 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
+        def handle_snap_points_in_xray_mode(closest_snaps, detected_snaps, snap_obj, is_xray):
+            for snap in closest_snaps:
+                if snap_obj.obj == snap["object"]:
+                    if "face_index" in snap and snap["face_index"]:
+                        points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
+                        for point in points:
+                            point["group"] = "Object"
+                            detected_snaps.append(point)
+            return detected_snaps
+
         # Polyline
         polyline_props = tool.Model.get_polyline_props()
         try:
@@ -388,58 +398,20 @@ class Snap(bonsai.core.tool.Snap):
 
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
-        # Wireframes
-        # For wireframe we have to get all the objects so we can further calculate edge intersection
-        for snap_obj in objs_to_raycast:
-            if snap_obj.obj.type in {"EMPTY", "CURVE"} or (snap_obj.obj.type == "MESH" and len(snap_obj.obj.data.polygons) == 0):
-                snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
-                if snap_points:
-                    for point in snap_points:
-                        point["group"] = "Wireframe"
-                        detected_snaps.append(point)
+        closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
+        detected_snaps.extend(closest_snaps)
 
-        if (space.shading.type == "SOLID" and space.shading.show_xray) or (
-            space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
-        ):
-            results = []
-            for obj in objs_to_raycast:
-                results.append(tool.Raycast.cast_rays_to_single_object(context, event, snap_obj.obj))
+        xray_conditions = (space.shading.type == "SOLID" and space.shading.show_xray) or (space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe)
+
+        if xray_conditions:
+            for snap_obj in objs_to_raycast:
+                detected_snaps = handle_snap_points_in_xray_mode(closest_snaps, detected_snaps, snap_obj, is_xray=True)
         else:
-            results = []
-            results.append(tool.Raycast.cast_rays_and_get_best_object(context, event, objs_to_raycast))
-
-        for result in results:
-            snap_obj = result[0]
-            hit = result[1]
-            face_index = result[2]
-            if hit is not None:
-                # Wireframes
-                if snap_obj.type in {"EMPTY", "CURVE"} or (
-                    snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0
-                ):
-                    continue
-                # Meshes
-                else:
-                    # Add face snap
-                    snap_point = {
-                        "point": hit,
-                        "type": "Face",
-                        "group": "Object",
-                        "object": snap_obj,
-                        "face_index": face_index,
-                        "distance": 9,  # High value so it has low priority
-                    }
-                    detected_snaps.append(snap_point)
-
-                    # Add vertex and edge snap
-                    snap_points = tool.Raycast.ray_cast_by_proximity(
-                        context, event, snap_obj, snap_obj.data.polygons[face_index]
-                    )
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Object"
-                            detected_snaps.append(point)
-
+            for snap_obj in objs_to_raycast:
+                for snap in closest_snaps:
+                    if "is_closest_to_camera" in snap and snap["is_closest_to_camera"]:
+                        detected_snaps = handle_snap_points_in_xray_mode([snap], detected_snaps, snap_obj, is_xray=False)
+         
         # snap to cut geometry (e.g. in plan view)
         if CutDecorator.installed:
             cut_snaps = []
