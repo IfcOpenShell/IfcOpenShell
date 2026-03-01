@@ -68,7 +68,10 @@ def _add_shape(
     if verts.size == 0:
         return
 
-    faces = np.array(geom.faces, dtype=int).reshape(-1, 3)
+    raw_faces = np.array(geom.faces, dtype=int)
+    if raw_faces.size == 0 or raw_faces.size % 3 != 0:
+        return  # degenerate geometry from kernel — skip silently
+    faces = raw_faces.reshape(-1, 3)
     material_ids = np.array(geom.material_ids, dtype=int)
 
     is_subject = highlight_ids is not None and shape.product.id() in highlight_ids
@@ -163,7 +166,10 @@ def render(
     plotter.background_color = "white"
 
     while True:
-        _add_shape(iterator.get(), plotter, highlight_ids=frozenset(element_ids) if element_ids else None)
+        try:
+            _add_shape(iterator.get(), plotter, highlight_ids=frozenset(element_ids) if element_ids else None)
+        except Exception:
+            pass  # skip broken shapes, keep rendering the rest
         if not iterator.next():
             break
 
