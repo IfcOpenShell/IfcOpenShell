@@ -166,6 +166,10 @@ def update_grid_is_visible(self: "BIMGridProperties", context: bpy.types.Context
     bpy.ops.bim.toggle_grids(is_visible=self.is_visible)
 
 
+def update_grid_is_selectable(self: "BIMGridProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.toggle_grids_selectability(is_selectable=self.is_selectable)
+
+
 def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.types.Object) -> bool:
     obj = self.id_data
     if (
@@ -317,9 +321,16 @@ class BIMGridProperties(PropertyGroup):
         default=True,
         update=update_grid_is_visible,
     )
+    is_selectable: BoolProperty(
+        name="Is Selectable",
+        description="Allow or prevent grids and grid axes from being selected",
+        default=True,
+        update=update_grid_is_selectable,
+    )
     grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)
 
     if TYPE_CHECKING:
         is_locked: bool
         is_visible: bool
+        is_selectable: bool
         grid_axes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
