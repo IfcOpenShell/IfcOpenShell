@@ -92,7 +92,7 @@ def coerce_value(
 
     # dict types
     if origin is dict:
-        return json.loads(value_str)
+        return _floatify_numeric_lists(json.loads(value_str))
 
     # Simple types
     if type_hint is str:
@@ -146,6 +146,22 @@ def _coerce_entity_list(value_str: str, lookup_file: ifcopenshell.file | None) -
     """Resolve a comma-separated list of step IDs to entity instances."""
     items = _split_list(value_str)
     return [_coerce_entity(item.strip(), lookup_file) for item in items]
+
+
+def _floatify_numeric_lists(obj):
+    """Recursively convert lists of numbers to lists of floats.
+
+    IFC C++ bindings require Python floats (not ints) for AGGREGATE OF DOUBLE
+    attributes (e.g. DirectionRatios, Coordinates). JSON parsing produces ints
+    for whole numbers like 0, which causes a TypeError at the binding level.
+    """
+    if isinstance(obj, dict):
+        return {k: _floatify_numeric_lists(v) for k, v in obj.items()}
+    if isinstance(obj, list) and obj and all(isinstance(v, (int, float)) for v in obj) and any(
+        isinstance(v, float) for v in obj
+    ):
+        return [float(v) for v in obj]
+    return obj
 
 
 def _split_list(value_str: str) -> list[str]:

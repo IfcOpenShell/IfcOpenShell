@@ -83,6 +83,19 @@ class TestDictCoercion:
         result = coerce_value('{"IsExternal": true, "FireRating": "2HR"}', dict[str, object])
         assert result == {"IsExternal": True, "FireRating": "2HR"}
 
+    def test_mixed_float_int_list_coerced_to_float(self):
+        # [0.419, 0, 0.908] — JSON integer 0 mixed with floats must become float
+        # so ifcopenshell AGGREGATE OF DOUBLE attributes (e.g. DirectionRatios) don't reject the list
+        result = coerce_value('{"DirectionRatios": [0.419, 0, 0.908]}', dict[str, object])
+        assert result["DirectionRatios"] == pytest.approx([0.419, 0.0, 0.908])
+        assert all(isinstance(v, float) for v in result["DirectionRatios"])
+
+    def test_pure_int_list_not_coerced(self):
+        # All-integer lists (e.g. face indices) must stay as ints
+        result = coerce_value('{"CoordIndex": [0, 1, 2]}', dict[str, object])
+        assert result["CoordIndex"] == [0, 1, 2]
+        assert all(isinstance(v, int) for v in result["CoordIndex"])
+
 
 class TestListCoercion:
     def test_comma_separated(self):
