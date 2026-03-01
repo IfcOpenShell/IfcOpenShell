@@ -12,7 +12,7 @@ from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, relations, schedule, schema, select, summary, tree
+from ifcquery import info, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -211,6 +211,30 @@ class IfcSession:
         """Return IFC class documentation for entity_type using the model's schema version."""
         return schema.schema(self._require_model(), entity_type)
 
+    def ifc_render(
+        self,
+        selector: str = "",
+        element_ids: list[int] | None = None,
+        view: str = "iso",
+    ) -> bytes:
+        """Render the loaded model to a PNG image and return raw bytes.
+
+        :param selector: ifcopenshell selector to restrict rendered elements
+            (e.g. ``'IfcWall'``). Omit to render the whole model.
+        :param element_ids: Step IDs of elements to highlight. Other elements
+            are rendered in translucent grey.
+        :param view: Camera angle: ``iso``, ``top``, ``south``, ``north``,
+            ``east``, or ``west``.
+        :return: PNG image as raw bytes.
+        """
+        model = self._require_model()
+        return render_mod.render(
+            model,
+            selector=selector if selector else None,
+            element_ids=element_ids,
+            view=view,
+        )
+
     def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
         """Run quantity take-off on the model using the named rule.
 
@@ -393,6 +417,30 @@ class IfcSession:
                         "selector": {"type": "string", "description": "ifcopenshell selector to restrict elements (default: all IfcElement)"},
                     },
                     "required": ["rule"],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "ifc_render",
+                "description": (
+                    "Render the loaded IFC model to a PNG image for visual inspection. "
+                    "Use selector to restrict which elements are rendered (e.g. a single storey). "
+                    "Use element_ids to highlight elements against a greyed-out background. "
+                    "Returns base64-encoded PNG bytes."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "selector": {"type": "string", "description": "ifcopenshell selector (default: whole model)"},
+                        "element_ids": {"type": "array", "items": {"type": "integer"}, "description": "Step IDs of elements to highlight"},
+                        "view": {
+                            "type": "string",
+                            "enum": ["iso", "top", "south", "north", "east", "west"],
+                            "description": "Camera angle (default: iso)",
+                        },
+                    },
+                    "required": [],
                     "additionalProperties": False,
                 },
             },

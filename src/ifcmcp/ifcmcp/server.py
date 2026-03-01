@@ -1,14 +1,17 @@
 # This file was generated with the assistance of an AI coding tool.
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 from ifcmcp.core import IfcSession
 
 try:
     from mcp.server.fastmcp import FastMCP  # type: ignore
+    from mcp.types import ImageContent  # type: ignore
 except Exception:  # pragma: no cover
     FastMCP = None  # type: ignore
+    ImageContent = None  # type: ignore
 
 
 def build_server() -> Any:
@@ -115,5 +118,27 @@ def build_server() -> Any:
     @server.tool()
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
+
+    @server.tool(structured_output=False)
+    def ifc_render(
+        selector: str = "",
+        element_ids: list[int] | None = None,
+        view: str = "iso",
+    ) -> list[ImageContent]:
+        """Render the loaded IFC model to a PNG image.
+
+        Returns an inline image the LLM can inspect to understand the spatial
+        layout of the model or a specific element in context.
+
+        :param selector: ifcopenshell selector to restrict rendered elements
+            (e.g. ``'IfcWall'``, ``'IfcBuildingStorey[Name="0"]'``).
+            Omit to render the whole model.
+        :param element_ids: Step IDs of elements to highlight. Other elements
+            are rendered in translucent grey so the subject stands out.
+        :param view: Camera angle — ``iso`` (default), ``top``, ``south``,
+            ``north``, ``east``, or ``west``.
+        """
+        png_bytes = session.ifc_render(selector=selector, element_ids=element_ids, view=view)
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     return server

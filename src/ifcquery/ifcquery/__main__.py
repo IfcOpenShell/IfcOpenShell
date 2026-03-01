@@ -21,13 +21,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 import ifcopenshell
 
 from ifcquery import clash as clash_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, relations, schedule, schema, select, summary, tree
+from ifcquery import info, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -123,6 +124,24 @@ def main():
     schema_parser = subparsers.add_parser("schema", help="IFC class documentation")
     schema_parser.add_argument("entity_type", help="IFC entity type (e.g. IfcWall)")
 
+    render_parser = subparsers.add_parser("render", help="Render model geometry to a PNG image")
+    render_parser.add_argument(
+        "-o", "--output", default="", metavar="FILE", help="Output PNG path (default: <ifc_file>.png)"
+    )
+    render_parser.add_argument(
+        "--selector", default="", metavar="QUERY", help="ifcopenshell selector to restrict rendered elements"
+    )
+    render_parser.add_argument(
+        "--element", default="", metavar="ID[,ID...]",
+        help="Comma-separated step IDs of elements to highlight (rest rendered in grey)"
+    )
+    render_parser.add_argument(
+        "--view",
+        choices=render_mod.VIEWS,
+        default="iso",
+        help="Camera angle (default: iso)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -187,6 +206,32 @@ def main():
         result = cost_mod.cost(model, max_depth=args.depth)
     elif args.command == "schema":
         result = schema.schema(model, args.entity_type)
+    elif args.command == "render":
+        element_ids = None
+        if args.element:
+            try:
+                element_ids = [parse_element_id(part) for part in args.element.split(",")]
+            except ValueError:
+                print(f"Error: Invalid element ID(s): {args.element}", file=sys.stderr)
+                sys.exit(1)
+        out_path = args.output or (os.path.splitext(args.ifc_file)[0] + ".png")
+        try:
+            png_bytes = render_mod.render(
+                model,
+                selector=args.selector or None,
+                element_ids=element_ids,
+                view=args.view,
+            )
+        except ImportError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        with open(out_path, "wb") as f:
+            f.write(png_bytes)
+        print(f"Saved render to {out_path}", file=sys.stderr)
+        return
 
     print(format_output(result, args.output_format))
 
