@@ -155,7 +155,7 @@ def _split_list(value_str: str) -> list[str]:
         try:
             parsed = json.loads(value_str)
             if isinstance(parsed, list):
-                return [str(item) for item in parsed]
+                return [json.dumps(item) if isinstance(item, (dict, list)) else str(item) for item in parsed]
         except json.JSONDecodeError:
             pass
     return [item.strip() for item in value_str.split(",") if item.strip()]
