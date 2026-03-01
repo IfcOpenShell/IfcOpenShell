@@ -85,6 +85,14 @@ def build_server() -> Any:
             scope=scope,
         )
 
+    @server.tool()
+    def ifc_contexts() -> list[dict[str, Any]]:
+        return session.ifc_contexts()
+
+    @server.tool()
+    def ifc_materials() -> list[dict[str, Any]]:
+        return session.ifc_materials()
+
     # ---- Edit ----
     @server.tool()
     def ifc_list(module: str = "") -> list[dict]:

@@ -27,8 +27,9 @@ import sys
 import ifcopenshell
 
 from ifcquery import clash as clash_mod
+from ifcquery import contexts as contexts_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, relations, render as render_mod, schedule, schema, select, summary, tree
+from ifcquery import info, materials as materials_mod, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -121,6 +122,10 @@ def main():
         "--depth", type=int, default=None, metavar="N", help="Limit cost item expansion to N levels (default: unlimited)"
     )
 
+    subparsers.add_parser("contexts", help="List geometric representation contexts and subcontexts")
+
+    subparsers.add_parser("materials", help="List materials and material sets")
+
     schema_parser = subparsers.add_parser("schema", help="IFC class documentation")
     schema_parser.add_argument("entity_type", help="IFC entity type (e.g. IfcWall)")
 
@@ -204,6 +209,10 @@ def main():
         result = schedule.schedule(model, max_depth=args.depth)
     elif args.command == "cost":
         result = cost_mod.cost(model, max_depth=args.depth)
+    elif args.command == "contexts":
+        result = contexts_mod.contexts(model)
+    elif args.command == "materials":
+        result = materials_mod.materials(model)
     elif args.command == "schema":
         result = schema.schema(model, args.entity_type)
     elif args.command == "render":

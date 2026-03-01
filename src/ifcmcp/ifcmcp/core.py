@@ -11,8 +11,9 @@ from ifcedit.discover import function_docs, list_functions, list_modules
 from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
+from ifcquery import contexts as contexts_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, relations, render as render_mod, schedule, schema, select, summary, tree
+from ifcquery import info, materials as materials_mod, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -149,6 +150,14 @@ class IfcSession:
             tolerance=tolerance,
             scope=scope,
         )
+
+    def ifc_contexts(self) -> list[dict[str, Any]]:
+        """List all geometric representation contexts and subcontexts with their step IDs."""
+        return contexts_mod.contexts(self._require_model())
+
+    def ifc_materials(self) -> list[dict[str, Any]]:
+        """List all materials and material sets (layers, constituents, profiles)."""
+        return materials_mod.materials(self._require_model())
 
     # ------------------------
     # Edit discovery + execute
@@ -328,6 +337,18 @@ class IfcSession:
                     "required": ["element_id"],
                     "additionalProperties": False,
                 },
+            },
+            {
+                "type": "function",
+                "name": "ifc_contexts",
+                "description": "List all geometric representation contexts and subcontexts with their step IDs, context type, identifier, and target view. Use this to find the context ID required for geometry-creation API calls.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+            },
+            {
+                "type": "function",
+                "name": "ifc_materials",
+                "description": "List all materials and material sets (IfcMaterial, IfcMaterialLayerSet, IfcMaterialConstituentSet, IfcMaterialProfileSet) with their layers, constituents, or profiles.",
+                "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
             },
             {
                 "type": "function",
