@@ -38,7 +38,7 @@ def is_ifc4x3():
 # =============================================================================
 
 
-class SAIKEI_UL_alignment_pis(UIList):
+class CIVIL_UL_alignment_pis(UIList):
     """UIList for displaying interleaved points and segments (Civil 3D style)
 
     Row types:
@@ -123,11 +123,11 @@ class SAIKEI_UL_alignment_pis(UIList):
 # =============================================================================
 
 
-class SAIKEI_PT_alignment_creation(Panel):
+class CIVIL_PT_alignment_creation(Panel):
     """Sub-panel for alignment creation tools"""
 
     bl_label = "Creation"
-    bl_idname = "SAIKEI_PT_alignment_creation"
+    bl_idname = "CIVIL_PT_alignment_creation"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -140,7 +140,7 @@ class SAIKEI_PT_alignment_creation(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # New alignment properties
         box = layout.box()
@@ -150,7 +150,7 @@ class SAIKEI_PT_alignment_creation(Panel):
 
         # Creation operators
         col = layout.column(align=True)
-        col.operator("saikei.create_alignment_by_pi", icon="CURVE_DATA")
+        col.operator("civil.create_alignment_by_pi", icon="CURVE_DATA")
 
 
 # =============================================================================
@@ -158,11 +158,11 @@ class SAIKEI_PT_alignment_creation(Panel):
 # =============================================================================
 
 
-class SAIKEI_PT_pi_editor(Panel):
+class CIVIL_PT_pi_editor(Panel):
     """Sub-panel for PI point table editor (Civil 3D style grid view)"""
 
     bl_label = "PI Editor"
-    bl_idname = "SAIKEI_PT_pi_editor"
+    bl_idname = "CIVIL_PT_pi_editor"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -175,7 +175,7 @@ class SAIKEI_PT_pi_editor(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # PI Edit Mode indicator
         if props.is_pi_edit_mode:
@@ -193,7 +193,7 @@ class SAIKEI_PT_pi_editor(Panel):
         if props.active_alignment_id != 0:
             box = layout.box()
             box.label(text="Edit Alignment:", icon="EDITMODE_HLT")
-            box.operator("saikei.enter_pi_edit_mode", icon="PIVOT_CURSOR", text="Edit PIs (G key)")
+            box.operator("civil.enter_pi_edit_mode", icon="PIVOT_CURSOR", text="Edit PIs (G key)")
             layout.separator()
 
         # Header row with column labels
@@ -208,7 +208,7 @@ class SAIKEI_PT_pi_editor(Panel):
         # Combined point/segment list (interleaved view)
         row = layout.row()
         row.template_list(
-            "SAIKEI_UL_alignment_pis",
+            "CIVIL_UL_alignment_pis",
             "",
             props,
             "display_rows",
@@ -219,16 +219,16 @@ class SAIKEI_PT_pi_editor(Panel):
 
         # Side buttons for list management
         col = row.column(align=True)
-        col.operator("saikei.add_pi", icon="ADD", text="")
-        col.operator("saikei.remove_pi", icon="REMOVE", text="")
+        col.operator("civil.add_pi", icon="ADD", text="")
+        col.operator("civil.remove_pi", icon="REMOVE", text="")
         col.separator()
-        col.operator("saikei.pick_pi_from_viewport", icon="EYEDROPPER", text="")
+        col.operator("civil.pick_pi_from_viewport", icon="EYEDROPPER", text="")
 
         # Bottom actions
         layout.separator()
         row = layout.row(align=True)
-        row.operator("saikei.recalculate_pis", icon="FILE_REFRESH", text="Recalculate")
-        row.operator("saikei.clear_pis", icon="TRASH", text="Clear All")
+        row.operator("civil.recalculate_pis", icon="FILE_REFRESH", text="Recalculate")
+        row.operator("civil.clear_pis", icon="TRASH", text="Clear All")
 
 
 # =============================================================================
@@ -236,11 +236,11 @@ class SAIKEI_PT_pi_editor(Panel):
 # =============================================================================
 
 
-class SAIKEI_PT_alignment_stationing(Panel):
+class CIVIL_PT_alignment_stationing(Panel):
     """Sub-panel for stationing and referents"""
 
     bl_label = "Stationing"
-    bl_idname = "SAIKEI_PT_alignment_stationing"
+    bl_idname = "CIVIL_PT_alignment_stationing"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -253,7 +253,7 @@ class SAIKEI_PT_alignment_stationing(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # Station display options
         box = layout.box()
@@ -265,5 +265,5 @@ class SAIKEI_PT_alignment_stationing(Panel):
 
         # Stationing operators
         col = layout.column(align=True)
-        col.operator("saikei.add_stationing_referent", icon="EMPTY_AXIS")
-        col.operator("saikei.name_segments", icon="FONT_DATA")
+        col.operator("civil.add_stationing_referent", icon="EMPTY_AXIS")
+        col.operator("civil.name_segments", icon="FONT_DATA")

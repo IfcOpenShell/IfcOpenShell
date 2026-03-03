@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, 2026 Michael Yoder <myoder@desertspringscivil.com>
 #
 # This file is part of Bonsai.
 #
@@ -25,28 +25,28 @@ classes = (
     # Property groups (must be registered before classes that use them)
     prop.AlignmentPI,
     prop.AlignmentDisplayRow,
-    prop.SaikeiAlignmentProperties,
+    prop.CivilAlignmentProperties,
     # UILists
-    ui.SAIKEI_UL_alignment_pis,
+    ui.CIVIL_UL_alignment_pis,
     operator.ImportAlignmentCSV,
     # Operators - PI Management
-    operator.SAIKEI_OT_add_pi,
-    operator.SAIKEI_OT_remove_pi,
-    operator.SAIKEI_OT_pick_pi_from_viewport,
-    operator.SAIKEI_OT_recalculate_pis,
-    operator.SAIKEI_OT_clear_pis,
+    operator.CIVIL_OT_add_pi,
+    operator.CIVIL_OT_remove_pi,
+    operator.CIVIL_OT_pick_pi_from_viewport,
+    operator.CIVIL_OT_recalculate_pis,
+    operator.CIVIL_OT_clear_pis,
     # Operators - Creation
-    operator.SAIKEI_OT_create_alignment_by_pi,
-    operator.SAIKEI_OT_import_alignment_csv,
+    operator.CIVIL_OT_create_alignment_by_pi,
+    operator.CIVIL_OT_import_alignment_csv,
     # Operators - Stationing
-    operator.SAIKEI_OT_add_stationing_referent,
-    operator.SAIKEI_OT_name_segments,
+    operator.CIVIL_OT_add_stationing_referent,
+    operator.CIVIL_OT_name_segments,
     # Operators - PI Edit Mode
-    operator.SAIKEI_OT_enter_pi_edit_mode,
+    operator.CIVIL_OT_enter_pi_edit_mode,
     # UI Panels (appear in Properties sidebar under CIVIL tab)
-    ui.SAIKEI_PT_alignment_creation,
-    ui.SAIKEI_PT_pi_editor,
-    ui.SAIKEI_PT_alignment_stationing,
+    ui.CIVIL_PT_alignment_creation,
+    ui.CIVIL_PT_pi_editor,
+    ui.CIVIL_PT_alignment_stationing,
 )
 
 
@@ -55,10 +55,10 @@ def menu_func_import(self, context):
 
 
 def register():
-    bpy.types.Scene.SaikeiAlignmentProperties = bpy.props.PointerProperty(type=prop.SaikeiAlignmentProperties)
+    bpy.types.Scene.CivilAlignmentProperties = bpy.props.PointerProperty(type=prop.CivilAlignmentProperties)
     bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    del bpy.types.Scene.SaikeiAlignmentProperties
+    del bpy.types.Scene.CivilAlignmentProperties

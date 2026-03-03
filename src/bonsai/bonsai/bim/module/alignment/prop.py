@@ -50,9 +50,11 @@ class AlignmentPI(PropertyGroup):
     - Interior PIs: Points where tangents intersect, optionally with curves
     """
 
-    # Coordinates
-    e: StringProperty(name="E", description="Easting", default="0.0")
-    n: StringProperty(name="N", description="Northing", default="0.0")
+    # Coordinates stored as global easting/northing (map coordinates).
+    # Coordinate flow: Blender coords -> xyz2enh() -> global E/N (stored here)
+    #                  global E/N -> enh2xyz(to_blender=False) -> local IFC coords (for IfcOpenShell API)
+    e: StringProperty(name="E", description="Easting (global map coordinates)", default="0.0")
+    n: StringProperty(name="N", description="Northing (global map coordinates)", default="0.0")
 
     # PI Type
     pi_type: EnumProperty(
@@ -146,7 +148,7 @@ class AlignmentDisplayRow(PropertyGroup):
     arc_length: FloatProperty(name="Arc Length", default=0.0, precision=2, unit="LENGTH")
 
 
-class SaikeiAlignmentProperties(PropertyGroup):
+class CivilAlignmentProperties(PropertyGroup):
     """Properties for the alignment module"""
 
     # Active alignment selection

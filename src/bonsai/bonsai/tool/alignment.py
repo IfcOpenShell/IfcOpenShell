@@ -273,17 +273,10 @@ class Alignment:
                 return None
             return (point[0] / unit_scale, point[1] / unit_scale)
 
-        try:
-            start, end, ti, ni = align_api.segment_vertices(ifc_file, segment)
-        except Exception:
-            try:
-                mapped = align_api.get_mapped_segments(segment)
-                curve_segment = mapped[0]
-                if curve_segment is None:
-                    return None
-                start, end, ti, ni = align_api.segment_vertices(ifc_file, curve_segment)
-            except Exception:
-                return None
+        result = align_api.segment_vertices(ifc_file, segment)
+        if result is None:
+            return None
+        start, end, ti, ni = result
 
         return (convert(start), convert(end), convert(ti), convert(ni))
 
@@ -658,7 +651,7 @@ class Alignment:
         the Blender UI properties.
 
         Args:
-            props: The SaikeiAlignmentProperties PropertyGroup
+            props: The CivilAlignmentProperties PropertyGroup
             geometry_result: PIGeometryResult from core.alignment
         """
         pis = props.pis
@@ -780,12 +773,9 @@ class Alignment:
         Returns:
             The parent IfcAlignment if found, None otherwise
         """
-        try:
-            import ifcopenshell.api.alignment as align_api
+        import ifcopenshell.api.alignment as align_api
 
-            return align_api.get_alignment(layout)
-        except Exception:
-            return None
+        return align_api.get_alignment(layout)
 
     @classmethod
     def safe_layout_horizontal_by_pi_method(
@@ -970,11 +960,11 @@ class Alignment:
             empty.location = blender_pos
 
             # Tag with custom properties for identification
-            empty["saikei_is_pi_empty"] = True
-            empty["saikei_pi_index"] = i
-            empty["saikei_pi_radius"] = pi["radius"]
-            empty["saikei_alignment_id"] = alignment_id
-            empty["saikei_pi_type"] = pi["pi_type"]
+            empty["civil_is_pi_empty"] = True
+            empty["civil_pi_index"] = i
+            empty["civil_pi_radius"] = pi["radius"]
+            empty["civil_alignment_id"] = alignment_id
+            empty["civil_pi_type"] = pi["pi_type"]
 
             # Parent to alignment object
             empty.parent = alignment_obj
@@ -1002,11 +992,11 @@ class Alignment:
         empties = []
 
         for obj in bpy.data.objects:
-            if obj.get("saikei_is_pi_empty") and obj.get("saikei_alignment_id") == alignment_id:
+            if obj.get("civil_is_pi_empty") and obj.get("civil_alignment_id") == alignment_id:
                 empties.append(obj)
 
         # Sort by PI index
-        empties.sort(key=lambda e: e.get("saikei_pi_index", 0))
+        empties.sort(key=lambda e: e.get("civil_pi_index", 0))
 
         return empties
 
@@ -1059,7 +1049,7 @@ class Alignment:
 
             # Collect radii for interior PIs only (not first or last)
             if 0 < i < len(empties) - 1:
-                radius = empty.get("saikei_pi_radius", 0.0)
+                radius = empty.get("civil_pi_radius", 0.0)
                 radii.append(radius)
 
         return (hpoints, radii)

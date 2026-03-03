@@ -1,5 +1,5 @@
 # Bonsai - OpenBIM Blender Add-on
-# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
+# Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>, 2026 Michael Yoder <myoder@desertspringscivil.com>
 #
 # This file is part of Bonsai.
 #
@@ -190,7 +190,7 @@ def on_radius_changed(pi, context):
     2. Rebuild of display_rows (Mid point becomes Curve segment)
     3. If an active alignment exists, regeneration of IFC entities
     """
-    props = context.scene.SaikeiAlignmentProperties
+    props = context.scene.CivilAlignmentProperties
     recalculate_pi_geometry(props)
 
     # If there's an active alignment, trigger IFC regeneration
@@ -311,10 +311,10 @@ def rebuild_display_rows(props):
 # =============================================================================
 
 
-class SAIKEI_OT_add_pi(Operator):
+class CIVIL_OT_add_pi(Operator):
     """Add a new PI point to the list"""
 
-    bl_idname = "saikei.add_pi"
+    bl_idname = "civil.add_pi"
     bl_label = "Add PI"
     bl_description = "Add a new PI (Point of Intersection) to the alignment"
     bl_options = {"REGISTER", "UNDO"}
@@ -324,7 +324,7 @@ class SAIKEI_OT_add_pi(Operator):
         return poll_ifc4x3(cls, context)
 
     def execute(self, context):
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # Add new PI
         pi = props.pis.add()
@@ -363,10 +363,10 @@ class SAIKEI_OT_add_pi(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_remove_pi(Operator):
+class CIVIL_OT_remove_pi(Operator):
     """Remove the selected PI point"""
 
-    bl_idname = "saikei.remove_pi"
+    bl_idname = "civil.remove_pi"
     bl_label = "Remove PI"
     bl_description = "Remove the selected PI from the alignment"
     bl_options = {"REGISTER", "UNDO"}
@@ -375,7 +375,7 @@ class SAIKEI_OT_remove_pi(Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if len(props.pis) == 0:
             cls.poll_message_set("No PIs to remove")
             return False
@@ -389,7 +389,7 @@ class SAIKEI_OT_remove_pi(Operator):
         return True
 
     def execute(self, context):
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # Get the PI index from the selected display row
         pi_index = -1
@@ -420,10 +420,10 @@ class SAIKEI_OT_remove_pi(Operator):
         return {"FINISHED"}
 
 
-class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+class CIVIL_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     """Add PI points by clicking in the 3D viewport using polyline tools"""
 
-    bl_idname = "saikei.pick_pi_from_viewport"
+    bl_idname = "civil.pick_pi_from_viewport"
     bl_label = "Pick PI from Viewport"
     bl_description = "Click in the viewport to add PI points with snapping and numeric input. RMB/Enter to finish, ESC to cancel."
     bl_options = {"REGISTER", "UNDO"}
@@ -554,7 +554,7 @@ class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool
         Polyline points are in Blender coordinate space. This method converts
         each point to IFC coordinate space before storing in props.pis.
         """
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         if not polyline_data:
@@ -566,7 +566,7 @@ class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool
 
         num_points = len(polyline_points)
         for i, point in enumerate(polyline_points):
-            # Convert Blender space -> IFC easting/northing
+            # Convert Blender space -> global easting/northing (props.pis stores global E/N coords)
             ifc_coord = tool.Georeference.xyz2enh((point.x, point.y, 0.0))
 
             pi = props.pis.add()
@@ -584,10 +584,10 @@ class SAIKEI_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool
         rebuild_display_rows(props)
 
 
-class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
+class CIVIL_OT_recalculate_pis(Operator, tool.Ifc.Operator):
     """Recalculate PI geometry and update IFC/visualization"""
 
-    bl_idname = "saikei.recalculate_pis"
+    bl_idname = "civil.recalculate_pis"
     bl_label = "Recalculate PIs"
     bl_description = "Recalculate geometry, update IFC segments, and refresh visualization"
     bl_options = {"REGISTER", "UNDO"}
@@ -596,7 +596,7 @@ class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if len(props.pis) < 2:
             cls.poll_message_set("Need at least 2 PIs to recalculate")
             return False
@@ -606,7 +606,7 @@ class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
         import ifcopenshell.api.alignment as align_api
 
         ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # Recalculate geometry in UI properties
         recalculate_pi_geometry(props)
@@ -619,7 +619,7 @@ class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, "Alignment has no horizontal layout")
                 return
 
-            # Collect updated PI data
+            # Convert global E/N coords (stored in props.pis) -> local IFC coords for the IfcOpenShell API
             hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
             radii = [pi.radius for pi in props.pis[1:-1]]
 
@@ -648,10 +648,10 @@ class SAIKEI_OT_recalculate_pis(Operator, tool.Ifc.Operator):
         self.report({"INFO"}, f"Recalculated {len(props.pis)} PIs, total length: {total_length:.2f}")
 
 
-class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
+class CIVIL_OT_clear_pis(Operator, tool.Ifc.Operator):
     """Clear all PI points and optionally remove visualization/IFC data"""
 
-    bl_idname = "saikei.clear_pis"
+    bl_idname = "civil.clear_pis"
     bl_label = "Clear All PIs"
     bl_description = "Remove all PI points and clear segment visualization"
     bl_options = {"REGISTER", "UNDO"}
@@ -660,7 +660,7 @@ class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if len(props.pis) == 0:
             cls.poll_message_set("No PIs to clear")
             return False
@@ -671,7 +671,7 @@ class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         removed_objects = 0
 
@@ -703,10 +703,10 @@ class SAIKEI_OT_clear_pis(Operator, tool.Ifc.Operator):
 # =============================================================================
 
 
-class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
+class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
     """Create alignment using the PI (Point of Intersection) method"""
 
-    bl_idname = "saikei.create_alignment_by_pi"
+    bl_idname = "civil.create_alignment_by_pi"
     bl_label = "Create by PI Method"
     bl_description = "Create alignment using PI points and curve radii. If an active alignment exists with no segments, adds to it instead of creating new."
     bl_options = {"REGISTER", "UNDO"}
@@ -715,7 +715,7 @@ class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if len(props.pis) < 2:
             cls.poll_message_set("Need at least 2 PI points")
             return False
@@ -725,8 +725,9 @@ class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
+        # Convert global E/N coords (stored in props.pis) -> local IFC coords for the IfcOpenShell API
         hpoints = [[float(o) for o in tool.Georeference.enh2xyz((float(pi.e), float(pi.n), 0.), to_blender=False)[:2]] for pi in props.pis]
         radii = [pi.radius for pi in props.pis[1:-1]]
 
@@ -759,10 +760,10 @@ class SAIKEI_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
             )
 
 
-class SAIKEI_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
+class CIVIL_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
     """Import alignment from CSV file"""
 
-    bl_idname = "saikei.import_alignment_csv"
+    bl_idname = "civil.import_alignment_csv"
     bl_label = "Import Alignment CSV"
     bl_description = "Import alignment definition from a CSV file"
     bl_options = {"REGISTER", "UNDO"}
@@ -776,7 +777,7 @@ class SAIKEI_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
 
     def _execute(self, context):
         ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         alignment = ifcopenshell.api.alignment.create_from_csv(ifc, self.filepath)
 
@@ -795,10 +796,10 @@ class SAIKEI_OT_import_alignment_csv(Operator, tool.Ifc.Operator, ImportHelper):
 # =============================================================================
 
 
-class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
+class CIVIL_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
     """Add a stationing referent to the alignment"""
 
-    bl_idname = "saikei.add_stationing_referent"
+    bl_idname = "civil.add_stationing_referent"
     bl_label = "Add Stationing Referent"
     bl_description = "Add an IfcReferent for stationing"
     bl_options = {"REGISTER", "UNDO"}
@@ -819,7 +820,7 @@ class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if props.active_alignment_id == 0:
             cls.poll_message_set("Select an alignment first")
             return False
@@ -827,7 +828,7 @@ class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         # Default station to start_station from props
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         self.station = props.start_station
         return context.window_manager.invoke_props_dialog(self)
 
@@ -841,7 +842,7 @@ class SAIKEI_OT_add_stationing_referent(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         alignment = tool.Alignment.get_active_alignment()
         if alignment is None:
@@ -883,10 +884,10 @@ def format_station(station_value):
         return f"{main}+{offset:05.2f}"
 
 
-class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
+class CIVIL_OT_name_segments(Operator, tool.Ifc.Operator):
     """Auto-name segments based on station values"""
 
-    bl_idname = "saikei.name_segments"
+    bl_idname = "civil.name_segments"
     bl_label = "Name Segments"
     bl_description = "Automatically name segments with station-based labels"
     bl_options = {"REGISTER", "UNDO"}
@@ -895,7 +896,7 @@ class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if props.active_alignment_id == 0:
             cls.poll_message_set("Select an alignment first")
             return False
@@ -903,7 +904,7 @@ class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc = tool.Ifc.get()
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         alignment = tool.Alignment.get_active_alignment()
         if alignment is None:
@@ -920,10 +921,10 @@ class SAIKEI_OT_name_segments(Operator, tool.Ifc.Operator):
 # =============================================================================
 
 
-class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
+class CIVIL_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
     """Enter PI editing mode - move PIs with G key, press Enter to apply or Escape to cancel"""
 
-    bl_idname = "saikei.enter_pi_edit_mode"
+    bl_idname = "civil.enter_pi_edit_mode"
     bl_label = "Edit PIs"
     bl_description = "Enter PI edit mode. Move PI points with G key. Press Enter to apply changes, Escape to cancel."
     bl_options = {"REGISTER", "UNDO"}
@@ -938,7 +939,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
     def poll(cls, context):
         if not poll_ifc4x3(cls, context):
             return False
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         if props.is_pi_edit_mode:
             cls.poll_message_set("Already in PI edit mode")
             return False
@@ -956,7 +957,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
     def _invoke(self, context, event):
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
         self._alignment_id = props.active_alignment_id
 
         # Enter edit mode via core layer (validates and creates empties)
@@ -999,7 +1000,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
 
     def _modal(self, context, event):
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         # Safety: check if empties still exist (handles undo edge case)
         if not self._empties_still_exist():
@@ -1040,7 +1041,7 @@ class SAIKEI_OT_enter_pi_edit_mode(Operator, tool.Ifc.Operator):
 
     def _cleanup_and_finish(self, context, apply: bool):
         """Exit edit mode, optionally applying changes."""
-        props = context.scene.SaikeiAlignmentProperties
+        props = context.scene.CivilAlignmentProperties
 
         try:
             if apply:
