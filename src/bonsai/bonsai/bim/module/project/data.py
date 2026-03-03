@@ -170,6 +170,6 @@ class ProjectLibraryData:
 
 
 class LinksData:
-    linked_data = {}
+    linked_data: dict[str, Any] = {}
     enable_culling = False
     is_loaded = False

@@ -125,7 +125,6 @@ class Patcher(ifcpatch.BasePatcher):
             )
         """
         super().__init__(file, logger)
-        self.logger = logger
         self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host
         self.username = username

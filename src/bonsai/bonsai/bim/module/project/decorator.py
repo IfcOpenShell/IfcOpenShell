@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union
-
 import bmesh
 import bpy
 import gpu
@@ -54,7 +52,7 @@ class ProjectDecorator:
     installed = None
 
     @classmethod
-    def install(cls, context):
+    def install(cls, context: bpy.types.Context) -> None:
         if cls.installed:
             cls.uninstall()
         handler = cls()
@@ -99,9 +97,9 @@ class ProjectDecorator:
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
-        selected_vertices = []
-        selected_edges = []
-        selected_tris = []
+        selected_vertices: list[tuple[float, float, float]] = []
+        selected_edges: list[tuple[int, int]] = []
+        selected_tris: list[tuple[int, int, int]] = []
 
         props = tool.Project.get_project_props()
         try:
@@ -112,7 +110,7 @@ class ProjectDecorator:
         except:
             return
 
-        root_obj: Union[bpy.types.Object, None] = props.queried_obj_root
+        root_obj = props.queried_obj_root
         if root_obj and not (m := root_obj.matrix_world).is_identity:
             selected_vertices = [m @ Vector(v) for v in selected_vertices]
 

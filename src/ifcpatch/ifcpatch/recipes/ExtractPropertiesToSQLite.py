@@ -17,9 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import logging
 import tempfile
 
 import ifcopenshell.util.element
+
+import ifcpatch
 
 try:
     import sqlite3
@@ -27,11 +30,11 @@ except:
     print("No SQLite support")
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
-        file,
-        logger,
+        file: ifcopenshell.file,
+        logger: logging.Logger | None = None,
     ):
         """Extracts properties and relationships from a IFC-SPF model to SQLite.
 
@@ -45,10 +48,11 @@ class Patcher:
             result = ifcpatch.execute({"input": fn, "file": model, "recipe": "ExtractPropertiesToSQLite"})
             ifcpatch.write(result, "output.sqlite")
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
 
     def patch(self):
+        import sqlite3
+
         tmp = tempfile.NamedTemporaryFile(delete=False)
         db_file = tmp.name
         self.db = sqlite3.connect(db_file)

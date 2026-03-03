@@ -27,11 +27,12 @@ import traceback
 from collections import defaultdict
 from math import radians
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
+import ifcopenshell.api.document
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -1438,8 +1439,13 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Load Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
-    link_index: bpy.props.IntProperty(name="Link Index")
-    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
+        use_cache: bool
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
@@ -1464,9 +1470,10 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             empty = bpy.data.objects.new(empty_name, None)
             empty.instance_type = "COLLECTION"
             empty.instance_collection = collection
-            empty.matrix_world = Matrix(tool.Project.calculate_link_matrix(self.link))
+            empty.matrix_world = tool.Project.calculate_link_matrix(self.link)
 
             tool.Project.set_link_empty_handle(self.link, empty)
+            assert bpy.context.scene
             bpy.context.scene.collection.objects.link(empty)
             self.link.is_loaded = True
             if tool.Ifc.get():  # For non-IFC projects, locking has no meaning
@@ -1635,8 +1642,16 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    link_index: bpy.props.IntProperty(name="Link Index")
-    mode: bpy.props.EnumProperty(name="Visibility Mode", items=((i, i, "") for i in ("WIREFRAME", "VISIBLE")))
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+    mode: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Visibility Mode",
+        items=((i, i, "") for i in ("WIREFRAME", "VISIBLE")),
+    )
+
+    if TYPE_CHECKING:
+        link_index: int
+        mode: Literal["WIREFRAME", "VISIBLE"]
 
     def execute(self, context):
         props = tool.Project.get_project_props()
@@ -1688,8 +1703,11 @@ class EnableEditingLink(bpy.types.Operator):
 
     def execute(self, context):
         link = tool.Project.get_project_props().active_link
+        assert link
         link.is_editing = True
-        tool.Geometry.unlock_object(tool.Project.get_link_empty_handle(link))
+        obj = tool.Project.get_link_empty_handle(link)
+        assert obj
+        tool.Geometry.unlock_object(obj)
         return {"FINISHED"}
 
 
@@ -1701,9 +1719,11 @@ class DisableEditingLink(bpy.types.Operator):
 
     def execute(self, context):
         link = tool.Project.get_project_props().active_link
+        assert link
         link.is_editing = False
         obj = tool.Project.get_link_empty_handle(link)
-        obj.matrix_world = Matrix(tool.Project.calculate_link_matrix(link))
+        assert obj
+        obj.matrix_world = tool.Project.calculate_link_matrix(link)
         tool.Geometry.lock_object(obj)
         return {"FINISHED"}
 
@@ -1716,8 +1736,10 @@ class EditLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         link = tool.Project.get_project_props().active_link
+        assert link
         link.is_editing = False
         obj = tool.Project.get_link_empty_handle(link)
+        assert obj
         new_obj_matrix = obj.matrix_world
 
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
@@ -1753,7 +1775,7 @@ class EditLink(bpy.types.Operator, tool.Ifc.Operator):
         else:
             link.transformation = transformation
 
-        obj.matrix_world = Matrix(tool.Project.calculate_link_matrix(link))
+        obj.matrix_world = tool.Project.calculate_link_matrix(link)
         tool.Geometry.lock_object(obj)
 
 
@@ -2270,7 +2292,8 @@ class QueryLinkedElement(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.queried_obj = None
 
-        for area in bpy.context.screen.areas:
+        assert context.screen
+        for area in context.screen.areas:
             if area.type == "PROPERTIES":
                 for region in area.regions:
                     if region.type == "WINDOW":
@@ -2278,6 +2301,7 @@ class QueryLinkedElement(bpy.types.Operator):
             elif area.type == "VIEW_3D":
                 area.tag_redraw()
 
+        assert context.region and context.region_data
         region = context.region
         rv3d = context.region_data
         coord = (self.mouse_x, self.mouse_y)
@@ -2294,18 +2318,20 @@ class QueryLinkedElement(bpy.types.Operator):
 
         guid = None
         guid_start_index = 0
-        for i, guid_end_index in enumerate(obj["guid_ids"]):
+        guid_ids: list[int] = obj["guid_ids"]
+        for i, guid_end_index in enumerate(guid_ids):
             if face_index < guid_end_index:
                 guid = obj["guids"][i]
                 props.queried_obj = obj
                 props.queried_obj_root = self.find_obj_root(obj, instance_matrix)
 
-                selected_tris = []
-                selected_edges = []
-                vert_indices = set()
+                selected_tris: list[tuple[int, ...]] = []
+                selected_edges: list[tuple[int, ...]] = []
+                vert_indices_set: set[int] = set()
+                assert isinstance(obj.data, bpy.types.Mesh)
                 for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
-                    vert_indices.update(polygon.vertices)
-                vert_indices = list(vert_indices)
+                    vert_indices_set.update(polygon.vertices)
+                vert_indices = list(vert_indices_set)
                 vert_map = {k: v for v, k in enumerate(vert_indices)}
                 selected_vertices = [tuple(obj.matrix_world @ obj.data.vertices[vi].co) for vi in vert_indices]
                 for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
@@ -2319,13 +2345,14 @@ class QueryLinkedElement(bpy.types.Operator):
                 break
             guid_start_index = guid_end_index
 
+        assert guid is not None
         self.db = sqlite3.connect(obj["db"])
         self.c = self.db.cursor()
 
         self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
         element = self.c.fetchone()
 
-        attributes = {}
+        attributes: dict[str, Any] = {}
         for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
             if element[i + 1] is not None:
                 attributes[attr] = element[i + 1]
@@ -2415,6 +2442,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             return {"CANCELLED"}
 
         queried_obj = props.queried_obj
+        assert queried_obj
 
         ifc_file = tool.Ifc.get()
         linked_ifc_file: ifcopenshell.file
@@ -2683,10 +2711,12 @@ class CreateClippingPlane(bpy.types.Operator):
             self.report({"INFO"}, "Maximum of six clipping planes allowed.")
             return {"FINISHED"}
 
+        assert context.screen
         for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
+        assert context.region and context.region_data
         region = context.region
         rv3d = context.region_data
         if rv3d:  # Called from a 3D viewport

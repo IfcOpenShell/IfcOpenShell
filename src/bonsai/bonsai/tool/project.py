@@ -31,6 +31,7 @@ import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 import numpy as np
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 
@@ -45,7 +46,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
+    from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings, Link
 
 HiearchyDict = dict[ifcopenshell.entity_instance, "HiearchyDict"]
 
@@ -61,20 +62,20 @@ class Project(bonsai.core.tool.Project):
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
-    def get_link_empty_handle(cls, link) -> bpy.types.Object | None:
+    def get_link_empty_handle(cls, link: Link) -> bpy.types.Object | None:
         if tool.Ifc.get():
             return tool.Ifc.get_object(tool.Ifc.get().by_id(link.ifc_definition_id))
         return link.empty_handle
 
     @classmethod
-    def set_link_empty_handle(cls, link, empty: bpy.types.Object) -> None:
+    def set_link_empty_handle(cls, link: Link, empty: bpy.types.Object) -> None:
         if tool.Ifc.get():
             tool.Ifc.link(tool.Ifc.get().by_id(link.ifc_definition_id), empty)
         else:
             link.empty_handle = empty
 
     @classmethod
-    def calculate_link_matrix(cls, link) -> None:
+    def calculate_link_matrix(cls, link: Link) -> Matrix:
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
         with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
             metadata = json.load(f)
@@ -99,7 +100,7 @@ class Project(bonsai.core.tool.Project):
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
         local_matrix = rot @ np.eye(4)
         local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
-        return np.linalg.inv(local_matrix) @ global_matrix
+        return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
