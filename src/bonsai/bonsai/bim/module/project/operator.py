@@ -2861,7 +2861,7 @@ class IFCFileHandlerOperator(bpy.types.Operator):
 
         def clean_up_path(path: str) -> str:
             # In Blender 4.5.6 there was a bug producing unncesseary double slash prefix
-            # breaking the paths. Issue is not present in 5.0+ and presumably will be solved in 4.5.7 too.
+            # breaking the paths. Issue is not present in 5.0+ and is fixed in 4.5.7.
             # https://projects.blender.org/blender/blender/issues/153822
             if bpy.app.version == (4, 5, 6):
                 blender_prefix = "//"
