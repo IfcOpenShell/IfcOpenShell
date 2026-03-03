@@ -1023,7 +1023,8 @@ class SvgWriter:
 
         for text_literal in text_literals:
             text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
-
+            if newline_at:
+                text = helper.add_newline_between_words(text, newline_at)
             text_segments = parse_markdown_it(text)
 
             if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):
