@@ -187,9 +187,6 @@ IF DEFINED PYTHON_VERSION (
 )
 
 :: VERSION DERIVATIONS
-for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
-    set PY_VER_MAJOR_MINOR=%%a%%b
-)
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     IF /I "%TARGET_ARCH%"=="arm64" (
         set PYTHONHOME=%DEPS_DIR%\pythonarm64.%PYTHON_VERSION%\tools

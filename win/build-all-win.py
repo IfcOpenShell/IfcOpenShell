@@ -21,7 +21,7 @@ def is_arm64() -> bool:
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
-PYTHON_VERSIONS = ["3.14.0"]
+PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
 VERSION = (REPO_PATH / "VERSION").read_text().strip()
@@ -61,23 +61,14 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [
-                str(REPO_WIN / "build-deps.cmd"),
-                "vs2022-ARM64" if is_arm64() else "vs2022-x64",
-                "Release",
-            ],
+            [str(REPO_WIN / "build-deps.cmd"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release", ],
             check=True,
             text=True,
             input="y\n",
         )
         OLD_ADD_COMMIT_SHA = set_env("ADD_COMMIT_SHA", "ON")
         run(
-            [
-                str(REPO_WIN / "run-cmake.bat"),
-                "vs2022-ARM64" if is_arm64() else "vs2022-x64",
-                "-DENABLE_BUILD_OPTIMIZATIONS=ON",
-                "-DGLTF_SUPPORT=ON",
-            ]
+            [ str(REPO_WIN / "run-cmake.bat"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "-DENABLE_BUILD_OPTIMIZATIONS=ON", "-DGLTF_SUPPORT=ON", ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)
         run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"])
