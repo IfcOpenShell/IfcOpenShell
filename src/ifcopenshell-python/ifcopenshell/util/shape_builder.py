@@ -517,11 +517,18 @@ class ShapeBuilder:
         trim_points_mask: Sequence[int],
         position_offset: Optional[VectorType] = None,
     ) -> np.ndarray:
-        """Handy way to get edge points of the ellipse like shape of a given radiuses.
+        """Get cardinal-point coordinates of an ellipse by index mask.
 
-        Mask points are numerated from 0 to 3 ccw starting from (x_axis_radius/2; 0).
+        The four cardinal points are numbered 0–3 counter-clockwise starting from the
+        positive X axis: 0 → ``(x, 0)``, 1 → ``(0, y)``, 2 → ``(-x, 0)``, 3 → ``(0, -y)``.
 
-        Example: mask (0, 1, 2, 3) will return points (x, 0), (0, y), (-x, 0), (0, -y)
+        Example: mask ``(0, 1, 2, 3)`` returns all four points in order.
+
+        :param x_axis_radius: Radius (semi-axis length) along the X axis.
+        :param y_axis_radius: Radius (semi-axis length) along the Y axis.
+        :param trim_points_mask: Sequence of cardinal-point indices (0–3) to select.
+        :param position_offset: Optional 2D offset added to all returned points.
+        :return: Numpy array of the selected 2D points.
         """
         points = np.array(
             (
@@ -546,15 +553,23 @@ class ShapeBuilder:
         ref_x_direction: VectorType = (1.0, 0.0),
         trim_points_mask: Sequence[int] = (),
     ) -> ifcopenshell.entity_instance:
-        """
-        Ellipse trimming points should be specified in counter clockwise order.
+        """Create an IfcEllipse, optionally trimmed to an arc.
 
-        For example, if you need to get the part of the ellipse ABOVE y-axis, you need to use mask (0,2). Below y-axis - (2,0)
+        If neither ``trim_points`` nor ``trim_points_mask`` is provided, a full IfcEllipse is returned.
+        Trimming points must be given in counter-clockwise order. For example, to get the arc
+        above the Y-axis use mask ``(0, 2)``; below the Y-axis use ``(2, 0)``.
 
-        For more information about trim_points_mask check builder.get_trim_points_from_mask
+        A trimmed result (IfcTrimmedCurve) includes a closing segment between the trim points,
+        making it suitable for use as a profile in :meth:`extrude`.
 
-        Notion: trimmed ellipse also contains polyline between trim points, meaning IfcTrimmedCurve could be used
-        for further extrusion.
+        :param x_axis_radius: Semi-axis length along the local X axis.
+        :param y_axis_radius: Semi-axis length along the local Y axis.
+        :param position: 2D centre of the ellipse.
+        :param trim_points: Explicit pair of 2D trim points. Takes precedence over ``trim_points_mask``.
+        :param ref_x_direction: Direction of the local X axis.
+        :param trim_points_mask: Pair of cardinal-point indices (0–3) used when ``trim_points`` is empty.
+            See :meth:`get_trim_points_from_mask` for index definitions.
+        :return: IfcEllipse (untrimmed) or IfcTrimmedCurve (trimmed).
         """
         ifc_position = self.create_axis2_placement_2d(position, ref_x_direction)
         ifc_ellipse = self.file.createIfcEllipse(
@@ -685,6 +700,14 @@ class ShapeBuilder:
         pivot_point: VectorType = (0.0, 0.0),
         counter_clockwise: bool = False,
     ) -> np.ndarray:
+        """Rotate a single 2D point around a pivot.
+
+        :param point_2d: The 2D point to rotate.
+        :param angle: Rotation angle, in degrees. Defaults to 90.
+        :param pivot_point: The point to rotate around.
+        :param counter_clockwise: If True, rotate counter-clockwise. Defaults to clockwise.
+        :return: Rotated 2D point as a numpy array.
+        """
         angle_rad = radians(angle) * (1 if counter_clockwise else -1)
         relative_point = np.array(point_2d) - pivot_point
         relative_point = np_rotation_matrix(angle_rad, 2) @ relative_point
@@ -752,7 +775,16 @@ class ShapeBuilder:
         mirror_axes: VectorType = (1.0, 1.0),
         mirror_point: VectorType = (0.0, 0.0),
     ) -> np.ndarray:
-        """mirror_axes - along which axes mirror will be applied"""
+        """Mirror a single 2D point across the specified axes.
+
+        :param point_2d: The 2D point to mirror.
+        :param mirror_axes: Indicates which axes to mirror across. A positive value in a
+            component means that axis is mirrored (negated relative to ``mirror_point``).
+            Example: ``(1, 0)`` mirrors across the Y-axis (negates X only),
+            ``(1, 1)`` mirrors across both axes.
+        :param mirror_point: Origin of the mirror operation.
+        :return: Mirrored 2D point as a numpy array.
+        """
         mirror_axes: np.ndarray = np.where(np.array(mirror_axes) > 0, -1, 1)
         mirror_point: np.ndarray = np.array(mirror_point)
         relative_point = point_2d - mirror_point
@@ -798,7 +830,13 @@ class ShapeBuilder:
     def create_axis2_placement_2d(
         self, position: VectorType = (0.0, 0.0), x_direction: Optional[VectorType] = None
     ) -> ifcopenshell.entity_instance:
-        """Create IfcAxis2Placement2D."""
+        """Create IfcAxis2Placement2D.
+
+        :param position: 2D origin of the placement.
+        :param x_direction: Direction of the local X axis. If not provided, defaults to
+            the global X axis ``(1, 0)``.
+        :return: IfcAxis2Placement2D
+        """
         ref_direction = (
             self.file.create_entity("IfcDirection", ifc_safe_vector_type(x_direction)) if x_direction else None
         )
@@ -1053,7 +1091,14 @@ class ShapeBuilder:
     def create_swept_disk_solid(
         self, path_curve: ifcopenshell.entity_instance, radius: float
     ) -> ifcopenshell.entity_instance:
-        """Create IfcSweptDiskSolid from `path_curve` (must be 3D) and `radius`"""
+        """Create an IfcSweptDiskSolid — a circular cross-section swept along a 3D path.
+
+        Useful for modelling round pipes, conduits, and cables.
+
+        :param path_curve: A 3D curve entity defining the centreline path. Must have ``Dim == 3``.
+        :param radius: Radius of the circular disk cross-section.
+        :return: IfcSweptDiskSolid
+        """
         if path_curve.Dim != 3:
             raise Exception(
                 f"Path curve for IfcSweptDiskSolid should be 3D to be valid, currently it has {path_curve.Dim} dimensions.\n"
@@ -1096,18 +1141,26 @@ class ShapeBuilder:
         )
 
     def deep_copy(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Create a deep copy of an IFC element and all its referenced entities.
+
+        :param element: The IFC entity to copy.
+        :return: A new independent copy of the element.
+        """
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
     def extrude_kwargs(self, axis: Literal["Y", "X", "Z"]) -> dict[str, tuple[float, float, float]]:
-        """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
+        """Shortcut to get kwargs for :meth:`extrude` to extrude along a principal axis.
 
-        It assumes you have 2D profile in:
-            XZ plane for Y axis extrusion, \n
-            YZ plane for X axis extrusion, \n
-            XY plane for Z axis extrusion, \n
+        Assumes the 2D profile lies in the plane perpendicular to the extrusion axis:
+        XZ plane for Y-axis extrusion, YZ plane for X-axis extrusion, XY plane for Z-axis extrusion.
 
-        Extruding by X/Y using other kwargs might break ValidExtrusionDirection."""
+        Extruding along X or Y with other kwargs may violate the IFC ValidExtrusionDirection constraint.
+
+        :param axis: The extrusion axis: ``'X'``, ``'Y'``, or ``'Z'``.
+        :return: A dict with keys ``position_x_axis``, ``position_z_axis``, and ``extrusion_vector``
+            suitable for passing as ``**kwargs`` to :meth:`extrude`.
+        """
 
         if axis == "Y":
             return {
@@ -1131,13 +1184,16 @@ class ShapeBuilder:
     def rotate_extrusion_kwargs_by_z(
         self, kwargs: dict[str, Any], angle: float, counter_clockwise: bool = False
     ) -> dict[str, VectorType]:
-        """shortcut to rotate extrusion kwargs by z axis
+        """Rotate extrusion kwargs around the Z axis.
 
-        `kwargs` expected to have `position_x_axis` and `position_z_axis` keys
+        A shortcut to rotate the ``position_x_axis`` and ``position_z_axis`` values returned by
+        :meth:`extrude_kwargs` around the Z axis before passing them to :meth:`extrude`.
 
-        `angle` is a rotation value in radians
-
-        by default rotation is clockwise, to make it counter clockwise use `counter_clockwise` flag
+        :param kwargs: A dict with ``position_x_axis`` and ``position_z_axis`` keys,
+            as returned by :meth:`extrude_kwargs`. The original dict is not mutated.
+        :param angle: Rotation angle, in radians.
+        :param counter_clockwise: If True, rotate counter-clockwise. Defaults to clockwise.
+        :return: A new dict with ``position_x_axis`` and ``position_z_axis`` rotated around Z.
         """
         rot = np_rotation_matrix(-angle, 3, "Z")
         kwargs = kwargs.copy()  # prevent mutation of original kwargs
@@ -1146,7 +1202,11 @@ class ShapeBuilder:
         return kwargs
 
     def get_polyline_coords(self, polyline: ifcopenshell.entity_instance) -> np.ndarray:
-        """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
+        """Extract the coordinate array from a polyline entity.
+
+        :param polyline: An ``IfcIndexedPolyCurve`` or ``IfcPolyline`` entity.
+        :return: Numpy array of the polyline's point coordinates.
+        """
         coords = None
         if polyline.is_a("IfcIndexedPolyCurve"):
             coords = np.array(polyline.Points.CoordList)
@@ -1157,7 +1217,12 @@ class ShapeBuilder:
         return coords
 
     def set_polyline_coords(self, polyline: ifcopenshell.entity_instance, coords: SequenceOfVectors) -> None:
-        """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
+        """Update the coordinates of a polyline entity in-place.
+
+        :param polyline: An ``IfcIndexedPolyCurve`` or ``IfcPolyline`` entity.
+        :param coords: New sequence of point coordinates. Must contain the same number of
+            points as the original polyline.
+        """
         if polyline.is_a("IfcIndexedPolyCurve"):
             polyline.Points.CoordList = ifc_safe_vector_type(coords)
         elif polyline.is_a("IfcPolyline"):
@@ -1296,6 +1361,18 @@ class ShapeBuilder:
         WallThickness: float,
         FilletRadius: float,
     ) -> ifcopenshell.entity_instance:
+        """Create a Z-profile (cold-formed steel section) outline curve with lips and fillets.
+
+        All dimensions are in the IFC project's length units.
+
+        :param FirstFlangeWidth: Width of the first (top) flange, measured from the web centreline.
+        :param SecondFlangeWidth: Width of the second (bottom) flange, measured from the web centreline.
+        :param Depth: Total depth of the section (web height).
+        :param Girth: Length of the return lips on each flange.
+        :param WallThickness: Uniform material thickness.
+        :param FilletRadius: Inner bend radius at each corner.
+        :return: IfcIndexedPolyCurve representing the closed Z-profile outline.
+        """
         x1 = FirstFlangeWidth
         x2 = SecondFlangeWidth
         y = Depth / 2
@@ -1337,10 +1414,17 @@ class ShapeBuilder:
     def create_transition_arc_ifc(
         self, width: float, height: float, create_ifc_curve: bool = False
     ) -> tuple[SequenceOfVectors, list[list[int]], Union[ifcopenshell.entity_instance, None]]:
-        """Create an arc in the rectangle with specified width and height.
+        """Create an arc fitting inside a rectangle of the given width and height.
 
-        If it's not possible to make a complete arc, create an arc with longest radius possible
-        and straight segment in the middle.
+        If a single arc cannot span the full width, the longest possible radius is used and
+        a straight segment is inserted in the middle.
+
+        :param width: Width of the bounding rectangle.
+        :param height: Height of the bounding rectangle (also the maximum arc radius).
+        :param create_ifc_curve: If True, also create and return an ``IfcIndexedPolyCurve``.
+            If False, only return the raw point and segment data.
+        :return: A tuple ``(points, segments, ifc_curve)`` where ``ifc_curve`` is an
+            ``IfcIndexedPolyCurve`` when ``create_ifc_curve=True``, otherwise ``None``.
         """
         fillet_size = (width / 2) / height
         if fillet_size <= 1:
@@ -1370,6 +1454,14 @@ class ShapeBuilder:
         return points, segments, transition_arc
 
     def mesh(self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]) -> ifcopenshell.entity_instance:
+        """Create a tessellated mesh from points and face indices.
+
+        Delegates to :meth:`faceted_brep` for IFC2X3, or :meth:`polygonal_face_set` for IFC4 and later.
+
+        :param points: List of 3D coordinates.
+        :param faces: List of faces, each face a sequence of zero-based point indices.
+        :return: IfcFacetedBrep (IFC2X3) or IfcPolygonalFaceSet (IFC4+).
+        """
         if self.file.schema == "IFC2X3":
             return self.faceted_brep(points, faces)
         return self.polygonal_face_set(points, faces)
@@ -1723,11 +1815,20 @@ class ShapeBuilder:
         angle: float,
         profile_offset: VectorType = (0.0, 0.0),
         verbose: bool = True,
-    ):
-        """get the final transition length for two profiles dimensions, angle and XY offset between them,
+    ) -> Optional[float]:
+        """Get the transition length for two profile half-dimensions, an angle, and an XY offset.
 
-        the difference from `calculate_transition` - `get_transition_length` is making sure
-        that length will fit both sides of the transition
+        Unlike :meth:`mep_transition_calculate`, this method checks that the resulting length
+        satisfies the angle constraint from both the start and end profile perspectives.
+
+        :param start_half_dim: Half-dimensions of the start profile as a 3-element array
+            ``[half_x, half_y, depth]``. For circular profiles ``half_x == half_y == radius``.
+        :param end_half_dim: Half-dimensions of the end profile in the same format.
+        :param angle: Maximum allowed transition angle, in degrees.
+        :param profile_offset: 2D XY offset between the centrelines of the start and end profiles.
+        :param verbose: If True, print diagnostic values during calculation.
+        :return: Transition length in project length units, or ``None`` if no valid length exists
+            for the given angle and offset.
         """
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
         np_X, np_Y = 0, 1
@@ -1788,9 +1889,23 @@ class ShapeBuilder:
         angle: Optional[float] = None,
         verbose: bool = True,
     ) -> Union[float, None]:
-        """will return transition length based on the profile dimension differences and offset.
+        """Calculate MEP transition length from angle, or transition angle from length.
 
-        If `length` is provided will return transition angle"""
+        Low-level calculation kernel used by :meth:`mep_transition_length`. Provide either
+        ``angle`` or ``length`` (not both); the other value is computed and returned.
+
+        :param start_half_dim: Half-dimensions of the start profile ``[half_x, half_y, depth]``.
+        :param end_half_dim: Half-dimensions of the end profile ``[half_x, half_y, depth]``.
+        :param offset: 2D XY offset between profile centrelines.
+        :param diff: Pre-computed absolute difference of start and end half-dimensions (XY only).
+            Computed from ``start_half_dim`` and ``end_half_dim`` if not provided.
+        :param end_profile: If True, swap X and Y axes to compute from the end-profile perspective.
+        :param length: Known transition length. If provided, the corresponding angle is returned.
+        :param angle: Known transition angle, in degrees. If provided, the corresponding length is returned.
+        :param verbose: If True, print diagnostic values during calculation.
+        :return: Transition length (if ``angle`` was given) or transition angle in degrees
+            (if ``length`` was given), or ``None`` if the geometry is not feasible.
+        """
 
         print = lambda *args, **kwargs: __builtins__["print"](*args, **kwargs) if verbose else None
 
