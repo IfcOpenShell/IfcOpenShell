@@ -1,4 +1,5 @@
 # This file was generated with the assistance of an AI coding tool.
+import pytest
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
@@ -6,14 +7,18 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import pytest
 
-import ifcmcp.server as server_mod
+from ifcmcp.core import IfcSession
+
+
+@pytest.fixture
+def session():
+    return IfcSession()
 
 
 @pytest.fixture
 def model():
-    """Create an IFC4 model with a spatial hierarchy, a wall, and a slab."""
+    """IFC4 model with a spatial hierarchy, a wall, and a slab."""
     f = ifcopenshell.api.project.create_file()
     ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
     ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
@@ -46,19 +51,9 @@ def model_file(model, tmp_path):
     return str(path)
 
 
-@pytest.fixture(autouse=True)
-def reset_server_state():
-    """Reset module-level state before each test."""
-    server_mod._model = None
-    server_mod._model_path = None
-    yield
-    server_mod._model = None
-    server_mod._model_path = None
-
-
 @pytest.fixture
-def loaded_model(model):
-    """Set the server module state to an in-memory model (no file path)."""
-    server_mod._model = model
-    server_mod._model_path = None
-    return model
+def loaded_session(model):
+    """An IfcSession with an in-memory model already loaded (no file path)."""
+    s = IfcSession()
+    s.model = model
+    return s

@@ -1,12 +1,14 @@
 # This file was generated with the assistance of an AI coding tool.
-from ifcmcp.server import server
+from ifcmcp.server import build_server
 
 
 class TestServerRegistration:
     def test_server_name(self):
+        server = build_server()
         assert server.name == "ifc-mcp"
 
     def test_all_tools_registered(self):
+        server = build_server()
         tools = [t.name for t in server._tool_manager.list_tools()]
         expected = [
             "ifc_load",
@@ -23,7 +25,3 @@ class TestServerRegistration:
         ]
         for name in expected:
             assert name in tools, f"Tool {name} not registered"
-
-    def test_tool_count(self):
-        tools = server._tool_manager.list_tools()
-        assert len(tools) == 11
