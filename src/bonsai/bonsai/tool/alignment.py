@@ -388,6 +388,68 @@ class Alignment:
         ifc_file = tool.Ifc.get()
         align_api.layout_horizontal_alignment_by_pi_method(ifc_file, layout, hpoints, radii)
 
+    @classmethod
+    def create_representation_structure(cls, alignment: "ifcopenshell.entity_instance", template: str) -> None:
+        """Create semantic layout containers and geometric representation for an IfcAlignment.
+
+        Called from the AddElement operator when the user selects a representation type
+        for a newly-created IfcAlignment.  For layout-based templates (HORIZONTAL, GRADIENT,
+        CANT), the appropriate IfcAlignmentHorizontal / Vertical / Cant entities are nested to
+        the alignment and ifcopenshell.api.alignment.create_representation is invoked to build
+        the matching geometric curves.  For polyline templates, an IfcPolyLine with two
+        placeholder origin points is created directly.
+
+        Layout containers are IFC entities only — no Blender objects are created for them.
+
+        Args:
+            alignment: The IfcAlignment entity that was just created by AddElement.
+            template:  One of ALIGNMENT_HORIZONTAL, ALIGNMENT_GRADIENT, ALIGNMENT_CANT,
+                       ALIGNMENT_POLYLINE_3D, or ALIGNMENT_POLYLINE_2D.
+        """
+        import ifcopenshell.api.alignment as align_api
+        import ifcopenshell.api.nest
+        import ifcopenshell.guid
+        from ifcopenshell.api.alignment._create_polyline_representation import (
+            _create_polyline_representation,
+        )
+
+        ifc_file = tool.Ifc.get()
+
+        if template == "ALIGNMENT_HORIZONTAL":
+            h_layout = ifc_file.createIfcAlignmentHorizontal(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[h_layout], relating_object=alignment)
+            align_api.create_representation(ifc_file, alignment)
+
+        elif template == "ALIGNMENT_GRADIENT":
+            h_layout = ifc_file.createIfcAlignmentHorizontal(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[h_layout], relating_object=alignment)
+            v_layout = ifc_file.createIfcAlignmentVertical(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[v_layout], relating_object=alignment)
+            align_api.create_representation(ifc_file, alignment)
+
+        elif template == "ALIGNMENT_CANT":
+            h_layout = ifc_file.createIfcAlignmentHorizontal(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[h_layout], relating_object=alignment)
+            v_layout = ifc_file.createIfcAlignmentVertical(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[v_layout], relating_object=alignment)
+            c_layout = ifc_file.createIfcAlignmentCant(GlobalId=ifcopenshell.guid.new())
+            ifcopenshell.api.nest.assign_object(ifc_file, related_objects=[c_layout], relating_object=alignment)
+            align_api.create_representation(ifc_file, alignment)
+
+        elif template == "ALIGNMENT_POLYLINE_3D":
+            pts = [
+                ifc_file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0)),
+                ifc_file.createIfcCartesianPoint(Coordinates=(1.0, 0.0, 0.0)),
+            ]
+            _create_polyline_representation(ifc_file, alignment, pts)
+
+        elif template == "ALIGNMENT_POLYLINE_2D":
+            pts = [
+                ifc_file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
+                ifc_file.createIfcCartesianPoint(Coordinates=(1.0, 0.0)),
+            ]
+            _create_polyline_representation(ifc_file, alignment, pts)
+
     # =========================================================================
     # Zero-Length Segment Utilities
     # =========================================================================

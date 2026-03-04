@@ -542,6 +542,11 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
         if representation_template in (
             "EMPTY",
+            "ALIGNMENT_HORIZONTAL",
+            "ALIGNMENT_GRADIENT",
+            "ALIGNMENT_CANT",
+            "ALIGNMENT_POLYLINE_3D",
+            "ALIGNMENT_POLYLINE_2D",
             "LAYERSET_AXIS2",
             "LAYERSET_AXIS3",
             "PROFILESET",
@@ -566,7 +571,17 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         )
         element.Description = props.description or None
 
-        if representation_template == "EMTPY" or not ifc_context:
+        if representation_template == "EMPTY":
+            pass
+        elif representation_template in (
+            "ALIGNMENT_HORIZONTAL",
+            "ALIGNMENT_GRADIENT",
+            "ALIGNMENT_CANT",
+            "ALIGNMENT_POLYLINE_3D",
+            "ALIGNMENT_POLYLINE_2D",
+        ):
+            tool.Alignment.create_representation_structure(element, representation_template)
+        elif not ifc_context:
             pass
         elif representation_template == "OBJ" and props.representation_obj:
             obj.matrix_world = props.representation_obj.matrix_world.copy()
@@ -862,5 +877,12 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif props.representation_template == "PROFILESET":
             row = self.layout.row()
             prop_with_search(self.layout, props, "profile", text="Profile", should_click_ok=True)
-        if props.representation_template != "EMPTY":
+        alignment_templates = {
+            "ALIGNMENT_HORIZONTAL",
+            "ALIGNMENT_GRADIENT",
+            "ALIGNMENT_CANT",
+            "ALIGNMENT_POLYLINE_3D",
+            "ALIGNMENT_POLYLINE_2D",
+        }
+        if props.representation_template != "EMPTY" and props.representation_template not in alignment_templates:
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
