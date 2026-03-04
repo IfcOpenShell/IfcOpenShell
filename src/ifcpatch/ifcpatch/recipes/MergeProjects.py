@@ -25,6 +25,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import numpy as np
 
+import ifcpatch
 from ifcpatch.recipes.SetFalseOrigin import Patcher as SetFalseOrigin
 
 

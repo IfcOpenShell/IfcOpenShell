@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
@@ -24,10 +26,8 @@ import pytest
 
 import bonsai.core.tool
 import bonsai.tool as tool
-import tempfile
 from bonsai.tool.blender import Blender as subject
 from test.bim.bootstrap import NewFile
-from pathlib import Path
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
