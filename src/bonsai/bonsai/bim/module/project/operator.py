@@ -2287,6 +2287,11 @@ class QueryLinkedElement(bpy.types.Operator):
             region_2d_to_origin_3d,
             region_2d_to_vector_3d,
         )
+        from ifcpatch.recipes.ExtractPropertiesToSQLite import (
+            ElementRow,
+            PropertyRow,
+            RelationshipRow,
+        )
 
         LinksData.linked_data = {}
         props = tool.Project.get_project_props()
@@ -2352,7 +2357,7 @@ class QueryLinkedElement(bpy.types.Operator):
         self.c = self.db.cursor()
 
         self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
-        element = self.c.fetchone()
+        element = ElementRow(*self.c.fetchone())
 
         attributes: dict[str, Any] = {}
         for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
@@ -2360,14 +2365,14 @@ class QueryLinkedElement(bpy.types.Operator):
                 attributes[attr] = element[i + 1]
 
         self.c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
-        rows = self.c.fetchall()
+        rows = [PropertyRow(*row) for row in self.c.fetchall()]
 
-        properties = {}
+        properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
         for row in rows:
-            properties.setdefault(row[1], {})[row[2]] = row[3]
+            properties[row.pset_name][row.name] = row.value
 
         self.c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
-        relationships = self.c.fetchall()
+        relationships = [RelationshipRow(*row) for row in self.c.fetchall()]
 
         relating_type_id = None
 
@@ -2375,12 +2380,12 @@ class QueryLinkedElement(bpy.types.Operator):
             if relationship[1] == "IfcRelDefinesByType":
                 relating_type_id = relationship[2]
 
-        type_properties = {}
+        type_properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
         if relating_type_id is not None:
             self.c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
-            rows = self.c.fetchall()
+            rows = [PropertyRow(*row) for row in self.c.fetchall()]
             for row in rows:
-                type_properties.setdefault(row[1], {})[row[2]] = row[3]
+                type_properties[row.pset_name][row.name] = row.value
 
         LinksData.linked_data = {
             "attributes": attributes,
