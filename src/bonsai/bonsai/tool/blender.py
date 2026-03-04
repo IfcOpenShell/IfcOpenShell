@@ -2184,3 +2184,20 @@ class Blender(bonsai.core.tool.Blender):
             for f in files
             if (Path(directory) / f.name).is_file()
         ]
+
+    @classmethod
+    def ray_cast_scene(
+        cls,
+        context: bpy.types.Context,
+        origin: Vector,
+        direction: Vector,
+    ) -> tuple[bool, Vector, Vector, int, bpy.types.Object, Matrix]:
+        depsgraph = context.evaluated_depsgraph_get()
+        assert context.scene
+        # `matrix` is just `obj.matrix_world`.
+        result = context.scene.ray_cast(
+            depsgraph,
+            origin,
+            direction,
+        )
+        return result

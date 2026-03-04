@@ -2307,7 +2307,9 @@ class QueryLinkedElement(bpy.types.Operator):
         coord = (self.mouse_x, self.mouse_y)
         origin = region_2d_to_origin_3d(region, rv3d, coord)
         direction = region_2d_to_vector_3d(region, rv3d, coord)
-        hit, location, normal, face_index, obj, instance_matrix = self.ray_cast(context, origin, direction)
+        hit, location, normal, face_index, obj, instance_matrix = tool.Blender.ray_cast_scene(
+            context, origin, direction
+        )
         if not hit:
             self.report({"INFO"}, "No object found.")
             return {"FINISHED"}
@@ -2398,11 +2400,6 @@ class QueryLinkedElement(bpy.types.Operator):
         self.report({"INFO"}, f"Loaded data for {guid}")
         ProjectDecorator.install(bpy.context)
         return {"FINISHED"}
-
-    def ray_cast(self, context: bpy.types.Context, origin: Vector, direction: Vector):
-        depsgraph = context.evaluated_depsgraph_get()
-        result = context.scene.ray_cast(depsgraph, origin, direction)
-        return result
 
     def find_obj_root(self, obj: bpy.types.Object, matrix: Matrix) -> Union[bpy.types.Object, None]:
         collections = set(obj.users_collection)
@@ -2723,7 +2720,7 @@ class CreateClippingPlane(bpy.types.Operator):
             coord = (self.mouse_x, self.mouse_y)
             origin = region_2d_to_origin_3d(region, rv3d, coord)
             direction = region_2d_to_vector_3d(region, rv3d, coord)
-            hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+            hit, location, normal, face_index, obj, matrix = tool.Blender.ray_cast_scene(context, origin, direction)
             if not hit:
                 self.report({"INFO"}, "No object found.")
                 return {"FINISHED"}
@@ -2757,11 +2754,6 @@ class CreateClippingPlane(bpy.types.Operator):
         ClippingPlaneDecorator.install(context)
         bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
         return {"FINISHED"}
-
-    def ray_cast(self, context, origin, direction):
-        depsgraph = context.evaluated_depsgraph_get()
-        result = context.scene.ray_cast(depsgraph, origin, direction)
-        return result
 
     def invoke(self, context, event):
         self.mouse_x = event.mouse_region_x
