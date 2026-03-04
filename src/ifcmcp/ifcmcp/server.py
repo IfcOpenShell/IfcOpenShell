@@ -127,6 +127,19 @@ def build_server() -> Any:
     def ifc_quantify(rule: str, selector: str = "") -> dict[str, Any]:
         return session.ifc_quantify(rule=rule, selector=selector)
 
+    # ---- Shape builder ----
+    @server.tool()
+    def ifc_shape_list() -> list[dict]:
+        return session.ifc_shape_list()
+
+    @server.tool()
+    def ifc_shape_docs(method: str) -> dict:
+        return session.ifc_shape_docs(method=method)
+
+    @server.tool()
+    def ifc_shape(method: str, params: str = "{}") -> dict:
+        return session.ifc_shape(method=method, params=params)
+
     @server.tool(structured_output=False)
     def ifc_render(
         selector: str = "",

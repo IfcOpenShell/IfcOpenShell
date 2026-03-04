@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable  # noqa: F401 — Callable used in helpers below
 
 import ifcopenshell
 
@@ -26,6 +26,10 @@ def _jsonify(x: Any) -> Any:
     if x is None or isinstance(x, (str, int, float, bool)):
         return x
 
+    # numpy arrays (and any array-like with tolist)
+    if hasattr(x, "tolist"):
+        return x.tolist()
+
     # IfcOpenShell entity instances: normalize
     if isinstance(x, ifcopenshell.entity_instance):
         return {
@@ -47,6 +51,142 @@ def _jsonify(x: Any) -> Any:
         return x
     except Exception:
         return str(x)
+
+
+# ---------------------------------------------------------------------------
+# Shape builder helpers
+# ---------------------------------------------------------------------------
+
+def _list_shape_methods() -> list[dict]:
+    """Introspect ShapeBuilder and return a summary of all public methods."""
+    import inspect
+
+    from ifcedit.discover import _extract_params
+    from ifcopenshell.util.shape_builder import ShapeBuilder
+
+    results = []
+    for name, fn in inspect.getmembers(ShapeBuilder, predicate=inspect.isfunction):
+        if name.startswith("_"):
+            continue
+        doc = fn.__doc__ or ""
+        description = doc.strip().split("\n")[0] if doc.strip() else ""
+        results.append({"method": name, "description": description, "params": _extract_params(fn)})
+    return results
+
+
+def _shape_method_docs(method_name: str) -> dict:
+    """Return full documentation for a single ShapeBuilder method."""
+    import typing
+
+    from ifcedit.discover import (
+        _extract_params,
+        _format_type_hint,
+        _parse_docstring_body,
+        _parse_param_docs,
+        _parse_return_doc,
+    )
+    from ifcopenshell.util.shape_builder import ShapeBuilder
+
+    if method_name.startswith("_"):
+        raise ValueError(f"ShapeBuilder has no method '{method_name}'")
+    fn = getattr(ShapeBuilder, method_name, None)
+    if fn is None:
+        raise ValueError(f"ShapeBuilder has no method '{method_name}'")
+
+    doc = fn.__doc__ or ""
+    description, long_description = _parse_docstring_body(doc)
+    params = _extract_params(fn)
+    for param in params:
+        param_desc = _parse_param_docs(doc)
+        if param["name"] in param_desc:
+            param["description"] = param_desc[param["name"]]
+
+    try:
+        hints = typing.get_type_hints(fn)
+    except Exception:
+        hints = {}
+
+    result: dict[str, Any] = {
+        "method": method_name,
+        "description": description,
+        "long_description": long_description,
+        "params": params,
+    }
+    return_type = _format_type_hint(hints.get("return"))
+    if return_type:
+        result["return_type"] = return_type
+    return_description = _parse_return_doc(doc)
+    if return_description:
+        result["return_description"] = return_description
+    return result
+
+
+def _coerce_shape_params(fn: Callable, raw_kwargs: dict, model: ifcopenshell.file) -> dict:
+    """Coerce JSON-parsed kwargs to proper Python types for a ShapeBuilder method."""
+    import inspect
+    import typing
+
+    sig = inspect.signature(fn)
+    try:
+        hints = typing.get_type_hints(fn)
+    except Exception:
+        hints = {}
+
+    return {
+        key: _coerce_shape_value(value, hints.get(key), model)
+        for key, value in raw_kwargs.items()
+        if key in sig.parameters and key != "self"
+    }
+
+
+def _coerce_shape_value(value: Any, hint: Any, model: ifcopenshell.file) -> Any:
+    """Convert a single JSON-parsed value to the correct Python type."""
+    import typing
+
+    if hint is None or value is None:
+        return value
+
+    origin = typing.get_origin(hint)
+    args = typing.get_args(hint)
+
+    # Optional[X] / Union — try each non-None branch in order
+    if origin is typing.Union:
+        if value is None:
+            return None
+        for t in (a for a in args if a is not type(None)):
+            try:
+                return _coerce_shape_value(value, t, model)
+            except (ValueError, TypeError):
+                continue
+        return value
+
+    # entity_instance: resolve integer or "#N" string step ID
+    if hint is ifcopenshell.entity_instance or (
+        isinstance(hint, type) and issubclass(hint, ifcopenshell.entity_instance)
+    ):
+        entity_id = int(str(value).lstrip("#"))
+        entity = model.by_id(entity_id)
+        if entity is None:
+            raise ValueError(f"Entity #{entity_id} not found in model")
+        return entity
+
+    # Sequence[entity_instance]: resolve each element in the list
+    import collections.abc
+    if origin is not None and issubclass(origin, collections.abc.Sequence) and not isinstance(value, str):
+        if args and (args[0] is ifcopenshell.entity_instance or (
+            isinstance(args[0], type) and issubclass(args[0], ifcopenshell.entity_instance)
+        )):
+            if isinstance(value, (list, tuple)):
+                return [_coerce_shape_value(v, args[0], model) for v in value]
+
+    # bool: JSON gives actual bools; also accept string representations
+    if hint is bool:
+        if isinstance(value, bool):
+            return value
+        return str(value).lower() in ("true", "1", "yes")
+
+    # Everything else (float, int, VectorType lists, dicts, Literals) passes through
+    return value
 
 class IfcSessionError(RuntimeError):
     pass
@@ -243,6 +383,47 @@ class IfcSession:
             element_ids=element_ids,
             view=view,
         )
+
+    # ------------------------
+    # Shape builder tools
+    # ------------------------
+    def ifc_shape_list(self) -> list[dict]:
+        """List all ShapeBuilder geometry methods with one-line descriptions and parameter names."""
+        return _list_shape_methods()
+
+    def ifc_shape_docs(self, method: str) -> dict:
+        """Full documentation for a ShapeBuilder method: params, types, return value."""
+        return _shape_method_docs(method)
+
+    def ifc_shape(self, method: str, params: Any = "{}") -> dict:
+        """Call a ShapeBuilder method by name. Returns the created entity's step ID.
+
+        params is a JSON string of keyword arguments. Pass entity references as integer
+        step IDs; vectors as JSON arrays (e.g. [1.0, 0.0, 0.0]).
+        """
+        model = self._require_model()
+
+        from ifcopenshell.util.shape_builder import ShapeBuilder
+
+        if method.startswith("_"):
+            raise IfcSessionError(f"Private method '{method}' is not accessible")
+        fn = getattr(ShapeBuilder, method, None)
+        if fn is None:
+            return {"ok": False, "error": f"ShapeBuilder has no method '{method}'"}
+
+        if isinstance(params, str):
+            raw_kwargs = json.loads(params) if params.strip() else {}
+        elif isinstance(params, dict):
+            raw_kwargs = params
+        else:
+            raw_kwargs = {}
+
+        try:
+            coerced = _coerce_shape_params(fn, raw_kwargs, model)
+            result = fn(ShapeBuilder(model), **coerced)
+            return {"ok": True, "result": _jsonify(result)}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
     def ifc_quantify(self, rule: str, selector: str = "") -> dict[str, Any]:
         """Run quantity take-off on the model using the named rule.
