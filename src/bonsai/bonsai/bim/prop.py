@@ -21,8 +21,6 @@ import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.pset
 import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
@@ -35,17 +33,9 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import PropertyGroup
-from ifcopenshell.util.doc import (
-    get_attribute_doc,
-    get_entity_doc,
-    get_predefined_type_doc,
-    get_property_doc,
-    get_property_set_doc,
-)
 
 import bonsai.bim
 import bonsai.bim.handler
-import bonsai.bim.schema
 import bonsai.tool as tool
 
 cwd = os.path.dirname(os.path.realpath(__file__))

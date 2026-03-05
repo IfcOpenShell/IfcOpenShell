@@ -31,7 +31,6 @@ from typing import Union
 
 import bpy
 import ifcopenshell
-import ifctester
 import ifctester.ids
 import ifctester.reporter
 import socketio

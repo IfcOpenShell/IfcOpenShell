@@ -794,6 +794,12 @@ if __name__ == "__main__":
     parser.add_argument("--rules", action="store_true", help="Run express rules.")
     parser.add_argument("--json", action="store_true", help="Output in JSON format.")
     parser.add_argument(
+        "--recursion-limit",
+        type=int,
+        default=-1,
+        help="Override sys.getrecursionlimit to process express rules on deeply nested structures (e.g 10000)",
+    )
+    parser.add_argument(
         "--fields",
         action="store_true",
         help="Output more detailed information about failed entities (only with --json).",
@@ -803,6 +809,9 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+
+    if args.recursion_limit > 0:
+        sys.setrecursionlimit(args.recursion_limit)
 
     for fn in filenames:
         handler = None

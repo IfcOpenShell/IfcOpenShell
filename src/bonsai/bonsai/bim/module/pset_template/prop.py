@@ -16,18 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.attribute
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -38,7 +35,6 @@ from ifcopenshell.util.doc import get_attribute_doc
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
-from bonsai.bim.prop import Attribute, StrProperty
 
 
 def updatePsetTemplateFiles(self, context):

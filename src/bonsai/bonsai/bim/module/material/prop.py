@@ -19,25 +19,21 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
-from ifcopenshell.util.doc import get_entity_doc
 
 import bonsai.tool as tool
 from bonsai.bim.module.classification.data import MaterialClassificationsData
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_profile_classes(self, context):

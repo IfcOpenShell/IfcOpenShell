@@ -34,7 +34,6 @@ IN_PACKAGE = __package__ == "bonsai"
 
 import platform
 import re
-import shutil
 import traceback
 import uuid
 import webbrowser

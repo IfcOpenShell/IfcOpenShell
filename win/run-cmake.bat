@@ -20,6 +20,10 @@
 :: Example usage:
 ::   run-cmake.bat vs2022-x64
 ::   run-cmake.bat vs2022-x64 -DGLTF_SUPPORT=ON -DHDF5_SUPPORT=OFF
+::
+:: Used environment variables:
+:: - `ADD_COMMIT_SHA` - if defined then `ADD_COMMIT_SHA` and `VERSION_OVERRIDE` cmake args will be set to `ON`.
+:: - `USE_NINJA` - if defined then the Ninja generator will be used instead of the Visual Studio.
 
 
 @if not defined ECHO_ON ( echo off )
@@ -105,7 +109,13 @@ set PYTHON_LIBRARY=%PYTHONHOME%\libs\python%PY_VER_MAJOR_MINOR%.lib
 :: we can remove it later.
 if not defined SWIG_INSTALL_DIR set SWIG_INSTALL_DIR=%INSTALL_DIR%\swigwin
 set JSON_INCLUDE_DIR=%INSTALL_DIR%\json
-if not defined ADD_COMMIT_SHA set ADD_COMMIT_SHA=Off
+if defined ADD_COMMIT_SHA (
+    set ADD_COMMIT_SHA=ON
+    set VERSION_OVERRIDE=ON
+) else (
+    set ADD_COMMIT_SHA=OFF
+    set VERSION_OVERRIDE=OFF
+)
 
 set CGAL_INSTALL_DIR=%INSTALL_DIR%\cgal
 set GMP_INSTALL_DIR=%INSTALL_DIR%\mpir
@@ -180,18 +190,15 @@ if defined USE_NINJA (
 )
 
 IF NOT "%VS_TOOLSET_HOST%"=="" (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% -T %VS_TOOLSET_HOST% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
-              -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
-              -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
-              -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
-) ELSE (
-    cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% ^
-              -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
-              -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
-              -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
-              -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% %ARGUMENTS%
+    set VS_TOOLSET_OPTION=-T %VS_TOOLSET_HOST%
 )
+
+cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% %VS_TOOLSET_OPTION% ^
+    -DCMAKE_INSTALL_PREFIX="%CMAKE_INSTALL_PREFIX%" ^
+    -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
+    -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
+    -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% -DVERSION_OVERRIDE=%VERSION_OVERRIDE% ^
+    %ARGUMENTS%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 

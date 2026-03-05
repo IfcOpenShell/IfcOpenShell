@@ -21,7 +21,6 @@ import json
 
 import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 

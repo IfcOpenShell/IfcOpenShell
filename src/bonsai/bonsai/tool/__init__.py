@@ -15,6 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Ignore unused imports.
+# ruff: noqa: F401
 
 from bonsai.tool.aggregate import Aggregate
 from bonsai.tool.attribute import Attribute

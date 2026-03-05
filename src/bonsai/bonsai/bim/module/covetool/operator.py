@@ -20,7 +20,6 @@ import json
 from math import atan2, degrees
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 
 import bonsai.tool as tool

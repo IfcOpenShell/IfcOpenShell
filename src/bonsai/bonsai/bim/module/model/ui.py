@@ -22,11 +22,10 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import bpy
-from bpy.types import Menu, Panel
+from bpy.types import Panel
 
 import bonsai.bim
 import bonsai.tool as tool
-from bonsai.bim import module
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
     ArrayData,

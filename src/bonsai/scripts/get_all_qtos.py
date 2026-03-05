@@ -7,7 +7,6 @@ from typing import Union
 
 import ifc5d
 import ifcopenshell.util.pset
-import ifcopenshell.util.type
 
 
 def order_dict(dictionary):

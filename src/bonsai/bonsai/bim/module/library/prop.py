@@ -20,20 +20,16 @@ from typing import TYPE_CHECKING, Literal
 
 import bpy
 from bpy.props import (
-    BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.library.data import LibrariesData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def update_active_reference_index(self, context):

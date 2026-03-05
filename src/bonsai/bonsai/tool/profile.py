@@ -25,9 +25,6 @@ import ifcopenshell
 import ifcopenshell.api.profile
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.element
-import ifcopenshell.util.placement
-import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import numpy as np

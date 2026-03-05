@@ -25,7 +25,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
+from ifcopenshell.util.doc import get_entity_doc
 from natsort import natsorted
 
 import bonsai.tool as tool
@@ -424,12 +424,12 @@ class SverchokData:
         return tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Sverchok")
 
     @classmethod
-    def has_sverchok(cls):
+    def has_sverchok(cls) -> bool:
         try:
-            import sverchok
+            import sverchok  # noqa: F401
 
             return True
-        except:
+        except ModuleNotFoundError:
             return False
 
 

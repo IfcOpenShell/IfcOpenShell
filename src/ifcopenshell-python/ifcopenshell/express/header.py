@@ -28,6 +28,7 @@ from collections import defaultdict
 
 USE_VIRTUAL_INHERITANCE = True
 
+
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []

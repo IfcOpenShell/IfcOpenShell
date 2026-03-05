@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import os
 import json
-import math
 import shutil
 import numpy as np
 from collections import defaultdict
@@ -33,7 +32,6 @@ import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 
 import bonsai.bim.schema
@@ -542,11 +540,11 @@ class Project(bonsai.core.tool.Project):
         if not ifc_file:
             raise Exception("No IFC file loaded")
 
-        doc = tool.Ifc.run("document.add_information", parent=None)
+        doc = ifcopenshell.api.document.add_information(ifc_file, parent=None)
 
         if ifc_file.schema == "IFC2X3":
-            tool.Ifc.run(
-                "document.edit_information",
+            ifcopenshell.api.document.edit_information(
+                ifc_file,
                 information=doc,
                 attributes={
                     "DocumentId": "BLEND_METADATA",
@@ -557,8 +555,8 @@ class Project(bonsai.core.tool.Project):
                 },
             )
         else:
-            tool.Ifc.run(
-                "document.edit_information",
+            ifcopenshell.api.document.edit_information(
+                ifc_file,
                 information=doc,
                 attributes={
                     "Identification": "BLEND_METADATA",
@@ -578,13 +576,15 @@ class Project(bonsai.core.tool.Project):
             return
 
         ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            return
-
-        tool.Ifc.run("document.edit_information", information=doc, attributes={"Location": metadata_filename})
+        ifcopenshell.api.document.edit_information(
+            ifc_file, information=doc, attributes={"Location": metadata_filename}
+        )
 
     @classmethod
     def remove_metadata_document_information(cls) -> None:
         doc = cls.get_metadata_document_information()
-        if doc:
-            tool.Ifc.run("document.remove_information", information=doc)
+        if not doc:
+            return
+
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.document.remove_information(ifc_file, information=doc)

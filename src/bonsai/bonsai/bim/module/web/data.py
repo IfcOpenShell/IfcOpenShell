@@ -18,8 +18,6 @@
 
 import os
 
-import bpy
-
 import bonsai.tool as tool
 
 

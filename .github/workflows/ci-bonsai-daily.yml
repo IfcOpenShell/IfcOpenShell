@@ -24,9 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
+    outputs:
+      timestamp: ${{ steps.timestamp.outputs.timestamp }}
     steps:
-    - name: Set env
-      run: echo ok go
+    - name: Get current timestamp
+      id: timestamp
+      # Include hours and minutes to release tag
+      # to avoid possibility of unstable repo's index.json
+      # pointing to the new file when index.json itself wasn't yet updated.
+      run: echo "timestamp=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
 
   build:
     needs: activate
@@ -67,12 +73,6 @@ jobs:
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
-      - name: Get current date
-        id: date
-        # Include hours and minutes to release tag
-        # to avoid possibility of unstable repo's index.json
-        # pointing to the new file when index.json itself wasn't yet updated.
-        run: echo "date=$(date +'%y%m%d%H%M')" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
           cd src/bonsai && make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
@@ -88,8 +88,8 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
-          release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
-          tag: "bonsai-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
+          release_name: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.activate.outputs.timestamp }} (unstable)"
+          tag: "bonsai-${{steps.version.outputs.version}}-alpha${{ needs.activate.outputs.timestamp }}"
           overwrite: true
           body: "See README in https://github.com/IfcOpenShell/bonsai_unstable_repo/ on how to setup autoupdates for daily Bonsai builds."
 

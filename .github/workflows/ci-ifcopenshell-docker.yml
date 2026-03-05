@@ -35,7 +35,7 @@ jobs:
 
     -
       name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
+      uses: hendrikmuhs/ccache-action@v1.2.20
 
     - 
       name: Build ifcopenshell
@@ -73,7 +73,7 @@ jobs:
         make package
       working-directory: build
     - name: Upload 
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         # Artifact name
         name: ifcos-artifacts
@@ -91,7 +91,7 @@ jobs:
         lfs: true
     
     - name: Download 
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.0
       with:
         # Artifact name
         name: ifcos-artifacts

@@ -30,7 +30,6 @@ import threading
 import time
 import webbrowser
 from pathlib import Path
-from time import sleep
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import bpy
@@ -118,7 +117,6 @@ class Web(bonsai.core.tool.Web):
 
         :param port: The port number on which to start the WebSocket server.
         """
-        import addon_utils
 
         global ws_process
 

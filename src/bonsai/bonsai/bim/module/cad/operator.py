@@ -17,13 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from math import cos, pi, radians, sin, sqrt
-from typing import Union
+from math import pi, sqrt
 
 import bmesh
 import bpy
 import bpy_extras
-import ifcopenshell.util.unit
 import mathutils
 from mathutils import Matrix, Vector
 

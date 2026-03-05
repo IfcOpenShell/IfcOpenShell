@@ -54,7 +54,7 @@ class TestFormat(test.bootstrap.IFC4):
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
-        assert subject.format('round(-123, 5)') == "-125"
+        assert subject.format("round(-123, 5)") == "-125"
         assert subject.format("int(123.123)") == "123"
         assert subject.format("int(123)") == "123"
         assert subject.format("number(123)") == "123"
@@ -79,14 +79,14 @@ class TestFormat(test.bootstrap.IFC4):
         assert subject.format('imperial_length(3.0, 4, "foot", "foot", False)') == "3' - 0\""
 
     def test_variable_formatting(self):
-        assert subject.format('{{undefined}}') is None
-        assert subject.format('upper({{undefined}})') == "NONE"
-        assert subject.format('int({{undefined}})') == "0"
+        assert subject.format("{{undefined}}") is None
+        assert subject.format("upper({{undefined}})") == "NONE"
+        assert subject.format("int({{undefined}})") == "0"
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        assert subject.format('{{undefined}}', element) is None
-        assert subject.format('{{class}}', element) == "IfcWall"
-        assert subject.format('{{ class }}', element) == "IfcWall"
-        assert subject.format('upper({{ class }})', element) == "IFCWALL"
+        assert subject.format("{{undefined}}", element) is None
+        assert subject.format("{{class}}", element) == "IfcWall"
+        assert subject.format("{{ class }}", element) == "IfcWall"
+        assert subject.format("upper({{ class }})", element) == "IFCWALL"
 
     def test_list_formatting(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -98,17 +98,17 @@ class TestFormat(test.bootstrap.IFC4):
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material2)
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=material_set, material=material3)
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
-        assert subject.format('{{materials.Name}}', element) == "CON01, CON03, CON02"
-        assert subject.format('sort({{materials.Name}})', element) == "CON01, CON02, CON03"
-        assert subject.format('reverse({{materials.Name}})', element) == "CON02, CON03, CON01"
+        assert subject.format("{{materials.Name}}", element) == "CON01, CON03, CON02"
+        assert subject.format("sort({{materials.Name}})", element) == "CON01, CON02, CON03"
+        assert subject.format("reverse({{materials.Name}})", element) == "CON02, CON03, CON01"
         assert subject.format('join("-", {{materials.Name}})', element) == "CON01-CON03-CON02"
 
     def test_expressions(self):
-        assert subject.format('2+3') == "5"
-        assert subject.format('-2+3') == "1"
-        assert subject.format('2-3') == "-1"
-        assert subject.format('3*2') == "6"
-        assert subject.format('3/2') == "1.5"
+        assert subject.format("2+3") == "5"
+        assert subject.format("-2+3") == "1"
+        assert subject.format("2-3") == "-1"
+        assert subject.format("3*2") == "6"
+        assert subject.format("3/2") == "1.5"
 
 
 class TestGetElementValue(test.bootstrap.IFC4):

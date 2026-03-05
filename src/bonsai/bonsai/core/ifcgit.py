@@ -19,12 +19,11 @@
 from __future__ import annotations
 
 import platform
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bpy
     import git
-    import ifcopenshell
 
     import bonsai.tool as tool
 

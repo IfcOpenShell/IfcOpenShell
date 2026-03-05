@@ -19,10 +19,7 @@
 from math import radians
 
 import blf
-import bmesh
-import bpy
 import gpu
-import ifcopenshell
 import ifcopenshell.util.geolocation
 from bpy.types import SpaceView3D
 from bpy_extras.view3d_utils import location_3d_to_region_2d

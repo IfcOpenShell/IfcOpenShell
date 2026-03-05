@@ -22,13 +22,11 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
-import ifcopenshell.util.element
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -44,7 +42,7 @@ from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
     PsetsGeneralData,
 )
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 psetnames = {}
 qtonames = {}

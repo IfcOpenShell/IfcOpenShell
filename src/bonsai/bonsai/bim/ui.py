@@ -24,10 +24,9 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 import bpy
 import platformdirs
-from bpy.props import BoolProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty
 from bpy.types import Panel
 from ifcopenshell.util.doc import (
-    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
@@ -38,7 +37,6 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai import get_debug_info
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
@@ -56,8 +54,6 @@ from bonsai.bim.module.model.ui import (
 )
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
-
-from . import ifc
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
@@ -661,7 +657,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     bsdd_baseurl: StringProperty(
-        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        name="bSDD API Base URL",
+        description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
         default="https://api.bsdd.buildingsmart.org/api/",
     )
     should_disable_undo_on_save: BoolProperty(
@@ -747,6 +744,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=".ifc.metadata.blend",
     )
 
+    decorator_font_scale: bpy.props.FloatProperty(
+        name="Decorator Font Scale",
+        description="Scale factor for decorator font size.",
+        default=1.0,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -786,6 +789,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
+        decorator_font_scale: float
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -1009,6 +1013,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             else:
                 row = layout.row()
                 row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+        layout.prop(self, "decorator_font_scale")
 
 
 # Scene panel groups

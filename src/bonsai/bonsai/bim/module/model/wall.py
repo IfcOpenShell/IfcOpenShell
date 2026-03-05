@@ -20,12 +20,11 @@
 
 import copy
 import math
-from math import acos, atan2, cos, degrees, pi, sin
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never, get_args
+from math import atan2, cos, degrees, pi, sin
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
@@ -45,11 +44,9 @@ from mathutils import Matrix, Vector
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.core.root
-import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 

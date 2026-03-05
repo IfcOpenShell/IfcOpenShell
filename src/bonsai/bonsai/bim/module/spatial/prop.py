@@ -19,15 +19,11 @@
 from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api.attribute
-import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,

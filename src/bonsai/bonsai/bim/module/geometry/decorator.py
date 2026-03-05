@@ -19,7 +19,6 @@
 from collections.abc import Sequence
 
 import blf
-import bmesh
 import bpy
 import gpu
 import ifcopenshell

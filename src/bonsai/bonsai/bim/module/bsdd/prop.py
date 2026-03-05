@@ -23,10 +23,7 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -34,7 +31,7 @@ from bpy.types import PropertyGroup
 import bonsai.tool as tool
 from bonsai.bim.module.bsdd.data import BSDDData
 from bonsai.bim.module.classification.data import ClassificationsData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_active_dictionary(self: "BIMBSDDProperties", context: object) -> tool.Blender.BLENDER_ENUM_ITEMS:
@@ -163,7 +160,7 @@ class BIMBSDDProperties(PropertyGroup):
         default=False,
     )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
-    
+
     if TYPE_CHECKING:
         active_dictionary: str
         active_dictionary: str
@@ -182,7 +179,7 @@ class BIMBSDDProperties(PropertyGroup):
         should_filter_ifc_class: bool
         use_only_ifc_properties: bool
         classification_psets: bpy.types.bpy_prop_collection_idprop[BSDDPset]
-        
+
     @property
     def active_class(self) -> Union[BSDDClassification, None]:
         return tool.Blender.get_active_uilist_element(self.classes, self.active_class_index)

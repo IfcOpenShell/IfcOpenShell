@@ -23,7 +23,6 @@ Use operators instead of `blender --command extension remove`
 to ensure disable and enable occur in the same Blender session.
 """
 
-
 import bpy
 
 import bonsai.tool as tool

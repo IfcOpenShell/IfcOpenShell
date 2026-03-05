@@ -5,17 +5,14 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.document.data import DocumentData, refresh
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def update_document_name(self: "Document", context: bpy.types.Context) -> None:

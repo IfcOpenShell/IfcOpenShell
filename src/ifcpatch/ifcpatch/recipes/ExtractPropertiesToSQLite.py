@@ -55,8 +55,7 @@ class Patcher:
         self.c = self.db.cursor()
         self.file_patched = db_file
 
-        self.c.execute(
-            """
+        self.c.execute("""
             CREATE TABLE IF NOT EXISTS elements (
                 id integer PRIMARY KEY NOT NULL UNIQUE,
                 global_id text,
@@ -65,33 +64,28 @@ class Patcher:
                 name text,
                 description text
             );
-        """
-        )
+        """)
         self.c.execute("CREATE INDEX IF NOT EXISTS idx_global_id ON elements (global_id);")
         self.c.execute("CREATE INDEX IF NOT EXISTS idx_ifc_class ON elements (ifc_class);")
         self.c.execute("CREATE INDEX IF NOT EXISTS idx_predefined_type ON elements (predefined_type);")
 
-        self.c.execute(
-            """
+        self.c.execute("""
             CREATE TABLE IF NOT EXISTS relationships (
                 from_id integer NOT NULL,
                 type text,
                 to_id integer NOT NULL
             );
-        """
-        )
+        """)
         self.c.execute("CREATE INDEX IF NOT EXISTS idx_from_id ON relationships (from_id);")
 
-        self.c.execute(
-            """
+        self.c.execute("""
            CREATE TABLE IF NOT EXISTS properties (
                element_id integer NOT NULL,
                set_name text,
                name text,
                value text
            );
-        """
-        )
+        """)
         self.c.execute("CREATE INDEX IF NOT EXISTS idx_element_id ON properties (element_id);")
 
         elements = self.file.by_type("IfcObjectDefinition")
