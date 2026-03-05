@@ -3,7 +3,7 @@ name = "IfcOpenShell"
 version = "0.0.0"
 dependencies = [
     "black==26.1.0",
-    "ruff==0.15.2",
+    "ruff==0.15.4",
     "poethepoet",
     "gersemi==0.26.0",
 ]

@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-logs-rocky-arm64
           path: |
