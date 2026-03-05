@@ -37,8 +37,11 @@ APPENDABLE_ASSET = Literal[
     "IfcProduct",
     "IfcMaterial",
     "IfcCostSchedule",
+    "IfcWorkSchedule",
+    "IfcWorkCalendar",
     "IfcProfileDef",
     "IfcPresentationStyle",
+    "IfcConstructionResource"
 ]
 APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
@@ -230,6 +233,15 @@ class Usecase:
         elif self.settings["element"].is_a("IfcCostSchedule"):
             self.target_class = "IfcCostSchedule"
             return self.append_cost_schedule()
+        elif self.settings["element"].is_a("IfcWorkSchedule"):
+            self.target_class = "IfcWorkSchedule"
+            return self.append_work_schedule()
+        elif self.settings["element"].is_a("IfcConstructionResource"):
+            self.target_class = "IfcConstructionResource"
+            return self.append_construction_resource()
+        elif self.settings["element"].is_a("IfcWorkCalendar"):
+            self.target_class = "IfcWorkCalendar"
+            return self.append_work_calendar()            
         elif self.settings["element"].is_a("IfcProfileDef"):
             self.target_class = "IfcProfileDef"
             return self.append_profile_def()
@@ -367,8 +379,70 @@ class Usecase:
         return element
 
     def append_cost_schedule(self):
-        self.whitelisted_inverse_attributes = {"IfcCostSchedule": ["Controls"], "IfcCostItem": ["IsNestedBy"]}
+        self.whitelisted_inverse_attributes = {
+            "IfcCostSchedule": ["Controls"], 
+            "IfcCostItem": ["IsNestedBy", "Nests", "HasAssociations", "Controls"],
+            "IfcClassificationReference":["ClassificationRefForObjects"],
+            "IfcBuildingElement":["IsDefinedBy"],
+            "IfcConstructionResource":[
+                "HasContext", 
+                "IsDefinedBy",
+                "IsNestedBy",
+                "Nests",
+                "HasAssignments",
+                "HasAssociations"
+            ]
+        }
         return self.add_element(self.settings["element"])
+
+    def append_work_schedule(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcWorkSchedule": ["Controls"], 
+            "IfcTask": [
+                "IsDefinedBy", 
+                "IsNestedBy", 
+                "Nests", 
+                "HasAssociations", 
+                "Controls",
+                "IsPredecessorTo",
+                "IsSuccessorFrom",
+                "HasAssignments",
+            ],
+            "IfcClassificationReference":["ClassificationRefForObjects"],
+            "IfcBuildingElement":["IsDefinedBy"],
+            "IfcConstructionResource":[
+                "HasContext", 
+                "IsDefinedBy", 
+                "IsNestedBy", 
+                "Nests", 
+                "HasAssignments", 
+                "HasAssociations",
+            ],
+        }
+        return self.add_element(self.settings["element"])
+    
+    def append_construction_resource(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcConstructionResource": [
+                "HasContext", 
+                "IsNestedBy",
+                "Nests",
+                "HasAssociations", 
+                "IsDefinedBy", 
+                #"HasAssignments"
+            ],
+            "IfcClassificationReference":["ClassificationRefForObjects"],
+            "IfcBuildingElement":["IsDefinedBy"],
+        }
+        return self.add_element(self.settings["element"])
+
+    def append_work_calendar(self):
+        self.whitelisted_inverse_attributes = {
+            "IfcWorkCalendar": [
+                "HasContext", 
+            ],
+            "IfcWorkTime":[],
+        }
 
     def append_profile_def(self):
         self.whitelisted_inverse_attributes = {"IfcProfileDef": ["HasProperties"]}
