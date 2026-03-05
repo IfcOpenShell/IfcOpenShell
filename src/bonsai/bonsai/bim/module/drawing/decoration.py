@@ -2082,6 +2082,11 @@ class DecorationsHandler:
         if context.region_data.view_perspective != "CAMERA":
             return
 
+        # Check if annotation decorator is enabled
+        model_props = tool.Model.get_model_props()
+        if not model_props.show_annotation_decorator:
+            return
+
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
