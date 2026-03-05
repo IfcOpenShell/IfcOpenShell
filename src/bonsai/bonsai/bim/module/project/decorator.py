@@ -97,26 +97,20 @@ class ProjectDecorator:
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
-        selected_vertices: list[tuple[float, float, float]] = []
-        selected_edges: list[tuple[int, int]] = []
-        selected_tris: list[tuple[int, int, int]] = []
-
         props = tool.Project.get_project_props()
-        try:
-            obj = props.queried_obj
-            selected_vertices = obj["selected_vertices"]
-            selected_edges = obj["selected_edges"]
-            selected_tris = obj["selected_tris"]
-        except:
+        obj = props.queried_obj
+        if obj is None:
             return
+        geom = tool.Project.Link.get_selected_geometry(obj)
+        selected_vertices = geom.selected_vertices
 
         root_obj = props.queried_obj_root
         if root_obj and not (m := root_obj.matrix_world).is_identity:
             selected_vertices = [m @ Vector(v) for v in selected_vertices]
 
-        if selected_edges:
-            self.draw_batch("LINES", selected_vertices, selected_elements_color, selected_edges)
-            self.draw_batch("TRIS", selected_vertices, transparent_color(selected_elements_color), selected_tris)
+        if geom.selected_edges:
+            self.draw_batch("LINES", selected_vertices, selected_elements_color, geom.selected_edges)
+            self.draw_batch("TRIS", selected_vertices, transparent_color(selected_elements_color), geom.selected_tris)
 
 
 class ClippingPlaneDecorator:

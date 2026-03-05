@@ -33,6 +33,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
+import numpy.typing as npt
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from mathutils import Matrix
 
@@ -622,27 +623,102 @@ class Project(bonsai.core.tool.Project):
             return guid_obj
 
         @classmethod
+        def get_linked_element_guid_ids(cls, obj: bpy.types.Object, *, skip_hidden: bool) -> npt.NDArray[np.int64]:
+            obj_guid_ids: npt.NDArray[np.int64] = np.array(obj["guid_ids"])
+
+            if not skip_hidden:
+                return obj_guid_ids
+
+            # 'hidden_indices' is needed, because otherwise we can't make sense of 'guid_ids',
+            # since part of the geometry is hidden.
+            obj_hidden_indices: list[int] = list(obj.get("hidden_indices") or [])
+
+            if not obj_hidden_indices:
+                return obj_guid_ids
+
+            # Skip hidden geometry indices.
+            hidden_indices_mask = np.zeros(len(obj_guid_ids), dtype=bool)
+            hidden_indices_mask[obj_hidden_indices] = True
+            deltas = np.diff(obj_guid_ids, prepend=0)
+            deltas[~hidden_indices_mask] = 0
+            obj_guid_ids -= np.cumsum(deltas)
+            return obj_guid_ids
+
+        @classmethod
         def get_guid_by_face_index(cls, obj: bpy.types.Object, face_index: int) -> str | None:
             guids: list[str] = obj["guids"]
-            guid_ids: list[int] = obj["guid_ids"]
+            guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=True)
             for guid, guid_end_index in zip(guids, guid_ids):
                 if face_index < guid_end_index:
                     return guid
 
         @classmethod
+        def get_linked_element_geom_slice(cls, obj: bpy.types.Object, guid: str) -> slice[int, int]:
+            """
+            Get slice for ``obj.data.polygons`` for the provided ``guid``.
+            """
+            obj_guids: list[str] = obj["guids"]
+
+            # Just to be safe.
+            obj_hidden_indices: list[int] = obj.get("hidden_indices") or []
+            index = obj_guids.index(guid)
+            if index in obj_hidden_indices:
+                assert False, "Unexpected. Why would you need the geometry for the hidden element?"
+            obj_guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=False)
+            guid_end_index = obj_guid_ids[index]
+            guid_start_index = index and obj_guid_ids[index - 1]
+            return slice(guid_start_index, guid_end_index)
+
+        @classmethod
+        def hide_linked_element(cls, obj: bpy.types.Object, guid: str) -> None:
+            verts = tool.Project.Link.get_linked_element_verts(obj, guid)
+
+            # `MeshPolygon.hide` works only in EDIT mode,
+            # so we use vertex groups + Mask modifier.
+            MODIFIER_VG_NAME = "BBIM_HIDE_LINKED_GEOMETRY"
+
+            vertex_groups = obj.vertex_groups
+            vertex_group = vertex_groups.get(MODIFIER_VG_NAME)
+            if vertex_group is None:
+                vertex_group = vertex_groups.new(name=MODIFIER_VG_NAME)
+
+            modifiers = obj.modifiers
+            modifier = modifiers.get(MODIFIER_VG_NAME)
+            if modifier is None:
+                modifier = modifiers.new(MODIFIER_VG_NAME, "MASK")
+            assert isinstance(modifier, bpy.types.MaskModifier)
+            modifier.vertex_group = MODIFIER_VG_NAME
+            modifier.invert_vertex_group = True
+
+            vertex_group.add(verts, 1.0, "REPLACE")
+
+            hidden_indices: list[int] = list(obj.get("hidden_indices") or [])
+            guid_ids: list[str] = obj["guids"]
+            index = guid_ids.index(guid)
+            hidden_indices.append(index)
+            obj["hidden_indices"] = hidden_indices
+
+        @classmethod
+        def unhide_all_elements(cls, link: Link) -> None:
+            obj = tool.Project.get_link_empty_handle(link)
+            assert obj
+            col = obj.instance_collection
+            assert col
+
+            for obj_ in col.objects:
+                if "hidden_indices" not in obj_:
+                    continue
+                obj_.vertex_groups.clear()
+                obj_.modifiers.clear()
+                del obj_["hidden_indices"]
+
+        @classmethod
         def select_linked_element_geom(cls, obj: bpy.types.Object, guid: str) -> None:
+            slice_ = cls.get_linked_element_geom_slice(obj, guid)
+
             mesh = obj.data
             assert isinstance(mesh, bpy.types.Mesh)
-            obj_guids: list[str] = obj["guids"]
-            obj_guid_ids: list[int] = obj["guid_ids"]
-
-            index = obj_guids.index(guid)
-            guid_end_index = obj_guid_ids[index]
-            if index > 0:
-                guid_start_index = obj_guid_ids[index - 1]
-            else:
-                guid_start_index = 0
-            guid_polygons = mesh.polygons[guid_start_index:guid_end_index]
+            guid_polygons = mesh.polygons[slice_]
 
             selected_tris: list[tuple[int, ...]] = []
             selected_edges: list[tuple[int, ...]] = []
@@ -661,6 +737,19 @@ class Project(bonsai.core.tool.Project):
             obj["selected_vertices"] = selected_vertices
             obj["selected_edges"] = selected_edges
             obj["selected_tris"] = selected_tris
+
+        @classmethod
+        def get_linked_element_verts(cls, obj: bpy.types.Object, guid: str) -> set[int]:
+            slice_ = cls.get_linked_element_geom_slice(obj, guid)
+
+            mesh = obj.data
+            assert isinstance(mesh, bpy.types.Mesh)
+            guid_polygons = mesh.polygons[slice_]
+
+            guid_vertices_set: set[int] = set()
+            for polygon in guid_polygons:
+                guid_vertices_set.update(polygon.vertices)
+            return guid_vertices_set
 
         @classmethod
         def select_linked_element(
@@ -686,10 +775,8 @@ class Project(bonsai.core.tool.Project):
             if instance_matrix is None:
                 instance_matrix = obj.matrix_world
 
-            props = tool.Project.get_project_props()
-            props.queried_obj = obj
-            props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
-
+            cls.deselect_queried_linked_element()
+            cls.set_queried_linked_element(obj, guid, instance_matrix)
             cls.select_linked_element_geom(obj, guid)
             db = sqlite3.connect(obj["db"])
             c = db.cursor()
@@ -744,6 +831,25 @@ class Project(bonsai.core.tool.Project):
             ProjectDecorator.install(context)
 
         @classmethod
+        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix) -> None:
+            props = tool.Project.get_project_props()
+            props.queried_obj = obj
+            props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
+            props.queried_guid = guid
+
+        @classmethod
+        def deselect_queried_linked_element(cls) -> None:
+            props = tool.Project.get_project_props()
+            obj = props.queried_obj
+            props.property_unset("queried_obj")
+            props.property_unset("queried_obj_root")
+            props.property_unset("queried_guid")
+
+            if obj is not None:
+                for field in cls.SelectedGeometry._fields:
+                    del obj[field]
+
+        @classmethod
         def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix) -> bpy.types.Object | None:
             collections = set(obj.users_collection)
             for o in bpy.data.objects:
@@ -755,3 +861,16 @@ class Project(bonsai.core.tool.Project):
                 ):
                     continue
                 return o
+
+        class SelectedGeometry(NamedTuple):
+            selected_vertices: list[tuple[float, float, float]]
+            selected_edges: list[tuple[int, int]]
+            selected_tris: list[tuple[int, int, int]]
+
+        @classmethod
+        def get_selected_geometry(cls, obj: bpy.types.Object) -> SelectedGeometry:
+            return cls.SelectedGeometry(
+                obj["selected_vertices"],
+                obj["selected_edges"],
+                obj["selected_tris"],
+            )

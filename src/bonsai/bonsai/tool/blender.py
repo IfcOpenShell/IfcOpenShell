@@ -2192,12 +2192,24 @@ class Blender(bonsai.core.tool.Blender):
         origin: Vector,
         direction: Vector,
     ) -> tuple[bool, Vector, Vector, int, bpy.types.Object, Matrix]:
+        """
+
+        The returned matrix is just ``obj.matrix_world``.
+        The returned object is not evaluated by the current depsgraph,
+        e.g. if object is modified by the depsgraph (e.g. by modifiers)
+        object has to be evaluated first (`obj.evaluated_get(depsgraph)`).
+        """
         depsgraph = context.evaluated_depsgraph_get()
         assert context.scene
-        # `matrix` is just `obj.matrix_world`.
         result = context.scene.ray_cast(
             depsgraph,
             origin,
             direction,
         )
         return result
+
+    @classmethod
+    def depsgraph_evaluate(cls, obj: bpy.types.Object) -> bpy.types.Object:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated_obj = obj.evaluated_get(depsgraph)
+        return evaluated_obj

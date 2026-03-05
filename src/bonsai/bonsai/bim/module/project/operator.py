@@ -53,7 +53,7 @@ from bpy_extras.view3d_utils import (
     region_2d_to_origin_3d,
     region_2d_to_vector_3d,
 )
-from mathutils import Matrix, Vector
+from mathutils import Vector
 
 import bonsai.bim.handler
 import bonsai.bim.helper
@@ -2365,6 +2365,53 @@ class QueryLinkedElement(bpy.types.Operator):
         self.mouse_x = event.mouse_region_x
         self.mouse_y = event.mouse_region_y
         return self.execute(context)
+
+
+class HideQueriedLinkedElement(bpy.types.Operator):
+    bl_idname = "bim.hide_queried_linked_element"
+    bl_label = "Hide Queried Linked Element"
+    bl_description = (
+        "Hide geometry for currently queried linked element.\n\n"
+        "ALT+Click (or ALT+H in Explore Tool) to unhide all geometry for currently selected linked model.\n"
+        "(Not Yet Implemented) SHIFT+Click to hide everything but currently queried element."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    unhide_all: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        unhide_all: bool
+
+    def invoke(self, context, event):
+        self.unhide_all = event.alt
+        return self.execute(context)
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Project.get_project_props()
+
+        if self.unhide_all:
+            return self.run_unhide_all()
+
+        obj = props.queried_obj
+        if not obj:
+            self.report({"INFO"}, "No object is queried to hide.")
+            return {"FINISHED"}
+        guid = props.queried_guid
+        tool.Project.Link.hide_linked_element(obj, guid)
+        tool.Project.Link.deselect_queried_linked_element()
+
+        self.report({"INFO"}, "Queried object is now hidden.")
+        return {"FINISHED"}
+
+    def run_unhide_all(self) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Project.get_project_props()
+        link = props.active_link
+        if not link:
+            self.report({"INFO"}, "No linked model is currently selected.")
+            return {"FINISHED"}
+        tool.Project.Link.unhide_all_elements(link)
+        self.report({"INFO"}, "All linked model geometry is unhidden.")
+        return {"FINISHED"}
 
 
 class AppendInspectedLinkedElement(AppendLibraryElement):
