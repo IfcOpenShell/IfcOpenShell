@@ -2426,7 +2426,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
     bl_idname = "bim.append_inspected_linked_element"
     bl_label = "Append Inspected Linked Element"
     bl_description = "Append inspected linked element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         from bonsai.bim.module.project.data import LinksData
