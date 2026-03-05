@@ -66,6 +66,7 @@ classes = (
     operator.RewindLibrary,
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,
+    operator.SelectLinkedModelElement,
     operator.SelectLinkHandle,
     operator.ToggleFilterCategories,
     operator.ToggleLinkSelectability,

@@ -27,7 +27,7 @@ import traceback
 from collections import defaultdict
 from math import radians
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
@@ -49,6 +49,10 @@ import ifcopenshell.util.unit
 import numpy as np
 from bpy.app.handlers import persistent
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+from bpy_extras.view3d_utils import (
+    region_2d_to_origin_3d,
+    region_2d_to_vector_3d,
+)
 from mathutils import Matrix, Vector
 
 import bonsai.bim.handler
@@ -1797,6 +1801,43 @@ class SelectLinkHandle(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SelectLinkedModelElement(bpy.types.Operator):
+    bl_idname = "bim.select_linked_model_element"
+    bl_label = "Select Linked Model Element"
+    bl_options = {"REGISTER"}
+    bl_description = "Select an element in the currently selected linked model by providing GlobalId."
+
+    guid: bpy.props.StringProperty(name="GlobalId")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        guid: str
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        guid = self.guid.strip()
+        if not guid:
+            self.report({"ERROR"}, "GlobalId is not provided.")
+            return {"CANCELLED"}
+
+        props = tool.Project.get_project_props()
+        active_link = props.active_link
+        assert active_link is not None
+        assert active_link.is_loaded
+
+        guid_obj = tool.Project.Link.get_obj_by_guid(active_link, guid)
+        if not guid_obj:
+            filepath = active_link.filepath
+            self.report({"INFO"}, f"Element with GlobalId '{guid}' not found in the linked model at '{filepath}'.")
+            return {"CANCELLED"}
+
+        tool.Project.Link.select_linked_element(context, guid_obj, guid)
+        self.report({"INFO"}, f"Element with GlobalId '{guid}' is selected.")
+        return {"FINISHED"}
+
+
 class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
@@ -2278,21 +2319,10 @@ class QueryLinkedElement(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
+        assert context.area
         return context.area.type == "VIEW_3D"
 
-    def execute(self, context):
-        import sqlite3
-
-        from bpy_extras.view3d_utils import (
-            region_2d_to_origin_3d,
-            region_2d_to_vector_3d,
-        )
-        from ifcpatch.recipes.ExtractPropertiesToSQLite import (
-            ElementRow,
-            PropertyRow,
-            RelationshipRow,
-        )
-
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         LinksData.linked_data = {}
         props = tool.Project.get_project_props()
         props.queried_obj = None
@@ -2319,104 +2349,17 @@ class QueryLinkedElement(bpy.types.Operator):
             self.report({"INFO"}, "No object found.")
             return {"FINISHED"}
 
-        if "guids" not in obj:
+        if not tool.Project.Link.is_linked_element(obj):
             self.report({"INFO"}, "Object is not a linked IFC element.")
             return {"FINISHED"}
 
-        guid = None
-        guid_start_index = 0
-        guid_ids: list[int] = obj["guid_ids"]
-        for i, guid_end_index in enumerate(guid_ids):
-            if face_index < guid_end_index:
-                guid = obj["guids"][i]
-                props.queried_obj = obj
-                props.queried_obj_root = self.find_obj_root(obj, instance_matrix)
-
-                selected_tris: list[tuple[int, ...]] = []
-                selected_edges: list[tuple[int, ...]] = []
-                vert_indices_set: set[int] = set()
-                assert isinstance(obj.data, bpy.types.Mesh)
-                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
-                    vert_indices_set.update(polygon.vertices)
-                vert_indices = list(vert_indices_set)
-                vert_map = {k: v for v, k in enumerate(vert_indices)}
-                selected_vertices = [tuple(obj.matrix_world @ obj.data.vertices[vi].co) for vi in vert_indices]
-                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
-                    selected_tris.append(tuple(vert_map[v] for v in polygon.vertices))
-                    selected_edges.extend(tuple([vert_map[vi] for vi in e] for e in polygon.edge_keys))
-
-                obj["selected_vertices"] = selected_vertices
-                obj["selected_edges"] = selected_edges
-                obj["selected_tris"] = selected_tris
-
-                break
-            guid_start_index = guid_end_index
-
+        guid = tool.Project.Link.get_guid_by_face_index(obj, face_index)
         assert guid is not None
-        self.db = sqlite3.connect(obj["db"])
-        self.c = self.db.cursor()
-
-        self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
-        element = ElementRow(*self.c.fetchone())
-
-        attributes: dict[str, Any] = {}
-        for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
-            if element[i + 1] is not None:
-                attributes[attr] = element[i + 1]
-
-        self.c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
-        rows = [PropertyRow(*row) for row in self.c.fetchall()]
-
-        properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
-        for row in rows:
-            properties[row.pset_name][row.name] = row.value
-
-        self.c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
-        relationships = [RelationshipRow(*row) for row in self.c.fetchall()]
-
-        relating_type_id = None
-
-        for relationship in relationships:
-            if relationship[1] == "IfcRelDefinesByType":
-                relating_type_id = relationship[2]
-
-        type_properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
-        if relating_type_id is not None:
-            self.c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
-            rows = [PropertyRow(*row) for row in self.c.fetchall()]
-            for row in rows:
-                type_properties[row.pset_name][row.name] = row.value
-
-        LinksData.linked_data = {
-            "attributes": attributes,
-            "properties": [(k, properties[k]) for k in sorted(properties.keys())],
-            "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
-        }
-        self.db.close()
-
-        for area in bpy.context.screen.areas:
-            if area.type == "PROPERTIES":
-                for region in area.regions:
-                    if region.type == "WINDOW":
-                        region.tag_redraw()
-            elif area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Project.Link.select_linked_element(context, obj, guid)
 
         self.report({"INFO"}, f"Loaded data for {guid}")
         ProjectDecorator.install(bpy.context)
         return {"FINISHED"}
-
-    def find_obj_root(self, obj: bpy.types.Object, matrix: Matrix) -> Union[bpy.types.Object, None]:
-        collections = set(obj.users_collection)
-        for o in bpy.data.objects:
-            if (
-                o.type != "EMPTY"
-                or o.instance_type != "COLLECTION"
-                or o.instance_collection not in collections
-                or not np.allclose(matrix, o.matrix_world, atol=1e-4)
-            ):
-                continue
-            return o
 
     def invoke(self, context, event):
         self.mouse_x = event.mouse_region_x
@@ -2702,11 +2645,6 @@ class CreateClippingPlane(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        from bpy_extras.view3d_utils import (
-            region_2d_to_origin_3d,
-            region_2d_to_vector_3d,
-        )
-
         # Clean up deleted planes
         props = tool.Project.get_project_props()
         if len(props.clipping_planes) > 5:

@@ -24,7 +24,7 @@ import shutil
 from collections import defaultdict
 from math import radians
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional
 
 import bpy
 import ifcopenshell
@@ -34,6 +34,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import numpy as np
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
+from mathutils import Matrix
 
 import bonsai.bim.schema
 import bonsai.core.aggregate
@@ -46,7 +47,11 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings, Link
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        Link,
+        MeasureToolSettings,
+    )
 
 HiearchyDict = dict[ifcopenshell.entity_instance, "HiearchyDict"]
 
@@ -497,8 +502,8 @@ class Project(bonsai.core.tool.Project):
         )
 
     @classmethod
-    def get_clipping_planes_normals(cls):
-        normals = []
+    def get_clipping_planes_normals(cls) -> list[tuple[Vector, Vector]]:
+        normals: list[tuple[Vector, Vector]] = []
         for clipping_plane in tool.Project.get_project_props().clipping_planes:
             plane = clipping_plane.obj
             if not plane or not plane.data:
@@ -507,6 +512,7 @@ class Project(bonsai.core.tool.Project):
             if plane.mode == "EDIT":
                 continue  # A profile decorator or something else is used here.
 
+            assert isinstance(plane.data, bpy.types.Mesh)
             v1 = plane.matrix_world @ plane.data.vertices[0].co
             v2 = plane.matrix_world @ plane.data.vertices[1].co
             v3 = plane.matrix_world @ plane.data.vertices[2].co
@@ -589,3 +595,163 @@ class Project(bonsai.core.tool.Project):
 
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.document.remove_information(ifc_file, information=doc)
+
+    class Link:
+        """Tools for working with linked models."""
+
+        @classmethod
+        def is_linked_element(cls, obj: bpy.types.Object) -> bool:
+            return "guids" in obj
+
+        @classmethod
+        def get_obj_by_guid(cls, link: Link, guid: str) -> bpy.types.Object | None:
+            assert link.is_loaded
+
+            handle = tool.Project.get_link_empty_handle(link)
+            assert handle
+            col = handle.instance_collection
+            assert col
+
+            guid_obj = None
+            for obj in col.objects:
+                obj_guids: list[str] = obj["guids"]
+                if guid in obj_guids:
+                    guid_obj = obj
+                    break
+
+            return guid_obj
+
+        @classmethod
+        def get_guid_by_face_index(cls, obj: bpy.types.Object, face_index: int) -> str | None:
+            guids: list[str] = obj["guids"]
+            guid_ids: list[int] = obj["guid_ids"]
+            for guid, guid_end_index in zip(guids, guid_ids):
+                if face_index < guid_end_index:
+                    return guid
+
+        @classmethod
+        def select_linked_element_geom(cls, obj: bpy.types.Object, guid: str) -> None:
+            mesh = obj.data
+            assert isinstance(mesh, bpy.types.Mesh)
+            obj_guids: list[str] = obj["guids"]
+            obj_guid_ids: list[int] = obj["guid_ids"]
+
+            index = obj_guids.index(guid)
+            guid_end_index = obj_guid_ids[index]
+            if index > 0:
+                guid_start_index = obj_guid_ids[index - 1]
+            else:
+                guid_start_index = 0
+            guid_polygons = mesh.polygons[guid_start_index:guid_end_index]
+
+            selected_tris: list[tuple[int, ...]] = []
+            selected_edges: list[tuple[int, ...]] = []
+
+            # Restart verts indices for our polygons.
+            guid_vertices_set: set[int] = set()
+            for polygon in guid_polygons:
+                guid_vertices_set.update(polygon.vertices)
+            vert_map = {k: v for v, k in enumerate(guid_vertices_set)}
+
+            selected_vertices = [obj.matrix_world @ mesh.vertices[vi].co for vi in vert_map]
+            for polygon in guid_polygons:
+                selected_tris.append(tuple(vert_map[vi] for vi in polygon.vertices))
+                selected_edges.extend(tuple([vert_map[vi] for vi in e]) for e in polygon.edge_keys)
+
+            obj["selected_vertices"] = selected_vertices
+            obj["selected_edges"] = selected_edges
+            obj["selected_tris"] = selected_tris
+
+        @classmethod
+        def select_linked_element(
+            cls,
+            context: bpy.types.Context,
+            obj: bpy.types.Object,
+            guid: str,
+            instance_matrix: Matrix | None = None,
+        ) -> None:
+            import sqlite3
+
+            from ifcpatch.recipes.ExtractPropertiesToSQLite import (
+                ElementRow,
+                PropertyRow,
+                RelationshipRow,
+            )
+
+            from bonsai.bim.module.project.data import LinksData
+            from bonsai.bim.module.project.decorator import ProjectDecorator
+
+            # Not sure if there's a difference between `instance_matrix` coming from `ray_cast`
+            # and usual `matrix_world`, maybe we can just get it from object always.
+            if instance_matrix is None:
+                instance_matrix = obj.matrix_world
+
+            props = tool.Project.get_project_props()
+            props.queried_obj = obj
+            props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
+
+            cls.select_linked_element_geom(obj, guid)
+            db = sqlite3.connect(obj["db"])
+            c = db.cursor()
+
+            c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
+            element = ElementRow(*c.fetchone())
+
+            attributes: dict[str, Any] = {}
+            for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
+                if element[i + 1] is not None:
+                    attributes[attr] = element[i + 1]
+
+            c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
+            rows = [PropertyRow(*row) for row in c.fetchall()]
+
+            properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
+            for row in rows:
+                properties[row.pset_name][row.name] = row.value
+
+            c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
+            relationships = [RelationshipRow(*row) for row in c.fetchall()]
+
+            relating_type_id = None
+
+            for relationship in relationships:
+                if relationship[1] == "IfcRelDefinesByType":
+                    relating_type_id = relationship[2]
+
+            type_properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
+            if relating_type_id is not None:
+                c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
+                rows = [PropertyRow(*row) for row in c.fetchall()]
+                for row in rows:
+                    type_properties[row.pset_name][row.name] = row.value
+
+            LinksData.linked_data = {
+                "attributes": attributes,
+                "properties": [(k, properties[k]) for k in sorted(properties.keys())],
+                "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
+            }
+            db.close()
+
+            assert context.screen
+            for area in context.screen.areas:
+                if area.type == "PROPERTIES":
+                    for region in area.regions:
+                        if region.type == "WINDOW":
+                            region.tag_redraw()
+                elif area.type == "VIEW_3D":
+                    area.tag_redraw()
+
+            ProjectDecorator.install(context)
+
+        @classmethod
+        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix) -> bpy.types.Object | None:
+            collections = set(obj.users_collection)
+            for o in bpy.data.objects:
+                if (
+                    o.type != "EMPTY"
+                    or o.instance_type != "COLLECTION"
+                    or o.instance_collection not in collections
+                    or not np.allclose(matrix, o.matrix_world, atol=1e-4)
+                ):
+                    continue
+                return o
