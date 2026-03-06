@@ -1116,10 +1116,22 @@ class ShapeBuilder:
     ) -> ifcopenshell.entity_instance:
         """Create IFC representation for the specified context and items.
 
+        **All items must belong to the same geometry category.** IFC prohibits
+        mixing incompatible item types in one representation (e.g.
+        ``IfcExtrudedAreaSolid`` with ``IfcBlock``, or solids with curves).
+        When ``representation_type`` is omitted the type is inferred via
+        :func:`ifcopenshell.util.representation.guess_type`; if the items are
+        heterogeneous ``guess_type`` returns ``None`` and the representation is
+        written with no ``RepresentationType``, which fails IFC validation.
+        Avoid mixing swept-solid primitives (``IfcExtrudedAreaSolid``,
+        ``IfcRevolvedAreaSolid``) with CSG primitives (``IfcBlock``,
+        ``IfcSphere``, etc.) or any other category in a single call.
+
         :param context: IfcGeometricRepresentationSubContext
-        :param items: could be a list or single curve/IfcExtrudedAreaSolid
+        :param items: A single item or list of items, all of the same geometry
+            category (e.g. all ``IfcExtrudedAreaSolid``, all ``IfcIndexedPolyCurve``)
         :param representation_type: Explicitly specified RepresentationType.
-            If not provided it will be guessed from the items types
+            If not provided it will be guessed from the items types.
         :return: IfcShapeRepresentation
         """
         if not isinstance(items, collections.abc.Iterable):
