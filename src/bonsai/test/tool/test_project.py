@@ -21,6 +21,7 @@ import json
 import tempfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import cast
 
 import bpy
 import ifcopenshell
@@ -399,3 +400,50 @@ class TestLoadingIfcSqlite(NewFile):
             for element_name in elements_without_meshes:
                 assert element_name in bpy.data.objects
                 assert not bpy.data.objects[element_name].data
+
+
+class TestGettingLinkedElementGeomSlice:
+    def __init__(self):
+        self.test_get_first_element()
+        self.test_get_middle_element()
+        self.test_skip_hidden_first_element()
+        self.test_skip_hidden_middle_element()
+        self.test_handle_hidden_non_first_element()
+
+    TEST_OBJ = {
+        "guids": ["aaa", "bbb", "ccc"],
+        "guid_ids": [5, 10, 15],
+    }
+
+    def test_get_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)
+
+    def test_get_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_skip_hidden_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [0]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5)
+
+    def test_skip_hidden_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "ccc")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_handle_hidden_non_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)
