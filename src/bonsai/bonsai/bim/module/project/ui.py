@@ -29,7 +29,6 @@ import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import (
@@ -491,6 +490,7 @@ class BIM_PT_links(Panel):
                         row.operator("bim.disable_editing_link", text="", icon="CANCEL")
                     else:
                         row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
+                    row.operator("bim.select_linked_model_element", icon="VIEWZOOM", text="")
                     row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
                     row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
                     row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index

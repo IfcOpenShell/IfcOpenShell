@@ -452,6 +452,7 @@ class BIMProjectProperties(PropertyGroup):
     )
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_guid: bpy.props.StringProperty()
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
@@ -550,6 +551,7 @@ class BIMProjectProperties(PropertyGroup):
         should_save_metadata_for_this_file: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
+        queried_guid: str
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
         clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]

@@ -774,6 +774,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_preview_dictionaries: bool
         bsdd_load_inactive_dictionaries: bool
         bsdd_load_test_dictionaries: bool
+        bsdd_baseurl: str
         should_disable_undo_on_save: bool
         should_stream: bool
         should_always_cache: bool
@@ -789,6 +790,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
+        metadata_blend_file_suffix: str
         decorator_font_scale: float
 
     def draw(self, context: bpy.types.Context) -> None:

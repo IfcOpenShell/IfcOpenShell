@@ -40,7 +40,7 @@ APPENDABLE_ASSET = Literal[
     "IfcProfileDef",
     "IfcPresentationStyle",
 ]
-APPENDABLE_ASSET_TYPES = get_args(APPENDABLE_ASSET)
+APPENDABLE_ASSET_TYPES: tuple[APPENDABLE_ASSET, ...] = get_args(APPENDABLE_ASSET)
 MATERIAL_SETS = ("IfcMaterialLayerSet", "IfcMaterialConstituentSet", "IfcMaterialProfileSet")
 
 
