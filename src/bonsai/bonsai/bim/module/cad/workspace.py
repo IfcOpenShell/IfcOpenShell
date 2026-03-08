@@ -20,12 +20,10 @@ import os
 from functools import partial
 
 import bpy
-import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 
-import bonsai.bim.module.type.prop as type_prop
 import bonsai.tool as tool
-from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
+from bonsai.bim.module.model.data import RailingData, RoofData
 
 
 def load_custom_icons():

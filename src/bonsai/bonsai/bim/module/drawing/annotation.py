@@ -18,15 +18,12 @@
 
 from __future__ import annotations
 
-import math
-import os
-from pathlib import Path
 from typing import Optional
 
 import bmesh
 import bpy
 import ifcopenshell.util.element
-from mathutils import Matrix, Vector
+from mathutils import Vector
 
 import bonsai.tool as tool
 

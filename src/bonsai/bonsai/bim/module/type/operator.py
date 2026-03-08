@@ -18,16 +18,11 @@
 
 from typing import TYPE_CHECKING
 
-import bmesh
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.attribute
 import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.schema
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
 
 import bonsai.bim.helper
 import bonsai.core.geometry

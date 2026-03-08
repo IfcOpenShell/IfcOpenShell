@@ -24,8 +24,6 @@ from typing import TYPE_CHECKING, Literal, final
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset_template
-import ifcopenshell.util.attribute
-import ifcopenshell.util.element
 
 import bonsai.bim
 import bonsai.core.tool

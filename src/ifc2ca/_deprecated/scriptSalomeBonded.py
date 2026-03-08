@@ -53,16 +53,16 @@ class MODEL:
         """Function to define a Point from
         a polyline (list of 1 point)"""
 
-        (x, y, z) = pl
+        x, y, z = pl
         return self.geompy.MakeVertex(x, y, z)
 
     def makeLine(self, pl):
         """Function to define a Line from
         a polyline (list of 2 points)"""
 
-        (x, y, z) = pl[0]
+        x, y, z = pl[0]
         P1 = self.geompy.MakeVertex(x, y, z)
-        (x, y, z) = pl[1]
+        x, y, z = pl[1]
         P2 = self.geompy.MakeVertex(x, y, z)
 
         return self.geompy.MakeLineTwoPnt(P1, P2)

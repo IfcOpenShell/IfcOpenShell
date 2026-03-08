@@ -19,7 +19,6 @@
 from typing import Any, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.system
 import ifcopenshell.util.unit

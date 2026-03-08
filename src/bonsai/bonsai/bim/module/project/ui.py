@@ -22,7 +22,6 @@ import os
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 from bpy.types import Menu, Panel, UIList
 
 import bonsai.bim
@@ -477,17 +476,28 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
+
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
-            self.layout.template_list(
-                "BIM_UL_links",
-                "",
-                self.props,
-                "links",
-                self.props,
-                "active_link_index",
-            )
+            if self.props.active_link:
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                index = self.props.active_link_index
+                if self.props.active_link.is_loaded:
+                    if self.props.active_link.is_editing:
+                        row.operator("bim.edit_link", text="", icon="CHECKMARK")
+                        row.operator("bim.disable_editing_link", text="", icon="CANCEL")
+                    else:
+                        row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
+                    row.operator("bim.select_linked_model_element", icon="VIEWZOOM", text="")
+                    row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
+                    row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
+                    row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
+                else:
+                    row.operator("bim.load_link", text="", icon="LINKED").link_index = index
+                    row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
+            self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
             row = self.layout.row(align=True)
@@ -607,47 +617,30 @@ class BIM_UL_links(UIList):
         active_propname,
         index,
     ):
-        if item:
-            row = layout.row(align=True)
-            if item.is_loaded:
-                row.label(text=item.name)
-                op = row.operator(
-                    "bim.toggle_link_selectability",
-                    text="",
-                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
-                    emboss=False,
-                )
-                op.link = item.name
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "WIREFRAME"
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "VISIBLE"
-                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
-                op.index = index
-                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-                op.filepath = item.name
-                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
-                op.filepath = item.name
-            else:
-                row.prop(item, "name", text="")
-                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
-                op = row.operator("bim.load_link", text="", icon="LINKED")
-                op.filepath = item.name
-                op = row.operator("bim.unlink_ifc", text="", icon="X")
-                op.filepath = item.name
+        row = layout.row(align=True)
+        if item.is_loaded:
+            if item.georeferenced == "NONE":
+                row.label(text="", icon="QUESTION")
+            elif item.georeferenced == "NOT_COMPATIBLE":
+                row.label(text="", icon="ERROR")
+            elif item.georeferenced == "FULL_COMPATIBLE":
+                row.label(text="", icon="WORLD")
+            if item.has_transformation:
+                row.label(text="", icon="OBJECT_ORIGIN")
+
+            row.label(text=item.filepath)
+            icon = "RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON"
+            row.operator("bim.toggle_link_selectability", text="", icon=icon, emboss=False).link_index = index
+            icon = "CUBE" if item.is_wireframe else "MESH_CUBE"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "WIREFRAME"
+            icon = "HIDE_ON" if item.is_hidden else "HIDE_OFF"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "VISIBLE"
+        else:
+            row.label(text=item.filepath)
 
 
 class BIM_PT_purge(Panel):

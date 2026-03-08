@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 

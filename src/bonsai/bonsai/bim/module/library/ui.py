@@ -28,7 +28,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.library.data import LibrariesData, LibraryReferencesData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.library.prop import BIMLibraryProperties, LibraryReference
+    from bonsai.bim.module.library.prop import LibraryReference
 
 
 class BIM_PT_libraries(Panel):

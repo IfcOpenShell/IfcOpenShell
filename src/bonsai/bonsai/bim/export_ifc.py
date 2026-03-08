@@ -24,21 +24,14 @@ import os
 import tempfile
 import zipfile
 from logging import Logger
-from math import radians
 from typing import Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from mathutils import Vector
 
-import bonsai.core.aggregate
 import bonsai.core.geometry
-import bonsai.core.spatial
-import bonsai.core.style
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
@@ -52,7 +45,6 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
-        tool.Project.save_linked_models_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:

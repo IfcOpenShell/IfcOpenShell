@@ -16,11 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import pathlib
 from typing import Any
 
-import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc

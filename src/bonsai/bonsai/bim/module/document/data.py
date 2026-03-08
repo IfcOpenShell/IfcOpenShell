@@ -19,8 +19,6 @@
 import os
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.schema
 from natsort import natsorted
 
 import bonsai.tool as tool

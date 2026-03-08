@@ -36,7 +36,14 @@ message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 find_package(LibXml2 REQUIRED)
 find_package(CGAL REQUIRED)
 
-include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include)
+set(SVGPP_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/svgpp/include")
+if(NOT EXISTS ${SVGPP_INCLUDE})
+    message(
+        FATAL_ERROR
+        "Missing svgpp include path, probably you forgot to initialize submodules in git repo. Missing path - '${SVGPP_INCLUDE}'."
+    )
+endif()
+include_directories(${Boost_INCLUDE_DIRS} ${SVGPP_INCLUDE})
 
 file(GLOB LIB_H_FILES src/*.h)
 file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)

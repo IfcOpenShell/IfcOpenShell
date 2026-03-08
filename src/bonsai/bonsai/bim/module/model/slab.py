@@ -17,13 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from math import acos, cos, degrees, pi, sin
-from typing import Optional
+from math import cos, pi
 
-import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -37,7 +34,6 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
 import bonsai.core.root
-import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.decorator import (

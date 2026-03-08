@@ -37,7 +37,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
             }
 
             auto self_places = placement->PlacesObject();
-            inst->ReferencedByPlacements();
             for (auto iter = self_places->begin(); iter != self_places->end(); ++iter) {
                 if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
                     (placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)) {
@@ -47,12 +46,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 			// Look for two levels deep, we want to know if we're at or *above* the 
 			// element we're ignoring, but we don't want to traverse the entire model.
+#ifdef SCHEMA_IfcObjectPlacement_HAS_ReferencedByPlacements
 			if (depth < 2) {
                 auto refs = placement->ReferencedByPlacements();
                 for (auto& ref : *refs) {
                     q.emplace_back(ref, depth + 1);
                 }
             }
+#else
+            Logger::Warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
+#endif
         }
 	}
 
@@ -123,7 +126,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
-        if (mapped_fallback != result) {
+        if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
             Logger::Warning("Computed placement differs from fallback", inst);
         }
     }

@@ -18,8 +18,6 @@
 
 from __future__ import annotations
 
-import collections
-import collections.abc
 import json
 import logging
 import math
@@ -857,9 +855,11 @@ class Drawing(bonsai.core.tool.Drawing):
     def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
-        for literal in cls.get_text_literal(obj, return_list=True):
+        to_remove = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
+        new_literals = [cls.add_literal(**a) for a in literal_attributes]
+        rep.Items = [i for i in rep.Items if not i.is_a("IfcTextLiteral")] + new_literals
+        for literal in to_remove:
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), literal)
-        rep.Items = [cls.add_literal(**a) for a in literal_attributes]
 
     @classmethod
     def add_literal(cls, **attributes: str) -> ifcopenshell.entity_instance:
@@ -2710,16 +2710,14 @@ class Drawing(bonsai.core.tool.Drawing):
             return float(value)
         except:
             pass  # Perhaps it's imperial?
-        l = lark.Lark(
-            """start: feet? "-"? inches?
+        l = lark.Lark("""start: feet? "-"? inches?
                     feet: NUMBER? "-"? fraction? "'"
                     inches: NUMBER? "-"? fraction? "\\""
                     fraction: NUMBER "/" NUMBER
                     %import common.NUMBER
                     %import common.WS
                     %ignore WS // Disregard spaces in text
-                 """
-        )
+                 """)
 
         try:
             start = l.parse(value)

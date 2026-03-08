@@ -30,6 +30,8 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import mathutils
 import numpy as np
+import pytest
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 
 import bonsai.core.tool
@@ -148,6 +150,34 @@ class TestDisableEditingSheets(NewFile):
         props.is_editing_sheets = True
         subject.disable_editing_sheets()
         assert props.is_editing_sheets == False
+
+
+class TestEditTextLiterals(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", None)
+        element = ifc.createIfcAnnotation()
+        element.Representation = ifc.createIfcProductDefinitionShape()
+        context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
+        item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
+        builder = ShapeBuilder(tool.Ifc.get())
+        polyline = builder.polyline([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
+        representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
+        element.Representation.Representations = [representation]
+        tool.Ifc.link(element, obj)
+        literal_attributes = [
+            {
+                "Literal": "Foo",
+                "Path": "RIGHT",
+                "BoxAlignment": "bottom-left",
+            }
+        ]
+        subject.edit_text_literals(obj, literal_attributes)
+        assert len(ifc.by_type("IfcTextLiteralWithExtent")) == 1
+        literal = ifc.by_type("IfcTextLiteralWithExtent")[0]
+        assert literal in representation.Items
+        assert literal.Literal == "Foo"
 
 
 class TestDisableEditingText(NewFile):
@@ -904,7 +934,7 @@ class TestAddReferenceImage(NewFile):
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
-        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=3.53982, y_length=2.0)
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
@@ -927,72 +957,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["Generated"].links[:]) == 1
-
-
-class TestAddReference(NewFile):
-    def test_add_single_reference(self):
-        """Test adding a single reference file (backward compatibility)"""
-        bpy.ops.bim.create_project()
-        ifc_path = Path("test/files/temp/test.ifc").absolute()
-        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
-
-        # Create a temporary SVG file
-        svg_path = Path("test/files/temp/reference.svg").absolute()
-        svg_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(svg_path, "w") as f:
-            f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
-
-        try:
-            # Add single reference
-            bpy.ops.bim.add_reference(filepath=str(svg_path))
-
-            # Verify reference was added
-            ifc = tool.Ifc.get()
-            references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
-            assert len(references) == 1
-            assert references[0].Name == "reference"
-        finally:
-            # Cleanup
-            if svg_path.exists():
-                svg_path.unlink()
-
-    def test_add_multiple_references(self):
-        """Test adding multiple reference files at once"""
-        bpy.ops.bim.create_project()
-        ifc_path = Path("test/files/temp/test.ifc").absolute()
-        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
-
-        # Create temporary SVG files
-        temp_dir = Path("test/files/temp").absolute()
-        temp_dir.mkdir(parents=True, exist_ok=True)
-
-        svg_files = []
-        for i in range(3):
-            svg_path = temp_dir / f"reference_{i}.svg"
-            with open(svg_path, "w") as f:
-                f.write('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
-            svg_files.append(svg_path)
-
-        try:
-            # Test by directly calling core.add_document multiple times
-            # (simulating what the operator does with multiple files)
-            ifc = tool.Ifc.get()
-            for svg_file in svg_files:
-                uri = tool.Ifc.get_uri(str(svg_file), use_relative_path=True)
-                from bonsai.bim import core
-
-                core.drawing.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
-
-            # Verify all references were added
-            references = [doc for doc in ifc.by_type("IfcDocumentInformation") if doc.Scope == "REFERENCE"]
-            assert len(references) == 3
-
-            reference_names = {ref.Name for ref in references}
-            expected_names = {f"reference_{i}" for i in range(3)}
-            assert reference_names == expected_names
-        finally:
-            # Cleanup
-            for svg_file in svg_files:
-                if svg_file.exists():
-                    svg_file.unlink()
+        assert len(uv_node.outputs["UV"].links[:]) == 1

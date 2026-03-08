@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
@@ -110,3 +112,35 @@ class TestBlenderErrorMessageExtraction(NewFile):
             assert error_reports == []
 
         bpy.utils.unregister_class(OBJECT_OT_test_fail_operator)
+
+
+class TestGetSelectedFiles(NewFile):
+    def test_get_a_single_file(self) -> None:
+        with tempfile.NamedTemporaryFile() as f:
+            file = type("", (object,), {"name": f.name})()
+            assert subject.get_selected_files(Path(f.name).parent, [file]) == [f.name]
+
+    def test_get_multiple_files(self) -> None:
+        with tempfile.NamedTemporaryFile() as f:
+            with tempfile.NamedTemporaryFile() as g:
+                file = type("", (object,), {"name": f.name})()
+                file2 = type("", (object,), {"name": g.name})()
+                assert subject.get_selected_files(Path(f.name).parent, [file, file2]) == [f.name, g.name]
+
+    def test_exclude_directories(self) -> None:
+        with tempfile.NamedTemporaryFile() as f:
+            with tempfile.TemporaryDirectory() as d:
+                file = type("", (object,), {"name": f.name})()
+                directory = type("", (object,), {"name": d})()
+                assert subject.get_selected_files(Path(f.name).parent, [file, directory]) == [f.name]
+
+    def test_get_relative_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_path = Path(tmp_dir)
+            with tempfile.NamedTemporaryFile(dir=tmp_dir, suffix=".ifc") as f:
+                tool.Ifc.set_path(str(f.name))
+                with tempfile.NamedTemporaryFile(dir=tmp_dir) as g:
+                    file = type("", (object,), {"name": g.name})
+                    assert subject.get_selected_files(Path(g.name).parent, [file], use_relative_path=True) == [
+                        Path(g.name).name
+                    ]

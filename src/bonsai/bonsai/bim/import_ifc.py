@@ -32,7 +32,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
@@ -85,7 +84,7 @@ class MaterialCreator:
         if element.is_a("IfcTypeProduct"):
             self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        if not self.ifc_import_settings.load_indexed_maps:
+        if self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
@@ -117,7 +116,6 @@ class MaterialCreator:
         for texture in texture_style.Textures or []:
             if coords := getattr(texture, "IsMappedBy", None):
                 coords = coords[0]
-                # IfcTextureCoordinateGenerator handled in the style shader graph
                 if coords.is_a("IfcIndexedTextureMap"):
                     return coords
                 # TODO: support IfcTextureMap
@@ -135,6 +133,10 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
+            elif tool.Style.get_texture_style(material):
+                # No explicit coordinate mapping (e.g. IFC2X3 has no IsMappedBy,
+                # and IFC4 COORD uses generated UVs). Bake XY→UV as fallback.
+                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -892,48 +894,6 @@ class IfcImporter:
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
 
-        if element.is_a("IfcAnnotation") and getattr(element, "ObjectType", None) == "IMAGE":
-            image = None
-            if obj.data and obj.data.materials and obj.data.materials[0]:
-                material = obj.data.materials[0]
-                if material.use_nodes and material.node_tree:
-                    for node in material.node_tree.nodes:
-                        if node.type == "TEX_IMAGE" and node.image:
-                            image = node.image
-                            break
-            if image:
-                import bmesh
-
-                bm = bmesh.new()
-                bm.from_mesh(obj.data)
-                if not bm.loops.layers.uv:
-                    uv_layer = bm.loops.layers.uv.new()
-                else:
-                    uv_layer = bm.loops.layers.uv.active
-
-                if bm.verts:
-                    min_x = min(v.co.x for v in bm.verts)
-                    max_x = max(v.co.x for v in bm.verts)
-                    min_y = min(v.co.y for v in bm.verts)
-                    max_y = max(v.co.y for v in bm.verts)
-
-                    width = max_x - min_x
-                    height = max_y - min_y
-
-                    for face in bm.faces:
-                        for loop in face.loops:
-                            vert = loop.vert
-                            u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                            v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                            u = max(0.0, min(1.0, u))
-                            v = max(0.0, min(1.0, v))
-
-                            loop[uv_layer].uv = (u, v)
-
-                bm.to_mesh(obj.data)
-                bm.free()
-                obj.data.update()
         return obj
 
     def load_existing_meshes(self) -> None:

@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.constraint
 
 import bonsai.bim.helper

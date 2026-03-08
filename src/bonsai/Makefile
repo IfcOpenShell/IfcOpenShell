@@ -104,7 +104,7 @@ endif
 endif # def PLATFORM
 
 # Current build commit hash.
-OLD:=e8eb5e4
+OLD:=1c5b825
 .PHONY: bump
 bump:
 ifndef NEW
@@ -371,7 +371,7 @@ test-tool:
 ifndef MODULE
 	pytest test/tool
 else
-	pytest test/tool/test_$(MODULE).py
+	pytest test/tool/test_$(MODULE).py --maxfail=1
 endif
 
 # Reregistering test is not added to the standard test suite because during unregister

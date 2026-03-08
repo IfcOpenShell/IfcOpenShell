@@ -17,13 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-from math import atan2, degrees, pi
+from math import atan2, degrees, pi, radians
 from typing import Any, Literal, Optional, Union
 
-import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.type
@@ -38,7 +36,6 @@ from mathutils import Matrix, Vector
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
-import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.decorator import (
@@ -195,8 +192,8 @@ class DumbProfileGenerator:
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
-            # Round to nearest 5 degrees
-            nearest_degree = (pi / 180) * 5
+            angle_snap = tool.Snap.get_angle_snap_value(bpy.context)
+            nearest_degree = radians(angle_snap)
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()

@@ -19,7 +19,6 @@
 import os
 
 import bpy
-import ifcopenshell.api
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 import bonsai.bim.handler

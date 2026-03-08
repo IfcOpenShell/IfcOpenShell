@@ -24,16 +24,11 @@ using namespace ifcopenshell::geometry;
 #ifdef SCHEMA_HAS_IfcToroidalSurface
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
-	return nullptr;
-
-	/*
-	gp_Trsf trsf;
-	IfcGeom::Kernel::convert(inst->Position(), trsf);
-
-	// IfcElementarySurface.Position has unit scale factor
-	face = BRepBuilderAPI_MakeFace(new Geom_ToroidalSurface(gp::XOY(), inst->MajorRadius() * length_unit_, inst->MinorRadius() * length_unit_), getValue(GV_PRECISION)).Face().Moved(trsf);
-	return true;
-	*/
+    auto c = taxonomy::make<taxonomy::torus>();
+    c->radius1 = inst->MajorRadius() * length_unit_;
+    c->radius2 = inst->MinorRadius() * length_unit_;
+    c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+    return c;
 }
 
 #endif

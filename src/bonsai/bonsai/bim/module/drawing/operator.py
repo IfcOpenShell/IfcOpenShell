@@ -18,9 +18,9 @@
 
 import hashlib
 import json
+import logging
 import multiprocessing
 import os
-import re
 import shutil
 import subprocess
 import time
@@ -41,7 +41,6 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
@@ -50,19 +49,18 @@ import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import numpy as np
 import shapely
-import shapely.ops
 from bpy_extras.image_utils import load_image
 from bpy_extras.io_utils import ImportHelper
 from lxml import etree
-from mathutils import Color, Matrix, Vector
+from mathutils import Color, Vector
 
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
-import bonsai.bim.helper
-import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.import_ifc
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.core.drawing as core
@@ -138,7 +136,7 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
         if props.create_representation_for_type and object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class EnableAddAnnotationType(bpy.types.Operator):
@@ -928,7 +926,7 @@ class CreateDrawing(bpy.types.Operator):
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.name] = self.get_linked_file(link)
+            files[link.filepath] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1374,7 +1372,7 @@ class CreateDrawing(bpy.types.Operator):
         return True
 
     def get_linked_file(self, link: "Link") -> ifcopenshell.file:
-        link_path = link.name
+        link_path = link.filepath
         ifc_file = IfcStore.session_files.get(link_path, None)
         if ifc_file is not None:
             return ifc_file
@@ -1759,7 +1757,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             enable_editing=True,
         )
         if props.object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
@@ -2896,12 +2894,16 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
+            core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
 
 
 class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -3090,23 +3092,16 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_description = "Import a .svg file to the project as a reference"
     bl_options = {"REGISTER", "UNDO"}
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
 
-    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
-    directory: bpy.props.StringProperty(subtype="DIR_PATH")
-
     def _execute(self, context):
-        # Handle both single and multiple file selection
-        if self.files:
-            for file_elem in self.files:
-                filepath = os.path.join(self.directory, file_elem.name)
-                uri = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
-                core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
-        else:
-            # Fallback for single file (backward compatibility)
-            filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
             core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
@@ -3165,6 +3160,7 @@ class EditTextPopup(bpy.types.Operator):
         bpy.ops.bim.disable_editing_text()
 
     def execute(self, context):
+        # TODO: check for possible subtle undo bug here
         # can't use invoke() because this operator
         # will be run indirectly by hotkey
         # so we use execute() and track whether it's the first run of the operator
@@ -3804,83 +3800,51 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
-
-    override_existing_image: bpy.props.BoolProperty(
-        name="Override Existing Image",
-        default=True,
-        description=(
-            "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
-        ),
-    )
-    use_existing_object_by_name: bpy.props.StringProperty(
-        name="Use Existing Object By Name",
-        description="Existing object name to add a style with reference image to. If not provided will create a new object.",
-        options={"SKIP_SAVE"},
-    )
-
     x_length: bpy.props.FloatProperty(
         name="X Length",
-        description="Width of the reference image in project units",
+        description="Width of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
     )
     y_length: bpy.props.FloatProperty(
         name="Y Length",
-        description="Height of the reference image in project units",
+        description="Height of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
+    )
+    show_texture_solid_mode: bpy.props.BoolProperty(
+        name="Show Texture in Solid mode (slow)",
+        description="Show Texture in Solid mode (slow)",
+        default=False,
     )
 
-    show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
-
-    def draw(self, context):
-        layout = self.layout
-
-        if getattr(self, "show_dimensions_dialog", False):
-            if tool.Ifc.get():
-                length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
-                if length_unit:
-                    unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
-                else:
-                    unit_name = "project units"
-                layout.label(text=f"Set Reference Image Dimensions (in {unit_name}):")
-            else:
-                layout.label(text="Set Reference Image Dimensions (in project units):")
-            layout.separator()
-            layout.prop(self, "x_length")
-            layout.prop(self, "y_length")
-        else:
-            if Path(tool.Ifc.get_path()).is_file():
-                layout.prop(self, "use_relative_path")
-            else:
-                self.use_relative_path = False
-                layout.label(text="Save the .ifc file first ")
-                layout.label(text="to use relative paths.")
-            layout.prop(self, "override_existing_image")
-            layout.prop(self, "use_existing_object_by_name")
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project is loaded.")
+            return False
+        return True
 
     def invoke(self, context, event):
-        if not getattr(self, "show_dimensions_dialog", False):
-            context.window_manager.fileselect_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            return context.window_manager.invoke_props_dialog(self)
+        self._last_filepath = ""
+        return super().invoke(context, event)
 
-    def execute(self, context):
-        if not getattr(self, "show_dimensions_dialog", False):
+    def check(self, context):
+        if not hasattr(self, "_last_filepath"):
+            self._last_filepath = ""
+
+        if self.filepath and self.filepath != self._last_filepath:
+            self._last_filepath = self.filepath
+
             abs_path = Path(self.filepath).absolute().resolve()
-            if self.override_existing_image:
-                params = {"check_existing": True, "force_reload": True}
-            else:
-                params = {"check_existing": False}
-
-            try:
-                image = load_image(abs_path.name, str(abs_path.parent), **params)
-
+            if abs_path.exists() and abs_path.is_file():
+                image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
                 image_width_px = image.size[0]
                 image_height_px = image.size[1]
                 aspect_ratio = image_width_px / image_height_px
@@ -3893,17 +3857,23 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                     self.y_length = 1.0
 
                 bpy.data.images.remove(image)
+                return True
 
-            except Exception as e:
-                self.report({"ERROR"}, f"Failed to load image: {str(e)}")
-                return {"CANCELLED"}
+        return False
 
-            self.show_dimensions_dialog = True
-            return context.window_manager.invoke_props_dialog(self)
-
-        return self._execute(context)
+    def draw(self, context):
+        layout = self.layout
+        if Path(tool.Ifc.get_path()).is_file():
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+        layout.prop(self, "show_texture_solid_mode")
+        layout.prop(self, "x_length")
+        layout.prop(self, "y_length")
 
     def _execute(self, context):
+        project_props = tool.Project.get_project_props()
+        project_props.load_indexed_maps = self.show_texture_solid_mode
         space = tool.Blender.get_view3d_space()
         if space.shading.color_type != "TEXTURE":
             space.shading.color_type = "TEXTURE"
@@ -3916,121 +3886,66 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
 
-        if self.override_existing_image:
-            params = {"check_existing": True, "force_reload": True}
-        else:
-            params = {"check_existing": False}
+        params = {"check_existing": False}
         image = load_image(abs_path.name, str(abs_path.parent), **params)
 
-        def bm_add_image_plane(mesh):
-            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+        mesh = bpy.data.meshes.new(image_filepath.stem)
+        obj = bpy.data.objects.new(image_filepath.stem, mesh)
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
+        )
 
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
-            matrix = Matrix.LocRotScale(None, None, plane_scale)
-            bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        hx = self.x_length * 0.5 / unit_scale
+        hy = self.y_length * 0.5 / unit_scale
+        verts = [(-hx, -hy, 0.0), (hx, -hy, 0.0), (hx, hy, 0.0), (-hx, hy, 0.0)]
+        item = builder.mesh(verts, [[0, 1, 2, 3]])
 
-            if not bm.loops.layers.uv:
-                uv_layer = bm.loops.layers.uv.new()
-            else:
-                uv_layer = bm.loops.layers.uv.active
+        ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = builder.get_representation(ifc_context, [item])
+        ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
 
-            min_x = min(v.co.x for v in bm.verts)
-            max_x = max(v.co.x for v in bm.verts)
-            min_y = min(v.co.y for v in bm.verts)
-            max_y = max(v.co.y for v in bm.verts)
-
-            width = max_x - min_x
-            height = max_y - min_y
-
-            for face in bm.faces:
-                for loop in face.loops:
-                    vert = loop.vert
-                    u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                    v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                    u = max(0.0, min(1.0, u))
-                    v = max(0.0, min(1.0, v))
-                    loop[uv_layer].uv = (u, v)
-
-            tool.Blender.apply_bmesh(mesh, bm)
-
-        if self.use_existing_object_by_name:
-            obj = bpy.data.objects[self.use_existing_object_by_name]
-            bm_add_image_plane(obj.data)
-            bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
-        else:
-            temp_mesh = bpy.data.meshes.new("temp_mesh")
-            bm_add_image_plane(temp_mesh)
-            obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
-            tool.Drawing.run_root_assign_class(
-                obj=obj,
-                ifc_class="IfcAnnotation",
-                predefined_type="IMAGE",
-                should_add_representation=True,
-                context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
-                ifc_representation_class=None,
-            )
-            tool.Blender.remove_data_block(temp_mesh)
-
-        element = tool.Ifc.get_entity(obj)
-        if element and isinstance(obj.data, bpy.types.Mesh):
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if representation and representation.Items:
-                item_id = representation.Items[0].id()
-                num_faces = len(obj.data.polygons)
-                obj.data["ios_item_ids"] = [item_id] * num_faces
-                tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
-
-                for item in representation.Items:
-                    if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
-                        new_coords = []
-                        for vertex in obj.data.vertices:
-                            co = obj.matrix_world @ vertex.co
-                            new_coords.append([co.x, co.y, co.z])
-                        item.Coordinates.CoordList = new_coords
-
-        tool.Blender.set_active_object(obj)
-
-        material = bpy.data.materials.new(name=image_filepath.stem)
-        obj.data.materials.append(None)  # new slot
-        obj.material_slots[0].material = material
-        bpy.ops.bim.add_style()
-
-        style = tool.Ifc.get_entity(material)
-        assert style
-        tool.Style.assign_style_to_object(style, obj)
+        style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
+        ifcopenshell.api.style.assign_representation_styles(
+            ifc_file, shape_representation=representation, styles=[style]
+        )
 
         # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
         # we don't support IfcSurfaceStyleWithTextures without Rendering yet
         shading_attributes = {
-            "SurfaceColour": {
-                "Red": 1.0,
-                "Green": 1.0,
-                "Blue": 1.0,
-            },
+            "SurfaceColour": {"Red": 1.0, "Green": 1.0, "Blue": 1.0},
             "Transparency": 0.0,
             "ReflectanceMethod": "NOTDEFINED",
         }
         ifcopenshell.api.style.add_surface_style(
-            tool.Ifc.get(),
-            style=style,
-            ifc_class="IfcSurfaceStyleRendering",
-            attributes=shading_attributes,
+            tool.Ifc.get(), style=style, ifc_class="IfcSurfaceStyleRendering", attributes=shading_attributes
         )
-        texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
-        textures = [texture]
-        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")  # UV map
-        ifcopenshell.api.style.add_surface_style(
-            ifc_file,
-            style=style,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-        tool.Style.reload_material_from_ifc(material)
-        tool.Geometry.record_object_materials(obj)
 
-        return {"FINISHED"}
+        if tool.Ifc.get_schema() == "IFC2X3":
+            texture = ifc_file.create_entity(
+                "IfcImageTexture",
+                RepeatS=True,
+                RepeatT=True,
+                TextureType="TEXTURE",
+                UrlReference=image_filepath.as_posix(),
+            )
+        else:
+            texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+            ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
+
+        textures = [texture]
+        ifcopenshell.api.style.add_surface_style(
+            ifc_file, style=style, ifc_class="IfcSurfaceStyleWithTextures", attributes={"Textures": textures}
+        )
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.create_style(style)
+
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
 
 
 class ConvertSVGToDXF(bpy.types.Operator):

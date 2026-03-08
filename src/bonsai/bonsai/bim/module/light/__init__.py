@@ -16,10 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import importlib
 import importlib.util
 import stat
-import traceback
 from pathlib import Path
 
 import bpy

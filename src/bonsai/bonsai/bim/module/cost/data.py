@@ -18,13 +18,11 @@
 
 from typing import Any, Union
 
-import bpy
 import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 
 import bonsai.tool as tool
 

@@ -20,12 +20,11 @@
 
 import copy
 import math
-from math import acos, atan2, cos, degrees, pi, sin
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never, get_args
+from math import atan2, cos, degrees, pi, sin
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
@@ -45,11 +44,9 @@ from mathutils import Matrix, Vector
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.core.root
-import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 
@@ -916,8 +913,8 @@ class DumbWallGenerator:
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
-            # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
+            angle_snap = tool.Snap.get_angle_snap_value(bpy.context)
+            nearest_degree = math.radians(angle_snap)
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_wall()

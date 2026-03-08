@@ -23,10 +23,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.util.unit
-import mathutils
-from lark import Lark, Transformer
 from mathutils import Matrix, Vector
 
 import bonsai.core.tool
@@ -113,6 +110,15 @@ class Snap(bonsai.core.tool.Snap):
                 increment = 1 * factor
 
         return increment
+
+    @classmethod
+    def get_angle_snap_value(cls, context: bpy.types.Context) -> float:
+        """Get the angle snap increment from Blender's tool settings.
+
+        :param context: Blender context
+        :return: Angle snap increment in degrees
+        """
+        return math.degrees(context.scene.tool_settings.snap_angle_increment_3d)
 
     @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):

@@ -16,15 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union
-
-import blf
 import bmesh
 import bpy
 import gpu
 from bpy.app.handlers import persistent
 from bpy.types import SpaceView3D
-from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 
@@ -56,7 +52,7 @@ class ProjectDecorator:
     installed = None
 
     @classmethod
-    def install(cls, context):
+    def install(cls, context: bpy.types.Context) -> None:
         if cls.installed:
             cls.uninstall()
         handler = cls()
@@ -101,26 +97,20 @@ class ProjectDecorator:
         # general shader
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
 
-        selected_vertices = []
-        selected_edges = []
-        selected_tris = []
-
         props = tool.Project.get_project_props()
-        try:
-            obj = props.queried_obj
-            selected_vertices = obj["selected_vertices"]
-            selected_edges = obj["selected_edges"]
-            selected_tris = obj["selected_tris"]
-        except:
+        obj = props.queried_obj
+        if obj is None:
             return
+        geom = tool.Project.Link.get_selected_geometry(obj)
+        selected_vertices = geom.selected_vertices
 
-        root_obj: Union[bpy.types.Object, None] = props.queried_obj_root
+        root_obj = props.queried_obj_root
         if root_obj and not (m := root_obj.matrix_world).is_identity:
             selected_vertices = [m @ Vector(v) for v in selected_vertices]
 
-        if selected_edges:
-            self.draw_batch("LINES", selected_vertices, selected_elements_color, selected_edges)
-            self.draw_batch("TRIS", selected_vertices, transparent_color(selected_elements_color), selected_tris)
+        if geom.selected_edges:
+            self.draw_batch("LINES", selected_vertices, selected_elements_color, geom.selected_edges)
+            self.draw_batch("TRIS", selected_vertices, transparent_color(selected_elements_color), geom.selected_tris)
 
 
 class ClippingPlaneDecorator:

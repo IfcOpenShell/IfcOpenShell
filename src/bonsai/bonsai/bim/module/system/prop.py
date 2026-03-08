@@ -23,10 +23,7 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -35,7 +32,7 @@ import bonsai.bim.handler
 import bonsai.bim.module.system.decorator as decorator
 import bonsai.tool as tool
 from bonsai.bim.module.system.data import SystemData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

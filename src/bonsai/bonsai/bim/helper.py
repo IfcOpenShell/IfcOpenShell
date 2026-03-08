@@ -28,7 +28,6 @@ import bpy
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import (
     get_attribute_doc,

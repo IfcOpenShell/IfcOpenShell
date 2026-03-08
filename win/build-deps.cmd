@@ -249,8 +249,9 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :proj
 
-IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
-    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+set PROJ_VERSION=9.4.1
+IF EXIST "%INSTALL_DIR%\proj-%PROJ_VERSION%" (
+    echo Found existing "%INSTALL_DIR%\proj-%PROJ_VERSION%", skipping
     goto :mpir
 )
 
@@ -269,13 +270,13 @@ copy sqlite3.h %INSTALL_DIR%\sqlite3\include
 popd
 
 set DEPENDENCY_NAME=proj
-set DEPENDENCY_DIR=%DEPS_DIR%\proj-9.2.1
-call :DownloadFile https://download.osgeo.org/proj/proj-9.2.1.zip "%DEPS_DIR%" proj-9.2.1.zip
+set DEPENDENCY_DIR=%DEPS_DIR%\proj-%PROJ_VERSION%
+call :DownloadFile https://download.osgeo.org/proj/proj-%PROJ_VERSION%.zip "%DEPS_DIR%" proj-%PROJ_VERSION%.zip
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive proj-9.2.1.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-9.2.1"
+call :ExtractArchive proj-%PROJ_VERSION%.zip "%DEPS_DIR%" "%DEPS_DIR%\proj-%PROJ_VERSION%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-9.2.1" ^
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\proj-%PROJ_VERSION%" ^
     -DSQLITE3_INCLUDE_DIR=%INSTALL_DIR%\sqlite3\include ^
     -DSQLITE3_LIBRARY=%INSTALL_DIR%\sqlite3\lib\sqlite3.lib ^
     -DENABLE_TIFF=Off -DENABLE_CURL=Off -DBUILD_PROJSYNC=Off ^
@@ -297,8 +298,9 @@ IF EXIST "%INSTALL_DIR%\mpir" (
 )
 
 set DEPENDENCY_NAME=mpir
+:: `mpfr` depends on relative path `..\mpir\config.h`, so dependency name should match exactly.
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
-call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
+call :GitCloneAndCheckoutRevision https://github.com/Andrej730/mpir-vs2026.git "%DEPENDENCY_DIR%"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 pushd "%DEPENDENCY_DIR%"
 git reset --hard
@@ -412,6 +414,11 @@ if exist "%DEPS_DIR%\boost-%BOOST_VERSION%". (
     ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
 )
 
+:: As boost 1.90.0 it still includes b2 that doesn't support vc145 (not to mention older boost versions).
+:: So to support vc145 we download b2 separately (only if we do use vc145).
+call :check_boost_vc145_compatibility "%VC_VER%" "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+if NOT %ERRORLEVEL%==0 GOTO :Error
+
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     cd "%DEPS_DIR%"
@@ -462,8 +469,10 @@ IF NOT %ERRORLEVEL%==0 git apply --reject --whitespace=fix "%~dp0patches\OpenCOL
 :: uncomment to following line in order to delete the CMakeCache.txt always if experiencing problems.
 REM IF EXIST "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt". del "%DEPENDENCY_DIR%\%BUILD_DIR%\CMakeCache.txt"
 :: NOTE Enforce that the embedded LibXml2 and PCRE are used as there might be problems with arbitrary versions of the libraries.
+:: OpenCOLLADA is ancient at this point and allows cmake 2.6+, which results in error in cmake 4, so we override minimum cmake version.
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" -DUSE_STATIC_MSVC_RUNTIME=0 -DCMAKE_DEBUG_POSTFIX=d ^
-               -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES=""
+               -DLIBXML2_LIBRARIES="" -DLIBXML2_INCLUDE_DIR="" -DPCRE_INCLUDE_DIR="" -DPCRE_LIBRARIES="" ^
+               -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 REM IF NOT EXIST "%DEPS_DIR%\OpenCOLLADA\%BUILD_DIR%\lib\%DEBUG_OR_RELEASE%\OpenCOLLADASaxFrameworkLoader.lib".
 call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
@@ -509,9 +518,18 @@ cd "%DEPENDENCY_DIR%"
 :: TODO: remove CMAKE_DEBUG_POSTFIX setting later.
 :: Temporarily explicitly set `CMAKE_DEBUG_POSTFIX` to empty to override it's perviously being set to `d`.
 :: OCCT don't need it, since it's layout is separating debug and release build by different folders.
+::
+:: OCCT 7.8.1 we're using is becoming old and it was targeting cmake 3.1+.
+::To make it buildable on cmake 4, we override policy version, but it may have some quirks in the future and we may consider version bump.
 call :RunCMake -DINSTALL_DIR="%DEPENDENCY_INSTALL_DIR%" -DBUILD_LIBRARY_TYPE="Static" -DCMAKE_DEBUG_POSTFIX="" ^
-    -DBUILD_MODULE_Draw=0 -DUSE_FREETYPE=OFF ^
-    -DBUILD_USE_PCH=ON
+    -DBUILD_MODULE_Draw=0 ^
+    -DBUILD_RELEASE_DISABLE_EXCEPTIONS=OFF ^
+    -DUSE_XLIB=OFF ^
+    -DUSE_FREETYPE=OFF ^
+    -DUSE_OPENGL=OFF ^
+    -DUSE_GLES2=OFF ^
+    -DBUILD_USE_PCH=ON ^
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 if not %ERRORLEVEL%==0 goto :Error
 
 :: whole program optimization avoids Visual C++ hanging when compiling 32-bit release OCCT up to version 7.4.0
@@ -572,7 +590,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :SWIG
 set DEPENDENCY_NAME=SWIG
-set SWIG_VERSION=4.1.0
+set SWIG_VERSION=4.2.1
 set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\swig-%SWIG_VERSION%
 echo SWIG_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -914,6 +932,15 @@ exit /b 0
 :: - DEPENDENCY_INSTALL_NAME
 :MarkInstallation
 %PWSH_TOOLS% mark "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+exit /b 0
+
+:: Params:
+:: - %1 - VC_VER
+:: - %2 - DEPS_DIR
+:: - %3 - BOOST_ROOT
+:check_boost_vc145_compatibility
+%PWSH_TOOLS% check_boost_vc145_compatibility "%1" "%2" "%3"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 exit /b 0
 

@@ -19,11 +19,10 @@
 # fmt: off
 # pylint: skip-file
 
-from math import cos, pi
+from math import pi
 from pathlib import Path
 
 import boltspy as bolts  # pyright: ignore[reportMissingImports]
-import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.project

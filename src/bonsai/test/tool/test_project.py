@@ -17,8 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import json
 import tempfile
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import cast
 
 import bpy
 import ifcopenshell
@@ -27,6 +30,7 @@ import ifcopenshell.api.document
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcpatch
+import numpy as np
 from ifcpatch.recipes import Ifc2Sql
 
 import bonsai.core.tool
@@ -263,7 +267,7 @@ class TestLoadLinkedModels(NewFile):
         props = tool.Project.get_project_props()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
         document = ifcopenshell.api.document.add_information(ifc)
-        document.Name = "BBIM_Linked_Models"
+        document.Name = "X"
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
         assert len(props.links) == 0
@@ -273,86 +277,81 @@ class TestLoadLinkedModels(NewFile):
         props = tool.Project.get_project_props()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
         document = ifcopenshell.api.document.add_information(ifc)
-        document.Name = "BBIM_Linked_Models"
+        document.Scope = "LINKED_MODEL"
         reference = ifcopenshell.api.document.add_reference(ifc, document)
-        linked_model_path = "test.ifc"
-        reference.Location = linked_model_path
+        reference.Location = "test.ifc"
+        reference.Identification = ""
+        reference2 = ifcopenshell.api.document.add_reference(ifc, document)
+        reference2.Location = "test2.ifc"
+        reference2.Identification = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16"
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
-        assert len(props.links) == 1
-        assert props.links[0].name == linked_model_path
+        assert len(props.links) == 2
+        assert props.links[0].name == "test.ifc"
+        assert props.links[0].ifc_definition_id == reference.id()
+        assert props.links[0].has_transformation is False
+        assert props.links[1].name == "test2.ifc"
+        assert props.links[1].ifc_definition_id == reference2.id()
+        assert props.links[1].has_transformation is True
 
 
-class TestSaveLinkedModelsToIfc(NewFile):
-    def test_save_linked_models_to_ifc_no_links(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
-        assert len(ifc.by_type("IfcDocumentInformation")) == 0
-        assert len(ifc.by_type("IfcDocumentReference")) == 0
-
-    def test_save_linked_models_to_ifc_paths_to_add(self):
-        ifc = ifcopenshell.file()
-        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+class TestCalculateLinkMatrix(NewFile):
+    def test_linking_a_model_without_an_offset_to_our_session_with_no_offset(self):
         props = tool.Project.get_project_props()
-        link = props.links.add()
-        linked_model_path = "test.ifc"
-        link.name = linked_model_path
-        tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
-        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
-        assert documents[0].Name == "BBIM_Linked_Models"
-        assert len(references := ifc.by_type("IfcDocumentReference")) == 1
-        assert references[0].Location == linked_model_path
+        gprops = tool.Georeference.get_georeference_props()
+        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+            link = props.links.add()
+            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            json.dump({"model_project_north": "0", "model_origin_si": "0,0,0"}, tmp)
+            tmp.flush()
+            gprops.model_project_north = "0"
+            gprops.model_origin_si = "0,0,0"
+            assert np.allclose(subject.calculate_link_matrix(link), np.eye(4))
 
-    def test_save_linked_models_to_ifc_already_created_references(self):
-        ifc = ifcopenshell.file()
-        links = tool.Project.get_project_props().links
-        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+    def test_linking_an_offset_model_to_our_session_with_no_offset(self):
+        props = tool.Project.get_project_props()
+        gprops = tool.Georeference.get_georeference_props()
+        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+            link = props.links.add()
+            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
+            tmp.flush()
+            gprops.model_project_north = "0"
+            gprops.model_origin_si = "0,0,0"
+            m = np.eye(4)
+            m[0][3] = 5
+            assert np.allclose(subject.calculate_link_matrix(link), m)
 
-        document = ifcopenshell.api.document.add_information(ifc)
-        document.Name = "BBIM_Linked_Models"
-        document_id = document.id()
-        reference = ifcopenshell.api.document.add_reference(ifc, document)
-        linked_model_path = "test.ifc"
-        reference.Location = linked_model_path
-        reference_id = reference.id()
+    def test_linking_an_offset_model_to_our_session_with_offset(self):
+        props = tool.Project.get_project_props()
+        gprops = tool.Georeference.get_georeference_props()
+        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+            link = props.links.add()
+            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
+            tmp.flush()
+            gprops.model_project_north = "0"
+            gprops.model_origin_si = "2,0,0"
+            m = np.eye(4)
+            m[0][3] = 3
+            assert np.allclose(subject.calculate_link_matrix(link), m)
 
-        link = links.add()
-        linked_model_path = "test.ifc"
-        link.name = linked_model_path
-        tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
-
-        # Information and references to stay intact.
-        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
-        assert documents[0].id() == document_id
-        assert documents[0].Name == "BBIM_Linked_Models"
-        assert len(references := ifc.by_type("IfcDocumentReference")) == 1
-        assert references[0].id() == reference_id
-        assert references[0].Location == linked_model_path
-
-    def test_save_linked_models_to_ifc_references_to_remove(self):
-        ifc = ifcopenshell.file()
-        links = tool.Project.get_project_props().links
-        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
-
-        document = ifcopenshell.api.document.add_information(ifc)
-        document.Name = "BBIM_Linked_Models"
-        document_id = document.id()
-        reference = ifcopenshell.api.document.add_reference(ifc, document)
-        linked_model_path = "test.ifc"
-        reference.Location = linked_model_path
-
-        tool.Ifc.set(ifc)
-        subject.save_linked_models_to_ifc()
-        links.clear()
-
-        # Remove reference for removed link.
-        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
-        assert documents[0].id() == document_id
-        assert documents[0].Name == "BBIM_Linked_Models"
-        assert len(ifc.by_type("IfcDocumentReference")) == 0
+    def test_linking_an_offset_model_to_our_session_with_offset_and_transformation(self):
+        props = tool.Project.get_project_props()
+        gprops = tool.Georeference.get_georeference_props()
+        with NamedTemporaryFile(suffix=".ifc.cache.json", mode="w", delete=True) as tmp:
+            link = props.links.add()
+            link.filepath = tmp.name.replace(".ifc.cache.json", ".ifc")
+            transformation = np.eye(4)
+            transformation[0][3] = 4
+            link.transformation = ",".join(map(str, transformation.reshape(-1)))
+            json.dump({"model_project_north": "0", "model_origin_si": "5,0,0"}, tmp)
+            tmp.flush()
+            gprops.model_project_north = "0"
+            gprops.model_origin_si = "2,0,0"
+            m = np.eye(4)
+            m[0][3] = 7
+            assert np.allclose(subject.calculate_link_matrix(link), m)
 
 
 class TestLoadingIfcSqlite(NewFile):
@@ -401,3 +400,50 @@ class TestLoadingIfcSqlite(NewFile):
             for element_name in elements_without_meshes:
                 assert element_name in bpy.data.objects
                 assert not bpy.data.objects[element_name].data
+
+
+class TestGettingLinkedElementGeomSlice:
+    def __init__(self):
+        self.test_get_first_element()
+        self.test_get_middle_element()
+        self.test_skip_hidden_first_element()
+        self.test_skip_hidden_middle_element()
+        self.test_handle_hidden_non_first_element()
+
+    TEST_OBJ = {
+        "guids": ["aaa", "bbb", "ccc"],
+        "guid_ids": [5, 10, 15],
+    }
+
+    def test_get_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)
+
+    def test_get_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_skip_hidden_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [0]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5)
+
+    def test_skip_hidden_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "ccc")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_handle_hidden_non_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)

@@ -26,7 +26,6 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -34,7 +33,7 @@ from ifcopenshell.geom.main import CLASH_TYPE_ITEMS, ClashType
 from mathutils import Vector
 
 import bonsai.tool as tool
-from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
+from bonsai.bim.prop import BIMFilterGroup, StrProperty
 
 
 class ClashSource(PropertyGroup):

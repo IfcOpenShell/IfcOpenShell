@@ -19,12 +19,10 @@
 import json
 
 import bpy
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 import bonsai.tool as tool
 

@@ -23,16 +23,12 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 from bonsai.bim.module.diff.data import DiffData
-from bonsai.bim.prop import BIMFilterGroup, StrProperty
+from bonsai.bim.prop import BIMFilterGroup
 
 
 def update_diff_json_file(self: "DiffProperties", context: bpy.types.Context) -> None:

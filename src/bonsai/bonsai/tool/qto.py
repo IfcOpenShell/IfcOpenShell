@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from mathutils import Vector
 

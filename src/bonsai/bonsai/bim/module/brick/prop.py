@@ -23,10 +23,7 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -34,7 +31,7 @@ from bpy.types import PropertyGroup
 import bonsai.core.brick as core
 import bonsai.tool.brick as tool
 from bonsai.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import StrProperty
 from bonsai.tool.brick import BrickStore
 
 
