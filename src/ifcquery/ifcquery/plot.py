@@ -25,7 +25,12 @@ from typing import Any
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
-import ifcopenshell.draw
+try:
+    import ifcopenshell.draw
+
+    _HAS_DRAW = True
+except ImportError:
+    _HAS_DRAW = False
 
 from xml.etree.ElementTree import ElementTree, Element, SubElement, register_namespace
 
