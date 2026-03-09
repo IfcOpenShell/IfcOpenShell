@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.grid
 from bpy.props import FloatProperty, IntProperty
 from bpy.types import Operator

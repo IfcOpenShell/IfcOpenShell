@@ -17,15 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
 from functools import partial
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import bpy
 import bpy.utils.previews
 from bpy.types import Menu, WorkSpaceTool
 
-import bonsai.bim
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.helper import draw_attribute, prop_with_search

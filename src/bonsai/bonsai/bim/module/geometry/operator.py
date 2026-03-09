@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 from collections.abc import Sequence
 from time import time
 from typing import (
@@ -32,11 +31,9 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.drawing
 import ifcopenshell.api.geometry
-import ifcopenshell.api.grid
 import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
@@ -61,10 +58,8 @@ import bonsai.core.geometry as core
 import bonsai.core.nest
 import bonsai.core.root
 import bonsai.core.spatial
-import bonsai.core.style
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -902,7 +897,7 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
-            
+
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):

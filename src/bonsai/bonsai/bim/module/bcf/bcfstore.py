@@ -19,9 +19,7 @@
 import os
 from typing import Union
 
-import bcf
 import bcf.bcfxml
-import bcf.v2.bcfxml
 import bpy
 
 import bonsai.tool as tool

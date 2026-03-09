@@ -22,18 +22,12 @@ import bpy
 import ifc5d.qto
 from bpy.props import (
     BoolProperty,
-    CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
-from bonsai.bim.prop import Attribute, StrProperty
 
 CALCULATOR_FUNCTION_ENUM_ITEMS: list[Union[tuple[str, str, str], None]] = []
 

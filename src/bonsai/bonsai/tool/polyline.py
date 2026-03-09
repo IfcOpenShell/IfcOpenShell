@@ -18,12 +18,10 @@
 
 import math
 from dataclasses import dataclass, field
-from math import cos, degrees, radians, sin, tan
+from math import radians
 from typing import Literal, Optional, Union
 
-import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.util.unit
 from lark import Lark, Transformer
 from mathutils import Matrix, Vector

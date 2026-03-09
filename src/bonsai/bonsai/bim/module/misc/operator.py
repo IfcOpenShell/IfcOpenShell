@@ -19,12 +19,11 @@
 from typing import TYPE_CHECKING, Literal, assert_never, get_args
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 import numpy as np
-from mathutils import Euler, Matrix, Vector
+from mathutils import Matrix
 
 import bonsai.core.geometry as core_geometry
 import bonsai.core.misc as core

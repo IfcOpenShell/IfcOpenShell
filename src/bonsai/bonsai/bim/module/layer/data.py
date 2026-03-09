@@ -19,7 +19,6 @@
 from typing import Any
 
 import bpy
-import ifcopenshell
 
 import bonsai.tool as tool
 

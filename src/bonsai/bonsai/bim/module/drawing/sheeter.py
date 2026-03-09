@@ -26,7 +26,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
-import bpy
 import ifcopenshell.util.geolocation
 import pystache
 from mathutils import Vector

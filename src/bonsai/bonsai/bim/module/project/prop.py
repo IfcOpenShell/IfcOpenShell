@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 from collections.abc import Generator
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
 
 import bpy
@@ -39,7 +37,7 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
-from bonsai.bim.prop import Attribute, ObjProperty, StrProperty
+from bonsai.bim.prop import Attribute, ObjProperty
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -454,6 +452,7 @@ class BIMProjectProperties(PropertyGroup):
     )
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_guid: bpy.props.StringProperty()
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
@@ -552,6 +551,7 @@ class BIMProjectProperties(PropertyGroup):
         should_save_metadata_for_this_file: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
+        queried_guid: str
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
         clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]

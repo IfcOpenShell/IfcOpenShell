@@ -20,7 +20,6 @@ import bmesh
 import gpu
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
-from mathutils import Vector
 
 import bonsai.tool as tool
 

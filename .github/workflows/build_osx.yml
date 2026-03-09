@@ -40,6 +40,8 @@ jobs:
           # preinstalled: xz, cmake
           brew install git bison autoconf automake libffi findutils
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+          # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
       - name: Install aws cli
         run: |
@@ -47,11 +49,11 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
-          install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
-          [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
+          cd build
+          python ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.20
         with:
           key: mac-${{ matrix.arch }}
 
@@ -81,7 +83,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-logs-osx-${{ matrix.arch }}
           path: |
@@ -93,9 +95,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd build
-          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
-            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
-          done
+          python ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |

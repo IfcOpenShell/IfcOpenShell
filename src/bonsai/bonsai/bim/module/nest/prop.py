@@ -22,19 +22,12 @@ import bpy
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
     PointerProperty,
-    StringProperty,
 )
 from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.nest.decorator import NestDecorator, NestModeDecorator
-from bonsai.bim.module.spatial.data import SpatialData
-from bonsai.bim.prop import Attribute, StrProperty
 
 
 def update_relating_object(self: "BIMObjectNestProperties", context: bpy.types.Context) -> None:

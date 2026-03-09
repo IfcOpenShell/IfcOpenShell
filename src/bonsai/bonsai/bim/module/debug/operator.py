@@ -29,7 +29,6 @@ from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W

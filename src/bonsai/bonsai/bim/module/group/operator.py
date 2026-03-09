@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, get_args
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 

@@ -38,3 +38,12 @@ exclude = ["test*"]
 
 [tool.ruff]
 extend = "../../pyproject.toml"
+lint.extend-select = [
+  "F401",  # unused imports
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "test",
+  "bonsai",
+]

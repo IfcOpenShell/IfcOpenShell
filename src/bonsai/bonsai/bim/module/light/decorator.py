@@ -16,10 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from math import degrees, radians
 
 import blf
-import bmesh
 import bpy
 import gpu
 from bpy.types import SpaceView3D

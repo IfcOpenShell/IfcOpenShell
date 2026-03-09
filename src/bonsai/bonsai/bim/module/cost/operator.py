@@ -987,10 +987,10 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     @classmethod
     def poll(cls, context):
         try:
-            import typst
+            import typst  # noqa: F401
 
             return True
-        except:
+        except ModuleNotFoundError:
             cls.poll_message_set(
                 "Typst not available.\nIt can be installed from Quality and\nControl -> Debug and using 'typst' with Pip Install.\n(Run Blender as Administrator)"
             )

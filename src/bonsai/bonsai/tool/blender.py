@@ -74,7 +74,7 @@ if TYPE_CHECKING:
         BIMSolarProperties,
         RadianceExporterProperties,
     )
-    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
+    from bonsai.bim.prop import BIMObjectProperties, BIMProperties
 
     T = TypeVar("T")
 
@@ -1571,13 +1571,22 @@ class Blender(bonsai.core.tool.Blender):
         return getattr(scene, "sun_pos_properties", None)
 
     @classmethod
-    def scale_font_size(cls, size):
+    def scale_font_size(cls, size=None):
         default_dpi = 72
         default_pixel_size = 1.0
+        ui_style = bpy.context.preferences.ui_styles[0]
+        base_size = ui_style.widget.points if size is None else size
+        platform_scale = 0.5 if sys.platform == "darwin" else 1
+
         default_scale = default_dpi * default_pixel_size
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
-        return (system_scale / default_scale) * size
+        return (
+            (system_scale / default_scale)
+            * base_size
+            * platform_scale
+            * tool.Blender.get_addon_preferences().decorator_font_scale
+        )
 
     @classmethod
     def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
@@ -2175,3 +2184,32 @@ class Blender(bonsai.core.tool.Blender):
             for f in files
             if (Path(directory) / f.name).is_file()
         ]
+
+    @classmethod
+    def ray_cast_scene(
+        cls,
+        context: bpy.types.Context,
+        origin: Vector,
+        direction: Vector,
+    ) -> tuple[bool, Vector, Vector, int, bpy.types.Object, Matrix]:
+        """
+
+        The returned matrix is just ``obj.matrix_world``.
+        The returned object is not evaluated by the current depsgraph,
+        e.g. if object is modified by the depsgraph (e.g. by modifiers)
+        object has to be evaluated first (`obj.evaluated_get(depsgraph)`).
+        """
+        depsgraph = context.evaluated_depsgraph_get()
+        assert context.scene
+        result = context.scene.ray_cast(
+            depsgraph,
+            origin,
+            direction,
+        )
+        return result
+
+    @classmethod
+    def depsgraph_evaluate(cls, obj: bpy.types.Object) -> bpy.types.Object:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated_obj = obj.evaluated_get(depsgraph)
+        return evaluated_obj

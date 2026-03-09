@@ -17,12 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import numpy as np
 import numpy.typing as npt
-from mathutils import Matrix
 
 import bonsai.core.tool
 import bonsai.tool as tool

@@ -23,7 +23,6 @@ from typing import Any
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.util.representation

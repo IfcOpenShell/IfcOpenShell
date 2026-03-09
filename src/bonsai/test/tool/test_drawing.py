@@ -21,7 +21,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import bpy
-import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -31,8 +30,9 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import mathutils
 import numpy as np
-from mathutils import Vector
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -162,7 +162,7 @@ class TestEditTextLiterals(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         builder = ShapeBuilder(tool.Ifc.get())
-        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        polyline = builder.polyline([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)
@@ -934,11 +934,11 @@ class TestAddReferenceImage(NewFile):
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
-        bpy.ops.bim.add_reference_image(filepath=str(filepath))
+        bpy.ops.bim.add_reference_image(filepath=str(filepath), x_length=3.53982, y_length=2.0)
 
         obj = bpy.data.objects["IfcAnnotation/image"]
         assert obj is not None
-        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((1.0, 0.565, 0.0)))
+        assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
 
         material = obj.active_material
         assert material
@@ -957,4 +957,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["Generated"].links[:]) == 1
+        assert len(uv_node.outputs["UV"].links[:]) == 1

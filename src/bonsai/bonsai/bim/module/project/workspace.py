@@ -19,7 +19,6 @@
 import os
 
 import bpy
-from bpy.types import WorkSpaceTool
 
 import bonsai.tool as tool
 from bonsai.bim.module.project.data import LinksData
@@ -41,9 +40,11 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
         ("bim.explore_hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.explore_hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS"}, {"properties": [("hotkey", "H")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_H")]}),
     )
 
-    def draw_settings(context, layout, ws_tool):
+    def draw_settings(context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool) -> None:
         row = layout.row(align=True)
         row.label(text="Query Object", icon="MOUSE_RMB")
         row = layout.row(align=True)
@@ -61,6 +62,9 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
+
+        row = layout.row(align=True)
+        row.operator("bim.hide_queried_linked_element", text="Hide Queried Element", icon="EVENT_H")
 
         prop = tool.Project.get_measure_tool_settings()
         row = layout.row(align=True)
@@ -87,6 +91,7 @@ class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
     bl_label = ""
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
@@ -138,3 +143,9 @@ class ExploreHotkey(bpy.types.Operator):
             return
 
         bpy.ops.bim.image_scaling_tool("INVOKE_DEFAULT")
+
+    def hotkey_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element()
+
+    def hotkey_A_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element(unhide_all=True)

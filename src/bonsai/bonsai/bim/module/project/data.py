@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Union
 
-import bpy
 import ifcopenshell.util.file
 
 import bonsai.tool as tool
@@ -172,6 +170,6 @@ class ProjectLibraryData:
 
 
 class LinksData:
-    linked_data = {}
+    linked_data: dict[str, Any] = {}
     enable_culling = False
     is_loaded = False

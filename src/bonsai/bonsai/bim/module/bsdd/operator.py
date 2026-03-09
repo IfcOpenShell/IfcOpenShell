@@ -19,7 +19,6 @@ import textwrap
 from typing import Any
 
 import bpy
-import bsdd
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 

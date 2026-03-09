@@ -20,19 +20,13 @@ from typing import TYPE_CHECKING
 
 import bpy
 from bpy.props import (
-    BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
-    StringProperty,
 )
 from bpy.types import PropertyGroup
 
-from bonsai.bim.module.context.data import ContextData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 class BIMContextProperties(PropertyGroup):

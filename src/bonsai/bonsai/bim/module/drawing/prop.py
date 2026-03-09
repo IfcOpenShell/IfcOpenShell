@@ -18,14 +18,11 @@
 
 import enum
 import json
-import os
 from collections.abc import Callable
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bpy.props import (
@@ -34,7 +31,6 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -42,19 +38,17 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 from mathutils import Matrix
 
-import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.decoration as decoration
 import bonsai.core.drawing as core
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import (
     AnnotationData,
-    DecoratorData,
     DrawingsData,
     ElementValuesData,
     SheetsData,
 )
 from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
+from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
 

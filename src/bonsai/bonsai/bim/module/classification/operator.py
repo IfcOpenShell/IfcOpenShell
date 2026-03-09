@@ -18,7 +18,6 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.classification
 import ifcopenshell.api.pset
 import ifcopenshell.util.classification

@@ -23,7 +23,6 @@ from typing import Any, Union
 
 import bpy
 import ifcopenshell.util.date
-import isodate
 from dateutil import parser
 
 from bonsai.bim.prop import ISODuration

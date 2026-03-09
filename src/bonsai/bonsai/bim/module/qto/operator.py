@@ -18,7 +18,6 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 from ifcopenshell.util.profiler import Profiler
 
 import bonsai.core.qto as core

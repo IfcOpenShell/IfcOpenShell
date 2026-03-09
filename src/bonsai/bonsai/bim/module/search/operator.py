@@ -19,11 +19,10 @@
 import bisect
 import json
 import traceback
-from typing import TYPE_CHECKING, Literal, assert_never, get_args
+from typing import TYPE_CHECKING, Any, Literal, assert_never, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -31,13 +30,10 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
-from bpy.types import Operator, PropertyGroup
+from bpy.types import Operator
 from natsort import natsorted
 
 import bonsai.core.search as core
@@ -695,9 +691,9 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         filter_groups = tool.Search.get_filter_groups(module)
 
         if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,
@@ -852,9 +848,9 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             query = tool.Search.export_filter_query(filter_groups)
             results = tool.Search.execute_filter_groups(filter_groups)
 
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,

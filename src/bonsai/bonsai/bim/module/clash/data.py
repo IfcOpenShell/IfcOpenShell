@@ -18,9 +18,6 @@
 
 import json
 
-import bpy
-import ifcopenshell.util.element
-
 import bonsai.tool as tool
 
 

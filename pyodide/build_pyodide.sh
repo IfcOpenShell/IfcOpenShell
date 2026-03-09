@@ -1,9 +1,12 @@
 #!/usr/bin/bash
 set -ex
 
+# Script is assuming that it will be possible to execute it multiple times
+# therefore we're clearing venv each time and ignoring existing 'emsdk' folder.
+
 # Install uv.
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv venv --python 3.13
+uv venv --python 3.13 --clear
 source .venv/bin/activate
 
 # Install pyodide cross build environment.
@@ -13,7 +16,9 @@ uv pip install pyodide-build
 uv run pyodide xbuildenv install
 
 # Emscripten doesn't come with xbuildenv.
-git clone https://github.com/emscripten-core/emsdk
+if [ ! -d emsdk ]; then
+  git clone https://github.com/emscripten-core/emsdk
+fi
 pushd emsdk
 PYODIDE_EMSCRIPTEN_VERSION=$(pyodide config get emscripten_version)
 ./emsdk install ${PYODIDE_EMSCRIPTEN_VERSION}

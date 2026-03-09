@@ -165,13 +165,6 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	std::vector<TopoDS_Shape> shps(loft->children.size());
     std::vector<std::vector<std::set<std::string>>> all_tags;
 
-
-	std::ostringstream oss;
-    loft->children[0]->print(oss);
-    loft->children[1]->print(oss);
-    auto s = oss.str();
-    std::wcout << s.c_str() << std::endl;
-
 	// First convert all taxonomy items to TopoDS_Wire/Face
     for (auto it = loft->children.begin(); it < loft->children.end(); ++it) {
 		auto i = std::distance(loft->children.begin(), it);
@@ -267,6 +260,18 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
     return true;
 	*/
 
+    if (shps.size() < 2) {
+        Logger::Error("Not enough sections to loft");
+        return false;
+    }
+
+    if (shps[0].ShapeType() == TopAbs_FACE) {
+        // When processing a sectioned *surface* there are no
+        // begin and end caps that need to be added.
+        BB.Add(comp, shps.front().Reversed());
+        BB.Add(comp, shps.back());
+    }
+
 	// @todo this approach is
     // potentially incorrect as there is no guarantee that the wires for
     // subsequently placed profiles are traversed from an equivalent start vertex.
@@ -290,18 +295,6 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 				}
 			} else {
                 ws[0][i] = TopoDS::Wire(*fa[i]);
-			}
-		}
-        if (it->ShapeType() == TopAbs_FACE) {
-			// When processing a sectioned *surface* there are no
-			// begin and end caps that need to be added.
-			if (it == shps.begin()) {
-				// faces.Append(shps[0]);
-				BB.Add(comp, shps[0]);
-			}
-            if (jt == shps.end() - 1) {
-				// faces.Append(shps[1]);
-				BB.Add(comp, shps[1]);
 			}
 		}
 

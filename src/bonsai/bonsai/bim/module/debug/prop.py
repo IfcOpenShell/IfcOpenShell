@@ -20,13 +20,9 @@ from typing import TYPE_CHECKING, Literal, get_args
 
 import bpy
 from bpy.props import (
-    BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup

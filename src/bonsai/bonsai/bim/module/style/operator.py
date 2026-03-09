@@ -87,6 +87,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
+# TODO: remove completely
 class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_style"
     bl_label = "Add Style"

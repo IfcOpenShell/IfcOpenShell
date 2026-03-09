@@ -11,6 +11,7 @@ import site
 from pathlib import Path
 
 SITE = Path(site.getusersitepackages())
+SITE.mkdir(parents=True, exist_ok=True)
 REPO_PATH = Path(__file__).parent.parent.parent.parent
 REPO_PATH_SRC = REPO_PATH / "src"
 assert REPO_PATH_SRC.exists(), f"'{REPO_PATH_SRC}' doesn't exist."
@@ -36,8 +37,8 @@ for package, repo_package_path in packages.items():
     if package_path.exists():
         # I guess it's a directory.
         shutil.rmtree(package_path)
-    package_path.symlink_to(repo_package_path, True)
     print(f"Symlinking {package_path} -> {repo_package_path}")
+    package_path.symlink_to(repo_package_path, True)
 
 
 PACKAGE_PATH = SITE / "ifcopenshell"
