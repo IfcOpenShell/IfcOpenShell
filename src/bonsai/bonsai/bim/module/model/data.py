@@ -90,6 +90,7 @@ class AuthoringData:
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
+        cls.data["selected_classes"] = cls.selected_classes()
 
         # Only after .active_material_usage() and .active_class()
         cls.data["is_flippable_element"] = cls.is_flippable_element()
@@ -345,6 +346,15 @@ class AuthoringData:
                     continue
             selected_usages.setdefault(usage, []).append(obj)
         return selected_usages
+
+    @classmethod
+    def selected_classes(cls):
+        selected_classes = set()
+        for obj in tool.Blender.get_selected_objects():
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                selected_classes.add(element.is_a())
+        return selected_classes
 
 
 class ArrayData:

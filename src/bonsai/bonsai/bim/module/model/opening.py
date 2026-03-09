@@ -818,11 +818,16 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     objects_to_remove.add(opening_obj)
                     continue
                 opening_elements.add(opening_element)
-                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                if opening_element.VoidsElements:
+                    building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                else:
+                    continue
                 building_objs.add(tool.Ifc.get_object(building_element))
         else:
             for obj in context.selected_objects:
                 element = tool.Ifc.get_entity(obj)
+                if element is None:
+                    continue
                 if element.is_a("IfcOpeningElement"):
                     opening_element = element
                     opening_elements.add(opening_element)
@@ -903,13 +908,16 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         if len(context.selected_objects) != 2:
             cls.poll_message_set("Exactly 2 objects must be selected.")
             return False
+        if not any(o.name.startswith("IfcOpeningElement/") for o in context.selected_objects):
+            cls.poll_message_set("One of the selected objects must be an IfcOpeningElement.")
+            return False
         return True
 
     def _execute(self, context):
         # NOTE: Operator displayed in UI only with IfcOpeningElement being active.
         ifc_file = tool.Ifc.get()
         objects = bpy.context.selected_objects
-        opening_obj = context.active_object
+        opening_obj = next(o for o in objects if o.name.startswith("IfcOpeningElement/"))
         assert opening_obj
         opening = tool.Ifc.get_entity(opening_obj)
         assert opening and opening.is_a("IfcOpeningElement")
