@@ -16,7 +16,7 @@ import ifcopenshell.api.unit
 import numpy as np
 import pytest
 
-from ifcquery.render import render
+from ifcquery.render import render, _make_type_occurrence
 
 try:
     import pyvista  # noqa: F401
@@ -69,6 +69,35 @@ def model_with_geometry():
     return f
 
 
+@pytest.fixture
+def library_with_type():
+    """IFC4 library file: a WallType with a RepresentationMap but no instances."""
+    f = ifcopenshell.api.project.create_file()
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+
+    project = ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="LibProject")
+    ifcopenshell.api.unit.assign_unit(f)
+
+    model_ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+    body = ifcopenshell.api.context.add_context(
+        f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_ctx
+    )
+
+    # Build the shape representation and wrap it in an IfcRepresentationMap.
+    shape_rep = ifcopenshell.api.geometry.add_wall_representation(f, context=body, length=3, height=2.5, thickness=0.2)
+    origin = f.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))
+    z_dir = f.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0))
+    x_dir = f.create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0))
+    map_origin = f.create_entity("IfcAxis2Placement3D", Location=origin, Axis=z_dir, RefDirection=x_dir)
+    rep_map = f.create_entity("IfcRepresentationMap", MappingOrigin=map_origin, MappedRepresentation=shape_rep)
+
+    wall_type = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="LibWallType")
+    wall_type.RepresentationMaps = [rep_map]
+
+    return f, wall_type
+
+
 class TestRenderBasic:
     def test_returns_png_bytes(self, model_with_geometry):
         result = render(model_with_geometry)
@@ -113,6 +142,44 @@ class TestRenderHighlight:
         walls = model_with_geometry.by_type("IfcWall")
         result = render(model_with_geometry, element_ids=[w.id() for w in walls])
         assert result[:4] == PNG_MAGIC
+
+
+class TestRenderTypes:
+    def test_render_type_by_selector(self, library_with_type):
+        """Selecting a type class renders its RepresentationMap geometry."""
+        model, wall_type = library_with_type
+        result = render(model, selector="IfcWallType")
+        assert result[:4] == PNG_MAGIC
+
+    def test_render_type_by_element_id(self, library_with_type):
+        """Passing a type step-ID via element_ids renders it highlighted."""
+        model, wall_type = library_with_type
+        result = render(model, element_ids=[wall_type.id()])
+        assert result[:4] == PNG_MAGIC
+
+    def test_original_model_unmodified(self, library_with_type):
+        """Rendering a type must not add entities to the original model."""
+        model, wall_type = library_with_type
+        entity_count_before = len(list(model))
+        render(model, selector="IfcWallType")
+        assert len(list(model)) == entity_count_before
+
+    def test_make_type_occurrence_no_rep_maps(self, library_with_type):
+        """_make_type_occurrence returns None for a type with no RepresentationMaps."""
+        model, _ = library_with_type
+        bare_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name="Bare")
+        assert _make_type_occurrence(model, bare_type) is None
+
+    def test_type_without_rep_maps_raises(self):
+        """Selecting a type that has no RepresentationMaps raises ValueError."""
+        f = ifcopenshell.api.project.create_file()
+        ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+        ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="P")
+        ifcopenshell.api.unit.assign_unit(f)
+        ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="Bare")
+        with pytest.raises(ValueError):
+            render(f, selector="IfcWallType")
 
 
 class TestRenderNoGeometry:
