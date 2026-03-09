@@ -164,7 +164,8 @@ class SafeRemovalContext:
     """If `False`, then all job is done by `file.add`
     and we don't need to worry about invalid entities."""
 
-    def __init__(self,
+    def __init__(
+        self,
         ifc_file: ifcopenshell.file,
         reuse_identities: dict[int, ifcopenshell.entity_instance],
         assume_asset_uniqueness_by_name: bool,
@@ -218,18 +219,14 @@ class Usecase:
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
-        self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings[
-            "reuse_identities"
-        ]
+        self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = (
             "IfcMaterial"
             if self.file.schema == "IFC2X3"
             else "IfcMaterialDefinition"
         )
-        self.assume_asset_uniqueness_by_name = self.settings[
-            "assume_asset_uniqueness_by_name"
-        ]
+        self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -322,8 +319,7 @@ class Usecase:
 
         return True
 
-    def get_existing_element(
-        self, element: ifcopenshell.entity_instance
+    def get_existing_element(self, element: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
         """Get existing element for a library element.
 
@@ -347,11 +343,7 @@ class Usecase:
 
         elif element.is_a() in MATERIAL_SETS:
             ifc_class = element.is_a()
-            name_attr = (
-                "LayerSetName"
-                if ifc_class == "IfcMaterialLayerSet"
-                else "Name"
-            )
+            name_attr = ("LayerSetName" if ifc_class == "IfcMaterialLayerSet" else "Name")
             material_set_name = getattr(element, name_attr)
             if material_set_name is None:
                 return
@@ -381,33 +373,15 @@ class Usecase:
         # Not really assets but if we don't check them here,
         # their subgraph entities may be appended twice.
         elif (ifc_class := element.is_a()) == "IfcOrganization":
-            attr_name = (
-                "Id" if self.file.schema == "IFC2X3" else "Identification"
-            )
+            attr_name = ("Id" if self.file.schema == "IFC2X3" else "Identification")
             org_id = getattr(element, attr_name)
             if org_id is not None:
-                return next(
-                    (
-                        e
-                        for e in self.file.by_type("IfcOrganization")
-                        if getattr(e, attr_name) == org_id
-                    ),
-                    None,
-                )
+                return next((e for e in self.file.by_type("IfcOrganization") if getattr(e, attr_name) == org_id), None,)
         elif ifc_class == "IfcPerson":
-            attr_name = (
-                "Id" if self.file.schema == "IFC2X3" else "Identification"
-            )
+            attr_name = ("Id" if self.file.schema == "IFC2X3" else "Identification")
             person_id = getattr(element, attr_name)
             if person_id is not None:
-                return next(
-                    (
-                        e
-                        for e in self.file.by_type("IfcPerson")
-                        if getattr(e, attr_name) == person_id
-                    ),
-                    None,
-                )
+                return next((e for e in self.file.by_type("IfcPerson") if getattr(e, attr_name) == person_id), None,)
 
         else:
             return None
@@ -420,9 +394,7 @@ class Usecase:
                 "HasRepresentation",
             ]
         }
-        self.existing_contexts = self.file.by_type(
-            "IfcGeometricRepresentationContext"
-        )
+        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         if element.HasRepresentation:
             self.reuse_existing_contexts()
