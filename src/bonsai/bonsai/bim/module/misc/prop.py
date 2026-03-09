@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 from bpy.props import (
     FloatVectorProperty,
     IntProperty,
@@ -32,3 +34,7 @@ class BIMMiscProperties(PropertyGroup):
     override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
+
+    if TYPE_CHECKING:
+        total_storeys: int
+        override_colour: tuple[float, float, float, float]

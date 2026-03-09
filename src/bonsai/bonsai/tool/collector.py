@@ -157,7 +157,8 @@ class Collector(bonsai.core.tool.Collector):
             return
         collection = bpy.data.collections.new(obj.name)
         props.collection = collection
-        collection.BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(collection)
+        collection_props.obj = obj
         return collection
 
     @classmethod

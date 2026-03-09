@@ -1020,7 +1020,8 @@ class IfcImporter:
         obj.hide_select = True
         obj.hide_viewport = True
         self.project["blender"].objects.link(obj)
-        self.project["blender"].BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(self.project["blender"])
+        collection_props.obj = obj
         props = tool.Blender.get_object_bim_props(obj)
         props.collection = self.collections[project.GlobalId] = self.project["blender"]
 

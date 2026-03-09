@@ -1031,7 +1031,7 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         if not UIData.is_loaded:
             UIData.load()
-        aprops = tool.Blender.get_area_props(context)
+        aprops = tool.Blender.get_active_area_props(context)
         addon_prefs = tool.Blender.get_addon_preferences()
 
         row = self.layout.row()

@@ -18,6 +18,8 @@
 
 import bpy
 
+import bonsai.tool as tool
+
 
 class BIM_PT_misc_utilities(bpy.types.Panel):
     bl_idname = "BIM_PT_misc_utilities"
@@ -30,7 +32,7 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMMiscProperties
+        props = tool.Misc.get_misc_props()
         row = layout.split(factor=0.2, align=True)
         row.prop(props, "override_colour", text="")
         row.operator("bim.set_override_colour")

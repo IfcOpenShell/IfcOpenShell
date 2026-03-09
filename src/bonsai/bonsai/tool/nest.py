@@ -124,8 +124,7 @@ class Nest(bonsai.core.tool.Nest):
 
     @classmethod
     def disable_nest_mode(cls):
-        context = bpy.context
-        props = context.scene.BIMNestProperties
+        props = cls.get_nest_props()
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
             obj.original.display_type = obj_prop.previous_display_type

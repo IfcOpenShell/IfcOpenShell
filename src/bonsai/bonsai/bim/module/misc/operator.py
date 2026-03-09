@@ -41,10 +41,11 @@ class SetOverrideColour(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        props = tool.Misc.get_misc_props()
         for obj in context.selected_objects:
-            obj.color = context.scene.BIMMiscProperties.override_colour
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+            obj.color = props.override_colour
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
         return {"FINISHED"}
 
 

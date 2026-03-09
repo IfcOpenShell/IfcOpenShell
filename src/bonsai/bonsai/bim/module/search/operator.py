@@ -1053,8 +1053,8 @@ class ColourByProperty(Operator):
                 colourscheme[str(values[index])]["total"] += 1
                 obj.color = (*tool.Search.get_quantitative_palette(palette, value, min_value, max_value), 1)
 
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
 
@@ -1078,16 +1078,18 @@ class ColourByProperty(Operator):
             return (1, value)
 
     def store_state(self, context):
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+        if space := tool.Blender.get_view3d_space():
+            self.transaction_data = {"color_type": space.shading.color_type}
 
     def rollback(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = data["color_type"]
 
     def commit(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = "OBJECT"
 
 
 class SelectByProperty(Operator):

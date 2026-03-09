@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
 
 import bmesh
 import bpy
@@ -30,8 +32,15 @@ import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.misc.prop import BIMMiscProperties
+
 
 class Misc(bonsai.core.tool.Misc):
+    @classmethod
+    def get_misc_props(cls) -> BIMMiscProperties:
+        return bpy.context.scene.BIMMiscProperties
+
     @classmethod
     def get_object_storey(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = tool.Ifc.get_entity(obj)
