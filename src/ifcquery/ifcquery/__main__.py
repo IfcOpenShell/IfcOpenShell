@@ -29,7 +29,7 @@ import ifcopenshell
 from ifcquery import clash as clash_mod
 from ifcquery import contexts as contexts_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, materials as materials_mod, relations, render as render_mod, schedule, schema, select, summary, tree
+from ifcquery import info, materials as materials_mod, plot, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -147,6 +147,52 @@ def main():
         help="Camera angle (default: iso)",
     )
 
+    plot_parser = subparsers.add_parser("plot", help="Plot model drawing (SVG via ifcopenshell.draw; optional PNG via CairoSVG)")
+    plot_parser.add_argument(
+        "-o", "--output", default="", metavar="FILE",
+        help="Output file path. Default depends on --out-format: <ifc_file>.svg/.png"
+    )
+    plot_parser.add_argument(
+        "--out-format",
+        choices=["svg", "png", "base64"],
+        default="png",
+        help="Output format: svg (write SVG), png (write PNG), base64 (print base64 in JSON/text). Default: png",
+    )
+    plot_parser.add_argument(
+        "--selector", default="", metavar="QUERY",
+        help="ifcopenshell selector to restrict plotted elements"
+    )
+    plot_parser.add_argument(
+        "--element", default="", metavar="ID[,ID...]",
+        help="Comma-separated step IDs of elements to highlight"
+    )
+    plot_parser.add_argument(
+        "--view",
+        choices=getattr(plot, "VIEWS", ("floorplan", "elevation", "section", "auto")),
+        default="floorplan",
+        help="Drawing view (default: floorplan)",
+    )
+    plot_parser.add_argument(
+        "--width-mm", type=float, default=297.0, metavar="MM",
+        help="Paper width in mm (default: 297)",
+    )
+    plot_parser.add_argument(
+        "--height-mm", type=float, default=420.0, metavar="MM",
+        help="Paper height in mm (default: 420)",
+    )
+    plot_parser.add_argument(
+        "--scale", type=float, default=1.0 / 100.0, metavar="S",
+        help="Model-to-paper scale (default: 0.01 = 1:100)",
+    )
+    plot_parser.add_argument(
+        "--png-width", type=int, default=1024, metavar="PX",
+        help="PNG width in pixels (default: 1024)",
+    )
+    plot_parser.add_argument(
+        "--png-height", type=int, default=1024, metavar="PX",
+        help="PNG height in pixels (default: 1024)",
+    )
+
     args = parser.parse_args()
 
     try:
@@ -241,6 +287,40 @@ def main():
             f.write(png_bytes)
         print(f"Saved render to {out_path}", file=sys.stderr)
         return
+    elif args.command == "plot":
+        element_ids = None
+        if args.element:
+            try:
+                element_ids = [parse_element_id(part) for part in args.element.split(",")]
+            except ValueError:
+                print(f"Error: Invalid element ID(s): {args.element}", file=sys.stderr)
+                sys.exit(1)
+
+        # Choose default output extension based on out-format
+        base = os.path.splitext(args.ifc_file)[0]
+        if args.out_format == "svg":
+            out_path = args.output or (base + ".svg")
+        elif args.out_format == "png":
+            out_path = args.output or (base + ".png")
+        else:
+            out_path = args.output  # unused; base64 prints to stdout via format_output
+
+        png_bytes = plot.plot(
+            model,
+            selector=args.selector or None,
+            element_ids=element_ids,
+            view=args.view,
+            width_mm=args.width_mm,
+            height_mm=args.height_mm,
+            scale=args.scale,
+            output_format=args.out_format
+        )
+        with open(out_path, "wb") as f:
+            f.write(png_bytes)
+
+        print(f"Saved render to {out_path}", file=sys.stderr)
+        return
+
 
     print(format_output(result, args.output_format))
 
