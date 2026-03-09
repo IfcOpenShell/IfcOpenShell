@@ -2373,7 +2373,8 @@ class HideQueriedLinkedElement(bpy.types.Operator):
     bl_description = (
         "Hide geometry for currently queried linked element.\n\n"
         "ALT+Click (or ALT+H in Explore Tool) to unhide all geometry for currently selected linked model.\n"
-        "(Not Yet Implemented) SHIFT+Click to hide everything but currently queried element."
+        "(Not Yet Implemented) SHIFT+Click to hide everything but currently queried element.\n\n"
+        "Know limitation: doesn't work with UNDO."
     )
     bl_options = {"REGISTER", "UNDO"}
 

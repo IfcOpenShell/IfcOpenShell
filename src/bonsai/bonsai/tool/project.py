@@ -675,6 +675,10 @@ class Project(bonsai.core.tool.Project):
 
             # `MeshPolygon.hide` works only in EDIT mode,
             # so we use vertex groups + Mask modifier.
+            # But since for hiding we're modifying object in a linked model,
+            # then those changes are ephemeral and not fully supported by Blender
+            # e.g. they're not tracked by UNDO system.
+
             MODIFIER_VG_NAME = "BBIM_HIDE_LINKED_GEOMETRY"
 
             vertex_groups = obj.vertex_groups
