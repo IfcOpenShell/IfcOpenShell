@@ -132,7 +132,7 @@ call cecho.cmd 0 10 "Script configuration:"
 call cecho.cmd 0 13 "* CMake Generator`t= '`"%GENERATOR%`'`t
 echo   - Passed to CMake -G option.
 call cecho.cmd 0 13 "* Target Architecture`t= %TARGET_ARCH%"
-echo   - Whether were doing 32-bit (x86) or 64-bit (x64) build.
+echo   - Whether were doing 32-bit (x86) or 64-bit (x64, arm64) build.
 call cecho.cmd 0 13 "* Target Platform`t= %VS_PLATFORM%"
 echo   - Passed to CMake -A option.
 call cecho.cmd 0 13 "* Target Toolset`t= %VS_TOOLSET%"
@@ -187,8 +187,15 @@ IF DEFINED PYTHON_VERSION (
 )
 
 :: VERSION DERIVATIONS
+for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do (
+    set PY_VER_MAJOR_MINOR=%%a%%b
+)
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
-    set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
+    IF /I "%TARGET_ARCH%"=="arm64" (
+        set PYTHONHOME=%DEPS_DIR%\pythonarm64.%PYTHON_VERSION%\tools
+    ) ELSE (
+        set PYTHONHOME=%DEPS_DIR%\python.%PYTHON_VERSION%\tools
+    )
 )
 
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
@@ -312,6 +319,11 @@ powershell -c "get-content %~dp0patches\mpir.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpir_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF /I "%VS_PLATFORM%"=="ARM64" (
+    echo "Applying ARM64 Patches for Mpir"
+    git apply "%~dp0patches\mpir-arm64-changes.patch" --unidiff-zero --ignore-whitespace
+)
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd msvc
 cd vs%VS_VER:~2,2%
 call .\msbuild.bat gc LIB %VS_PLATFORM% %DEBUG_OR_RELEASE%
@@ -338,6 +350,10 @@ powershell -c "get-content %~dp0patches\mpfr.patch | %%{$_ -replace \"sdk\",\"%U
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 if NOT "%USE_STATIC_RUNTIME%"=="FALSE" git apply "%~dp0patches\mpfr_runtime.patch" --unidiff-zero --ignore-whitespace
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF /I "%VS_PLATFORM%"=="ARM64" (
+    echo "Applying ARM64 Patches for Mpfr"
+    git apply "%~dp0patches\mpfr-arm64-changes.patch" --unidiff-zero --ignore-whitespace
+)
 if "%VS_VER%"=="2017" (
   set mpfr_sln=build.vc15
   set orig_platform_toolset=v141
@@ -406,6 +422,7 @@ cd "%DEPS_DIR%"
 call :DownloadFile https://github.com/boostorg/boost/releases/download/boost-%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPS_DIR%"
 call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
@@ -429,13 +446,22 @@ if not exist "%DEPENDENCY_DIR%\project-config.jam". (
     IF NOT %ERRORLEVEL%==0 GOTO :Error
 )
 
+if /I "%TARGET_ARCH%"=="x64" (
+    set B2_ARCH_FEATURE=x86
+) else if /I "%TARGET_ARCH%"=="arm64" (
+    set B2_ARCH_FEATURE=arm
+) else (
+    echo "Failed to identify architecture"
+    GOTO :Error
+)
+
 set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPENDENCY_DIR%"
 call cecho.cmd 0 13 "Building %DEPENDENCY_NAME% %BOOST_LIBS% Please be patient, this will take a while."
 IF EXIST "%DEPENDENCY_DIR%\bin.v2\project-cache.jam" del "%DEPENDENCY_DIR%\bin.v2\project-cache.jam"
 
-call .\b2 toolset=%BOOST_TOOLSET% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
+call .\b2 toolset=%BOOST_TOOLSET% architecture=%B2_ARCH_FEATURE% runtime-link=shared address-model=%ARCH_BITS% --abbreviate-paths -j%IFCOS_NUM_BUILD_PROCS% ^
     variant=%DEBUG_OR_RELEASE_LOWERCASE% %BOOST_WIN_API% %BOOST_LIBS% stage --stagedir=%DEPENDENCY_INSTALL_DIR%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -561,9 +587,10 @@ SET COMPILE_WITH_WPO=FALSE
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=-amd64
-IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
+set PYTHON_AMD64_POSTFIX=
+IF /I "%TARGET_ARCH%"=="x64"   set "PYTHON_AMD64_POSTFIX=-amd64"
+IF /I "%TARGET_ARCH%"=="arm64" set "PYTHON_AMD64_POSTFIX=-arm64"
+set "PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe"
 
 IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     call cecho.cmd 0 13 "IFCOS_INSTALL_PYTHON not 'TRUE', skipping installation of Python."
@@ -571,22 +598,25 @@ IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :: nuget doesn't support providing architecture for packages.
-if NOT %TARGET_ARCH%==x64 (
+IF /I NOT "%TARGET_ARCH%"=="x64" IF /I NOT "%TARGET_ARCH%"=="arm64" (
     call cecho.cmd 0 12 "Automatic insallation of Python for x86 builds is not supported,"
     call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
     call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
     goto :Error
 )
 
-
 if EXIST "%PYTHONHOME%" (
     echo Found existing '%PYTHONHOME%', skipping installation.
     goto :SWIG
 )
 
-"%NUGET_EXE%" install Python -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
+IF /I "%TARGET_ARCH%"=="x64" (
+    "%NUGET_EXE%" install Python -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
+    IF NOT %ERRORLEVEL%==0 GOTO :Error
+) ELSE (
+    "%NUGET_EXE%" install pythonarm64 -Version %PYTHON_VERSION% -OutputDirectory "%DEPS_DIR%"
+    IF NOT %ERRORLEVEL%==0 GOTO :Error
+)
 
 :SWIG
 set DEPENDENCY_NAME=SWIG
@@ -723,6 +753,9 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" 
                -DWITH_CORE_TOOLS=OFF ^
                -DROCKSDB_BUILD_SHARED=OFF ^
                -DWITH_ZSTD=On ^
+               -DZSTD_INCLUDE_DIR="%ZSTD_INCLUDE%" ^
+               -DZSTD_LIBRARY_DEBUG="%ZSTD_LIB_DEBUG%" ^
+               -DZSTD_LIBRARY_RELEASE="%ZSTD_LIB_RELEASE%" ^
                -DPORTABLE=1 ^
                -DCMAKE_DEBUG_POSTFIX="_d"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -960,4 +993,3 @@ echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 echo NB: This script needs to be ran from the directory directly containing it.
 echo.
-
