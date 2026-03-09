@@ -1,0 +1,519 @@
+diff --git a/msvc/postbuild.bat b/msvc/postbuild.bat
+index 1c301d1a..7d5362be 100644
+--- a/msvc/postbuild.bat
++++ b/msvc/postbuild.bat
+@@ -1,6 +1,6 @@
+ @echo off
+ rem %1 = full target path
+-rem %2 = last two digits of the Visual Studio version number (e.g. 17)
++rem %2 = last two digits of the Visual Studio version number (e.g. 17 or 22)
+ 
+ set vs_ver=%2
+ set str=%~1
+@@ -20,11 +20,13 @@ goto dele
+ set str=%str_confirmed%
+ echo "Final subpath %str%"
+ 
+-rem we now have: msvc.\vs<nn>\<project_directory>\<win32|x64>\<debug|release>\mpir.<lib|dll>
+-rem extract: project_directory, platform (plat=<win32|x64>), configuration (conf=<debug|release>) and file name
++rem we now have: msvc\vs<nn>\<project>\<plat>\<conf>\mpir(.xx).<lib|dll>
++rem extract: project_directory, platform (plat), configuration (conf) and file name
+ 
+ set file=
+-for /f "tokens=1,2,3,4,5,6 delims=\" %%a in ("%str%") do set tloc=%%c&set plat=%%d&set conf=%%e&set file=%%f
++for /f "tokens=1,2,3,4,5,6 delims=\" %%a in ("%str%") do (
++    set tloc=%%c&set plat=%%d&set conf=%%e&set file=%%f
++)
+ if /i "%file%" NEQ "" (goto next)
+ call :seterr & echo ERROR: %1 is not supported & exit /b %errorlevel%
+ 
+@@ -42,9 +44,9 @@ call :seterr & echo "postbuild copy error ERROR: target=%tloc%, plat=%plat%, con
+ 
+ :is2nd:
+ rem set the target and final binary output directories
+-set tgt_dir="vs%vs_ver%\%loc%%plat%\%conf%\"
+-set bin_dir="..\%extn%\%plat%\%conf%\"
+-set hdr_dir="..\%extn%\%plat%\%conf%\"
++set "tgt_dir=vs%vs_ver%\%loc%%plat%\%conf%"
++set "bin_dir=..\%extn%\%plat%\%conf%"
++set "hdr_dir=..\%extn%\%plat%\%conf%"
+ 
+ rem output parametrers for the MPIR tests
+ if /i "%filename%" EQU "mpirxx" goto skip
+@@ -66,43 +68,42 @@ rem %1 = target (build output) directory
+ rem %2 = binary destination directory
+ rem %3 = configuration (debug/release)
+ rem %4 = library (lib/dll)
+-rem %5 = file name
++rem %5 = file name (mpir | mpirxx)
+ :copyb
+ if "%4" EQU "dll" (
+-	copy %1mpir.dll %2mpir.dll > nul 2>&1
+-	copy %1mpir.exp %2mpir.exp > nul 2>&1
+-	copy %1mpir.lib %2mpir.lib > nul 2>&1
+-	if exist %1mpir.pdb (copy %1mpir.pdb %2mpir.pdb  > nul 2>&1)
++    copy "%~1\mpir.dll" "%~2\mpir.dll" > nul 2>&1
++    copy "%~1\mpir.exp" "%~2\mpir.exp" > nul 2>&1
++    copy "%~1\mpir.lib" "%~2\mpir.lib" > nul 2>&1
++    if exist "%~1\mpir.pdb" copy "%~1\mpir.pdb" "%~2\mpir.pdb" > nul 2>&1
+ ) else if "%4" EQU "lib" (
+     if "%5" EQU "mpir" (
+-  	    if exist %1mpir.lib (
+-        copy %1mpir.lib %2mpir.lib > nul 2>&1
+-	    if exist %1mpir.pdb (copy %1mpir.pdb %2mpir.pdb > nul 2>&1)
++        if exist "%~1\mpir.lib" (
++            copy "%~1\mpir.lib" "%~2\mpir.lib" > nul 2>&1
++            if exist "%~1\mpir.pdb" copy "%~1\mpir.pdb" "%~2\mpir.pdb" > nul 2>&1
++        ) else (
++            echo "Not Found MPIR at location" "%~1\mpir.lib"
+         )
+     ) else if "%5" EQU "mpirxx" (
+-	    if exist %1mpirxx.lib (
+-        copy %1mpirxx.lib %2mpirxx.lib > nul 2>&1
+-	    if exist %1mpirxx.pdb (copy %1mpirxx.pdb %2mpirxx.pdb > nul 2>&1)
++        if exist "%~1\mpirxx.lib" (
++            copy "%~1\mpirxx.lib" "%~2\mpirxx.lib" > nul 2>&1
++            if exist "%~1\mpirxx.pdb" copy "%~1\mpirxx.pdb" "%~2\mpirxx.pdb" > nul 2>&1
+         )
+     )
+ ) else (
+-	call :seterr & echo ERROR: illegal library type %4  & exit /b %errorlevel%
++    call :seterr & echo ERROR: illegal library type %4 & exit /b %errorlevel%
+ )
+-
+-rem set configuration for the tests
+-call gen_test_config_props %plat% %conf% %vs_ver%
+ exit /b 0
+ 
+ rem copy headers to final destination directory
+ :copyh
+-copy ..\config.h %1config.h > nul 2>&1
+-copy ..\gmp-mparam.h %1gmp-mparam.h > nul 2>&1
+-copy ..\mpir.h %1mpir.h > nul 2>&1
+-copy ..\mpir.h %1gmp.h > nul 2>&1
+-copy ..\gmp-impl.h %1gmp-impl.h > nul 2>&1
+-copy ..\longlong.h %1longlong.h > nul 2>&1
+-copy ..\mpirxx.h %1mpirxx.h > nul 2>&1
+-copy ..\mpirxx.h %1gmpxx.h > nul 2>&1
++copy "..\config.h"     "%~1\config.h"     > nul 2>&1
++copy "..\gmp-mparam.h" "%~1\gmp-mparam.h" > nul 2>&1
++copy "..\mpir.h"       "%~1\mpir.h"       > nul 2>&1
++copy "..\mpir.h"       "%~1\gmp.h"        > nul 2>&1
++copy "..\gmp-impl.h"   "%~1\gmp-impl.h"   > nul 2>&1
++copy "..\longlong.h"   "%~1\longlong.h"   > nul 2>&1
++copy "..\mpirxx.h"     "%~1\mpirxx.h"     > nul 2>&1
++copy "..\mpirxx.h"     "%~1\gmpxx.h"      > nul 2>&1
+ exit /b 0
+ 
+ :seterr
+diff --git a/msvc/prebuild.bat b/msvc/prebuild.bat
+index 243d054f..c1d49c67 100644
+--- a/msvc/prebuild.bat
++++ b/msvc/prebuild.bat
+@@ -1,29 +1,56 @@
+ @echo off
+-rem %1 = mpn directory (generic, x86\... or x86_64\...) 
+-rem %2 = platform (win32 or x64)
++rem %1 = mpn directory (generic, x86\... or x86_64\... or arm64\...)
++rem %2 = platform (win32, x64/amd64, or arm64)
+ rem %3 = MSVC version number (e.g. 14)
+ 
+-if /i "%2" EQU "win32" ((set platform=win32) & (set bdir=x86w\)) else ((set platform=x64) & (set bdir=x86_64w\))
+-set sdir=
+-if /i "%1" EQU "gc" ((set sdir=generic) & (set bdir=generic)) else (set sdir=%bdir%%1)
+-if not exist ..\mpn\%sdir% (call :seterr & echo ERROR: %1 is not supported & exit /b %errorlevel%)
++set "platform="
++set "bdir="
++
++if /i "%2"=="win32" (
++    set "platform=win32"
++    set "bdir=x86w\"
++) else if /i "%2"=="x64" (
++    set "platform=x64"
++    set "bdir=x86_64w\"
++) else if /i "%2"=="arm64" (
++    set "platform=arm64"
++    set "bdir=arm64w\"
++) else (
++    call :seterr & echo ERROR: Unsupported platform "%2" (expected win32, x64/amd64, or arm64) & exit /b %errorlevel%
++)
++
++set "sdir="
++if /i "%1"=="gc" (
++    rem Generic C (portable) implementation
++    set "sdir=generic"
++    set "bdir=generic"
++) else (
++    set "sdir=%bdir%%~1"
++)
++
++if not exist "..\mpn\%sdir%" (
++    call :seterr & echo ERROR: %1 is not supported & exit /b %errorlevel%
++)
+ 
+ echo building MPIR for %1 (%platform%) from directory mpn\%sdir%
+ 
+-set cdir=vs%3\cdata\mpn\%sdir%\
+-set sdir=..\mpn\%sdir%\
+-set bdir=..\mpn\%bdir%\
++set "cdir=vs%3\cdata\mpn\%sdir%\"
++set "sdir=..\mpn\%sdir%\"
++set "bdir=..\mpn\%bdir%\"
+ 
+ call gen_mpir_h %platform%
+ call gen_config_h %cdir%
+ 
+-if exist %sdir%\gmp-mparam.h (call out_copy_rename %sdir%\gmp-mparam.h ..\ gmp-mparam.h) else (
+-    call out_copy_rename %bdir%\gmp-mparam.h ..\ gmp-mparam.h)
++if exist "%sdir%\gmp-mparam.h" (
++    call out_copy_rename "%sdir%\gmp-mparam.h" "..\" "gmp-mparam.h"
++) else (
++    call out_copy_rename "%bdir%\gmp-mparam.h" "..\" "gmp-mparam.h"
++)
+ 
+-type ..\longlong_pre.h >tmp.h
+-type %bdir%\longlong_inc.h >>tmp.h
+-type ..\longlong_post.h >>tmp.h
+-call out_copy_rename tmp.h ..\ longlong.h
++type "..\longlong_pre.h" > tmp.h
++type "%bdir%\longlong_inc.h" >> tmp.h
++type "..\longlong_post.h" >> tmp.h
++call out_copy_rename tmp.h "..\" "longlong.h"
+ del tmp.h
+ 
+ exit /b 0
+diff --git a/msvc/vs22/lib_mpir_cxx/lib_mpir_cxx.vcxproj b/msvc/vs22/lib_mpir_cxx/lib_mpir_cxx.vcxproj
+index 0aca0c6e..e4bcf619 100644
+--- a/msvc/vs22/lib_mpir_cxx/lib_mpir_cxx.vcxproj
++++ b/msvc/vs22/lib_mpir_cxx/lib_mpir_cxx.vcxproj
+@@ -1,6 +1,14 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <Project DefaultTargets="Build" ToolsVersion="19.30.30401" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
+     <ProjectConfiguration Include="Release|Win32">
+       <Configuration>Release</Configuration>
+       <Platform>Win32</Platform>
+@@ -40,11 +48,21 @@
+     <UseDebugLibraries>false</UseDebugLibraries>
+     <PlatformToolset>v143</PlatformToolset>
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++  </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
+     <UseDebugLibraries>true</UseDebugLibraries>
+     <PlatformToolset>v143</PlatformToolset>
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+@@ -58,17 +76,27 @@
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+     <Import Project="..\..\mpir_release_lib.props" />
+   </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
++    <Import Project="..\..\mpir_release_lib.props" />
++  </ImportGroup>
+   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+     <Import Project="..\..\mpir_debug_lib.props" />
+   </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
++    <Import Project="..\..\mpir_debug_lib.props" />
++  </ImportGroup>
+   <PropertyGroup Label="UserMacros" />
+   <PropertyGroup>
+     <_ProjectFileVersion>10.0.21006.1</_ProjectFileVersion>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mpirxx</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mpirxx</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mpirxx</TargetName>
++    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mpirxx</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mpirxx</TargetName>
++    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">mpirxx</TargetName>
+   </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <ClCompile>
+@@ -99,6 +127,17 @@ postbuild "$(TargetPath)" 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
++postbuild "$(TargetPath)" 22
++      </Command>
++    </PostBuildEvent>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <ClCompile>
++      <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++    </ClCompile>
++    <PostBuildEvent>
++      <Command>cd ..\..\
+ postbuild "$(TargetPath)" 22
+       </Command>
+     </PostBuildEvent>
+@@ -110,6 +149,17 @@ postbuild "$(TargetPath)" 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
++postbuild "$(TargetPath)" 22
++      </Command>
++    </PostBuildEvent>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <ClCompile>
++      <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++    </ClCompile>
++    <PostBuildEvent>
++      <Command>cd ..\..\
+ postbuild "$(TargetPath)" 22
+       </Command>
+     </PostBuildEvent>
+@@ -141,7 +191,7 @@ postbuild "$(TargetPath)" 22
+   <ItemGroup>
+   </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+-<ItemGroup>
++  <ItemGroup>
+     <None Include="..\..\..\gmp-h.in" />
+-    </ItemGroup>
+-</Project>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/msvc/vs22/lib_mpir_gc/lib_mpir_gc.vcxproj b/msvc/vs22/lib_mpir_gc/lib_mpir_gc.vcxproj
+index 350ee110..faf49ac3 100644
+--- a/msvc/vs22/lib_mpir_gc/lib_mpir_gc.vcxproj
++++ b/msvc/vs22/lib_mpir_gc/lib_mpir_gc.vcxproj
+@@ -1,6 +1,14 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <Project DefaultTargets="Build" ToolsVersion="19.30.30401" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
+     <ProjectConfiguration Include="Release|Win32">
+       <Configuration>Release</Configuration>
+       <Platform>Win32</Platform>
+@@ -40,11 +48,21 @@
+     <UseDebugLibraries>false</UseDebugLibraries>
+     <PlatformToolset>v143</PlatformToolset>
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++  </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+     <ConfigurationType>StaticLibrary</ConfigurationType>
+     <UseDebugLibraries>true</UseDebugLibraries>
+     <PlatformToolset>v143</PlatformToolset>
+   </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <ConfigurationType>StaticLibrary</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++  </PropertyGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+@@ -58,23 +76,32 @@
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+     <Import Project="..\..\mpir_release_lib.props" />
+   </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
++    <Import Project="..\..\mpir_release_lib.props" />
++  </ImportGroup>
+   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+     <Import Project="..\..\mpir_debug_lib.props" />
+   </ImportGroup>
++  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
++    <Import Project="..\..\mpir_debug_lib.props" />
++  </ImportGroup>
+   <PropertyGroup Label="UserMacros" />
+   <PropertyGroup>
+     <_ProjectFileVersion>10.0.21006.1</_ProjectFileVersion>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mpir</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mpir</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mpir</TargetName>
++    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">mpir</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mpir</TargetName>
++    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">mpir</TargetName>
+   </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <PreBuildEvent>
+       <Command>cd ..\..\
+-prebuild gc Win32 22
+-      </Command>
++prebuild gc $(Platform) 22</Command>
+     </PreBuildEvent>
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
+@@ -82,15 +109,13 @@ prebuild gc Win32 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
+-postbuild "$(TargetPath)" 22
+-      </Command>
++postbuild "$(TargetPath)" 22</Command>
+     </PostBuildEvent>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+     <PreBuildEvent>
+       <Command>cd ..\..\
+-prebuild gc Win32 22
+-      </Command>
++prebuild gc $(Platform) 22</Command>
+     </PreBuildEvent>
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
+@@ -98,15 +123,27 @@ prebuild gc Win32 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
+-postbuild "$(TargetPath)" 22
+-      </Command>
++postbuild "$(TargetPath)" 22</Command>
+     </PostBuildEvent>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+     <PreBuildEvent>
+       <Command>cd ..\..\
+-prebuild gc x64 22
+-      </Command>
++prebuild gc $(Platform) 22</Command>
++    </PreBuildEvent>
++    <ClCompile>
++      <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++    </ClCompile>
++    <PostBuildEvent>
++      <Command>cd ..\..\
++postbuild "$(TargetPath)" 22</Command>
++    </PostBuildEvent>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <PreBuildEvent>
++      <Command>cd ..\..\
++prebuild gc $(Platform) 22</Command>
+     </PreBuildEvent>
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
+@@ -114,15 +151,13 @@ prebuild gc x64 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
+-postbuild "$(TargetPath)" 22
+-      </Command>
++postbuild "$(TargetPath)" 22</Command>
+     </PostBuildEvent>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+     <PreBuildEvent>
+       <Command>cd ..\..\
+-prebuild gc x64 22
+-      </Command>
++prebuild gc $(Platform) 22</Command>
+     </PreBuildEvent>
+     <ClCompile>
+       <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
+@@ -130,8 +165,21 @@ prebuild gc x64 22
+     </ClCompile>
+     <PostBuildEvent>
+       <Command>cd ..\..\
+-postbuild "$(TargetPath)" 22
+-      </Command>
++postbuild "$(TargetPath)" 22</Command>
++    </PostBuildEvent>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <PreBuildEvent>
++      <Command>cd ..\..\
++prebuild gc $(Platform) 22</Command>
++    </PreBuildEvent>
++    <ClCompile>
++      <AdditionalIncludeDirectories>..\..\..\</AdditionalIncludeDirectories>
++      <PreprocessorDefinitions>_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++    </ClCompile>
++    <PostBuildEvent>
++      <Command>cd ..\..\
++postbuild "$(TargetPath)" 22</Command>
+     </PostBuildEvent>
+   </ItemDefinitionGroup>
+   <ImportGroup>
+@@ -667,7 +715,7 @@ postbuild "$(TargetPath)" 22
+   <ItemGroup>
+   </ItemGroup>
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+-<ItemGroup>
++  <ItemGroup>
+     <None Include="..\..\..\gmp-h.in" />
+-    </ItemGroup>
+-</Project>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/msvc/vs22/msbuild.bat b/msvc/vs22/msbuild.bat
+index f119c3e9..36bfe28b 100644
+--- a/msvc/vs22/msbuild.bat
++++ b/msvc/vs22/msbuild.bat
+@@ -1,7 +1,7 @@
+ @echo off
+ rem %1 = architecture
+ rem %2 = library type (LIB|DLL)
+-rem %3 = platform (Win32|x64)
++rem %3 = platform (Win32|x64|ARM64)
+ rem %4 = configuration (Release|Debug)
+ rem %5 = Windows SDK Version
+ rem %6 = build tests (|+tests)
+@@ -31,15 +31,21 @@ if not exist !msb_exe! (
+ 
+ if "%4" NEQ "" if "%3" NEQ "" if "%2" NEQ "" if "%1" NEQ "" goto cont
+ call :get_architectures -
+-echo usage: msbuild architecture=^<%architectures:|=^|%^> library_type=^<LIB^|DLL^> platform=^<Win32^|x64^> configuration=^<Release^|Debug^> [Windows_SDK_Version=^<n^>] [+tests]
++echo usage: msbuild architecture=^<%architectures:|=^|%^> library_type=^<LIB^|DLL^> platform=^<Win32^|x64^|ARM64^> configuration=^<Release^|Debug^> [Windows_SDK_Version=^<n^>] [+tests]
+ goto :eof
+ 
+ :cont
+ rem example use: msbuild sandybridge_ivybridge dll x64 release
+ if not exist "lib_mpir_%1" (call :get_architectures & call :seterr & echo ERROR: architecture is one of ^(%architectures%^) ^(not %1^) & exit /b %errorlevel%)
+ if /i "%2" EQU "DLL" (set libp=dll) else (if /i "%2" EQU "LIB" (set libp=lib) else ((call :seterr & echo ERROR: library type is "lib" or "dll" ^(not "%2"^) & exit /b %errorlevel%)))
+-if /i "%3" EQU "x64" (set plat=x64) else (if /i "%3" EQU "Win32" (set plat=win32) else (call :seterr & echo ERROR: platform is "Win32" or "x64" ^(not "%3"^) & exit /b %errorlevel%))
+-if /i "%4" EQU "Debug" (set conf=Debug) else (if /i "%4" EQU "Release" (set conf=Release) else (call :seterr & echo ERROR: configuration is "Release" or "Debug" ^(not "%4"^) & exit /b %errorlevel%))
++if /i "%3" EQU "x64" (set plat=x64) else (
++    if /i "%3" EQU "Win32" (set plat=win32) else (
++        if /i "%3" EQU "ARM64" (set plat=ARM64) else (
++            call :seterr & echo ERROR: platform is "Win32", "x64", or "ARM64" ^(not %3^) & exit /b %errorlevel%
++        )
++    )
++)
++if /i "%4" EQU "Debug" (set conf=Debug) else (if /i "%4" EQU "Release" (set conf=Release) else (call :seterr & echo ERROR: configuration is "Release" or "Debug" ^(not %4^) & exit /b %errorlevel%))
+ if /i "%5" NEQ "" if "%5" EQU "+tests" (set run_tests=y) else (set win_sdk=%5)
+ if /i "%6" NEQ "" if "%6" EQU "+tests" (set run_tests=y)
+ 
