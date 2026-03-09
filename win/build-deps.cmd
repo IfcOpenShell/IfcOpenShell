@@ -454,7 +454,6 @@ if /I "%TARGET_ARCH%"=="x64" (
     echo "Failed to identify architecture"
     GOTO :Error
 )
-
 set BOOST_LIBS=--with-system --with-regex --with-thread --with-program_options --with-date_time --with-iostreams --with-filesystem
 :: NOTE Boost is fast to build with limited set of libraries so build it always.
 cd "%DEPENDENCY_DIR%"

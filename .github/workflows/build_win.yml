@@ -86,7 +86,7 @@ jobs:
           git config user.email "ifcopenbot@ifcopenshell.org"
           git checkout -B ${{ matrix.build_branch }}
           git add *.zip
-          git commit -m "Update ARM64 build caches [skip ci]" || echo "No changes to commit"
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
           git push --set-upstream origin ${{ matrix.build_branch }} || echo "Push failed"
 
       - name: Configure AWS Credentials

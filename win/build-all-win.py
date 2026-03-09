@@ -61,11 +61,7 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [
-                str(REPO_WIN / "build-deps.cmd"),
-                "vs2022-ARM64" if is_arm64() else "vs2022-x64",
-                "Release",
-            ],
+            [str(REPO_WIN / "build-deps.cmd"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"],
             check=True,
             text=True,
             input="y\n",
