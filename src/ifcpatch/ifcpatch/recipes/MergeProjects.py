@@ -16,20 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 from logging import Logger
 from typing import Union
 
+import ifcpatch
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import numpy as np
 
+import ifcpatch
 from ifcpatch.recipes.SetFalseOrigin import Patcher as SetFalseOrigin
 
 
-class Patcher:
-    def __init__(self, file: ifcopenshell.file, logger: Logger, filepaths: list[Union[str, ifcopenshell.file]]):
+class Patcher(ifcpatch.BasePatcher):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        logger: Logger | None = None,
+        filepaths: Sequence[Union[str, ifcopenshell.file]] = (),
+    ):
         """Merge two or more IFC models into one
 
         Note that other than combining the two (or more) IfcProject elements into
@@ -50,8 +58,7 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeProjects", "arguments": ["/path/to/model2.ifc"]})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.filepaths = filepaths
 
     def patch(self):
@@ -61,6 +68,8 @@ class Patcher:
                 "replace it with a list of file/filepaths."
             )
             self.filepaths = [self.filepaths]
+        if len(self.filepaths) == 0:
+            raise ValueError("At least one file/filepath must be provided to merge with the main model.")
         for filepath in self.filepaths:
             if isinstance(filepath, ifcopenshell.file):
                 other = filepath

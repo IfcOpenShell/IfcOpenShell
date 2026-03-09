@@ -18,6 +18,7 @@
 
 import hashlib
 import json
+import logging
 import multiprocessing
 import os
 import shutil
@@ -39,7 +40,6 @@ from typing import (
 
 import bmesh
 import bpy
-import logging
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.api.pset
@@ -58,9 +58,9 @@ from bpy_extras.io_utils import ImportHelper
 from lxml import etree
 from mathutils import Color, Vector
 
-import bonsai.bim.import_ifc
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
+import bonsai.bim.import_ifc
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.core.drawing as core

@@ -76,6 +76,7 @@ IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINAR
 .PHONY: build-urls
 build-urls:
 	@echo "You can provide one of the 4 platforms (linux64, macos64, macosm164, win64) using 'PLATFORM=xxx'."
+	@echo "And Python version using 'PYNUMBER=xx' (e.g. 'PYNUMBER=311')."
 	@echo ${IOS_URL}
 	@echo ${IFCCONVERT_URL}
 
