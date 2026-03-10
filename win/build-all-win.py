@@ -5,7 +5,7 @@ but also archives them to '~/outputs'.
 """
 
 import os
-import platform  
+import platform
 import subprocess
 import zipfile
 from pathlib import Path
