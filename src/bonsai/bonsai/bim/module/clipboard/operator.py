@@ -122,7 +122,6 @@ class BonsaiGraphClipboardEngine:
             try:
                 element = source.by_guid(guid)
             except RuntimeError:
-                pass
                 continue
 
             if element.is_a() not in self.UNSAFE_CLASSES:
@@ -191,7 +190,6 @@ class BonsaiGraphClipboardEngine:
                     self._remap_single_representation(rep, context_map)
         except AttributeError:
             pass
-            pass
 
         # Handle type products with RepresentationMaps
         try:
@@ -200,7 +198,6 @@ class BonsaiGraphClipboardEngine:
                     if rep_map.MappedRepresentation:
                         self._remap_single_representation(rep_map.MappedRepresentation, context_map)
         except AttributeError:
-            pass
             pass
 
     def _remap_single_representation(self, rep, context_map):
@@ -317,9 +314,8 @@ class BonsaiGraphClipboardEngine:
                 if hasattr(source_element, "Name") and source_element.Name is not None:
                     key = (ifc_class, source_element.Name)
                     return existing_by_name.get(key)
-        except Exception as e:
-            pass
-            pass
+        except Exception:
+            return None
 
         return None
 
@@ -420,7 +416,7 @@ class BonsaiGraphClipboardEngine:
                         elem_name = element.Name or ""
                     elif hasattr(element, "ProfileName"):
                         elem_name = element.ProfileName or ""
-            except Exception as e:
+            except Exception:
                 pass
 
     # --------------------------------------------------------
@@ -554,7 +550,6 @@ class BonsaiGraphClipboardEngine:
                                     copy_deep(self.target, styled_item, copied_entities=copied_entities)
             except AttributeError:
                 pass
-                pass
 
             # Copy property sets and quantities
             psets_for_element = []
@@ -587,30 +582,11 @@ class BonsaiGraphClipboardEngine:
                 progress = 10 + int(60 * idx / len(root_elements))
                 bpy.context.window_manager.progress_update(progress)
 
-            # Log what we're copying
-            try:
-                element_name = getattr(root, "Name", None) or "(unnamed)"
-                if root.id() in copied_entities:
-                    pass
-            except:
-                pass
-                pass
-
             new_root = copy_deep(
                 self.target,
                 root,
                 copied_entities=copied_entities,
             )
-
-            # Check if type was already assigned by copy_deep
-            try:
-                existing_type = ifcopenshell.util.element.get_type(new_root)
-                if existing_type:
-                    pass
-                else:
-                    pass
-            except Exception as e:
-                pass
 
             # Collect reconnection data instead of calling API immediately
             if root.id() in element_types:
@@ -684,10 +660,8 @@ class BonsaiGraphClipboardEngine:
                         related_objects=[new_root],
                         relating_type=copied_type,
                     )
-                    # Verify it worked
-                    assigned_type = ifcopenshell.util.element.get_type(new_root)
-                except Exception as e:
-                    pass
+                except Exception:
+                    pass  # type assignment may fail for some element/type combinations
 
         # Progress: 72-74% for type materials
         if show_progress:
@@ -797,8 +771,7 @@ class BonsaiGraphClipboardEngine:
                 old_entity = source.by_id(old_entity_id)
                 if old_entity.is_a("IfcRoot"):  # Only IfcRoot entities have GlobalId
                     old_guid_to_new_guid[old_entity.GlobalId] = new_entity.GlobalId
-            except:
-                pass
+            except RuntimeError:
                 pass
 
         # Update all BBIM_Array psets to use new child GUIDs
@@ -829,7 +802,6 @@ class BonsaiGraphClipboardEngine:
                             properties={"Data": new_data},
                         )
                 except (json.JSONDecodeError, KeyError, RuntimeError):
-                    pass
                     pass
 
         if paste_mode == "RENAME":
@@ -892,7 +864,6 @@ class BonsaiGraphClipboardEngine:
                             removed_count += 1
                         except RuntimeError:
                             pass
-                            pass
                     else:
                         # Check if this parent has any subcontexts still in use
                         has_subcontexts = False
@@ -905,7 +876,6 @@ class BonsaiGraphClipboardEngine:
                                 self.target.remove(ctx)
                                 removed_count += 1
                             except RuntimeError:
-                                pass
                                 pass
 
         # Progress: 84% complete
@@ -1024,7 +994,6 @@ class BonsaiGraphClipboardEngine:
                         renamed_entities.add(entity_id)
                         renamed_count += 1
             except (RuntimeError, ReferenceError):
-                pass
                 continue
 
         # Check presentation styles
@@ -1052,7 +1021,6 @@ class BonsaiGraphClipboardEngine:
                         renamed_entities.add(entity_id)
                         renamed_count += 1
             except (RuntimeError, ReferenceError):
-                pass
                 continue
 
         # Check profiles
@@ -1080,7 +1048,6 @@ class BonsaiGraphClipboardEngine:
                         renamed_entities.add(entity_id)
                         renamed_count += 1
             except (RuntimeError, ReferenceError):
-                pass
                 continue
 
     def _reattach_to_containers(self, source, new_elements, copied_entities, context):
@@ -1246,8 +1213,7 @@ class BonsaiGraphClipboardEngine:
 
             return None
 
-        except Exception as e:
-            pass
+        except Exception:
             return None
 
     def _assign_elements_to_containers(self, source, new_elements, copied_entities, target_containers, context):
@@ -1315,8 +1281,8 @@ class BonsaiGraphClipboardEngine:
                         if obj := tool.Ifc.get_object(elem):
                             tool.Collector.assign(obj)
 
-                except Exception as e:
-                    pass
+                except Exception:
+                    pass  # spatial assignment failure for one container should not abort the entire paste
 
     # --------------------------------------------------------
 
@@ -1330,56 +1296,54 @@ class BonsaiGraphClipboardEngine:
         if not new_elements:
             return []
 
-        try:
-            # Create importer with factory settings
-            ifc_import_settings = import_ifc.IfcImportSettings.factory()
-            ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        # Create importer with factory settings
+        ifc_import_settings = import_ifc.IfcImportSettings.factory()
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
 
-            # Set up importer for the target file
-            ifc_importer.file = self.target
-            ifc_importer.calculate_unit_scale()
-            ifc_importer.process_context_filter()
+        # Set up importer for the target file
+        ifc_importer.file = self.target
+        ifc_importer.calculate_unit_scale()
+        ifc_importer.process_context_filter()
 
-            # Load any existing materials first (for reuse)
-            ifc_importer.material_creator.load_existing_materials()
+        # Load any existing materials first (for reuse)
+        ifc_importer.material_creator.load_existing_materials()
 
-            # Create Blender materials/styles from IFC styles
-            ifc_importer.create_styles()
+        # Create Blender materials/styles from IFC styles
+        ifc_importer.create_styles()
 
-            # Collect element types from the pasted products
-            element_types = set()
-            for element in new_elements:
-                if element.is_a("IfcProduct"):
-                    element_type = ifcopenshell.util.element.get_type(element)
-                    if element_type:
-                        # Only import types that don't already have Blender objects
-                        # (reused types from DESTINATION mode already have objects)
-                        if not tool.Ifc.get_object(element_type):
-                            element_types.add(element_type)
+        # Collect element types from the pasted products
+        element_types = set()
+        for element in new_elements:
+            if element.is_a("IfcProduct"):
+                element_type = ifcopenshell.util.element.get_type(element)
+                if element_type:
+                    # Only import types that don't already have Blender objects
+                    # (reused types from DESTINATION mode already have objects)
+                    if not tool.Ifc.get_object(element_type):
+                        element_types.add(element_type)
 
-            # Import element types first
-            if element_types:
-                ifc_importer.element_types = element_types
-                ifc_importer.create_element_types()
+        # Import element types first
+        if element_types:
+            ifc_importer.element_types = element_types
+            ifc_importer.create_element_types()
 
-            # Import all products
-            products = set(e for e in new_elements if e.is_a("IfcProduct"))
-            if products:
-                ifc_importer.create_generic_elements(products)
-                ifc_importer.setup_arrays()
+        # Import all products
+        products = set(e for e in new_elements if e.is_a("IfcProduct"))
+        if products:
+            ifc_importer.create_generic_elements(products)
+            ifc_importer.setup_arrays()
 
-                # Assign all created objects to their collections (filter out materials)
-                pasted_blender_objects = [
-                    obj for obj in ifc_importer.added_data.values() if isinstance(obj, bpy.types.Object)
-                ]
-                for obj in pasted_blender_objects:
-                    try:
-                        tool.Collector.assign(obj, should_clean_users_collection=False)
-                    except Exception:
-                        pass
-                return pasted_blender_objects
-        except Exception as e:
-            raise
+            # Assign all created objects to their collections (filter out materials)
+            pasted_blender_objects = [
+                obj for obj in ifc_importer.added_data.values() if isinstance(obj, bpy.types.Object)
+            ]
+            for obj in pasted_blender_objects:
+                try:
+                    tool.Collector.assign(obj, should_clean_users_collection=False)
+                except Exception:
+                    pass  # collection assignment is non-critical; object was created successfully
+            return pasted_blender_objects
+
         return []
 
     # --------------------------------------------------------
@@ -1515,8 +1479,28 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         elements_to_copy = []
 
+        all_selected = list(context.selected_objects)
+        non_ifc_objs = [obj for obj in all_selected if not tool.Ifc.get_entity(obj)]
+
+        if non_ifc_objs:
+            prev_active = context.view_layer.objects.active
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in non_ifc_objs:
+                obj.select_set(True)
+            context.view_layer.objects.active = non_ifc_objs[0]
+            try:
+                viewport_ctx = tool.Blender.get_viewport_context()
+                with context.temp_override(**viewport_ctx):
+                    bpy.ops.view3d.copybuffer()
+            except Exception:
+                pass
+            bpy.ops.object.select_all(action="DESELECT")
+            for obj in all_selected:
+                obj.select_set(True)
+            context.view_layer.objects.active = prev_active
+
         # Collect IFC elements from selected objects
-        for obj in context.selected_objects:
+        for obj in all_selected:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -1545,6 +1529,9 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
                 elements_to_copy.append((obj, element))
 
         if not elements_to_copy:
+            if non_ifc_objs:
+                self.report({"INFO"}, f"Copied {len(non_ifc_objs)} vanilla object(s) to Blender clipboard")
+                return {"FINISHED"}
             self.report({"WARNING"}, "No IFC elements selected")
             return {"CANCELLED"}
 
@@ -1614,11 +1601,13 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
             if show_progress:
                 bpy.context.window_manager.progress_update(100)
 
-            self.report({"INFO"}, f"Copied {len(clipboard_data['elements'])} element(s)")
+            msg = f"Copied {len(clipboard_data['elements'])} IFC element(s)"
+            if non_ifc_objs:
+                msg += f" + {len(non_ifc_objs)} vanilla object(s)"
+            self.report({"INFO"}, msg)
             return {"FINISHED"}
 
         except Exception as e:
-            pass
             self.report({"ERROR"}, f"Copy failed: {str(e)}")
             return {"CANCELLED"}
         finally:
@@ -1658,13 +1647,19 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
 
             # Get paste mode from properties
             paste_mode = "RENAME"
-            try:
-                if hasattr(context.scene, "BIMClipboardProperties"):
-                    paste_mode = context.scene.BIMClipboardProperties.paste_mode
-            except Exception:
-                pass
-                pass
+            if hasattr(context.scene, "BIMClipboardProperties"):
+                paste_mode = context.scene.BIMClipboardProperties.paste_mode
 
+            # ── Pass 1: paste vanilla Blender objects from Blender's buffer ────────
+            pre_paste = set(context.selected_objects)
+            viewport_ctx = tool.Blender.get_viewport_context()
+            vanilla_pasted_objects = []
+            with context.temp_override(**viewport_ctx):
+                result = bpy.ops.view3d.pastebuffer()
+            if result == {"FINISHED"}:
+                vanilla_pasted_objects = [obj for obj in context.selected_objects if obj not in pre_paste]
+
+            # ── Pass 2: paste IFC elements from Bonsai clipboard ─────────────────
             engine = BonsaiGraphClipboardEngine(target)
 
             new_elements, pasted_blender_objects = engine.paste_from_file(
@@ -1674,20 +1669,26 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             # Ensure all Blender data is properly updated before returning
             bpy.context.view_layer.update()
 
-            if new_elements:
+            # ── Select all pasted objects (vanilla + IFC) ─────────────────────────
+            all_pasted = vanilla_pasted_objects + pasted_blender_objects
+            if all_pasted:
                 bpy.ops.object.select_all(action="DESELECT")
-                for obj in pasted_blender_objects:
+                for obj in all_pasted:
                     obj.select_set(True)
-                if pasted_blender_objects:
-                    context.view_layer.objects.active = pasted_blender_objects[0]
+                context.view_layer.objects.active = all_pasted[0]
 
-                self.report({"INFO"}, f"Pasted {len(new_elements)} element(s)")
+            if new_elements or vanilla_pasted_objects:
+                parts = []
+                if new_elements:
+                    parts.append(f"{len(new_elements)} IFC element(s)")
+                if vanilla_pasted_objects:
+                    parts.append(f"{len(vanilla_pasted_objects)} vanilla object(s)")
+                self.report({"INFO"}, f"Pasted {' + '.join(parts)}")
             else:
                 self.report({"WARNING"}, "Nothing pasted")
 
             return {"FINISHED"}
 
         except Exception as e:
-            pass
             self.report({"ERROR"}, f"Paste failed: {str(e)}")
             return {"CANCELLED"}
