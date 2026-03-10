@@ -117,6 +117,36 @@ def _make_filtered_iterator(model: ifcopenshell.file, include_elements: list[Any
     return ifcopenshell.geom.iterator(geom_settings, model, n_threads, include=include_elements)
 
 
+def _diagnose_empty_drawing(model: ifcopenshell.file, view: str) -> str:
+    """Return a helpful error message when ifcopenshell.draw produces no geometry groups."""
+    hints = []
+
+    if view in ("floorplan", "auto"):
+        storeys = model.by_type("IfcBuildingStorey")
+        if not storeys:
+            hints.append("the model has no IfcBuildingStorey entities (required for auto_floorplan)")
+        else:
+            null_elevation = [s for s in storeys if getattr(s, "Elevation", None) is None]
+            if null_elevation:
+                names = ", ".join(f'"{s.Name or s.GlobalId}"' for s in null_elevation)
+                hints.append(
+                    f"storey Elevation is None for: {names} — "
+                    "set IfcBuildingStorey.Elevation (e.g. 0.0) so the section cut height can be determined"
+                )
+
+    has_geom = any(
+        getattr(e, "Representation", None) is not None
+        for e in model.by_type("IfcProduct")
+    )
+    if not has_geom:
+        hints.append("no IfcProduct entities have geometric representations")
+
+    base = f"No plan geometry found for view={view!r}."
+    if hints:
+        return base + " Possible causes: " + "; ".join(hints) + "."
+    return base + " The model may lack geometry visible in this view."
+
+
 def plot(
     model: ifcopenshell.file,
     *,
@@ -225,7 +255,7 @@ def plot(
 
     svgs = list(svg_split(BytesIO(svg_bytes)))
     if not svgs:
-        raise ValueError("No plan geometry found; the model may lack 2D annotation representations for the requested view.")
+        raise ValueError(_diagnose_empty_drawing(model, view))
 
     composite = None
     png_bytes = None

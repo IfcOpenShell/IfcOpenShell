@@ -52,6 +52,7 @@ def model_with_annotations():
     site = ifcopenshell.api.root.create_entity(f, ifc_class="IfcSite", name="TestSite")
     building = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuilding", name="TestBuilding")
     storey = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBuildingStorey", name="Ground Floor")
+    storey.Elevation = 0.0  # required for setSectionHeightsFromStoreys() to create a cut plane
     ifcopenshell.api.aggregate.assign_object(f, products=[site], relating_object=project)
     ifcopenshell.api.aggregate.assign_object(f, products=[building], relating_object=site)
     ifcopenshell.api.aggregate.assign_object(f, products=[storey], relating_object=building)
