@@ -474,6 +474,14 @@ class Blender(bonsai.core.tool.Blender):
         cls.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
+    def update_all_viewports(cls, context: bpy.types.Context | None = None) -> None:
+        context = context or bpy.context
+        assert context.screen
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+
+    @classmethod
     def force_depsgraph_update(cls) -> None:
         """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
         # blender is requiring some ID to be changed

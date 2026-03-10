@@ -457,9 +457,7 @@ class HideClash(bpy.types.Operator):
 
     def execute(self, context):
         ClashDecorator.uninstall()
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
         return {"FINISHED"}
 
 

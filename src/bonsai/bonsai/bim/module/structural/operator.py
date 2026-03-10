@@ -42,14 +42,10 @@ class ShowLoads(bpy.types.Operator):
         assert context.screen
         if event.type == "F5":
             LoadsDecorator.update()
-            for area in context.screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
+            tool.Blender.update_all_viewports(context)
         if event.type == "ESC":
             LoadsDecorator.uninstall()
-            for area in context.screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
+            tool.Blender.update_all_viewports(context)
             return {"FINISHED"}
         return {"PASS_THROUGH"}
 
@@ -69,9 +65,7 @@ class ShowLoads(bpy.types.Operator):
             raise exc
         context.window.cursor_modal_restore()
         context.window_manager.modal_handler_add(self)
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
 
         return {"RUNNING_MODAL"}
 

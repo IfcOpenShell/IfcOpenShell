@@ -2699,10 +2699,7 @@ class CreateClippingPlane(bpy.types.Operator):
             self.report({"INFO"}, "Maximum of six clipping planes allowed.")
             return {"FINISHED"}
 
-        assert context.screen
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
 
         assert context.region and context.region_data
         region = context.region
