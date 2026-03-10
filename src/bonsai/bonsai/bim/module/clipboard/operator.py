@@ -78,7 +78,7 @@ class BonsaiGraphClipboardEngine:
         roots = self._collect_safe_roots(source, clipboard_data)
 
         if not roots:
-            return []
+            return [], []
 
         # Show progress for large operations
         total = len(roots)
@@ -1482,6 +1482,32 @@ class CopyToClipboard(bpy.types.Operator, tool.Ifc.Operator):
         all_selected = list(context.selected_objects)
         non_ifc_objs = [obj for obj in all_selected if not tool.Ifc.get_entity(obj)]
 
+        # ── Clear both buffers before populating them ─────────────────────────
+        # Clears stale data so paste only reflects what is selected right now.
+
+        # Clear Blender's vanilla clipboard by copying with nothing selected
+        prev_active = context.view_layer.objects.active
+        bpy.ops.object.select_all(action="DESELECT")
+        try:
+            viewport_ctx = tool.Blender.get_viewport_context()
+            with context.temp_override(**viewport_ctx):
+                bpy.ops.view3d.copybuffer()
+        except Exception:
+            pass
+        for obj in all_selected:
+            obj.select_set(True)
+        context.view_layer.objects.active = prev_active
+
+        # Clear Bonsai's IFC clipboard files
+        for fname in ("bonsai_clipboard.ifc", "bonsai_clipboard.json"):
+            fpath = get_clipboard_path(fname)
+            if os.path.exists(fpath):
+                try:
+                    os.remove(fpath)
+                except Exception:
+                    pass
+        # ─────────────────────────────────────────────────────────────────────
+
         if non_ifc_objs:
             prev_active = context.view_layer.objects.active
             bpy.ops.object.select_all(action="DESELECT")
@@ -1654,6 +1680,8 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             pre_paste = set(context.selected_objects)
             viewport_ctx = tool.Blender.get_viewport_context()
             vanilla_pasted_objects = []
+            new_elements = []
+            pasted_blender_objects = []
             with context.temp_override(**viewport_ctx):
                 result = bpy.ops.view3d.pastebuffer()
             if result == {"FINISHED"}:
