@@ -24,6 +24,7 @@ venv
 .vscode
 !.vscode/launch.json
 !.vscode/tasks.json
+!.vscode/debugpy_port.py
 .vs
 
 # PyCharm files
