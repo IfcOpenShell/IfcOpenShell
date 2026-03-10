@@ -97,7 +97,7 @@ class BonsaiGraphClipboardEngine:
         if show_progress:
             bpy.context.window_manager.progress_update(90)
 
-        self._import_into_blender(new_elements)
+        pasted_blender_objects = self._import_into_blender(new_elements)
 
         if show_progress:
             bpy.context.window_manager.progress_update(95)
@@ -108,7 +108,7 @@ class BonsaiGraphClipboardEngine:
             bpy.context.window_manager.progress_update(100)
             bpy.context.window_manager.progress_end()
 
-        return new_elements
+        return new_elements, pasted_blender_objects
 
 
     def _collect_safe_roots(self, source, clipboard_data):
@@ -1314,10 +1314,12 @@ class BonsaiGraphClipboardEngine:
     def _import_into_blender(self, new_elements):
         """
         Create Blender objects for new IFC products.
+
+        :return: List of created bpy.types.Object instances.
         """
         
         if not new_elements:
-            return
+            return []
         
         try:
             # Create importer with factory settings
@@ -1358,14 +1360,19 @@ class BonsaiGraphClipboardEngine:
                 ifc_importer.setup_arrays()
                 
                 # Assign all created objects to their collections (filter out materials)
-                for obj in ifc_importer.added_data.values():
-                    if isinstance(obj, bpy.types.Object):
-                        try:
-                            tool.Collector.assign(obj, should_clean_users_collection=False)
-                        except Exception as e:
-                            pass
+                pasted_blender_objects = [
+                    obj for obj in ifc_importer.added_data.values()
+                    if isinstance(obj, bpy.types.Object)
+                ]
+                for obj in pasted_blender_objects:
+                    try:
+                        tool.Collector.assign(obj, should_clean_users_collection=False)
+                    except Exception:
+                        pass
+                return pasted_blender_objects
         except Exception as e:
             raise
+        return []
 
     # --------------------------------------------------------
 
@@ -1654,7 +1661,7 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             
             engine = BonsaiGraphClipboardEngine(target)
             
-            new_elements = engine.paste_from_file(
+            new_elements, pasted_blender_objects = engine.paste_from_file(
                 clipboard_ifc,
                 clipboard_data,
                 context,
@@ -1665,6 +1672,12 @@ class PasteFromClipboard(bpy.types.Operator, tool.Ifc.Operator):
             bpy.context.view_layer.update()
             
             if new_elements:
+                bpy.ops.object.select_all(action="DESELECT")
+                for obj in pasted_blender_objects:
+                    obj.select_set(True)
+                if pasted_blender_objects:
+                    context.view_layer.objects.active = pasted_blender_objects[0]
+
                 self.report({"INFO"}, f"Pasted {len(new_elements)} element(s)")
             else:
                 self.report({"WARNING"}, "Nothing pasted")
