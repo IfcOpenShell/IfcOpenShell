@@ -80,7 +80,7 @@ option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
-option(BUILD_EXAMPLES "Build example applications." ON)
+option(BUILD_EXAMPLES "Build example applications." OFF)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
