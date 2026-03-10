@@ -13,14 +13,14 @@ jobs:
             runs_on: windows-2022
             deps_dir: _deps-vs2022-x64-installed
             vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"'
-            arch: x64
+            build_branch: windows-x64
             zip_suffix: win64
 
           - arch: ARM64
             runs_on: windows-11-arm
             deps_dir: _deps-vs2022-ARM64-installed
             vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"'
-            arch: arm64
+            build_branch: windows-arm64
             zip_suffix: win-arm64
 
     runs-on: ${{ matrix.runs_on }}
