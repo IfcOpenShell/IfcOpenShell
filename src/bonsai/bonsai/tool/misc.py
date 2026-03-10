@@ -18,7 +18,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+import ctypes
+from typing import TYPE_CHECKING, Any, NamedTuple, Union
 
 import bmesh
 import bpy
@@ -37,6 +38,155 @@ if TYPE_CHECKING:
 
 
 class Misc(bonsai.core.tool.Misc):
+
+    class BlenderCStructs:
+
+        class ListBase(ctypes.Structure):
+            _fields_ = [("first", ctypes.c_void_p), ("last", ctypes.c_void_p)]
+
+        class bUserMenu(ctypes.Structure):
+            pass
+
+        bUserMenu._fields_ = [
+            ("next", ctypes.c_void_p),
+            ("prev", ctypes.c_void_p),
+            ("space_type", ctypes.c_int8),
+            ("_pad0", ctypes.c_int8 * 7),
+            ("context", ctypes.c_char * 64),
+            ("items", ListBase),
+        ]
+
+        class bUserMenuItem(ctypes.Structure):
+            _fields_ = [
+                ("next", ctypes.c_void_p),
+                ("prev", ctypes.c_void_p),
+                ("ui_name", ctypes.c_char * 64),
+                ("type", ctypes.c_int8),
+                ("_pad0", ctypes.c_int8 * 7),
+            ]
+
+        class bUserMenuItem_Op(ctypes.Structure):
+            pass
+
+        bUserMenuItem_Op._fields_ = [
+            ("item", bUserMenuItem),
+            ("op_idname", ctypes.c_char * 64),
+            ("prop", ctypes.c_void_p),
+            ("op_prop_enum", ctypes.c_char * 64),
+            ("opcontext", ctypes.c_int8),
+            ("_pad0", ctypes.c_int8 * 7),
+        ]
+
+        class IDPropertyData(ctypes.Structure):
+            pass
+
+        IDPropertyData._fields_ = [
+            ("pointer", ctypes.c_void_p),
+            ("group", ListBase),
+            ("children_map", ctypes.c_void_p),
+            ("val", ctypes.c_int),
+            ("val2", ctypes.c_int),
+        ]
+
+        class IDProperty(ctypes.Structure):
+            pass
+
+        IDProperty._fields_ = [
+            ("next", ctypes.c_void_p),
+            ("prev", ctypes.c_void_p),
+            ("type", ctypes.c_int8),
+            ("subtype", ctypes.c_int8),
+            ("flag", ctypes.c_int16),
+            ("name", ctypes.c_char * 64),
+            ("_pad0", ctypes.c_int8 * 4),
+            ("data", IDPropertyData),
+            ("len", ctypes.c_int),
+            ("totallen", ctypes.c_int),
+            ("ui_data", ctypes.c_void_p),
+        ]
+
+    class QuickFavorites:
+        """Blender doesn't provide a good way to access or manage Quick Favorites
+        from the Python API. We use c-structs (ctypes) to read data directly from memory.
+        This is fragile and can break between Blender versions. We only use this for
+        reading data and never writing, to avoid the possibility of corrupting user preferences.
+        """
+
+        OFFSET_USER_MENUS: dict[tuple[int, int], int] = {
+            (4, 5): 10032,
+            (5, 0): 10032,
+            (5, 1): 10032,
+        }
+
+        @classmethod
+        def _read_idprop_value(cls, prop_ptr: int) -> Any:
+            IDP_STRING = 0
+            IDP_INT = 1
+            IDP_FLOAT = 2
+            IDP_BOOLEAN = 10
+
+            p = Misc.BlenderCStructs.IDProperty.from_address(prop_ptr)
+            if p.type == IDP_INT:
+                return p.data.val
+            elif p.type == IDP_BOOLEAN:
+                return bool(p.data.val)
+            elif p.type == IDP_FLOAT:
+                return ctypes.c_float.from_buffer_copy(ctypes.c_int(p.data.val)).value
+            elif p.type == IDP_STRING:
+                return ctypes.string_at(p.data.pointer).decode()
+            return f"<type={p.type}>"
+
+        @classmethod
+        def _read_idprop_group(cls, group_ptr: int) -> dict[str, Any]:
+            root = Misc.BlenderCStructs.IDProperty.from_address(group_ptr)
+            result: dict[str, Any] = {}
+            child_ptr = root.data.group.first
+            while child_ptr:
+                child = Misc.BlenderCStructs.IDProperty.from_address(child_ptr)
+                result[child.name.decode()] = cls._read_idprop_value(child_ptr)
+                child_ptr = child.next
+            return result
+
+        class QuickFavoritesOperator(NamedTuple):
+            ui_name: str
+            op_idname_py: str
+            props: dict[str, Any]
+
+        @classmethod
+        def get_quick_favorites(cls) -> list[QuickFavoritesOperator]:
+            assert bpy.context.preferences
+            blender_version = bpy.app.version[:2]
+            offset = cls.OFFSET_USER_MENUS[blender_version]
+            prefs_address = bpy.context.preferences.as_pointer()
+            user_menus = Misc.BlenderCStructs.ListBase.from_address(prefs_address + offset)
+
+            result: list[cls.QuickFavoritesOperator] = []
+            SPACE_VIEW3D = 4
+
+            node = user_menus.first
+            while node:
+                user_menu = Misc.BlenderCStructs.bUserMenu.from_address(node)
+                if user_menu.space_type != SPACE_VIEW3D:
+                    node = user_menu.next
+                    continue
+                item_ptr = user_menu.items.first
+                while item_ptr:
+                    umi = Misc.BlenderCStructs.bUserMenuItem.from_address(item_ptr)
+                    if umi.type == 2:  # OPERATOR
+                        op = Misc.BlenderCStructs.bUserMenuItem_Op.from_address(item_ptr)
+                        props = cls._read_idprop_group(op.prop) if op.prop else {}
+                        result.append(
+                            cls.QuickFavoritesOperator(
+                                ui_name=op.item.ui_name.decode(),
+                                op_idname_py=tool.Blender.operator_idname_to_py(op.op_idname.decode()),
+                                props=props,
+                            )
+                        )
+                    item_ptr = umi.next
+                node = user_menu.next
+
+            return result
+
     @classmethod
     def get_misc_props(cls) -> BIMMiscProperties:
         return bpy.context.scene.BIMMiscProperties

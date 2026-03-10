@@ -99,6 +99,7 @@ class Blender:
     def get_object_bounding_box(cls, obj): pass
     def get_selected_objects(cls, include_active=False): pass
     def get_viewport_context(cls): pass
+    def operator_idname_to_py(cls, idname): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
     def remove_object(cls, obj): pass

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, assert_never, get_args
+from typing import TYPE_CHECKING, Literal, assert_never, cast, get_args
 
 import bpy
 import ifcopenshell.util.geolocation
@@ -29,6 +29,9 @@ import bonsai.core.geometry as core_geometry
 import bonsai.core.misc as core
 import bonsai.core.root
 import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
 
 
 class SetOverrideColour(bpy.types.Operator):
@@ -350,6 +353,149 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
                 )
             )
         return matrix
+
+
+class EnableQuickFavoriteSearch(bpy.types.Operator):
+    bl_idname = "bim.enable_quick_favorite_search"
+    bl_label = "Enable Search"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        fav = props.quick_favorites[self.index]
+        name = fav.search.strip()
+
+        # TODO: don't use try / except.
+        try:
+            module, func = name.split(".", 1)
+            op = getattr(getattr(bpy.ops, module), func)
+            rna = cast(bpy.types.Struct, op.get_rna_type())
+        except (ValueError, AttributeError):
+            self.report({"ERROR"}, f"Operator '{name}' not found.")
+            return {"CANCELLED"}
+
+        fav.operator_id = name
+        fav.label = rna.name
+        fav.properties.clear()
+        has_skipped = False
+        for p in rna.properties:
+            # skip silently, e.g. `rna_type` is a PointerProperty
+            if isinstance(p, bpy.types.PointerProperty):
+                continue
+            if isinstance(p, (bpy.types.FloatProperty, bpy.types.BoolProperty, bpy.types.IntProperty)) and p.is_array:
+                print(f"Array property '{p.identifier}' is not supported, skipping.")
+                has_skipped = True
+                continue
+            item = fav.properties.add()
+            item.name = p.identifier
+            item.display_name = p.name
+            if isinstance(p, bpy.types.FloatProperty):
+                item.value_prop = "float_value"
+                item.float_value = p.default
+            elif isinstance(p, bpy.types.BoolProperty):
+                item.value_prop = "bool_value"
+                item.bool_value = p.default
+            elif isinstance(p, bpy.types.IntProperty):
+                item.value_prop = "int_value"
+                item.int_value = p.default
+            elif isinstance(p, (bpy.types.StringProperty, bpy.types.EnumProperty)):
+                # TODO: support displaying enum items in the UI for EnumProperty
+                item.value_prop = "string_value"
+                item.string_value = p.default
+            else:
+                print(f"Unhandled property type {type(p).__name__} for '{p.identifier}', skipping.")
+                has_skipped = True
+        if has_skipped:
+            self.report({"WARNING"}, "Some properties were skipped, see the system console for details.")
+        return {"FINISHED"}
+
+
+class ImportQuickFavorites(bpy.types.Operator):
+    bl_idname = "bim.import_quick_favorites"
+    bl_label = "Import Quick Favorites"
+    bl_description = "Import operators from Blender's Quick Favorites menu, including their configured properties"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        props.quick_favorites.clear()
+
+        has_missing_props = False
+        for i, qf in enumerate(tool.Misc.QuickFavorites.get_quick_favorites()):
+            fav = props.quick_favorites.add()
+            fav.label = qf.ui_name
+            fav.search = qf.op_idname_py
+            bpy.ops.bim.enable_quick_favorite_search(index=i)
+            fav.label = qf.ui_name or fav.label
+
+            for prop in fav.properties:
+                prop.is_active = prop.name in qf.props
+
+            for key, value in qf.props.items():
+                if key not in fav.properties:
+                    print(f"Property '{key}' not found in operator '{qf.op_idname_py}'.")
+                    has_missing_props = True
+                    continue
+                item = fav.properties[key]
+                setattr(item, item.value_prop, value)
+
+        if has_missing_props:
+            self.report(
+                {"WARNING"}, "Some properties were not found during import, see the system console for details."
+            )
+        return {"FINISHED"}
+
+
+class MoveQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.move_quick_favorites_item"
+    bl_label = "Move Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    direction: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[("UP", "Up", ""), ("DOWN", "Down", "")]
+    )
+
+    if TYPE_CHECKING:
+        index: int
+        direction: Literal["UP", "DOWN"]
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        total = len(props.quick_favorites)
+        new_index = self.index - 1 if self.direction == "UP" else self.index + 1
+        if 0 <= new_index < total:
+            props.quick_favorites.move(self.index, new_index)
+        return {"FINISHED"}
+
+
+class RemoveQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.remove_quick_favorites_item"
+    bl_label = "Remove Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        props.quick_favorites.remove(self.index)
+        return {"FINISHED"}
+
+
+class AddQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.add_quick_favorites_item"
+    bl_label = "Add Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        props.quick_favorites.add()
+        return {"FINISHED"}
 
 
 class IfcSverchokUseBonsaiFile(bpy.types.Operator, tool.Ifc.Operator):

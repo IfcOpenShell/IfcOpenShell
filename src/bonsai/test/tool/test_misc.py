@@ -171,6 +171,12 @@ class TestScaleObjectToHeight(test.bim.bootstrap.NewFile):
         assert list(obj.scale) == [1.0, 1.0, 1.0]
 
 
+class TestQuickFavoritesOffsetUserMenus(test.bim.bootstrap.NewFile):
+    def test_current_blender_version_is_supported(self):
+        version = bpy.app.version[:2]
+        assert version in subject.QuickFavorites.OFFSET_USER_MENUS
+
+
 class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):
     def test_run(self):
         bpy.ops.mesh.primitive_cube_add()

@@ -348,6 +348,15 @@ class Blender(bonsai.core.tool.Blender):
                     return area
 
     @classmethod
+    def operator_idname_to_py(cls, idname: str) -> str:
+        """Convert a Blender internal operator idname to its Python equivalent.
+
+        Example: ``MESH_OT_primitive_cube_add`` -> ``mesh.primitive_cube_add``
+        """
+        module, func = idname.split("_OT_", 1)
+        return f"{module.lower()}.{func}"
+
+    @classmethod
     def get_view3d_space(cls) -> Union[bpy.types.SpaceView3D, None]:
         if area := cls.get_view3d_area():
             space = area.spaces.active
