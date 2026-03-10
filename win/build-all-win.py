@@ -5,11 +5,12 @@ but also archives them to '~/outputs'.
 """
 
 import os
+import platform  
 import subprocess
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
-import platform  
+
 
 def is_arm64() -> bool:
     arch = os.environ.get("TARGET_ARCH", "").lower()
