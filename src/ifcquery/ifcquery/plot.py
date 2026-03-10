@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import base64
 from io import BytesIO
 import os
 from typing import Any
@@ -61,7 +62,10 @@ def _escape_css_attr(name: str) -> str:
 def _highlight_css_from_ids(model: ifcopenshell.file, element_ids: list[int]) -> str:
     guids: list[str] = []
     for sid in element_ids:
-        e = model.by_id(int(sid))
+        try:
+            e = model.by_id(int(sid))
+        except RuntimeError:
+            continue
         if e is None:
             continue
         gid = getattr(e, "GlobalId", None)
@@ -219,9 +223,12 @@ def plot(
     if not _HAS_CAIROSVG:
         raise ImportError("CairoSVG is not installed. Install with: pip install cairosvg")
 
+    svgs = list(svg_split(BytesIO(svg_bytes)))
+    if not svgs:
+        raise ValueError("No plan geometry found; the model may lack 2D annotation representations for the requested view.")
+
     composite = None
     png_bytes = None
-    svgs = list(svg_split(BytesIO(svg_bytes)))
     for i, svgb in enumerate(svgs):
         png_bytes = cairosvg.svg2png(bytestring=svgb, output_width=png_width, output_height=png_height)
         if len(svgs) == 1:
@@ -239,5 +246,14 @@ def plot(
         b = BytesIO()
         composite.save(b, 'png')
         png_bytes = b.getvalue()
+
+    if output_format == "base64":
+        return {
+            "mime": "image/png",
+            "png_b64": base64.b64encode(png_bytes).decode(),
+            "width": png_width,
+            "height": png_height,
+            "view": view,
+        }
 
     return png_bytes

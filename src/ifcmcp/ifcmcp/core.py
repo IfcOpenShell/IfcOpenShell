@@ -13,7 +13,7 @@ from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
 from ifcquery import contexts as contexts_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, materials as materials_mod, relations, render as render_mod, schedule, schema, select, summary, tree
+from ifcquery import info, materials as materials_mod, plot as plot_mod, relations, render as render_mod, schedule, schema, select, summary, tree
 from ifcquery import validate as validate_mod
 
 
@@ -359,6 +359,48 @@ class IfcSession:
     def ifc_schema(self, entity_type: str) -> dict[str, Any]:
         """Return IFC class documentation for entity_type using the model's schema version."""
         return schema.schema(self._require_model(), entity_type)
+
+    def ifc_plot(
+        self,
+        selector: str = "",
+        element_ids: list[int] | None = None,
+        view: str = "floorplan",
+        width_mm: float = 297.0,
+        height_mm: float = 420.0,
+        scale: float = 1.0 / 100.0,
+        png_width: int = 1024,
+        png_height: int = 1024,
+    ) -> bytes:
+        """Generate a 2D technical drawing (floor plan, elevation, or section) and return PNG bytes.
+
+        Uses ifcopenshell.draw to produce SVG output which is rasterised to PNG via CairoSVG.
+
+        :param selector: ifcopenshell selector to restrict plotted elements
+            (e.g. ``'IfcWall'``). Omit to plot the whole model.
+        :param element_ids: Step IDs of elements to highlight. Other elements
+            are faded to 10% opacity so the subject stands out.
+        :param view: Drawing view — ``floorplan`` (default), ``elevation``,
+            ``section``, or ``auto``.
+        :param width_mm: Paper width in mm (default 297 = A4).
+        :param height_mm: Paper height in mm (default 420 = A4).
+        :param scale: Model-to-paper scale ratio (default 0.01 = 1:100).
+        :param png_width: Raster output width in pixels (default 1024).
+        :param png_height: Raster output height in pixels (default 1024).
+        :return: PNG image as raw bytes.
+        """
+        model = self._require_model()
+        return plot_mod.plot(
+            model,
+            output_format="png",
+            selector=selector if selector else None,
+            element_ids=element_ids,
+            view=view,
+            width_mm=width_mm,
+            height_mm=height_mm,
+            scale=scale,
+            png_width=png_width,
+            png_height=png_height,
+        )
 
     def ifc_render(
         self,

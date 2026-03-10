@@ -141,6 +141,46 @@ def build_server() -> Any:
         return session.ifc_shape(method=method, params=params)
 
     @server.tool(structured_output=False)
+    def ifc_plot(
+        selector: str = "",
+        element_ids: list[int] | None = None,
+        view: str = "floorplan",
+        width_mm: float = 297.0,
+        height_mm: float = 420.0,
+        scale: float = 1.0 / 100.0,
+        png_width: int = 1024,
+        png_height: int = 1024,
+    ) -> list[ImageContent]:
+        """Generate a 2D technical drawing of the loaded IFC model.
+
+        Returns an inline image (floor plan, elevation, or section) that the
+        LLM can inspect to understand the 2D layout of the model.
+
+        :param selector: ifcopenshell selector to restrict plotted elements
+            (e.g. ``'IfcWall'``). Omit to plot the whole model.
+        :param element_ids: Step IDs of elements to highlight. Other elements
+            are faded so the subject stands out.
+        :param view: Drawing view — ``floorplan`` (default), ``elevation``,
+            ``section``, or ``auto``.
+        :param width_mm: Paper width in mm (default 297 = A4 landscape width).
+        :param height_mm: Paper height in mm (default 420 = A4 landscape height).
+        :param scale: Model-to-paper scale ratio (default 0.01 = 1:100).
+        :param png_width: Raster output width in pixels (default 1024).
+        :param png_height: Raster output height in pixels (default 1024).
+        """
+        png_bytes = session.ifc_plot(
+            selector=selector,
+            element_ids=element_ids,
+            view=view,
+            width_mm=width_mm,
+            height_mm=height_mm,
+            scale=scale,
+            png_width=png_width,
+            png_height=png_height,
+        )
+        return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
+
+    @server.tool(structured_output=False)
     def ifc_render(
         selector: str = "",
         element_ids: list[int] | None = None,

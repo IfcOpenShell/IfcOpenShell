@@ -296,29 +296,40 @@ def main():
                 print(f"Error: Invalid element ID(s): {args.element}", file=sys.stderr)
                 sys.exit(1)
 
-        # Choose default output extension based on out-format
+        try:
+            result = plot.plot(
+                model,
+                selector=args.selector or None,
+                element_ids=element_ids,
+                view=args.view,
+                width_mm=args.width_mm,
+                height_mm=args.height_mm,
+                scale=args.scale,
+                output_format=args.out_format,
+            )
+        except ImportError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        if args.out_format == "base64":
+            # result is a dict; serialise to stdout so callers can consume it
+            print(format_output(result, args.output_format))
+            return
+
+        # svg or png: write to a file
         base = os.path.splitext(args.ifc_file)[0]
         if args.out_format == "svg":
             out_path = args.output or (base + ".svg")
-        elif args.out_format == "png":
-            out_path = args.output or (base + ".png")
         else:
-            out_path = args.output  # unused; base64 prints to stdout via format_output
+            out_path = args.output or (base + ".png")
 
-        png_bytes = plot.plot(
-            model,
-            selector=args.selector or None,
-            element_ids=element_ids,
-            view=args.view,
-            width_mm=args.width_mm,
-            height_mm=args.height_mm,
-            scale=args.scale,
-            output_format=args.out_format
-        )
         with open(out_path, "wb") as f:
-            f.write(png_bytes)
+            f.write(result)
 
-        print(f"Saved render to {out_path}", file=sys.stderr)
+        print(f"Saved drawing to {out_path}", file=sys.stderr)
         return
 
 
