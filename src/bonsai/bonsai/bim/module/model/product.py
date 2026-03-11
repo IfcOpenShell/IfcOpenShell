@@ -691,11 +691,19 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
-        for obj in context.selected_objects:
-            self.mirror_obj(context, obj)
+        active_obj = context.active_object
+        mirror_ref = None
+        if active_obj:
+            objs_to_mirror = [obj for obj in context.selected_objects if obj != active_obj]
+            if objs_to_mirror:
+                mirror_ref = active_obj
+        if mirror_ref is None:
+            objs_to_mirror = context.selected_objects
+        for obj in objs_to_mirror:
+            self.mirror_obj(context, obj, mirror_ref)
         return {"FINISHED"}
 
-    def mirror_obj(self, context: bpy.types.Context, obj: bpy.types.Object):
+    def mirror_obj(self, context: bpy.types.Context, obj: bpy.types.Object, mirror_ref: bpy.types.Object = None):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -714,11 +722,17 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         context.view_layer.update()
 
-        mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
-
-        x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
-        x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
-        obj.location -= x_correction_vec
+        if mirror_ref:
+            # Reflect object origin about the mirror reference's YZ plane
+            origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
+            origin_in_mirror.x *= -1
+            obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+        else:
+            # Fall back: nudge in place to compensate for bounding box shift after inversion
+            mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
+            x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
+            x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
+            obj.location -= x_correction_vec
 
         if element.is_a("IfcElement") and element.FillsVoids:
             tool.Model.update_simple_openings(element)
