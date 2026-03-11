@@ -1036,49 +1036,6 @@ class RADIANCE_OT_open_spectraldb(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnumPropertySearch(bpy.types.Operator):
-    bl_idname = "radiance.enum_property_search"
-    bl_label = "Search Enum Property"
-    bl_options = {"REGISTER", "UNDO"}
-
-    prop_name: bpy.props.StringProperty()
-    search_term: bpy.props.StringProperty()
-
-    def execute(self, context):
-        data = context.space_data.context_pointer_get("data")
-        enum_items = get_enum_items(data, self.prop_name)
-        filtered_items = [item for item in enum_items if self.search_term.lower() in item[1].lower()]
-
-        def draw_menu(self, context):
-            layout = self.layout
-            for item in filtered_items:
-                props = layout.operator("bim.set_enum_property", text=item[1])
-                props.prop_name = self.prop_name
-                props.enum_value = item[0]
-
-        bpy.context.window_manager.popup_menu(draw_menu, title="Search Results", icon="VIEWZOOM")
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        self.layout.prop(self, "search_term", text="Search")
-
-
-class SetEnumProperty(bpy.types.Operator):
-    bl_idname = "bim.set_enum_property"
-    bl_label = "Set Enum Property"
-    bl_options = {"REGISTER", "UNDO"}
-
-    prop_name: bpy.props.StringProperty()
-    enum_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        data = context.space_data.context_pointer_get("data")
-        setattr(data, self.prop_name, self.enum_value)
-        return {"FINISHED"}
-
 
 def convert_ies_to_radiance(
     ies_file_path: str,
