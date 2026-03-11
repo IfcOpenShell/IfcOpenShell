@@ -736,9 +736,17 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             mirror_axes = (
                 1.0 if abs(mirror_normal_local.x) > 0.5 else 0.0,
                 1.0 if abs(mirror_normal_local.y) > 0.5 else 0.0,
+                1.0 if abs(mirror_normal_local.z) > 0.5 else 0.0,
             )
+            print(f"[mirror] --- {obj.name} ---")
+            print(f"[mirror] mirror_ref='{mirror_ref.name}'")
+            print(f"[mirror] mirror_ref rotation:      {mirror_ref.matrix_world.to_euler()}")
+            print(f"[mirror] mirror normal (world):    {mirror_normal_world}")
+            print(f"[mirror] mirror normal (obj local):{mirror_normal_local}")
+            print(f"[mirror] mirror_axes:              {mirror_axes}")
         else:
-            mirror_axes = (1, 0)
+            mirror_axes = (1, 0, 0)
+            print(f"[mirror] --- {obj.name} --- no mirror_ref, mirror_axes={mirror_axes}")
 
         if type_element and element.id() != type_element.id():
             # obj has a type, use / create inverted type and assign it
@@ -752,14 +760,17 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if mirror_ref:
             # Reflect object origin about the mirror reference's YZ plane
             origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
+            print(f"[mirror] origin before: {obj.matrix_world.translation}")
             origin_in_mirror.x *= -1
             obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+            print(f"[mirror] origin after:  {obj.matrix_world.translation}")
         else:
             # Fall back: nudge in place to compensate for bounding box shift after inversion
             mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
             x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
             x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
             obj.location -= x_correction_vec
+            print(f"[mirror] fallback x_correction={x_correction_factor}")
 
         if element.is_a("IfcElement") and element.FillsVoids:
             tool.Model.update_simple_openings(element)
@@ -774,7 +785,9 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
         )
 
-    def invert_general_object(self, element, mirror_axes=(1, 0)):
+    def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
+        # ShapeBuilder.mirror works in 2D; use only the XY components
+        mirror_axes_2d = mirror_axes[:2]
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
@@ -782,12 +795,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             for representation in element.Representation.Representations:
                 for item in representation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                    builder.mirror(item, mirror_axes, create_copy=False)
+                    builder.mirror(item, mirror_axes_2d, create_copy=False)
         elif element.is_a("IfcTypeProduct"):
             for representation_map in (element.RepresentationMaps or []):
                 for item in representation_map.MappedRepresentation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                    builder.mirror(item, mirror_axes, create_copy=False)
+                    builder.mirror(item, mirror_axes_2d, create_copy=False)
 
         tool.Geometry.reload_representation(tool.Ifc.get_object(element))
 
@@ -824,13 +837,13 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.mark_thumbnail_for_update(element)
 
-    def invert_representation(self, element, mirror_axes=(1, 0)):
+    def invert_representation(self, element, mirror_axes=(1, 0, 0)):
         if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
             self.invert_door_swing(element)
         else:
             self.invert_general_object(element, mirror_axes)
 
-    def assign_inverted_type(self, element, mirror_axes=(1, 0)):
+    def assign_inverted_type(self, element, mirror_axes=(1, 0, 0)):
         type_element = ifcopenshell.util.element.get_type(element)
 
         inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
@@ -841,17 +854,29 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
             tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
             inverted_type.Name = f"{inverted_type.Name}.Mirror"
+            print(f"[mirror] created new inverted type '{inverted_type.Name}'")
+        else:
+            print(f"[mirror] reusing cached type '{inverted_type.Name}', mirror_axes={mirror_axes}")
 
         bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
 
-        # The cached type is always X-flipped. If we need Y-flip, rotate 180° around Z to compensate
-        # (flip_Y = Rotate_Z_180 ∘ flip_X)
-        if mirror_axes == (0.0, 1.0):
+        # The cached type is always X-flipped. Apply rotation compensation for other axes:
+        # flip_Y = Rotate_Z_180 ∘ flip_X
+        # flip_Z = Rotate_Y_180 ∘ flip_X
+        if mirror_axes == (0.0, 1.0, 0.0):
             obj = tool.Ifc.get_object(element)
             loc = obj.matrix_world.translation.copy()
             rot_180_z = Matrix.Rotation(math.pi, 4, "Z")
             obj.matrix_world = rot_180_z @ obj.matrix_world
             obj.matrix_world.translation = loc
+            print(f"[mirror] applied 180° Z rotation to compensate for Y-flip")
+        elif mirror_axes == (0.0, 0.0, 1.0):
+            obj = tool.Ifc.get_object(element)
+            loc = obj.matrix_world.translation.copy()
+            rot_180_y = Matrix.Rotation(math.pi, 4, "Y")
+            obj.matrix_world = rot_180_y @ obj.matrix_world
+            obj.matrix_world.translation = loc
+            print(f"[mirror] applied 180° Y rotation to compensate for Z-flip")
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
