@@ -19,6 +19,7 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import json
+import math
 from typing import TYPE_CHECKING, Any, Literal, get_args
 
 import bmesh
@@ -727,12 +728,24 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         bb_data = tool.Blender.get_object_bounding_box(obj)
 
+        # Compute the geometry inversion axis from the mirror reference's local X (= mirror plane normal).
+        # Without a reference, always fall back to inverting along the object's local X.
+        if mirror_ref:
+            mirror_normal_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+            mirror_normal_local = obj.matrix_world.to_3x3().inverted() @ mirror_normal_world
+            mirror_axes = (
+                1.0 if abs(mirror_normal_local.x) > 0.5 else 0.0,
+                1.0 if abs(mirror_normal_local.y) > 0.5 else 0.0,
+            )
+        else:
+            mirror_axes = (1, 0)
+
         if type_element and element.id() != type_element.id():
             # obj has a type, use / create inverted type and assign it
-            self.assign_inverted_type(element)
+            self.assign_inverted_type(element, mirror_axes)
         else:
             # invert representation of entity directly
-            self.invert_representation(element)
+            self.invert_representation(element, mirror_axes)
 
         context.view_layer.update()
 
@@ -761,7 +774,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
         )
 
-    def invert_general_object(self, element):
+    def invert_general_object(self, element, mirror_axes=(1, 0)):
         if element.is_a("IfcProduct"):
             if not element.Representation:
                 return
@@ -769,12 +782,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             for representation in element.Representation.Representations:
                 for item in representation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                    builder.mirror(item, (1, 0), create_copy=False)
+                    builder.mirror(item, mirror_axes, create_copy=False)
         elif element.is_a("IfcTypeProduct"):
             for representation_map in (element.RepresentationMaps or []):
                 for item in representation_map.MappedRepresentation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-                    builder.mirror(item, (1, 0), create_copy=False)
+                    builder.mirror(item, mirror_axes, create_copy=False)
 
         tool.Geometry.reload_representation(tool.Ifc.get_object(element))
 
@@ -811,25 +824,34 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.mark_thumbnail_for_update(element)
 
-    def invert_representation(self, element):
+    def invert_representation(self, element, mirror_axes=(1, 0)):
         if ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"):
             self.invert_door_swing(element)
         else:
-            self.invert_general_object(element)
+            self.invert_general_object(element, mirror_axes)
 
-    def assign_inverted_type(self, element):
+    def assign_inverted_type(self, element, mirror_axes=(1, 0)):
         type_element = ifcopenshell.util.element.get_type(element)
 
         inverted_type = tool.Blender.Modifier.has_mirrored_type(type_element)
         if not inverted_type:
             old_to_new, _ = tool.Geometry.duplicate_ifc_objects([tool.Ifc.get_object(type_element)])
             inverted_type = old_to_new[type_element][0]
-            self.invert_representation(inverted_type)
+            self.invert_representation(inverted_type)  # always X-flip for the cached type
             tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
             tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
             inverted_type.Name = f"{inverted_type.Name}.Mirror"
 
         bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
+
+        # The cached type is always X-flipped. If we need Y-flip, rotate 180° around Z to compensate
+        # (flip_Y = Rotate_Z_180 ∘ flip_X)
+        if mirror_axes == (0.0, 1.0):
+            obj = tool.Ifc.get_object(element)
+            loc = obj.matrix_world.translation.copy()
+            rot_180_z = Matrix.Rotation(math.pi, 4, "Z")
+            obj.matrix_world = rot_180_z @ obj.matrix_world
+            obj.matrix_world.translation = loc
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
