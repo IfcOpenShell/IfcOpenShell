@@ -30,15 +30,10 @@ All operator classes are defined in their respective submodules:
                  RADIANCE_OT_open_spectraldb
   - ies.py:      AddIESLight, RemoveIESLight
 
-Small operators (EnumPropertySearch, SetEnumProperty) remain defined here.
+EnumPropertySearch and SetEnumProperty are provided by the global
+bonsai.bim.operator module (bl_idname "bim.enum_property_search").
 """
 
-import bpy
-
-import bonsai.tool as tool
-from bonsai.bim.module.light.ui import get_enum_items
-
-# Re-export from submodules
 from bonsai.bim.module.light.export import CleanupRadianceFiles, ExportOBJ  # noqa: F401
 from bonsai.bim.module.light.ies import AddIESLight, RemoveIESLight  # noqa: F401
 from bonsai.bim.module.light.material import (  # noqa: F401
@@ -49,7 +44,10 @@ from bonsai.bim.module.light.material import (  # noqa: F401
     UnmapMaterial,
 )
 from bonsai.bim.module.light.prepare import PrepareRadianceScene  # noqa: F401
-from bonsai.bim.module.light.render import FalseColorRadiance, RadianceRender  # noqa: F401
+from bonsai.bim.module.light.render import (  # noqa: F401
+    FalseColorRadiance,
+    RadianceRender,
+)
 from bonsai.bim.module.light.solar import (  # noqa: F401
     ImportLatLong,
     ImportTrueNorth,
@@ -58,54 +56,3 @@ from bonsai.bim.module.light.solar import (  # noqa: F401
     MoveSunPathTo3DCursor,
     ViewFromSun,
 )
-
-
-class EnumPropertySearch(bpy.types.Operator):
-    bl_idname = "radiance.enum_property_search"
-    bl_label = "Search Enum Property"
-    bl_options = {"REGISTER", "UNDO"}
-
-    prop_name: bpy.props.StringProperty()
-    search_term: bpy.props.StringProperty()
-
-    def execute(self, context):
-        try:
-            data = context.space_data.context_pointer_get("data")
-        except Exception:
-            self.report({"ERROR"}, "Could not access context data for enum search.")
-            return {"CANCELLED"}
-        if data is None:
-            self.report({"ERROR"}, "No context data available for enum search.")
-            return {"CANCELLED"}
-        enum_items = get_enum_items(data, self.prop_name)
-        filtered_items = [item for item in enum_items if self.search_term.lower() in item[1].lower()]
-
-        def draw_menu(self, context):
-            layout = self.layout
-            for item in filtered_items:
-                props = layout.operator("bim.set_enum_property", text=item[1])
-                props.prop_name = self.prop_name
-                props.enum_value = item[0]
-
-        bpy.context.window_manager.popup_menu(draw_menu, title="Search Results", icon="VIEWZOOM")
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        self.layout.prop(self, "search_term", text="Search")
-
-
-class SetEnumProperty(bpy.types.Operator):
-    bl_idname = "bim.set_enum_property"
-    bl_label = "Set Enum Property"
-    bl_options = {"REGISTER", "UNDO"}
-
-    prop_name: bpy.props.StringProperty()
-    enum_value: bpy.props.StringProperty()
-
-    def execute(self, context):
-        data = context.space_data.context_pointer_get("data")
-        setattr(data, self.prop_name, self.enum_value)
-        return {"FINISHED"}
