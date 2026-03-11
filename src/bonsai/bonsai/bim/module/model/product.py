@@ -684,7 +684,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mirror_geometry"
     bl_label = "Mirror Element Geometry"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Mirrors the selected objects by mirroring their representation (or their types representation)"
+    bl_description = (
+        "Mirrors the selected objects by inverting their representation. "
+        "If an active object is set, mirrors about its YZ plane; otherwise mirrors in place along the X axis. "
+        "Shift: duplicate and mirror, leaving the original in place"
+    )
+    keep_original: bpy.props.BoolProperty(name="Keep Original", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -698,7 +703,16 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             if objs_to_mirror:
                 mirror_ref = active_obj
         if mirror_ref is None:
-            objs_to_mirror = context.selected_objects
+            objs_to_mirror = list(context.selected_objects)
+
+        if self.keep_original:
+            if mirror_ref:
+                mirror_ref.select_set(False)
+            bpy.ops.bim.override_object_duplicate_move(is_interactive=False)
+            objs_to_mirror = [obj for obj in context.selected_objects if obj != mirror_ref]
+            if mirror_ref:
+                mirror_ref.select_set(True)
+
         for obj in objs_to_mirror:
             self.mirror_obj(context, obj, mirror_ref)
         return {"FINISHED"}
