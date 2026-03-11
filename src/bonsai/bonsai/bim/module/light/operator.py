@@ -61,7 +61,7 @@ from bonsai.bim.module.light.solar import (  # noqa: F401
 
 
 class EnumPropertySearch(bpy.types.Operator):
-    bl_idname = "bim.enum_property_search"
+    bl_idname = "radiance.enum_property_search"
     bl_label = "Search Enum Property"
     bl_options = {"REGISTER", "UNDO"}
 

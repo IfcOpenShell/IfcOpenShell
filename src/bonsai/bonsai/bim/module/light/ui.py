@@ -41,7 +41,7 @@ def prop_with_search(layout, data, prop_name, **kwargs):
     try:
         if len(get_enum_items(data, prop_name)) > 10:
             row.context_pointer_set(name="data", data=data)
-            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
+            op = row.operator("radiance.enum_property_search", text="", icon="VIEWZOOM")
             op.prop_name = prop_name
     except TypeError:
         pass
