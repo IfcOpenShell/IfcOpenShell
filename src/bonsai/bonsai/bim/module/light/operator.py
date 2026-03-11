@@ -1036,7 +1036,7 @@ class RADIANCE_OT_open_spectraldb(bpy.types.Operator):
 
 
 class EnumPropertySearch(bpy.types.Operator):
-    bl_idname = "bim.enum_property_search"
+    bl_idname = "radiance.enum_property_search"
     bl_label = "Search Enum Property"
     bl_options = {"REGISTER", "UNDO"}
 
