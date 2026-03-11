@@ -42,6 +42,8 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 
 if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
     from bonsai.bim.prop import BIMFacet
 
 
@@ -785,6 +787,27 @@ class Search(Operator):
 
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
         active_object = next(iter(objs), None)
+        selection = tool.Blender.validate_object_selection(context, active_object, objs)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
+        return {"FINISHED"}
+
+
+class SelectQueryElements(Operator):
+    bl_idname = "bim.select_query_elements"
+    bl_label = "Select Query Elements"
+    bl_description = "Select elements matching an provided selector query"
+    bl_options = {"REGISTER", "UNDO"}
+
+    query: StringProperty(name="Query")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        query: str
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), self.query)
+        objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
+        active_object = context.active_object or next(iter(objs), None)
         selection = tool.Blender.validate_object_selection(context, active_object, objs)
         tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
         self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")

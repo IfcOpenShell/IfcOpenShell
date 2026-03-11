@@ -489,7 +489,11 @@ class AddQuickFavoritesItem(bpy.types.Operator):
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         props = tool.Misc.get_misc_props()
-        props.quick_favorites.add()
+        fav = props.quick_favorites.add()
+        fav.search = "bim.select_query_elements"
+        index = len(props.quick_favorites) - 1
+        bpy.ops.bim.confirm_quick_favorite_operator(index=index)
+        fav.properties["query"].string_value = "IfcWall"
         return {"FINISHED"}
 
 
