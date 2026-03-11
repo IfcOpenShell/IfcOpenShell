@@ -743,7 +743,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
                     builder.mirror(item, (1, 0), create_copy=False)
         elif element.is_a("IfcTypeProduct"):
-            for representation_map in element.RepresentationMaps:
+            for representation_map in (element.RepresentationMaps or []):
                 for item in representation_map.MappedRepresentation.Items:
                     builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
                     builder.mirror(item, (1, 0), create_copy=False)
@@ -801,7 +801,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
             inverted_type.Name = f"{inverted_type.Name}.Mirror"
 
-        bonsai.core.type.assign_type(tool.Ifc, tool.Type, element, inverted_type)
+        bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
