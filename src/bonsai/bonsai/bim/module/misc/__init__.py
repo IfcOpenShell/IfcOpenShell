@@ -33,6 +33,7 @@ classes = (
     operator.SetOverrideColour,
     operator.SnapSpacesTogether,
     operator.SplitAlongEdge,
+    prop.QuickFavoriteEnumItem,
     prop.QuickFavoriteProperty,
     prop.QuickFavoritesItem,
     prop.BIMMiscProperties,

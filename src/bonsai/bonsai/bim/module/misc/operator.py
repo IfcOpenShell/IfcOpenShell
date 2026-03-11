@@ -397,8 +397,11 @@ class ConfirmQuickFavoriteOperator(bpy.types.Operator):
             elif isinstance(p, bpy.types.IntProperty):
                 item.value_prop = "int_value"
                 item.int_value = p.default
-            elif isinstance(p, (bpy.types.StringProperty, bpy.types.EnumProperty)):
-                # TODO: support displaying enum items in the UI for EnumProperty
+            elif isinstance(p, bpy.types.EnumProperty):
+                item.value_prop = "enum_value"
+                item.set_enum_items([(e.identifier, e.name, e.description) for e in p.enum_items])
+                item.enum_value = p.default
+            elif isinstance(p, bpy.types.StringProperty):
                 item.value_prop = "string_value"
                 item.string_value = p.default
             else:
@@ -436,7 +439,7 @@ class ImportQuickFavorites(bpy.types.Operator):
                     has_missing_props = True
                     continue
                 item = fav.properties[key]
-                setattr(item, item.value_prop, value)
+                item.set_value(value)
 
         if has_missing_props:
             self.report(

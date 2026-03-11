@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, cast, get_args
+from typing import TYPE_CHECKING, Any, Literal, cast, get_args
 
 import bpy
 from bpy.props import (
@@ -32,7 +32,22 @@ from bpy.types import PropertyGroup
 
 from bonsai.bim.module.misc.data import QuickFavoritesData
 
-QuickFavoriteValueType = Literal["float_value", "bool_value", "int_value", "string_value"]
+QuickFavoriteValueType = Literal["float_value", "bool_value", "int_value", "string_value", "enum_value"]
+
+
+class QuickFavoriteEnumItem(PropertyGroup):
+    name: StringProperty(name="Name", default="")  # pyright: ignore[reportRedeclaration]
+    display_name: StringProperty(name="Display Name", default="")  # pyright: ignore[reportRedeclaration]
+    description: StringProperty(name="Description", default="")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        name: str
+        display_name: str
+        description: str
+
+
+def get_enum_items(self: "QuickFavoriteProperty", context: bpy.types.Context | None) -> list[tuple[str, str, str]]:
+    return [(item.name, item.display_name, item.description) for item in self.enum_items]
 
 
 class QuickFavoriteProperty(PropertyGroup):
@@ -46,11 +61,24 @@ class QuickFavoriteProperty(PropertyGroup):
     float_value: FloatProperty(name="Float Value", default=0.0)  # pyright: ignore[reportRedeclaration]
     int_value: IntProperty(name="Int Value", default=0)  # pyright: ignore[reportRedeclaration]
     bool_value: BoolProperty(name="Bool Value", default=False)  # pyright: ignore[reportRedeclaration]
+    enum_value: EnumProperty(name="Enum Value", items=get_enum_items)  # pyright: ignore[reportRedeclaration]
+    enum_items: CollectionProperty(type=QuickFavoriteEnumItem)  # pyright: ignore[reportRedeclaration]
     is_active: BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Is Active",
         description="Only active properties will be added to the operator when invoked from Quick Favorites",
         default=False,
     )
+
+    def set_value(self, value: Any) -> None:
+        setattr(self, self.value_prop, value)
+
+    def set_enum_items(self, items: list[tuple[str, str, str]]) -> None:
+        self.enum_items.clear()
+        for identifier, name, description in items:
+            item = self.enum_items.add()
+            item.name = identifier
+            item.display_name = name
+            item.description = description
 
     if TYPE_CHECKING:
         name: str
@@ -60,6 +88,8 @@ class QuickFavoriteProperty(PropertyGroup):
         float_value: float
         int_value: int
         bool_value: bool
+        enum_value: str
+        enum_items: bpy.types.bpy_prop_collection_idprop[QuickFavoriteEnumItem]
         is_active: bool
 
 
