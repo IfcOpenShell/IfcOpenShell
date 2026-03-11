@@ -6,6 +6,7 @@ import tempfile
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
+import ifcopenshell.guid
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
@@ -16,7 +17,7 @@ import ifcopenshell.api.unit
 import numpy as np
 import pytest
 
-from ifcquery.render import render, _make_type_occurrence
+from ifcquery.render import render, _make_type_occurrence, _make_profile_occurrence
 
 try:
     import pyvista  # noqa: F401
@@ -96,6 +97,44 @@ def library_with_type():
     wall_type.RepresentationMaps = [rep_map]
 
     return f, wall_type
+
+
+@pytest.fixture
+def library_with_profile_type():
+    """IFC4 library: a BeamType with an IfcMaterialProfileSet but no RepresentationMaps."""
+    f = ifcopenshell.api.project.create_file()
+    ifcopenshell.api.owner.settings.get_user = lambda ifc: (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    ifcopenshell.api.owner.settings.get_application = lambda ifc: (ifc.by_type("IfcApplication") or [None])[0]
+
+    project = ifcopenshell.api.root.create_entity(f, ifc_class="IfcProject", name="ProfileLibProject")
+    ifcopenshell.api.unit.assign_unit(f)
+
+    model_ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
+    ifcopenshell.api.context.add_context(
+        f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model_ctx
+    )
+
+    # Rectangular profile 0.2m x 0.3m
+    profile = f.create_entity(
+        "IfcRectangleProfileDef",
+        ProfileType="AREA",
+        ProfileName="200x300",
+        XDim=0.2,
+        YDim=0.3,
+    )
+    material = f.create_entity("IfcMaterial", Name="Steel")
+    mat_profile = f.create_entity("IfcMaterialProfile", Material=material, Profile=profile)
+    profile_set = f.create_entity("IfcMaterialProfileSet", MaterialProfiles=[mat_profile])
+
+    beam_type = ifcopenshell.api.root.create_entity(f, ifc_class="IfcBeamType", name="200x300 Steel Beam")
+    rel = f.create_entity(
+        "IfcRelAssociatesMaterial",
+        GlobalId=ifcopenshell.guid.new(),
+        RelatedObjects=[beam_type],
+        RelatingMaterial=profile_set,
+    )
+
+    return f, beam_type
 
 
 class TestRenderBasic:
@@ -180,6 +219,34 @@ class TestRenderTypes:
         ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="Bare")
         with pytest.raises(ValueError):
             render(f, selector="IfcWallType")
+
+
+class TestRenderProfileTypes:
+    def test_render_profile_type_by_element_id(self, library_with_profile_type):
+        """A type with only a material profile set renders via temporary extrusion."""
+        model, beam_type = library_with_profile_type
+        result = render(model, element_ids=[beam_type.id()])
+        assert result[:4] == PNG_MAGIC
+
+    def test_make_profile_occurrence_creates_occurrence(self, library_with_profile_type):
+        """_make_profile_occurrence returns an occurrence entity for a profile-set type."""
+        model, beam_type = library_with_profile_type
+        occ = _make_profile_occurrence(model, beam_type)
+        assert occ is not None
+
+    def test_make_profile_occurrence_no_profile_returns_none(self, library_with_type):
+        """_make_profile_occurrence returns None when type has no material profile set."""
+        model, wall_type = library_with_type
+        # wall_type has RepresentationMaps but no material profile set
+        occ = _make_profile_occurrence(model, wall_type)
+        assert occ is None
+
+    def test_original_model_unmodified_for_profile_type(self, library_with_profile_type):
+        """Rendering a profile-based type does not modify the original model."""
+        model, beam_type = library_with_profile_type
+        entity_count_before = len(list(model))
+        render(model, element_ids=[beam_type.id()])
+        assert len(list(model)) == entity_count_before
 
 
 class TestRenderNoGeometry:

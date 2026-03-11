@@ -231,6 +231,102 @@ def _make_type_occurrence(model: ifcopenshell.file, type_entity) -> object | Non
     return occurrence
 
 
+def _make_profile_occurrence(model: ifcopenshell.file, type_entity) -> object | None:
+    """Create a temporary occurrence for a type that has a material profile set.
+
+    Finds the first profile in the type's IfcMaterialProfileSet and creates a
+    1-metre IfcExtrudedAreaSolid body representation from it.  Returns the
+    occurrence, or ``None`` when no usable profile is found.
+
+    .. note::
+        Intended for use on a temporary model copy; caller discards it after
+        rendering.
+    """
+    # Locate the first profile from the type's material profile set.
+    profile = None
+    for rel in getattr(type_entity, "HasAssociations", []):
+        if not rel.is_a("IfcRelAssociatesMaterial"):
+            continue
+        mat = rel.RelatingMaterial
+        if mat.is_a("IfcMaterialProfileSetUsage"):
+            mat = mat.ForProfileSet
+        if mat.is_a("IfcMaterialProfileSet"):
+            mat_profiles = list(getattr(mat, "MaterialProfiles", None) or [])
+            if mat_profiles:
+                profile = getattr(mat_profiles[0], "Profile", None)
+        if profile is not None:
+            break
+    if profile is None:
+        return None
+
+    # Find a Body subcontext, or fall back to any Model context.
+    body_ctx = None
+    for ctx in model.by_type("IfcGeometricRepresentationSubContext"):
+        if ctx.ContextIdentifier == "Body":
+            body_ctx = ctx
+            break
+    if body_ctx is None:
+        for ctx in model.by_type("IfcGeometricRepresentationContext"):
+            if ctx.ContextType == "Model":
+                body_ctx = ctx
+                break
+    if body_ctx is None:
+        return None
+
+    # Extrude 1 metre along Z (profile lies in XY plane).
+    origin = model.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))
+    z_axis = model.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0))
+    x_axis = model.create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0))
+    position = model.create_entity(
+        "IfcAxis2Placement3D", Location=origin, Axis=z_axis, RefDirection=x_axis
+    )
+    extrude_dir = model.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0))
+    extrusion = model.create_entity(
+        "IfcExtrudedAreaSolid",
+        SweptArea=profile,
+        Position=position,
+        ExtrudedDirection=extrude_dir,
+        Depth=1.0,
+    )
+    shape_rep = model.create_entity(
+        "IfcShapeRepresentation",
+        ContextOfItems=body_ctx,
+        RepresentationIdentifier="Body",
+        RepresentationType="SweptSolid",
+        Items=[extrusion],
+    )
+    prod_def_shape = model.create_entity(
+        "IfcProductDefinitionShape",
+        Representations=[shape_rep],
+    )
+
+    # Identity placement.
+    pt = model.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0))
+    z_dir = model.create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0))
+    x_dir = model.create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0))
+    axis2 = model.create_entity("IfcAxis2Placement3D", Location=pt, Axis=z_dir, RefDirection=x_dir)
+    placement = model.create_entity("IfcLocalPlacement", RelativePlacement=axis2)
+
+    occ_class = _get_occurrence_class(type_entity)
+    try:
+        occurrence = model.create_entity(
+            occ_class,
+            GlobalId=ifcopenshell.guid.new(),
+            Name=f"_profile_preview_{type_entity.id()}",
+            ObjectPlacement=placement,
+            Representation=prod_def_shape,
+        )
+    except Exception:
+        occurrence = model.create_entity(
+            "IfcBuildingElementProxy",
+            GlobalId=ifcopenshell.guid.new(),
+            Name=f"_profile_preview_{type_entity.id()}",
+            ObjectPlacement=placement,
+            Representation=prod_def_shape,
+        )
+    return occurrence
+
+
 def _render_with_types(
     model: ifcopenshell.file,
     types: list,
@@ -256,12 +352,12 @@ def _render_with_types(
         type_id_to_occ_id: dict[int, int] = {}
         for t in types:
             tmp_type = tmp.by_id(t.id())
-            occ = _make_type_occurrence(tmp, tmp_type)
+            occ = _make_type_occurrence(tmp, tmp_type) or _make_profile_occurrence(tmp, tmp_type)
             if occ:
                 type_id_to_occ_id[t.id()] = occ.id()
 
         if not type_id_to_occ_id:
-            raise ValueError("Type entities have no RepresentationMaps to render")
+            raise ValueError("Type entities have no RepresentationMaps or material profile sets to render")
 
         include = [tmp.by_id(occ_id) for occ_id in type_id_to_occ_id.values()]
         if selector_elements:
