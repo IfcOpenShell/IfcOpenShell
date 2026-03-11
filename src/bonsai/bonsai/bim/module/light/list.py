@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import bpy
 import json
 import os
 from typing import TYPE_CHECKING
