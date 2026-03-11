@@ -1146,6 +1146,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         self.x = self.props.x
         self.y = self.props.y
         self.z = self.props.z
+        self.shift = event.shift
         return self.execute(context)
 
     def draw(self, context):
@@ -1304,7 +1305,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_C_F(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.mirror_geometry()
+        bpy.ops.bim.mirror_geometry(keep_original=getattr(self, "shift", False))
 
     def hotkey_S_G(self):
         obj = bpy.context.active_object
