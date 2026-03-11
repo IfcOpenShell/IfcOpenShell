@@ -619,12 +619,14 @@ class BIM_UL_links(UIList):
     ):
         row = layout.row(align=True)
         if item.is_loaded:
-            if item.georeferenced == "NONE":
-                row.label(text="", icon="QUESTION")
-            elif item.georeferenced == "NOT_COMPATIBLE":
-                row.label(text="", icon="ERROR")
-            elif item.georeferenced == "FULL_COMPATIBLE":
-                row.label(text="", icon="WORLD")
+            from bonsai.bim.module.project.prop import Link
+
+            s = Link.bl_rna
+            geo_prop = s.properties["georeferenced"]
+            assert isinstance(geo_prop, bpy.types.EnumProperty)
+            enum_item = geo_prop.enum_items[item.georeferenced]
+            op = row.operator("bim.show_description", text="", icon=enum_item.icon, emboss=False)
+            op.description = f"{geo_prop.description}\n{enum_item.name}: {enum_item.description}"
             if item.has_transformation:
                 row.label(text="", icon="OBJECT_ORIGIN")
 
