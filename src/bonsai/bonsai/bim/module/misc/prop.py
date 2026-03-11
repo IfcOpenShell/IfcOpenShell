@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Literal, cast, get_args
 
 import bpy
 from bpy.props import (
@@ -29,6 +29,8 @@ from bpy.props import (
     StringProperty,
 )
 from bpy.types import PropertyGroup
+
+from bonsai.bim.module.misc.data import QuickFavoritesData
 
 QuickFavoriteValueType = Literal["float_value", "bool_value", "int_value", "string_value"]
 
@@ -61,20 +63,46 @@ class QuickFavoriteProperty(PropertyGroup):
         is_active: bool
 
 
+def get_operator_suggestions(self: "QuickFavoritesItem", context: bpy.types.Context, edit_text: str) -> list[str]:
+    if not QuickFavoritesData.is_loaded:
+        QuickFavoritesData.load()
+    return QuickFavoritesData.data["operators"]
+
+
 class QuickFavoritesItem(PropertyGroup):
-    is_expanded: BoolProperty(name="Is Expanded", default=True)  # pyright: ignore[reportRedeclaration]
-    search: StringProperty(name="Search", default="")  # pyright: ignore[reportRedeclaration]
+    is_expanded: BoolProperty(name="Is Expanded", default=False)  # pyright: ignore[reportRedeclaration]
+    search: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Search",
+        default="",
+        search=get_operator_suggestions,
+        # Resetting `search_options`, allowing users only to use suggestions.
+        search_options=set(),
+    )
     properties: CollectionProperty(type=QuickFavoriteProperty)  # pyright: ignore[reportRedeclaration]
-    operator_id: StringProperty(name="Operator ID", default="")  # pyright: ignore[reportRedeclaration]
+    operator_id: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Operator ID",
+        default="",
+    )
     label: StringProperty(  # pyright: ignore[reportRedeclaration]
         name="Label",
         description="Label that will be used in Quick Favorites for this operator",
         default="",
     )
 
+    def get_searched_operator(self) -> bpy.types.Struct | None:
+        if not self.search:
+            return None
+        search_label = self.search
+        name = search_label.split(" - ", 1)[0]
+        module, func = name.split(".", 1)
+        op = getattr(getattr(bpy.ops, module), func)
+        rna = cast(bpy.types.Struct, op.get_rna_type())
+        return rna
+
     if TYPE_CHECKING:
         is_expanded: bool
         search: str
+        """Internal property set when confirming results of the search field"""
         properties: bpy.types.bpy_prop_collection_idprop[QuickFavoriteProperty]
         operator_id: str
         label: str

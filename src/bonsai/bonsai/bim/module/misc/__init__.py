@@ -25,7 +25,7 @@ classes = (
     operator.RemoveQuickFavoritesItem,
     operator.MoveQuickFavoritesItem,
     operator.AddQuickFavoritesItem,
-    operator.EnableQuickFavoriteSearch,
+    operator.ConfirmQuickFavoriteOperator,
     operator.DrawSystemArrows,
     operator.GetConnectedSystemElements,
     operator.IfcSverchokUseBonsaiFile,

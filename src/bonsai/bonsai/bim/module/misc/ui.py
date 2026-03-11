@@ -77,8 +77,8 @@ class BIM_PT_quick_favorites_manager(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.label(text="Quick Favorites:")
-        row.operator("bim.import_quick_favorites", text="", icon="BLENDER")
         row.operator("bim.add_quick_favorites_item", text="", icon="ADD")
+        row.operator("bim.import_quick_favorites", text="", icon="BLENDER")
         op = row.operator("bim.show_description", text="", icon="INFO")
         op.attr_name = "Quick Favorites Manager"
         op.description = (
@@ -115,13 +115,16 @@ class BIM_PT_quick_favorites_manager(bpy.types.Panel):
                 continue
             row = box.row(align=True)
             row.prop(fav, "search", text="")
-            row.operator("bim.enable_quick_favorite_search", text="", icon="VIEWZOOM").index = i
+            row.operator("bim.confirm_quick_favorite_operator", text="", icon="VIEWZOOM").index = i
             if not fav.operator_id:
                 continue
             layout.separator()
-            box.label(text="Properties:")
-            prop_box = box.box()
-            for item in fav.properties:
-                row = prop_box.row(align=True)
-                row.prop(item, item.value_prop, text=item.display_name)
-                row.prop(item, "is_active", text="", icon="RADIOBUT_ON" if item.is_active else "RADIOBUT_OFF")
+            if fav.properties:
+                box.label(text="Properties:")
+                prop_box = box.box()
+                for item in fav.properties:
+                    row = prop_box.row(align=True)
+                    row.prop(item, item.value_prop, text=item.display_name)
+                    row.prop(item, "is_active", text="", icon="RADIOBUT_ON" if item.is_active else "RADIOBUT_OFF")
+            else:
+                box.label(text="No Properties.")

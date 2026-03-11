@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING, Literal, assert_never, cast, get_args
+from typing import TYPE_CHECKING, Literal, assert_never, get_args
 
 import bpy
 import ifcopenshell.util.geolocation
@@ -355,9 +355,9 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         return matrix
 
 
-class EnableQuickFavoriteSearch(bpy.types.Operator):
-    bl_idname = "bim.enable_quick_favorite_search"
-    bl_label = "Enable Search"
+class ConfirmQuickFavoriteOperator(bpy.types.Operator):
+    bl_idname = "bim.confirm_quick_favorite_operator"
+    bl_label = "Confirm Operator"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
 
@@ -367,18 +367,13 @@ class EnableQuickFavoriteSearch(bpy.types.Operator):
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         props = tool.Misc.get_misc_props()
         fav = props.quick_favorites[self.index]
-        name = fav.search.strip()
+        rna = fav.get_searched_operator()
 
-        # TODO: don't use try / except.
-        try:
-            module, func = name.split(".", 1)
-            op = getattr(getattr(bpy.ops, module), func)
-            rna = cast(bpy.types.Struct, op.get_rna_type())
-        except (ValueError, AttributeError):
-            self.report({"ERROR"}, f"Operator '{name}' not found.")
+        if rna is None:
+            self.report({"INFO"}, "No operator entered for search.")
             return {"CANCELLED"}
 
-        fav.operator_id = name
+        fav.operator_id = tool.Blender.operator_idname_to_py(rna.identifier)
         fav.label = rna.name
         fav.properties.clear()
         has_skipped = False
@@ -429,7 +424,7 @@ class ImportQuickFavorites(bpy.types.Operator):
             fav = props.quick_favorites.add()
             fav.label = qf.ui_name
             fav.search = qf.op_idname_py
-            bpy.ops.bim.enable_quick_favorite_search(index=i)
+            bpy.ops.bim.confirm_quick_favorite_operator(index=i)
             fav.label = qf.ui_name or fav.label
 
             for prop in fav.properties:
