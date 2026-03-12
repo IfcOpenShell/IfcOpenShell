@@ -128,10 +128,6 @@ def _add_segment_to_curve(file: ifcopenshell.file, segment: entity_instance, cur
     elif segment.DesignParameters.is_a("IfcAlignmentCantSegment") and not curve.is_a("IfcSegmentedReferenceCurve"):
         raise TypeError(f"Expected to see IfcSegmentedReferenceCurve, instead received '{curve.is_a()}'.")
 
-    expected_type = "IfcCompositeCurve"
-    if not curve.is_a(expected_type):
-        raise TypeError(f"Expected to see {expected_type}, instead received {curve.is_a()}.")
-
     # map the IfcAlignmentSegment to an IfcCurveSegment (or two in the case of helmert curves)
     if segment.DesignParameters.is_a("IfcAlignmentHorizontalSegment"):
         mapped_segments = _map_alignment_horizontal_segment(file, segment)
