@@ -2142,6 +2142,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             if iterator.initialize():
                 while True:  # Main loop.
                     shape = iterator.get()
+                    assert isinstance(shape, W.TriangulationElement)
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
 
@@ -2372,18 +2373,23 @@ class HideQueriedLinkedElement(bpy.types.Operator):
     bl_label = "Hide Queried Linked Element"
     bl_description = (
         "Hide geometry for currently queried linked element.\n\n"
-        "ALT+Click (or ALT+H in Explore Tool) to unhide all geometry for currently selected linked model.\n"
-        "(Not Yet Implemented) SHIFT+Click to hide everything but currently queried element."
+        "SHIFT+Click (or SHIFT+H in Explore Tool) to hide everything "
+        "in the currently selected model, but the queried element.\n"
+        "ALT+Click (or ALT+H in Explore Tool) to unhide all geometry for currently selected linked model.\n\n"
+        "Known limitation: doesn't work with UNDO."
     )
     bl_options = {"REGISTER", "UNDO"}
 
     unhide_all: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    hide_all_except: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
 
     if TYPE_CHECKING:
         unhide_all: bool
+        hide_all_except: bool
 
     def invoke(self, context, event):
         self.unhide_all = event.alt
+        self.hide_all_except = event.shift
         return self.execute(context)
 
     def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
@@ -2391,6 +2397,9 @@ class HideQueriedLinkedElement(bpy.types.Operator):
 
         if self.unhide_all:
             return self.run_unhide_all()
+
+        if self.hide_all_except:
+            return self.run_hide_all_except()
 
         obj = props.queried_obj
         if not obj:
@@ -2411,6 +2420,21 @@ class HideQueriedLinkedElement(bpy.types.Operator):
             return {"FINISHED"}
         tool.Project.Link.unhide_all_elements(link)
         self.report({"INFO"}, "All linked model geometry is unhidden.")
+        return {"FINISHED"}
+
+    def run_hide_all_except(self) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Project.get_project_props()
+        obj = props.queried_obj
+        if not obj:
+            self.report({"INFO"}, "No object is queried.")
+            return {"FINISHED"}
+        link = props.active_link
+        if not link:
+            self.report({"INFO"}, "No linked model is currently selected.")
+            return {"FINISHED"}
+        guid = props.queried_guid
+        tool.Project.Link.hide_all_elements_except(link, obj, guid)
+        self.report({"INFO"}, "All other linked model geometry is now hidden.")
         return {"FINISHED"}
 
 
@@ -2698,10 +2722,7 @@ class CreateClippingPlane(bpy.types.Operator):
             self.report({"INFO"}, "Maximum of six clipping planes allowed.")
             return {"FINISHED"}
 
-        assert context.screen
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
 
         assert context.region and context.region_data
         region = context.region

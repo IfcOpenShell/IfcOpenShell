@@ -1253,8 +1253,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         else:
             obj.data.show_background_images = False
 
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert (space := tool.Blender.get_view3d_space())
+        space.region_3d.view_perspective = "CAMERA"
 
         if self.file:
             self.set_viewpoint_components(viewpoint, context)

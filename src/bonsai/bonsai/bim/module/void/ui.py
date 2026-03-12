@@ -29,6 +29,8 @@ from bonsai.bim.module.void.data import BooleansData, VoidsData
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
 
+    from bonsai.bim.module.void.prop import Boolean
+
 
 OPENING_ICON = "SELECT_SUBTRACT"
 FILLING_ICON = "SELECT_INTERSECT"
@@ -175,7 +177,9 @@ class BIM_PT_booleans(Panel):
 
 
 class BIM_UL_booleans(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: Boolean, icon, active_data, active_propname
+    ) -> None:
         if item:
             if item.operator == "DIFFERENCE":
                 icon = "SELECT_DIFFERENCE"

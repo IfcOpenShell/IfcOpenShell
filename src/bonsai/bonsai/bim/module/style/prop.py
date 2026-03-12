@@ -102,7 +102,10 @@ def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Contex
 
 
 def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
-    props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
+    if isinstance(self, Texture):
+        props = tool.Style.get_style_props()
+    else:
+        props = self
 
     if not props.update_graph:
         return

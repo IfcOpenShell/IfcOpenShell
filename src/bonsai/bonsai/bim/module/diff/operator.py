@@ -98,8 +98,8 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0.0, 1.0, 0.0, 1.0)
             elif global_id in diff["changed"]:
                 obj.color = (0.0, 0.0, 1.0, 1.0)
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
         return {"FINISHED"}
 
 

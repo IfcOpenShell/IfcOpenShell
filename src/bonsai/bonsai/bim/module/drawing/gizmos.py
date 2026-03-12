@@ -1243,9 +1243,7 @@ class SnapManager:
     @staticmethod
     def _redraw_viewport() -> None:
         """Force 3D viewport redraw."""
-        for area in bpy.context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports()
 
     def build_snap_cache(
         self, context: bpy.types.Context, active_obj: bpy.types.Object, include_active: bool = False

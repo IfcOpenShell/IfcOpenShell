@@ -31,7 +31,7 @@ import bonsai.tool as tool
 
 def update_sverchok_modifier(context):
     obj = context.active_object
-    props = obj.BIMSverchokProperties
+    props = tool.Model.get_sverchok_props(obj)
     element = tool.Ifc.get_entity(obj)
     psets = ifcopenshell.util.element.get_psets(element)
     pset = psets.get("BBIM_Sverchok", None)
@@ -72,7 +72,7 @@ class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         import sverchok
 
         obj = context.active_object
-        props = obj.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(obj)
 
         node_group = bpy.data.node_groups.new("IfcNodeTree", type="SverchCustomTreeType")
         plane = node_group.nodes.new(type="SvPlaneNodeMk3")
@@ -96,7 +96,7 @@ class DeleteSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(obj)
         bpy.data.node_groups.remove(props.node_group)
         return {"FINISHED"}
 
@@ -113,7 +113,8 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
 
     def invoke(self, context, event):
-        if not context.active_object.BIMSverchokProperties.node_group:
+        props = tool.Model.get_sverchok_props(context.active_object)
+        if not props.node_group:
             return context.window_manager.invoke_props_dialog(self)
         return self._execute(context)
 
@@ -124,7 +125,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(obj)
         node_group = props.node_group
 
         if node_group:
@@ -196,7 +197,7 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         importer = sverchok.utils.sv_json_import.JSONImporter.init_from_path(self.filepath)
         obj = context.active_object
-        props = obj.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(obj)
 
         node_group = context.scene.io_panel_properties.import_tree
         if not node_group:
@@ -234,7 +235,7 @@ class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
         import sverchok
 
         obj = context.active_object
-        props = obj.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(obj)
         ng = props.node_group
         destination_path = self.filepath
         if not destination_path.lower().endswith(".json"):
@@ -273,7 +274,8 @@ class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
         return {"FINISHED"}
 
     def draw(self, context):
-        graph_name = context.active_object.BIMSverchokProperties.node_group.name
+        props = tool.Model.get_sverchok_props(context.active_object)
+        graph_name = props.node_group.name
         self.layout.label(text=f'Save node tree "{graph_name}" into json:')
 
         col = self.layout.column(heading="Options")  # new syntax in >= 2.90

@@ -512,7 +512,7 @@ class SetContainerVisibility(bpy.types.Operator):
                 containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
             for container in containers:
                 if obj := tool.Ifc.get_object(container):
-                    if collection := obj.BIMObjectProperties.collection:
+                    if collection := tool.Blender.get_object_bim_props(obj).collection:
                         collection.hide_viewport = True
             should_hide = False
         else:
@@ -523,7 +523,7 @@ class SetContainerVisibility(bpy.types.Operator):
         while queue:
             container = queue.pop()
             if obj := tool.Ifc.get_object(container):
-                if collection := obj.BIMObjectProperties.collection:
+                if collection := tool.Blender.get_object_bim_props(obj).collection:
                     collection.hide_viewport = should_hide
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))

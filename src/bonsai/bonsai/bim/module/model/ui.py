@@ -360,7 +360,7 @@ class BIM_PT_sverchok(bpy.types.Panel):
             self.layout.label(text="Requires Sverchok Add-on", icon="ERROR")
             return
 
-        props = context.active_object.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(context.active_object)
         self.layout.prop_search(props, "node_group", bpy.data, "node_groups")
         self.layout.operator("bim.create_new_sverchok_graph", icon="ADD")
 
