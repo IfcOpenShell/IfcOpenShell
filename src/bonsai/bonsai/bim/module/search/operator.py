@@ -1264,15 +1264,17 @@ class SelectGlobalId(Operator):
 
 
 class SelectIfcClass(Operator):
-    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type"""
+    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type\nALT + Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
     should_filter_predefined_type: BoolProperty(default=False)
+    should_unhide: BoolProperty(default=False)
 
     def invoke(self, context, event):
         self.should_filter_predefined_type = event.shift
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
@@ -1292,6 +1294,9 @@ class SelectIfcClass(Operator):
                 ):
                     continue
                 if obj := tool.Ifc.get_object(element):
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
                     tool.Blender.select_object(obj)
 
             # copy selection query to clipboard
