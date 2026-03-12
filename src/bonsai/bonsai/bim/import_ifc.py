@@ -747,6 +747,7 @@ class IfcImporter:
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
                 product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)

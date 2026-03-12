@@ -255,7 +255,7 @@ class BIM_PT_project(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
 
-    def draw_editing_buttons(self, context, row):
+    def draw_editing_buttons(self, context: object, row: bpy.types.UILayout) -> None:
         pprops = self.props
         if tool.Ifc.get():
             if pprops.is_editing:

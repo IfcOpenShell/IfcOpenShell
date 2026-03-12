@@ -1032,7 +1032,6 @@ class BIM_PT_tabs(Panel):
         if not UIData.is_loaded:
             UIData.load()
         aprops = tool.Blender.get_active_area_props(context)
-        addon_prefs = tool.Blender.get_addon_preferences()
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -1119,7 +1118,9 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
+    def draw_tab_entry(
+        self, row: bpy.types.UILayout, icon: int | str, tab_name: str, enabled: bool = True, highlight: bool = True
+    ) -> None:
         tab_entry = row.row(align=True)
         if isinstance(icon, int):
             tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon_value=icon).tab = tab_name

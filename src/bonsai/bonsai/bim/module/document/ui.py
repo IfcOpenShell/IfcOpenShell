@@ -16,9 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import bpy
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.document.prop import Document, DocumentObject
+
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
@@ -207,7 +216,9 @@ class BIM_PT_object_documents(Panel):
 
 
 class BIM_UL_documents(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: Document, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             indent_depth = 0
@@ -252,7 +263,9 @@ class BIM_UL_documents(UIList):
 
 
 class BIM_UL_document_objects(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: DocumentObject, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False, icon="OBJECT_DATA")

@@ -2142,6 +2142,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             if iterator.initialize():
                 while True:  # Main loop.
                     shape = iterator.get()
+                    assert isinstance(shape, W.TriangulationElement)
                     results.add(self.file.by_id(shape.id))
                     geometry = shape.geometry
 
