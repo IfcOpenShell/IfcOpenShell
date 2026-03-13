@@ -223,19 +223,8 @@ endif
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
-	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
-	cd build && unzip ifc2json.zip && rm ifc2json.zip
-	# IFCJSON doesn't have pyproject.toml, so we use python command.
-	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
-		$(PYTHON) -c "from setuptools import setup; \
-		setup( \
-			name='ifcjson', \
-			version='0.0.1', \
-			author='Jan Brouwer', \
-			author_email='jan@brewsky.nl', \
-			packages=['ifcjson'], \
-		)" bdist_wheel
-	cp -r build/IFC2JSON_python-*/file_converters/dist/*.whl build/wheels/
+	# TODO: Use official repo, once https://github.com/IFCJSON-Team/IFC2JSON_python/pull/8 is merged.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml" --no-deps -w wheels/
 
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
