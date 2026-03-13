@@ -98,7 +98,7 @@ def offset_walls(ifc: type[tool.Ifc], blender: type[tool.Blender], model: type[t
     ]
     for obj in objs:
         model.offset_wall(obj, offset_type)
-    model.recalculate_walls(objs)
+    model.recalculate_layer2_elements(objs)
 
 
 def align_walls(

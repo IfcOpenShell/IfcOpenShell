@@ -945,7 +945,7 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
         DumbProfileRecalculator().recalculate(profile_objs)
-        tool.Model.recalculate_walls(layer2_objs)
+        tool.Model.recalculate_layer2_elements(layer2_objs)
         return {"FINISHED"}
 
 

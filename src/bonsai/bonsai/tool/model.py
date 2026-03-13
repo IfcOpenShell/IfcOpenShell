@@ -2709,41 +2709,41 @@ class Model(bonsai.core.tool.Model):
         tool.Geometry.record_object_position(obj)
 
     @classmethod
-    def recalculate_walls(cls, walls: list[bpy.types.Object]) -> None:
+    def recalculate_layer2_elements(cls, objs: list[bpy.types.Object]) -> None:
         queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
-        for wall in walls:
-            element = tool.Ifc.get_entity(wall)
-            if tool.Ifc.is_moved(wall):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall)
-            queue.add((element, wall))
+        for obj in objs:
+            element = tool.Ifc.get_entity(obj)
+            if tool.Ifc.is_moved(obj):
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            queue.add((element, obj))
             for rel in getattr(element, "ConnectedTo", []):
-                obj = tool.Ifc.get_object(rel.RelatedElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatedElement, obj))
+                connected_obj = tool.Ifc.get_object(rel.RelatedElement)
+                if tool.Ifc.is_moved(connected_obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=connected_obj)
+                queue.add((rel.RelatedElement, connected_obj))
             for rel in getattr(element, "ConnectedFrom", []):
-                obj = tool.Ifc.get_object(rel.RelatingElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatingElement, obj))
-        for element, wall in queue:
-            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
+                connected_obj = tool.Ifc.get_object(rel.RelatingElement)
+                if tool.Ifc.is_moved(connected_obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=connected_obj)
+                queue.add((rel.RelatingElement, connected_obj))
+        for element, obj in queue:
+            if tool.Model.get_usage_type(element) == "LAYER2" and obj:
                 # Use layer custom offset
-                custom_offset = tool.Model.get_material_layer_custom_offset(element, wall)
+                custom_offset = tool.Model.get_material_layer_custom_offset(element, obj)
                 material = ifcopenshell.util.element.get_material(element)
                 if material.is_a("IfcMaterialLayerSetUsage") and custom_offset is not None:
                     material.OffsetFromReferenceLine = custom_offset
 
-                cls.recreate_wall(element, wall)
+                cls.recreate_wall(element, obj)
 
     @classmethod
-    def regenerate_slab(cls, obj: bpy.types.Object) -> None:
-        from bonsai.bim.module.model.slab import DumbSlabPlaner
+    def regenerate_layer3_element(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.slab import Layer3Planer
 
         element = tool.Ifc.get_entity(obj)
         material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
-        DumbSlabPlaner().change_thickness(element, new_thickness)
+        Layer3Planer().change_thickness(element, new_thickness)
 
     @classmethod
     def regenerate_profile(cls, obj: bpy.types.Object) -> None:

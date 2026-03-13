@@ -1063,12 +1063,16 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+        # Always compute unit_scale fresh — cls.unit_scale may be stale (e.g. during live
+        # geometry updates that don't go through the full import pipeline).
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
         if not (material := ifcopenshell.util.element.get_material(element)):
             return mesh
         elif material.is_a("IfcMaterialLayerSetUsage"):
             usage = material
             layer_set = material.ForLayerSet
-            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            offset = usage.OffsetFromReferenceLine * unit_scale
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
         elif material.is_a("IfcMaterialLayerSet"):
             usage = None
@@ -1082,6 +1086,7 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
+        depth_scale = 1.0
         if not usage:
             sense_factor = 1  # Assume the extrusion vector points in the direction sense
             no = cls.get_extrusion_vector(element).normalized()
@@ -1091,9 +1096,43 @@ class Loader(bonsai.core.tool.Loader):
             no = cls.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
         elif usage.LayerSetDirection == "AXIS3":
-            co = Vector((0.0, 0.0, offset))
-            no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
+            co = Vector((0.0, 0.0, offset))
+            # Bisect planes are always horizontal (world Z) for AXIS3.
+            # The mesh local Z span should equal total_perp_thickness × unit_scale:
+            #   extrusion.Depth × extrusion_vec.z = total_perp_thickness
+            # If the IFC data is inconsistent (e.g. from old Bonsai code that incorrectly
+            # scaled extrusion.Depth for ObjectPlacement-rotated slabs), we self-heal:
+            # scale the mesh vertices to the correct Z span and fix the stored depth so
+            # future imports load correctly without this correction.
+            extrusion_vec = cls.get_extrusion_vector(element).normalized()
+            ifc_extrusion_depth = None
+            if body_rep := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW"):
+                for item in ifcopenshell.util.representation.resolve_representation(body_rep).Items:
+                    while item.is_a("IfcBooleanResult"):
+                        item = item.FirstOperand
+                    if item.is_a("IfcExtrudedAreaSolid"):
+                        ifc_extrusion_depth = item.Depth
+                        break
+            total_perp_thickness = sum(l.LayerThickness for l in layer_set.MaterialLayers)
+            if ifc_extrusion_depth and total_perp_thickness:
+                depth_scale = abs(extrusion_vec.z) * (ifc_extrusion_depth / total_perp_thickness)
+            if abs(depth_scale - 1.0) > 1e-6 and ifc_extrusion_depth and body_rep:
+                # Z_span / depth_scale == total_perp_thickness × unit_scale for any
+                # extrusion direction, so scaling from the mesh bottom is always correct.
+                min_z = min(v.co.z for v in bm.verts)
+                for v in bm.verts:
+                    v.co.z = min_z + (v.co.z - min_z) / depth_scale
+                # Fix the IFC data so future imports don't require this correction.
+                extrusion_vec_z = abs(extrusion_vec.z)
+                correct_depth = total_perp_thickness / extrusion_vec_z if extrusion_vec_z > 1e-6 else total_perp_thickness
+                for item in ifcopenshell.util.representation.resolve_representation(body_rep).Items:
+                    while item.is_a("IfcBooleanResult"):
+                        item = item.FirstOperand
+                    if item.is_a("IfcExtrudedAreaSolid"):
+                        item.Depth = correct_depth
+                        break
+                depth_scale = 1.0
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
@@ -1110,7 +1149,7 @@ class Loader(bonsai.core.tool.Loader):
         for i, layer in enumerate(layer_set.MaterialLayers):
             if i != last_i:
                 prev_co = co.copy()
-                co += no * layer.LayerThickness * cls.unit_scale
+                co += no * layer.LayerThickness * depth_scale * unit_scale
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )
@@ -1124,14 +1163,17 @@ class Loader(bonsai.core.tool.Loader):
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) >= 0:
+                        dot = (center - co).dot(no)
+                        if dot >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
             else:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
+                        dot_co = (center - co).dot(no)
+                        dot_prev = (center - prev_co).dot(no)
+                        if dot_co < 0 and dot_prev >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
 

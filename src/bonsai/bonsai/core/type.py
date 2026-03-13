@@ -41,9 +41,9 @@ def assign_type(
     if (usage := model.get_usage_type(type)) == "PROFILE":
         model.regenerate_profile(obj)
     elif usage == "LAYER2":
-        model.recalculate_walls([obj])
+        model.recalculate_layer2_elements([obj])
     elif usage == "LAYER3":
-        model.regenerate_slab(obj)
+        model.regenerate_layer3_element(obj)
     else:
         type_data = type_tool.get_object_data(ifc.get_object(type))
         if type_data:
