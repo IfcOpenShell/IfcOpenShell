@@ -35,7 +35,6 @@ IN_PACKAGE = __package__ == "bonsai"
 import platform
 import re
 import traceback
-import uuid
 import webbrowser
 from collections import deque
 from collections.abc import Generator
@@ -176,33 +175,10 @@ def get_binaries(path: Path) -> Generator[Path, None, None]:
     yield from path.glob("**/*.so")
 
 
-def safe_link_dlls() -> None:
-    # Blender 4.2+ has a problem on Windows for disabling/enabling/reinstalling extensions
-    # with loaded binary dependencies (on Windows you can't remove a binary if it's loaded by some program).
-    # To avoid this issue we temporary hard link dlls to our temp directory on unregister()
-    # (unregister is executed before Blender will try to uninstall dependencies and the issue will arise).
-    # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
-    # On register() we clean up our temp directory with binaries.
-    #
-    # TODO: If user uninstalls Bonsai to never use it again, temporary directory won't be cleared.
-    #
-    # See: https://projects.blender.org/blender/blender/issues/125049
-    import bpy
-
-    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
-    local_path = ext_path / ".local"
-
-    # We use random hash subfolder as user may try to enable/disable addon multiple times.
-    random_hash = uuid.uuid4().hex[:8]
-    temp_local = ext_path / ".local_temp" / random_hash
-    temp_local.mkdir(parents=True)
-
-    for filepath in get_binaries(local_path):
-        dest_path = temp_local / filepath.relative_to(local_path)
-        dest_path.parent.mkdir(exist_ok=True, parents=True)
-        os.link(filepath, dest_path)
-
-
+# TODO: remove before 0.8.6 release.
+# On Windows issues with removing extensions were resolved in Blender 4.3,
+# but we removed our workaround that was producing some junk only in 0.8.5 release.
+# So we're temporarily keeping the part that's cleaning up outputs from previous releases.
 def clean_up_dlls_safe_links() -> None:
     import bpy
 
@@ -325,9 +301,6 @@ if IN_BLENDER:
             purge_cache()
 
         def unregister():
-            if platform.system() == "Windows":
-                safe_link_dlls()
-
             import bonsai.bim
 
             bonsai.bim.unregister()
