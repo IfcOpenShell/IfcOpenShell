@@ -540,33 +540,87 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
 
-        if representation_template in (
-            "EMPTY",
-            "LAYERSET_AXIS2",
-            "LAYERSET_AXIS3",
-            "PROFILESET",
-        ) or representation_template.startswith("FLOW_SEGMENT_"):
-            mesh = None
-        elif representation_template == "OBJ" and not props.representation_obj:
-            mesh = None
+        alignment_templates = {
+            "ALIGNMENT_HORIZONTAL",
+            "ALIGNMENT_GRADIENT",
+            "ALIGNMENT_CANT",
+            "ALIGNMENT_POLYLINE_3D",
+            "ALIGNMENT_POLYLINE_2D",
+        }
+
+        if representation_template in alignment_templates:
+            import ifcopenshell.api.alignment as align_api
+            from ifcopenshell.api.alignment._create_polyline_representation import (
+                _create_polyline_representation,
+            )
+
+            ifc_file = tool.Ifc.get()
+            alignment_name = props.name or "Unnamed"
+
+            if representation_template == "ALIGNMENT_HORIZONTAL":
+                element = align_api.create(ifc_file, alignment_name, include_vertical=False, include_cant=False)
+            elif representation_template == "ALIGNMENT_GRADIENT":
+                element = align_api.create(ifc_file, alignment_name, include_vertical=True, include_cant=False)
+            elif representation_template == "ALIGNMENT_CANT":
+                element = align_api.create(ifc_file, alignment_name, include_vertical=True, include_cant=True)
+            elif representation_template == "ALIGNMENT_POLYLINE_3D":
+                element = ifc_file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name=alignment_name)
+                pts = [
+                    ifc_file.createIfcCartesianPoint(Coordinates=(0.0, 0.0, 0.0)),
+                    ifc_file.createIfcCartesianPoint(Coordinates=(1.0, 0.0, 0.0)),
+                ]
+                _create_polyline_representation(ifc_file, element, pts)
+                project = ifc_file.by_type("IfcProject")
+                if project:
+                    ifcopenshell.api.aggregate.assign_object(ifc_file, products=[element], relating_object=project[0])
+            elif representation_template == "ALIGNMENT_POLYLINE_2D":
+                element = ifc_file.createIfcAlignment(GlobalId=ifcopenshell.guid.new(), Name=alignment_name)
+                pts = [
+                    ifc_file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
+                    ifc_file.createIfcCartesianPoint(Coordinates=(1.0, 0.0)),
+                ]
+                _create_polyline_representation(ifc_file, element, pts)
+                project = ifc_file.by_type("IfcProject")
+                if project:
+                    ifcopenshell.api.aggregate.assign_object(ifc_file, products=[element], relating_object=project[0])
+
+            element.Description = props.description or None
+            obj = bpy.data.objects.new(props.ifc_class[3:], None)
+            obj.name = alignment_name
+            obj.location = bpy.context.scene.cursor.location
+            tool.Root.set_object_name(obj, element)
+            tool.Ifc.link(element, obj)
+            tool.Collector.assign(obj)
         else:
-            mesh = bpy.data.meshes.new("Mesh")
+            if representation_template in (
+                "EMPTY",
+                "LAYERSET_AXIS2",
+                "LAYERSET_AXIS3",
+                "PROFILESET",
+            ) or representation_template.startswith("FLOW_SEGMENT_"):
+                mesh = None
+            elif representation_template == "OBJ" and not props.representation_obj:
+                mesh = None
+            else:
+                mesh = bpy.data.meshes.new("Mesh")
 
-        obj = bpy.data.objects.new(props.ifc_class[3:], mesh)
-        obj.name = props.name or "Unnamed"
-        obj.location = bpy.context.scene.cursor.location
-        element = core.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class=props.ifc_class,
-            predefined_type=predefined_type,
-            should_add_representation=False,
-        )
-        element.Description = props.description or None
+            obj = bpy.data.objects.new(props.ifc_class[3:], mesh)
+            obj.name = props.name or "Unnamed"
+            obj.location = bpy.context.scene.cursor.location
+            element = core.assign_class(
+                tool.Ifc,
+                tool.Collector,
+                tool.Root,
+                obj=obj,
+                ifc_class=props.ifc_class,
+                predefined_type=predefined_type,
+                should_add_representation=False,
+            )
+            element.Description = props.description or None
 
-        if representation_template == "EMTPY" or not ifc_context:
+        if representation_template == "EMPTY" or representation_template in alignment_templates:
+            pass
+        elif not ifc_context:
             pass
         elif representation_template == "OBJ" and props.representation_obj:
             obj.matrix_world = props.representation_obj.matrix_world.copy()
@@ -829,10 +883,23 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if props.ifc_class == "IfcAlignment":
                 ifcopenshell.api.aggregate.assign_object(tool.Ifc.get(), products=[element], relating_object=alignment)
             elif props.ifc_class in ("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"):
-                ifcopenshell.api.nest.assign_object(tool.Ifc.get(), related_objects=[element], relating_object=alignment)
+                ifcopenshell.api.nest.assign_object(
+                    tool.Ifc.get(), related_objects=[element], relating_object=alignment
+                )
 
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         tool.Blender.set_active_object(obj)
+
+        # After alignment creation, auto-invoke PI picker for layout-based templates
+        if (
+            props.ifc_class == "IfcAlignment"
+            and representation_template.startswith("ALIGNMENT_")
+            and representation_template not in ("ALIGNMENT_POLYLINE_2D", "ALIGNMENT_POLYLINE_3D")
+        ):
+            civil_props = context.scene.CivilAlignmentProperties
+            civil_props.active_alignment_id = element.id()
+            civil_props.active_alignment_name = element.Name or "Unnamed"
+            bpy.ops.civil.pick_pi_from_viewport("INVOKE_DEFAULT")
 
     def draw(self, context):
         props = tool.Root.get_root_props()
@@ -862,5 +929,12 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif props.representation_template == "PROFILESET":
             row = self.layout.row()
             prop_with_search(self.layout, props, "profile", text="Profile", should_click_ok=True)
-        if props.representation_template != "EMPTY":
+        alignment_templates = {
+            "ALIGNMENT_HORIZONTAL",
+            "ALIGNMENT_GRADIENT",
+            "ALIGNMENT_CANT",
+            "ALIGNMENT_POLYLINE_3D",
+            "ALIGNMENT_POLYLINE_2D",
+        }
+        if props.representation_template != "EMPTY" and props.representation_template not in alignment_templates:
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)

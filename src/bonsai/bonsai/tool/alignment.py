@@ -572,6 +572,8 @@ class Alignment:
                 obj = bpy.data.objects.new(tool.Loader.get_name(curve_segment), mesh)
                 tool.Ifc.link(curve_segment, obj)
                 tool.Collector.assign(obj)
+                if parent_obj:
+                    obj.parent = parent_obj
         return obj
 
     @classmethod

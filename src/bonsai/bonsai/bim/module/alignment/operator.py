@@ -583,6 +583,10 @@ class CIVIL_OT_pick_pi_from_viewport(bpy.types.Operator, PolylineOperator, tool.
         recalculate_pi_geometry(props)
         rebuild_display_rows(props)
 
+        # If invoked from alignment creation flow, auto-create IFC segments
+        if props.active_alignment_id != 0 and len(props.pis) >= 2:
+            bpy.ops.civil.create_alignment_by_pi()
+
 
 class CIVIL_OT_recalculate_pis(Operator, tool.Ifc.Operator):
     """Recalculate PI geometry and update IFC/visualization"""
@@ -738,7 +742,8 @@ class CIVIL_OT_create_alignment_by_pi(Operator, tool.Ifc.Operator):
         segments = ifcopenshell.api.alignment.get_layout_segments(h_layout)
         has_real_segments = bool([s for s in segments if not tool.Alignment.is_zero_length_segment(s)])
 
-        ifcopenshell.api.alignment._create_geometric_representation(tool.Ifc.get(), existing_alignment)
+        if not ifcopenshell.api.alignment.get_curve(existing_alignment):
+            ifcopenshell.api.alignment._create_geometric_representation(tool.Ifc.get(), existing_alignment)
 
         if not has_real_segments:
             # Use existing alignment - add segments to it

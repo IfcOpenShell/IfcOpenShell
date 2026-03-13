@@ -138,7 +138,40 @@ class IfcClassData:
             ("EMPTY", "No Geometry", "Start with an empty object"),
         ]
 
+        if ifc_class in ("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"):
+            return templates  # layout containers have no direct representation per IFC 4.3 spec
+
         if ifc_class == "IfcAlignment":
+            templates.extend(
+                [
+                    None,
+                    (
+                        "ALIGNMENT_HORIZONTAL",
+                        "Horizontal Alignment (2D)",
+                        "2D horizontal-only alignment (IfcCompositeCurve)",
+                    ),
+                    (
+                        "ALIGNMENT_GRADIENT",
+                        "Gradient Curve (3D)",
+                        "3D alignment with horizontal and vertical layouts (IfcGradientCurve)",
+                    ),
+                    (
+                        "ALIGNMENT_CANT",
+                        "Segmented Reference Curve",
+                        "3D alignment with horizontal, vertical, and cant layouts (IfcSegmentedReferenceCurve)",
+                    ),
+                    (
+                        "ALIGNMENT_POLYLINE_3D",
+                        "3D Survey Polyline",
+                        "3D alignment from survey data (IfcPolyline with 3D points)",
+                    ),
+                    (
+                        "ALIGNMENT_POLYLINE_2D",
+                        "2D Planning Polyline",
+                        "2D alignment for early planning phases (IfcPolyline with 2D points)",
+                    ),
+                ]
+            )
             return templates
         elif ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
             templates.extend([None, ("WINDOW", "Window", "Parametric window")])
