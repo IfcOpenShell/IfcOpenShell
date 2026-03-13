@@ -883,13 +883,19 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if props.ifc_class == "IfcAlignment":
                 ifcopenshell.api.aggregate.assign_object(tool.Ifc.get(), products=[element], relating_object=alignment)
             elif props.ifc_class in ("IfcAlignmentHorizontal", "IfcAlignmentVertical", "IfcAlignmentCant"):
-                ifcopenshell.api.nest.assign_object(tool.Ifc.get(), related_objects=[element], relating_object=alignment)
+                ifcopenshell.api.nest.assign_object(
+                    tool.Ifc.get(), related_objects=[element], relating_object=alignment
+                )
 
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         tool.Blender.set_active_object(obj)
 
         # After alignment creation, auto-invoke PI picker for layout-based templates
-        if props.ifc_class == "IfcAlignment" and representation_template.startswith("ALIGNMENT_") and representation_template not in ("ALIGNMENT_POLYLINE_2D", "ALIGNMENT_POLYLINE_3D"):
+        if (
+            props.ifc_class == "IfcAlignment"
+            and representation_template.startswith("ALIGNMENT_")
+            and representation_template not in ("ALIGNMENT_POLYLINE_2D", "ALIGNMENT_POLYLINE_3D")
+        ):
             civil_props = context.scene.CivilAlignmentProperties
             civil_props.active_alignment_id = element.id()
             civil_props.active_alignment_name = element.Name or "Unnamed"
