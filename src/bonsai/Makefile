@@ -232,16 +232,8 @@ endif
 	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
-	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
-	cd build && unzip master.zip && rm master.zip
-	cd build && . env/$(VENV_ACTIVATE) && cd bpypolyskel-master && \
-		$(PYTHON) -c "from setuptools import setup; \
-		setup( \
-			name='bpypolyskel', \
-			version='0.0.0', \
-			packages=['bpypolyskel'], \
-		)" bdist_wheel
-	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
+	# TODO: Use official repo once https://github.com/prochitecture/bpypolyskel/pull/22 is merged.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/Andrej730/bpypolyskel.git@pyproject_toml" --no-deps -w wheels/
 
 	# folder for executable files
 	mkdir -p build/bonsai/libs/bin
