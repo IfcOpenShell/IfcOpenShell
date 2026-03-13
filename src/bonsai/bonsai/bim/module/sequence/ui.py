@@ -810,11 +810,10 @@ class BIM_UL_task_columns(UIList):
         active_data,
         active_propname,
     ):
-        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            if props.sort_column == item.name:
+            if data.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 

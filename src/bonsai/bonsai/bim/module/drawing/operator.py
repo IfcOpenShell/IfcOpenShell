@@ -42,6 +42,7 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
+import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
 import ifcopenshell.geom

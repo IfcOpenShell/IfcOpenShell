@@ -43,7 +43,7 @@ import ifcopenshell.util.shape_builder
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 import bonsai.bim.schema
 import bonsai.core.aggregate

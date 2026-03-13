@@ -123,10 +123,11 @@ class Nest(bonsai.core.tool.Nest):
         return {"FINISHED"}
 
     @classmethod
-    def disable_nest_mode(cls):
+    def disable_nest_mode(cls) -> None:
         props = cls.get_nest_props()
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
+            assert obj and obj.original
             obj.original.display_type = obj_prop.previous_display_type
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -134,7 +135,7 @@ class Nest(bonsai.core.tool.Nest):
 
         components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(props.editing_nest))
         objs = [tool.Ifc.get_object(component) for component in components]
-        if context.space_data.local_view:
+        if bpy.context.space_data.local_view:
             bpy.ops.view3d.localview()
 
         props.in_nest_mode = False

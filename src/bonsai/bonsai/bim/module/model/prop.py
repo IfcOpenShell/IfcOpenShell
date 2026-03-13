@@ -733,6 +733,9 @@ class BIMStairProperties(PropertyGroup):
 class BIMSverchokProperties(PropertyGroup):
     node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)
 
+    if TYPE_CHECKING:
+        node_group: bpy.types.NodeTree | None
+
 
 def window_type_prop_update(self, context):
     number_of_panels, panels_data = self.window_types_panels[self.window_type]

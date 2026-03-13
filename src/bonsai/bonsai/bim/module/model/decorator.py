@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import math
-from math import cos, radians, sin, tan
+from math import cos, pi, radians, sin, tan
 from typing import Any, Literal
 
 import blf
@@ -27,6 +27,10 @@ import bmesh
 import bpy
 import gpu
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import mathutils
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -35,6 +39,7 @@ from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from mathutils import Matrix, Quaternion, Vector
 
+import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 
@@ -1566,7 +1571,7 @@ class ProductDecorator:
                     obj_type,
                     representation,
                 )
-                context.view_layer.update()
+                bpy.context.view_layer.update()
                 break
 
         translate_mouse = Matrix.Translation(mouse_point)

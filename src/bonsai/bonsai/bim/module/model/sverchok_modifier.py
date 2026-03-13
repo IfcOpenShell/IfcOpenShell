@@ -69,7 +69,7 @@ class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        import sverchok
+        import sverchok.ui.sv_temporal_viewers
 
         obj = context.active_object
         props = tool.Model.get_sverchok_props(obj)
@@ -193,7 +193,7 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     filename_ext = ".json"
 
     def _execute(self, context):
-        import sverchok
+        import sverchok.utils.sv_json_import
 
         importer = sverchok.utils.sv_json_import.JSONImporter.init_from_path(self.filepath)
         obj = context.active_object
@@ -232,7 +232,7 @@ class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
     compress: bpy.props.BoolProperty()
 
     def _execute(self, context):
-        import sverchok
+        import sverchok.utils.sv_json_export
 
         obj = context.active_object
         props = tool.Model.get_sverchok_props(obj)

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import ifcopenshell
 
 if TYPE_CHECKING:
-    import bpy
+    import bpy  # pyright: ignore[reportMissingImports]
 
 
 def add_surface_textures(

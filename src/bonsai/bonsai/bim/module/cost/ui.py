@@ -663,10 +663,17 @@ class BIM_UL_cost_items_trait:
         split2.label(text="Rate")
 
     def draw_item(
-        self, context, layout: bpy.types.UILayout, data, item: CostProp.CostItem, icon, active_data, active_propname
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMCostProperties,
+        item: CostProp.CostItem,
+        icon,
+        active_data,
+        active_propname,
     ) -> None:
         if item:
-            self.props = tool.Cost.get_cost_props()
+            self.props = data
             cost_item = CostSchedulesData.data["cost_items"][item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -812,10 +819,16 @@ class BIM_UL_cost_columns(UIList):
 
 class BIM_UL_cost_item_types(UIList):
     def draw_item(
-        self, context, layout: bpy.types.UILayout, data, item: CostProp.CostItemType, icon, active_data, active_propname
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMCostProperties,
+        item: CostProp.CostItemType,
+        icon,
+        active_data,
+        active_propname,
     ) -> None:
-        props = tool.Cost.get_cost_props()
-        cost_item = props.cost_items[props.active_cost_item_index]
+        cost_item = data.cost_items[data.active_cost_item_index]
 
         if item:
             row = layout.row(align=True)

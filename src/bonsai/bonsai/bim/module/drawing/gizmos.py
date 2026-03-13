@@ -151,7 +151,7 @@ from bpy_extras.view3d_utils import (
 )
 from gpu_extras.batch import batch_for_shader
 from ifcopenshell.util.unit import si_conversions
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, geometry
 from mathutils.geometry import intersect_line_line
 from mathutils.kdtree import KDTree
 
