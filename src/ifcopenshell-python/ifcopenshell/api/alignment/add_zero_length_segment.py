@@ -123,8 +123,7 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
         if layout.is_a("IfcSegmentedReferenceCurve"):
             ifcopenshell.api.alignment.add_zero_length_segment(file, layout.BaseCurve)
         elif layout.is_a("IfcGradientCurve"):
-            if layout.BaseCurve is not None:
-                ifcopenshell.api.alignment.add_zero_length_segment(file, layout.BaseCurve)
+            ifcopenshell.api.alignment.add_zero_length_segment(file, layout.BaseCurve)
 
     else:
         zero_length_curve_segment = None

@@ -52,6 +52,5 @@ def create_representation(
     for layout in layouts:
         curve = ifcopenshell.api.alignment.get_layout_curve(layout)
         layout_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
-        if layout_nest:  # None when no segments exist yet (by design of get_alignment_segment_nest)
-            for segment in layout_nest.RelatedObjects:
-                _add_segment_to_curve(file, segment, curve)
+        for segment in layout_nest.RelatedObjects:
+            _add_segment_to_curve(file, segment, curve)
