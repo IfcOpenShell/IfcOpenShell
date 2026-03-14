@@ -22,7 +22,9 @@ from pathlib import Path
 from typing import Any, Union
 
 import bpy
+import ifcopenshell.util.classification
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 from natsort import natsorted
 

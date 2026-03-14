@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Union
 import bpy
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.geolocation
 import pyradiance as pr
 import requests
@@ -106,9 +107,8 @@ class ExportOBJ(bpy.types.Operator):
         if iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 materials = shape.geometry.materials
-                material_ids = shape.geometry.material_ids
-                # material_names = shape.geometry.material_names
 
                 for material in materials:
                     ifc_materials.append(material.name)

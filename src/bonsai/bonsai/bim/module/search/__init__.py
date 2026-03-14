@@ -41,6 +41,7 @@ classes = (
     operator.SelectByProperty,
     operator.SelectFilterElements,
     operator.SelectGlobalId,
+    operator.SelectQueryElements,
     operator.SelectIfcClass,
     operator.SelectSimilar,
     operator.ShowAllElements,

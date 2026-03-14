@@ -123,7 +123,6 @@ class BIM_UL_units(UIList):
         active_data,
         active_propname,
     ) -> None:
-        props = tool.Unit.get_unit_props()
         if item:
             icon = tool.Unit.get_icon_for_unit_class(item.ifc_class)
             row = layout.row(align=True)
@@ -137,10 +136,10 @@ class BIM_UL_units(UIList):
                 op = row.operator("bim.assign_unit", text="", icon="KEYFRAME", emboss=False)
                 op.unit = item.ifc_definition_id
 
-            if props.active_unit_id == item.ifc_definition_id:
+            if data.active_unit_id == item.ifc_definition_id:
                 row.operator("bim.edit_unit", text="", icon="CHECKMARK").unit = item.ifc_definition_id
                 row.operator("bim.disable_editing_unit", text="", icon="CANCEL")
-            elif props.active_unit_id:
+            elif data.active_unit_id:
                 row.operator("bim.remove_unit", text="", icon="X").unit = item.ifc_definition_id
             else:
                 op = row.operator("bim.enable_editing_unit", text="", icon="GREASEPENCIL")

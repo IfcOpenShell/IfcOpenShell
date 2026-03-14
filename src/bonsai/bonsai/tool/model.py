@@ -76,6 +76,7 @@ if TYPE_CHECKING:
         BIMRailingProperties,
         BIMRoofProperties,
         BIMStairProperties,
+        BIMSverchokProperties,
         BIMWindowProperties,
     )
 
@@ -87,23 +88,27 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
-        return obj.BIMDoorProperties
+        return obj.BIMDoorProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_window_props(cls, obj: bpy.types.Object) -> BIMWindowProperties:
-        return obj.BIMWindowProperties
+        return obj.BIMWindowProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
-        return obj.BIMStairProperties
+        return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
-        return obj.BIMRoofProperties
+        return obj.BIMRoofProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
-        return obj.BIMRailingProperties
+        return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
+        return obj.BIMSverchokProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:

@@ -230,11 +230,11 @@ class Link(PropertyGroup):
     )
     georeferenced: EnumProperty(
         name="Georeferenced",
-        description="Georeferencing status: compatibility between host and linked model",
+        description="Georeferencing status, compatibility between host and linked model",
         items=[
-            ("NONE", "No Georef", "Linked model has no georeferencing"),
-            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS differ from host"),
-            ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host"),
+            ("NONE", "No Georef", "Linked model has no georeferencing", "QUESTION", 0),
+            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS differ from host", "ERROR", 1),
+            ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host", "WORLD", 2),
         ],
         default="NONE",
     )

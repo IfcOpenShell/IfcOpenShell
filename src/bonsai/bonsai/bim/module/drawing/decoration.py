@@ -70,9 +70,9 @@ class profile_consequential:
         cls.start_time = None
         lines = "\n".join(cls.lines)
         print(lines)
-        import pyperclip
 
-        pyperclip.copy(lines)
+        assert (wm := bpy.context.window_manager)
+        wm.clipboard = lines
         cls.lines = []
 
 

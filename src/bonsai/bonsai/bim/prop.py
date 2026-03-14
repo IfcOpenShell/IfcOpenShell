@@ -59,7 +59,8 @@ def update_is_visible(self: "BIMTabVisibility", context: bpy.types.Context) -> N
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = context.id_data
-    aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
+    assert isinstance(screen, bpy.types.Screen)
+    aprops = tool.Blender.get_area_props(screen)[screen.areas[:].index(context.area)]
     aprops.tab = self.tab
 
 

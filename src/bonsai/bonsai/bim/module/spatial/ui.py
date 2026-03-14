@@ -357,7 +357,7 @@ class BIM_UL_elements(UIList):
         super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
-    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):
+    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int) -> None:
         icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
         row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
 

@@ -41,6 +41,7 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         ("bim.explore_hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
         ("bim.explore_hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
         ("bim.explore_hotkey", {"type": "H", "value": "PRESS"}, {"properties": [("hotkey", "H")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_H")]}),
         ("bim.explore_hotkey", {"type": "H", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_H")]}),
     )
 
@@ -146,6 +147,9 @@ class ExploreHotkey(bpy.types.Operator):
 
     def hotkey_H(self) -> None:
         bpy.ops.bim.hide_queried_linked_element()
+
+    def hotkey_S_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element(hide_all_except=True)
 
     def hotkey_A_H(self) -> None:
         bpy.ops.bim.hide_queried_linked_element(unhide_all=True)

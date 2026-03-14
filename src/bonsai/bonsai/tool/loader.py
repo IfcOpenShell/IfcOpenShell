@@ -1070,11 +1070,6 @@ class Loader(bonsai.core.tool.Loader):
             layer_set = material.ForLayerSet
             offset = usage.OffsetFromReferenceLine * cls.unit_scale
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
-        elif material.is_a("IfcMaterialLayerSet"):
-            usage = None
-            layer_set = material
-            offset = 0
-            sense_factor = 1
         else:
             return mesh
         if len(layer_set.MaterialLayers) == 1:
@@ -1082,11 +1077,7 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
-        if not usage:
-            sense_factor = 1  # Assume the extrusion vector points in the direction sense
-            no = cls.get_extrusion_vector(element).normalized()
-            co = Vector((0.0, 0.0, offset))
-        elif usage.LayerSetDirection == "AXIS2":
+        if usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
             no = cls.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
