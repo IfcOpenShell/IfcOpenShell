@@ -444,7 +444,7 @@ class BIMProjectProperties(PropertyGroup):
         items=get_parent_libaries,
     )
 
-    use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
+    use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=True)
     should_save_metadata_for_this_file: BoolProperty(
         name="Save Session Data for This File",
         description="Enable saving session data (window layout, settings) to a metadata blend file for this specific IFC file",

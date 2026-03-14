@@ -271,6 +271,7 @@ def register():
     parametric_lifecycle.install_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
+    bpy.app.handlers.save_post.append(handler.save_post)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapProperties)
     bpy.types.Scene.BIMSnapGroups = bpy.props.PointerProperty(type=prop.BIMSnapGroups)
@@ -329,6 +330,7 @@ def unregister():
     parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
+    bpy.app.handlers.save_post.remove(handler.save_post)
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
