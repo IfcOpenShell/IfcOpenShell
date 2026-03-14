@@ -125,6 +125,8 @@ class CadMitre(bpy.types.Operator):
 
 
 class CadFillet(bpy.types.Operator):
+    """Add fillet to the 2 selected edges."""
+
     bl_idname = "bim.cad_fillet"
     bl_label = "CAD Fillet"
     bl_description = "Add fillet to the 2 selected edges."
@@ -214,6 +216,8 @@ class CadFillet(bpy.types.Operator):
 
 
 class CadArcFrom2Points(bpy.types.Operator):
+    """Add an arc to the active mesh based on 2 selected vertices."""
+
     bl_idname = "bim.cad_arc_from_2_points"
     bl_label = "CAD Arc from 2 Points"
     bl_description = "Add an arc to the active mesh based on 2 selected vertices."
@@ -277,6 +281,8 @@ class CadArcFrom2Points(bpy.types.Operator):
 
 
 class CadArcFrom3Points(bpy.types.Operator):
+    """Create a points based arc from 3 selected points."""
+
     bl_idname = "bim.cad_arc_from_3_points"
     bl_label = "CAD Arc from 3 Points"
     bl_options = {"REGISTER", "UNDO"}
@@ -341,6 +347,8 @@ class CadArcFrom3Points(bpy.types.Operator):
 
 
 class CadOffset(bpy.types.Operator):
+    """Copy selected mesh geometry at provided offset."""
+
     bl_idname = "bim.cad_offset"
     bl_label = "CAD Offset"
     bl_description = "Copy selected mesh geometry at provided offset. Mesh copied based on the current viewport angle."
@@ -540,6 +548,8 @@ class CadOffset(bpy.types.Operator):
 
 
 class AddIfcCircle(bpy.types.Operator):
+    """Add IfcCircle to the currently active mesh."""
+
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
     bl_description = "Add IfcCircle to the currently active mesh."
@@ -622,6 +632,8 @@ class AddIfcCircle(bpy.types.Operator):
 
 
 class AddIfcArcIndexFillet(bpy.types.Operator):
+    """Add a fillet for the selected vertices."""
+
     bl_idname = "bim.add_ifcarcindex_fillet"
     bl_label = "Add Arc Index Fillet"
     bl_description = "Add a fillet for the selected vertices."
@@ -809,6 +821,8 @@ class AlignViewToProfile(bpy.types.Operator):
 
 
 class AddRectangle(bpy.types.Operator):
+    """Add rectangle shape to the active mesh."""
+
     bl_idname = "bim.add_rectangle"
     bl_label = "Add Rectangle"
     bl_description = "Add rectangle shape to the active mesh."

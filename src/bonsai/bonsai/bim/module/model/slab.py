@@ -756,6 +756,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class ResetVertex(bpy.types.Operator):
+    """Reset selected vertices group assignments (e.g. remove curve/circle)."""
+
     bl_idname = "bim.reset_vertex"
     bl_label = "Reset Vertex"
     bl_description = "Reset selected vertices group assignments (e.g. remove curve/circle)."
@@ -781,6 +783,8 @@ class ResetVertex(bpy.types.Operator):
 
 
 class SetArcIndex(bpy.types.Operator):
+    """Add an IfcArcIndex based 3 point arc for the selected vertices."""
+
     bl_idname = "bim.set_arc_index"
     bl_label = "Set Arc Index"
     bl_description = (

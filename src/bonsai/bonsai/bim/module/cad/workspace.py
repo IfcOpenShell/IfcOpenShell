@@ -112,17 +112,17 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", "Add a fillet for the selected vertices.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Copy selected mesh geometry at provided offset.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Rectangle", "S_R", bpy.ops.bim.add_rectangle.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Rectangle", "S_R", "Add rectangle shape to the active mesh.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Circle", "S_C", "Add IfcCircle to the currently active mesh.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.set_arc_index.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "Add an IfcArcIndex based 3 point arc for the selected vertices.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", "Reset selected vertices group assignments (e.g. remove curve/circle).", ui_context)
 
         elif (
             isinstance(data, tool.Geometry.TYPES_WITH_MESH_PROPERTIES)
@@ -138,9 +138,9 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", "Add fillet to the 2 selected edges.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Copy selected mesh geometry at provided offset.", ui_context)
 
         else:
             if (
@@ -174,13 +174,13 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", "Add a fillet for the selected vertices.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", "Copy selected mesh geometry at provided offset.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", bpy.ops.bim.cad_arc_from_2_points.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", "Add an arc to the active mesh based on 2 selected vertices.", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.cad_arc_from_3_points.__doc__, ui_context)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "Create a points based arc from 3 selected points.", ui_context)
 
 
 class CadHotkey(bpy.types.Operator):
