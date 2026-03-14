@@ -3364,57 +3364,55 @@ class OrderTextLiteralDown(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# Ifc Operator is unnecessary, because suboperator is handling IFC changes.
-class AssignSelectedObjectAsProduct(bpy.types.Operator):
+class AssignSelectedObjectAsProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_selected_as_product"
     bl_label = "Assign Selected Object As Product"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        if len(context.selected_objects) != 2:
-            cls.poll_message_set("2 objects need to be selected")
+        if len(context.selected_objects) < 2:
+            cls.poll_message_set("At least 2 objects need to be selected")
             return False
         return True
 
-    def execute(self, context):
-        assert bpy.context.view_layer
+    def _execute(self, context):
         objs = context.selected_objects[:]
-        obj1, obj2 = objs
-        element1 = tool.Ifc.get_entity(obj1)
-        element2 = tool.Ifc.get_entity(obj2)
-        assert element1 and element2
+        ifc_objs = [(o, tool.Ifc.get_entity(o)) for o in objs if tool.Ifc.get_entity(o)]
 
-        # Check if at least one object is an IfcAnnotation
-        is_annotation1 = element1.is_a("IfcAnnotation")
-        is_annotation2 = element2.is_a("IfcAnnotation")
+        annotations = [(o, e) for o, e in ifc_objs if e.is_a("IfcAnnotation")]
+        non_annotations = [(o, e) for o, e in ifc_objs if not e.is_a("IfcAnnotation")]
 
-        if not (is_annotation1 or is_annotation2):
-            self.report({"ERROR"}, "At least one of the selected objects must be IfcAnnotation.")
+        if not annotations:
+            self.report({"ERROR"}, "At least one selected object must be an IfcAnnotation.")
             return {"CANCELLED"}
 
-        # If both are annotations, use the currently active object as relating product
-        if is_annotation1 and is_annotation2:
+        if len(non_annotations) == 1:
+            # One product, one or more annotations — assign all annotations to the product.
+            product = non_annotations[0][1]
+        elif len(non_annotations) == 0 and len(annotations) == 2:
+            # Both objects are annotations — use the non-active one as the relating product.
             active_obj = context.active_object
-            if active_obj == obj1:
-                other_selected_object = obj1
-                bpy.context.view_layer.objects.active = obj2
+            if annotations[0][0] == active_obj:
+                annotation_obj, annotation = annotations[0]
+                product = annotations[1][1]
             else:
-                other_selected_object = obj2
-                bpy.context.view_layer.objects.active = obj1
-        # If only one is an annotation, make it the active object
-        elif is_annotation1:
-            other_selected_object = obj2
-            bpy.context.view_layer.objects.active = obj1
+                annotation_obj, annotation = annotations[1]
+                product = annotations[0][1]
+            core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation_obj, product=product)
+            tool.Blender.update_viewport()
+            return
         else:
-            other_selected_object = obj1
-            bpy.context.view_layer.objects.active = obj2
+            self.report(
+                {"ERROR"},
+                "Select exactly one product object and one or more IfcAnnotation objects.",
+            )
+            return {"CANCELLED"}
 
-        assert (active_obj := context.active_object)
-        props = tool.Drawing.get_object_assigned_product_props(active_obj)
-        props.relating_product = other_selected_object
-        bpy.ops.bim.edit_assigned_product()
-        return {"FINISHED"}
+        for annotation_obj, _ in annotations:
+            core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation_obj, product=product)
+
+        tool.Blender.update_viewport()
 
 
 class EditAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
