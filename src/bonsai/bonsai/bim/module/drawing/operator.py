@@ -3305,9 +3305,8 @@ class AddTextLiteral(bpy.types.Operator):
                 attr.data_type = "string"
                 attr.string_value = literal_attr_values[attr_name]
 
-        box_alignment_mask = [False] * 9
-        box_alignment_mask[6] = True  # bottom_left box_alignment
-        literal_props.box_alignment = box_alignment_mask
+        literal_props.align_vertical = "bottom"
+        literal_props.align_horizontal = "left"
         return {"FINISHED"}
 
 
@@ -4178,10 +4177,7 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
                                     should_select = True
                                     break
                         elif self.attribute_type == "box_alignment":
-                            box_alignment_attr = next(
-                                (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
-                            )
-                            if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                            if literal.get_box_alignment() == self.literal_value:
                                 should_select = True
                                 break
 
