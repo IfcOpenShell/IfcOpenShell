@@ -970,7 +970,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path",
         description="Store the IFC project path relative to the .blend file. Requires .blend file to be saved",
-        default=False,
+        default=True,
     )
     should_start_fresh_session: bpy.props.BoolProperty(
         name="Should Start Fresh Session",
@@ -1985,7 +1985,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     skip_recent: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     if TYPE_CHECKING:
