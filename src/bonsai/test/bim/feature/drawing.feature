@@ -310,6 +310,81 @@ Scenario: Create sheet - with a drawing added to it
     When I click "OUTPUT"
     Then the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should contain "IfcWall"
 
+Scenario: Enable editing text
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    When I click "Enable Editing Text"
+    Then I see "Literals:"
+    And I don't see "FontSize"
+
+Scenario: Disable editing text
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    When I click "CANCEL"
+    Then I see "FontSize"
+    And I don't see "Literals:"
+
+Scenario: Edit text - no changes
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    When I click "Edit Text"
+    Then I see "FontSize"
+    And I don't see "Literals:"
+
+Scenario: Edit text - change literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I set the "Literal" property to "Hello World"
+    When I click "Edit Text"
+    Then I see "Hello World"
+
 Scenario: Add reference image
     Given an empty IFC project
     And I save IFC project
