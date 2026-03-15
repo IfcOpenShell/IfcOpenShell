@@ -30,7 +30,6 @@ classes = (
     operator.ActivateModel,
     operator.AddAnnotation,
     operator.AddAnnotationType,
-    operator.AddManualDrawingReference,
     operator.AssignManualDrawingReference,
     operator.AddDrawing,
     operator.AddDrawingStyle,

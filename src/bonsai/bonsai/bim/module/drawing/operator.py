@@ -1727,11 +1727,29 @@ class CreateDrawing(bpy.types.Operator):
         return drawing_path
 
 
+def _get_drawing_enum_items(self, context):
+    items = [("0", "None", "Clear the drawing assignment")]
+    if ifc := tool.Ifc.get():
+        for d in ifc.by_type("IfcAnnotation"):
+            if d.ObjectType == "DRAWING":
+                items.append((str(d.id()), d.Name or f"Drawing {d.id()}", ""))
+    return items
+
+
 class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
     bl_options = {"REGISTER", "UNDO"}
     description: bpy.props.StringProperty()
+    annotation_subtype: bpy.props.EnumProperty(
+        name="Type",
+        items=[
+            ("ELEVATION", "Elevation", "Place a manual elevation tag"),
+            ("SECTION", "Section", "Place a manual section tag"),
+        ],
+        default="ELEVATION",
+    )
+    drawing_id: bpy.props.EnumProperty(name="Drawing", items=_get_drawing_enum_items)
 
     @classmethod
     def poll(cls, context):
@@ -1741,6 +1759,16 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     def description(cls, context, operator):
         return operator.description or ""
 
+    def invoke(self, context, event):
+        if tool.Drawing.get_annotation_props().object_type == "MANUAL_DRAWING_REFERENCE":
+            self.drawing_id = "0"
+            return context.window_manager.invoke_props_dialog(self)
+        return self.execute(context)
+
+    def draw(self, context):
+        self.layout.prop(self, "annotation_subtype", expand=True)
+        self.layout.prop(self, "drawing_id")
+
     def _execute(self, context):
         props = tool.Drawing.get_annotation_props()
         dprops = tool.Drawing.get_document_props()
@@ -1748,69 +1776,25 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"WARNING"}, "No active drawing.")
             return
 
+        object_type = self.annotation_subtype if props.object_type == "MANUAL_DRAWING_REFERENCE" else props.object_type
         obj = core.add_annotation(
             tool.Ifc,
             tool.Collector,
             tool.Drawing,
             drawing=drawing,
-            object_type=props.object_type,
+            object_type=object_type,
             relating_type=tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None,
             enable_editing=True,
         )
         if props.object_type == "IMAGE":
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
-
-
-class AddManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_manual_drawing_reference"
-    bl_label = "Add Manual Drawing Reference"
-    bl_description = "Place a manual elevation or section tag that will not be moved or deleted during drawing regeneration"
-    bl_options = {"REGISTER", "UNDO"}
-    annotation_type: bpy.props.EnumProperty(
-        name="Type",
-        items=[
-            ("ELEVATION", "Elevation", "Place a manual elevation tag"),
-            ("SECTION", "Section", "Place a manual section tag"),
-        ],
-        default="ELEVATION",
-    )
-
-    @classmethod
-    def poll(cls, context):
-        if not tool.Ifc.get():
-            return False
-        if not context.scene.camera:
-            cls.poll_message_set("No active drawing.")
-            return False
-        return True
-
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-
-    def draw(self, context):
-        self.layout.prop(self, "annotation_type")
-
-    def _execute(self, context):
-        dprops = tool.Drawing.get_document_props()
-        if not (drawing := dprops.get_active_drawing()):
-            self.report({"WARNING"}, "No active drawing.")
-            return
-        core.add_manual_drawing_reference(
-            tool.Ifc,
-            tool.Collector,
-            tool.Drawing,
-            drawing=drawing,
-            annotation_type=self.annotation_type,
-        )
-
-
-def _get_drawing_enum_items(self, context):
-    items = [("0", "None", "Clear the drawing assignment")]
-    if ifc := tool.Ifc.get():
-        for d in ifc.by_type("IfcAnnotation"):
-            if d.ObjectType == "DRAWING":
-                items.append((str(d.id()), d.Name or f"Drawing {d.id()}", ""))
-    return items
+        if object_type in ("ELEVATION", "SECTION"):
+            element = tool.Ifc.get_entity(obj)
+            tool.Drawing.set_manual_drawing_reference(element)
+            if self.drawing_id != "0":
+                core.assign_manual_drawing_reference(
+                    tool.Ifc, tool.Drawing, element=element, drawing=tool.Ifc.get().by_id(int(self.drawing_id))
+                )
 
 
 class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):

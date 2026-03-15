@@ -518,28 +518,6 @@ def assign_manual_drawing_reference(
         ifc.run("drawing.assign_product", relating_product=drawing, related_object=element)
 
 
-def add_manual_drawing_reference(
-    ifc: type[tool.Ifc],
-    collector: type[tool.Collector],
-    drawing_tool: type[tool.Drawing],
-    drawing: ifcopenshell.entity_instance,
-    annotation_type: str,
-) -> bpy.types.Object:
-    if annotation_type == "ELEVATION":
-        element = drawing_tool.create_manual_elevation_reference(drawing)
-    else:  # SECTION
-        target_view = drawing_tool.get_drawing_target_view(drawing)
-        context = drawing_tool.get_annotation_context(target_view)
-        if not context:
-            context = drawing_tool.create_annotation_context(target_view, annotation_type)
-        element = drawing_tool.create_manual_section_reference(drawing, context)
-    drawing_tool.set_manual_drawing_reference(element)
-    ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
-    obj = ifc.get_object(element)
-    collector.assign(obj)
-    return obj
-
-
 def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_instance) -> None:
     drawing.create_svg_schedule(schedule)
     drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))

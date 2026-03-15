@@ -111,6 +111,7 @@ class Drawing(bonsai.core.tool.Drawing):
         "FILL_AREA":     AnnotationObjectType("Fill Area",        "", "NODE_TEXTURE", "mesh"),
         "FALL":          AnnotationObjectType("Fall",             "", "SORT_ASC", "curve"),
         "IMAGE":         AnnotationObjectType("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
+        "MANUAL_DRAWING_REFERENCE": AnnotationObjectType("Manual Drawing Reference", "Add manual elevation or section reference tag that will not be moved or deleted during drawing regeneration", "EMPTY_ARROWS", "empty"),
     }
     # fmt: on
 
@@ -177,6 +178,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
+        if object_type == "ELEVATION":
+            return "empty"
+        if object_type == "SECTION":
+            return "mesh"
         return cls.ANNOTATION_TYPES_DATA[object_type].data_type
 
     @classmethod
@@ -207,6 +212,13 @@ class Drawing(bonsai.core.tool.Drawing):
             co_end = co1 + vec * scaled_length
             obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
             obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        elif object_type == "ELEVATION":
+            obj.matrix_world = Matrix.Translation(bpy.context.scene.cursor.location.copy()) @ Matrix.Rotation(
+                math.radians(90), 4, "X"
+            )
+        elif object_type == "SECTION":
+            obj.matrix_world = Matrix.Translation(bpy.context.scene.cursor.location.copy())
+            obj = annotation.Annotator.add_line_to_annotation(obj)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 
@@ -1531,6 +1543,10 @@ class Drawing(bonsai.core.tool.Drawing):
         return elements
 
     @classmethod
+    def is_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"))
+
+    @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
         if not (element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")):
             return False
@@ -1863,40 +1879,6 @@ class Drawing(bonsai.core.tool.Drawing):
             )
             element.Name = elevation.Name or "Unnamed"
             return element
-
-    @classmethod
-    def create_manual_elevation_reference(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        cursor_location = bpy.context.scene.cursor.location.copy()
-        obj = bpy.data.objects.new("Unnamed", None)
-        obj.empty_display_size = 0.1
-        obj.matrix_world = Matrix.Translation(cursor_location) @ Matrix.Rotation(math.radians(90), 4, "X")
-        element = cls.run_root_assign_class(
-            obj=obj, ifc_class="IfcAnnotation", predefined_type="ELEVATION", should_add_representation=False
-        )
-        element.Name = "Unnamed"
-        return element
-
-    @classmethod
-    def create_manual_section_reference(
-        cls, drawing: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
-    ) -> ifcopenshell.entity_instance:
-        cursor_location = bpy.context.scene.cursor.location.copy()
-        mesh = bpy.data.meshes.new("Mesh")
-        obj = bpy.data.objects.new("Unnamed", mesh)
-        obj.matrix_world = Matrix.Translation(cursor_location)
-        element = cls.run_root_assign_class(
-            obj=obj, ifc_class="IfcAnnotation", predefined_type="SECTION", should_add_representation=False
-        )
-        element.Name = "Unnamed"
-        builder = ShapeBuilder(tool.Ifc.get())
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        p1 = cursor_location + Vector((-0.5, 0, 0))
-        p2 = cursor_location + Vector((0.5, 0, 0))
-        points = [p1 / unit_scale, p2 / unit_scale]
-        representation = builder.get_representation(context, [builder.polyline(points)])
-        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
-        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
-        return element
 
     @classmethod
     def set_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> None:

@@ -332,7 +332,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():
-            bpy.ops.bim.add_annotation()
+            bpy.ops.bim.add_annotation("INVOKE_DEFAULT")
 
     def hotkey_S_E(self):
         if not bpy.context.active_object:
