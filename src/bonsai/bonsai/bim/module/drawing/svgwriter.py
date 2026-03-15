@@ -895,6 +895,8 @@ class SvgWriter:
         reference_id = "-"
         sheet_id = "-"
         drawing = tool.Drawing.get_annotation_element(element)
+        if not drawing:
+            return ("-", "-")
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
             for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):

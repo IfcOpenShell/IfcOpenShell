@@ -1761,6 +1761,49 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
+class AddManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_manual_drawing_reference"
+    bl_label = "Add Manual Drawing Reference"
+    bl_description = "Place a manual elevation or section tag that will not be moved or deleted during drawing regeneration"
+    bl_options = {"REGISTER", "UNDO"}
+    annotation_type: bpy.props.EnumProperty(
+        name="Type",
+        items=[
+            ("ELEVATION", "Elevation", "Place a manual elevation tag"),
+            ("SECTION", "Section", "Place a manual section tag"),
+        ],
+        default="ELEVATION",
+    )
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.scene.camera:
+            cls.poll_message_set("No active drawing.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "annotation_type")
+
+    def _execute(self, context):
+        dprops = tool.Drawing.get_document_props()
+        if not (drawing := dprops.get_active_drawing()):
+            self.report({"WARNING"}, "No active drawing.")
+            return
+        core.add_manual_drawing_reference(
+            tool.Ifc,
+            tool.Collector,
+            tool.Drawing,
+            drawing=drawing,
+            annotation_type=self.annotation_type,
+        )
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"

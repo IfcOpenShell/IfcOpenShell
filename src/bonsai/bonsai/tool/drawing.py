@@ -1865,6 +1865,48 @@ class Drawing(bonsai.core.tool.Drawing):
             return element
 
     @classmethod
+    def create_manual_elevation_reference(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        cursor_location = bpy.context.scene.cursor.location.copy()
+        obj = bpy.data.objects.new("Unnamed", None)
+        obj.empty_display_size = 0.1
+        obj.matrix_world = Matrix.Translation(cursor_location) @ Matrix.Rotation(math.radians(90), 4, "X")
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="ELEVATION", should_add_representation=False
+        )
+        element.Name = "Unnamed"
+        return element
+
+    @classmethod
+    def create_manual_section_reference(
+        cls, drawing: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        cursor_location = bpy.context.scene.cursor.location.copy()
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Unnamed", mesh)
+        obj.matrix_world = Matrix.Translation(cursor_location)
+        element = cls.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="SECTION", should_add_representation=False
+        )
+        element.Name = "Unnamed"
+        builder = ShapeBuilder(tool.Ifc.get())
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        p1 = cursor_location + Vector((-0.5, 0, 0))
+        p2 = cursor_location + Vector((0.5, 0, 0))
+        points = [p1 / unit_scale, p2 / unit_scale]
+        representation = builder.get_representation(context, [builder.polyline(points)])
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
+        return element
+
+    @classmethod
+    def set_manual_drawing_reference(cls, element: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsManualDrawingReference": True})
+
+    @classmethod
     def regenerate_elevation_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
