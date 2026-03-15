@@ -872,7 +872,11 @@ class SvgWriter:
 
         v1 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, 0)))
         v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((0, 0, -1)))
-        angle = -math.degrees((v2 - v1).xy.angle_signed(Vector((0, 1))))
+        delta = (v2 - v1).xy
+        if delta.length <= 1e-6:
+            v2 = self.project_point_onto_camera(obj.matrix_world @ Vector((1, 0, 0)))
+            delta = (v2 - v1).xy
+        angle = -math.degrees(delta.angle_signed(Vector((0, 1)))) if delta.length > 1e-6 else 90.0
 
         transform = "rotate({}, {}, {})".format(angle, *symbol_position_svg.xy)
 

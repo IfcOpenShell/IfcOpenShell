@@ -1497,6 +1497,20 @@ class ElevationDecorator(BaseDecorator):
             "output_edges": output_edges,
         }
 
+        # Determine the arrow direction in camera-image-plane (XY) space.
+        # The elevation tag's local -Z is intentionally parallel to the drawing
+        # camera's view direction, so projecting it always gives a near-zero XY
+        # delta.  Fall through to local +X (which is perpendicular to the view
+        # and rotates visibly when the user spins the tag).
+        view_mat = context.region_data.view_matrix
+        edge_dir_2d = Vector((1.0, 0.0))  # final fallback
+        for local_axis in (Vector((0, 0, -1)), Vector((1, 0, 0)), Vector((0, 1, 0))):
+            world_axis = obj.matrix_world.to_3x3() @ local_axis
+            cam_xy = (view_mat.to_3x3() @ world_axis).xy
+            if cam_xy.length > 1e-6:
+                edge_dir_2d = cam_xy.normalized()
+                break
+
         # process edges
         for edge in edges_original:
             v0, v1 = winspace_verts[edge[0]], winspace_verts[edge[1]]
@@ -1505,7 +1519,7 @@ class ElevationDecorator(BaseDecorator):
             circle_head = get_circle_head(circle_size)
             start_i = add_verts_sequence(add_offsets(v0, circle_head), start_i, **out_kwargs, closed=True)
 
-            edge_dir = (v1 - v0).normalized()
+            edge_dir = edge_dir_2d.to_3d()
             side = (edge_dir.yx * Vector((1, -1))).to_3d()
             triangle_head = get_triangle_head(side, edge_dir, triangle_length, triangle_width)
             start_i = add_verts_sequence(add_offsets(v0, triangle_head), start_i, **out_kwargs, closed=True)
