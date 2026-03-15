@@ -22,11 +22,10 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import bpy
-from bpy.types import Menu, Panel
+from bpy.types import Panel
 
 import bonsai.bim
 import bonsai.tool as tool
-from bonsai.bim import module
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
     ArrayData,
@@ -361,7 +360,7 @@ class BIM_PT_sverchok(bpy.types.Panel):
             self.layout.label(text="Requires Sverchok Add-on", icon="ERROR")
             return
 
-        props = context.active_object.BIMSverchokProperties
+        props = tool.Model.get_sverchok_props(context.active_object)
         self.layout.prop_search(props, "node_group", bpy.data, "node_groups")
         self.layout.operator("bim.create_new_sverchok_graph", icon="ADD")
 

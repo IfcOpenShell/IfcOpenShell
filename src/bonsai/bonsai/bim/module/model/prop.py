@@ -22,7 +22,6 @@ from math import pi, radians
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
 from bpy.types import NodeTree, PropertyGroup
 from mathutils import Vector
@@ -733,6 +732,9 @@ class BIMStairProperties(PropertyGroup):
 
 class BIMSverchokProperties(PropertyGroup):
     node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)
+
+    if TYPE_CHECKING:
+        node_group: bpy.types.NodeTree | None
 
 
 def window_type_prop_update(self, context):

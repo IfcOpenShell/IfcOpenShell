@@ -30,7 +30,6 @@
 
 from __future__ import annotations
 
-import itertools
 import math
 import sys
 from typing import TYPE_CHECKING, Union
@@ -842,7 +841,7 @@ class Cad:
         return new_verts
 
     @classmethod
-    def region_2d_to_vector_3d_np(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector) -> Vector:
+    def region_2d_to_vector_3d_np(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_vector_3d
         Return a direction vector from the viewport at the specific 2d region
@@ -881,7 +880,7 @@ class Cad:
 
     @classmethod
     def region_2d_to_location_3d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, depth_location: Vector
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, depth_location: Vector
     ) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_location_3d
@@ -914,7 +913,7 @@ class Cad:
 
     @classmethod
     def region_2d_to_origin_3d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, clamp: float = None
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, *, clamp: float = None
     ) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_origin_3d
@@ -972,7 +971,7 @@ class Cad:
 
     @classmethod
     def location_3d_to_region_2d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, default=None
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, *, default=None
     ) -> Vector:
         """
         Numpy version of view3d_utils.location_3d_to_region_2d

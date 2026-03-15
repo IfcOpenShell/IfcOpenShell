@@ -34,14 +34,12 @@ IN_PACKAGE = __package__ == "bonsai"
 
 import platform
 import re
-import shutil
 import traceback
-import uuid
 import webbrowser
 from collections import deque
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 last_commit_hash = "8888888"
 last_commit_date = "9999999"
@@ -73,6 +71,21 @@ REINSTALLED_BBIM_VERSION: Union[str, None] = None
 REGISTERED_BBIM_PACKAGE: str
 
 
+def is_registering() -> bool:
+    """
+    During addon registration ``bpy.context`` and ``bpy.data`` are restricted
+    and you can't access their properties.
+    """
+    import bpy
+
+    if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
+        import _bpy_restrict_state as bpy_restrict_state
+    else:
+        import bpy_restrict_state
+
+    return isinstance(bpy.context, bpy_restrict_state._RestrictContext)
+
+
 def initialize_bbim_semver():
     """Initialize `bbim_semver` dictionary.
 
@@ -94,9 +107,13 @@ def initialize_bbim_semver():
     bbim_semver["version"] = version_str
 
 
-def get_debug_info():
+def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
+    import bpy
+
     bbim_version = bbim_semver["version"]
 
+    # All data here should be gettable even in case of `bpy.context` and `bpy.data` being inaccessible
+    # and Bonsai completely failed to load.
     debug_info = {
         "os": platform.system(),
         "os_version": platform.version(),
@@ -111,6 +128,14 @@ def get_debug_info():
         "last_actions": last_actions,
         "last_error": last_error,
     }
+
+    # Can't access blend data or context during registration.
+    # If Bonsai failed to load we cannot safely access any of its properties or its tools
+    # as they may not be registered yet and acessing them will break Bonsai Fatal Error UI.
+    if is_registering() or bonsai_failed_to_load:
+        return debug_info
+
+    import bonsai.tool as tool
 
     # Add .blend file save information
     if bpy.data.is_saved:
@@ -132,7 +157,7 @@ def get_debug_info():
     return debug_info
 
 
-def format_debug_info(info: dict):
+def format_debug_info(info: dict[str, Any]) -> str:
     last_actions = ""
     for action in info["last_actions"]:
         last_actions += f"\n# {action['type']}: {action['name']}"
@@ -150,33 +175,10 @@ def get_binaries(path: Path) -> Generator[Path, None, None]:
     yield from path.glob("**/*.so")
 
 
-def safe_link_dlls() -> None:
-    # Blender 4.2+ has a problem on Windows for disabling/enabling/reinstalling extensions
-    # with loaded binary dependencies (on Windows you can't remove a binary if it's loaded by some program).
-    # To avoid this issue we temporary hard link dlls to our temp directory on unregister()
-    # (unregister is executed before Blender will try to uninstall dependencies and the issue will arise).
-    # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
-    # On register() we clean up our temp directory with binaries.
-    #
-    # TODO: If user uninstalls Bonsai to never use it again, temporary directory won't be cleared.
-    #
-    # See: https://projects.blender.org/blender/blender/issues/125049
-    import bpy
-
-    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
-    local_path = ext_path / ".local"
-
-    # We use random hash subfolder as user may try to enable/disable addon multiple times.
-    random_hash = uuid.uuid4().hex[:8]
-    temp_local = ext_path / ".local_temp" / random_hash
-    temp_local.mkdir(parents=True)
-
-    for filepath in get_binaries(local_path):
-        dest_path = temp_local / filepath.relative_to(local_path)
-        dest_path.parent.mkdir(exist_ok=True, parents=True)
-        os.link(filepath, dest_path)
-
-
+# TODO: remove before 0.8.6 release.
+# On Windows issues with removing extensions were resolved in Blender 4.3,
+# but we removed our workaround that was producing some junk only in 0.8.5 release.
+# So we're temporarily keeping the part that's cleaning up outputs from previous releases.
 def clean_up_dlls_safe_links() -> None:
     import bpy
 
@@ -206,6 +208,8 @@ def clean_up_dlls_safe_links() -> None:
 
 
 if IN_BLENDER:
+    import bpy
+
     initialize_bbim_semver()
 
     def get_binary_info() -> dict[str, Any]:
@@ -297,9 +301,6 @@ if IN_BLENDER:
             purge_cache()
 
         def unregister():
-            if platform.system() == "Windows":
-                safe_link_dlls()
-
             import bonsai.bim
 
             bonsai.bim.unregister()
@@ -334,7 +335,7 @@ if IN_BLENDER:
             bl_context = "scene"
 
             def draw(self, context):
-                info = get_debug_info()
+                info = get_debug_info(bonsai_failed_to_load=True)
 
                 layout = self.layout
                 layout.alert = True
@@ -410,7 +411,7 @@ if IN_BLENDER:
             bl_description = "Copies debugging information to your clipboard for use in bugreports"
 
             def execute(self, context):
-                info = get_debug_info()
+                info = get_debug_info(bonsai_failed_to_load=True)
                 info.update(get_binary_info())
                 info = format_debug_info(info)
                 context.window_manager.clipboard = info

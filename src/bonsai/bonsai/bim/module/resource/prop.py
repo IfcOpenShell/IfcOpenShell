@@ -19,7 +19,6 @@
 from typing import TYPE_CHECKING, Literal, get_args
 
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.resource
 import ifcopenshell.util.resource
 from bpy.props import (
@@ -27,9 +26,7 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
@@ -191,7 +188,7 @@ class BIMResourceProperties(PropertyGroup):
     @property
     def productivity(self) -> "BIMResourceProductivity":
         assert bpy.context.scene
-        productivity = bpy.context.scene.BIMResourceProductivity
+        productivity = bpy.context.scene.BIMResourceProductivity  # pyright: ignore[reportAttributeAccessIssue]
         assert isinstance(productivity, BIMResourceProductivity)
         return productivity
 

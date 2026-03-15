@@ -19,7 +19,6 @@
 from typing import Any
 
 import bpy
-import bpy.utils
 import bpy.utils.previews
 import ifcopenshell.util.doc
 

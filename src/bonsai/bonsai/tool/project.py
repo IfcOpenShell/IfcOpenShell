@@ -18,23 +18,32 @@
 
 from __future__ import annotations
 
-import os
 import json
-import math
+import os
 import shutil
-import numpy as np
 from collections import defaultdict
 from math import radians
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    NotRequired,
+    Optional,
+    TypedDict,
+)
 
 import bpy
 import ifcopenshell
 import ifcopenshell.api.document
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
+import ifcopenshell.util.shape_builder
+import numpy as np
+import numpy.typing as npt
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
+from mathutils import Matrix, Vector
 
 import bonsai.bim.schema
 import bonsai.core.aggregate
@@ -47,7 +56,11 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import BIMProjectProperties, MeasureToolSettings
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        Link,
+        MeasureToolSettings,
+    )
 
 HiearchyDict = dict[ifcopenshell.entity_instance, "HiearchyDict"]
 
@@ -63,20 +76,20 @@ class Project(bonsai.core.tool.Project):
         return scene.MeasureToolSettings  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
-    def get_link_empty_handle(cls, link) -> bpy.types.Object | None:
+    def get_link_empty_handle(cls, link: Link) -> bpy.types.Object | None:
         if tool.Ifc.get():
             return tool.Ifc.get_object(tool.Ifc.get().by_id(link.ifc_definition_id))
         return link.empty_handle
 
     @classmethod
-    def set_link_empty_handle(cls, link, empty: bpy.types.Object) -> None:
+    def set_link_empty_handle(cls, link: Link, empty: bpy.types.Object) -> None:
         if tool.Ifc.get():
             tool.Ifc.link(tool.Ifc.get().by_id(link.ifc_definition_id), empty)
         else:
             link.empty_handle = empty
 
     @classmethod
-    def calculate_link_matrix(cls, link) -> None:
+    def calculate_link_matrix(cls, link: Link) -> Matrix:
         filepath = Path(tool.Ifc.resolve_uri(link.filepath))
         with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
             metadata = json.load(f)
@@ -101,7 +114,7 @@ class Project(bonsai.core.tool.Project):
         rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
         local_matrix = rot @ np.eye(4)
         local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
-        return np.linalg.inv(local_matrix) @ global_matrix
+        return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
 
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
@@ -498,8 +511,8 @@ class Project(bonsai.core.tool.Project):
         )
 
     @classmethod
-    def get_clipping_planes_normals(cls):
-        normals = []
+    def get_clipping_planes_normals(cls) -> list[tuple[Vector, Vector]]:
+        normals: list[tuple[Vector, Vector]] = []
         for clipping_plane in tool.Project.get_project_props().clipping_planes:
             plane = clipping_plane.obj
             if not plane or not plane.data:
@@ -508,6 +521,7 @@ class Project(bonsai.core.tool.Project):
             if plane.mode == "EDIT":
                 continue  # A profile decorator or something else is used here.
 
+            assert isinstance(plane.data, bpy.types.Mesh)
             v1 = plane.matrix_world @ plane.data.vertices[0].co
             v2 = plane.matrix_world @ plane.data.vertices[1].co
             v3 = plane.matrix_world @ plane.data.vertices[2].co
@@ -542,11 +556,11 @@ class Project(bonsai.core.tool.Project):
         if not ifc_file:
             raise Exception("No IFC file loaded")
 
-        doc = tool.Ifc.run("document.add_information", parent=None)
+        doc = ifcopenshell.api.document.add_information(ifc_file, parent=None)
 
         if ifc_file.schema == "IFC2X3":
-            tool.Ifc.run(
-                "document.edit_information",
+            ifcopenshell.api.document.edit_information(
+                ifc_file,
                 information=doc,
                 attributes={
                     "DocumentId": "BLEND_METADATA",
@@ -557,8 +571,8 @@ class Project(bonsai.core.tool.Project):
                 },
             )
         else:
-            tool.Ifc.run(
-                "document.edit_information",
+            ifcopenshell.api.document.edit_information(
+                ifc_file,
                 information=doc,
                 attributes={
                     "Identification": "BLEND_METADATA",
@@ -578,13 +592,382 @@ class Project(bonsai.core.tool.Project):
             return
 
         ifc_file = tool.Ifc.get()
-        if not ifc_file:
-            return
-
-        tool.Ifc.run("document.edit_information", information=doc, attributes={"Location": metadata_filename})
+        ifcopenshell.api.document.edit_information(
+            ifc_file, information=doc, attributes={"Location": metadata_filename}
+        )
 
     @classmethod
     def remove_metadata_document_information(cls) -> None:
         doc = cls.get_metadata_document_information()
-        if doc:
-            tool.Ifc.run("document.remove_information", information=doc)
+        if not doc:
+            return
+
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.document.remove_information(ifc_file, information=doc)
+
+    class Link:
+        """Tools for working with linked models."""
+
+        class LinkedObjectChunk(TypedDict):
+            """There's actually no dictionary with those keys,
+            just using this class to document what keys we do assign to the objects
+            that represent chunks of the linked models.
+            """
+
+            guids: list[str]
+            """List of guids present in the object."""
+
+            guid_ids: list[int]
+            """Number of faces that belong to each guid.
+
+            E.g. if chunk consists of two 12 tris cubes:
+            ```
+                guids = ["aaa", "bbb"]
+                # Meaning object has 24 polygons
+                # [0;11] is part of "aaa", [12:23] is part of "bbb".
+                guid_ids = [12, 24]
+            ```
+            """
+
+            db: str
+            """Absolute filepath to .ifc.cache.sqlite."""
+
+            ifc_filepath: str
+            """Absolute filepath to .ifc."""
+
+            # Only added when object is queried.
+            selected_vertices: NotRequired[list[tuple[int, int, int]]]
+            selected_edges: NotRequired[list[tuple[int, int]]]
+            selected_tris: NotRequired[list[tuple[int, int, int]]]
+
+            hidden_indices: NotRequired[list[int]]
+            """List of hidden indices in "guids".
+            Note that entire object also can be hidden by ``hide_viewport`` and then "hidden_indices" won't be set.
+
+            ```
+                guids = ["aaa", "bbb", "ccc"]
+                # guid "bbb" is hidden.
+                hidden_indices = [1]
+            ```
+            """
+
+        @classmethod
+        def is_linked_element(cls, obj: bpy.types.Object) -> bool:
+            return "guids" in obj
+
+        @classmethod
+        def get_obj_by_guid(cls, link: Link, guid: str) -> bpy.types.Object | None:
+            assert link.is_loaded
+
+            handle = tool.Project.get_link_empty_handle(link)
+            assert handle
+            col = handle.instance_collection
+            assert col
+
+            guid_obj = None
+            for obj in col.objects:
+                obj_guids: list[str] = obj["guids"]
+                if guid in obj_guids:
+                    guid_obj = obj
+                    break
+
+            return guid_obj
+
+        @classmethod
+        def get_linked_element_guid_ids(cls, obj: bpy.types.Object, *, skip_hidden: bool) -> npt.NDArray[np.int64]:
+            obj_guid_ids: npt.NDArray[np.int64] = np.array(obj["guid_ids"])
+
+            if not skip_hidden:
+                return obj_guid_ids
+
+            # 'hidden_indices' is needed, because otherwise we can't make sense of 'guid_ids',
+            # since part of the geometry is hidden.
+            obj_hidden_indices: list[int] = list(obj.get("hidden_indices") or [])
+
+            if not obj_hidden_indices:
+                return obj_guid_ids
+
+            # Skip hidden geometry indices.
+            hidden_indices_mask = np.zeros(len(obj_guid_ids), dtype=bool)
+            hidden_indices_mask[obj_hidden_indices] = True
+            deltas = np.diff(obj_guid_ids, prepend=0)
+            deltas[~hidden_indices_mask] = 0
+            obj_guid_ids -= np.cumsum(deltas)
+            return obj_guid_ids
+
+        @classmethod
+        def get_guid_by_face_index(cls, obj: bpy.types.Object, face_index: int) -> str | None:
+            guids: list[str] = obj["guids"]
+            guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=True)
+            for guid, guid_end_index in zip(guids, guid_ids):
+                if face_index < guid_end_index:
+                    return guid
+
+        @classmethod
+        def get_linked_element_geom_slice(cls, obj: bpy.types.Object, guid: str) -> slice[int, int]:
+            """
+            Get slice for ``obj.data.polygons`` for the provided ``guid``.
+            """
+            obj_guids: list[str] = obj["guids"]
+
+            # Just to be safe.
+            obj_hidden_indices: list[int] = obj.get("hidden_indices") or []
+            index = obj_guids.index(guid)
+            if index in obj_hidden_indices:
+                assert False, "Unexpected. Why would you need the geometry for the hidden element?"
+            obj_guid_ids = cls.get_linked_element_guid_ids(obj, skip_hidden=False)
+            guid_end_index = obj_guid_ids[index]
+            guid_start_index = index and obj_guid_ids[index - 1]
+            return slice(guid_start_index, guid_end_index)
+
+        @classmethod
+        def setup_hide_modifier(
+            cls,
+            obj: bpy.types.Object,
+            hide_type: Literal["hide_selected", "hide_unselected"],
+        ) -> bpy.types.VertexGroup:
+            # `MeshPolygon.hide` works only in EDIT mode,
+            # so we use vertex groups + Mask modifier.
+            # But since for hiding we're modifying object in a linked model,
+            # then those changes are ephemeral and not fully supported by Blender
+            # e.g. they're not tracked by UNDO system.
+
+            MODIFIER_VG_NAME = "BBIM_HIDE_LINKED_GEOMETRY"
+
+            vertex_groups = obj.vertex_groups
+            vertex_group = vertex_groups.get(MODIFIER_VG_NAME)
+            if vertex_group is None:
+                vertex_group = vertex_groups.new(name=MODIFIER_VG_NAME)
+
+            modifiers = obj.modifiers
+            modifier = modifiers.get(MODIFIER_VG_NAME)
+            if modifier is None:
+                modifier = modifiers.new(MODIFIER_VG_NAME, "MASK")
+            assert isinstance(modifier, bpy.types.MaskModifier)
+            modifier.vertex_group = MODIFIER_VG_NAME
+            # Mask modifier by default shows only geometry from the provided vertex group.
+            modifier.invert_vertex_group = hide_type == "hide_selected"
+            return vertex_group
+
+        @classmethod
+        def hide_linked_element(cls, obj: bpy.types.Object, guid: str) -> None:
+            verts = tool.Project.Link.get_linked_element_verts(obj, guid)
+
+            vertex_group = cls.setup_hide_modifier(obj, "hide_selected")
+            vertex_group.add(verts, 1.0, "REPLACE")
+
+            hidden_indices: list[int] = list(obj.get("hidden_indices") or [])
+            guid_ids: list[str] = obj["guids"]
+            index = guid_ids.index(guid)
+            hidden_indices.append(index)
+            obj["hidden_indices"] = hidden_indices
+
+        @classmethod
+        def unhide_all_elements(cls, link: Link) -> None:
+            obj = tool.Project.get_link_empty_handle(link)
+            assert obj
+            col = obj.instance_collection
+            assert col
+
+            for obj_ in col.objects:
+                obj_.hide_viewport = False
+
+                if "hidden_indices" not in obj_:
+                    continue
+                obj_.vertex_groups.clear()
+                obj_.modifiers.clear()
+                del obj_["hidden_indices"]
+
+        @classmethod
+        def hide_all_elements_except(cls, link: Link, queried_obj: bpy.types.Object, queried_guid: str) -> None:
+            handle = tool.Project.get_link_empty_handle(link)
+            assert handle
+            col = handle.instance_collection
+            assert col
+
+            for obj_ in col.objects:
+                if "guids" not in obj_:
+                    continue
+                if obj_ != queried_obj:
+                    # Just hide the entire chunk, if queried guid is not part of it.
+                    obj_.hide_viewport = True
+                    continue
+
+                guids: list[str] = obj_["guids"]
+                queried_guid_index = guids.index(queried_guid)
+
+                # Get vertices for the queried element before modifying hidden_indices.
+                queried_verts = cls.get_linked_element_verts(obj_, queried_guid)
+                vertex_group = cls.setup_hide_modifier(obj_, "hide_unselected")
+
+                assert isinstance(mesh := obj_.data, bpy.types.Mesh)
+                # Clean up possible previously hidden elements.
+                vertex_group.remove(range(len(mesh.vertices)))
+
+                vertex_group.add(queried_verts, 1.0, "REPLACE")
+
+                # Mark all guids as hidden except the queried one.
+                obj_["hidden_indices"] = [i for i in range(len(guids)) if i != queried_guid_index]
+
+        @classmethod
+        def select_linked_element_geom(cls, obj: bpy.types.Object, guid: str) -> None:
+            slice_ = cls.get_linked_element_geom_slice(obj, guid)
+
+            mesh = obj.data
+            assert isinstance(mesh, bpy.types.Mesh)
+            guid_polygons = mesh.polygons[slice_]
+
+            selected_tris: list[tuple[int, ...]] = []
+            selected_edges: list[tuple[int, ...]] = []
+
+            # Restart verts indices for our polygons.
+            guid_vertices_set: set[int] = set()
+            for polygon in guid_polygons:
+                guid_vertices_set.update(polygon.vertices)
+            vert_map = {k: v for v, k in enumerate(guid_vertices_set)}
+
+            selected_vertices = [obj.matrix_world @ mesh.vertices[vi].co for vi in vert_map]
+            for polygon in guid_polygons:
+                selected_tris.append(tuple(vert_map[vi] for vi in polygon.vertices))
+                selected_edges.extend(tuple([vert_map[vi] for vi in e]) for e in polygon.edge_keys)
+
+            obj["selected_vertices"] = selected_vertices
+            obj["selected_edges"] = selected_edges
+            obj["selected_tris"] = selected_tris
+
+        @classmethod
+        def get_linked_element_verts(cls, obj: bpy.types.Object, guid: str) -> set[int]:
+            slice_ = cls.get_linked_element_geom_slice(obj, guid)
+
+            mesh = obj.data
+            assert isinstance(mesh, bpy.types.Mesh)
+            guid_polygons = mesh.polygons[slice_]
+
+            guid_vertices_set: set[int] = set()
+            for polygon in guid_polygons:
+                guid_vertices_set.update(polygon.vertices)
+            return guid_vertices_set
+
+        @classmethod
+        def select_linked_element(
+            cls,
+            context: bpy.types.Context,
+            obj: bpy.types.Object,
+            guid: str,
+            instance_matrix: Matrix | None = None,
+        ) -> None:
+            import sqlite3
+
+            from ifcpatch.recipes.ExtractPropertiesToSQLite import (
+                ElementRow,
+                PropertyRow,
+                RelationshipRow,
+            )
+
+            from bonsai.bim.module.project.data import LinksData
+            from bonsai.bim.module.project.decorator import ProjectDecorator
+
+            # Not sure if there's a difference between `instance_matrix` coming from `ray_cast`
+            # and usual `matrix_world`, maybe we can just get it from object always.
+            if instance_matrix is None:
+                instance_matrix = obj.matrix_world
+
+            cls.deselect_queried_linked_element()
+            cls.set_queried_linked_element(obj, guid, instance_matrix)
+            cls.select_linked_element_geom(obj, guid)
+            db = sqlite3.connect(obj["db"])
+            c = db.cursor()
+
+            c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
+            element = ElementRow(*c.fetchone())
+
+            attributes: dict[str, Any] = {}
+            for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
+                if element[i + 1] is not None:
+                    attributes[attr] = element[i + 1]
+
+            c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
+            rows = [PropertyRow(*row) for row in c.fetchall()]
+
+            properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
+            for row in rows:
+                properties[row.pset_name][row.name] = row.value
+
+            c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
+            relationships = [RelationshipRow(*row) for row in c.fetchall()]
+
+            relating_type_id = None
+
+            for relationship in relationships:
+                if relationship[1] == "IfcRelDefinesByType":
+                    relating_type_id = relationship[2]
+
+            type_properties: defaultdict[str, dict[str, str]] = defaultdict(dict)
+            if relating_type_id is not None:
+                c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
+                rows = [PropertyRow(*row) for row in c.fetchall()]
+                for row in rows:
+                    type_properties[row.pset_name][row.name] = row.value
+
+            LinksData.linked_data = {
+                "attributes": attributes,
+                "properties": [(k, properties[k]) for k in sorted(properties.keys())],
+                "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
+            }
+            db.close()
+
+            assert context.screen
+            for area in context.screen.areas:
+                if area.type == "PROPERTIES":
+                    for region in area.regions:
+                        if region.type == "WINDOW":
+                            region.tag_redraw()
+                elif area.type == "VIEW_3D":
+                    area.tag_redraw()
+
+            ProjectDecorator.install(context)
+
+        @classmethod
+        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix) -> None:
+            props = tool.Project.get_project_props()
+            props.queried_obj = obj
+            props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
+            props.queried_guid = guid
+
+        @classmethod
+        def deselect_queried_linked_element(cls) -> None:
+            props = tool.Project.get_project_props()
+            obj = props.queried_obj
+            props.property_unset("queried_obj")
+            props.property_unset("queried_obj_root")
+            props.property_unset("queried_guid")
+
+            if obj is not None:
+                for field in cls.SelectedGeometry._fields:
+                    del obj[field]
+
+        @classmethod
+        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix) -> bpy.types.Object | None:
+            collections = set(obj.users_collection)
+            for o in bpy.data.objects:
+                if (
+                    o.type != "EMPTY"
+                    or o.instance_type != "COLLECTION"
+                    or o.instance_collection not in collections
+                    or not np.allclose(matrix, o.matrix_world, atol=1e-4)
+                ):
+                    continue
+                return o
+
+        class SelectedGeometry(NamedTuple):
+            selected_vertices: list[tuple[float, float, float]]
+            selected_edges: list[tuple[int, int]]
+            selected_tris: list[tuple[int, int, int]]
+
+        @classmethod
+        def get_selected_geometry(cls, obj: bpy.types.Object) -> SelectedGeometry:
+            return cls.SelectedGeometry(
+                obj["selected_vertices"],
+                obj["selected_edges"],
+                obj["selected_tris"],
+            )

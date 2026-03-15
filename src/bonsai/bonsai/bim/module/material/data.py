@@ -16,14 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 from typing import Any, Union
 
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import ifcopenshell.util.schema
 from natsort import natsorted
 
 import bonsai.tool as tool
@@ -104,7 +102,6 @@ class MaterialsData:
             if (style_name := s.Name) is not None
         ]
         results = natsorted(results, key=lambda i: i[1])
-        results.insert(0, ("-", "No Surface Style", ""))
         return results
 
     @classmethod

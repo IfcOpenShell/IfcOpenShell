@@ -20,7 +20,6 @@ import os
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset_template
 
 import bonsai.bim.handler

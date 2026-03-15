@@ -20,11 +20,11 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
-import bmesh
-import bpy.types
+import bmesh  # pyright: ignore[reportMissingImports]
+import bpy  # pyright: ignore[reportMissingImports]
 import numpy as np
 import numpy.typing as npt
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports]
 
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit

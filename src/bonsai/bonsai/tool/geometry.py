@@ -39,7 +39,6 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
@@ -81,7 +80,7 @@ if TYPE_CHECKING:
         BIMGeometryProperties,
         BIMObjectGeometryProperties,
     )
-    from bonsai.bim.prop import Attribute, BIMMeshProperties
+    from bonsai.bim.prop import BIMMeshProperties
 
 
 class Geometry(bonsai.core.tool.Geometry):

@@ -27,20 +27,18 @@ import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.root
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import mathutils
-import numpy as np
 import shapely
 import shapely.ops
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Matrix, Vector
 
 import bonsai.bim.import_ifc as import_ifc
-import bonsai.core
 import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -704,6 +702,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             while True:
                 tree.add_element(iterator.get_native())
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 shapes[shape.id] = {
                     "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
                     "faces": ifcopenshell.util.shape.get_faces(shape.geometry),

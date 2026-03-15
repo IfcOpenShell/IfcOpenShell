@@ -5,9 +5,13 @@ This script is finding common install directory and either
 packs each folder into a tar.gz archive, if it wasn't packed before,
 or unpacks existing archives.
 
+Expected to be executed from 'build' directory (e.g. that might contain 'Linux/x86_64/install').
+
 Usage: python cache_dependencies.py [pack|unpack]
 """
 
+import platform
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -17,9 +21,18 @@ CACHE_PREFIX = "cache-"
 
 
 def get_install_dir() -> Path:
-    for data in Path.cwd().glob("*/*/install"):
+    if platform.system() == "Darwin":
+        pattern = "Darwin/*/*/install"
+    else:
+        pattern = "*/*/install"
+    for data in Path.cwd().glob(pattern):
         return data
     raise Exception("No install dir found")
+
+
+def run(cmd: str) -> None:
+    print(f"Running command: `{cmd}`")
+    subprocess.check_call(cmd, shell=True)
 
 
 def pack_dependencies(install_dir: Path) -> None:
@@ -32,8 +45,8 @@ def pack_dependencies(install_dir: Path) -> None:
         if tar_path.exists():
             print(f"Skipping existing cache: '{tar_path}'")
         else:
-            with tarfile.open(tar_path, "w:gz") as tar:
-                tar.add(dependency_path, arcname=dependency_path.name)
+            # Python's `tarfile` is 10x slower than `tar` cli, so we use `tar`.
+            run(f'tar -czf "{tar_path}" -C "{install_dir}" "{dependency_name}"')
             print(f"Created cache: '{tar_path}'")
 
 

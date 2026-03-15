@@ -691,6 +691,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
 }
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
+    if (inst == nullptr) {
+        Logger::Error("Warning nullptr passed to map() function");
+        return nullptr;
+    }
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
     if (use_caching_) {
         std::lock_guard<std::mutex> guard(cache_guard_);

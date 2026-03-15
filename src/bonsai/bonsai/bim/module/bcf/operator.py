@@ -16,22 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import tempfile
 import uuid
 import webbrowser
-from math import atan, cos, degrees, radians, sin, tan
+from math import atan, degrees, radians, tan
 from pathlib import Path
 
-import bcf
 import bcf.agnostic.topic
 import bcf.agnostic.visinfo
-import bcf.bcfxml
 import bcf.v2.bcfxml
 import bcf.v2.model
 import bcf.v2.topic
 import bcf.v2.visinfo
-import bcf.v3
 import bcf.v3.bcfxml
 import bcf.v3.document
 import bcf.v3.model
@@ -43,11 +39,10 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
 import numpy as np
 from bpy_extras.io_utils import ExportHelper, ImportHelper
-from mathutils import Euler, Matrix, Vector, geometry
+from mathutils import Matrix, Vector
 from xsdata.models.datatype import XmlDateTime
 
 import bonsai.bim.module.bcf.bcfstore as bcfstore
-import bonsai.bim.module.bcf.prop as bcf_prop
 import bonsai.tool as tool
 
 
@@ -1258,8 +1253,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         else:
             obj.data.show_background_images = False
 
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert (space := tool.Blender.get_view3d_space())
+        space.region_3d.view_perspective = "CAMERA"
 
         if self.file:
             self.set_viewpoint_components(viewpoint, context)

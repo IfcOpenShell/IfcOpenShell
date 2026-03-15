@@ -58,15 +58,13 @@ class DecorationShader:
             "PLANAR LOAD",
         }
         if pattern not in valid_patterns:
-            raise ValueError(
-                """pattern must be one of:
+            raise ValueError("""pattern must be one of:
                              PERPENDICULAR DISTRIBUTED FORCE
                              PARALLEL DISTRIBUTED FORCE,
                              DISTRIBUTED MOMENT,
                              SINGLE FORCE,
                              SINGLE MOMENT,
-                             PLANAR LOAD"""
-            )
+                             PLANAR LOAD""")
         if "DISTRIBUTED" in pattern.upper():
             shader = self.get_linear_shader(pattern)
             return shader

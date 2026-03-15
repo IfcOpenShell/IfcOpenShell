@@ -61,9 +61,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 
 		longitudes.push_back(*pbde->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>(true) * length_unit_);
 
-		auto linear_placement = taxonomy::cast<taxonomy::matrix4>(map(csp));
-      profile_offsets.push_back(linear_placement->ccomponents().block<3, 1>(0, 3));
-		boost::optional<Eigen::Matrix3d> rot(linear_placement->ccomponents().block<3,3>(0,0));
+		Eigen::Vector3d po(
+            pbde->OffsetLateral().get_value_or(0.),
+            // @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
+            pbde->OffsetVertical().get_value_or(0.),
+            0.);
+
+        profile_offsets.push_back(po);
+
+		auto axis2_placement_linear = taxonomy::cast<taxonomy::matrix4>(map(csp));
+        boost::optional<Eigen::Matrix3d> rot(axis2_placement_linear->ccomponents().block<3, 3>(0, 0));
 		profile_rotations.push_back(rot);
 	}
 	if (faces.size() != profile_offsets.size()) {

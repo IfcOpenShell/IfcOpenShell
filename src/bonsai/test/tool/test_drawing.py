@@ -21,7 +21,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import bpy
-import pytest
 import ifcopenshell
 import ifcopenshell.api.drawing
 import ifcopenshell.api.group
@@ -31,8 +30,9 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import mathutils
 import numpy as np
-from mathutils import Vector
+import pytest
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -162,7 +162,7 @@ class TestEditTextLiterals(NewFile):
         context = ifc.createIfcGeometricRepresentationSubContext(ContextType="Plan", ContextIdentifier="Annotation")
         item = ifc.createIfcTextLiteralWithExtent(Literal="Literal", Path="RIGHT", BoxAlignment="bottom-left")
         builder = ShapeBuilder(tool.Ifc.get())
-        polyline = builder.polyline([(0.,0.,0.), (1.,0.,0.)])
+        polyline = builder.polyline([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         representation = ifc.createIfcShapeRepresentation(ContextOfItems=context, Items=[item, polyline])
         element.Representation.Representations = [representation]
         tool.Ifc.link(element, obj)
@@ -666,10 +666,13 @@ class TestImportTextAttributes(NewFile):
 
         literal_props = props.literals[0]
         assert literal_props.ifc_definition_id == item.id()
-        assert literal_props.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
         assert literal_props.attributes["Literal"].string_value == "Literal"
         assert literal_props.attributes["Path"].enum_value == "RIGHT"
         assert literal_props.attributes["BoxAlignment"].string_value == "bottom-left"
+        assert literal_props.align_vertical == "bottom"
+        assert literal_props.align_horizontal == "left"
+        assert props.align_vertical == "bottom"
+        assert props.align_horizontal == "left"
 
 
 class TestReplaceTextLiteralVariables(NewFile):
@@ -957,4 +960,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["UV"].links[:]) == 1
+        assert len(uv_node.outputs["Generated"].links[:]) == 1

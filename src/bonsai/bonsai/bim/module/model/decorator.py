@@ -19,15 +19,18 @@
 from __future__ import annotations
 
 import math
-from itertools import chain
-from math import cos, radians, sin, tan
-from typing import Any, Literal, Union
+from math import cos, pi, radians, sin, tan
+from typing import Any, Literal
 
 import blf
 import bmesh
 import bpy
 import gpu
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import mathutils
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -36,6 +39,7 @@ from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from mathutils import Matrix, Quaternion, Vector
 
+import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 
@@ -466,13 +470,14 @@ class PolylineDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 0
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
+        offset = tool.Blender.scale_font_size() * 1.5
+        line_height = tool.Blender.scale_font_size() * 1.25
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
         color = self.addon_prefs.decorations_colour
         color_highlight = self.addon_prefs.decorator_color_special
-        offset = 20
         new_line = 0
         for i, (key, field_name) in enumerate(texts.items()):
             formatted_value = None
@@ -480,7 +485,7 @@ class PolylineDecorator:
                 # Controls which options are displayed in the UI
                 if key not in self.input_ui.input_options:
                     continue
-                new_line += 20
+                new_line += line_height
                 if self.tool_state and key != self.tool_state.input_type:
                     formatted_value = self.input_ui.get_formatted_value(key)
                 else:
@@ -515,7 +520,7 @@ class PolylineDecorator:
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.font_id = 1
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
         blf.size(self.font_id, font_size)
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
@@ -1076,7 +1081,7 @@ class ProductDecorator:
         data["verts"] = []
 
         # Verts
-        polyline_vertices = []
+        polyline_vertices: list[Vector] = []
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -1196,7 +1201,7 @@ class ProductDecorator:
         data = {}
         data["verts"] = []
         # Verts
-        polyline_vertices = []
+        polyline_vertices: list[Vector] = []
         polyline_props = tool.Model.get_polyline_props()
         polyline_data = polyline_props.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -1566,7 +1571,7 @@ class ProductDecorator:
                     obj_type,
                     representation,
                 )
-                context.view_layer.update()
+                bpy.context.view_layer.update()
                 break
 
         translate_mouse = Matrix.Translation(mouse_point)
@@ -1936,7 +1941,7 @@ class BoundingBoxDecorator:
 
         addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
-        font_size = tool.Blender.scale_font_size(12)
+        font_size = tool.Blender.scale_font_size()
         blf.size(font_id, font_size)
         blf.enable(font_id, blf.SHADOW)
         blf.shadow(font_id, 6, 0, 0, 0, 1)

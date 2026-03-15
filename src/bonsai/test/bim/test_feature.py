@@ -378,7 +378,7 @@ def i_look_at_the_panel_panel(panel: str) -> None:
     # Option to provide explicit panel name if panel names overlap.
     panel_class = getattr(bpy.types, panel, None)
 
-    if panel_class is None:
+    if panel_class is None or panel_class.bl_rna.base.name not in ("Panel", "Operator", "Menu", "UIList"):
         global ui_name_cache
         create_ui_name_cache()
         if panel not in ui_name_cache:

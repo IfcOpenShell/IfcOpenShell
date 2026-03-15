@@ -70,7 +70,7 @@ class SetTab(bpy.types.Operator):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
         tool.Blender.setup_tabs()
-        aprops = tool.Blender.get_area_props(context)
+        aprops = tool.Blender.get_active_area_props(context)
         aprops.tab = self.tab
         return {"FINISHED"}
 
@@ -85,7 +85,7 @@ class SwitchTab(bpy.types.Operator):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
         tool.Blender.setup_tabs()
-        aprops = tool.Blender.get_area_props(context)
+        aprops = tool.Blender.get_active_area_props(context)
         aprops.tab = aprops.alt_tab
         return {"FINISHED"}
 

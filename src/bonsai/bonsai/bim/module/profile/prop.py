@@ -19,15 +19,10 @@
 from typing import TYPE_CHECKING, Union
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.attribute
-import ifcopenshell.util.schema
 from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -36,7 +31,7 @@ from bpy.types import PropertyGroup
 
 import bonsai.tool as tool
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.prop import Attribute, StrProperty
+from bonsai.bim.prop import Attribute
 
 
 def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

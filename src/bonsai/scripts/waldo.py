@@ -3,7 +3,6 @@
 from itertools import cycle
 from math import radians
 
-import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry

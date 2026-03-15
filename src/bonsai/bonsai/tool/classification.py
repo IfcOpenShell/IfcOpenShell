@@ -22,10 +22,8 @@ from typing import TYPE_CHECKING, Union, assert_never
 
 import bpy
 import ifcopenshell.api
-import ifcopenshell.util.classification
 
 import bonsai.core.tool
-import bonsai.tool as tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.classification.prop import (

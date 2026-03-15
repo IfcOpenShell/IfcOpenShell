@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 from bpy.types import Panel
 
 import bonsai.bim.module.root.prop as root_prop

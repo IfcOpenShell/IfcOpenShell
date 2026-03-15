@@ -99,6 +99,7 @@ class Blender:
     def get_object_bounding_box(cls, obj): pass
     def get_selected_objects(cls, include_active=False): pass
     def get_viewport_context(cls): pass
+    def operator_idname_to_py(cls, idname): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
     def remove_object(cls, obj): pass
@@ -579,6 +580,7 @@ class Material:
     def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
+    def is_type_product(cls, element): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass

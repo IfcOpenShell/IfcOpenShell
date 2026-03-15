@@ -17,14 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import sys
 import uuid
 
 import bpy
-import bspy  # pyright: ignore[reportMissingImports]
 
 # sys.path.append('C:\Program Files\Python37\Lib\site-packages')
-import lxml
 import lxml.etree
 from bspy import Gbxml  # pyright: ignore[reportMissingImports]
 

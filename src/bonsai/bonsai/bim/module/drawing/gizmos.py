@@ -151,7 +151,7 @@ from bpy_extras.view3d_utils import (
 )
 from gpu_extras.batch import batch_for_shader
 from ifcopenshell.util.unit import si_conversions
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, geometry
 from mathutils.geometry import intersect_line_line
 from mathutils.kdtree import KDTree
 
@@ -1243,9 +1243,7 @@ class SnapManager:
     @staticmethod
     def _redraw_viewport() -> None:
         """Force 3D viewport redraw."""
-        for area in bpy.context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports()
 
     def build_snap_cache(
         self, context: bpy.types.Context, active_obj: bpy.types.Object, include_active: bool = False

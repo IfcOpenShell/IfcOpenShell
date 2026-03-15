@@ -19,17 +19,10 @@
 from typing import TYPE_CHECKING, Union
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.schema
 import ifcopenshell.util.type
 from bpy.props import (
-    BoolProperty,
-    CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
     PointerProperty,
     StringProperty,
 )

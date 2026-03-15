@@ -20,10 +20,11 @@ from __future__ import annotations
 
 import json
 import math
-from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.unit
 from lark import Lark, Transformer
 
 import bonsai.bim.helper

@@ -18,14 +18,11 @@
 
 import enum
 import json
-import os
 from collections.abc import Callable
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+from typing import TYPE_CHECKING, Any, Literal, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bpy.props import (
@@ -34,7 +31,6 @@ from bpy.props import (
     CollectionProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
     IntProperty,
     PointerProperty,
     StringProperty,
@@ -42,19 +38,17 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 from mathutils import Matrix
 
-import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.decoration as decoration
 import bonsai.core.drawing as core
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.data import (
     AnnotationData,
-    DecoratorData,
     DrawingsData,
     ElementValuesData,
     SheetsData,
 )
 from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from bonsai.bim.prop import Attribute, BIMFilterGroup, StrProperty
+from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
 
@@ -679,20 +673,6 @@ class BIMCameraProperties(PropertyGroup):
         return ortho_scale, aspect_ratio
 
 
-DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
-BOX_ALIGNMENT_POSITIONS = [
-    "top-left",
-    "top-middle",
-    "top-right",
-    "middle-left",
-    "center",
-    "middle-right",
-    "bottom-left",
-    "bottom-middle",
-    "bottom-right",
-]
-
-
 class ElementValueRow(PropertyGroup):
     """Represents a single element value row with category, key, and formatted value"""
 
@@ -795,40 +775,38 @@ def get_category_items_with_counts(self, context):
 
 
 class LiteralProps(PropertyGroup):
-    def set_box_alignment(self, new_value):
-        markers = new_value.count(True)
-        if not markers:
-            return
-
-        if markers > 1:
-            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-            # looking for the first value changed to positive
-            first_changed_value = next((i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None)
-
-            # if nothing have changed we just keep the previous value
-            if first_changed_value is None:
-                return
-            new_value = [False] * 9
-            new_value[first_changed_value] = True
-
-        self["box_alignment"] = new_value
-        position_string = BOX_ALIGNMENT_POSITIONS[next(i for i in range(9) if new_value[i])]
-        self.attributes["BoxAlignment"].set_value(position_string)
-
-    def get_box_alignment(self):
-        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    box_alignment: BoolVectorProperty(
-        name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
-    )
     ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
+    )
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
+    )
+
+    def get_box_alignment(self) -> str:
+        alignment = self.align_vertical + "-" + self.align_horizontal
+        if alignment == "middle-middle":
+            alignment = "center"
+        return alignment
 
     def get_literal_edited_data(self) -> dict[str, str]:
         text_data = {
             "CurrentValue": self.attributes["Literal"].string_value,
             "Literal": self.attributes["Literal"].string_value,
-            "BoxAlignment": self.attributes["BoxAlignment"].string_value,
+            "BoxAlignment": self.get_box_alignment(),
         }
         return text_data
 
@@ -866,10 +844,17 @@ class LiteralProps(PropertyGroup):
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
-        box_alignment: tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool]
         ifc_definition_id: int
+        align_horizontal: str
+        align_vertical: str
         element_value_rows: bpy.types.bpy_prop_collection_idprop[ElementValueRow]
         category_for_adding: str
+
+
+def update_text_alignment(self, context):
+    for literal_props in self.literals:
+        literal_props.align_horizontal = self.align_horizontal
+        literal_props.align_vertical = self.align_vertical
 
 
 class BIMTextProperties(PropertyGroup):
@@ -905,6 +890,7 @@ class BIMTextProperties(PropertyGroup):
         ],
         default="left",
         name="Horizontal Alignment",
+        update=update_text_alignment,
     )
     align_vertical: EnumProperty(
         items=[
@@ -914,6 +900,7 @@ class BIMTextProperties(PropertyGroup):
         ],
         default="middle",
         name="Vertical Alignment",
+        update=update_text_alignment,
     )
 
     if TYPE_CHECKING:

@@ -36,11 +36,15 @@ else()
 endif()
 
 macro(build_example exe_name)
-    set (additional_targets ${ARGN})
+    set(additional_targets ${ARGN})
     add_executable(${exe_name} ${exe_name}.cpp)
 
     if(STANDALONE_PROJECT)
-        target_link_libraries(${exe_name} IfcOpenShell::IfcParse $<$<BOOL:${additional_targets}>:IfcOpenShell::${additional_targets}>)
+        target_link_libraries(
+            ${exe_name}
+            IfcOpenShell::IfcParse
+            $<$<BOOL:${additional_targets}>:IfcOpenShell::${additional_targets}>
+        )
     else()
         target_include_directories(${exe_name} PRIVATE "${CMAKE_SOURCE_DIR}/../src")
         target_link_libraries(${exe_name} IfcParse ${additional_targets})

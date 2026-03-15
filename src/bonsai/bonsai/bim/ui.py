@@ -24,10 +24,9 @@ from typing import TYPE_CHECKING, Literal, Optional
 
 import bpy
 import platformdirs
-from bpy.props import BoolProperty, IntProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty
 from bpy.types import Panel
 from ifcopenshell.util.doc import (
-    get_attribute_doc,
     get_entity_doc,
     get_property_set_doc,
     get_type_doc,
@@ -38,7 +37,6 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai import get_debug_info
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
@@ -56,8 +54,6 @@ from bonsai.bim.module.model.ui import (
 )
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
-
-from . import ifc
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
@@ -661,7 +657,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     bsdd_baseurl: StringProperty(
-        name="bSDD API Base URL", description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
+        name="bSDD API Base URL",
+        description="Base URL for data dictionary API requests, e.g. https://api.bsdd.buildingsmart.org/api/",
         default="https://api.bsdd.buildingsmart.org/api/",
     )
     should_disable_undo_on_save: BoolProperty(
@@ -747,6 +744,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=".ifc.metadata.blend",
     )
 
+    decorator_font_scale: bpy.props.FloatProperty(
+        name="Decorator Font Scale",
+        description="Scale factor for decorator font size.",
+        default=1.0,
+    )
+
     if TYPE_CHECKING:
         svg2pdf_command: str
         svg2dxf_command: str
@@ -771,6 +774,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_preview_dictionaries: bool
         bsdd_load_inactive_dictionaries: bool
         bsdd_load_test_dictionaries: bool
+        bsdd_baseurl: str
         should_disable_undo_on_save: bool
         should_stream: bool
         should_always_cache: bool
@@ -786,6 +790,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
+        metadata_blend_file_suffix: str
+        decorator_font_scale: float
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
@@ -1009,6 +1015,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             else:
                 row = layout.row()
                 row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+        layout.prop(self, "decorator_font_scale")
 
 
 # Scene panel groups
@@ -1024,8 +1031,7 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         if not UIData.is_loaded:
             UIData.load()
-        aprops = tool.Blender.get_area_props(context)
-        addon_prefs = tool.Blender.get_addon_preferences()
+        aprops = tool.Blender.get_active_area_props(context)
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -1112,7 +1118,9 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
+    def draw_tab_entry(
+        self, row: bpy.types.UILayout, icon: int | str, tab_name: str, enabled: bool = True, highlight: bool = True
+    ) -> None:
         tab_entry = row.row(align=True)
         if isinstance(icon, int):
             tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon_value=icon).tab = tab_name

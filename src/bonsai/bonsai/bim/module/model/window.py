@@ -17,21 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import collections
 import collections.abc
 import json
-from typing import TYPE_CHECKING, get_args
+from typing import TYPE_CHECKING
 
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 from bmesh.types import BMVert
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS

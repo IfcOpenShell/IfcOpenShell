@@ -160,12 +160,12 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 					}
 					
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
-                    if (rotation_a == rotation_b && rotation_a) {
-                        // @todo we don't support an overridden rotation on only one of the placements
+                    if (rotation_a.has_value() && rotation_b.has_value() ) {
+                            // @todo we don't support an overridden rotation on only one of the placements
                         // in which case we would need to lerp with the rotation component below in m4b.
                         interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
                     } else if (rotation_a != rotation_b) {
-						Logger::Error("Direction vectors on cross section placements only supported when used consistently");
+                        Logger::Error("Direction vectors on cross section placements only supported when used consistently");
 					}
 
 					taxonomy::loop::ptr w1, w2;

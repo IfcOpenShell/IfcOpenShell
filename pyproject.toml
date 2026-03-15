@@ -2,10 +2,10 @@
 name = "IfcOpenShell"
 version = "0.0.0"
 dependencies = [
-    "black==26.1.0",
-    "ruff==0.15.1",
+    "black==26.3.1",
+    "ruff==0.15.6",
     "poethepoet",
-    "gersemi==0.25.4",
+    "gersemi==0.26.1",
 ]
 
 [tool.black]
@@ -15,7 +15,8 @@ include = '''
     |nix/.*.pyi?$
 '''
 extend-exclude = '''
-    src/ifcopenshell-python/ifcopenshell/express/*
+    src/ifcopenshell-python/ifcopenshell/express/rules/*
+    |src/ifcopenshell-python/ifcopenshell/express/express_parser.py
     |src/ifcopenshell-python/ifcopenshell/mvd/*
     |src/ifcopenshell-python/ifcopenshell/simple_spf/*
     |src/ifc2ca/templates/*
@@ -27,6 +28,12 @@ extend-exclude = '''
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
+# Pylance doesn't respect gitignore, so we have to exclude files manually here
+# to avoid VS Code slowing down.
+# https://github.com/microsoft/pylance-release/issues/5169
+exclude = [
+    "_deps",
+]
 
 # Define here general ruff settings,
 # then they will be inherited by projects' .toml files.

@@ -60,7 +60,6 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import ifcopenshell
 import ifcopenshell.express.rule_executor
 import ifcopenshell.ifcopenshell_wrapper
-import ifcopenshell.ifcopenshell_wrapper as W
 
 if TYPE_CHECKING:
     import ifcopenshell.simple_spf
@@ -705,10 +704,10 @@ def validate_ifc_header(
             log_error(header_entity, name, index, STRING_TYPE, type(value).__name__)
 
     # Ignore header.file_schema as file won't load to IfcOpenShell with invalid file_schema.
-    file_description: W.FileDescription = header.file_description
+    file_description = header.file_description
     validate_attribute(file_description, "description", 0, aggregate=True)
     validate_attribute(file_description, "implementation_level", 1)
-    file_name: W.FileName = header.file_name
+    file_name = header.file_name
     validate_attribute(file_name, "name", 0)
     validate_attribute(file_name, "time_stamp", 1)
     validate_attribute(file_name, "author", 2, aggregate=True)
@@ -794,6 +793,12 @@ if __name__ == "__main__":
     parser.add_argument("--rules", action="store_true", help="Run express rules.")
     parser.add_argument("--json", action="store_true", help="Output in JSON format.")
     parser.add_argument(
+        "--recursion-limit",
+        type=int,
+        default=-1,
+        help="Override sys.getrecursionlimit to process express rules on deeply nested structures (e.g 10000)",
+    )
+    parser.add_argument(
         "--fields",
         action="store_true",
         help="Output more detailed information about failed entities (only with --json).",
@@ -803,6 +808,9 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+
+    if args.recursion_limit > 0:
+        sys.setrecursionlimit(args.recursion_limit)
 
     for fn in filenames:
         handler = None

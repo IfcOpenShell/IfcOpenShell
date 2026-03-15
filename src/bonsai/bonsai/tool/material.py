@@ -38,7 +38,6 @@ if TYPE_CHECKING:
         BIMMaterialProperties,
         BIMObjectMaterialProperties,
     )
-    from bonsai.bim.module.material.prop import Material as MaterialItem
 
 
 class Material(bonsai.core.tool.Material):
@@ -226,6 +225,10 @@ class Material(bonsai.core.tool.Material):
             "IfcMaterialLayerSet",
             "IfcMaterialProfileSet",
         ]
+
+    @classmethod
+    def is_type_product(cls, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcTypeProduct")
 
     @classmethod
     def add_material_to_set(

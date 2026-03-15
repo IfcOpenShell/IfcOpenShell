@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import collections
 import collections.abc
 import json
 from collections.abc import Iterable, Sequence
@@ -38,7 +37,6 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
@@ -78,6 +76,7 @@ if TYPE_CHECKING:
         BIMRailingProperties,
         BIMRoofProperties,
         BIMStairProperties,
+        BIMSverchokProperties,
         BIMWindowProperties,
     )
 
@@ -89,23 +88,27 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
-        return obj.BIMDoorProperties
+        return obj.BIMDoorProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_window_props(cls, obj: bpy.types.Object) -> BIMWindowProperties:
-        return obj.BIMWindowProperties
+        return obj.BIMWindowProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
-        return obj.BIMStairProperties
+        return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
-        return obj.BIMRoofProperties
+        return obj.BIMRoofProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
-        return obj.BIMRailingProperties
+        return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
+        return obj.BIMSverchokProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:
@@ -1244,18 +1247,7 @@ class Model(bonsai.core.tool.Model):
 
                 height = 100
 
-                is_horizontal = False
-                if element.is_a("IfcSlabType"):
-                    is_horizontal = True
-
-                parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-                if parametric:
-                    layer_set_direction = parametric.get("LayerSetDirection", None)
-                    if layer_set_direction == "AXIS2":
-                        is_horizontal = False
-                    elif layer_set_direction == "AXIS3":
-                        is_horizontal = True
-
+                is_horizontal = cls.get_usage_type(element) == "LAYER3"
                 if is_horizontal:
                     width, height = height, width
 
@@ -1266,7 +1258,7 @@ class Model(bonsai.core.tool.Model):
                 del thicknesses[-1]
                 for thickness in thicknesses:
                     current_thickness += thickness
-                    if element.is_a("IfcSlabType"):
+                    if is_horizontal:
                         y = (current_thickness / total_thickness) * height
                         line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
                     else:
@@ -2637,7 +2629,7 @@ class Model(bonsai.core.tool.Model):
         reference_obj: bpy.types.Object,
         objs: Iterable[bpy.types.Object],
         align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
-    ):
+    ) -> None:
         if align_type == "CENTER":
             point = reference_obj.matrix_world @ (Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2))
         elif align_type == "POSITIVE":
@@ -2782,7 +2774,7 @@ class Model(bonsai.core.tool.Model):
             SvIfcStore.use_bonsai_file = False
 
     @classmethod
-    def create_bmesh_from_vertices(cls, vertices, is_closed=False):
+    def create_bmesh_from_vertices(cls, vertices: list[Vector], is_closed: bool = False) -> bmesh.types.BMesh:
         bm = bmesh.new()
 
         new_verts = [bm.verts.new(v) for v in vertices]

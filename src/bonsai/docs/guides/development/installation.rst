@@ -10,6 +10,8 @@ There are different methods of installation, depending on your situation.
    recommended for developers who are actively coding.
 4. :ref:`guides/development/installation:Packaged installation` is recommended
    for those who use a package manager.
+5. :ref:`guides/development/installation:BonsaiPR (Bleeding Edge) Installation` merges all open, non-draft PRs automatically.
+
 
 System requirements
 -------------------
@@ -230,6 +232,95 @@ source of truth for how dependencies are bundled are found in
 the `Makefile
 <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/bonsai/Makefile>`__
 in the ``dist`` target.
+
+
+
+BonsaiPR (Bleeding Edge) Installation
+--------------------------------------
+
+**BonsaiPR** is a community-maintained build that automatically merges open pull
+requests (PRs) from the IfcOpenShell repository into a single installable add-on.
+It is intended for power users and testers who want to try the latest community
+contributions before they are officially reviewed and merged.
+
+Why BonsaiPR Exists
+~~~~~~~~~~~~~~~~~~~~
+
+Many excellent PRs are submitted by contributors, but core maintainers have
+limited time for timely reviews. As a result, PRs often sit unmerged,
+contributors lose momentum, and valuable work risks being forgotten.
+
+BonsaiPR addresses this by providing a ``bleeding_edge`` build that merges all
+open, non-draft PRs automatically. Power users can install this build to test
+multiple PRs together, helping catch issues earlier and reducing the load on core
+developers.
+
+.. warning::
+
+   You must enable either **Bonsai** or **BonsaiPR**, but **not both at the
+   same time**. Enabling both can cause conflicts or unexpected behaviour. To
+   switch between them, disable the active one before enabling the other.
+
+How It Works
+~~~~~~~~~~~~~
+
+On a regular basis (and whenever a PR is opened or modified), an automated
+system:
+
+1. Clones the IfcOpenShell repository and merges all open, non-draft PRs.
+2. Builds the resulting add-on for all supported platforms.
+3. Publishes the result as a release on the `BonsaiPR releases page
+   <https://github.com/falken10vdl/bonsaiPR/releases>`__.
+4. The list of branches is also published on `falken10vdl's IfcOpenShell Fork
+   <https://github.com/falken10vdl/IfcOpenShell/branches>`__.
+
+Each release includes a full report listing which PRs were merged successfully,
+which were skipped (e.g. drafts), and which failed due to conflicts with other
+PRs.
+
+Installing BonsaiPR with Automated Updates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Open Blender and go to :menuselection:`Edit --> Preferences --> Add-ons`.
+   Disable **Bonsai** if it is currently enabled.
+
+2. Click on the **Get Extensions** tab in the left sidebar.
+
+3. In the top right, click the **Repositories** dropdown, then the **+ icon**,
+   and select **Add Remote Repository**.
+
+4. Enter the following URL::
+
+      https://raw.githubusercontent.com/falken10vdl/bonsaiPR/refs/heads/main/index.json
+
+5. Enable **Check for Updates on Startup**, then click **Create**.
+
+6. In the **Get Extensions** search bar, type ``bonsai`` and look for
+   **BonsaiPR**. Click **Install**.
+
+7. Go to :menuselection:`Edit --> Preferences --> Add-ons` and confirm that
+   **BonsaiPR** is enabled and **Bonsai** is disabled.
+
+8. Restart Blender.
+
+Blender will automatically check for updates to the BonsaiPR extension on
+startup, so you will always have access to the latest bleeding edge build.
+
+Installing BonsaiPR Manually
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you prefer to install manually, download the appropriate ``.zip`` file for
+your platform from the `BonsaiPR releases page
+<https://github.com/falken10vdl/bonsaiPR/releases>`__:
+
+- **Linux (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-linux-x64.zip``
+- **macOS Intel (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-macos-x64.zip``
+- **macOS Apple Silicon (ARM64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-macos-arm64.zip``
+- **Windows (x64)**: ``bonsaiPR_py311-0.8.4-alphaYYMMDDHHMM-windows-x64.zip``
+
+Then go to :menuselection:`Edit --> Preferences --> Get Extensions --> "V" Icon
+(top right) --> Install from Disk` and select the downloaded zip.
+
 
 Add-on compatibility
 --------------------

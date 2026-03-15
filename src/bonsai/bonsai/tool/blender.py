@@ -74,7 +74,13 @@ if TYPE_CHECKING:
         BIMSolarProperties,
         RadianceExporterProperties,
     )
-    from bonsai.bim.prop import BIMObjectProperties, BIMProperties, BIMSnapProperties
+    from bonsai.bim.prop import (
+        BIMAreaProperties,
+        BIMCollectionProperties,
+        BIMObjectProperties,
+        BIMProperties,
+        BIMTabProperties,
+    )
 
     T = TypeVar("T")
 
@@ -138,17 +144,20 @@ class Blender(bonsai.core.tool.Blender):
         space.region_3d.view_perspective = "CAMERA"
 
     @classmethod
-    def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
+    def get_active_area_props(cls, context: bpy.types.Context) -> BIMAreaProperties | BIMTabProperties:
+        FULLSCREEN_SUFFIX = "-nonnormal"  # Ctrl-space temporary fullscreen
+        assert (screen := context.screen)
         try:
-            if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
-                screen = bpy.data.screens[context.screen.name.removesuffix("-nonnormal")]
+            if screen.name.endswith(FULLSCREEN_SUFFIX):
+                screen = bpy.data.screens[screen.name.removesuffix(FULLSCREEN_SUFFIX)]
                 # The original area object has its type changed to "EMPTY" apparently
                 index = [a.type for a in screen.areas].index("EMPTY")
-                return screen.BIMAreaProperties[index]
-            return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+                return cls.get_area_props(screen)[index]
+            assert (area := context.area)
+            return cls.get_area_props(screen)[screen.areas[:].index(area)]
         except IndexError:
             # Fallback in case areas aren't setup yet.
-            return context.screen.BIMTabProperties
+            return cls.get_tab_props(screen)
 
     @classmethod
     def set_active_object(cls, obj: bpy.types.Object) -> None:
@@ -165,15 +174,16 @@ class Blender(bonsai.core.tool.Blender):
     def setup_tabs(cls) -> None:
         # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
         for screen in bpy.data.screens:
-            if len(screen.BIMAreaProperties) == 20:
+            area_props = cls.get_area_props(screen)
+            if len(area_props) == 20:
                 continue
-            screen.BIMAreaProperties.clear()
+            area_props.clear()
             for i in range(20):  # 20 is an arbitrary value of split areas
-                screen.BIMAreaProperties.add()
+                area_props.add()
 
     @classmethod
     def should_show_panel(cls, context: bpy.types.Context, tab: str, panel: str) -> bool:
-        aprops = cls.get_area_props(context)
+        aprops = cls.get_active_area_props(context)
         if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
         if (is_bookmark_tab := aprops.tab == "BOOKMARK") or aprops.tab == tab:
@@ -185,6 +195,7 @@ class Blender(bonsai.core.tool.Blender):
                     return True
             elif panel_visibility.is_visible:
                 return True
+        return False
 
     @classmethod
     def is_default_scene(cls) -> bool:
@@ -330,15 +341,27 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_view3d_area(cls) -> Union[bpy.types.Area, None]:
-        for window in bpy.context.window_manager.windows:
+        assert (wm := bpy.context.window_manager)
+        for window in wm.windows:
             for area in window.screen.areas:
                 if area.type == "VIEW_3D":
                     return area
 
     @classmethod
+    def operator_idname_to_py(cls, idname: str) -> str:
+        """Convert a Blender internal operator idname to its Python equivalent.
+
+        Example: ``MESH_OT_primitive_cube_add`` -> ``mesh.primitive_cube_add``
+        """
+        module, func = idname.split("_OT_", 1)
+        return f"{module.lower()}.{func}"
+
+    @classmethod
     def get_view3d_space(cls) -> Union[bpy.types.SpaceView3D, None]:
         if area := cls.get_view3d_area():
-            return area.spaces.active
+            space = area.spaces.active
+            assert isinstance(space, bpy.types.SpaceView3D)
+            return space
 
     @classmethod
     def get_blender_prop_default_value(cls, props: bpy.types.bpy_struct, prop_name: str) -> Any:
@@ -458,6 +481,14 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def update_viewport(cls) -> None:
         cls.get_viewport_context()["area"].tag_redraw()
+
+    @classmethod
+    def update_all_viewports(cls, context: bpy.types.Context | None = None) -> None:
+        context = context or bpy.context
+        assert context.screen
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
 
     @classmethod
     def force_depsgraph_update(cls) -> None:
@@ -1489,7 +1520,7 @@ class Blender(bonsai.core.tool.Blender):
     def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
         @classmethod
         def poll_check_blender_tab(cls, context):
-            aprops = tool.Blender.get_area_props(context)
+            aprops = tool.Blender.get_active_area_props(context)
             if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
                 return True
             return aprops.tab == "BLENDER"
@@ -1571,13 +1602,22 @@ class Blender(bonsai.core.tool.Blender):
         return getattr(scene, "sun_pos_properties", None)
 
     @classmethod
-    def scale_font_size(cls, size):
+    def scale_font_size(cls, size=None):
         default_dpi = 72
         default_pixel_size = 1.0
+        ui_style = bpy.context.preferences.ui_styles[0]
+        base_size = ui_style.widget.points if size is None else size
+        platform_scale = 0.5 if sys.platform == "darwin" else 1
+
         default_scale = default_dpi * default_pixel_size
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
-        return (system_scale / default_scale) * size
+        return (
+            (system_scale / default_scale)
+            * base_size
+            * platform_scale
+            * tool.Blender.get_addon_preferences().decorator_font_scale
+        )
 
     @classmethod
     def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
@@ -1821,6 +1861,18 @@ class Blender(bonsai.core.tool.Blender):
         return scene.BIMProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
+    def get_area_props(cls, screen: bpy.types.Screen) -> bpy.types.bpy_prop_collection_idprop[BIMAreaProperties]:
+        return screen.BIMAreaProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_tab_props(cls, screen: bpy.types.Screen) -> BIMTabProperties:
+        return screen.BIMTabProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_collection_props(cls, collection: bpy.types.Collection) -> BIMCollectionProperties:
+        return collection.BIMCollectionProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
     def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
         return obj.BIMObjectProperties  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -1873,19 +1925,21 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def clear_undo_history(cls) -> None:
         """Clears the Blender history, Bonsai history, and IfcOpenShell history"""
-        old_undo_steps = bpy.context.preferences.edit.undo_steps
-        bpy.context.preferences.edit.undo_steps = 2
+        assert (preferences := bpy.context.preferences)
+        old_undo_steps = preferences.edit.undo_steps
+        preferences.edit.undo_steps = 2
         for i in range(3):
             bpy.ops.ed.undo_push(message="Undo history cleared")
-        bpy.context.preferences.edit.undo_steps = old_undo_steps
+        preferences.edit.undo_steps = old_undo_steps
         tool.Ifc.clear_history()
         old_history_size = tool.Ifc.get().history_size
         tool.Ifc.get().set_history_size(0)
         tool.Ifc.get().set_history_size(old_history_size)
 
     @classmethod
-    def get_unit_scale(cls):
-        unit_length = bpy.context.scene.unit_settings.length_unit
+    def get_unit_scale(cls) -> float:
+        assert (scene := bpy.context.scene)
+        unit_length = scene.unit_settings.length_unit
         unit_scale = 1.0
         if unit_length == "CENTIMETERS":
             unit_scale = 0.01
@@ -2175,3 +2229,32 @@ class Blender(bonsai.core.tool.Blender):
             for f in files
             if (Path(directory) / f.name).is_file()
         ]
+
+    @classmethod
+    def ray_cast_scene(
+        cls,
+        context: bpy.types.Context,
+        origin: Vector,
+        direction: Vector,
+    ) -> tuple[bool, Vector, Vector, int, bpy.types.Object, Matrix]:
+        """
+
+        The returned matrix is just ``obj.matrix_world``.
+        The returned object is not evaluated by the current depsgraph,
+        e.g. if object is modified by the depsgraph (e.g. by modifiers)
+        object has to be evaluated first (`obj.evaluated_get(depsgraph)`).
+        """
+        depsgraph = context.evaluated_depsgraph_get()
+        assert context.scene
+        result = context.scene.ray_cast(
+            depsgraph,
+            origin,
+            direction,
+        )
+        return result
+
+    @classmethod
+    def depsgraph_evaluate(cls, obj: bpy.types.Object) -> bpy.types.Object:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated_obj = obj.evaluated_get(depsgraph)
+        return evaluated_obj

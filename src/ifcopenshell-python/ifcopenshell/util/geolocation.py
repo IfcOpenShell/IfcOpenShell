@@ -18,7 +18,7 @@
 
 import math
 from decimal import ROUND_HALF_UP, Decimal
-from typing import NamedTuple, Optional, Union, Any
+from typing import Any, NamedTuple, Optional, Union
 
 import numpy as np
 

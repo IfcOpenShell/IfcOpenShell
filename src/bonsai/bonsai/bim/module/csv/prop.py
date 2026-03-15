@@ -23,15 +23,11 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    IntProperty,
-    PointerProperty,
     StringProperty,
 )
 from bpy.types import PropertyGroup
 
-from bonsai.bim.prop import BIMFilterGroup, StrProperty
+from bonsai.bim.prop import BIMFilterGroup
 
 
 class CsvAttribute(PropertyGroup):

@@ -16,18 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell
 import pytest
 
+import bonsai
 import bonsai.core.tool
 import bonsai.tool as tool
-import tempfile
 from bonsai.tool.blender import Blender as subject
 from test.bim.bootstrap import NewFile
-from pathlib import Path
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
@@ -144,3 +145,25 @@ class TestGetSelectedFiles(NewFile):
                     assert subject.get_selected_files(Path(g.name).parent, [file], use_relative_path=True) == [
                         Path(g.name).name
                     ]
+
+
+class TestGetDebugInfo(NewFile):
+    # Only keys that are safe to set if Bonsai fails to load.
+    EXPECTED_KEYS = {
+        "os",
+        "os_version",
+        "python_version",
+        "architecture",
+        "machine",
+        "processor",
+        "blender_version",
+        "bonsai_version",
+        "bonsai_commit_hash",
+        "bonsai_commit_date",
+        "last_actions",
+        "last_error",
+    }
+
+    def test_failed_to_load_returns_only_base_keys(self):
+        info = bonsai.get_debug_info(bonsai_failed_to_load=True)
+        assert set(info.keys()) == self.EXPECTED_KEYS

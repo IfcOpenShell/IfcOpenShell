@@ -18,12 +18,10 @@
 
 import math
 from dataclasses import dataclass, field
-from math import cos, degrees, radians, sin, tan
+from math import radians
 from typing import Literal, Optional, Union
 
-import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.util.unit
 from lark import Lark, Transformer
 from mathutils import Matrix, Vector
@@ -535,9 +533,12 @@ class Polyline(bonsai.core.tool.Polyline):
             polyline_data = polyline_data[0]
         polyline_points = polyline_data.polyline_points
         if polyline_points:
-            # Avoids creating two points at the same location
-            for point in polyline_points[1:]:  # The first can be repeated to form a wall loop
+            # Avoids creating two points at the same location.
+            # The only exception is repeating the first point to close a loop (requires >= 3 existing points).
+            for i, point in enumerate(polyline_points):
                 if (x, y, z) == (point.x, point.y, point.z):
+                    if i == 0 and len(polyline_points) >= 3:
+                        continue
                     return "Cannot create two points at the same location"
             # Avoids creating overlapping edges
             if len(polyline_points) > 1:

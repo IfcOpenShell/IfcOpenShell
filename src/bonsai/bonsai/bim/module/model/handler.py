@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifcopenshell
 import ifcopenshell.api
 from bpy.app.handlers import persistent
 
-from bonsai.bim.module.model import opening, product, profile, slab, task, wall
+from bonsai.bim.module.model import opening, product, profile, task
 
 
 @persistent

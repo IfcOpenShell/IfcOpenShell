@@ -32,7 +32,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
@@ -748,6 +747,7 @@ class IfcImporter:
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
                 product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
@@ -1021,7 +1021,8 @@ class IfcImporter:
         obj.hide_select = True
         obj.hide_viewport = True
         self.project["blender"].objects.link(obj)
-        self.project["blender"].BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(self.project["blender"])
+        collection_props.obj = obj
         props = tool.Blender.get_object_bim_props(obj)
         props.collection = self.collections[project.GlobalId] = self.project["blender"]
 

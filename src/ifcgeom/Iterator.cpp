@@ -620,17 +620,7 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
-	}
-#ifdef IFOPSH_WITH_OPENCASCADE
-	catch (const Standard_Failure& e) {
-		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
-		} else {
-			Logger::Error("Unknown error returning product");
-		}
-	}
-#endif
-	catch (...) {
+	} catch (...) {
 		Logger::Error("Unknown error returning product");
 	}
 
@@ -645,18 +635,7 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create() {
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 		had_error_processing_elements_ = true;
-	}
-#ifdef IFOPSH_WITH_OPENCASCADE
-	catch (const Standard_Failure& e) {
-		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
-		} else {
-			Logger::Error("Unknown error creating geometry");
-		}
-		had_error_processing_elements_ = true;
-	}
-#endif
-	catch (...) {
+	} catch (...) {
 		Logger::Error("Unknown error creating geometry");
 		had_error_processing_elements_ = true;
 	}

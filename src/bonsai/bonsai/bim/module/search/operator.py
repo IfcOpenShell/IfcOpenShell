@@ -19,11 +19,10 @@
 import bisect
 import json
 import traceback
-from typing import TYPE_CHECKING, Literal, assert_never, get_args
+from typing import TYPE_CHECKING, Any, Literal, assert_never, get_args
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
@@ -31,13 +30,10 @@ from bpy.props import (
     BoolProperty,
     CollectionProperty,
     EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
     IntProperty,
-    PointerProperty,
     StringProperty,
 )
-from bpy.types import Operator, PropertyGroup
+from bpy.types import Operator
 from natsort import natsorted
 
 import bonsai.core.search as core
@@ -46,6 +42,8 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 
 if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
     from bonsai.bim.prop import BIMFacet
 
 
@@ -695,9 +693,9 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         filter_groups = tool.Search.get_filter_groups(module)
 
         if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,
@@ -795,6 +793,27 @@ class Search(Operator):
         return {"FINISHED"}
 
 
+class SelectQueryElements(Operator):
+    bl_idname = "bim.select_query_elements"
+    bl_label = "Select Query Elements"
+    bl_description = "Select elements matching an provided selector query"
+    bl_options = {"REGISTER", "UNDO"}
+
+    query: StringProperty(name="Query")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        query: str
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), self.query)
+        objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
+        active_object = context.active_object or next(iter(objs), None)
+        selection = tool.Blender.validate_object_selection(context, active_object, objs)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
+        return {"FINISHED"}
+
+
 class SaveSearch(Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_search"
     bl_label = "Save Search"
@@ -852,9 +871,9 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             query = tool.Search.export_filter_query(filter_groups)
             results = tool.Search.execute_filter_groups(filter_groups)
 
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,
@@ -1057,8 +1076,8 @@ class ColourByProperty(Operator):
                 colourscheme[str(values[index])]["total"] += 1
                 obj.color = (*tool.Search.get_quantitative_palette(palette, value, min_value, max_value), 1)
 
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
 
@@ -1082,16 +1101,18 @@ class ColourByProperty(Operator):
             return (1, value)
 
     def store_state(self, context):
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+        if space := tool.Blender.get_view3d_space():
+            self.transaction_data = {"color_type": space.shading.color_type}
 
     def rollback(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = data["color_type"]
 
     def commit(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = "OBJECT"
 
 
 class SelectByProperty(Operator):

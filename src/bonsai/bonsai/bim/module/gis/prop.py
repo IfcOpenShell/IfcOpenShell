@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
+import bpy
 from bpy.props import BoolProperty, CollectionProperty, EnumProperty, StringProperty
 from bpy.types import PropertyGroup
 
@@ -37,3 +40,13 @@ class BIMCityJsonProperties(PropertyGroup):
     lod: EnumProperty(name="LOD", description="", items=get_lods, options={"ANIMATABLE"}, default=None)
     is_lod_found: BoolProperty(name="Is LOD Found", default=False)
     load_after_convert: BoolProperty(name="Load After Converting", default=True)
+
+    if TYPE_CHECKING:
+        input: str
+        output: str
+        name: str
+        split_lod: bool
+        lods: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        lod: str
+        is_lod_found: bool
+        load_after_convert: bool

@@ -543,8 +543,8 @@ piecewise_function::const_ptr offset_function::get_offset() const { return offse
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
 	ifcopenshell::geometry::visit<taxonomy::collection>(deep, [&flat](taxonomy::ptr i) {
-		flat->children.push_back(taxonomy::cast<taxonomy::geom_item>(clone(i)));
-		});
+		flat->children.push_back(std::static_pointer_cast<taxonomy::geom_item>(clone(i)));
+	});
 	return flat;
 }
 

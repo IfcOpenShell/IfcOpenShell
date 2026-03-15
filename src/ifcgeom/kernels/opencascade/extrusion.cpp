@@ -72,6 +72,8 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Shape shape;
 	if (!convert(extrusion, shape)) {
 		return false;
@@ -84,4 +86,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, I
 		extrusion->surface_style
 	));
 	return true;
+
+	});
 }

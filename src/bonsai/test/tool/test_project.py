@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
 import contextlib
+import json
 import tempfile
-import numpy as np
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import cast
 
 import bpy
 import ifcopenshell
@@ -30,6 +30,7 @@ import ifcopenshell.api.document
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcpatch
+import numpy as np
 from ifcpatch.recipes import Ifc2Sql
 
 import bonsai.core.tool
@@ -399,3 +400,43 @@ class TestLoadingIfcSqlite(NewFile):
             for element_name in elements_without_meshes:
                 assert element_name in bpy.data.objects
                 assert not bpy.data.objects[element_name].data
+
+
+class TestGettingLinkedElementGeomSlice:
+    TEST_OBJ = {
+        "guids": ["aaa", "bbb", "ccc"],
+        "guid_ids": [5, 10, 15],
+    }
+
+    def test_get_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)
+
+    def test_get_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_skip_hidden_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [0]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "bbb")
+        assert range(15)[slice_] == range(5)
+
+    def test_skip_hidden_middle_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "ccc")
+        assert range(15)[slice_] == range(5, 10)
+
+    def test_handle_hidden_non_first_element(self):
+        obj = TestGettingLinkedElementGeomSlice.TEST_OBJ
+        obj = obj | {"hidden_indices": [1]}
+        obj = cast(bpy.types.Object, obj)
+        slice_ = subject.Link.get_linked_element_geom_slice(obj, "aaa")
+        assert range(15)[slice_] == range(5)

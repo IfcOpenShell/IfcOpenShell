@@ -18,28 +18,13 @@
 
 from __future__ import annotations
 
-import copy
-import math
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Union
 
-import bmesh
 import bpy
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.geom
-import ifcopenshell.util.element
-import ifcopenshell.util.placement
-import ifcopenshell.util.representation
-import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import mathutils.geometry
-from lark import Lark, Transformer
 from mathutils import Vector
 
-import bonsai.core.geometry
-import bonsai.core.model as core
-import bonsai.core.root
-import bonsai.core.type
 import bonsai.tool as tool
 from bonsai.bim.module.model.decorator import PolylineDecorator
 
