@@ -67,6 +67,7 @@ import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
 from bonsai.bim.module.drawing.decoration import CutDecorator
@@ -1767,7 +1768,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
 
     def draw(self, context):
         self.layout.prop(self, "annotation_subtype", expand=True)
-        self.layout.prop(self, "drawing_id")
+        prop_with_search(self.layout, self, "drawing_id", should_click_ok=True, search_threshold=0, original_operator_path=f"{__name__}.AddAnnotation")
 
     def _execute(self, context):
         props = tool.Drawing.get_annotation_props()
@@ -1829,7 +1830,7 @@ class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
-        self.layout.prop(self, "drawing_id")
+        prop_with_search(self.layout, self, "drawing_id", search_threshold=0, original_operator_path=f"{__name__}.AssignManualDrawingReference")
 
     def _execute(self, context):
         element = tool.Ifc.get_entity(context.active_object)
