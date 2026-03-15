@@ -227,6 +227,10 @@ class Material(bonsai.core.tool.Material):
         ]
 
     @classmethod
+    def is_type_product(cls, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcTypeProduct")
+
+    @classmethod
     def add_material_to_set(
         cls, material_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
     ) -> None:

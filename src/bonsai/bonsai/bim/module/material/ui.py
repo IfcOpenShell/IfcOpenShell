@@ -118,12 +118,17 @@ class BIM_PT_materials(Panel):
             row.operator("bim.edit_material", text="Save Material", icon="CHECKMARK").material = ifc_definition_id
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")
         elif self.props.editing_material_type == "STYLE":
-            row = self.layout.row(align=True)
-            row.prop(self.props, "contexts", text="")
-            prop_with_search(row, self.props, "styles", text="")
-            row = self.layout.row(align=True)
-            row.operator("bim.edit_material_style", text="Assign Style", icon="CHECKMARK")
-            row.operator("bim.disable_editing_material", text="", icon="CANCEL")
+            if MaterialsData.data["styles"]:
+                row = self.layout.row(align=True)
+                row.prop(self.props, "contexts", text="")
+                prop_with_search(row, self.props, "styles", text="")
+                row = self.layout.row(align=True)
+                row.operator("bim.edit_material_style", text="Assign Style", icon="CHECKMARK")
+                row.operator("bim.disable_editing_material", text="", icon="CANCEL")
+            else:
+                row = self.layout.row(align=True)
+                row.label(text="No Styles Found")
+                row.operator("bim.disable_editing_material", text="", icon="CANCEL")
 
 
 class BIM_PT_object_material(Panel):

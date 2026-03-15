@@ -102,7 +102,6 @@ class MaterialsData:
             if (style_name := s.Name) is not None
         ]
         results = natsorted(results, key=lambda i: i[1])
-        results.insert(0, ("-", "No Surface Style", ""))
         return results
 
     @classmethod

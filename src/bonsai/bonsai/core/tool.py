@@ -580,6 +580,7 @@ class Material:
     def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
+    def is_type_product(cls, element): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass

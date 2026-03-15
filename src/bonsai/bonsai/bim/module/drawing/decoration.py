@@ -1787,7 +1787,7 @@ class CutDecorator:
 
         # Handle both old float64 and new float32 checksums for version compatibility
         rot_checksum_bytes: bytes = eval(DecoratorData.camera_rotation_checksum)
-        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9)
+        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9).reshape(3, 3)
         rot_real = tool.Blender.np_array_legacy(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))

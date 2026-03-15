@@ -262,7 +262,7 @@ class BIM_PT_object_psets(Panel):
 
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
-        if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url):
+        if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url()):
             op = row.operator("bim.add_pset", icon="ADD", text="")
             op.obj = obj.name
             op.obj_type = "Object"
