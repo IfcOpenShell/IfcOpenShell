@@ -223,7 +223,8 @@ class AnnotationToolUI:
 
     @classmethod
     def draw_edit_object_interface(cls, context):
-        if DecoratorData.get_text_data(bpy.context.active_object):
+        obj = bpy.context.active_object
+        if tool.Ifc.get_entity(obj) and DecoratorData.get_text_data(obj):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
 
     @classmethod

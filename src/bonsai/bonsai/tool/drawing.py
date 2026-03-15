@@ -217,7 +217,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 math.radians(90), 4, "X"
             )
         elif object_type == "SECTION":
-            obj.matrix_world = Matrix.Translation(bpy.context.scene.cursor.location.copy())
+            camera = tool.Ifc.get_object(drawing)
+            obj.matrix_world = cls.get_default_annotation_matrix(camera)
             obj = annotation.Annotator.add_line_to_annotation(obj)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
