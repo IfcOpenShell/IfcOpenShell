@@ -1898,7 +1898,10 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             drawing=drawing,
             object_type=props.object_type,
             relating_type=tool.Ifc.get().by_id(int(props.relating_type_id)) if props.relating_type_id != "0" else None,
-            enable_editing=True,
+            # ELEVATION/SECTION annotations use simple empty/line geometry that
+            # cannot be tessellated by the IFC geometry engine, so skip IFC
+            # item edit mode for these types.
+            enable_editing=object_type not in ("ELEVATION", "SECTION"),
         )
         if props.object_type == "IMAGE":
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
