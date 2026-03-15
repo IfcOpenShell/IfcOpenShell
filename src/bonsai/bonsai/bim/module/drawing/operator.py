@@ -3886,8 +3886,7 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
 
-        params = {"check_existing": False}
-        image = load_image(abs_path.name, str(abs_path.parent), **params)
+        image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
 
         mesh = bpy.data.meshes.new(image_filepath.stem)
         obj = bpy.data.objects.new(image_filepath.stem, mesh)

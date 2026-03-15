@@ -313,6 +313,6 @@ Scenario: Create sheet - with a drawing added to it
 Scenario: Add reference image
     Given an empty IFC project
     And I save IFC project
-    When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg')"
+    When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg', x_length=1, y_length=0.565)"
     Then the object "IfcAnnotation/image" exists
     And the object "IfcAnnotation/image" dimensions are "1.0,0.565,0."
