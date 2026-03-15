@@ -1908,6 +1908,55 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
 # inherits from it.  This placeholder keeps the module namespace tidy.
 
 
+def _get_drawing_enum_items(self, context):
+    items = [("0", "None", "Clear the drawing assignment")]
+    if ifc := tool.Ifc.get():
+        for d in ifc.by_type("IfcAnnotation"):
+            if d.ObjectType == "DRAWING":
+                items.append((str(d.id()), d.Name or f"Drawing {d.id()}", ""))
+    return items
+
+
+class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_manual_drawing_reference"
+    bl_label = "Assign Drawing"
+    bl_description = "Assign a target drawing to this manual drawing reference tag"
+    bl_options = {"REGISTER", "UNDO"}
+    drawing_id: bpy.props.EnumProperty(name="Drawing", items=_get_drawing_enum_items)
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        if element.ObjectType not in ("ELEVATION", "SECTION"):
+            cls.poll_message_set("Active object is not an elevation or section annotation.")
+            return False
+        if not ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"):
+            cls.poll_message_set("Active object is not a manual drawing reference.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        element = tool.Ifc.get_entity(context.active_object)
+        current = tool.Drawing.get_annotation_element(element)
+        self.drawing_id = str(current.id()) if current else "0"
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        self.layout.prop(self, "drawing_id")
+
+    def _execute(self, context):
+        element = tool.Ifc.get_entity(context.active_object)
+        drawing = tool.Ifc.get().by_id(int(self.drawing_id)) if self.drawing_id != "0" else None
+        core.assign_manual_drawing_reference(tool.Ifc, tool.Drawing, element=element, drawing=drawing)
+        for area in context.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
