@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from database.neo4j import db
 from fastapi import Depends, HTTPException, Security, status
@@ -33,10 +33,8 @@ credentials_exception = HTTPException(
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     payload = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expires_delta = expires_delta or timedelta(minutes=15)
+    expire = datetime.now(timezone.utc) + expires_delta
     payload.update({"expires": str(expire)})
     encoded_jwt = jwt.encode(payload, secrets["security_secret_key"], algorithm=os.environ["SECURITY_ALGORITHM"])
     return encoded_jwt
