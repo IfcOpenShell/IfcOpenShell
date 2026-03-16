@@ -1300,13 +1300,16 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         use_cache: bool
 
     def draw(self, context):
+        assert self.layout
         pprops = tool.Project.get_project_props()
         row = self.layout.row()
         row.prop(self, "use_relative_path")
         row = self.layout.row()
         row.prop(self, "use_cache")
         row = self.layout.row()
-        row.prop(pprops, "false_origin_mode")
+        row.label(text="False Origin Mode:")
+        row = self.layout.row()
+        row.prop(pprops, "false_origin_mode", text="")
         if pprops.false_origin_mode == "MANUAL":
             row = self.layout.row()
             row.prop(pprops, "false_origin")
