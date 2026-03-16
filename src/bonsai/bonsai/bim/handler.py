@@ -445,8 +445,12 @@ def save_post(scene) -> None:
     blend_dir = bpy.path.abspath("//")
     if not blend_dir:
         return
+    from pathlib import Path
     from bonsai.bim.ifc import IfcStore
-    rel_path = os.path.relpath(ifc_path, blend_dir)
+    try:
+        rel_path = str(Path(ifc_path).relative_to(blend_dir))
+    except ValueError:
+        return  # IFC file is not under the blend directory; keep absolute path
     bim_props.ifc_file = rel_path
     IfcStore.set_path(ifc_path)  # keep IfcStore.path absolute for loading
 
