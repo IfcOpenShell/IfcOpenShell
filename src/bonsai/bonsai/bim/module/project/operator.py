@@ -1329,7 +1329,10 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     query: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
         name="Query",
-        description="Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.",
+        description=(
+            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
+            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+        ),
     )
 
     filename_ext = ".ifc"
