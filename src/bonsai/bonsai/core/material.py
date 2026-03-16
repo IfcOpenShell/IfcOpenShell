@@ -143,7 +143,9 @@ def assign_material(
             material_tool.add_material_to_set(material_set=material, material=default_material)
         elif material_tool.is_a_material_set(assigned_material):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)
-        material_tool.ensure_material_assigned(elements=[element], material_type=element_material_type, material=material)
+        material_tool.ensure_material_assigned(
+            elements=[element], material_type=element_material_type, material=material
+        )
 
 
 def unassign_material(ifc: type[tool.Ifc], material_tool: type[tool.Material], objects: list[bpy.types.Object]) -> None:

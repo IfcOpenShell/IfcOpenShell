@@ -914,7 +914,7 @@ Scenario: Export IFC - with moved object location synchronised
 
 Scenario: Export IFC - with moved grid axis location synchronised
     Given an empty IFC project
-    And I press "mesh.add_grid"
+    And I press "bim.add_grid"
     When the object "IfcGridAxis/01" is moved to "1,0,0"
     And I save IFC project
     And I load previously saved IFC project

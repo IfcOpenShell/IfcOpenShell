@@ -82,7 +82,7 @@ def add_object(self: "BIM_OT_add_object", context: bpy.types.Context) -> None:
 
 
 class BIM_OT_add_object(Operator, tool.Ifc.Operator):
-    bl_idname = "mesh.add_grid"
+    bl_idname = "bim.add_grid"
     bl_label = "Grid"
     bl_description = "Add IfcGrid."
     bl_options = {"REGISTER", "UNDO"}
