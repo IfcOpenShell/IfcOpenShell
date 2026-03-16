@@ -267,6 +267,8 @@ class BIMGeoreferenceProperties(PropertyGroup):
         x_axis_ordinate: str
         x_axis_is_null: bool
 
+        model_is_georeferenced: bool
+        model_crs: str
         model_origin: str
         model_origin_si: str
         model_project_north: str

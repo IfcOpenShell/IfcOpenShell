@@ -178,9 +178,18 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_description = (
         "Select an IFC file that can be used as a library.\n\nALT+click to reload the current loaded library file."
     )
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    append_all: bpy.props.BoolProperty(default=False)
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    filter_glob: bpy.props.StringProperty(
+        default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+    append_all: bpy.props.BoolProperty(default=False)  # pyright: ignore[reportRedeclaration]
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path", default=False
+    )  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        filter_glob: str
+        append_all: bool
+        use_relative_path: bool
 
     reload_previous_file = False
 
@@ -558,7 +567,11 @@ class AppendEntireLibrary(bpy.types.Operator, tool.Ifc.Operator):
 class AppendLibraryElementByQuery(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.append_library_element_by_query"
     bl_label = "Append Library Element By Query"
-    query: bpy.props.StringProperty(name="Query")
+
+    query: bpy.props.StringProperty(name="Query")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        query: str
 
     @classmethod
     def poll(cls, context):
@@ -587,9 +600,16 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         "Append element to the current project.\n\n"
         "ALT+CLICK to skip reusing materials, profiles, styles based on their name (may result in duplicates)"
     )
-    definition: bpy.props.IntProperty()
-    prop_index: bpy.props.IntProperty()
-    assume_unique_by_name: bpy.props.BoolProperty(name="Assume Unique By Name", default=True, options={"SKIP_SAVE"})
+    definition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    prop_index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    assume_unique_by_name: bpy.props.BoolProperty(
+        name="Assume Unique By Name", default=True, options={"SKIP_SAVE"}
+    )  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        definition: int
+        prop_index: int
+        assume_unique_by_name: bool
 
     file: ifcopenshell.file
 
@@ -939,24 +959,28 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load an existing IFC project"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
-    is_advanced: bpy.props.BoolProperty(
+    filepath: bpy.props.StringProperty(
+        subtype="FILE_PATH", options={"SKIP_SAVE"}
+    )  # pyright: ignore[reportRedeclaration]
+    filter_glob: bpy.props.StringProperty(
+        default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+    is_advanced: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Enable Advanced Mode",
         description="Load IFC file with advanced settings. Checking this option will skip loading IFC file and will open advanced load settings",
         default=False,
     )
-    use_relative_path: bpy.props.BoolProperty(
+    use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Use Relative Path",
         description="Store the IFC project path relative to the .blend file. Requires .blend file to be saved",
         default=False,
     )
-    should_start_fresh_session: bpy.props.BoolProperty(
+    should_start_fresh_session: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Should Start Fresh Session",
         description="Clear current Blender session before loading IFC. Not supported with 'Use Relative Path' option",
         default=True,
     )
-    import_without_ifc_data: bpy.props.BoolProperty(
+    import_without_ifc_data: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Import Without IFC Data",
         description=(
             "Import IFC objects as Blender objects without any IFC metadata and authoring capabilities."
@@ -964,8 +988,19 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         ),
         default=False,
     )
-    use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    use_detailed_tooltip: bpy.props.BoolProperty(
+        default=False, options={"HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
     filename_ext = ".ifc"
+
+    if TYPE_CHECKING:
+        filepath: str
+        filter_glob: str
+        is_advanced: bool
+        use_relative_path: bool
+        should_start_fresh_session: bool
+        import_without_ifc_data: bool
+        use_detailed_tooltip: bool
 
     @classmethod
     def description(cls, context, properties):
@@ -1265,7 +1300,10 @@ class ToggleFilterCategories(bpy.types.Operator):
     bl_idname = "bim.toggle_filter_categories"
     bl_label = "Toggle Filter Categories"
     bl_options = {"REGISTER", "UNDO"}
-    should_select: bpy.props.BoolProperty(name="Should Select", default=True)
+    should_select: bpy.props.BoolProperty(name="Should Select", default=True)  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        should_select: bool
 
     def execute(self, context):
         props = tool.Project.get_project_props()
@@ -1355,7 +1393,11 @@ class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Unlink IFC"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Remove the selected file from the link list"
-    link_index: bpy.props.IntProperty(name="Link Index")
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def _execute(self, context):
         props = tool.Project.get_project_props()
@@ -1375,7 +1417,11 @@ class UnloadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Unload Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Unload the selected linked file"
-    link_index: bpy.props.IntProperty(name="Link Index")
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def _execute(self, context):
         link = tool.Project.get_project_props().links[self.link_index]
@@ -1560,7 +1606,11 @@ class ReloadLink(bpy.types.Operator):
     bl_label = "Reload Link"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reload the selected file"
-    link_index: bpy.props.IntProperty(name="Link Index")
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def execute(self, context):
         bpy.ops.bim.unload_link(link_index=self.link_index)
@@ -1572,7 +1622,11 @@ class ToggleLinkSelectability(bpy.types.Operator):
     bl_label = "Toggle Link Selectability"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle selectability"
-    link_index: bpy.props.IntProperty(name="Link Index")
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def execute(self, context):
         props = tool.Project.get_project_props()
@@ -1742,7 +1796,11 @@ class SelectLinkHandle(bpy.types.Operator):
     bl_label = "Select Link Handle"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select link empty object handle"
-    link_index: bpy.props.IntProperty(name="Link Index")
+
+    link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def execute(self, context):
         props = tool.Project.get_project_props()
@@ -1800,11 +1858,28 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     supported_filexts = (".ifc", ".ifczip", ".ifcjson")
-    filter_glob: bpy.props.StringProperty(default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"})
-    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
-    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
-    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
-    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    filter_glob: bpy.props.StringProperty(
+        default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+    json_version: bpy.props.EnumProperty(
+        items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version"
+    )  # pyright: ignore[reportRedeclaration]
+    json_compact: bpy.props.BoolProperty(
+        name="Export Compact IFCJSON", default=False
+    )  # pyright: ignore[reportRedeclaration]
+    should_save_as: bpy.props.BoolProperty(
+        name="Should Save As", default=False, options={"HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path", default=False
+    )  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        filter_glob: str
+        json_version: str
+        json_compact: bool
+        should_save_as: bool
+        use_relative_path: bool
 
     @classmethod
     def poll(cls, context):
@@ -2449,7 +2524,7 @@ class EnableCulling(bpy.types.Operator):
         self.total_mousemoves = 0
         self.cullable_objects = []
 
-    def modal(self, context, event):
+    def modal(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if not LinksData.enable_culling:
             for obj in bpy.context.visible_objects:
                 if obj.type == "MESH" and obj.name.startswith("Ifc"):
@@ -2480,7 +2555,7 @@ class EnableCulling(bpy.types.Operator):
 
         return {"PASS_THROUGH"}
 
-    def is_view_changed(self, context):
+    def is_view_changed(self, context: bpy.types.Context) -> bool:
         view_matrix = context.region_data.view_matrix
         projection_matrix = context.region_data.window_matrix
         vp_matrix = projection_matrix @ view_matrix
@@ -2495,7 +2570,7 @@ class EnableCulling(bpy.types.Operator):
             return True
         return False
 
-    def is_object_in_view(self, obj, context, camera_position):
+    def is_object_in_view(self, obj: bpy.types.Object, context: bpy.types.Context, camera_position: Vector) -> bool:
         # Get the view matrix and the projection matrix from the active viewport
         view_matrix = context.region_data.view_matrix
         projection_matrix = context.region_data.window_matrix
@@ -2522,7 +2597,7 @@ class EnableCulling(bpy.types.Operator):
             return False
         return True
 
-    def invoke(self, context, event):
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set["rna_enums.OperatorReturnItems"]:
         LinksData.enable_culling = True
         self.cullable_objects = []
         for obj in bpy.context.visible_objects:
@@ -2809,8 +2884,16 @@ class IFCFileHandlerOperator(bpy.types.Operator):
     bl_label = "Import .ifc file"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
-    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
+    directory: bpy.props.StringProperty(
+        subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+    files: bpy.props.CollectionProperty(
+        type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"}
+    )  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        directory: str
+        files: list[bpy.types.OperatorFileListElement]
 
     def invoke(self, context, event):
         # Keeping code in .invoke() as we'll probably add some
@@ -2861,7 +2944,10 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     bl_label = "Measure Tool"
     bl_options = {"REGISTER", "UNDO"}
 
-    measure_type: bpy.props.StringProperty()
+    measure_type: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        measure_type: str
 
     @classmethod
     def poll(cls, context):
@@ -2957,7 +3043,10 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
     bl_label = "Measure Face Area Tool"
     bl_options = {"REGISTER", "UNDO"}
 
-    measure_type: bpy.props.StringProperty()
+    measure_type: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        measure_type: str
 
     @classmethod
     def poll(cls, context):
@@ -3165,7 +3254,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         super().invoke(context, event)
         return {"RUNNING_MODAL"}
 
-    def cancel_tool(self, context):
+    def cancel_tool(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
         context.workspace.status_text_set(text=None)
         if hasattr(self, "tool_state"):
             self.tool_state.plane_method = None
@@ -3173,7 +3262,7 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
         tool.Blender.update_viewport()
         return {"CANCELLED"}
 
-    def handle_custom_instructions(self, context):
+    def handle_custom_instructions(self, context: bpy.types.Context) -> None:
         if len(self.selected_points) == 0:
             instruction_text = "Click First Point on Image"
         elif len(self.selected_points) == 1:
@@ -3188,14 +3277,14 @@ class ImageScalingTool(bpy.types.Operator, PolylineOperator):
 
         context.workspace.status_text_set(text=instruction_text)
 
-    def calculate_distance(self):
+    def calculate_distance(self) -> None:
         if len(self.selected_points) == 2:
             point1 = self.selected_points[0]
             point2 = self.selected_points[1]
             distance_3d = (point2 - point1).length
             self.calculated_distance = distance_3d / self.unit_scale
 
-    def apply_scaling(self, context):
+    def apply_scaling(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
         if len(self.selected_points) != 2:
             self.report({"ERROR"}, "Two points must be selected")
             return {"CANCELLED"}
@@ -3253,7 +3342,10 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
     bl_idname = "bim.load_blend_metadata_and_ifc"
     bl_label = "Load Blend Metadata and IFC"
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(name="IFC File Path", default="")
+    filepath: bpy.props.StringProperty(name="IFC File Path", default="")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        filepath: str
 
     def execute(self, context):
         ifc_file = self.filepath
