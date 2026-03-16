@@ -3413,3 +3413,19 @@ class LoadBlendMetadataAndIFC(bpy.types.Operator):
         bpy.app.handlers.load_post.append(load_handler)
         bpy.ops.wm.open_mainfile(filepath=metadata_path)
         return {"FINISHED"}
+
+
+class GenerateUVMap(bpy.types.Operator):
+    bl_idname = "bim.generate_uv_map"
+    bl_label = "Generate UV Map"
+    bl_description = "Generate UV map for selected mesh."
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    def execute(self, context):
+        obj = context.active_object
+        if not obj or not isinstance(obj.data, bpy.types.Mesh):
+            self.report({"ERROR"}, "No valid mesh selected.")
+            return {"CANCELLED"}
+        tool.Loader.load_generated_uv_map(obj.data)
+        self.report({"INFO"}, "Generated UV map for selected mesh.")
+        return {"FINISHED"}

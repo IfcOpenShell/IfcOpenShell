@@ -76,7 +76,7 @@ classes = (
     operator.UnlinkIfc,
     operator.UnloadLink,
     workspace.ExploreHotkey,
-    workspace.GenerateUVMap,
+    operator.GenerateUVMap,
     prop.LibraryBreadcrumb,
     prop.LibraryElement,
     prop.FilterCategory,
