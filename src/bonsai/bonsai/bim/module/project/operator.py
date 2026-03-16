@@ -3184,7 +3184,10 @@ class ClearMeasurement(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         polyline_props = tool.Model.get_polyline_props()
-        return len(polyline_props.measurement_polyline) > 0
+        if len(polyline_props.measurement_polyline) > 0:
+            return True
+        cls.poll_message_set("No measurement to clear.")
+        return False
 
     def execute(self, context):
         polyline_props = tool.Model.get_polyline_props()
