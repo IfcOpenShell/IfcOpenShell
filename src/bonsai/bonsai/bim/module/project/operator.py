@@ -1329,10 +1329,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
     query: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
         name="Query",
-        description="Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
-        "Currently caching with custom queries is not supported and model will be reloaded each time. "
-        "Also if model was previously loaded with query, "
-        "you may need to avoid using previous cache to load it wihout query.",
+        description="Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.",
     )
 
     filename_ext = ".ifc"
@@ -1395,10 +1392,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
-            # TODO: currently we don't detect the previous query model was loaded with
-            # so if query is provided, cache is ignored.
-            use_cache = self.use_cache or bool(self.query)
-            bpy.ops.bim.load_link(link_index=-1, use_cache=use_cache, query=self.query)
+            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query)
 
 
 class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
@@ -1506,8 +1500,20 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
         h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
+        json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
-        if not self.use_cache and blend_filepath.exists():
+        def should_clear_cache() -> bool:
+            if not self.use_cache:
+                return True
+            if not blend_filepath.exists():
+                return False
+            data = json.loads(json_filepath.read_text())
+            # Empty 'query' - model loaded without custom query.
+            # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
+            query = data.get("query", "")
+            return query != self.query
+
+        if should_clear_cache():
             os.remove(blend_filepath)
 
         if not blend_filepath.exists():
@@ -2134,6 +2140,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             "false_origin_mode": pprops.false_origin_mode,
             "false_origin": pprops.false_origin,
             "project_north": pprops.project_north,
+            "query": self.query,
         }
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)
