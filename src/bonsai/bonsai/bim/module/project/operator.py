@@ -1327,6 +1327,14 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         default=False,
     )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
+    query: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Query",
+        description="Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
+        "Currently caching with custom queries is not supported and model will be reloaded each time. "
+        "Also if model was previously loaded with query, "
+        "you may need to avoid using previous cache to load it wihout query.",
+    )
+
     filename_ext = ".ifc"
 
     if TYPE_CHECKING:
@@ -1336,6 +1344,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
         filter_glob: str
         use_relative_path: bool
         use_cache: bool
+        query: str
 
     def draw(self, context):
         assert self.layout
@@ -1353,6 +1362,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
             row.prop(pprops, "false_origin")
             row = self.layout.row()
             row.prop(pprops, "project_north")
+        self.layout.prop(self, "query", placeholder="IfcElement")
 
     def _execute(self, context):
         start = time.time()
@@ -1385,7 +1395,10 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
-            bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache)
+            # TODO: currently we don't detect the previous query model was loaded with
+            # so if query is provided, cache is ignored.
+            use_cache = self.use_cache or bool(self.query)
+            bpy.ops.bim.load_link(link_index=-1, use_cache=use_cache, query=self.query)
 
 
 class UnlinkIfc(bpy.types.Operator, tool.Ifc.Operator):
@@ -1446,10 +1459,12 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     link_index: bpy.props.IntProperty(name="Link Index")  # pyright: ignore[reportRedeclaration]
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)  # pyright: ignore[reportRedeclaration]
+    query: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
 
     if TYPE_CHECKING:
         link_index: int
         use_cache: bool
+        query: str
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
@@ -1520,7 +1535,7 @@ def run():
     pprops.project_north = "{pprops.project_north}"
     # Use absolute path to be safe from cwd changes.
     try:
-        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}")
+        bpy.ops.bim.load_linked_project(filepath=r"{str(self.filepath_)}", query={repr(self.query)})
     except RuntimeError as e:
         # Operator failed (returned CANCELLED with error report)
         print(f"Failed to load linked project: {{e}}")
@@ -2029,6 +2044,12 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
     bl_description = "Operator is used to load a project .cache.blend to then link it to the IFC file."
     bl_options = {"REGISTER", "UNDO"}
 
+    query: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    """See ``bim.link_ifc``."""
+
+    if TYPE_CHECKING:
+        query: str
+
     file: ifcopenshell.file
     meshes: dict[str, bpy.types.Mesh]
     # Material names is derived from diffuse as in 'r-g-b-a'.
@@ -2078,14 +2099,17 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
-        self.elements = set(self.file.by_type("IfcElement"))
-        if self.file.schema in ("IFC2X3", "IFC4"):
-            self.elements |= set(self.file.by_type("IfcProxy"))
-        if self.file.schema == "IFC2X3":
-            self.elements |= set(self.file.by_type("IfcSpatialStructureElement"))
+        if self.query:
+            self.elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
         else:
-            self.elements |= set(self.file.by_type("IfcSpatialElement"))
-        self.elements -= set(self.file.by_type("IfcFeatureElement"))
+            self.elements = set(self.file.by_type("IfcElement"))
+            if self.file.schema in ("IFC2X3", "IFC4"):
+                self.elements |= set(self.file.by_type("IfcProxy"))
+            if self.file.schema == "IFC2X3":
+                self.elements |= set(self.file.by_type("IfcSpatialStructureElement"))
+            else:
+                self.elements |= set(self.file.by_type("IfcSpatialElement"))
+            self.elements -= set(self.file.by_type("IfcFeatureElement"))
 
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
