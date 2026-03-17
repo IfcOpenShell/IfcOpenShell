@@ -27,7 +27,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bpy.props import (
     BoolProperty,
-    BoolVectorProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,

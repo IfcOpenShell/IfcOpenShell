@@ -78,6 +78,17 @@ ignore = [
     "UP032", # Replace .format with f-string
 ]
 
+[tool.ty.rules]
+# We only use `ty` currently to check for deprecated methods.
+all = "ignore"
+deprecated = "error"
+
+[tool.ty.src]
+exclude = [
+    "src/ifc2ca/templates",
+    "src/svgfill/3rdparty",
+]
+
 [tool.poe.tasks]
 
 ruff-main = "ruff check --extend-exclude nix/build-all.py"
@@ -86,6 +97,8 @@ ruff-old = "ruff check nix/build-all.py --target-version py37"
 ruff.sequence = ["ruff-main", "ruff-old"]
 
 black = "black ."
+
+ty = "ty check"
 
 format.sequence = ["black", "ruff-main", "ruff-old"]
 

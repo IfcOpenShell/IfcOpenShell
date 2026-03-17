@@ -71,24 +71,26 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_M")
-        row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
         op.hotkey = "S_M"
         row = layout.row(align=True)
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
-        row = layout.row(align=True)
         op = row.operator("bim.clear_measurement", text="", icon="X")
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_S")
-        row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Image Scaling Tool", icon="IMAGE_PLANE")
         op.hotkey = "S_S"
-        op.description = "Scale Image Annotation. Allows to scale an IfcReferenceImage. Select image, select tool. Check lower left corner instructions to select two points and provide real distance between them"
+        op.description = (
+            "Scale Image Annotation.\n\n"
+            "Allows to scale an IfcReferenceImage.\n\n"
+            "Select image, select tool. "
+            "Check lower left corner instructions to select two points and provide real distance between them"
+        )
 
-        op = row.operator("bim.generate_uv_map", text="Generate UV Map", icon="UV")
-        op.description = "Generate UV map for selected mesh."
+        row = layout.row(align=True)
+        row.operator("bim.generate_uv_map", icon="UV")
 
 
 class ExploreHotkey(bpy.types.Operator):
@@ -156,20 +158,3 @@ class ExploreHotkey(bpy.types.Operator):
 
     def hotkey_A_H(self) -> None:
         bpy.ops.bim.hide_queried_linked_element(unhide_all=True)
-
-
-class GenerateUVMap(bpy.types.Operator):
-    bl_idname = "bim.generate_uv_map"
-    bl_label = "Generate UV Map"
-    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
-
-    description: bpy.props.StringProperty()
-
-    def execute(self, context):
-        obj = context.active_object
-        if not obj or not hasattr(obj, "data") or not hasattr(obj.data, "polygons"):
-            self.report({"ERROR"}, "No valid mesh selected.")
-            return {"CANCELLED"}
-        tool.Loader.load_generated_uv_map(obj.data)
-        self.report({"INFO"}, "Generated UV map for selected mesh.")
-        return {"FINISHED"}

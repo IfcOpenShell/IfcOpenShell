@@ -365,7 +365,7 @@ class TestLoadingIfcSqlite(NewFile):
             sql_type="SQLite",
         )
         patcher.patch()
-        tmp_file = Path(tempfile.mktemp(suffix=".ifcsqlite"))
+        tmp_file = Path(tempfile.mkstemp(suffix=".ifcsqlite")[1])
         ifcpatch.write(patcher.get_output(), tmp_file)
 
         elements_with_meshes = [

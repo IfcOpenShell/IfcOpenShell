@@ -496,7 +496,7 @@ class BIM_PT_links(Panel):
                     row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
                 else:
                     row.operator("bim.load_link", text="", icon="LINKED").link_index = index
-                    row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
+                row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
             self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
