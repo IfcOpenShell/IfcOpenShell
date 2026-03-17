@@ -2469,3 +2469,27 @@ class Geometry(bonsai.core.tool.Geometry):
         bm.to_mesh(mesh)
         bm.free()
         mesh.update()
+
+    @classmethod
+    def update_bbox_accumulation(cls, obj: bpy.types.Object) -> None:
+        """Expand the accumulated IFC bounding box custom properties to include the current mesh bbox.
+
+        Stores the union of all representation bboxes ever loaded for this object as
+        ``obj["ifc_bbox_min"]`` and ``obj["ifc_bbox_max"]`` in object-local space.
+        """
+        if not obj.bound_box:
+            return
+        corners = obj.bound_box
+        xs = [v[0] for v in corners]
+        ys = [v[1] for v in corners]
+        zs = [v[2] for v in corners]
+        new_min = [min(xs), min(ys), min(zs)]
+        new_max = [max(xs), max(ys), max(zs)]
+        if "ifc_bbox_min" in obj:
+            prev_min = list(obj["ifc_bbox_min"])
+            prev_max = list(obj["ifc_bbox_max"])
+            obj["ifc_bbox_min"] = [min(new_min[i], prev_min[i]) for i in range(3)]
+            obj["ifc_bbox_max"] = [max(new_max[i], prev_max[i]) for i in range(3)]
+        else:
+            obj["ifc_bbox_min"] = new_min
+            obj["ifc_bbox_max"] = new_max

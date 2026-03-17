@@ -2530,15 +2530,80 @@ class Drawing(bonsai.core.tool.Drawing):
         y = props.height
 
         camera_inverse_matrix = camera.matrix_world.inverted()
-        return set(
-            [
-                tool.Ifc.get_entity(o)
-                for o in objs
-                if o
-                and cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end)
-                and tool.Ifc.get_entity(o)
-            ]
-        )
+        result = set()
+        for o in objs:
+            if not o:
+                continue
+            element = tool.Ifc.get_entity(o)
+            if not element:
+                continue
+            if cls.is_in_camera_view(o, camera_inverse_matrix, x, y, camera.data.clip_start, camera.data.clip_end, element):
+                result.add(element)
+        return result
+
+    @classmethod
+    def _get_bbox_corners(
+        cls, obj: bpy.types.Object, element: Optional[ifcopenshell.entity_instance] = None
+    ) -> list[Vector]:
+        """Return 8 bbox corners in object-local space for camera frustum testing.
+
+        Unions all available bbox sources so that the result covers the full geometric
+        extent of the element regardless of which representation is currently active:
+        1. IfcBoundingBox from a ``Box`` representation context.
+        2. Accumulated union bbox stored in ``obj["ifc_bbox_min/max"]`` custom properties.
+        3. Current ``obj.bound_box``.
+        """
+        all_corners: list[Vector] = []
+
+        # 1. IfcBoundingBox (typically the floor-plan XY footprint)
+        if element is not None and getattr(element, "Representation", None):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            for rep in element.Representation.Representations:
+                try:
+                    resolved = tool.Geometry.resolve_mapped_representation(rep)
+                except Exception:
+                    continue
+                ctx = resolved.ContextOfItems
+                if getattr(ctx, "ContextIdentifier", None) == "Box":
+                    for item in resolved.Items:
+                        if item.is_a("IfcBoundingBox"):
+                            c = item.Corner.Coordinates
+                            cx = c[0] * unit_scale
+                            cy = c[1] * unit_scale
+                            cz = c[2] * unit_scale
+                            dx = item.XDim * unit_scale
+                            dy = item.YDim * unit_scale
+                            dz = item.ZDim * unit_scale
+                            all_corners.extend([
+                                Vector((cx, cy, cz)),
+                                Vector((cx + dx, cy + dy, cz + dz)),
+                            ])
+
+        # 2. Accumulated bbox custom properties (union of all representations ever loaded)
+        if "ifc_bbox_min" in obj and "ifc_bbox_max" in obj:
+            mn = obj["ifc_bbox_min"]
+            mx = obj["ifc_bbox_max"]
+            all_corners.extend([Vector((mn[0], mn[1], mn[2])), Vector((mx[0], mx[1], mx[2]))])
+
+        # 3. Current Blender bound_box
+        all_corners.extend(Vector(v) for v in obj.bound_box)
+
+        # Return 8 corners of the union bounding box
+        xs = [v.x for v in all_corners]
+        ys = [v.y for v in all_corners]
+        zs = [v.z for v in all_corners]
+        mn_x, mn_y, mn_z = min(xs), min(ys), min(zs)
+        mx_x, mx_y, mx_z = max(xs), max(ys), max(zs)
+        return [
+            Vector((mn_x, mn_y, mn_z)),
+            Vector((mx_x, mn_y, mn_z)),
+            Vector((mn_x, mx_y, mn_z)),
+            Vector((mx_x, mx_y, mn_z)),
+            Vector((mn_x, mn_y, mx_z)),
+            Vector((mx_x, mn_y, mx_z)),
+            Vector((mn_x, mx_y, mx_z)),
+            Vector((mx_x, mx_y, mx_z)),
+        ]
 
     @classmethod
     def is_in_camera_view(
@@ -2549,8 +2614,9 @@ class Drawing(bonsai.core.tool.Drawing):
         y: float,
         clip_start: float,
         clip_end: float,
+        element: Optional[ifcopenshell.entity_instance] = None,
     ) -> bool:
-        local_bbox = [camera_inverse_matrix @ obj.matrix_world @ Vector(v) for v in obj.bound_box]
+        local_bbox = [camera_inverse_matrix @ obj.matrix_world @ v for v in cls._get_bbox_corners(obj, element)]
         local_x = [v.x for v in local_bbox]
         local_y = [v.y for v in local_bbox]
         local_z = [v.z for v in local_bbox]
