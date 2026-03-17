@@ -34,7 +34,7 @@
         (facet as Record<string, unknown>)[prop] = value;
     };
 
-    const baseId = `facet-${facetType}-${index}`;
+    let baseId = $derived(`facet-${facetType}-${index}`);
 </script>
 
 <div class="restriction-item">

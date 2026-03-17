@@ -265,17 +265,17 @@ export async function deleteFacet(
     const spec = Module.documents[docId].specifications.specification[specId];
     const list = (spec[clause] as Record<string, unknown> | undefined)?.[facet] as Facet[] | undefined;
     if (!list) return;
-    delete list[facetId];
+    list.splice(facetId, 1);
 }
 
 export function getSpecUsage(spec?: Specification | null): IdsCardinality {
     if (!spec?.applicability) return 'required';
     const minOccurs = spec.applicability["@minOccurs"] as number | undefined;
     const maxOccurs = spec.applicability["@maxOccurs"] as number | "unbounded" | undefined;
-    
-    if (minOccurs === 1 && maxOccurs === "unbounded") return 'required';
-    if (minOccurs === 0 && maxOccurs === "unbounded") return 'optional';
-    if (minOccurs === 0 && maxOccurs === 0) return 'prohibited';
+
+    if (minOccurs !== 0) return 'required';
+    if (minOccurs === 0 && maxOccurs !== 0) return 'optional';
+    if (maxOccurs === 0) return 'prohibited';
     return 'required';
 };
 

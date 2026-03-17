@@ -44,6 +44,7 @@ export type AuditSpecification = {
     description: string;
     instructions: string;
     status: boolean;
+    is_skipped?: boolean;
     is_ifc_version: boolean;
     total_applicable: number;
     total_applicable_pass: number;
@@ -55,6 +56,7 @@ export type AuditSpecification = {
     percent_checks_pass: ResultsPercent;
     cardinality: string;
     applicability: string[];
+    applicable_entities?: AuditReportEntity[];
     requirements: AuditRequirement[];
     total_requirements?: number;
     total_requirements_pass?: number;

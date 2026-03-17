@@ -26,6 +26,11 @@
             ? (activeDocument.specifications.specification[documentState.activeSpecification] as Specification)
             : null
     );
+    let importableDocuments = $derived(
+        Object.entries(IDS.Module.documents).filter(
+            ([docId, doc]) => docId !== IDS.Module.activeDocument && doc.specifications?.specification?.length > 0
+        ) as [string, IdsDocument][]
+    );
     
     async function addNewSpecification() {
         if (!IDS.Module.activeDocument) return;
@@ -153,8 +158,7 @@
                                         Import from IDS
                                     </DropdownMenu.SubTrigger>
                                     <DropdownMenu.SubContent class="w-64 max-h-64 overflow-y-auto">
-                                        {#each Object.entries(IDS.Module.documents) as [docId, doc]}
-                                            {#if docId !== IDS.Module.activeDocument && doc.specifications?.specification?.length > 0}
+                                        {#each importableDocuments as [docId, doc], docIndex}
                                                 <DropdownMenu.Label class="font-medium text-xs text-muted-foreground px-2 py-1 truncate">
                                                     {doc.info?.title || 'Untitled Document'}
                                                 </DropdownMenu.Label>
@@ -169,12 +173,11 @@
                                                         </span>
                                                     </DropdownMenu.Item>
                                                 {/each}
-                                                {#if Object.entries(IDS.Module.documents).filter(([id, d]) => id !== IDS.Module.activeDocument && d.specifications?.specification?.length > 0).indexOf([docId, doc]) < Object.entries(IDS.Module.documents).filter(([id, d]) => id !== IDS.Module.activeDocument && d.specifications?.specification?.length > 0).length - 1}
+                                                {#if docIndex < importableDocuments.length - 1}
                                                     <DropdownMenu.Separator />
                                                 {/if}
-                                            {/if}
                                         {/each}
-                                        {#if Object.entries(IDS.Module.documents).filter(([docId, doc]) => docId !== IDS.Module.activeDocument && doc.specifications?.specification?.length > 0).length === 0}
+                                        {#if importableDocuments.length === 0}
                                             <DropdownMenu.Item disabled>
                                                 <span class="text-sm">No specifications available to import</span>
                                             </DropdownMenu.Item>

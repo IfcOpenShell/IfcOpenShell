@@ -4,7 +4,7 @@
     import { error, success } from "$src/modules/utils/toast.svelte";
     import * as Tooltip from "$src/lib/components/ui/tooltip";
     import type { AuditReport, AuditReportData } from "$src/types/report";
-    import type { DocumentState, IdsDocument } from "$src/types/ids";
+    import type { DocumentState, IdsDocument, Specification } from "$src/types/ids";
 
     let activeDocument = $derived(
         IDS.Module.activeDocument ? (IDS.Module.documents[IDS.Module.activeDocument] as IdsDocument) : null
@@ -18,6 +18,8 @@
     let expandedSpecs = $state(new Set<number>());
     let expandedRequirements = $state(new Set<string>());
     let allExpanded = $state(false);
+
+    type SpecificationStatus = boolean | 'skipped' | null;
 
     // Open Editor mode and jump to a specific specification
     function editSpecification(index: number) {
@@ -55,7 +57,7 @@
         }
     }
 
-    function getSpecificationStatus(specIndex: number, auditData: AuditReportData) {
+    function getSpecificationStatus(specIndex: number, auditData: AuditReportData): SpecificationStatus {
         const spec = auditData.specifications[specIndex];
         if (!spec) return null;
         return spec.is_skipped ? 'skipped' : spec.status;
@@ -96,6 +98,10 @@
         }
         
         return null; // No reason needed for passed specifications
+    }
+
+    function getDocumentSpecificationUsage(spec: Specification) {
+        return IDS.getSpecUsage(spec);
     }
 
     async function handleDownloadReport() {
@@ -223,6 +229,7 @@
                 </button>
             </div>
             {#each activeDocument.specifications.specification as spec, index}
+                {@const usage = getDocumentSpecificationUsage(spec)}
                 <div class="specification-card {auditReport ? 'with-audit' : ''} {auditReport && getSpecificationStatus(index, auditReport.data) !== null ? (getSpecificationStatus(index, auditReport.data) === 'skipped' ? 'spec-skipped' : (getSpecificationStatus(index, auditReport.data) ? 'spec-pass' : 'spec-fail')) : ''}">
                     <div
                         class="spec-card-header"
@@ -260,19 +267,19 @@
                                 <p class="spec-description">{spec["@description"]}</p>
                             {/if}
                             <div class="spec-stats">
-                                {#if spec.applicability["@minOccurs"] === 1 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                {#if usage === 'required'}
                                     <span class="stat-item">Required</span>
                                 {/if}
-                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 'unbounded'}
+                                {#if usage === 'optional'}
                                     <span class="stat-item">Optional</span>
                                 {/if}
-                                {#if spec.applicability["@minOccurs"] === 0 && spec.applicability["@maxOccurs"] === 0}
+                                {#if usage === 'prohibited'}
                                     <span class="stat-item">Prohibited</span>
                                 {/if}
                                 {#if auditReport}
                                     {@const stats = getSpecificationStats(index, auditReport.data)}
                                     {@const status = getSpecificationStatus(index, auditReport.data)}
-                                    {#if stats && spec.applicability["@maxOccurs"] !== 0 && status !== 'skipped'}
+                                    {#if stats && usage !== 'prohibited' && status !== 'skipped'}
                                         <span class="stat-item">Checks: {stats.checksPassed}/{stats.checksTotal}</span>
                                         <span class="stat-item">Requirements: {stats.requirementsPassed}/{stats.requirements}</span>
                                     {/if}
@@ -325,12 +332,13 @@
 
                                 {#if auditReport}
                                     {@const status = getSpecificationStatus(index, auditReport.data)}
-                                    {#if ! status && spec.applicability["@maxOccurs"] == 0}
+                                    {#if status === false && usage === 'prohibited'}
                                         {@const specReport = auditReport.data.specifications[index]}
+                                        {@const applicableEntities = specReport.applicable_entities ?? []}
                                         <div class="entity-tables">
-                                            {#if specReport.applicable_entities && specReport.applicable_entities.length > 0}
+                                            {#if applicableEntities.length > 0}
                                                 <div class="entity-table-section fail">
-                                                    <h4>Failed Elements ({specReport.applicable_entities.length})</h4>
+                                                    <h4>Failed Elements ({applicableEntities.length})</h4>
                                                     <div class="entity-table-container">
                                                         <Tooltip.Provider>
                                                             <table class="entity-table">
@@ -346,7 +354,7 @@
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                {#each specReport.applicable_entities.slice(0, 10) as entity}
+                                                                {#each applicableEntities.slice(0, 10) as entity}
                                                                     <tr>
                                                                         <td>{entity.class}</td>
                                                                         <td>{entity.predefined_type || '-'}</td>
@@ -402,9 +410,9 @@
                                                                         </td>
                                                                     </tr>
                                                                 {/each}
-                                                                {#if specReport.applicable_entities.length > 10}
+                                                                {#if applicableEntities.length > 10}
                                                                     <tr class="more-row">
-                                                                        <td colspan="7">... {specReport.applicable_entities.length - 10} more failing elements not shown ...</td>
+                                                                        <td colspan="7">... {applicableEntities.length - 10} more failing elements not shown ...</td>
                                                                     </tr>
                                                                 {/if}
                                                             </tbody>

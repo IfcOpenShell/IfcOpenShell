@@ -1,6 +1,14 @@
 <script lang="ts">
     import Svelecte from 'svelecte';
-    import { getEntityClasses, getMaterialCategories, getClassificationSystems, getDataTypes, getPredefinedTypes, getEntityAttributes, getApplicablePsets } from '$src/modules/api/api.svelte';
+    import {
+        getApplicablePsets,
+        getClassificationSystems,
+        getDataTypes,
+        getEntityAttributes,
+        getEntityClasses,
+        getMaterialCategories,
+        getPredefinedTypes
+    } from '$src/modules/api/api.svelte';
     import * as IDS from '$src/modules/api/ids.svelte';
     import type { DocumentState, Facet, FacetValue, IdsDocument, Restriction, RestrictionValue, Specification } from '$src/types/ids';
     
@@ -29,16 +37,17 @@
         autocomplete?: AutocompleteType;
         isSpecialProp?: boolean;
     } = $props();
-    
-    const isEntityNameField = autocomplete === 'entityName';
-    const isMaterialField = autocomplete === 'material';
-    const isClassificationSystemField = autocomplete === 'classificationSystem';
-    const isPredefinedTypeField = autocomplete === 'predefinedType';
-    const isAttributeNameField = autocomplete === 'attributeName';
-    const isPropertySetField = autocomplete === 'propertySet';
-    const isDataTypeField = autocomplete === 'dataType';
 
-    const baseId = `restriction-${fieldName}-${Math.random().toString(36).slice(2, 8)}`;
+    let isEntityNameField = $derived(autocomplete === 'entityName');
+    let isMaterialField = $derived(autocomplete === 'material');
+    let isClassificationSystemField = $derived(autocomplete === 'classificationSystem');
+    let isPredefinedTypeField = $derived(autocomplete === 'predefinedType');
+    let isAttributeNameField = $derived(autocomplete === 'attributeName');
+    let isPropertySetField = $derived(autocomplete === 'propertySet');
+    let isDataTypeField = $derived(autocomplete === 'dataType');
+
+    const uniqueId = Math.random().toString(36).slice(2, 8);
+    let baseId = $derived(`restriction-${fieldName}-${uniqueId}`);
     
     // Predefined Types autocompletions
     let predefinedTypeOptions: string[] = $state([]);
