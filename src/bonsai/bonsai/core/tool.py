@@ -349,7 +349,10 @@ class Drawing:
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
+    def export_font_size(cls, obj): pass
+    def export_symbol(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
+    def export_wrap_length(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_reference_attributes(cls, reference, **attributes): pass

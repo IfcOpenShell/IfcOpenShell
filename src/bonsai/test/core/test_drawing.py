@@ -35,9 +35,14 @@ class TestDisableEditingText:
 
 class TestEditText:
     def test_run(self, drawing):
-        drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
-        drawing.update_text_size_pset("obj").should_be_called()
-        drawing.update_text_annotation_properties("obj").should_be_called()
+        drawing.export_text_literal_attributes("obj").should_be_called().will_return("literal_attributes")
+        drawing.export_font_size("obj").should_be_called().will_return("font_size")
+        drawing.edit_text_font_size("obj", "font_size").should_be_called()
+        drawing.export_wrap_length("obj").should_be_called().will_return("wrap_length")
+        drawing.edit_text_wrap_length("obj", "wrap_length").should_be_called()
+        drawing.export_symbol("obj").should_be_called().will_return("symbol")
+        drawing.edit_text_symbol("obj", "symbol").should_be_called()
+        drawing.edit_text_literals("obj", "literal_attributes").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
 
