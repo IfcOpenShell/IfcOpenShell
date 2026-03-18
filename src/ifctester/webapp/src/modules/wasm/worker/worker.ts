@@ -83,7 +83,13 @@ async function initEnvironment() {
     await pyodide.loadPackage("shapely");
 
     // Install IfcTester
-    await micropip.install('ifctester');
+    const ifctesterManifest = await fetch('/worker/generated/ifctester.json').then((response) => {
+        if (!response.ok) {
+            throw new Error(`[worker] Failed to load IfcTester wheel manifest: ${response.status} ${response.statusText}`);
+        }
+        return response.json() as Promise<{ wheel_url: string }>;
+    });
+    await micropip.install(ifctesterManifest.wheel_url);
 
     // Initialize IDS and API
     await API.init(pyodide);

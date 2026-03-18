@@ -1,5 +1,5 @@
-import config from '../../../config.json';
 import hyperid from 'hyperid';
+import config from '../../../config.json';
 import type { AuditReportData } from "$src/types/report";
 
 let pyodide: any = null;
