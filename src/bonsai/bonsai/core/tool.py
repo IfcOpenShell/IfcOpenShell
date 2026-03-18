@@ -624,7 +624,10 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
+    def recalculate_walls(cls, objs): pass
     def regenerate_array(cls, parent, data): pass
+    def regenerate_profile(cls, obj): pass
+    def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
@@ -1123,6 +1126,8 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def record_material_usage_attributes(cls, element): pass
+    def restore_material_usage_attributes(cls, element, usage_attributes): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None): pass
 
