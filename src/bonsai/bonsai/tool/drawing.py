@@ -1289,6 +1289,12 @@ class Drawing(bonsai.core.tool.Drawing):
         return ifcopenshell.util.representation.get_representation(element, context)
 
     @classmethod
+    def set_camera_name(cls, drawing: ifcopenshell.entity_instance, name: str) -> None:
+        camera = tool.Ifc.get_object(drawing)
+        if camera and camera.name != name:
+            camera.name = name
+
+    @classmethod
     def set_drawing_collection_name(
         cls, drawing: ifcopenshell.entity_instance, collection: bpy.types.Collection
     ) -> None:
