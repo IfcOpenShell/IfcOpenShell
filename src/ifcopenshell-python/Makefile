@@ -28,9 +28,6 @@ endif
 endif
 
 # TODO: we should simplify this at some point...
-ifeq ($(PYVERSION), py39)
-PYNUMBER:=39
-endif
 ifeq ($(PYVERSION), py310)
 PYNUMBER:=310
 endif
