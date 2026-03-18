@@ -41,6 +41,9 @@ def pack_dependencies(install_dir: Path) -> None:
         if not dependency_path.is_dir():
             continue
         dependency_name = dependency_path.name
+        # Skip ifcopenshell - it's a build output, not a dependency to reuse across builds.
+        if dependency_name == "ifcopenshell":
+            continue
         tar_path = install_dir / f"{CACHE_PREFIX}{dependency_name}.tar.gz"
         if tar_path.exists():
             print(f"Skipping existing cache: '{tar_path}'")
