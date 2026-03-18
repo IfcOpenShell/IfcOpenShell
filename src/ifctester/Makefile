@@ -25,6 +25,10 @@ WEBAPP_BUILD_DIR := $(WEBAPP_DIR)/dist
 PYODIDE_DIR := $(WEBAPP_DIR)/public/pyodide
 PYODIDE_VERSION := 0.28.0
 PYODIDE_URL := https://github.com/pyodide/pyodide/releases/download/$(PYODIDE_VERSION)/pyodide-$(PYODIDE_VERSION).tar.bz2
+WORKER_BIN_DIR := $(WEBAPP_DIR)/public/worker/bin
+IFCOPENSHELL_WASM_WHEEL := ifcopenshell-0.8.5+a51b2c5-cp313-cp313-pyodide_2025_0_wasm32.whl
+IFCOPENSHELL_WASM_WHEEL_URL := https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-0.8.5%2Ba51b2c5-cp313-cp313-pyodide_2025_0_wasm32.whl
+IFCOPENSHELL_WASM_WHEEL_PATH := $(WORKER_BIN_DIR)/$(IFCOPENSHELL_WASM_WHEEL)
 WEBAPP_GENERATED_DIR := $(WEBAPP_DIR)/public/worker/generated
 WEBAPP_IFCTESTER_MANIFEST := $(WEBAPP_GENERATED_DIR)/ifctester.json
 WEBAPP_IFCTESTER_BUILD_DIR := build-webapp-wheel
@@ -32,7 +36,7 @@ PACKAGE_WEBAPP_DIR := $(PACKAGE_NAME)/webapp
 PACKAGE_WEBAPP_WWW_DIR := $(PACKAGE_WEBAPP_DIR)/www
 
 .PHONY: webapp-dev
-webapp-dev: pyodide-download webapp-stage-ifctester-wheel
+webapp-dev: pyodide-download ifcopenshell-wasm-download webapp-stage-ifctester-wheel
 	cd $(WEBAPP_DIR) && npm install
 	cd $(WEBAPP_DIR) && npm run dev
 
@@ -68,6 +72,18 @@ pyodide-download:
 		echo "Pyodide $(PYODIDE_VERSION) prepared in $(PYODIDE_DIR)"; \
 	fi
 
+.PHONY: ifcopenshell-wasm-download
+ifcopenshell-wasm-download:
+	@if [ -f "$(IFCOPENSHELL_WASM_WHEEL_PATH)" ]; then \
+		echo "IfcOpenShell wasm wheel already exists at $(IFCOPENSHELL_WASM_WHEEL_PATH), skipping download"; \
+	else \
+		echo "Downloading IfcOpenShell wasm wheel..."; \
+		mkdir -p $(WORKER_BIN_DIR); \
+		rm -f $(WORKER_BIN_DIR)/ifcopenshell-*.whl; \
+		curl -fL -o "$(IFCOPENSHELL_WASM_WHEEL_PATH)" "$(IFCOPENSHELL_WASM_WHEEL_URL)"; \
+		echo "IfcOpenShell wasm wheel prepared at $(IFCOPENSHELL_WASM_WHEEL_PATH)"; \
+	fi
+
 .PHONY: webapp-stage-ifctester-wheel
 webapp-stage-ifctester-wheel:
 	rm -rf $(WEBAPP_GENERATED_DIR)
@@ -92,7 +108,7 @@ endif
 	rm -rf $(WEBAPP_IFCTESTER_BUILD_DIR)
 
 .PHONY: webapp-build
-webapp-build: pyodide-download webapp-stage-ifctester-wheel
+webapp-build: pyodide-download ifcopenshell-wasm-download webapp-stage-ifctester-wheel
 	cd $(WEBAPP_DIR) && npm install
 	cd $(WEBAPP_DIR) && npm run build
 
@@ -105,6 +121,7 @@ clean:
 	rm -rf $(WEBAPP_BUILD_DIR)
 	rm -rf $(WEBAPP_DIR)/node_modules
 	rm -rf $(PYODIDE_DIR)
+	rm -f $(WORKER_BIN_DIR)/ifcopenshell-*.whl
 	rm -rf $(WEBAPP_GENERATED_DIR)
 	rm -rf $(WEBAPP_IFCTESTER_BUILD_DIR)
 	rm -rf $(PACKAGE_NAME)/webapp
