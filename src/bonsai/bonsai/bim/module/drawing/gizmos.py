@@ -1285,7 +1285,7 @@ class SnapManager:
                     continue
 
                 coords = np.empty(vertex_count * 3, dtype=np.float32)
-                mesh.vertices.foreach_get("co", coords)  # type: ignore[arg-type]
+                mesh.vertices.foreach_get("co", coords)
                 coords = coords.reshape(-1, 3)
 
                 matrix = np.array(obj_eval.matrix_world, dtype=np.float32)

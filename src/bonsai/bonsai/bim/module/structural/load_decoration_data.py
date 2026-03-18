@@ -28,6 +28,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import numpy as np
+import numpy.typing as npt
 from mathutils import Vector
 
 import bonsai.tool as tool
@@ -478,7 +479,7 @@ class ShaderInfo:
         """get the args to the point shader"""
         location = np.array(location)
         indices = []
-        direction_dict = {
+        direction_dict: dict[str, tuple[npt.NDArray, ...]] = {
             "fx": (np.array((1, 0, 0)), np.array((0, 1, 0)), np.array((0, 0, 1))),
             "fy": (np.array((0, 1, 0)), np.array((1, 0, 0)), np.array((0, 0, 1))),
             "fz": (np.array((0, 0, 1)), np.array((0, 1, 0)), np.array((1, 0, 0))),

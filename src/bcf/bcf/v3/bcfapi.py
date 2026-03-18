@@ -34,8 +34,8 @@ client_id, client_secret = "", ""
 class OAuthReceiver(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        self.server.auth_code = query.get("code", [""])[0]  # type: ignore
-        self.server.auth_state = query.get("state", [""])[0]  # type: ignore
+        self.server.auth_code = query.get("code", [""])[0]
+        self.server.auth_state = query.get("state", [""])[0]
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
@@ -255,7 +255,7 @@ class BcfClient:
         project_id: str = "",
         topics: str = "",
         query_string: Optional[str] = None,
-    ) -> list[Any]:
+    ) -> None:
         # return self.get(
         #     f"/projects/{project_id}/topics",
         #     {
