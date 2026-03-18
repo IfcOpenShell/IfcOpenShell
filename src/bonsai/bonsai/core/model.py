@@ -109,7 +109,7 @@ def align_walls(
     align_type: AlignType,
 ):
     reference_obj = blender.get_active_object(is_selected=True)
-    if not (e := ifc.get_entity(reference_obj) or not model.get_usage_type(e) == "LAYER2"):
+    if not reference_obj or not (e := ifc.get_entity(reference_obj)) or not model.get_usage_type(e) == "LAYER2":
         reference_obj = None
     objs = [
         o
