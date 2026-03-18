@@ -89,6 +89,7 @@ SETTING = Literal[
     "keep-bounding-boxes",
     "layerset-first",
     "length-unit",
+    "make-volume",
     "max-offset-deviation",
     "max-offset",
     "mesher-angular-deflection",
@@ -124,6 +125,7 @@ SERIALIZER_SETTING = Literal[
     "ecef",
     "digits",
     "wkt-use-section",
+    "separate-z-up-node",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example

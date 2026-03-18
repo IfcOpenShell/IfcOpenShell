@@ -1143,7 +1143,8 @@ class loft:
 class loop:
     closed: Any
     external: Any
-    fi: Any
+    function_item: Any
+    tags: Any
     def calc_hash(self): ...
     def calculate_linear_edge_curves(self): ...
     def centroid(self): ...
