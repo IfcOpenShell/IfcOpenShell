@@ -2477,7 +2477,10 @@ class Geometry(bonsai.core.tool.Geometry):
         Stores the union of all representation bboxes ever loaded for this object as
         ``obj["ifc_bbox_min"]`` and ``obj["ifc_bbox_max"]`` in object-local space.
         """
-        if not obj.bound_box:
+        try:
+            if not obj.bound_box:
+                return
+        except ReferenceError:
             return
         corners = obj.bound_box
         xs = [v[0] for v in corners]
