@@ -717,13 +717,38 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        bonsai.bim.helper.import_attributes(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes(
+            material_set_item,
+            self.props.material_set_item_attributes,
+            callback=self.import_attributes_callback,
+        )
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:
                 self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
+
+    def import_attributes_callback(
+        self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
+    ) -> None | Literal[True]:
+        if data["type"] != "IfcMaterialLayer" or name != "IsVentilated" or not prop:
+            return None
+
+        # Keep null semantics unchanged on export, but avoid an empty UI selection.
+        prop.data_type = "enum"
+        prop.special_type = "LOGICAL"
+        prop.enum_items = json.dumps(("TRUE", "FALSE", "UNKNOWN"))
+
+        value = data[name]
+        if value == "UNKNOWN":
+            prop.enum_value = "UNKNOWN"
+        elif value is None:
+            prop.enum_value = "FALSE"
+        else:
+            prop.enum_value = "TRUE" if value else "FALSE"
+
+        return True
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):

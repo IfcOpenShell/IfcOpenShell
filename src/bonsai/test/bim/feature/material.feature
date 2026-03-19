@@ -422,6 +422,24 @@ Scenario: Enable editing material set item
     When I press "bim.enable_editing_material_set_item(material_set_item={material_profile})"
     Then nothing happens
 
+Scenario: Edit layer item defaults null IsVentilated to FALSE in UI
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I press "bim.add_material()"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    And I press "bim.enable_editing_assigned_material"
+    And the variable "layer" is "{ifc}.by_type('IfcMaterialLayer')[0].id()"
+    And I press "bim.enable_editing_material_set_item(material_set_item={layer})"
+    When I evaluate expression "attrs = bpy.context.active_object.BIMObjectMaterialProperties.material_set_item_attributes; is_vent = next(a for a in attrs if a.name == 'IsVentilated'); assert is_vent.enum_value == 'FALSE'; assert is_vent.is_null is True"
+    And I press "bim.edit_material_set_item(material_set_item={layer})"
+    Then I evaluate expression "assert {ifc}.by_id({layer}).IsVentilated is None"
+
 Scenario: Add material set layer
     Given an empty IFC project
     And I add a cube
