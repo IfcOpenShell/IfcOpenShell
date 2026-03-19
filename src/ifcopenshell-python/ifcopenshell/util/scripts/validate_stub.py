@@ -57,9 +57,16 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
     :return: Function node name as ``SubnameType``  or ``None``, if function wasn't processed and can be skipped.
     """
     node_name = node.name
-    if node_name.startswith("_") and node_name not in ("_is",):
+    is_init = node_name == "__init__"
+
+    if node_name.startswith("_") and node_name not in ("_is",) and not is_init:
         return None
     args = [a.arg for a in node.args.args]
+
+    # Skip non-informative constructors.
+    if is_init and args == ["self"]:
+        return None
+
     if node.args.vararg:
         args.append("*args")
 
