@@ -159,48 +159,6 @@ def extend_wall_to_slab(
     model.reload_body_representation(wall_objs)
 
 
-def join_walls_TZ(
-    ifc: type[tool.Ifc],
-    blender: type[tool.Blender],
-    geometry: type[tool.Geometry],
-    joiner: DumbWallJoiner,
-    model: type[tool.Model],
-) -> None:
-    selected_objs = [
-        o
-        for o in blender.get_selected_objects()
-        if (e := ifc.get_entity(o)) and model.get_usage_type(e) in ("LAYER2", "LAYER3")
-    ]
-    if len(selected_objs) < 2:
-        raise RequireAtLeastTwoLayeredElements(
-            "Two or more vertically or horizontally layered elements must be selected to connect their paths together"
-        )
-
-    for obj in selected_objs:
-        geometry.clear_scale(obj)
-
-    elements = [ifc.get_entity(o) for o in blender.get_selected_objects()]
-    layer2_elements = []
-    layer3_elements = []
-    for element in elements:
-        usage = model.get_usage_type(element)
-        if usage == "LAYER2":
-            layer2_elements.append(element)
-        elif usage == "LAYER3":
-            layer3_elements.append(element)
-    if layer3_elements:
-        target = ifc.get_object(layer3_elements[0])
-        for element in layer2_elements:
-            joiner.join_Z(ifc.get_object(element), target)
-    else:
-        if not (active_obj := blender.get_active_object()):
-            active_obj = selected_objs[0]
-        for obj in selected_objs:
-            if obj == active_obj:
-                continue
-            joiner.join_T(obj, active_obj)
-
-
 class RequireTwoWallsError(Exception):
     pass
 
