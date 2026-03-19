@@ -227,7 +227,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
             is_parallel21 = tool.Cad.is_x(angle21, (0, 180), tolerance=0.001)
             is_parallel23 = tool.Cad.is_x(angle23, (0, 180), tolerance=0.001)
 
-            if not all(is_parallel12, is_parallel13, is_parallel21, is_parallel23):
+            if not all([is_parallel12, is_parallel13, is_parallel21, is_parallel23]):
                 fitting_type = "WYE"
 
         if not fitting_type:
