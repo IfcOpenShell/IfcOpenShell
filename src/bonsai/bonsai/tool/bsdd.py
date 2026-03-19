@@ -269,7 +269,8 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def get_bsdd_property(cls, uri: str) -> dict:
         if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
-            bsdd_property = cls.client.get_property(uri, include_classes=True)
+            # Cache miss occurs for keyword search mode, for classes cache is prepopulated.
+            bsdd_property = cls.client.get_property(uri)
             cls.bsdd_properties[uri] = bsdd_property
         return bsdd_property
 
