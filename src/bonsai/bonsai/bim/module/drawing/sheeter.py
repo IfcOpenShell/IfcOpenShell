@@ -132,9 +132,22 @@ class SheetBuilder:
         self.add_view_title(x, view_height + y + VIEW_TITLE_OFFSET_Y, view, layout_dir)
         layout_tree.write(layout_path)
 
+    @staticmethod
+    def _ifc_entity_exists(ifc: ifcopenshell.file, entity_id: int) -> bool:
+        try:
+            ifc.by_id(entity_id)
+            return True
+        except RuntimeError:
+            return False
+
     def next_drawing_location(self, layout_root: ET.Element, next_width: float) -> list:
         titleblocks = layout_root.findall(f'{SVG}g[@data-type="titleblock"]')
-        drawings = layout_root.findall(f'{SVG}g[@data-type="drawing"]')
+        ifc = tool.Ifc.get()
+        drawings = [
+            g
+            for g in layout_root.findall(f'{SVG}g[@data-type="drawing"]')
+            if self._ifc_entity_exists(ifc, int(g.attrib.get("data-id", "0")))
+        ]
 
         # how wide is the title block frame
         try:
@@ -403,14 +416,20 @@ class SheetBuilder:
 
         return svg
 
-    def build_drawings(self, root: ET.Element, sheet: ifcopenshell.entity_instance):
+    def build_drawings(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         for view in root.findall(f'{SVG}g[@data-type="drawing"]'):
             drawing_id = int(view.attrib["data-id"])
             try:
                 reference = tool.Ifc.get().by_id(int(view.attrib["data-id"]))
                 drawing = tool.Ifc.get().by_guid(view.attrib["data-drawing"])
             except RuntimeError:
-                # Perhaps the SVG has outdated content or is edited externally which we cannot control.
+                # The layout SVG has a drawing group whose IFC reference no longer
+                # exists. This is intentional: remove_drawing_from_sheet deliberately
+                # leaves the group in the layout SVG so that Blender's undo can restore
+                # the IFC reference and the group is still there to build from. Remove
+                # it only from the in-memory tree so it doesn't appear in the output
+                # sheet; the layout SVG file on disk is left untouched.
+                root.remove(view)
                 continue
 
             images = view.findall(f"{SVG}image")

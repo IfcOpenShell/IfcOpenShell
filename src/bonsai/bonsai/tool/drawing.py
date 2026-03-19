@@ -2838,13 +2838,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
-        import bonsai.bim.module.drawing.sheeter as sheeter
-
-        sheet = tool.Drawing.get_reference_document(reference)
-
-        sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.remove_drawing(reference, sheet)
-
+        # NOTE: The layout SVG is intentionally NOT modified here. Removing the
+        # drawing group from the SVG file would make the change non-undoable
+        # (Blender's undo restores IFC state but not files on disk). Instead,
+        # build_drawings() detects and removes stale groups (those whose IFC
+        # reference no longer exists) the next time the sheet is built, and also
+        # writes the cleaned layout SVG back to disk at that point.
         ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
 
         tool.Drawing.import_sheets()
