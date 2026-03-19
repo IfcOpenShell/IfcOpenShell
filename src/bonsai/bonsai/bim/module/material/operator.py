@@ -744,7 +744,9 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         if value == "UNKNOWN":
             prop.enum_value = "UNKNOWN"
         elif value is None:
+            # Keep visible default as FALSE, but preserve null semantics on save.
             prop.enum_value = "FALSE"
+            prop.is_null = True
         else:
             prop.enum_value = "TRUE" if value else "FALSE"
 
