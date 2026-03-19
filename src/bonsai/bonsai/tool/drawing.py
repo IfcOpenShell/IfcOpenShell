@@ -482,8 +482,10 @@ class Drawing(bonsai.core.tool.Drawing):
         for reference in cls.get_document_references(sheet):
             reference_description = cls.get_reference_description(reference)
             if reference_description == "DRAWING":
-                drawing_references[Path(reference.Location).stem] = reference
-                drawing_names.append(Path(reference.Location).stem)
+                info = cls.get_reference_document(reference)
+                drawing_name = info.Name if info else Path(reference.Location).stem
+                drawing_references[drawing_name] = reference
+                drawing_names.append(drawing_name)
         for drawing_annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
             if drawing_annotation.Name in drawing_names:
                 sheet_builder.add_drawing(drawing_references[drawing_annotation.Name], drawing_annotation, sheet)
@@ -1131,6 +1133,12 @@ class Drawing(bonsai.core.tool.Drawing):
             if not new.is_expanded:
                 continue
 
+            drawing_name_by_location = {
+                cls.get_document_uri(cls.get_drawing_document(d)): d.Name
+                for d in tool.Ifc.get().by_type("IfcAnnotation")
+                if d.ObjectType == "DRAWING" and cls.get_drawing_document(d)
+            }
+
             for reference in cls.get_document_references(sheet):
                 reference_description = cls.get_reference_description(reference)
                 if reference_description in ("SHEET", "LAYOUT", "RASTER"):
@@ -1145,7 +1153,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 else:
                     new.identification = reference.Identification or ""
 
-                new.name = os.path.basename(reference.Location)
+                resolved_location = cls.get_document_uri(reference)
+                new.name = drawing_name_by_location.get(resolved_location) or os.path.basename(reference.Location)
                 new.reference_type = reference_description
 
     @classmethod
