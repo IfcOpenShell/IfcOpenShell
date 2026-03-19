@@ -903,7 +903,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
     radius: bpy.props.FloatProperty(
-        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
+        name="Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
     )
 
     def _execute(self, context):
