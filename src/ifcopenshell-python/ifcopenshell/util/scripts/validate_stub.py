@@ -61,7 +61,14 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
 
     if node_name.startswith("_") and node_name not in ("_is",) and not is_init:
         return None
-    args = [a.arg for a in node.args.args]
+    arg_nodes = node.args.args
+    defaults = [None] * (len(arg_nodes) - len(node.args.defaults)) + node.args.defaults
+    args: list[str] = []
+    for arg, default in zip(arg_nodes, defaults):
+        if default is None:
+            args.append(arg.arg)
+        else:
+            args.append(f"{arg.arg}={ast.unparse(default)}")
 
     # Skip non-informative constructors.
     if is_init and args == ["self"]:
