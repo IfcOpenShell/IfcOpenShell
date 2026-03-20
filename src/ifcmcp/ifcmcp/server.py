@@ -150,11 +150,14 @@ def build_server() -> Any:
         scale: float = 1.0 / 100.0,
         png_width: int = 1024,
         png_height: int = 1024,
+        output_path: str = "",
     ) -> list[ImageContent]:
         """Generate a 2D technical drawing of the loaded IFC model.
 
-        Returns an inline image (floor plan, elevation, or section) that the
-        LLM can inspect to understand the 2D layout of the model.
+        Returns an inline PNG image (floor plan, elevation, or section) that the
+        LLM can inspect to understand the 2D layout of the model.  If
+        ``output_path`` is provided the drawing is also saved to disk — as SVG
+        when the path ends in ``.svg``, otherwise as PNG.
 
         :param selector: ifcopenshell selector to restrict plotted elements
             (e.g. ``'IfcWall'``). Omit to plot the whole model.
@@ -167,6 +170,7 @@ def build_server() -> Any:
         :param scale: Model-to-paper scale ratio (default 0.01 = 1:100).
         :param png_width: Raster output width in pixels (default 1024).
         :param png_height: Raster output height in pixels (default 1024).
+        :param output_path: Optional file path to save the drawing to disk.
         """
         png_bytes = session.ifc_plot(
             selector=selector,
@@ -177,7 +181,24 @@ def build_server() -> Any:
             scale=scale,
             png_width=png_width,
             png_height=png_height,
+            output_format="png",
         )
+        if output_path:
+            if output_path.endswith(".svg"):
+                svg_bytes = session.ifc_plot(
+                    selector=selector,
+                    element_ids=element_ids,
+                    view=view,
+                    width_mm=width_mm,
+                    height_mm=height_mm,
+                    scale=scale,
+                    output_format="svg",
+                )
+                with open(output_path, "wb") as f:
+                    f.write(svg_bytes)
+            else:
+                with open(output_path, "wb") as f:
+                    f.write(png_bytes)
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     @server.tool(structured_output=False)
@@ -185,11 +206,13 @@ def build_server() -> Any:
         selector: str = "",
         element_ids: list[int] | None = None,
         view: str = "iso",
+        output_path: str = "",
     ) -> list[ImageContent]:
         """Render the loaded IFC model to a PNG image.
 
         Returns an inline image the LLM can inspect to understand the spatial
-        layout of the model or a specific element in context.
+        layout of the model or a specific element in context.  If
+        ``output_path`` is provided the PNG is also saved to that file path.
 
         :param selector: ifcopenshell selector to restrict rendered elements
             (e.g. ``'IfcWall'``, ``'IfcBuildingStorey[Name="0"]'``).
@@ -198,8 +221,12 @@ def build_server() -> Any:
             are rendered in translucent grey so the subject stands out.
         :param view: Camera angle — ``iso`` (default), ``top``, ``south``,
             ``north``, ``east``, or ``west``.
+        :param output_path: Optional file path to save the PNG to disk.
         """
         png_bytes = session.ifc_render(selector=selector, element_ids=element_ids, view=view)
+        if output_path:
+            with open(output_path, "wb") as f:
+                f.write(png_bytes)
         return [ImageContent(type="image", data=base64.b64encode(png_bytes).decode(), mimeType="image/png")]
 
     return server

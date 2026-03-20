@@ -1,4 +1,6 @@
 # This file was generated with the assistance of an AI coding tool.
+from unittest.mock import patch
+
 import ifcopenshell
 import pytest
 
@@ -42,3 +44,19 @@ class TestSave:
     def test_save_no_path_no_original(self, loaded_session):
         with pytest.raises(IfcSessionError, match="No path specified"):
             loaded_session.ifc_save()
+
+
+class TestIfcPlotOutputFormat:
+    """ifc_plot should pass output_format through to the underlying plot function."""
+
+    def test_default_output_format_is_png(self, loaded_session):
+        with patch("ifcmcp.core.plot_mod.plot", return_value=b"PNG_FAKE") as mock_plot:
+            loaded_session.ifc_plot()
+            mock_plot.assert_called_once()
+            assert mock_plot.call_args.kwargs["output_format"] == "png"
+
+    def test_svg_output_format(self, loaded_session):
+        with patch("ifcmcp.core.plot_mod.plot", return_value=b"SVG_FAKE") as mock_plot:
+            result = loaded_session.ifc_plot(output_format="svg")
+            assert result == b"SVG_FAKE"
+            assert mock_plot.call_args.kwargs["output_format"] == "svg"

@@ -370,10 +370,12 @@ class IfcSession:
         scale: float = 1.0 / 100.0,
         png_width: int = 1024,
         png_height: int = 1024,
+        output_format: str = "png",
     ) -> bytes:
-        """Generate a 2D technical drawing (floor plan, elevation, or section) and return PNG bytes.
+        """Generate a 2D technical drawing (floor plan, elevation, or section) and return image bytes.
 
-        Uses ifcopenshell.draw to produce SVG output which is rasterised to PNG via CairoSVG.
+        Uses ifcopenshell.draw to produce SVG output which is rasterised to PNG via CairoSVG
+        when output_format is 'png'.
 
         :param selector: ifcopenshell selector to restrict plotted elements
             (e.g. ``'IfcWall'``). Omit to plot the whole model.
@@ -386,12 +388,13 @@ class IfcSession:
         :param scale: Model-to-paper scale ratio (default 0.01 = 1:100).
         :param png_width: Raster output width in pixels (default 1024).
         :param png_height: Raster output height in pixels (default 1024).
-        :return: PNG image as raw bytes.
+        :param output_format: ``'svg'`` or ``'png'`` (default ``'png'``).
+        :return: SVG or PNG bytes depending on output_format.
         """
         model = self._require_model()
         return plot_mod.plot(
             model,
-            output_format="png",
+            output_format=output_format,
             selector=selector if selector else None,
             element_ids=element_ids,
             view=view,
