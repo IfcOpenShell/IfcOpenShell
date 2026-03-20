@@ -386,6 +386,63 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         assert unit_assignment
         assert len(unit_assignment.Units) == 1
 
+    def test_converting_drawing_scales(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+
+        model_context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            self.file,
+            parent=model_context,
+            context_identifier="Annotation",
+            target_view="PLAN_VIEW",
+            target_scale=0.01,
+        )
+
+        drawing = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Scale": "1/100", "HumanScale": "1:100"})
+
+        output = subject.convert_file_length_units(self.file, target_units="METER")
+
+        subcontext = output.by_type("IfcGeometricRepresentationSubContext")[0]
+        assert np.isclose(subcontext.TargetScale, 10.0)
+
+        drawing = output.by_type("IfcAnnotation")[0]
+        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        assert pset_data["Scale"] == "10/1"
+        assert pset_data["HumanScale"] == "1:0.1"
+
+    def test_converting_drawing_scales_to_smaller_units(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+
+        model_context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        ifcopenshell.api.context.add_context(
+            self.file,
+            parent=model_context,
+            context_identifier="Annotation",
+            target_view="PLAN_VIEW",
+            target_scale=0.01,
+        )
+
+        drawing = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Scale": "1/100", "HumanScale": "1:100"})
+
+        output = subject.convert_file_length_units(self.file, target_units="MILLIMETER")
+
+        subcontext = output.by_type("IfcGeometricRepresentationSubContext")[0]
+        assert np.isclose(subcontext.TargetScale, 0.00001)
+
+        drawing = output.by_type("IfcAnnotation")[0]
+        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        assert pset_data["Scale"] == "1/100000"
+        assert pset_data["Scale"] != "0"
+        assert pset_data["HumanScale"] == "1:100000"
+
 
 class TestConvertFileLengthUnitsIFC4(test.bootstrap.IFC4, TestConvertFileLengthUnits):
     pass
