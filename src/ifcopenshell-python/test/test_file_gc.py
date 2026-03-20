@@ -95,7 +95,7 @@ def test_bug_2486_a():
     file = ifcopenshell.api.project.create_file()
 
     mymaterial = ifcopenshell.api.material.add_material(file)
-    pset = ifcopenshell.api.pset.add_pset(file, product=mymaterial)
+    pset = ifcopenshell.api.pset.add_pset(file, product=mymaterial, name="Foo")
     ifcopenshell.api.pset.edit_pset(
         file,
         pset=pset,
