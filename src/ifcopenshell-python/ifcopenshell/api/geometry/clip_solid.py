@@ -18,8 +18,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+import json
+from typing import Optional, Sequence
 
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
 
@@ -61,9 +64,23 @@ def clip_solid(
         or ``IfcBooleanClippingResult``).
     :param location: A point on the clipping plane in the representation's
         local coordinate system.
-    :param normal: Plane normal pointing toward the material to be removed.
+    :param normal: Plane normal pointing toward the material to be removed
+        (see warning above).
+    :param element: If provided, the resulting ``IfcBooleanClippingResult`` is
+        registered in the element's ``BBIM_Boolean`` property set so that
+        :func:`regenerate_wall_representation` preserves it during regeneration.
     :return: The resulting ``IfcBooleanClippingResult``.
     """
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
     clipping = Clipping(location=tuple(location), normal=tuple(normal))
-    return clipping.apply(file, item, unit_scale)
+    result = clipping.apply(file, item, unit_scale)
+    if element is not None:
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if pset_data:
+            pset = file.by_id(pset_data["id"])
+            data = list(set(json.loads(pset_data["Data"]) + [result.id()]))
+        else:
+            pset = ifcopenshell.api.pset.add_pset(file, product=element, name="BBIM_Boolean")
+            data = [result.id()]
+        ifcopenshell.api.pset.edit_pset(file, pset=pset, properties={"Data": json.dumps(data)})
+    return result

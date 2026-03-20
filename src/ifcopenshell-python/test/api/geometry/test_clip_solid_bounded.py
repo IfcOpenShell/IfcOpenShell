@@ -16,7 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 import ifcopenshell.api.geometry
+import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
 import test.bootstrap
 
@@ -143,6 +146,34 @@ class TestClipSolidBounded(test.bootstrap.IFC4):
         assert result.is_a("IfcBooleanClippingResult")
         assert result.FirstOperand == first_clip
         assert first_clip.FirstOperand == extrusion
+
+
+    def test_element_registers_result_in_bbim_boolean(self):
+        extrusion = self.make_extrusion()
+        wall = self.file.createIfcWall()
+        result = ifcopenshell.api.geometry.clip_solid_bounded(
+            self.file,
+            item=extrusion,
+            location=[2.5, 0.0, 2.0],
+            normal=[0.6, 0.0, 0.8],
+            boundary_points=[[2.0, 0.0], [3.0, 0.0], [3.0, 2.0], [2.0, 2.0]],
+            element=wall,
+        )
+        pset = ifcopenshell.util.element.get_pset(wall, "BBIM_Boolean")
+        assert pset is not None
+        assert result.id() in json.loads(pset["Data"])
+
+    def test_no_element_does_not_create_pset(self):
+        extrusion = self.make_extrusion()
+        wall = self.file.createIfcWall()
+        ifcopenshell.api.geometry.clip_solid_bounded(
+            self.file,
+            item=extrusion,
+            location=[2.5, 0.0, 2.0],
+            normal=[0.6, 0.0, 0.8],
+            boundary_points=[[2.0, 0.0], [3.0, 0.0], [3.0, 2.0], [2.0, 2.0]],
+        )
+        assert ifcopenshell.util.element.get_pset(wall, "BBIM_Boolean") is None
 
 
 class TestClipSolidBoundedIFC2X3(test.bootstrap.IFC2X3, TestClipSolidBounded):
