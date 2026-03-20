@@ -252,7 +252,9 @@ class DumbProfileRegenerator:
                         results.extend(rel.RelatedObjects)
         return results
 
-    def get_element_types_using_profile(self, profile: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    def get_element_types_using_profile(
+        self, profile: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         results = []
         profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
