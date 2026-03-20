@@ -254,6 +254,7 @@ jobs:
           cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || ERROR=1
+          make build-ids-docs || ERROR=1
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
           cd ../ifcopenshell-python
           pip install mathutils
