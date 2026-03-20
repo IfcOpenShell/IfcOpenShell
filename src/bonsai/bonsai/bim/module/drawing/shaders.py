@@ -367,7 +367,7 @@ class BaseLinesShader(BaseShader):
     """
 
     def __init__(self, gap_size=16):
-        super().__init__(gap_size=gap_size)
+        super().__init__()
 
     def glenable(self):
         super().glenable()
