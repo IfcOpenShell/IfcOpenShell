@@ -26,7 +26,7 @@ def assign_process(
     relating_process: ifcopenshell.entity_instance,
     related_object: ifcopenshell.entity_instance,
 ) -> ifcopenshell.entity_instance:
-    """Assigns an object to be related to a process, typically a construction task
+    """Assigns an object as an input, control, or resource of a process
 
     Processes work using the ICOM (Input, Controls, Outputs, Mechanisms)
     paradigm in IFC. This process model is commonly used in modeling
@@ -63,6 +63,17 @@ def assign_process(
 
     For resources, any construction resource may be assigned to a task.
 
+    .. warning::
+
+        This function creates an **Input** relationship
+        (``IfcRelAssignsToProcess``), meaning the product is *consumed* or
+        *operated on* by the task — the typical case is demolition or
+        maintenance.
+
+        If the task *constructs or installs* a product (e.g. erecting a wall
+        or fitting a window), use :func:`assign_product` instead, which
+        creates an **Output** relationship (``IfcRelAssignsToProduct``).
+
     :param relating_process: The IfcProcess (typically IfcTask) that the
         input, control, or resource is related to.
     :param related_object: The IfcProduct (for input), IfcCostItem (for
@@ -77,7 +88,7 @@ def assign_process(
         # need to be part of a work schedule.
         schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
-        # Let's create a construction task. Note that the predefined type is
+        # Let's create a demolition task. Note that the predefined type is
         # important to distinguish types of tasks.
         task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Demolish existing", identification="A", predefined_type="DEMOLITION")
@@ -85,8 +96,12 @@ def assign_process(
         # Let's say we have a wall somewhere.
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
-        # Let's demolish that wall!
+        # The wall is an INPUT to the demolition task (it will be consumed).
         ifcopenshell.api.sequence.assign_process(model, relating_process=task, related_object=wall)
+
+        # For a construction task that BUILDS a wall, use assign_product instead:
+        # build_task = ifcopenshell.api.sequence.add_task(model, ..., predefined_type="CONSTRUCTION")
+        # ifcopenshell.api.sequence.assign_product(model, relating_product=wall, related_object=build_task)
     """
     if related_object.HasAssignments:
         for assignment in related_object.HasAssignments:
