@@ -304,8 +304,8 @@ restriction = ifctester.ids.Restriction(options={"pattern": "(-|[0-9]{2,3})\/(-|
 spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
-        name="FireRating",
-        datatype="IfcLabel",
+        baseName="FireRating",
+        dataType="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )
