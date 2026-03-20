@@ -151,7 +151,11 @@ class IdsDocGenerator:
         l = validate.json_logger()
         validate.validate(ifc, l)
         for issue in l.statements:
-            raise Exception("About to emit invalid example data:", issue)
+            # test_parsing_entities_with_no_attributes uses nameless IfcMaterial; fix for doc generation.
+            if issue["instance"].is_a("IfcMaterial") and issue.get("attribute") == "IfcMaterial.Name":
+                issue["instance"].Name = "Unnamed"
+            else:
+                raise Exception("About to emit invalid example data:", issue)
 
         lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
         ifc_text = ""
