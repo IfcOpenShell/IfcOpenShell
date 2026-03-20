@@ -40,6 +40,7 @@ import test_ids
 from ifcopenshell import validate
 
 import ifctester
+import ifctester.facet
 from ifctester import ids
 
 outdir = "build"
@@ -117,6 +118,8 @@ class FacetDocGenerator:
             {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": inst.id()}
         )
 
+        ifctester.facet.get_pset.cache_clear()
+        ifctester.facet.get_psets.cache_clear()
         assert bool(facet(inst)) is expected
 
     def set_facet(self, facet):
