@@ -1066,7 +1066,7 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
         cls.poll_message_set("Only available from Outliner.")
         return False
 
-    def execute(self, context):
+    def execute(self, context):  # ty:ignore[override-of-final-method]
         if len(getattr(context, "selected_ids", [])) == 0:
             return {"FINISHED"}
 

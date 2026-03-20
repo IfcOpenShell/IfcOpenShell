@@ -242,7 +242,7 @@ class TemplateListItemSpy(PanelSpy):
         self.spied_props: list[dict[str, Any]] = []
         self.spied_operators: list[dict[str, Any]] = []
         if len(signature(blender_panel.draw_item).parameters) == 8:
-            blender_panel.draw_item(
+            blender_panel.draw_item(  # ty:ignore[missing-argument]
                 self,
                 bpy.context,
                 self,

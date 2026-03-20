@@ -111,8 +111,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream, stream_entity
-    from .stream import stream as _stream
+    from .stream import stream, stream_entity  # ty: ignore[possibly-missing-import]
+    from .stream import stream as _stream  # ty: ignore[possibly-missing-import]
 except:
     pass
 

@@ -321,7 +321,7 @@ def get_gross_perimeter(o: bpy.types.Object) -> float:
     return gross_perimeter
 
 
-def get_space_net_perimeter(obj: bpy.types.Object) -> float:
+def get_space_net_perimeter(obj: bpy.types.Object) -> None:
     pass
 
 

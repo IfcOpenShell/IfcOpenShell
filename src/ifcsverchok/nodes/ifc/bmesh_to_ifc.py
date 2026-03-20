@@ -193,7 +193,7 @@ class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.help
                         blender_object=obj,
                         geometry=obj.data,
                         context=context,
-                        should_run_listeners=False,
+                        should_run_listeners=False,  # ty:ignore[unknown-argument]
                     )
                     if not representation:
                         raise Exception("Couldn't create representation. Possibly wrong context.")

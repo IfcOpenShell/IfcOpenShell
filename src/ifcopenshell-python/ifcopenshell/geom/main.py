@@ -28,7 +28,7 @@ from ..file import file
 from . import has_occ
 
 if TYPE_CHECKING:
-    from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]
+    from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     IteratorOutput = Union["ShapeElementType", "utils.shape_tuple"]
 
@@ -47,9 +47,9 @@ if has_occ:
     from . import occ_utils as utils
 
     try:
-        from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]
+        from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
     except ImportError:
-        from OCC import TopoDS  # pyright: ignore[reportMissingImports]
+        from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
         if getattr(settings, "use_python_opencascade", False):
