@@ -1234,7 +1234,9 @@ def get_controls(element: ifcopenshell.entity_instance) -> Generator[ifcopenshel
             yield rel.RelatingControl
 
 
-def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+def get_parent(
+    element: ifcopenshell.entity_instance, ifc_class: Optional[str] = None
+) -> Union[ifcopenshell.entity_instance, None]:
     """Get the parent in the spatial heirarchy
 
     IFC features a spatial hierarchy tree of all objects. Each spatial element
@@ -1251,6 +1253,8 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
     - Voiding: the opening voids another physical element, such as a hole in a wall
 
     :param element: Any physical or spatial element in the tree
+    :param ifc_class: Optionally filter the type of parent you're after. For
+        example, you may be after the storey, not a space.
     :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
 
     Example:
@@ -1260,13 +1264,23 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
         element = file.by_type("IfcWall")[0]
         parent = ifcopenshell.util.element.get_parent(element)
     """
-    return (
+    parent = (
         get_container(element, should_get_direct=True)
         or get_aggregate(element)
         or get_nest(element)
         or get_filled_void(element)
         or get_voided_element(element)
     )
+
+    if not ifc_class:
+        return parent
+
+    while parent:
+        if parent.is_a(ifc_class):
+            return parent
+        parent = get_parent(parent)
+
+    return None
 
 
 def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
