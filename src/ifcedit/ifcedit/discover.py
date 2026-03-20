@@ -236,6 +236,9 @@ def _parse_docstring_body(docstring: str) -> tuple[str, str]:
     return summary, long_description
 
 
+_FIELD_MARKER = re.compile(r":(?:param|returns?|rtype|type|raises?)\b")
+
+
 def _parse_param_docs(docstring: str) -> dict[str, str]:
     """Extract :param name: description lines from a docstring."""
     params = {}
@@ -249,9 +252,9 @@ def _parse_param_docs(docstring: str) -> dict[str, str]:
                 params[current_param] = " ".join(current_lines).strip()
             current_param = match.group(1)
             current_lines = [match.group(2)]
-        elif current_param and stripped and not stripped.startswith(":"):
+        elif current_param and stripped and not _FIELD_MARKER.match(stripped):
             current_lines.append(stripped)
-        elif stripped.startswith(":") or (stripped == "" and current_param):
+        elif _FIELD_MARKER.match(stripped) or (stripped == "" and current_param):
             if current_param:
                 params[current_param] = " ".join(current_lines).strip()
                 current_param = None
@@ -273,7 +276,7 @@ def _parse_return_doc(docstring: str) -> str:
             in_return = True
             lines = [match.group(1)]
         elif in_return:
-            if stripped.startswith(":") or stripped == "":
+            if _FIELD_MARKER.match(stripped) or stripped == "":
                 break
             lines.append(stripped)
     return re.sub(r"\s+", " ", " ".join(lines).strip())
