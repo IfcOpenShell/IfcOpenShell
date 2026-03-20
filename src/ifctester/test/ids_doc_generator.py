@@ -143,7 +143,7 @@ class IdsDocGenerator:
             all_applicable.update(spec.applicable_entities)
             for requirement in spec.requirements:
                 if requirement.status is False:
-                    all_failures.update(requirement.failed_entities)
+                    all_failures.update(f["element"] for f in requirement.failures)
         assert set(all_applicable) == set(applicable_entities)
         assert set(all_failures) == set(failed_entities)
 
