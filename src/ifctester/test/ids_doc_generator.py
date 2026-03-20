@@ -16,6 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Documentation generator for IfcTester IDS facets and test cases.
+
+This is not a test file. It lives in the test/ directory because it reuses
+test cases from test_facet.py and test_ids.py to generate example IFC files,
+IDS files, and Markdown documentation into test/build/.
+
+Run via: make build-ids-docs (from src/ifctester/)
+"""
+
 import functools
 import os
 import re

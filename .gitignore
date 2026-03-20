@@ -5,6 +5,8 @@
 /_installed-vs*-x*/
 /build/
 /src/examples/build/
+# ifctester docs output
+/src/ifctester/test/build/
 
 # output directories
 /cmake/out/
