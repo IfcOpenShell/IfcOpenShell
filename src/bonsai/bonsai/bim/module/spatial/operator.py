@@ -284,14 +284,16 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
-    bl_description = "Recurvisevly selects all objects in the container.\n\nCtrl+click to select only one level deep"
+    bl_description = "Recursively selects all objects in the container.\n\nCtrl+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
 
     is_recursive: bpy.props.BoolProperty(default=True)
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.ctrl:
             self.is_recursive = False
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
@@ -300,6 +302,7 @@ class SelectSimilarContainer(bpy.types.Operator):
             tool.Spatial,
             obj=context.active_object,
             is_recursive=self.is_recursive,
+            should_unhide=self.should_unhide,
         )
         self.is_recursive = True  # <-- forcibly reset
         return {"FINISHED"}

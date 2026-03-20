@@ -200,6 +200,7 @@ class Spatial(bonsai.core.tool.Spatial):
             obj = tool.Ifc.get_object(product)
             if obj and view_layer.objects.get(obj.name):
                 if unhide:
+                    obj.hide_viewport = False
                     obj.hide_set(False)
                 obj.select_set(True)
 
