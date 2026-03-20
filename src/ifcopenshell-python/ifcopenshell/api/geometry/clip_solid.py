@@ -29,13 +29,20 @@ def clip_solid(
     item: ifcopenshell.entity_instance,
     location: Sequence[float],
     normal: Sequence[float],
+    element: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     """Clip a solid with a half-space plane, returning an IfcBooleanClippingResult.
 
     Convenience wrapper around :class:`ifcopenshell.util.data.Clipping` for
-    use with any solid.  The ``normal`` points toward the **removed** material
-    (the void side); the kept region is on the opposite side.  This is the same
-    convention used by the ``clippings`` parameter of :func:`add_wall_representation`.
+    use with any solid.  This is the same convention used by the ``clippings``
+    parameter of :func:`add_wall_representation`.
+
+    .. warning::
+
+        The ``normal`` points toward the **removed** material (the discarded
+        side), not toward the kept material.  For a slope clip the normal
+        points upward into the removed wedge above the slope line.  For a
+        side mitre the normal points outward away from the wall body.
 
     After clipping, set the parent ``IfcShapeRepresentation``
     ``RepresentationType`` to ``"Clipping"``.
