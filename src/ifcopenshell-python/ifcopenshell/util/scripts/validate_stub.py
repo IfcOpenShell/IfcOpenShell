@@ -70,12 +70,15 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
         else:
             args.append(f"{arg.arg}={ast.unparse(default)}")
 
+    if arg := node.args.vararg:
+        args.append(f"*{arg.arg}")
+
+    if arg := node.args.kwarg:
+        args.append(f"**{arg.arg}")
+
     # Skip non-informative constructors.
     if is_init and args == ["self"]:
         return None
-
-    if node.args.vararg:
-        args.append("*args")
 
     node_name = f"def {node.name}"
     node_name = f"{node_name}({', '.join(args)}): ..."
