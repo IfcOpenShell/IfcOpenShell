@@ -1845,7 +1845,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_radiance_exporter_props(cls) -> RadianceExporterProperties:
         assert (scene := bpy.context.scene)
-        return scene.BIMRadianceExporeterProperies  # pyright: ignore[reportAttributeAccessIssue]
+        return scene.BIMRadianceExporterProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_fm_props(cls) -> BIMFMProperties:

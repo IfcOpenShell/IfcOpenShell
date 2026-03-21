@@ -18,16 +18,12 @@
 
 from __future__ import annotations
 
-import json
-import os
+import bpy
 from typing import TYPE_CHECKING
 from pathlib import Path
 
 if TYPE_CHECKING:
     from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial, IESLight
-
-with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
-    spectraldb = json.load(f)
 
 
 class MATERIAL_UL_radiance_materials(bpy.types.UIList):
@@ -89,12 +85,13 @@ class MATERIAL_UL_ies_lights(bpy.types.UIList):
             else:
                 row.label(text="(No file selected)", icon="ERROR")
 
-            # Target object property (displays object name)
-            row.prop(item, "target_object", text="", emboss=False)
-
-            # Object eyedropper picker button (like in modifiers)
-            op = row.operator("radiance.set_ies_light_object", text="", icon="EYEDROPPER")
-            op.index = index
+            # Target: collection or single object
+            if item.use_collection:
+                row.prop(item, "target_collection", text="", icon="OUTLINER_COLLECTION", emboss=False)
+            else:
+                row.prop(item, "target_object", text="", emboss=False)
+                op = row.operator("radiance.set_ies_light_object", text="", icon="EYEDROPPER")
+                op.index = index
 
             # Remove button (X icon - negative action)
             op = row.operator("radiance.remove_ies_light", text="", icon="X")
