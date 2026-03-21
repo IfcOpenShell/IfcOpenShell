@@ -407,13 +407,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}
     select_parts: bpy.props.BoolProperty(default=False)
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select all aggregates, subaggregates and all their parts"
+            return "Select all aggregates, subaggregates and all their parts\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select all aggregates"
+            return "Select all aggregates\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+
+    def invoke(self, context, event):
+        self.should_unhide = event.alt
+        return self.execute(context)
 
     def execute(self, context):
         for obj in context.selected_objects:
@@ -446,11 +451,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                     for element in parts_objs:
                         obj = tool.Ifc.get_object(element)
                         if obj:
+                            if self.should_unhide:
+                                obj.hide_viewport = False
+                                obj.hide_set(False)
                             obj.select_set(True)
                 else:
                     for element in parts:
                         obj = tool.Ifc.get_object(element)
-                        obj.select_set(True)
+                        if obj:
+                            if self.should_unhide:
+                                obj.hide_viewport = False
+                                obj.hide_set(False)
+                            obj.select_set(True)
 
         return {"FINISHED"}
 
