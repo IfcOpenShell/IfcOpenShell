@@ -540,6 +540,16 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        if booleans:
+            # Users typically select two top-level items and expect the
+            # operand to be absorbed into the boolean, not remain as a
+            # standalone item alongside it.
+            representation = tool.Geometry.get_active_representation(rep_obj)
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            second_items_set = set(second_items)
+            new_items = [i for i in representation.Items if i not in second_items_set]
+            if new_items:
+                representation.Items = new_items
         rep_element = tool.Ifc.get_entity(rep_obj)
         tool.Model.mark_manual_booleans(rep_element, booleans)
         tool.Geometry.reload_representation(rep_obj)
