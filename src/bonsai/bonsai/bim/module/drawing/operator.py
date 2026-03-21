@@ -1426,6 +1426,7 @@ class CreateDrawing(bpy.types.Operator):
                 "/Pset_.*Common/.Status",
                 "EPset_Status.Status",
                 "EPset_Status.UserDefinedStatus",
+                "Material.Name",
             ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
