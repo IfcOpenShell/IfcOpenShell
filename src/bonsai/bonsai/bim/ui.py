@@ -714,9 +714,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Default parameters for BIM elements",
     )
 
-    container_hide_show_isolate: BoolProperty(
-        name="Container hide/show/isolate",
-        description="Enable container hide/show/isolate feature in the UI",
+    show_container_tools: BoolProperty(
+        name="Show Container Tools (Select, Hide, Show, Isolate)",
+        description="Enable container select, hide/show/isolate tools in the UI",
         default=False,
     )
 
@@ -786,7 +786,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         pset_dir: str
         doc: DocPreferences
         default_parameters: DefaultParameters
-        container_hide_show_isolate: bool
+        show_container_tools: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
         metadata_blend_file_suffix: str
@@ -984,7 +984,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "bsdd_baseurl")
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        layout.prop(self, "container_hide_show_isolate")
+        layout.prop(self, "show_container_tools")
         row = layout.row(align=True)
         row.prop(self, "chain_filter_with_set_operations")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"
