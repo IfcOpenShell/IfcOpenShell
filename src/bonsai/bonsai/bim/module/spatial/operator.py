@@ -428,24 +428,29 @@ class SelectDecomposedElements(bpy.types.Operator):
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, operator):
         return (
             "Select the active item"
-            + "\nALT+CLICK to select all listed elements.\nCTRL + CLICK to select only one level deep"
+            + "\nSHIFT+CLICK to select all listed elements.\nCTRL+CLICK to select only one level deep"
+            + "\nALT+CLICK to also unhide hidden objects (viewport and local hide)"
         )
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE":
-            if event.alt:
+            if event.shift:
                 self.should_filter = False
             if event.ctrl:
                 self.is_recursive = False
+            self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
-        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive))
+        tool.Spatial.select_products(
+            tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive), unhide=self.should_unhide
+        )
 
         # Make selected active element in list, the active object
         props = tool.Spatial.get_spatial_props()
