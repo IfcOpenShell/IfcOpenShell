@@ -28,6 +28,7 @@ extend-exclude = '''
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
+reportRedeclaration = false
 # Pylance doesn't respect gitignore, so we have to exclude files manually here
 # to avoid VS Code slowing down.
 # https://github.com/microsoft/pylance-release/issues/5169
