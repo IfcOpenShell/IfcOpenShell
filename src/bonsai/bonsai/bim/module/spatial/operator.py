@@ -287,6 +287,7 @@ class SelectSimilarContainer(bpy.types.Operator):
     bl_description = "Recursively selects all objects in the container.\n\nCtrl+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
 
+    container: bpy.props.IntProperty(default=0)
     is_recursive: bpy.props.BoolProperty(default=True)
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
@@ -297,10 +298,17 @@ class SelectSimilarContainer(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        if self.container:
+            container = tool.Ifc.get().by_id(self.container)
+        elif element := tool.Ifc.get_entity(context.active_object):
+            container = ifcopenshell.util.element.get_container(element)
+        else:
+            return {"CANCELLED"}
+        if not container:
+            return {"CANCELLED"}
         core.select_similar_container(
-            tool.Ifc,
             tool.Spatial,
-            obj=context.active_object,
+            container=container,
             is_recursive=self.is_recursive,
             should_unhide=self.should_unhide,
         )
