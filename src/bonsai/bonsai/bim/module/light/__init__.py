@@ -52,6 +52,7 @@ classes = (
     operator.AddIESLight,
     operator.RemoveIESLight,
     operator.SetIESLightObject,
+    operator.CleanupRadianceFiles,
     prop.RadianceMaterial,
     prop.IESLight,
     prop.BIMSolarProperties,
@@ -64,7 +65,7 @@ classes = (
 
 
 def register():
-    bpy.types.Scene.BIMRadianceExporeterProperies = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
+    bpy.types.Scene.BIMRadianceExporterProperties = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
     bpy.types.Scene.BIMSolarProperties = bpy.props.PointerProperty(type=prop.BIMSolarProperties)
 
     if pyradiance:
@@ -77,5 +78,5 @@ def register():
 
 
 def unregister():
-    del bpy.types.Scene.BIMRadianceExporeterProperies
+    del bpy.types.Scene.BIMRadianceExporterProperties
     del bpy.types.Scene.BIMSolarProperties

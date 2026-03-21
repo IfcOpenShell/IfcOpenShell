@@ -20,6 +20,8 @@ import json
 import math
 import multiprocessing
 import os
+import subprocess
+import threading
 import time
 import webbrowser
 from datetime import datetime
@@ -39,13 +41,14 @@ from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
+from bonsai.bim.module.light.prop import spectraldb
 
 ifc_materials = []
 
 scene = None
 
-with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
-    spectraldb = json.load(f)
+# Stores info about exported linked models: list of (obj_path, mtl_path, link_matrix_4x4)
+linked_model_exports: list[tuple[str, str, list[list[float]]]] = []
 
 
 class ExportOBJ(bpy.types.Operator):
@@ -63,41 +66,18 @@ class ExportOBJ(bpy.types.Operator):
             return False
         return True
 
-    def execute(self, context):
-
-        # Get the output directory
-        props = tool.Blender.get_radiance_exporter_props()
-        should_load_from_memory = props.should_load_from_memory
-        output_dir = props.output_dir
-
-        props.is_exporting = True
-
-        # Conversion from IFC to OBJ
-        # Settings for obj
+    def _get_geom_settings(self):
+        """Create standard geometry and serializer settings for OBJ export."""
         settings = ifcopenshell.geom.settings()
         serializer_settings = ifcopenshell.geom.serializer_settings()
-
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
         serializer_settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
+        return settings, serializer_settings
 
-        ifc_file: ifcopenshell.file
-        if should_load_from_memory:
-            ifc_file = tool.Ifc.get()
-
-        else:
-            ifc_file_path = props.ifc_file
-            ifc_file = ifcopenshell.open(ifc_file_path)
-
-        obj_file_path = os.path.join(output_dir, "model.obj")
-        mtl_file_path = os.path.join(output_dir, "model.mtl")
-
-        serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, serializer_settings)
-        serialiser.setFile(ifc_file)
-        serialiser.setUnitNameAndMagnitude("METER", 1.0)
-        serialiser.writeHeader()
-
+    def _get_exportable_elements(self, ifc_file, filter_visibility=True):
+        """Get the list of elements to export from an IFC file."""
         if ifc_file.schema in ("IFC2X3", "IFC4"):
             elements = ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcProxy")
         else:
@@ -106,52 +86,396 @@ class ExportOBJ(bpy.types.Operator):
         elements += ifc_file.by_type("IfcSite")
         elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
 
-        # Filter elements by visibility in Blender
-        # Only export elements that are visible in the viewport
+        if not filter_visibility:
+            return elements
+
+        # Filter by visibility in Blender.
+        # We use hide_get() (user-toggled eye icon) instead of visible_get()
+        # because visible_get() also considers collection/view-layer visibility
+        # which incorrectly excludes objects in linked aggregate sub-collections.
         visible_elements = []
         for element in elements:
-            # Get the corresponding Blender object
             blender_obj = tool.Ifc.get_object(element)
-
-            # If no Blender object exists, include the element (not yet represented)
             if blender_obj is None:
+                # No Blender object (linked aggregate copies, or not yet represented)
+                # Include by default — the geometry exists in the IFC file
                 visible_elements.append(element)
                 continue
-
-            # Check if the object is visible
-            # visible_get() returns True if the object is visible (not hidden, not on hidden layer, etc.)
-            if blender_obj.visible_get():
+            if not blender_obj.hide_get():
                 visible_elements.append(element)
             else:
                 print(f"Skipping hidden element: {element.GlobalId if hasattr(element, 'GlobalId') else element.id()}")
+        return visible_elements
 
-        print(f"Exporting {len(visible_elements)} visible elements out of {len(elements)} total elements")
-        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=visible_elements)
+    def _export_ifc_to_obj(self, ifc_file, obj_path, mtl_path, settings, serializer_settings, elements):
+        """Export elements from an IFC file to OBJ format. Returns collected material names."""
+        materials_collected = []
+        serialiser = ifcopenshell.geom.serializers.obj(obj_path, mtl_path, settings, serializer_settings)
+        serialiser.setFile(ifc_file)
+        serialiser.setUnitNameAndMagnitude("METER", 1.0)
+        serialiser.writeHeader()
+
+        print(f"Exporting {len(elements)} elements to {obj_path}")
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
         if iterator.initialize():
             while True:
                 shape = iterator.get()
-                assert isinstance(shape, W.TriangulationElement)
-                materials = shape.geometry.materials
-
-                for material in materials:
-                    ifc_materials.append(material.name)
-
+                for material in shape.geometry.materials:
+                    materials_collected.append(material.name)
                 serialiser.write(shape)
                 if not iterator.next():
                     break
 
         serialiser.finalize()
+        return materials_collected
+
+    def _sync_moved_object_placements(self):
+        """Sync Blender object positions to IFC ObjectPlacements for all moved objects.
+
+        This is critical for linked aggregate copies: their IFC ObjectPlacements
+        are initially copies of the original's placement. After the user moves them
+        in Blender, the IFC placements are stale until explicitly synced. Without
+        this, the iterator with use-world-coords=True exports all copies at the
+        original position.
+        """
+        import bonsai.core.geometry as core_geometry
+
+        synced = 0
+        for obj in bpy.data.objects:
+            element = tool.Ifc.get_entity(obj)
+            if element is None:
+                continue
+            if not element.is_a("IfcProduct"):
+                continue
+            try:
+                if tool.Ifc.is_moved(obj):
+                    core_geometry.edit_object_placement(
+                        ifc=tool.Ifc,
+                        geometry=tool.Geometry,
+                        surveyor=tool.Surveyor,
+                        obj=obj,
+                        apply_scale=False,
+                    )
+                    synced += 1
+            except Exception as e:
+                print(f"Could not sync placement for {obj.name}: {e}")
+        if synced:
+            print(f"Synced {synced} moved object placement(s) to IFC before export")
+
+    def _export_collection_instances_obj(self, context, output_dir):
+        """Export Blender collection instances as per-parent OBJ files.
+
+        Collection instances (empties with instance_type='COLLECTION') are purely
+        Blender constructs — they don't exist in the IFC file. The ifcopenshell
+        iterator ignores them entirely, so we must export their geometry via
+        Blender's depsgraph which evaluates all instances with correct world transforms.
+
+        Each collection instance parent gets its own OBJ file because obj2mesh
+        cannot handle all instances in a single file ("too many patch triangles").
+        """
+        depsgraph = context.evaluated_depsgraph_get()
+
+        # Find which objects are collection instance parents (visible, not hidden)
+        # Skip collections that belong to linked IFC models — those are already
+        # exported by _export_linked_models() via the IFC serializer.
+        instance_parents = set()
+        for obj in bpy.data.objects:
+            if obj.instance_type == 'COLLECTION' and obj.instance_collection is not None:
+                if not obj.visible_get():
+                    continue
+                # Check if this collection contains linked IFC objects
+                coll = obj.instance_collection
+                is_linked_ifc = any("guids" in child for child in coll.all_objects if child.type == 'MESH')
+                if is_linked_ifc:
+                    print(f"Skipping collection instance '{obj.name}' (linked IFC model, exported via IFC serializer)")
+                    continue
+                instance_parents.add(obj.name)
+
+        if not instance_parents:
+            return
+
+        print(f"Found {len(instance_parents)} collection instance(s) to export")
+
+        # Export one OBJ per collection instance parent
+        identity = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+        total_meshes = 0
+
+        for parent_name in sorted(instance_parents):
+            obj_path = os.path.join(output_dir, f"instance_{parent_name}.obj")
+            vert_offset = 0
+            mesh_count = 0
+
+            with open(obj_path, "w") as f:
+                f.write(f"# Collection instance geometry for {parent_name}\n")
+                f.write("usemtl white\n\n")
+
+                for dep_inst in depsgraph.object_instances:
+                    if not dep_inst.is_instance:
+                        continue
+                    if dep_inst.parent is None:
+                        continue
+                    if dep_inst.parent.original.name != parent_name:
+                        continue
+
+                    eval_obj = dep_inst.object
+                    if eval_obj.type != 'MESH':
+                        continue
+
+                    try:
+                        mesh = eval_obj.to_mesh()
+                    except RuntimeError:
+                        continue
+                    if mesh is None:
+                        continue
+
+                    matrix = dep_inst.matrix_world
+                    f.write(f"g obj_{mesh_count}\n")
+
+                    for v in mesh.vertices:
+                        co = matrix @ v.co
+                        f.write(f"v {co.x} {co.y} {co.z}\n")
+
+                    mesh.calc_loop_triangles()
+                    for tri in mesh.loop_triangles:
+                        i0 = vert_offset + tri.vertices[0] + 1
+                        i1 = vert_offset + tri.vertices[1] + 1
+                        i2 = vert_offset + tri.vertices[2] + 1
+                        f.write(f"f {i0} {i1} {i2}\n")
+
+                    vert_offset += len(mesh.vertices)
+                    mesh_count += 1
+                    eval_obj.to_mesh_clear()
+
+            if mesh_count == 0:
+                try:
+                    os.remove(obj_path)
+                except OSError:
+                    pass
+                continue
+
+            # Identity matrix — geometry is already at world coordinates
+            linked_model_exports.append((obj_path, "", identity))
+            total_meshes += mesh_count
+            print(f"  {parent_name}: {mesh_count} meshes, {vert_offset} vertices")
+
+        if total_meshes > 0:
+            print(f"Exported {total_meshes} instanced meshes across {len(linked_model_exports)} file(s)")
+
+    def execute(self, context):
+        ifc_materials.clear()
+        linked_model_exports.clear()
+
+        props = tool.Blender.get_radiance_exporter_props()
+        should_load_from_memory = props.should_load_from_memory
+        output_dir = props.output_dir
+        props.is_exporting = True
+
+        # Sync all moved Blender object positions to IFC before export.
+        # This ensures linked aggregate copies (and any other moved objects)
+        # export at their correct Blender positions, not their stale IFC positions.
+        if should_load_from_memory and tool.Ifc.get():
+            self._sync_moved_object_placements()
+
+        settings, serializer_settings = self._get_geom_settings()
+
+        ifc_file: ifcopenshell.file
+        if should_load_from_memory:
+            ifc_file = tool.Ifc.get()
+        else:
+            ifc_file_path = props.ifc_file
+            ifc_file = ifcopenshell.open(ifc_file_path)
+
+        # --- Export main model ---
+        obj_file_path = os.path.join(output_dir, "model.obj")
+        mtl_file_path = os.path.join(output_dir, "model.mtl")
+
+        visible_elements = self._get_exportable_elements(ifc_file, filter_visibility=should_load_from_memory)
+        mats = self._export_ifc_to_obj(ifc_file, obj_file_path, mtl_file_path, settings, serializer_settings, visible_elements)
+        ifc_materials.extend(mats)
+
+        self.report({"INFO"}, f"Exported main model OBJ to: {obj_file_path}")
+
+        # --- Export linked models (external IFC files) ---
+        if should_load_from_memory and tool.Ifc.get():
+            self._export_linked_models(ifc_file, output_dir, settings, serializer_settings)
+
+        # --- Export collection instances (Blender-level linked copies) ---
+        if should_load_from_memory:
+            self._export_collection_instances_obj(context, output_dir)
+
+        # --- Export non-IFC Blender meshes (plain geometry with no IFC entity) ---
+        if should_load_from_memory:
+            self._export_non_ifc_meshes(context, output_dir)
+
         props.is_exporting = False
-
-        self.report({"INFO"}, "Exported OBJ file to: {}".format(obj_file_path))
-
+        total_linked = len(linked_model_exports)
+        if total_linked:
+            self.report({"INFO"}, f"Also exported {total_linked} linked/instanced model(s)")
         return {"FINISHED"}
+
+    def _export_non_ifc_meshes(self, context, output_dir):
+        """Export visible Blender mesh objects that have no IFC entity.
+
+        These are plain Blender geometry (e.g. manually added planes, cubes)
+        that don't exist in any IFC file. They are skipped by the IFC iterator
+        and by the collection instance exporter, so we handle them separately.
+        """
+        non_ifc_meshes = []
+        for obj in bpy.data.objects:
+            if obj.type != 'MESH':
+                continue
+            if not obj.visible_get():
+                continue
+            # Skip objects that have an IFC entity (handled by main/linked IFC export)
+            if tool.Ifc.get_entity(obj) is not None:
+                continue
+            # Skip objects inside instanced collections (handled by collection instance export)
+            if any(col.library for col in obj.users_collection):
+                continue
+            # Skip linked IFC element objects (have "guids" custom prop)
+            if "guids" in obj:
+                continue
+            non_ifc_meshes.append(obj)
+
+        if not non_ifc_meshes:
+            return
+
+        obj_path = os.path.join(output_dir, "blender_meshes.obj")
+        vert_offset = 0
+        mesh_count = 0
+        identity = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+
+        depsgraph = context.evaluated_depsgraph_get()
+
+        with open(obj_path, "w") as f:
+            f.write("# Non-IFC Blender mesh geometry\n")
+            f.write("usemtl white\n\n")
+
+            for obj in non_ifc_meshes:
+                eval_obj = obj.evaluated_get(depsgraph)
+                try:
+                    mesh = eval_obj.to_mesh()
+                except RuntimeError:
+                    continue
+                if mesh is None:
+                    continue
+
+                matrix = obj.matrix_world
+                f.write(f"g {obj.name}\n")
+
+                for v in mesh.vertices:
+                    co = matrix @ v.co
+                    f.write(f"v {co.x} {co.y} {co.z}\n")
+
+                mesh.calc_loop_triangles()
+                for tri in mesh.loop_triangles:
+                    i0 = vert_offset + tri.vertices[0] + 1
+                    i1 = vert_offset + tri.vertices[1] + 1
+                    i2 = vert_offset + tri.vertices[2] + 1
+                    f.write(f"f {i0} {i1} {i2}\n")
+
+                vert_offset += len(mesh.vertices)
+                mesh_count += 1
+                eval_obj.to_mesh_clear()
+
+        if mesh_count == 0:
+            try:
+                os.remove(obj_path)
+            except OSError:
+                pass
+            return
+
+        linked_model_exports.append((obj_path, "", identity))
+        print(f"Exported {mesh_count} non-IFC Blender mesh(es) ({vert_offset} vertices)")
+
+    def _export_linked_models(self, main_ifc_file, output_dir, settings, serializer_settings):
+        """Detect and export all linked IFC models."""
+        try:
+            project_props = tool.Project.get_project_props()
+        except Exception:
+            print("Could not access project properties for linked models")
+            return
+
+        for idx, link in enumerate(project_props.links):
+            if not link.is_loaded:
+                print(f"Skipping linked model '{link.name}' (not loaded)")
+                continue
+
+            # Check if the link's empty handle is hidden in Blender
+            try:
+                link_empty = tool.Project.get_link_empty_handle(link)
+                if link_empty is not None and not link_empty.visible_get():
+                    print(f"Skipping linked model '{link.name}' (hidden in viewport)")
+                    continue
+            except Exception:
+                pass  # If we can't check visibility, export anyway
+
+            try:
+                filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+            except Exception as e:
+                print(f"Could not resolve path for linked model '{link.name}': {e}")
+                continue
+
+            if not filepath.exists():
+                print(f"Linked IFC file not found: {filepath}")
+                continue
+
+            print(f"Exporting linked model {idx}: {filepath.name}")
+            try:
+                linked_ifc = ifcopenshell.open(str(filepath))
+            except Exception as e:
+                print(f"  Failed to open linked IFC: {e}")
+                continue
+
+            link_obj_path = os.path.join(output_dir, f"linked_{idx}.obj")
+            link_mtl_path = os.path.join(output_dir, f"linked_{idx}.mtl")
+
+            # For linked models we don't filter by Blender visibility
+            # (their objects are collection instances, not individually tracked)
+            elements = self._get_exportable_elements(linked_ifc, filter_visibility=False)
+            if not elements:
+                print(f"  No exportable elements found in linked model")
+                continue
+
+            mats = self._export_ifc_to_obj(
+                linked_ifc, link_obj_path, link_mtl_path, settings, serializer_settings, elements
+            )
+            ifc_materials.extend(mats)
+
+            # Get the link transformation matrix
+            try:
+                link_matrix = tool.Project.calculate_link_matrix(link)
+                matrix_list = [list(row) for row in link_matrix]
+            except Exception as e:
+                print(f"  Could not calculate link matrix: {e}, using identity")
+                matrix_list = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+
+            linked_model_exports.append((link_obj_path, link_mtl_path, matrix_list))
+            print(f"  Exported {len(elements)} elements from linked model '{link.name}'")
 
 
 class PrepareRadianceScene(bpy.types.Operator):
+    """Prepares the Radiance scene (runs heavy work in background thread)"""
+
     bl_idname = "scene.prepare_radiance"
     bl_label = "Prepare Radiance Scene"
     bl_description = "Prepares the Radiance scene by creating necessary files and setting up the view"
+
+    _timer = None
+    _thread: Union[threading.Thread, None] = None
+    _error: Union[str, None] = None
+    _start_time: float = 0.0
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        if not props.output_dir:
+            cls.poll_message_set("Output directory is not set.")
+            return False
+        if props.is_preparing:
+            cls.poll_message_set("Scene preparation is already in progress.")
+            return False
+        return True
 
     def get_camera_data(self, camera):
         # Get camera position
@@ -182,6 +506,12 @@ class PrepareRadianceScene(bpy.types.Operator):
             up = right.cross(direction)
             up.normalize()
 
+        # Final safety: if up is still degenerate, default to world Z
+        if up.length < 0.01:
+            up = Vector((0, 0, 1))
+        else:
+            up.normalize()
+
         return (
             (position.x, position.y, position.z),
             (direction.x, direction.y, direction.z),
@@ -209,28 +539,20 @@ class PrepareRadianceScene(bpy.types.Operator):
         context.scene.render.resolution_y = resolution_y
 
         aspect_ratio = resolution_x / resolution_y
-
-        quality = props.radiance_quality.upper()
-        detail = props.radiance_detail.upper()
-        variability = props.radiance_variability.upper()
         use_hdr = props.use_hdr
         choose_hdr_image = props.choose_hdr_image
 
-        global scene
-        scene = None
-
         print(f"Resolution: {resolution_x}x{resolution_y}")
-        print(f"Quality: {quality}, Detail: {detail}, Variability: {variability}")
         print(f"Output directory: {output_dir}")
         print(f"Found OBJ file: {obj_file_path} ({os.path.getsize(obj_file_path)} bytes)")
 
+        hdr_image_path = ""
+        hdr_mask_path = ""
+        sky_map_cal_path = ""
         if use_hdr:
-            hdr_image = "noon_grass_2k.hdr"
-            hdr_mask = "noon_grass_2k_mask.hdr"
-            sky_map_cal = "skymap.cal"
-            hdr_image_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_image)
-            hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", hdr_mask)
-            sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", sky_map_cal)
+            hdr_image_path = os.path.join(os.path.dirname(__file__), "HDRs", "noon_grass_2k.hdr")
+            hdr_mask_path = os.path.join(os.path.dirname(__file__), "HDRs", "noon_grass_2k_mask.hdr")
+            sky_map_cal_path = os.path.join(os.path.dirname(__file__), "HDRs", "skymap.cal")
 
         sky_file_path = os.path.join(output_dir, "sky.rad")
 
@@ -244,16 +566,19 @@ class PrepareRadianceScene(bpy.types.Operator):
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
             return {"CANCELLED"}
 
-        # Get camera position, direction, and up vector
+        # Get camera data (must be on main thread — accesses Blender objects)
         camera_position, camera_direction, camera_up = self.get_camera_data(camera)
+        camera_type = camera.data.type
+        camera_fov = camera.data.angle if camera_type == "PERSP" else 0.0
+        camera_ortho_scale = camera.data.ortho_scale if camera_type == "ORTHO" else 0.0
 
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
         print(f"Camera up: {camera_up}")
 
-        # Generate sky file based on use_sun setting
+        # Collect sky generation data (must be on main thread)
+        sky_data = None
         if props.use_sun:
-            # Use sun position data to generate sky
             sun_props = tool.Blender.get_solar_props()
             sun_pos_props = tool.Blender.get_sun_props()
             if not sun_pos_props:
@@ -262,55 +587,165 @@ class PrepareRadianceScene(bpy.types.Operator):
                 )
                 return {"CANCELLED"}
 
-            # Build datetime for Radiance gensky
-            # Note: sun_props (BIMSolarProperties) is the authoritative source, synchronized to sun_pos_props
-            dt = datetime(sun_props.year, sun_props.month, sun_props.day, sun_props.hour, sun_props.minute)
+            sky_data = {
+                "year": sun_props.year, "month": sun_props.month, "day": sun_props.day,
+                "hour": sun_props.hour, "minute": sun_props.minute,
+                "latitude": sun_props.latitude, "longitude": sun_props.longitude,
+                "UTC_zone": sun_props.UTC_zone, "sun_year": sun_pos_props.year,
+                "sky_condition": props.sky_condition,
+                "ground_reflectance": props.ground_reflectance,
+                "turbidity": props.turbidity,
+            }
+
+        # Collect IES light data (must be on main thread — accesses Blender pointer props)
+        # Each entry has a list of positions (one per target empty) to support collection mode
+        ies_light_data = []  # list of dicts with all needed data
+        for idx, ies_light in enumerate(props.ies_lights):
+            if not ies_light.is_enabled or not ies_light.ies_file_path:
+                ies_light_data.append(None)
+                continue
+
+            target_empties = ies_light.get_target_empties()
+            if not target_empties:
+                ies_light_data.append(None)
+                continue
+
+            positions = []
+            for obj in target_empties:
+                try:
+                    positions.append((obj.location.x, obj.location.y, obj.location.z))
+                except ReferenceError:
+                    continue
+
+            if not positions:
+                ies_light_data.append(None)
+                continue
+
+            ies_light_data.append({
+                "ies_file_path": ies_light.ies_file_path,
+                "lamp_type": ies_light.lamp_type,
+                "lamp_color": ies_light.lamp_color,
+                "multiply_factor": ies_light.multiply_factor,
+                "radius": ies_light.radius,
+                "rotation_z": ies_light.rotation_z,
+                "positions": positions,
+                "is_enabled": ies_light.is_enabled,
+            })
+
+        # Collect material mapping data (must be on main thread)
+        material_mappings = []
+        for m in props.materials:
+            material_mappings.append({
+                "style_id": m.style_id,
+                "is_mapped": m.is_mapped,
+                "category": m.category,
+                "subcategory": m.subcategory,
+            })
+
+        # Snapshot linked_model_exports (it's a module-level list)
+        linked_exports_snapshot = list(linked_model_exports)
+
+        # All Blender data collected — now launch background thread
+        props.is_preparing = True
+        self._start_time = time.time()
+        self._error = None
+
+        global scene
+        scene = None
+
+        self._thread = threading.Thread(
+            target=self._prepare_worker,
+            args=(
+                output_dir, obj_file_path, sky_file_path,
+                use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
+                sky_data, ies_light_data, material_mappings,
+                linked_exports_snapshot,
+                camera_position, camera_direction, camera_up,
+                camera_type, camera_fov, camera_ortho_scale,
+                aspect_ratio,
+            ),
+            daemon=True,
+        )
+        self._thread.start()
+
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.5, window=context.window)
+        wm.modal_handler_add(self)
+
+        self.report({"INFO"}, "Scene preparation started in background...")
+        context.window.cursor_set('WAIT')
+        return {"RUNNING_MODAL"}
+
+    def _prepare_worker(
+        self, output_dir, obj_file_path, sky_file_path,
+        use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
+        sky_data, ies_light_data, material_mappings,
+        linked_exports_snapshot,
+        camera_position, camera_direction, camera_up,
+        camera_type, camera_fov, camera_ortho_scale,
+        aspect_ratio,
+    ):
+        """Runs in a background thread — no Blender API calls allowed here."""
+        try:
+            self._do_prepare(
+                output_dir, obj_file_path, sky_file_path,
+                use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
+                sky_data, ies_light_data, material_mappings,
+                linked_exports_snapshot,
+                camera_position, camera_direction, camera_up,
+                camera_type, camera_fov, camera_ortho_scale,
+                aspect_ratio,
+            )
+        except Exception as e:
+            self._error = str(e)
+            import traceback
+            traceback.print_exc()
+
+    def _do_prepare(
+        self, output_dir, obj_file_path, sky_file_path,
+        use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
+        sky_data, ies_light_data, material_mappings,
+        linked_exports_snapshot,
+        camera_position, camera_direction, camera_up,
+        camera_type, camera_fov, camera_ortho_scale,
+        aspect_ratio,
+    ):
+        """The actual preparation logic (no Blender API)."""
+        global scene
+
+        # --- Generate sky file ---
+        if sky_data is not None:
+            dt = datetime(sky_data["year"], sky_data["month"], sky_data["day"],
+                          sky_data["hour"], sky_data["minute"])
 
             print(f"Sun position data for Radiance gensky:")
             print(f"  DateTime: {dt}")
-            print(f"  Latitude: {sun_props.latitude}°")
-            print(f"  Longitude: {sun_props.longitude}°")
-            print(f"  UTC Zone: {sun_props.UTC_zone}")
-            print(f"  Year: {sun_pos_props.year}")
-            # Map sky condition enum to boolean parameters
-            sky_condition = props.sky_condition
-            sunny_with_sun = sky_condition == "SUNNY_WITH_SUN"
-            sunny_without_sun = sky_condition == "SUNNY_WITHOUT_SUN"
-            cloudy = sky_condition == "CLOUDY"
+            print(f"  Latitude: {sky_data['latitude']}°")
+            print(f"  Longitude: {sky_data['longitude']}°")
 
-            # Note: Radiance gensky expects longitude and timezone in "degrees west of Greenwich"
-            # Standard geographic coordinates have positive east, so we need to negate for eastern hemisphere
-            # longitude: positive = east of Greenwich (negate for gensky), negative = west (keep as is)
-            # timezone: UTC offset hours × 15 degrees, but negative for eastern hemisphere (UTC+)
-            longitude_for_gensky = -sun_props.longitude  # Negate because geographic coords are positive east
-            timezone_for_gensky = -int(sun_props.UTC_zone) * 15  # Negate because UTC+ is east
+            sky_condition = sky_data["sky_condition"]
+            longitude_for_gensky = -sky_data["longitude"]
+            timezone_for_gensky = -int(sky_data["UTC_zone"]) * 15
 
             sky_description = pr.gensky(
                 dt=dt,
-                latitude=sun_props.latitude,
+                latitude=sky_data["latitude"],
                 longitude=longitude_for_gensky,
-                year=sun_pos_props.year,
+                year=sky_data["sun_year"],
                 timezone=timezone_for_gensky,
-                sunny_with_sun=sunny_with_sun,
-                sunny_without_sun=sunny_without_sun,
-                cloudy=cloudy,
-                ground_reflectance=props.ground_reflectance,
-                turbidity=props.turbidity,
+                sunny_with_sun=sky_condition == "SUNNY_WITH_SUN",
+                sunny_without_sun=sky_condition == "SUNNY_WITHOUT_SUN",
+                cloudy=sky_condition == "CLOUDY",
+                ground_reflectance=sky_data["ground_reflectance"],
+                turbidity=sky_data["turbidity"],
             )
 
             sky_description_str = sky_description.decode("utf-8")
-        else:
-            # Skip sky generation when use_sun is False
-            print("Skipping sky generation (use_sun is False)...")
-            sky_description_str = None
 
-        # Only generate sky.rad file when use_sun is True
-        if props.use_sun:
             if use_hdr and choose_hdr_image == "Noon":
                 with open(sky_file_path, "w") as f:
                     f.write(sky_description_str)
                     f.write("\n")
-                    # When using sun, skyfunc is defined by gensky, so we can use it
                     f.write(
                         '''void colorpict env_map
 7 red green blue "'''
@@ -364,39 +799,35 @@ ground_glow source ground
 0
 4 0 0 -1 180"""
                     )
-
             elif not use_hdr:
                 with open(sky_file_path, "w") as f:
                     f.write(sky_description_str)
                     f.write("\n")
-                    # When using sun, skyfunc is defined by gensky
                     f.write("skyfunc glow sky_glow\n0\n0\n4 .9 .9 1.15 0\n")
                     f.write("sky_glow source sky\n0\n0\n4 0 0 1 180\n")
                     f.write("skyfunc glow ground_glow\n0\n0\n4 1.4 .9 .6 0\n")
                     f.write("ground_glow source ground\n0\n0\n4 0 0 -1 180\n")
+        else:
+            print("Skipping sky generation (use_sun is False)...")
 
-        props = tool.Blender.get_radiance_exporter_props()
-
-        # data = props.get_mappings_dict()
-
+        # --- Write materials.rad ---
         materials_file = os.path.join(output_dir, "materials.rad")
         written_materials = set()
 
         all_materials = set(ifc_materials)
 
         with open(materials_file, "w") as file:
-            # Write default materials
             default_materials = [
                 "void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n",
             ]
             for material in default_materials:
                 file.write(material)
-                written_materials.add(material.split()[2])  # Add material name to written set
+                written_materials.add(material.split()[2])
 
             for style_id in all_materials:
-                material = next((m for m in props.materials if m.style_id == style_id), None)
-                if material and material.is_mapped:
-                    category, subcategory = material.category, material.subcategory
+                mat_data = next((m for m in material_mappings if m["style_id"] == style_id), None)
+                if mat_data and mat_data["is_mapped"]:
+                    category, subcategory = mat_data["category"], mat_data["subcategory"]
                     if category in spectraldb and subcategory in spectraldb[category]:
                         material_def = spectraldb[category][subcategory]
                         material_name = material_def.split()[2]
@@ -407,146 +838,209 @@ ground_glow source ground
                     else:
                         file.write(f"inherit alias {style_id} white\n")
                 else:
-                    # If the material is not mapped, alias it to white
                     file.write(f"inherit alias {style_id} white\n")
 
-        self.report({"INFO"}, f"Exported Materials Rad file to: {materials_file}")
+        print(f"Exported Materials Rad file to: {materials_file}")
 
-        # Convert IES light files to Radiance format
+        # --- Convert IES light files ---
         print("Processing IES light files...")
-        converted_ies_lights = {}  # {index: (rad_path, dat_path)}
-        for idx, ies_light in enumerate(props.ies_lights):
-            if not ies_light.is_enabled or not ies_light.ies_file_path or not ies_light.target_object:
+        converted_ies_lights = {}
+        for idx, ies_data in enumerate(ies_light_data):
+            if ies_data is None:
                 continue
             try:
                 rad_file, dat_file = convert_ies_to_radiance(
-                    ies_light.ies_file_path,
+                    ies_data["ies_file_path"],
                     output_dir,
-                    lamp_type=ies_light.lamp_type,
-                    lamp_color=ies_light.lamp_color,
-                    multiply_factor=ies_light.multiply_factor,
-                    radius=ies_light.radius,
+                    lamp_type=ies_data["lamp_type"],
+                    lamp_color=ies_data["lamp_color"],
+                    multiply_factor=ies_data["multiply_factor"],
+                    radius=ies_data["radius"],
                 )
                 converted_ies_lights[idx] = (rad_file, dat_file)
-                print(f"  Converted IES light {idx}: {Path(ies_light.ies_file_path).name}")
+                print(f"  Converted IES light {idx}: {Path(ies_data['ies_file_path']).name}")
             except Exception as e:
                 print(f"  ERROR converting IES light {idx}: {str(e)}")
-                self.report({"WARNING"}, f"Failed to convert IES light: {str(e)}")
 
+        # --- Convert OBJ to RTM ---
         print(f"OBJ file size: {os.path.getsize(obj_file_path)} bytes")
         print(f"Materials file size: {os.path.getsize(materials_file)} bytes")
         print(f"Converting OBJ to RTM format...")
 
-        # Run obj2mesh
         rtm_file_path = os.path.join(output_dir, "model.rtm")
-        try:
-            mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
-            self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
-        except Exception as e:
-            error_msg = f"Failed to convert OBJ to RTM: {str(e)}"
-            self.report({"ERROR"}, error_msg)
-            print(f"ERROR: {error_msg}")
-            print(f"Check the console output above for more details")
-            return {"CANCELLED"}
+        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
+        print(f"obj2mesh output: {mesh_file_path}")
+
+        # Convert linked model OBJs to RTM
+        linked_rtm_files = []
+        for link_idx, (link_obj_path, link_mtl_path, link_matrix) in enumerate(linked_exports_snapshot):
+            if not os.path.exists(link_obj_path):
+                print(f"Linked model OBJ not found: {link_obj_path}")
+                continue
+            link_rtm_path = os.path.join(output_dir, f"linked_{link_idx}.rtm")
+            try:
+                save_obj2mesh_output(link_obj_path, link_rtm_path, matfiles=[materials_file])
+                linked_rtm_files.append((link_rtm_path, link_matrix))
+                print(f"Converted linked model {link_idx} to RTM")
+            except Exception as e:
+                print(f"Failed to convert linked model {link_idx} to RTM: {e}")
+
+        # --- Write scene.rad ---
         scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
             file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
             file.write("\n")
 
-            # Add IES light fixtures
-            if len(props.ies_lights) > 0:
-                file.write("\n# IES Light Fixtures\n")
-                for idx, ies_light in enumerate(props.ies_lights):
-                    if ies_light.ies_file_path and ies_light.target_object:
-                        obj = ies_light.target_object
-                        pos = obj.location
-                        # Convert rotation from radians to degrees
-                        # (Blender's ANGLE subtype stores values in radians)
-                        z_rot = math.degrees(ies_light.rotation_z)
+            if linked_rtm_files:
+                file.write("\n# Linked Models\n")
+                for link_idx, (link_rtm_path, link_matrix) in enumerate(linked_rtm_files):
+                    is_identity = all(
+                        abs(link_matrix[i][j] - (1.0 if i == j else 0.0)) < 1e-6
+                        for i in range(4) for j in range(4)
+                    )
 
+                    if is_identity:
+                        file.write(f'void mesh linked_{link_idx}\n1 "{link_rtm_path}"\n0\n0\n\n')
+                        print(f"Added linked model {link_idx} to scene (identity, inline mesh)")
+                    else:
+                        link_rad_path = os.path.join(output_dir, f"linked_{link_idx}.rad")
+                        with open(link_rad_path, "w") as link_file:
+                            link_file.write(f'void mesh linked_{link_idx}\n1 "{link_rtm_path}"\n0\n0\n')
+
+                        xform_args = _matrix_to_xform_args(link_matrix)
+                        file.write(f'!xform {xform_args} "{link_rad_path}"\n')
+                        print(f"Added linked model {link_idx} to scene with xform: {xform_args}")
+
+            # IES light fixtures
+            if ies_light_data:
+                file.write("\n# IES Light Fixtures\n")
+                for idx, ies_data in enumerate(ies_light_data):
+                    if ies_data is None:
+                        continue
+                    z_rot = math.degrees(ies_data["rotation_z"])
+
+                    for pos in ies_data["positions"]:
                         if idx in converted_ies_lights:
-                            # Light is enabled and was converted
                             rad_path = converted_ies_lights[idx][0]
                             rad_filename = Path(rad_path).name
-                            xform_line = f"!xform -rz {z_rot} -t {pos.x} {pos.y} {pos.z} {rad_filename}\n"
-                            file.write(xform_line)
+                            file.write(f'!xform -rz {z_rot} -t {pos[0]} {pos[1]} {pos[2]} "{rad_filename}"\n')
                         else:
-                            # Light is disabled or not converted - write as comment
-                            rad_base = Path(ies_light.ies_file_path).stem
+                            rad_base = Path(ies_data["ies_file_path"]).stem
                             rad_filename = f"{rad_base}.rad"
-                            xform_line = f"# !xform -rz {z_rot} -t {pos.x} {pos.y} {pos.z} {rad_filename}\n"
-                            file.write(xform_line)
+                            file.write(f'# !xform -rz {z_rot} -t {pos[0]} {pos[1]} {pos[2]} "{rad_filename}"\n')
 
-        self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
+        print(f"Exported Scene file to: {scene_file}")
 
-        # Validate that at least one light source will be available
-        has_sky = props.use_sun
+        # --- Validate light sources ---
+        has_sky = sky_data is not None
         has_ies_lights = len(converted_ies_lights) > 0
 
         if not has_sky and not has_ies_lights:
-            error_msg = "ERROR: No light sources available. Please enable 'Use Sun' or add and map IES light fixtures."
-            self.report({"ERROR"}, error_msg)
-            print(error_msg)
-            return {"CANCELLED"}
+            raise RuntimeError("No light sources available. Please enable 'Use Sun' or add and map IES light fixtures.")
 
+        # --- Build pr.Scene ---
         print("Setting up Radiance scene...")
-        scene = pr.Scene("ascene")
+        new_scene = pr.Scene("ascene")
 
         material_path = os.path.join(output_dir, "materials.rad")
         scene_path = os.path.join(output_dir, "scene.rad")
 
-        scene.add_material(material_path)
-        scene.add_surface(scene_path)
+        new_scene.add_material(material_path)
+        new_scene.add_surface(scene_path)
 
-        # Add light source(s)
-        if props.use_sun:
-            scene.add_source(sky_file_path)
+        if has_sky:
+            new_scene.add_source(sky_file_path)
             print(f"Added sky light source")
 
         if has_ies_lights:
             print(f"Added {len(converted_ies_lights)} IES light source(s)")
-        print("Setting up view...")
-        assert isinstance(camera.data, bpy.types.Camera)
-        if camera.data.type == "PERSP":
-            # Perspective camera
-            camera_fov = camera.data.angle
-            # Calculate vertical FOV based on the desired aspect ratio
-            vertical_fov = 2 * math.atan(math.tan(camera_fov / 2) / aspect_ratio)
 
+        print("Setting up view...")
+        if camera_type == "PERSP":
+            vertical_fov = 2 * math.atan(math.tan(camera_fov / 2) / aspect_ratio)
             aview = pr.create_default_view()
-            aview.type = "v"  # Perspective view
+            aview.type = "v"
             aview.vp = camera_position
             aview.vdir = camera_direction
-            aview.vu = camera_up  # Use computed up vector perpendicular to view direction
+            aview.vu = camera_up
             aview.horiz = math.degrees(camera_fov)
             aview.vert = math.degrees(vertical_fov)
-        else:  # 'ORTHO'
-            # Orthographic camera
-            # Calculate the view size based on the camera's orthographic scale
-            ortho_scale = camera.data.ortho_scale
-            view_width = ortho_scale
-            view_height = ortho_scale / aspect_ratio
-
+        else:
+            view_width = camera_ortho_scale
+            view_height = camera_ortho_scale / aspect_ratio
             aview = pr.create_default_view()
-            aview.type = "l"  # Parallel projection (orthographic)
+            aview.type = "l"
             aview.vp = camera_position
             aview.vdir = camera_direction
-            aview.vu = camera_up  # Use computed up vector perpendicular to view direction
+            aview.vu = camera_up
             aview.horiz = view_width
             aview.vert = view_height
-        scene.add_view(aview)
-        print("Starting render...")
 
-        self.report({"INFO"}, "Radiance scene prepared successfully.")
-        return {"FINISHED"}
+        new_scene.add_view(aview)
+
+        # Set the global scene reference (thread-safe assignment)
+        scene = new_scene
+        print("Scene preparation complete.")
+
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            if self._thread is not None and self._thread.is_alive():
+                return {"RUNNING_MODAL"}
+
+            # Thread finished — clean up
+            self._cleanup_timer(context)
+            props = tool.Blender.get_radiance_exporter_props()
+            props.is_preparing = False
+            context.window.cursor_set('DEFAULT')
+
+            if self._error:
+                self.report({"ERROR"}, f"Scene preparation failed: {self._error}")
+                return {"CANCELLED"}
+
+            elapsed = time.time() - self._start_time
+            self.report({"INFO"}, f"Radiance scene prepared successfully in {elapsed:.1f}s")
+            print(f"Scene preparation completed in {elapsed:.2f} seconds")
+            return {"FINISHED"}
+
+        elif event.type == 'ESC':
+            self._cleanup_timer(context)
+            props = tool.Blender.get_radiance_exporter_props()
+            props.is_preparing = False
+            context.window.cursor_set('DEFAULT')
+            self.report({"WARNING"}, "Scene preparation cannot be cancelled mid-operation")
+            return {"RUNNING_MODAL"}
+
+        return {"PASS_THROUGH"}
+
+    def _cleanup_timer(self, context):
+        if self._timer is not None:
+            context.window_manager.event_timer_remove(self._timer)
+            self._timer = None
 
 
 class RadianceRender(bpy.types.Operator):
-    """Radiance Rendering"""
+    """Radiance Rendering (runs in background thread)"""
 
     bl_idname = "render_scene.radiance"
     bl_label = "Render"
     bl_description = "Renders the scene using Radiance"
+
+    _timer = None
+    _thread: Union[threading.Thread, None] = None
+    _result_image: Union[bytes, None] = None
+    _error: Union[str, None] = None
+    _start_time: float = 0.0
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        if props.is_rendering:
+            cls.poll_message_set("A render is already in progress.")
+            return False
+        if scene is None:
+            cls.poll_message_set("Radiance scene not prepared. Please run 'Prepare Scene' (Step 2) first.")
+            return False
+        return True
 
     def execute(self, context):
         props = tool.Blender.get_radiance_exporter_props()
@@ -558,46 +1052,112 @@ class RadianceRender(bpy.types.Operator):
         quality = props.radiance_quality.upper()
         detail = props.radiance_detail.upper()
         variability = props.radiance_variability.upper()
+        ambient_bounces = props.ambient_bounces
         output_dir = props.output_dir
-        output_file_name = props.output_file_name
-        output_file_format = props.output_file_format
 
-        global scene
+        props.is_rendering = True
+        self._start_time = time.time()
+        self._result_image = None
+        self._error = None
 
-        start_time = time.time()
-        cwd_saved = os.getcwd()
-        os.chdir(output_dir)
-        image = pr.render(
-            scene,
-            ambbounce=1,
-            resolution=(resolution_x, resolution_y),
-            quality=quality,
-            detail=detail,
-            variability=variability,
-            nproc=multiprocessing.cpu_count(),
+        # Launch render in a background thread
+        self._thread = threading.Thread(
+            target=self._render_worker,
+            args=(scene, output_dir, resolution_x, resolution_y, quality, detail, variability, ambient_bounces),
+            daemon=True,
         )
-        os.chdir(cwd_saved)
-        end_time = time.time()
-        print(f"Render completed in {end_time - start_time:.2f} seconds")
+        self._thread.start()
 
-        output_hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
-        print(f"Saving HDR output to: {output_hdr_path}")
-        with open(output_hdr_path, "wb") as wtr:
-            wtr.write(image)
+        # Set up a timer to poll for completion
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.5, window=context.window)
+        wm.modal_handler_add(self)
 
-        if output_file_format == "HDR_TIFF":
-            print("Applying tone mapping...")
-            pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+        self.report({"INFO"}, "Radiance render started in background...")
+        context.window.cursor_set('WAIT')
+        return {"RUNNING_MODAL"}
 
-            tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
-            print(f"Saving TIFF output to: {tiff_path}")
-            pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+    def _render_worker(self, render_scene, output_dir, res_x, res_y, quality, detail, variability, ambient_bounces):
+        """Runs in a background thread — no Blender API calls allowed here."""
+        cwd_saved = os.getcwd()
+        try:
+            os.chdir(output_dir)
+            self._result_image = pr.render(
+                render_scene,
+                ambbounce=ambient_bounces,
+                resolution=(res_x, res_y),
+                quality=quality,
+                detail=detail,
+                variability=variability,
+                nproc=multiprocessing.cpu_count(),
+            )
+        except Exception as e:
+            self._error = str(e)
+        finally:
+            os.chdir(cwd_saved)
 
-        print("Radiance rendering process completed successfully.")
-        self.report({"INFO"}, f"Radiance rendering completed. HDR Output: {output_hdr_path}")
-        if output_file_format == "HDR_TIFF":
-            self.report({"INFO"}, f"TIFF Output: {tiff_path}")
-        return {"FINISHED"}
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            if self._thread is not None and self._thread.is_alive():
+                # Still running — keep waiting
+                return {"RUNNING_MODAL"}
+
+            # Thread finished — clean up timer
+            self._cleanup_timer(context)
+            props = tool.Blender.get_radiance_exporter_props()
+            props.is_rendering = False
+            context.window.cursor_set('DEFAULT')
+
+            if self._error:
+                self.report({"ERROR"}, f"Radiance render failed: {self._error}")
+                return {"CANCELLED"}
+
+            elapsed = time.time() - self._start_time
+            print(f"Render completed in {elapsed:.2f} seconds")
+
+            # Write output files (safe on main thread)
+            output_dir = props.output_dir
+            output_file_name = props.output_file_name
+            output_file_format = props.output_file_format
+
+            output_hdr_path = os.path.join(output_dir, f"{output_file_name}.hdr")
+            print(f"Saving HDR output to: {output_hdr_path}")
+            with open(output_hdr_path, "wb") as wtr:
+                wtr.write(self._result_image)
+
+            if output_file_format == "HDR_TIFF":
+                print("Applying tone mapping...")
+                pcond_image = pr.pcond(hdr=output_hdr_path, human=True)
+                tiff_path = os.path.join(output_dir, f"{output_file_name}.tiff")
+                print(f"Saving TIFF output to: {tiff_path}")
+                pr.ra_tiff(inp=pcond_image, out=tiff_path, lzw=True)
+
+            print("Radiance rendering process completed successfully.")
+            self.report({"INFO"}, f"Radiance rendering completed. HDR Output: {output_hdr_path}")
+            if output_file_format == "HDR_TIFF":
+                self.report({"INFO"}, f"TIFF Output: {tiff_path}")
+
+            # Force UI redraw so the render button re-enables
+            for area in context.screen.areas:
+                area.tag_redraw()
+
+            return {"FINISHED"}
+
+        elif event.type == 'ESC':
+            # User pressed Escape — we can't kill the thread, but we can stop waiting
+            self._cleanup_timer(context)
+            props = tool.Blender.get_radiance_exporter_props()
+            props.is_rendering = False
+            context.window.cursor_set('DEFAULT')
+            self.report({"WARNING"}, "Render cancelled by user. Background process may still be running.")
+            return {"CANCELLED"}
+
+        return {"PASS_THROUGH"}
+
+    def _cleanup_timer(self, context):
+        if self._timer is not None:
+            context.window_manager.event_timer_remove(self._timer)
+            self._timer = None
 
 
 class FalseColorRadiance(bpy.types.Operator):
@@ -681,6 +1241,7 @@ class FalseColorRadiance(bpy.types.Operator):
             cmd = [falsecolor_bin]
             cmd.extend(["-m", str(multiplier)])
             cmd.extend(["-s", fc_scale])
+            cmd.extend(["-n", str(props.false_color_steps)])
             cmd.extend(["-l", props.false_color_label])
 
             # Determine contour mode and build command accordingly
@@ -776,6 +1337,38 @@ class FalseColorRadiance(bpy.types.Operator):
 
             traceback.print_exc()
             return {"CANCELLED"}
+
+
+def _matrix_to_xform_args(matrix: list[list[float]]) -> str:
+    """Decompose a 4x4 matrix into Radiance xform arguments.
+
+    Decomposes into Z/Y/X Euler rotations + translation.
+    The matrix is expected in row-major format (Blender convention).
+    xform applies transforms right-to-left, so we write: -rx X -ry Y -rz Z -t tx ty tz
+    """
+    from mathutils import Matrix as MMatrix
+
+    m = MMatrix(matrix)
+    translation = m.to_translation()
+    euler = m.to_euler("XYZ")
+
+    parts = []
+    rx = math.degrees(euler.x)
+    ry = math.degrees(euler.y)
+    rz = math.degrees(euler.z)
+
+    # Only include non-zero rotations
+    if abs(rx) > 1e-6:
+        parts.append(f"-rx {rx:.6f}")
+    if abs(ry) > 1e-6:
+        parts.append(f"-ry {ry:.6f}")
+    if abs(rz) > 1e-6:
+        parts.append(f"-rz {rz:.6f}")
+
+    # Translation is always applied last (rightmost in xform, applied first to geometry)
+    parts.append(f"-t {translation.x:.6f} {translation.y:.6f} {translation.z:.6f}")
+
+    return " ".join(parts)
 
 
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
@@ -1043,7 +1636,14 @@ class EnumPropertySearch(bpy.types.Operator):
     search_term: bpy.props.StringProperty()
 
     def execute(self, context):
-        data = context.space_data.context_pointer_get("data")
+        try:
+            data = context.space_data.context_pointer_get("data")
+        except Exception:
+            self.report({"ERROR"}, "Could not access context data for enum search.")
+            return {"CANCELLED"}
+        if data is None:
+            self.report({"ERROR"}, "No context data available for enum search.")
+            return {"CANCELLED"}
         enum_items = get_enum_items(data, self.prop_name)
         filtered_items = [item for item in enum_items if self.search_term.lower() in item[1].lower()]
 
@@ -1103,7 +1703,7 @@ def convert_ies_to_radiance(
     try:
         import pyradiance as pr
 
-        ies_path = Path(ies_file_path)
+        ies_path = Path(bpy.path.abspath(ies_file_path))
         base_name = ies_path.stem
 
         # ies2rad creates .rad and .dat files
@@ -1152,7 +1752,11 @@ class AddIESLight(bpy.types.Operator, ImportHelper):
 
         # Create new IES light entry
         ies_light = props.ies_lights.add()
-        ies_light.ies_file_path = self.filepath
+        # Store as relative path if the blend file is saved
+        if bpy.data.filepath:
+            ies_light.ies_file_path = bpy.path.relpath(self.filepath)
+        else:
+            ies_light.ies_file_path = self.filepath
         ies_light.rotation_z = 0.0
         ies_light.is_enabled = True
 
@@ -1214,3 +1818,61 @@ class SetIESLightObject(bpy.types.Operator):
 
         self.report({"WARNING"}, "Invalid IES light index")
         return {"CANCELLED"}
+
+
+class CleanupRadianceFiles(bpy.types.Operator):
+    """Delete all generated Radiance files from the output directory"""
+
+    bl_idname = "radiance.cleanup_files"
+    bl_label = "Cleanup Radiance Files"
+    bl_description = "Remove all generated files (OBJ, MTL, RTM, RAD, HDR, TIFF, DAT) from the output directory"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        if not props.output_dir:
+            cls.poll_message_set("Output directory is not set.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        output_dir = props.output_dir
+
+        if not os.path.isdir(output_dir):
+            self.report({"WARNING"}, f"Output directory does not exist: {output_dir}")
+            return {"CANCELLED"}
+
+        cleanup_patterns = (
+            "model.obj", "model.mtl", "model.rtm",
+            "sky.rad", "materials.rad", "scene.rad",
+            "ascene.oct", "mascene.oct", "ascene.amb",
+        )
+        cleanup_extensions = (".hdr", ".tiff", ".rad", ".dat")
+        # Also match generated instance/linked files: instance_*.obj/rtm, linked_*.obj/rtm
+        cleanup_prefixes = ("instance_", "linked_")
+
+        removed = 0
+        for filename in os.listdir(output_dir):
+            filepath = os.path.join(output_dir, filename)
+            if not os.path.isfile(filepath):
+                continue
+            is_generated = (
+                filename in cleanup_patterns
+                or os.path.splitext(filename)[1].lower() in cleanup_extensions
+                or any(filename.startswith(p) for p in cleanup_prefixes)
+            )
+            if is_generated:
+                try:
+                    os.remove(filepath)
+                    removed += 1
+                except OSError as e:
+                    print(f"Failed to remove {filepath}: {e}")
+
+        # Reset the global scene reference
+        global scene
+        scene = None
+
+        self.report({"INFO"}, f"Cleaned up {removed} generated files from {output_dir}")
+        return {"FINISHED"}

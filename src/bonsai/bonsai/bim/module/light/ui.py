@@ -131,6 +131,9 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.prop(props, "radiance_variability")
 
         row = box.row()
+        row.prop(props, "ambient_bounces")
+
+        row = box.row()
         row.prop(props, "output_file_name")
 
         row = box.row()
@@ -139,10 +142,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         row = box.row()
         row.prop(props, "use_hdr")
-
-        if props.use_hdr:
-            row = box.row()
-            row.prop(props, "choose_hdr_image")
 
         layout.separator()
 
@@ -179,6 +178,21 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             box = layout.box()
             box.label(text="Selected Light Properties")
 
+            # Target mode toggle
+            row = box.row()
+            row.prop(active_light, "use_collection", text="Target Collection", icon="OUTLINER_COLLECTION")
+
+            # Show the appropriate target picker
+            row = box.row()
+            if active_light.use_collection:
+                row.prop(active_light, "target_collection", text="Collection")
+                if active_light.target_collection:
+                    empties = [o for o in active_light.target_collection.all_objects if o.type == "EMPTY"]
+                    row = box.row()
+                    row.label(text=f"{len(empties)} empty object(s) in collection", icon="INFO")
+            else:
+                row.prop(active_light, "target_object", text="Object")
+
             # Rotation Z
             row = box.row()
             row.prop(active_light, "rotation_z")
@@ -213,7 +227,10 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         box = layout.box()
         box.label(text="Step 2: Prepare Radiance scene")
         row = box.row()
-        row.operator("scene.prepare_radiance", text="Prepare Scene")
+        if props.is_preparing:
+            row.label(text="Preparing scene...", icon="SORTTIME")
+        else:
+            row.operator("scene.prepare_radiance", text="Prepare Scene")
 
         layout.separator()
 
@@ -221,8 +238,11 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         box = layout.box()
         box.label(text="Step 3: Run the simulation")
         row = box.row()
-        row.operator("render_scene.radiance", text="Radiance Render")
-        row.enabled = not props.is_exporting
+        if props.is_rendering:
+            row.label(text="Rendering in progress...", icon="RENDER_STILL")
+        else:
+            row.operator("render_scene.radiance", text="Radiance Render")
+            row.enabled = not props.is_exporting
 
         layout.separator()
 
@@ -239,6 +259,9 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
             row = box.row()
             row.label(text="Scale Factor")
             row.prop(props, "false_color_scale", text="")
+
+            row = box.row()
+            row.prop(props, "false_color_steps")
 
             row = box.row()
             row.prop(props, "false_color_contour_lines")
@@ -258,6 +281,14 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
             row = box.row()
             row.operator("render_scene.false_color_radiance", text="Generate False Color Image")
+
+        layout.separator()
+
+        # Cleanup
+        box = layout.box()
+        box.label(text="Cleanup")
+        row = box.row()
+        row.operator("radiance.cleanup_files", text="Cleanup Generated Files", icon="TRASH")
 
 
 class BIM_PT_solar(bpy.types.Panel):
@@ -375,7 +406,10 @@ class BIM_PT_solar(bpy.types.Panel):
             row = self.layout.row()
             sun_props = tool.Blender.get_sun_props()
             assert sun_props
-            row.prop(sun_props.sun_object.data, "energy", text="Sun Intensity")
+            if sun_props.sun_object is not None and sun_props.sun_object.data is not None:
+                row.prop(sun_props.sun_object.data, "energy", text="Sun Intensity")
+            else:
+                row.label(text="Sun object not found. Toggle shadow mode to recreate.", icon="ERROR")
 
         row = self.layout.row(align=True)
         row.operator("bim.view_from_sun", icon="LIGHT_HEMI")
