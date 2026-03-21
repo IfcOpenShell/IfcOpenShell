@@ -533,6 +533,11 @@ class SetContainerVisibility(bpy.types.Operator):
             if obj := tool.Ifc.get_object(container):
                 if collection := tool.Blender.get_object_bim_props(obj).collection:
                     collection.hide_viewport = should_hide
+            if not should_hide:
+                for element in tool.Spatial.get_decomposed_elements(container, is_recursive=False):
+                    if element_obj := tool.Ifc.get_object(element):
+                        element_obj.hide_viewport = False
+                        element_obj.hide_set(False)
             if self.should_include_children:
                 queue.extend(ifcopenshell.util.element.get_parts(container))
         return {"FINISHED"}
