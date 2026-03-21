@@ -857,6 +857,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
+        if not literal_attributes:
+            return
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
         to_remove = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
