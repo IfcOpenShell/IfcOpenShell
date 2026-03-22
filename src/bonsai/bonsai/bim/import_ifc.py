@@ -64,8 +64,8 @@ class MaterialCreator:
         mesh: Union[OBJECT_DATA_TYPE, None],
         shape_has_openings: bool,
     ) -> None:
-        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
-            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
+        if (((rep := getattr(element, "Representation", ...)) is not ... and not rep) or
+            ((rep := getattr(element, "RepresentationMaps", ...)) is not ... and not rep)
         ):
             return
 
