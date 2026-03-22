@@ -42,7 +42,6 @@ import importlib
 import inspect
 import json
 from collections.abc import Callable
-from functools import partial
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy
@@ -90,11 +89,7 @@ def renamed_arguments_deprecation(
 # "group.add_group": partial(
 #     renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
 # ),
-ARGUMENTS_DEPRECATION: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any]]]] = {
-    "control.assign_control": partial(
-        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
-    ),
-}
+ARGUMENTS_DEPRECATION: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any]]]] = {}
 
 
 CACHED_USECASE_CLASSES: dict[str, Callable] = {}

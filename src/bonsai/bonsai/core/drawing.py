@@ -432,10 +432,7 @@ def update_drawing_name(
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
 
-    # Update the camera object name
-    camera = ifc.get_object(drawing)
-    if camera and camera.name != name:
-        camera.name = name
+    drawing_tool.set_camera_name(drawing, name)
 
     group = drawing_tool.get_drawing_group(drawing)
     if drawing_tool.get_name(group) != name:

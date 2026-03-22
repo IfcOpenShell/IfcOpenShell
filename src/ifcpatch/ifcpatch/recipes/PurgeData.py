@@ -57,13 +57,7 @@ class Patcher:
 
     def patch(self):
         self.file.header.file_name.name = "Rabbit"
-        self.file.header.file_name.time_stamp = (
-            datetime.datetime.utcnow()
-            .replace(tzinfo=datetime.timezone.utc)
-            .astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-        )
+        self.file.header.file_name.time_stamp = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
         self.file.header.file_name.preprocessor_version = "Rabbit"
         self.file.header.file_name.originating_system = "Rabbit"
 

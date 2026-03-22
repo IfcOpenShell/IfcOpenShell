@@ -31,7 +31,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import numpy as np
-import pywavefront  # pyright: ignore[reportMissingImports]
+import pywavefront  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
 
 class Obj2Ifc:

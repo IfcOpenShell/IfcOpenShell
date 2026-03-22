@@ -816,7 +816,6 @@ class BIM_PT_text(Panel):
 
         for i, literal_data in enumerate(text_data["Literals"]):
             box = self.layout.box()
-            box.label(text=f"Literal[{i}]:")
 
             # Combine both approaches: clickable attributes from PR #7292 and display from PR #7106
             for attribute in literal_data:

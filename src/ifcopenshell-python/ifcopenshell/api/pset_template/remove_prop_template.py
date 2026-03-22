@@ -22,9 +22,9 @@ import ifcopenshell.util.element
 def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.entity_instance) -> None:
     """Removes a property template
 
-    Note that a property set template should always have at least one
-    property template to be valid, so take care when removing property
-    templates.
+    Note that a property set template should always have at least one property
+    template to be valid. So a property set template will not be removed if it
+    is the only template ina a property ste template.
 
     :param prop_template: The IfcSimplePropertyTemplate to remove.
     :return: None
@@ -43,10 +43,8 @@ def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.en
         ifcopenshell.api.pset_template.remove_prop_template(model, prop_template=prop2)
     """
     for inverse in file.get_inverse(prop_template):
-        if len(inverse.HasPropertyTemplates) == 1:
-            inverse.HasPropertyTemplates = []
-        else:
+        if len(inverse.HasPropertyTemplates) > 1:
             has_property_templates = list(inverse.HasPropertyTemplates)
             has_property_templates.remove(prop_template)
             inverse.HasPropertyTemplates = has_property_templates
-    ifcopenshell.util.element.remove_deep(file, prop_template)
+    ifcopenshell.util.element.remove_deep2(file, prop_template)

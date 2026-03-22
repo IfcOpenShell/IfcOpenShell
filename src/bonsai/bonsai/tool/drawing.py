@@ -857,6 +857,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
+        if not literal_attributes:
+            return
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
         to_remove = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
@@ -1287,6 +1289,12 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_representation(cls, element, context):
         return ifcopenshell.util.representation.get_representation(element, context)
+
+    @classmethod
+    def set_camera_name(cls, drawing: ifcopenshell.entity_instance, name: str) -> None:
+        camera = tool.Ifc.get_object(drawing)
+        if camera and camera.name != name:
+            camera.name = name
 
     @classmethod
     def set_drawing_collection_name(

@@ -154,7 +154,7 @@ class Cost(bonsai.core.tool.Cost):
         device = aud.Device()
         # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
         filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
-        sound = aud.Sound(filepath)
+        sound = aud.Sound(filepath)  # ty:ignore[too-many-positional-arguments]
         device.play(sound)
 
     @classmethod

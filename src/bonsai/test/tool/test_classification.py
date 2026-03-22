@@ -42,6 +42,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 
@@ -66,6 +67,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 
@@ -110,6 +112,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 

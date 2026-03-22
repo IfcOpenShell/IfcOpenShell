@@ -151,29 +151,11 @@ class FilledOpeningGenerator:
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             assert representation
-
-            # Check if mapped representation - PRESERVE the mapping structure
-            if (
-                representation.RepresentationType == "MappedRepresentation"
-                and len(representation.Items) == 1
-                and representation.Items[0].is_a("IfcMappedItem")
-            ):
-                # Store the existing RepresentationMap to reuse it
-                existing_mapping_source = representation.Items[0].MappingSource
-                reuse_mapped_representation = True
-            else:
-                representation = ifcopenshell.util.representation.resolve_representation(representation)
-
-        if not reuse_mapped_representation:
-            # Check for library template before generating from filling
-            template_rep = self.get_opening_template_from_type(filling)
-
-            if template_rep:
-                representation = template_rep
-            else:
-                representation = self.generate_opening_from_filling(
-                    filling, filling_obj, opening_thickness_si=opening_thickness_si
-                )
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+        else:
+            representation = self.generate_opening_from_filling(
+                filling, filling_obj, opening_thickness_si=opening_thickness_si
+            )
 
         # Create mapped representation
         if reuse_mapped_representation:
@@ -247,109 +229,38 @@ class FilledOpeningGenerator:
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-
-        # ALWAYS preserve the existing opening representation (Tessellation, SweptSolid, etc.)
-        preserved_representation = None
-        if opening_rep:
-            if (
-                opening_rep.RepresentationType == "MappedRepresentation"
-                and len(opening_rep.Items) == 1
-                and opening_rep.Items[0].is_a("IfcMappedItem")
-            ):
-                # For mapped representations, copy the underlying representation
-                preserved_representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(),
-                    opening_rep.Items[0].MappingSource.MappedRepresentation,
-                    exclude=["IfcGeometricRepresentationContext"],
-                )
-            else:
-                # For direct representations (non-mapped), copy them too
-                preserved_representation = ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(), opening_rep, exclude=["IfcGeometricRepresentationContext"]
-                )
-
         ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
         ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
-        # Priority order for choosing representation:
-        # 1. Existing occurrence with MappedRepresentation (preserve mapping!)
-        # 2. Library template with Tessellation
-        # 3. Preserved representation from old opening (maintain user's work)
-        # 4. Generate from filling (last resort)
-
-        representation_to_use = None
-        reuse_mapped_representation = False
-        existing_mapping_source = None
-
         if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
-
-            if (
-                representation
-                and representation.RepresentationType == "MappedRepresentation"
-                and len(representation.Items) == 1
-                and representation.Items[0].is_a("IfcMappedItem")
-            ):
-                # PRESERVE the mapped structure - reuse the same RepresentationMap
-                existing_mapping_source = representation.Items[0].MappingSource
-                reuse_mapped_representation = True
-            else:
-                representation_to_use = ifcopenshell.util.representation.resolve_representation(representation)
-
-        if not representation_to_use and not reuse_mapped_representation:
-            template_rep = self.get_opening_template_from_type(filling)
-            if template_rep and template_rep.RepresentationType == "Tessellation":
-                representation_to_use = template_rep
-
-        if not representation_to_use and not reuse_mapped_representation and preserved_representation:
-            representation_to_use = preserved_representation
-
-        if not representation_to_use and not reuse_mapped_representation:
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
+            )
+        else:
             opening_obj = tool.Ifc.get_object(opening)
             if opening_obj:
                 tool.Ifc.unlink(element=opening)
                 tool.Blender.remove_data_blocks([opening_obj], remove_unused_data=True)
 
             filling_obj = tool.Ifc.get_object(filling)
-            representation_to_use = self.generate_opening_from_filling(filling, filling_obj)
-
-        # Create the mapped representation
-        if reuse_mapped_representation:
-            # Reuse existing RepresentationMap - don't create a new one!
-            context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-            new_mapped_item = tool.Ifc.get().create_entity(
-                "IfcMappedItem",
-                MappingSource=existing_mapping_source,
-                MappingTarget=tool.Ifc.get().create_entity(
-                    "IfcCartesianTransformationOperator3D",
-                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
-                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
-                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
-                    Scale=1.0,
-                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
-                ),
-            )
-            mapped_representation = tool.Ifc.get().create_entity(
-                "IfcShapeRepresentation",
-                ContextOfItems=context,
-                RepresentationIdentifier="Body",
-                RepresentationType="MappedRepresentation",
-                Items=[new_mapped_item],
-            )
-        else:
+            representation = self.generate_opening_from_filling(filling, filling_obj)
             mapped_representation = ifcopenshell.api.geometry.map_representation(
-                tool.Ifc.get(), representation=representation_to_use
+                tool.Ifc.get(), representation=representation
+            )
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
             )
 
-        ifcopenshell.api.geometry.assign_representation(
-            tool.Ifc.get(), product=opening, representation=mapped_representation
-        )
-
-        # update voided object representation...
+        # update voided object representation or all it's parts if it's an aggregate
         voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
         for voided_element in voided_elements:
             voided_obj = tool.Ifc.get_object(voided_element)
@@ -362,36 +273,6 @@ class FilledOpeningGenerator:
                 obj=voided_obj,
                 representation=representation,
             )
-
-    def get_opening_template_from_type(
-        self, filling: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.entity_instance, None]:
-        """
-        Check if the filling's type has a stored opening template from library import.
-        """
-        element_type = ifcopenshell.util.element.get_type(filling)
-
-        if not element_type:
-            return None
-
-        desc = element_type.Description
-
-        if not desc or "||BonsaiOpeningTemplate:" not in desc:
-            return None
-
-        # Extract template ID
-        marker = desc.split("||BonsaiOpeningTemplate:")[-1]
-        template_id = int(marker.split("||")[0])
-
-        try:
-            template_rep = tool.Ifc.get().by_id(template_id)
-            # Make a copy so we don't reuse the same representation instance
-            copied = ifcopenshell.util.element.copy_deep(
-                tool.Ifc.get(), template_rep, exclude=["IfcGeometricRepresentationContext"]
-            )
-            return copied
-        except:
-            return None
 
     def generate_opening_from_filling(
         self,
@@ -659,6 +540,16 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        if booleans:
+            # Users typically select two top-level items and expect the
+            # operand to be absorbed into the boolean, not remain as a
+            # standalone item alongside it.
+            representation = tool.Geometry.get_active_representation(rep_obj)
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            second_items_set = set(second_items)
+            new_items = [i for i in representation.Items if i not in second_items_set]
+            if new_items:
+                representation.Items = new_items
         rep_element = tool.Ifc.get_entity(rep_obj)
         tool.Model.mark_manual_booleans(rep_element, booleans)
         tool.Geometry.reload_representation(rep_obj)

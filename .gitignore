@@ -5,6 +5,8 @@
 /_installed-vs*-x*/
 /build/
 /src/examples/build/
+# ifctester docs output
+/src/ifctester/test/build/
 
 # output directories
 /cmake/out/
@@ -79,6 +81,9 @@ src/ifcopenshell-python/test/build
 
 # bonsai i18n
 src/bonsai/bonsai/translations.py
+
+# bonsai external dependencies (cloned for just ty checks)
+src/bonsai/external_dependencies/
 
 # bonsai test temp files
 src/bonsai/test/files/temp

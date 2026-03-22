@@ -349,7 +349,10 @@ class Drawing:
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
+    def export_font_size(cls, obj): pass
+    def export_symbol(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
+    def export_wrap_length(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_reference_attributes(cls, reference, **attributes): pass
@@ -402,6 +405,7 @@ class Drawing:
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
+    def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
@@ -620,7 +624,10 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
+    def recalculate_walls(cls, objs): pass
     def regenerate_array(cls, parent, data): pass
+    def regenerate_profile(cls, obj): pass
+    def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
@@ -1119,6 +1126,8 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def record_material_usage_attributes(cls, element): pass
+    def restore_material_usage_attributes(cls, element, usage_attributes): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None): pass
 

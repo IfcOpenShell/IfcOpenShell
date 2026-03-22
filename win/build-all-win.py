@@ -114,7 +114,7 @@ def archive_python_packages() -> None:
     deps_path = REPO_PATH / "_deps"
     python_versions: list[str] = []
     for d in deps_path.iterdir():
-        if d.is_dir() and d.name.startswith("python."):
+        if d.is_dir() and (d.name.startswith("python.") or d.name.startswith("pythonarm64.")):
             python_version = d.name.partition(".")[2]
             python_path = d / "tools"
             archive_python_package(python_version, python_path)
