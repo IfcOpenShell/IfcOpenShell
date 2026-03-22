@@ -1004,9 +1004,10 @@ class Spatial:
     def get_named_obj_from_mesh(cls, name, mesh): pass
     def get_named_mesh_from_bmesh(cls, name, bmesh): pass
     def get_transformed_mesh_from_local_to_global(cls, mesh): pass
-    def edit_active_space_obj_from_mesh(cls, mesh): pass
+    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True): pass
+    def create_object(cls, name): pass
+    def set_obj_origin_to_polygon_center(cls, obj, poly, polygon_is_si=True): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass

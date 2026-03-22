@@ -28,6 +28,7 @@ import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.geom
 import ifcopenshell.util.classification
@@ -1034,6 +1035,23 @@ class Spatial(bonsai.core.tool.Spatial):
         return obj
 
     @classmethod
+    def create_object(cls, name: str) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new(name=name)
+        obj = bpy.data.objects.new(name, mesh)
+        return obj
+
+    @classmethod
+    def set_obj_origin_to_polygon_center(
+        cls, obj: bpy.types.Object, poly: Polygon, polygon_is_si: bool = True
+    ) -> None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        centroid = poly.centroid
+        if polygon_is_si:
+            obj.location = Vector((centroid.x, centroid.y, 0))
+        else:
+            obj.location = Vector((centroid.x * unit_scale, centroid.y * unit_scale, 0))
+
+    @classmethod
     def get_named_obj_from_mesh(cls, name: str, mesh: bpy.types.Mesh) -> bpy.types.Object:
         obj = bpy.data.objects.new(name, mesh)
         return obj
@@ -1054,17 +1072,55 @@ class Spatial(bonsai.core.tool.Spatial):
         return mesh
 
     @classmethod
-    def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
-        active_obj = bpy.context.active_object
-        old_mesh = active_obj.data
-        old_mesh_name = old_mesh.name
-        assert active_obj and isinstance(old_mesh, bpy.types.Mesh)
-        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = tool.Geometry.get_mesh_props(old_mesh).ifc_definition_id
-        tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
-        tool.Ifc.edit(active_obj)
-        tool.Blender.remove_data_block(old_mesh)
-        # Rename after old mesh is removed to avoid .001 suffix.
-        mesh.name = old_mesh_name
+    def set_space_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        poly: Polygon,
+        h: float,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create or replace the IFC body representation of a space from a polygon.
+
+        :param obj: The Blender object for the space.
+        :param element: The IfcSpace entity.
+        :param poly: The space polygon in world space.
+        :param h: The height in SI (meters).
+        :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        """
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        bpy.context.view_layer.update()
+        mat_inv = obj.matrix_world.inverted()
+        coords_2d = []
+        for v in shapely.get_exterior_ring(poly).coords[:-1]:
+            world_si = Vector((v[0], v[1], 0))
+            if not polygon_is_si:
+                world_si = world_si * unit_scale
+            local_si = mat_inv @ world_si
+            coords_2d.append(Vector((local_si.x, local_si.y)) / unit_scale)
+
+        curve = builder.polyline(coords_2d, closed=True)
+        item = builder.extrude(curve, magnitude=h / unit_scale)
+
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body:
+            context = old_body.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
+        else:
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
 
     @classmethod
     def set_obj_origin_to_bboxcenter(cls, obj: bpy.types.Object) -> None:
@@ -1075,24 +1131,6 @@ class Spatial(bonsai.core.tool.Spatial):
 
         oldLoc = obj.location
         newLoc = global_bbox_center
-        diff = newLoc - oldLoc
-        for vert in obj.data.vertices:
-            aux_vector = mat @ vert.co
-            aux_vector = aux_vector - diff
-            vert.co = inverted @ aux_vector
-        obj.location = newLoc
-
-    @classmethod
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
-        mat = obj.matrix_world
-        inverted = mat.inverted()
-        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
-        global_bbox_center = mat @ local_bbox_center
-        global_obj_origin = global_bbox_center
-        global_obj_origin.z = 0
-
-        oldLoc = obj.location
-        newLoc = global_obj_origin
         diff = newLoc - oldLoc
         for vert in obj.data.vertices:
             aux_vector = mat @ vert.co
@@ -1188,7 +1226,14 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def assign_ifcspace_class_to_obj(cls, obj: bpy.types.Object) -> None:
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcSpace",
+            should_add_representation=False,
+        )
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
