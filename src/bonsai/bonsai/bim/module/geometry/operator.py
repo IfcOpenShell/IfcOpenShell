@@ -2289,7 +2289,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif obj in pprops.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
-            if not obj.data:
+            if not obj.data or obj.type not in ("MESH", "CURVE"):
                 self.report({"INFO"}, "No geometry to edit")
             elif tool.Geometry.is_locked(element):
                 self.report({"ERROR"}, lock_error_message(obj.name))
