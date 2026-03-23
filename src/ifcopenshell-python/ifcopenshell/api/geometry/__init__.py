@@ -26,6 +26,7 @@ geometry extrusions).
 from .. import wrap_usecases
 from .add_axis_representation import add_axis_representation
 from .add_boolean import add_boolean
+from .clip_solid import clip_solid
 from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
 from .add_mesh_representation import add_mesh_representation
@@ -61,6 +62,7 @@ wrap_usecases(__path__, __name__)
 __all__ = [
     "add_axis_representation",
     "add_boolean",
+    "clip_solid",
     "add_door_representation",
     "add_footprint_representation",
     "add_mesh_representation",
