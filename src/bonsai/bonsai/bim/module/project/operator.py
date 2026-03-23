@@ -1102,7 +1102,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         else:
             return self.finish_loading_project(context)
 
-    def finish_loading_project(self, context):
+    def finish_loading_project(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"]:
         try:
             filepath = self.get_filepath()
             if not self.is_existing_ifc_file():
