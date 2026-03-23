@@ -1,13 +1,22 @@
-<script>
-    import * as IDS from "$src/modules/api/ids.svelte.js";
+<script lang="ts">
+    import * as IDS from "$src/modules/api/ids.svelte";
+    import type { IdsDocument } from "$src/types/ids";
 
-    function switchDocument(docId) {
+    function switchDocument(docId: string) {
         IDS.Module.activeDocument = docId;
     }
     
-    function closeDocument(docId) {
+    function closeDocument(docId: string) {
         IDS.deleteDocument(docId);
     }
+
+    const handleActivation = (event: KeyboardEvent, action: () => void) => {
+        if (event.currentTarget !== event.target) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            action();
+        }
+    };
 </script>
 
 <div class="ids-tabs">
@@ -15,10 +24,13 @@
         <div 
             class="ids-tab" 
             class:active={IDS.Module.activeDocument === docId}
+            role="button"
+            tabindex="0"
             onclick={() => switchDocument(docId)}
-            aria-label={doc.info.title || "Untitled"}
+            onkeydown={(event) => handleActivation(event, () => switchDocument(docId))}
+            aria-label={(doc as IdsDocument).info.title || "Untitled"}
         >
-            <span class="tab-title">{doc.info.title || "Untitled"}</span>
+            <span class="tab-title">{(doc as IdsDocument).info.title || "Untitled"}</span>
             <button 
                 class="tab-close" 
                 onclick={(e) => { e.stopPropagation(); closeDocument(docId); }}

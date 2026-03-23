@@ -1,11 +1,11 @@
-<script>
+<script lang="ts">
     import * as Menubar from "$lib/components/ui/menubar";
     import * as Dialog from "$lib/components/ui/dialog";
-    import * as IDS from "$src/modules/api/ids.svelte.js";
-    import * as API from "$src/modules/api/api.svelte.js";
-    import { error, success, info } from "$src/modules/utils/toast.svelte.js";
+    import * as IDS from "$src/modules/api/ids.svelte";
+    import * as API from "$src/modules/api/api.svelte";
+    import { error, success } from "$src/modules/utils/toast.svelte";
 
-    let { isOpen = false } = $props();
+    let { isOpen = false } : { isOpen?: boolean } = $props();
 
     function openForum() {
         window.open('https://community.osarch.org', '_blank');
@@ -23,8 +23,9 @@
         try {
             await IDS.openDocument();
         } catch (err) {
-            if (err.message !== 'File selection cancelled') {
-                error('Error opening file: ' + err.message);
+            const message = err instanceof Error ? err.message : String(err);
+            if (message !== 'File selection cancelled') {
+                error(`Error opening file: ${message}`);
                 console.error(err);
             }
         }
@@ -50,7 +51,7 @@
             success('Audit completed successfully');
         } catch (err) {
             console.error("Audit failed: ", err);
-            error(`Audit failed: check console for details`);
+            error("Audit failed: check console for details");
         }
     }
 </script>

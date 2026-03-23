@@ -14,6 +14,7 @@
 /src/ifcmax/out/
 /src/ifcwrap/out/
 /src/qtviewer/out/
+/src/ifctester/webapp/public/pyodide/
 
 /win/BuildDepsCache*.txt
 
