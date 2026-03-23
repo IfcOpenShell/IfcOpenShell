@@ -18,10 +18,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+import json
+from typing import Optional, Sequence
 
 import numpy as np
 
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
@@ -33,6 +36,7 @@ def clip_solid_bounded(
     normal: Sequence[float],
     boundary_points: Sequence[Sequence[float]],
     boundary_position: Sequence[float] = (0.0, 0.0, 0.0),
+    element: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     """Clip a solid with a polygonally bounded half-space, returning an IfcBooleanClippingResult.
 
@@ -67,6 +71,9 @@ def clip_solid_bounded(
         is automatically closed — do not repeat the first point.
     :param boundary_position: 3D origin of the boundary coordinate system
         (axes default to the global X/Y/Z directions).  Defaults to the origin.
+    :param element: If provided, the resulting ``IfcBooleanClippingResult`` is
+        registered in the element's ``BBIM_Boolean`` property set so that
+        :func:`regenerate_wall_representation` preserves it during regeneration.
     :return: The resulting ``IfcBooleanClippingResult``.
     """
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
@@ -96,4 +103,14 @@ def clip_solid_bounded(
     boundary = file.createIfcPolyline(ifc_pts)
 
     half_space = file.create_entity("IfcPolygonalBoundedHalfSpace", plane, False, boundary_pos_entity, boundary)
-    return file.create_entity("IfcBooleanClippingResult", "DIFFERENCE", item, half_space)
+    result = file.create_entity("IfcBooleanClippingResult", "DIFFERENCE", item, half_space)
+    if element is not None:
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        if pset_data:
+            pset = file.by_id(pset_data["id"])
+            data = list(set(json.loads(pset_data["Data"]) + [result.id()]))
+        else:
+            pset = ifcopenshell.api.pset.add_pset(file, product=element, name="BBIM_Boolean")
+            data = [result.id()]
+        ifcopenshell.api.pset.edit_pset(file, pset=pset, properties={"Data": json.dumps(data)})
+    return result
