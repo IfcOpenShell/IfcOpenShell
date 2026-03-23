@@ -920,6 +920,21 @@ Scenario: Export IFC - with moved grid axis location synchronised
     And I load previously saved IFC project
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
 
+Scenario: Export IFC - with duplicate-of-duplicate grid axis locations preserved
+    Given an empty IFC project
+    And I press "bim.add_grid"
+    And I set "scene.BIMGridProperties.is_locked" to "False"
+    And the object "IfcGridAxis/01" is selected
+    And I duplicate the selected objects
+    And the object "IfcGridAxis/01.001" is moved to "1,0,0"
+    And the object "IfcGridAxis/01.001" is selected
+    And I duplicate the selected objects
+    And the object "IfcGridAxis/01.002" is moved to "2,0,0"
+    When I save IFC project
+    And I load previously saved IFC project
+    Then the object "IfcGridAxis/01.001" bottom left corner is at "1,-2,0"
+    And the object "IfcGridAxis/01.002" bottom left corner is at "2,-2,0"
+
 Scenario: Export IFC - with changed object scale ignored
     Given an empty IFC project
     And I add a cube
