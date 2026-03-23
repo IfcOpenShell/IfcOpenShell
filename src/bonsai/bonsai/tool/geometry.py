@@ -2670,6 +2670,11 @@ class Geometry(bonsai.core.tool.Geometry):
         # copy the actual class
         new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
+        # Give each duplicated IfcGridAxis its own AxisCurve so it doesn't
+        # share geometry with the source axis.
+        if new and new.is_a("IfcGridAxis"):
+            tool.Model.create_axis_curve(new_obj, new)
+
         # clean up the orphaned mesh with ifc id of the original object to avoid confusion
         # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
         if new and temp_data and not new.is_a("IfcGridAxis"):

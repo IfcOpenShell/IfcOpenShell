@@ -120,10 +120,10 @@ class IfcExporter:
                 # updata_representation will run edit_object_placement if object is scaled
                 # and had no openings.
                 return element
-        if not tool.Ifc.is_moved(obj):
-            return
         if element.is_a("IfcGridAxis"):
             return self.sync_grid_axis_object_placement(obj, element)
+        if not tool.Ifc.is_moved(obj):
+            return
         if not hasattr(element, "ObjectPlacement"):
             return
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)

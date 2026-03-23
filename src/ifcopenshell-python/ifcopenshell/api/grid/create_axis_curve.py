@@ -89,5 +89,5 @@ def create_axis_curve(
         ),
     )
 
-    if existing_curve:
+    if existing_curve and file.get_total_inverses(existing_curve) == 0:
         ifcopenshell.util.element.remove_deep2(file, existing_curve)
