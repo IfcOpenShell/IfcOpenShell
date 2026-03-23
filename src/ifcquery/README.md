@@ -324,6 +324,84 @@ ifcquery model.ifc schema IfcBuildingStorey
 
 Returns `{"error": "Unknown entity: Foo"}` for unrecognised types.
 
+### contexts
+
+List all geometric representation contexts and subcontexts in the model.
+
+```bash
+ifcquery model.ifc contexts
+```
+
+```json
+[
+  {
+    "id": 5,
+    "type": "IfcGeometricRepresentationContext",
+    "context_type": "Model",
+    "subcontexts": [
+      {"id": 6, "type": "IfcGeometricRepresentationSubContext", "context_identifier": "Body", "target_view": "MODEL_VIEW"},
+      {"id": 7, "type": "IfcGeometricRepresentationSubContext", "context_identifier": "Axis", "target_view": "GRAPH_VIEW"}
+    ]
+  }
+]
+```
+
+### materials
+
+List all materials and material sets used in the model, with their assigned elements.
+
+```bash
+ifcquery model.ifc materials
+```
+
+```json
+[
+  {
+    "id": 60,
+    "type": "IfcMaterial",
+    "name": "Concrete",
+    "elements": [{"id": 10, "type": "IfcWall", "name": "Wall001"}]
+  }
+]
+```
+
+### plot
+
+Generate a 2D technical drawing (floor plan, elevation, or section) of the model and write it to a file.
+
+```bash
+ifcquery model.ifc plot output.svg
+ifcquery model.ifc plot output.png --view floorplan --scale 0.01
+```
+
+Options:
+
+- `--view {floorplan,elevation,section,auto}` -- drawing view (default: `floorplan`)
+- `--scale <ratio>` -- model-to-paper scale ratio (default: 0.01 = 1:100)
+- `--width-mm <mm>` -- paper width in mm (default: 297)
+- `--height-mm <mm>` -- paper height in mm (default: 420)
+- `--png-width <px>` -- raster output width in pixels (default: 1024)
+- `--png-height <px>` -- raster output height in pixels (default: 1024)
+
+Writes SVG when the output path ends in `.svg`, otherwise PNG.
+Requires the IfcOpenShell drawing module (`ifcopenshell.draw`).
+
+### render
+
+Render a 3D view of the model geometry to a PNG file.
+
+```bash
+ifcquery model.ifc render output.png
+ifcquery model.ifc render output.png --view iso --selector IfcWall
+```
+
+Options:
+
+- `--view {iso,top,south,north,east,west}` -- camera angle (default: `iso`)
+- `--selector <query>` -- ifcopenshell selector to restrict rendered elements
+
+Requires `pyvista` and the IfcOpenShell C++ geometry bindings.
+
 ### clash
 
 Check a single element for geometric intersections and clearance violations
