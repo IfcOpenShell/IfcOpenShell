@@ -131,7 +131,7 @@ def model_two_storeys():
 
 class TestNoClashes:
     def test_no_clashes_far_apart(self, model_with_geometry):
-        wall3 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall003"][0]
+        wall3 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall003")
         result = clash(model_with_geometry, wall3)
         assert result["pass"] is True
         assert result["checks"]["intersection"]["pass"] is True
@@ -166,7 +166,7 @@ class TestNoClashes:
 
 class TestIntersectionDetected:
     def test_overlapping_walls(self, model_with_geometry):
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1)
         assert result["pass"] is False
         assert result["checks"]["intersection"]["pass"] is False
@@ -174,11 +174,11 @@ class TestIntersectionDetected:
         assert len(clashes) > 0
         # Wall002 should be in the clashes (it overlaps wall1)
         clash_ids = {c["element"]["id"] for c in clashes}
-        wall2 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall002"][0]
+        wall2 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall002")
         assert wall2.id() in clash_ids
 
     def test_clash_has_points(self, model_with_geometry):
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1)
         clashes = result["checks"]["intersection"]["clashes"]
         for c in clashes:
@@ -193,45 +193,45 @@ class TestIntersectionDetected:
 class TestClearance:
     def test_clearance_violation(self, model_with_geometry):
         """Wall004 is 0.1m from wall1; clearance of 0.5m should fail."""
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1, clearance=0.5)
         assert "clearance" in result["checks"]
         # Wall004 should violate clearance
         clearance_clashes = result["checks"]["clearance"]["clashes"]
         clash_ids = {c["element"]["id"] for c in clearance_clashes}
-        wall4 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall004"][0]
+        wall4 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall004")
         assert wall4.id() in clash_ids
         assert result["checks"]["clearance"]["pass"] is False
 
     def test_clearance_pass(self, model_with_geometry):
         """Wall003 is 10m away; clearance of 0.5m should pass for wall003."""
-        wall3 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall003"][0]
+        wall3 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall003")
         result = clash(model_with_geometry, wall3, clearance=0.5)
         assert result["checks"]["clearance"]["pass"] is True
         assert result["checks"]["clearance"]["clashes"] == []
 
     def test_clearance_not_included_by_default(self, model_with_geometry):
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1)
         assert "clearance" not in result["checks"]
 
 
 class TestScope:
     def test_scope_storey_excludes_other_storeys(self, model_two_storeys):
-        wall1 = [w for w in model_two_storeys.by_type("IfcWall") if w.Name == "GroundWall"][0]
+        wall1 = next(w for w in model_two_storeys.by_type("IfcWall") if w.Name == "GroundWall")
         result = clash(model_two_storeys, wall1, scope="storey")
         assert result["scope"] == "storey"
         # No clashes because the overlapping wall is in a different storey
         assert result["pass"] is True
 
     def test_scope_all_includes_other_storeys(self, model_two_storeys):
-        wall1 = [w for w in model_two_storeys.by_type("IfcWall") if w.Name == "GroundWall"][0]
+        wall1 = next(w for w in model_two_storeys.by_type("IfcWall") if w.Name == "GroundWall")
         result = clash(model_two_storeys, wall1, scope="all")
         assert result["scope"] == "all"
         # Should detect clash with the other-storey wall
         assert result["pass"] is False
         clash_ids = {c["element"]["id"] for c in result["checks"]["intersection"]["clashes"]}
-        wall2 = [w for w in model_two_storeys.by_type("IfcWall") if w.Name == "FirstFloorWall"][0]
+        wall2 = next(w for w in model_two_storeys.by_type("IfcWall") if w.Name == "FirstFloorWall")
         assert wall2.id() in clash_ids
 
 
@@ -247,14 +247,14 @@ class TestNoGeometry:
 
 class TestJsonSerializable:
     def test_result_serializable(self, model_with_geometry):
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1)
         serialized = json.dumps(result)
         parsed = json.loads(serialized)
         assert parsed["element"]["type"] == "IfcWall"
 
     def test_clearance_result_serializable(self, model_with_geometry):
-        wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+        wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
         result = clash(model_with_geometry, wall1, clearance=0.5)
         serialized = json.dumps(result)
         parsed = json.loads(serialized)
@@ -272,7 +272,7 @@ class TestCLI:
     def test_clash_json(self, model_with_geometry):
         path = self._ifc_path(model_with_geometry)
         try:
-            wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+            wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
             result = subprocess.run(
                 [sys.executable, "-m", "ifcquery", path, "clash", str(wall1.id())],
                 capture_output=True,
@@ -289,7 +289,7 @@ class TestCLI:
     def test_clash_with_clearance(self, model_with_geometry):
         path = self._ifc_path(model_with_geometry)
         try:
-            wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+            wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
             result = subprocess.run(
                 [sys.executable, "-m", "ifcquery", path, "clash", str(wall1.id()), "--clearance", "0.5"],
                 capture_output=True,
@@ -304,7 +304,7 @@ class TestCLI:
     def test_clash_scope_all(self, model_with_geometry):
         path = self._ifc_path(model_with_geometry)
         try:
-            wall1 = [w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001"][0]
+            wall1 = next(w for w in model_with_geometry.by_type("IfcWall") if w.Name == "Wall001")
             result = subprocess.run(
                 [sys.executable, "-m", "ifcquery", path, "clash", str(wall1.id()), "--scope", "all"],
                 capture_output=True,

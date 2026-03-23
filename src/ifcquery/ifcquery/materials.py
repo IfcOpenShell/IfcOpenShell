@@ -31,56 +31,70 @@ def materials(model: ifcopenshell.file) -> list[dict]:
     results = []
 
     for m in model.by_type("IfcMaterial"):
-        results.append({
-            "id": m.id(),
-            "type": "IfcMaterial",
-            "name": m.Name,
-            "category": getattr(m, "Category", None),
-        })
+        results.append(
+            {
+                "id": m.id(),
+                "type": "IfcMaterial",
+                "name": m.Name,
+                "category": getattr(m, "Category", None),
+            }
+        )
 
     for ls in model.by_type("IfcMaterialLayerSet"):
         layers = []
-        for layer in (ls.MaterialLayers or []):
-            layers.append({
-                "name": layer.Name,
-                "thickness": layer.LayerThickness,
-                "material": layer.Material.Name if layer.Material else None,
-                "is_ventilated": layer.IsVentilated,
-            })
-        results.append({
-            "id": ls.id(),
-            "type": "IfcMaterialLayerSet",
-            "name": ls.LayerSetName,
-            "layers": layers,
-        })
+        for layer in ls.MaterialLayers or []:
+            layers.append(
+                {
+                    "name": layer.Name,
+                    "thickness": layer.LayerThickness,
+                    "material": layer.Material.Name if layer.Material else None,
+                    "is_ventilated": layer.IsVentilated,
+                }
+            )
+        results.append(
+            {
+                "id": ls.id(),
+                "type": "IfcMaterialLayerSet",
+                "name": ls.LayerSetName,
+                "layers": layers,
+            }
+        )
 
     for cs in model.by_type("IfcMaterialConstituentSet"):
         constituents = []
-        for c in (cs.MaterialConstituents or []):
-            constituents.append({
-                "name": c.Name,
-                "material": c.Material.Name if c.Material else None,
-                "fraction": c.Fraction,
-            })
-        results.append({
-            "id": cs.id(),
-            "type": "IfcMaterialConstituentSet",
-            "name": cs.Name,
-            "constituents": constituents,
-        })
+        for c in cs.MaterialConstituents or []:
+            constituents.append(
+                {
+                    "name": c.Name,
+                    "material": c.Material.Name if c.Material else None,
+                    "fraction": c.Fraction,
+                }
+            )
+        results.append(
+            {
+                "id": cs.id(),
+                "type": "IfcMaterialConstituentSet",
+                "name": cs.Name,
+                "constituents": constituents,
+            }
+        )
 
     for ps in model.by_type("IfcMaterialProfileSet"):
         profiles = []
-        for p in (ps.MaterialProfiles or []):
-            profiles.append({
-                "name": p.Name,
-                "material": p.Material.Name if p.Material else None,
-            })
-        results.append({
-            "id": ps.id(),
-            "type": "IfcMaterialProfileSet",
-            "name": ps.Name,
-            "profiles": profiles,
-        })
+        for p in ps.MaterialProfiles or []:
+            profiles.append(
+                {
+                    "name": p.Name,
+                    "material": p.Material.Name if p.Material else None,
+                }
+            )
+        results.append(
+            {
+                "id": ps.id(),
+                "type": "IfcMaterialProfileSet",
+                "name": ps.Name,
+                "profiles": profiles,
+            }
+        )
 
     return results

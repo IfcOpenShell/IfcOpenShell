@@ -7,6 +7,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+
 from ifcquery.info import info
 
 
@@ -52,8 +53,11 @@ class TestGeometrySummary:
         ifcopenshell.api.unit.assign_unit(f)
         model_ctx = ifcopenshell.api.context.add_context(f, context_type="Model")
         ifcopenshell.api.context.add_context(
-            f, context_type="Model", context_identifier="Body",
-            target_view="MODEL_VIEW", parent=model_ctx,
+            f,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=model_ctx,
         )
         wall = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name="W1")
         ifcopenshell.api.geometry.edit_object_placement(f, product=wall)
@@ -80,7 +84,11 @@ class TestGeometrySummary:
         f, wall = self._make_model_with_wall()
         body = self._body_context(f)
         rep = ifcopenshell.api.geometry.add_wall_representation(
-            f, context=body, length=5.0, height=4.0, thickness=0.2,
+            f,
+            context=body,
+            length=5.0,
+            height=4.0,
+            thickness=0.2,
             clippings=[{"location": (0.0, 0.0, 3.0), "normal": (0.0, 0.0, 1.0)}],
         )
         ifcopenshell.api.geometry.assign_representation(f, product=wall, representation=rep)
@@ -95,6 +103,7 @@ class TestGeometrySummary:
 
     def test_geometry_summary_json_serializable(self):
         import json
+
         f, wall = self._make_model_with_wall()
         body = self._body_context(f)
         rep = ifcopenshell.api.geometry.add_wall_representation(f, context=body, length=5.0, height=3.0, thickness=0.2)

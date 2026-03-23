@@ -1,25 +1,39 @@
 # This file was generated with the assistance of an AI coding tool.
 from __future__ import annotations
 
+# inside ifcmcp/core.py
 import json
+from collections.abc import Callable  # noqa: F401 — Callable used in helpers below
 from dataclasses import dataclass
-from typing import Any, Callable  # noqa: F401 — Callable used in helpers below
+from typing import Any
 
 import ifcopenshell
-
 from ifcedit.discover import function_docs, list_functions, list_modules
 from ifcedit.quantify import run_quantify
 from ifcedit.run import run_api
 from ifcquery import clash as clash_mod
 from ifcquery import contexts as contexts_mod
 from ifcquery import cost as cost_mod
-from ifcquery import info, materials as materials_mod, plot as plot_mod, relations, render as render_mod, schedule, schema, select, summary, tree
+from ifcquery import (
+    info,
+    relations,
+    schedule,
+    schema,
+    select,
+    summary,
+    tree,
+)
+from ifcquery import (
+    materials as materials_mod,
+)
+from ifcquery import (
+    plot as plot_mod,
+)
+from ifcquery import (
+    render as render_mod,
+)
 from ifcquery import validate as validate_mod
 
-
-# inside ifcmcp/core.py
-import json
-from typing import Any
 
 def _jsonify(x: Any) -> Any:
     """Convert IfcOpenShell objects / iterables into JSON-safe primitives."""
@@ -56,6 +70,7 @@ def _jsonify(x: Any) -> Any:
 # ---------------------------------------------------------------------------
 # Shape builder helpers
 # ---------------------------------------------------------------------------
+
 
 def _list_shape_methods() -> list[dict]:
     """Introspect ShapeBuilder and return a summary of all public methods."""
@@ -172,10 +187,12 @@ def _coerce_shape_value(value: Any, hint: Any, model: ifcopenshell.file) -> Any:
 
     # Sequence[entity_instance]: resolve each element in the list
     import collections.abc
+
     if origin is not None and issubclass(origin, collections.abc.Sequence) and not isinstance(value, str):
-        if args and (args[0] is ifcopenshell.entity_instance or (
-            isinstance(args[0], type) and issubclass(args[0], ifcopenshell.entity_instance)
-        )):
+        if args and (
+            args[0] is ifcopenshell.entity_instance
+            or (isinstance(args[0], type) and issubclass(args[0], ifcopenshell.entity_instance))
+        ):
             if isinstance(value, (list, tuple)):
                 return [_coerce_shape_value(v, args[0], model) for v in value]
 
@@ -187,6 +204,7 @@ def _coerce_shape_value(value: Any, hint: Any, model: ifcopenshell.file) -> Any:
 
     # Everything else (float, int, VectorType lists, dicts, Literals) passes through
     return value
+
 
 class IfcSessionError(RuntimeError):
     pass
@@ -615,7 +633,9 @@ class IfcSession:
                 "description": "Validate the loaded model. Returns valid bool and list of issues.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"express_rules": {"type": "boolean", "description": "Also check EXPRESS rules (slower)"}},
+                    "properties": {
+                        "express_rules": {"type": "boolean", "description": "Also check EXPRESS rules (slower)"}
+                    },
                     "required": [],
                     "additionalProperties": False,
                 },
@@ -626,7 +646,12 @@ class IfcSession:
                 "description": "List work schedules and nested tasks. Use max_depth=1 for top-level phases only on large projects.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"max_depth": {"type": "integer", "description": "Max levels of subtask expansion (omit for unlimited)"}},
+                    "properties": {
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Max levels of subtask expansion (omit for unlimited)",
+                        }
+                    },
                     "required": [],
                     "additionalProperties": False,
                 },
@@ -637,7 +662,12 @@ class IfcSession:
                 "description": "List cost schedules and nested cost items. Use max_depth=1 for top-level sections only on large BoQs.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"max_depth": {"type": "integer", "description": "Max levels of cost item expansion (omit for unlimited)"}},
+                    "properties": {
+                        "max_depth": {
+                            "type": "integer",
+                            "description": "Max levels of cost item expansion (omit for unlimited)",
+                        }
+                    },
                     "required": [],
                     "additionalProperties": False,
                 },
@@ -661,7 +691,10 @@ class IfcSession:
                     "type": "object",
                     "properties": {
                         "rule": {"type": "string", "description": "QTO rule name, e.g. IFC4QtoBaseQuantities"},
-                        "selector": {"type": "string", "description": "ifcopenshell selector to restrict elements (default: all IfcElement)"},
+                        "selector": {
+                            "type": "string",
+                            "description": "ifcopenshell selector to restrict elements (default: all IfcElement)",
+                        },
                     },
                     "required": ["rule"],
                     "additionalProperties": False,
@@ -680,7 +713,11 @@ class IfcSession:
                     "type": "object",
                     "properties": {
                         "selector": {"type": "string", "description": "ifcopenshell selector (default: whole model)"},
-                        "element_ids": {"type": "array", "items": {"type": "integer"}, "description": "Step IDs of elements to highlight"},
+                        "element_ids": {
+                            "type": "array",
+                            "items": {"type": "integer"},
+                            "description": "Step IDs of elements to highlight",
+                        },
                         "view": {
                             "type": "string",
                             "enum": ["iso", "top", "south", "north", "east", "west"],

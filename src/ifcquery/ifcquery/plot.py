@@ -19,13 +19,14 @@
 from __future__ import annotations
 
 import base64
-from io import BytesIO
 import os
+from io import BytesIO
 from typing import Any
 
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
+
 try:
     import ifcopenshell.draw
 
@@ -33,7 +34,7 @@ try:
 except ImportError:
     _HAS_DRAW = False
 
-from xml.etree.ElementTree import ElementTree, Element, SubElement, register_namespace
+from xml.etree.ElementTree import Element, ElementTree, SubElement, register_namespace
 
 try:
     import cairosvg  # type: ignore
@@ -44,7 +45,7 @@ except Exception:
 
 
 try:
-    from PIL import Image # type: ignore
+    from PIL import Image  # type: ignore
 
     _HAS_PIL = True
 except Exception:
@@ -79,8 +80,8 @@ def _highlight_css_from_ids(model: ifcopenshell.file, element_ids: list[int]) ->
 
     css = [
         "/* Auto-highlight injected by ifcquery.plot */",
-        f'[{attr}] path {{ opacity: 0.10; }}',
-        f'[{attr}] text {{ opacity: 0.25; }}',
+        f"[{attr}] path {{ opacity: 0.10; }}",
+        f"[{attr}] text {{ opacity: 0.25; }}",
     ]
     for gid in guids:
         css.append(f'[{attr}="{gid}"] path {{ opacity: 1.0; stroke: #d00; stroke-width: 0.25; }}')
@@ -134,10 +135,7 @@ def _diagnose_empty_drawing(model: ifcopenshell.file, view: str) -> str:
                     "set IfcBuildingStorey.Elevation (e.g. 0.0) so the section cut height can be determined"
                 )
 
-    has_geom = any(
-        getattr(e, "Representation", None) is not None
-        for e in model.by_type("IfcProduct")
-    )
+    has_geom = any(getattr(e, "Representation", None) is not None for e in model.by_type("IfcProduct"))
     if not has_geom:
         hints.append("no IfcProduct entities have geometric representations")
 
@@ -224,10 +222,10 @@ def plot(
         iterators=iterators,
         merge_projection=merge_projection,
     )
-    
-    register_namespace('',"http://www.w3.org/2000/svg")
 
-    def svg_split(f):    
+    register_namespace("", "http://www.w3.org/2000/svg")
+
+    def svg_split(f):
         x = ElementTree(file=f)
         svg = x.getroot()
         resources = []
@@ -235,13 +233,10 @@ def plot(
             if child.tag == "{http://www.w3.org/2000/svg}g":
                 root = Element(svg.tag, svg.attrib)
                 n = ElementTree(root)
-                for r in (resources + [child]):
+                for r in resources + [child]:
                     root.append(r)
                 b = BytesIO()
-                n.write(b,
-                    xml_declaration = True,
-                    encoding = 'utf-8',
-                    method = 'xml')
+                n.write(b, xml_declaration=True, encoding="utf-8", method="xml")
                 yield b.getvalue()
             else:
                 resources.append(child)
@@ -269,12 +264,12 @@ def plot(
             raise ImportError("Pillow is not installed. Install with: pip install Pillow")
 
         if composite is None:
-            composite = Image.new('RGBA', (png_width, png_height * len(svgs)))
+            composite = Image.new("RGBA", (png_width, png_height * len(svgs)))
         img = Image.open(BytesIO(png_bytes))
         composite.paste(img, (0, png_height * i))
     if composite is not None:
         b = BytesIO()
-        composite.save(b, 'png')
+        composite.save(b, "png")
         png_bytes = b.getvalue()
 
     if output_format == "base64":

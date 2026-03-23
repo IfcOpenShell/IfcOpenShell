@@ -1,5 +1,4 @@
 # This file was generated with the assistance of an AI coding tool.
-import pytest
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
@@ -7,6 +6,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
+import pytest
 
 from ifcmcp.core import IfcSession
 

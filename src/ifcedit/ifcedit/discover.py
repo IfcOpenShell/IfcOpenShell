@@ -182,7 +182,7 @@ def _format_type_hint(hint) -> str | None:
         formatted = [_format_type_hint(a) for a in args]
         # Optional[X] is Union[X, None] — render as "Optional[X]"
         if len(formatted) == 2 and "None" in formatted:
-            inner = [f for f in formatted if f != "None"][0]
+            inner = next(f for f in formatted if f != "None")
             return f"Optional[{inner}]"
         return " | ".join(formatted)
 

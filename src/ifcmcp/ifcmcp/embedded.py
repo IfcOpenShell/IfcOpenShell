@@ -1,7 +1,8 @@
 # This file was generated with the assistance of an AI coding tool.
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from ifcmcp.core import IfcSession
 

@@ -18,8 +18,7 @@ def build_server() -> Any:
     """Create the FastMCP server if the dependency is available."""
     if FastMCP is None:
         raise ImportError(
-            "FastMCP is not installed. Install with: pip install ifcmcp[mcp] "
-            "(or add 'mcp' to your environment)."
+            "FastMCP is not installed. Install with: pip install ifcmcp[mcp] " "(or add 'mcp' to your environment)."
         )
 
     session = IfcSession()

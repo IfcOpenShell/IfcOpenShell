@@ -17,7 +17,7 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import pytest
 
-from ifcquery.plot import plot, _highlight_css_from_ids
+from ifcquery.plot import _highlight_css_from_ids, plot
 
 try:
     import ifcopenshell.draw  # noqa: F401

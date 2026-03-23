@@ -58,17 +58,33 @@ class TestRenderOutputPath:
 class TestPlotOutputPath:
     def test_no_output_path_no_file_written(self, tool_fns, tmp_path):
         with patch("ifcmcp.core.IfcSession.ifc_plot", return_value=PNG_FAKE):
-            tool_fns["ifc_plot"](selector="", element_ids=None, view="floorplan",
-                                 width_mm=297.0, height_mm=420.0, scale=0.01,
-                                 png_width=1024, png_height=1024, output_path="")
+            tool_fns["ifc_plot"](
+                selector="",
+                element_ids=None,
+                view="floorplan",
+                width_mm=297.0,
+                height_mm=420.0,
+                scale=0.01,
+                png_width=1024,
+                png_height=1024,
+                output_path="",
+            )
         assert list(tmp_path.iterdir()) == []
 
     def test_png_output_path_writes_png(self, tool_fns, tmp_path):
         out = str(tmp_path / "plot.png")
         with patch("ifcmcp.core.IfcSession.ifc_plot", return_value=PNG_FAKE):
-            tool_fns["ifc_plot"](selector="", element_ids=None, view="floorplan",
-                                 width_mm=297.0, height_mm=420.0, scale=0.01,
-                                 png_width=1024, png_height=1024, output_path=out)
+            tool_fns["ifc_plot"](
+                selector="",
+                element_ids=None,
+                view="floorplan",
+                width_mm=297.0,
+                height_mm=420.0,
+                scale=0.01,
+                png_width=1024,
+                png_height=1024,
+                output_path=out,
+            )
         assert open(out, "rb").read() == PNG_FAKE
 
     def test_svg_output_path_writes_svg(self, tool_fns, tmp_path):
@@ -76,7 +92,15 @@ class TestPlotOutputPath:
         # ifc_plot is called twice: once with "png" for the inline image,
         # once with "svg" for the file.
         with patch("ifcmcp.core.IfcSession.ifc_plot", side_effect=[PNG_FAKE, SVG_FAKE]):
-            tool_fns["ifc_plot"](selector="", element_ids=None, view="floorplan",
-                                 width_mm=297.0, height_mm=420.0, scale=0.01,
-                                 png_width=1024, png_height=1024, output_path=out)
+            tool_fns["ifc_plot"](
+                selector="",
+                element_ids=None,
+                view="floorplan",
+                width_mm=297.0,
+                height_mm=420.0,
+                scale=0.01,
+                png_width=1024,
+                png_height=1024,
+                output_path=out,
+            )
         assert open(out, "rb").read() == SVG_FAKE

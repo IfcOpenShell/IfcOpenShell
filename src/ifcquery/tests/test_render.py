@@ -6,7 +6,6 @@ import tempfile
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
-import ifcopenshell.guid
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.owner.settings
@@ -14,10 +13,11 @@ import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
+import ifcopenshell.guid
 import numpy as np
 import pytest
 
-from ifcquery.render import render, _make_type_occurrence, _make_profile_occurrence
+from ifcquery.render import _make_profile_occurrence, _make_type_occurrence, render
 
 try:
     import pyvista  # noqa: F401

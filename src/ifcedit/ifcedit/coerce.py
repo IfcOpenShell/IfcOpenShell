@@ -157,8 +157,11 @@ def _floatify_numeric_lists(obj):
     """
     if isinstance(obj, dict):
         return {k: _floatify_numeric_lists(v) for k, v in obj.items()}
-    if isinstance(obj, list) and obj and all(isinstance(v, (int, float)) for v in obj) and any(
-        isinstance(v, float) for v in obj
+    if (
+        isinstance(obj, list)
+        and obj
+        and all(isinstance(v, (int, float)) for v in obj)
+        and any(isinstance(v, float) for v in obj)
     ):
         return [float(v) for v in obj]
     return obj

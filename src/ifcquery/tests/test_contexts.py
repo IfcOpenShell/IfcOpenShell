@@ -15,6 +15,7 @@ class TestContexts:
 
     def test_model_context(self, model):
         import ifcopenshell.api.context
+
         ifcopenshell.api.context.add_context(model, context_type="Model")
         result = contexts(model)
         assert len(result) == 1
@@ -26,6 +27,7 @@ class TestContexts:
 
     def test_subcontext(self, model):
         import ifcopenshell.api.context
+
         model_ctx = ifcopenshell.api.context.add_context(model, context_type="Model")
         ifcopenshell.api.context.add_context(
             model,
@@ -43,6 +45,7 @@ class TestContexts:
 
     def test_ids_are_integers(self, model):
         import ifcopenshell.api.context
+
         ifcopenshell.api.context.add_context(model, context_type="Model")
         result = contexts(model)
         for entry in result:
