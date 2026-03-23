@@ -147,7 +147,6 @@ class TestClipSolidBounded(test.bootstrap.IFC4):
         assert result.FirstOperand == first_clip
         assert first_clip.FirstOperand == extrusion
 
-
     def test_element_registers_result_in_bbim_boolean(self):
         extrusion = self.make_extrusion()
         wall = self.file.createIfcWall()

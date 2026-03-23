@@ -102,7 +102,6 @@ class TestClipSolid(test.bootstrap.IFC4):
         assert result.is_a("IfcBooleanClippingResult")
         assert result.SecondOperand.is_a("IfcHalfSpaceSolid")
 
-
     def test_element_registers_result_in_bbim_boolean(self):
         extrusion = self.make_extrusion()
         wall = self.file.createIfcWall()

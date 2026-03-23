@@ -28,14 +28,18 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         body = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         if body is None:
             model = self.file.createIfcGeometricRepresentationContext(
-                ContextType="Model", CoordinateSpaceDimension=3, Precision=1e-5,
+                ContextType="Model",
+                CoordinateSpaceDimension=3,
+                Precision=1e-5,
                 WorldCoordinateSystem=self.file.createIfcAxis2Placement3D(
                     self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
                 ),
             )
             body = self.file.createIfcGeometricRepresentationSubContext(
-                ContextIdentifier="Body", ContextType="Model",
-                TargetView="MODEL_VIEW", ParentContext=model,
+                ContextIdentifier="Body",
+                ContextType="Model",
+                TargetView="MODEL_VIEW",
+                ParentContext=model,
             )
         return body
 
@@ -52,9 +56,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         wall_b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         self._add_body_rep(wall_a)
 
-        result = ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        result = ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         assert result is not None
         assert result.is_a("IfcShapeRepresentation")
@@ -67,9 +69,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         wall_b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         source_rep = self._add_body_rep(wall_a)
 
-        new_rep = ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        new_rep = ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         assert new_rep.id() != source_rep.id()
         assert new_rep.Items[0].id() != source_rep.Items[0].id()
@@ -79,9 +79,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         wall_b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         source_rep = self._add_body_rep(wall_a)
 
-        new_rep = ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        new_rep = ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         assert new_rep.ContextOfItems.id() == source_rep.ContextOfItems.id()
 
@@ -92,9 +90,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         old_rep = self._add_body_rep(wall_b)
         old_rep_id = old_rep.id()
 
-        ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         try:
             self.file.by_id(old_rep_id)
@@ -108,9 +104,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         source_rep = self._add_body_rep(wall_a)
         source_rep_id = source_rep.id()
 
-        ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         assert self.file.by_id(source_rep_id) is not None  # source must still exist
         assert ifcopenshell.util.representation.get_representation(wall_a, "Model", "Body") is not None
@@ -119,9 +113,7 @@ class TestCopyRepresentation(test.bootstrap.IFC4):
         wall_a = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         wall_b = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
 
-        result = ifcopenshell.api.geometry.copy_representation(
-            self.file, source=wall_a, target=wall_b
-        )
+        result = ifcopenshell.api.geometry.copy_representation(self.file, source=wall_a, target=wall_b)
 
         assert result is None
 

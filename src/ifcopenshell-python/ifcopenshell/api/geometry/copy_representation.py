@@ -61,19 +61,13 @@ def copy_representation(
         ifcopenshell.api.geometry.copy_representation(model,
             source=wall_a, target=wall_b)
     """
-    source_rep = ifcopenshell.util.representation.get_representation(
-        source, "Model", context_identifier
-    )
+    source_rep = ifcopenshell.util.representation.get_representation(source, "Model", context_identifier)
     if source_rep is None:
         return None
 
-    new_rep = ifcopenshell.util.element.copy_deep(
-        file, source_rep, exclude=["IfcGeometricRepresentationContext"]
-    )
+    new_rep = ifcopenshell.util.element.copy_deep(file, source_rep, exclude=["IfcGeometricRepresentationContext"])
 
-    existing_rep = ifcopenshell.util.representation.get_representation(
-        target, "Model", context_identifier
-    )
+    existing_rep = ifcopenshell.util.representation.get_representation(target, "Model", context_identifier)
     if existing_rep:
         ifcopenshell.api.geometry.unassign_representation(file, product=target, representation=existing_rep)
         ifcopenshell.api.geometry.remove_representation(file, representation=existing_rep)
