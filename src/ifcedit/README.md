@@ -237,7 +237,7 @@ Exit code is 0 on success, 1 on error.
 
 `ifcedit` and `ifcquery` are complementary tools:
 
-- **ifcquery** reads and inspects IFC models (summary, tree, info, select, relations, clash, validate, schedule, cost, schema)
+- **ifcquery** reads and inspects IFC models (summary, tree, info, select, relations, clash, validate, schedule, cost, schema, contexts, materials, plot, render)
 - **ifcedit** modifies IFC models by wrapping `ifcopenshell.api` functions, and runs QTO via `quantify`
 
 A typical workflow: inspect with `ifcquery`, look up the right API function
