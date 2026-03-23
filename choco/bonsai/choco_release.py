@@ -13,6 +13,7 @@ import hashlib
 import os
 import pathlib
 import re
+import subprocess
 from typing import NoReturn
 from urllib import request
 
@@ -20,7 +21,7 @@ from github import Github
 
 
 def get_repo_tag_names() -> list[str]:
-    git_return = os.popen("git tag -l").read()
+    git_return = subprocess.check_output("git tag -l", text=True)
     tag_names = [tag_name for tag_name in git_return.split("\n") if tag_name]
     print(f"{len(tag_names)} tag_names found in repo")
     return tag_names
@@ -78,6 +79,10 @@ def get_release_zip(tag: str) -> tuple[str, str]:
     raise Exception(f"Couldn't find the release matching '{python_version}' and '{TARGET_OS}' in tag '{tag}'.")
 
 
+def run(command: str) -> None:
+    subprocess.check_output(command)
+
+
 start = datetime.datetime.now()
 
 URL_CHOCO_PACKAGE  = "https://community.chocolatey.org/packages/blender"
@@ -97,7 +102,7 @@ should_release = False
 target_release_tag = ""
 TARGET_OS = "windows-x64"
 
-git_status = os.popen("git status").read()
+git_status = subprocess.check_output("git status", text=True)
 print(git_status)
 
 for tag_name in get_repo_tag_names():
@@ -147,7 +152,7 @@ blenderbim_build_version = target_release_tag.replace("blenderbim-", "")
 
 # url_blenderbim_py3x_win_zip
 release_zip_file_name, url_blenderbim_py3x_win_zip = get_release_zip(target_release_tag)
-os.popen(f"wget {url_blenderbim_py3x_win_zip} --no-verbose").read()
+subprocess.check_call(f"wget {url_blenderbim_py3x_win_zip} --no-verbose")
 
 # sha256sum_blenderbim_py310_win_zip
 sha256sum_blenderbim_py3x_win_zip = get_file_sha256_hash(release_zip_file_name)
@@ -201,13 +206,13 @@ print("[INFO] inserting dynamic chocolatey package parameters successful")
 print("\n_____ build choco.exe with mono")
 
 choco_version = "1.1.0"
-os.popen(f"wget https://github.com/chocolatey/choco/archive/refs/tags/{choco_version}.tar.gz --quiet").read()
-os.popen(f"tar -xzf {choco_version}.tar.gz").read()
+run(f"wget https://github.com/chocolatey/choco/archive/refs/tags/{choco_version}.tar.gz --quiet")
+run(f"tar -xzf {choco_version}.tar.gz")
 print("choco tar unpack successful")
 os.chdir("choco-1.1.0")
-os.popen("./build.sh").read()
+run("./build.sh")
 
-os.popen("cp -r build_output/chocolatey /opt/chocolatey").read()
+run("cp -r build_output/chocolatey /opt/chocolatey")
 os.chdir(BLENDERBIM_DIR)
 
 if pathlib.Path("/opt/chocolatey/choco.exe").exists():
@@ -215,11 +220,15 @@ if pathlib.Path("/opt/chocolatey/choco.exe").exists():
 
 print("\n_____ build choco pack")
 
-os.popen("mono /opt/chocolatey/choco.exe pack --allow-unofficial").read()
-os.popen('mono /opt/chocolatey/choco.exe setapikey --key="{choco_token}" --source="https://push.chocolatey.org/" --allow-unofficial').read()
+run("mono /opt/chocolatey/choco.exe pack --allow-unofficial")
+run(
+    'mono /opt/chocolatey/choco.exe setapikey --key="{choco_token}" --source="https://push.chocolatey.org/" --allow-unofficial'
+)
 
 print("\n_____ build choco push")
-os.popen('mono /opt/chocolatey/choco.exe push --source="https://push.chocolatey.org/" --key="$CHOCO_TOKEN" --allow-unofficial --verbose').read()
+run(
+    'mono /opt/chocolatey/choco.exe push --source="https://push.chocolatey.org/" --key="$CHOCO_TOKEN" --allow-unofficial --verbose'
+)
 
 print(f"choco push of version: {target_release_tag} successful!")
 print(f"it took: {datetime.datetime.now() - start}")

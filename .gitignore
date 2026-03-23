@@ -5,6 +5,8 @@
 /_installed-vs*-x*/
 /build/
 /src/examples/build/
+# ifctester docs output
+/src/ifctester/test/build/
 
 # output directories
 /cmake/out/
@@ -80,10 +82,14 @@ src/ifcopenshell-python/test/build
 # bonsai i18n
 src/bonsai/bonsai/translations.py
 
-# bonsai test temp files
+# bonsai external dependencies (cloned for just ty checks)
+src/bonsai/external_dependencies/
+
+# bonsai test temp/cache files
 src/bonsai/test/files/temp
-src/bonsai/test/files/basic.ifc.cache.blend
-src/bonsai/test/files/basic.ifc.cache.sqlite
+src/bonsai/test/files/*.cache.blend
+src/bonsai/test/files/*.cache.json
+src/bonsai/test/files/*.cache.sqlite
 
 # bonsai data
 src/bonsai/bonsai/bim/data/build/
@@ -115,3 +121,9 @@ dev_environment.bat
 
 src/ifcopenshell-python/ifcopenshell/express/*.exp
 src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
+
+
+# temp files from AI coding tools
+*.claude
+*.py.tmp*
+*.json.tmp*

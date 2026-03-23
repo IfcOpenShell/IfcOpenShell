@@ -45,16 +45,19 @@ from bonsai.bim.module.nest.decorator import NestDecorator
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
+# Separate owner for per-object msgbus subscriptions (name, active_material_index).
+# Using a dedicated owner allows clearing all per-object subscriptions at once
+# during undo/redo without affecting other global subscriptions.
+object_subscription_owner = object()
 
 
 def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -> None:
     try:
         obj.name
     except:
-        # The object is invalid but somehow still has a callback. Clear all
-        # msgbus subscriptions to prevent useless further triggers.
-        bpy.msgbus.clear_by_owner(obj)
-        return  # In case the object RNA is gone during an undo / redo operation
+        # The object is invalid but somehow still has a callback.
+        # This can occur during undo/redo when the Python wrapper is stale.
+        return
     # Blender names are up to 63 UTF-8 bytes
     if len(bytes(obj.name, "utf-8")) >= 63:
         return
@@ -189,7 +192,7 @@ def subscribe_to(obj: bpy.types.ID, data_path: str, callback: Callable[[bpy.type
         return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
-        owner=obj,
+        owner=object_subscription_owner,
         args=(
             obj,
             data_path,

@@ -173,16 +173,17 @@ def assert_viewpoints(viewpoints):
     assert viewpoint.snapshot is not None
 
 
+# TODO: dead code - ported from v2 but buildingSMART/BCF-XML has no v3 MaximumInformation.bcf equivalent
 def assert_second_viewpoint(viewpoint, expected_selection, expected_exception, expected_coloring) -> None:
     expected_vp = mdl.VisualizationInfo(
         components=mdl.Components(
-            view_setup_hints=mdl.ViewSetupHints(
-                spaces_visible=False,
-                space_boundaries_visible=False,
-                openings_visible=False,
-            ),
             selection=expected_selection,
             visibility=mdl.ComponentVisibility(
+                view_setup_hints=mdl.ViewSetupHints(
+                    spaces_visible=False,
+                    space_boundaries_visible=False,
+                    openings_visible=False,
+                ),
                 exceptions=expected_exception,
                 default_visibility=False,
             ),
@@ -193,6 +194,7 @@ def assert_second_viewpoint(viewpoint, expected_selection, expected_exception, e
             camera_direction=mdl.Direction(x=0.6745243072509766, y=-0.6599355936050415, z=-0.33091068267822266),
             camera_up_vector=mdl.Direction(x=0.2271970510482788, y=-0.24091780185699463, z=0.9435783624649048),
             field_of_view=60,
+            aspect_ratio=1.0,
         ),
         guid="21dd4807-e9af-439e-a980-04d913a6b1ce",
     )
@@ -200,16 +202,17 @@ def assert_second_viewpoint(viewpoint, expected_selection, expected_exception, e
     assert viewpoint.snapshot is not None
 
 
+# TODO: dead code - ported from v2 but buildingSMART/BCF-XML has no v3 MaximumInformation.bcf equivalent
 def assert_third_viewpoint(viewpoint, expected_selection, expected_exception, expected_coloring) -> None:
     expected_vp = mdl.VisualizationInfo(
         components=mdl.Components(
-            view_setup_hints=mdl.ViewSetupHints(
-                spaces_visible=False,
-                space_boundaries_visible=False,
-                openings_visible=True,
-            ),
             selection=expected_selection,
             visibility=mdl.ComponentVisibility(
+                view_setup_hints=mdl.ViewSetupHints(
+                    spaces_visible=False,
+                    space_boundaries_visible=False,
+                    openings_visible=True,
+                ),
                 exceptions=expected_exception,
                 default_visibility=True,
             ),
@@ -220,6 +223,7 @@ def assert_third_viewpoint(viewpoint, expected_selection, expected_exception, ex
             camera_direction=mdl.Direction(x=0.7232745289802551, y=0.5967116951942444, z=-0.3475759029388428),
             camera_up_vector=mdl.Direction(x=0.27662187814712524, y=0.21082592010498047, z=0.937567412853241),
             field_of_view=60,
+            aspect_ratio=1.0,
         ),
         guid="81daa431-bf01-4a49-80a2-1ab07c177717",
     )

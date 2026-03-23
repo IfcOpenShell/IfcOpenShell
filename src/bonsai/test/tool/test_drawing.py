@@ -666,10 +666,13 @@ class TestImportTextAttributes(NewFile):
 
         literal_props = props.literals[0]
         assert literal_props.ifc_definition_id == item.id()
-        assert literal_props.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
         assert literal_props.attributes["Literal"].string_value == "Literal"
         assert literal_props.attributes["Path"].enum_value == "RIGHT"
         assert literal_props.attributes["BoxAlignment"].string_value == "bottom-left"
+        assert literal_props.align_vertical == "bottom"
+        assert literal_props.align_horizontal == "left"
+        assert props.align_vertical == "bottom"
+        assert props.align_horizontal == "left"
 
 
 class TestReplaceTextLiteralVariables(NewFile):
@@ -957,4 +960,4 @@ class TestAddReferenceImage(NewFile):
         assert texture_filepath == filepath
 
         uv_node = material_nodes["Texture Coordinate"]
-        assert len(uv_node.outputs["UV"].links[:]) == 1
+        assert len(uv_node.outputs["Generated"].links[:]) == 1

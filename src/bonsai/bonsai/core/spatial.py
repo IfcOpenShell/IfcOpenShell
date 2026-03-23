@@ -219,13 +219,8 @@ def generate_space(
         else:
             assert space_polygon
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h, polygon_is_si=True)
-
-    mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
-
     if element and element.is_a("IfcSpace"):
-        mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
-        spatial.edit_active_space_obj_from_mesh(mesh)
+        spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
         spatial.translate_obj_to_z_location(active_obj, z)
     else:
         if relating_type:
@@ -233,12 +228,13 @@ def generate_space(
         else:
             name = "Space"
 
-        obj = spatial.get_named_obj_from_mesh(name, mesh)
+        obj = spatial.create_object(name)
         spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
         spatial.translate_obj_to_z_location(obj, z)
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
+        spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
@@ -257,15 +253,15 @@ def generate_spaces_from_walls(
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
 
-        bm = spatial.get_bmesh_from_polygon(poly, h, polygon_is_si=False)
-
         name = "Space" + str(i)
 
-        obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
-
-        spatial.set_obj_origin_to_bboxcenter_and_zero_elevation(obj)
+        obj = spatial.create_object(name)
+        spatial.set_obj_origin_to_polygon_center(obj, poly, polygon_is_si=False)
         spatial.translate_obj_to_z_location(obj, z)
         spatial.assign_ifcspace_class_to_obj(obj)
+
+        element = ifc.get_entity(obj)
+        spatial.set_space_representation_from_polygon(obj, element, poly, h, polygon_is_si=False)
 
 
 def toggle_space_visibility(ifc: type[tool.Ifc], spatial: type[tool.Spatial]) -> None:

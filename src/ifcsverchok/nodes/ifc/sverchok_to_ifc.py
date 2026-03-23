@@ -143,7 +143,7 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             for item in obj:
                 representation = ifcopenshell.api.geometry.add_mesh_representation(
                     self.file,
-                    should_run_listeners=False,
+                    should_run_listeners=False,  # ty:ignore[unknown-argument]
                     context=self.context,
                     vertices=[list(map(tuple, item[0]))],
                     edges=[list(map(tuple, item[1]))],

@@ -694,10 +694,14 @@ def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
-        new_box = ifcopenshell.api.geometry.add_representation(ifc_file, should_run_listeners=False, **new_settings)
+        new_box = ifcopenshell.api.geometry.add_representation(
+            ifc_file,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
+            **new_settings,
+        )
         ifcopenshell.api.geometry.assign_representation(
             ifc_file,
-            should_run_listeners=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
             product=product,
             representation=new_box,
         )

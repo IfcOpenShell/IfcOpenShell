@@ -603,6 +603,10 @@ class Drawing(bonsai.core.tool.Drawing):
         props = tool.Drawing.get_text_props(obj)
         for literal_props in props.literals:
             literal_data = bonsai.bim.helper.export_attributes(literal_props.attributes)
+            alignment = literal_props.align_vertical + "-" + literal_props.align_horizontal
+            if alignment == "middle-middle":
+                alignment = "center"
+            literal_data["BoxAlignment"] = alignment
             literals.append(literal_data)
         return literals
 
@@ -853,6 +857,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def edit_text_literals(cls, obj: bpy.types.Object, literal_attributes: dict) -> None:
+        if not literal_attributes:
+            return
         assert (element := tool.Ifc.get_entity(obj))
         assert (rep := cls.get_annotation_representation(element))
         to_remove = [i for i in rep.Items if i.is_a("IfcTextLiteral")]
@@ -1176,22 +1182,26 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
-        from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
-
         props = cls.get_text_props(obj)
         props.literals.clear()
 
         ifc_literals = cls.get_text_literal(obj, return_list=True)
         assert isinstance(ifc_literals, list)
+
+        if ifc_literals:
+            first_alignment = getattr(ifc_literals[0], "BoxAlignment", None) or "bottom-left"
+            if first_alignment == "center":
+                first_alignment = "middle-middle"
+            props.align_vertical, props.align_horizontal = first_alignment.split("-")
+
         for ifc_literal in ifc_literals:
             literal_props = props.literals.add()
             bonsai.bim.helper.import_attributes(ifc_literal, literal_props.attributes)
 
-            box_alignment_mask = [False] * 9
-            position_string = literal_props.attributes["BoxAlignment"].string_value
-            box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
-
-            literal_props.box_alignment = box_alignment_mask  # pyright: ignore[reportAttributeAccessIssue]
+            alignment = getattr(ifc_literal, "BoxAlignment", None) or "bottom-left"
+            if alignment == "center":
+                alignment = "middle-middle"
+            literal_props.align_vertical, literal_props.align_horizontal = alignment.split("-")
             literal_props.ifc_definition_id = ifc_literal.id()
 
         from bonsai.bim.module.drawing.data import DecoratorData
@@ -1279,6 +1289,12 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_representation(cls, element, context):
         return ifcopenshell.util.representation.get_representation(element, context)
+
+    @classmethod
+    def set_camera_name(cls, drawing: ifcopenshell.entity_instance, name: str) -> None:
+        camera = tool.Ifc.get_object(drawing)
+        if camera and camera.name != name:
+            camera.name = name
 
     @classmethod
     def set_drawing_collection_name(

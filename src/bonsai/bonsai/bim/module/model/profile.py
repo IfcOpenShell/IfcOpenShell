@@ -18,7 +18,7 @@
 
 import copy
 from math import atan2, degrees, pi, radians
-from typing import Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bpy
 import ifcopenshell
@@ -49,7 +49,7 @@ ProfileFrom2PointsReturn = Union[dict[str, Any], None]
 
 
 class DumbProfileGenerator:
-    def __init__(self, relating_type):
+    def __init__(self, relating_type: ifcopenshell.entity_instance):
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -201,7 +201,7 @@ class DumbProfileGenerator:
 
 
 class DumbProfileRegenerator:
-    def regenerate_from_profile_def(self, profile):
+    def regenerate_from_profile_def(self, profile: ifcopenshell.entity_instance) -> None:
         self.file = tool.Ifc.get()
         objs = []
         if not profile:
@@ -221,7 +221,7 @@ class DumbProfileRegenerator:
         for element in self.get_element_types_using_profile(profile):
             tool.Model.mark_thumbnail_for_update(element)
 
-    def regenerate_from_profile(self, usecase_path, ifc_file, settings):
+    def regenerate_from_profile(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         self.file = ifc_file
         objs = []
         profile = settings["profile"].Profile
@@ -233,7 +233,7 @@ class DumbProfileRegenerator:
                 objs.append(obj)
         DumbProfileRecalculator().recalculate(objs)
 
-    def get_elements_using_profile(self, profile):
+    def get_elements_using_profile(self, profile: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
         profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
@@ -252,7 +252,9 @@ class DumbProfileRegenerator:
                         results.extend(rel.RelatedObjects)
         return results
 
-    def get_element_types_using_profile(self, profile):
+    def get_element_types_using_profile(
+        self, profile: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         results = []
         profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
@@ -269,12 +271,18 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
-    join_type: bpy.props.StringProperty()
+    join_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[("-", "Unjoin", ""), ("L", "L", ""), ("V", "V", ""), ("T", "T", "")],
+        default="-",
+    )
+
+    if TYPE_CHECKING:
+        join_type: Literal["-", "L", "V", "T"]
 
     def _execute(self, context):
         selected_objs = context.selected_objects
         joiner = DumbProfileJoiner()
-        if not self.join_type:
+        if self.join_type == "-":
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
@@ -626,11 +634,15 @@ class DumbProfileJoiner:
             if connection1 == "ATEND":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[1] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
 
@@ -673,11 +685,15 @@ class DumbProfileJoiner:
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[0] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
 
@@ -721,7 +737,9 @@ class DumbProfileJoiner:
             if connection1 == "ATEND":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[1] = intersect
                 else:
                     plane = self.get_profile_plane(
@@ -729,7 +747,9 @@ class DumbProfileJoiner:
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
                     )
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
                     self.clippings.append(
@@ -742,7 +762,9 @@ class DumbProfileJoiner:
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[0] = intersect
                 else:
                     plane = self.get_profile_plane(
@@ -750,7 +772,9 @@ class DumbProfileJoiner:
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
                     )
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
                     self.clippings.append(

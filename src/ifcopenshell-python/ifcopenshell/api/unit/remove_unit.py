@@ -47,4 +47,5 @@ def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> 
             unit_assignment.Units = units
         else:
             file.remove(unit_assignment)
-    ifcopenshell.util.element.remove_deep(file, unit)
+    # TODO handle other possible unit inverses
+    ifcopenshell.util.element.remove_deep2(file, unit)

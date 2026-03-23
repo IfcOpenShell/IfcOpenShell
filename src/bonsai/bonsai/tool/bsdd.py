@@ -32,14 +32,28 @@ import bonsai.core.tool
 import bonsai.tool as tool
 
 if TYPE_CHECKING:
+    from bsdd.bsdd import ClassContractV1, ClassPropertyContractV1, PropertyContractV5
+
     from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary
 
 
 class Bsdd(bonsai.core.tool.Bsdd):
-    identifier_url = "https://identifier.buildingsmart.org"
+    default_identifier_url = "https://identifier.buildingsmart.org"
+    default_api_url = "https://api.bsdd.buildingsmart.org/api/"
     client = bsdd.Client()
-    bsdd_classes: dict[str, dict] = {}
-    bsdd_properties: dict[str, dict] = {}
+    bsdd_classes: dict[str, ClassContractV1] = {}
+    bsdd_properties: dict[str, ClassPropertyContractV1 | PropertyContractV5] = {}
+
+    @classmethod
+    def identifier_url(cls) -> str:
+        """Derives the identifier base URL from the current client baseurl.
+        Falls back to the standard bSDD identifier URL when using the default API."""
+        if cls.client.baseurl == cls.default_api_url:
+            return cls.default_identifier_url
+        from urllib.parse import urlparse
+
+        parsed = urlparse(cls.client.baseurl)
+        return f"{parsed.scheme}://{parsed.netloc}"
 
     @classmethod
     def get_bsdd_props(cls) -> BIMBSDDProperties:
@@ -255,7 +269,8 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def get_bsdd_property(cls, uri: str) -> dict:
         if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
-            bsdd_property = cls.client.get_property(uri, include_classes=True)
+            # Cache miss occurs for keyword search mode, for classes cache is prepopulated.
+            bsdd_property = cls.client.get_property(uri)
             cls.bsdd_properties[uri] = bsdd_property
         return bsdd_property
 
@@ -269,7 +284,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
         for obj in tool.Blender.get_selected_objects(include_active=True):
             if element := tool.Ifc.get_entity(obj):
                 for reference in ifcopenshell.util.classification.get_references(element):
-                    if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+                    if (uri := reference.Location) and uri.startswith(cls.identifier_url()):
                         classes.add((reference[1] or reference[2] or "Unnamed", uri))
 
         dictionary_uris = (
@@ -383,7 +398,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
     def get_applicable_psets(cls, element: ifcopenshell.entity_instance):
         uris = set()
         for reference in ifcopenshell.util.classification.get_references(element):
-            if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+            if (uri := reference.Location) and uri.startswith(cls.identifier_url()):
                 uris.add(uri)
         psets = set()
         for uri in uris:
@@ -399,7 +414,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
     def is_applicable(cls, pset_uri: str, element: ifcopenshell.entity_instance) -> bool:
         uris = set()
         for reference in ifcopenshell.util.classification.get_references(element):
-            if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+            if (uri := reference.Location) and uri.startswith(cls.identifier_url()):
                 uris.add(uri)
         class_uri, pset_name = pset_uri.rsplit("#", 1)
         return class_uri in uris

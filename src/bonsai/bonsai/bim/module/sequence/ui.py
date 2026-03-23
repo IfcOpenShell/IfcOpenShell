@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Optional
 
 import bpy
@@ -802,17 +804,16 @@ class BIM_UL_task_columns(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMWorkScheduleProperties",
-        item: "Attribute",
+        data: BIMWorkScheduleProperties,
+        item: Attribute,
         icon,
         active_data,
         active_propname,
     ):
-        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            if props.sort_column == item.name:
+            if data.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
@@ -901,8 +902,8 @@ class BIM_UL_tasks(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMTaskTreeProperties",
-        item: "Task",
+        data: BIMTaskTreeProperties,
+        item: Task,
         icon,
         active_data,
         active_propname,

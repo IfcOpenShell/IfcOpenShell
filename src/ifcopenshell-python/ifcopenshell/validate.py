@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import itertools
 import json
 import os
 import sys
@@ -60,7 +61,6 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import ifcopenshell
 import ifcopenshell.express.rule_executor
 import ifcopenshell.ifcopenshell_wrapper
-import ifcopenshell.ifcopenshell_wrapper as W
 
 if TYPE_CHECKING:
     import ifcopenshell.simple_spf
@@ -332,7 +332,7 @@ def log_internal_cpp_errors(
         lines = list(open(filename, "rb"))
         lengths = list(map(len, lines))
         cumsum = 0
-        cs = [cumsum := cumsum + x for x in lengths]
+        cs = list(itertools.accumulate(lengths))
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:
@@ -705,10 +705,10 @@ def validate_ifc_header(
             log_error(header_entity, name, index, STRING_TYPE, type(value).__name__)
 
     # Ignore header.file_schema as file won't load to IfcOpenShell with invalid file_schema.
-    file_description: W.FileDescription = header.file_description
+    file_description = header.file_description
     validate_attribute(file_description, "description", 0, aggregate=True)
     validate_attribute(file_description, "implementation_level", 1)
-    file_name: W.FileName = header.file_name
+    file_name = header.file_name
     validate_attribute(file_name, "name", 0)
     validate_attribute(file_name, "time_stamp", 1)
     validate_attribute(file_name, "author", 2, aggregate=True)

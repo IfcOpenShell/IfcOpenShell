@@ -5,10 +5,20 @@ but also archives them to '~/outputs'.
 """
 
 import os
+import platform
 import subprocess
 import zipfile
 from pathlib import Path
 from zipfile import ZipFile
+
+
+def is_arm64() -> bool:
+    arch = os.environ.get("TARGET_ARCH", "").lower()
+    if arch in ("arm64", "aarch64"):
+        return True
+    if arch in ("x64", "amd64", "x86_64"):
+        return False
+    return platform.machine().lower() in ("arm64", "aarch64")
 
 assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' directory."
 
@@ -23,7 +33,7 @@ else:
 OUTPUT_DIR = Path.home() / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 print("Output directory:", OUTPUT_DIR)
-ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-win64.zip"
+ZIP_TEMPLATE = f"{{package_name}}-v{VERSION}-{SHA}-{'win-arm64' if is_arm64() else 'win64'}.zip"
 
 
 def run(command: list[str]) -> None:
@@ -52,7 +62,7 @@ def build() -> None:
         os.environ["PYTHON_VERSION"] = python_version
         print(f"Building for Python {python_version}...")
         subprocess.run(
-            [str(REPO_WIN / "build-deps.cmd"), "vs2022-x64", "Release"],
+            [str(REPO_WIN / "build-deps.cmd"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"],
             check=True,
             text=True,
             input="y\n",
@@ -61,13 +71,13 @@ def build() -> None:
         run(
             [
                 str(REPO_WIN / "run-cmake.bat"),
-                "vs2022-x64",
+                "vs2022-ARM64" if is_arm64() else "vs2022-x64",
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
             ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)
-        run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-x64", "Release"])
+        run([str(REPO_WIN / "install-ifcopenshell.bat"), "vs2022-ARM64" if is_arm64() else "vs2022-x64", "Release"])
 
 
 def archive_executables() -> None:
@@ -104,7 +114,7 @@ def archive_python_packages() -> None:
     deps_path = REPO_PATH / "_deps"
     python_versions: list[str] = []
     for d in deps_path.iterdir():
-        if d.is_dir() and d.name.startswith("python."):
+        if d.is_dir() and (d.name.startswith("python.") or d.name.startswith("pythonarm64.")):
             python_version = d.name.partition(".")[2]
             python_path = d / "tools"
             archive_python_package(python_version, python_path)

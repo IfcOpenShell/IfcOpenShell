@@ -953,7 +953,7 @@ def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str
             return val(unit.Currency)
 
 
-def get_unit_name(ifc_file: ifcopenshell.entity_instance, unit: ifcopenshell.entity_instance) -> Union[str, None]:
+def get_unit_name(unit: ifcopenshell.entity_instance) -> Union[str, None]:
     if unit.is_a("IfcNamedUnit"):
         return val(unit.Name)
 

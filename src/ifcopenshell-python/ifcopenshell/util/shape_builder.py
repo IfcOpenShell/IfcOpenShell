@@ -40,7 +40,7 @@ if TYPE_CHECKING:
     # NOTE: mathutils is never used at runtime in ifcopenshell,
     # only for type checking to ensure methods are compatible with
     # Blender vectors.
-    from mathutils import Vector
+    from mathutils import Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     # Support both numpy arrays and python sequences as inputs.
     VectorType = Union[Sequence[float], Vector, np.ndarray]

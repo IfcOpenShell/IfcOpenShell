@@ -101,7 +101,7 @@ class NestDecorator:
         cls.is_installed = False
 
     def dotted_line_shader(self):
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty:ignore[too-many-positional-arguments]
         vert_out.smooth("FLOAT", "v_ArcLength")
 
         shader_info = gpu.types.GPUShaderCreateInfo()

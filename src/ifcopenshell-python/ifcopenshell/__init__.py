@@ -111,8 +111,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream, stream_entity
-    from .stream import stream as _stream
+    from .stream import stream, stream_entity  # ty: ignore[possibly-missing-import]
+    from .stream import stream as _stream  # ty: ignore[possibly-missing-import]
 except:
     pass
 
@@ -199,11 +199,13 @@ def open(
         for ty in bypass_types:
             f.bypass_type(ty)
         if mmap:
-            f.initialize(str(path.absolute()), mmap=mmap)
+            # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+            f.initialize(str(path.absolute()), mmap=mmap)  # type: ignore[unknown-argument]
         else:
             f.initialize(str(path.absolute()))
     elif mmap:
-        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)
+        # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # type: ignore[unknown-argument]
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
     return file(f)

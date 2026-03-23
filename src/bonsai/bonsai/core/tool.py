@@ -349,7 +349,10 @@ class Drawing:
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
+    def export_font_size(cls, obj): pass
+    def export_symbol(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
+    def export_wrap_length(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_reference_attributes(cls, reference, **attributes): pass
@@ -402,6 +405,7 @@ class Drawing:
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
+    def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
@@ -580,6 +584,7 @@ class Material:
     def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
+    def is_type_product(cls, element): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
@@ -619,7 +624,10 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
+    def recalculate_walls(cls, objs): pass
     def regenerate_array(cls, parent, data): pass
+    def regenerate_profile(cls, obj): pass
+    def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
@@ -991,14 +999,12 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
-    def get_named_obj_from_bmesh(cls, name, bmesh): pass
-    def get_named_obj_from_mesh(cls, name, mesh): pass
-    def get_named_mesh_from_bmesh(cls, name, bmesh): pass
-    def get_transformed_mesh_from_local_to_global(cls, mesh): pass
-    def edit_active_space_obj_from_mesh(cls, mesh): pass
-    def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
+    def get_2d_vertices_from_polygon(cls, poly, obj, polygon_is_si=True): pass
+    def set_extrusion_representation_from_polygon(cls, obj, element, poly, depth_ifc, polygon_is_si=True): pass
+    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True): pass
+    def set_covering_representation_from_polygon(cls, obj, poly, polygon_is_si=True): pass
+    def create_object(cls, name): pass
+    def set_obj_origin_to_polygon_center(cls, obj, poly, polygon_is_si=True): pass
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
@@ -1006,14 +1012,9 @@ class Spatial:
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
     def translate_obj_to_z_location(cls, obj, z): pass
-    def get_2d_vertices_from_obj(cls, obj): pass
-    def get_scaled_2d_vertices(cls, points): pass
-    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
-    def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
     def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
-    def regen_obj_representation(cls, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
     def toggle_hide_spaces(cls, spaces): pass
     def set_default_container(cls, container): pass
@@ -1118,6 +1119,8 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def record_material_usage_attributes(cls, element): pass
+    def restore_material_usage_attributes(cls, element, usage_attributes): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None): pass
 

@@ -26,7 +26,11 @@ from bpy.types import Panel, UIList
 import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.document.prop import Document, DocumentObject
+    from bonsai.bim.module.document.prop import (
+        BIMDocumentProperties,
+        Document,
+        DocumentObject,
+    )
 
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
@@ -217,7 +221,14 @@ class BIM_PT_object_documents(Panel):
 
 class BIM_UL_documents(UIList):
     def draw_item(
-        self, context, layout: bpy.types.UILayout, data, item: Document, icon, active_data, active_propname
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMDocumentProperties,
+        item: Document,
+        icon,
+        active_data,
+        active_propname,
     ) -> None:
         if item:
             row = layout.row(align=True)
@@ -264,17 +275,21 @@ class BIM_UL_documents(UIList):
 
 class BIM_UL_document_objects(UIList):
     def draw_item(
-        self, context, layout: bpy.types.UILayout, data, item: DocumentObject, icon, active_data, active_propname
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMDocumentProperties,
+        item: DocumentObject,
+        icon,
+        active_data,
+        active_propname,
     ) -> None:
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False, icon="OBJECT_DATA")
             row.operator("bim.select_object", text="", icon="RESTRICT_SELECT_OFF").obj_name = item.name
 
-            props = tool.Document.get_document_props()
-            if props.active_document:
-                document = props.active_document
-
+            if document := data.active_document:
                 op = row.operator("bim.unassign_document", text="", icon="X")
                 op.document = document.ifc_definition_id
                 op.obj = item.name

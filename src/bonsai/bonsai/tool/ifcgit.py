@@ -284,7 +284,7 @@ class IfcGit:
             if re.match("^Ifc", obj.name):
                 bpy.data.objects.remove(obj, do_unlink=True)
 
-        bpy.data.orphans_purge(do_recursive=True)
+        bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
 
         settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
         settings.should_setup_viewport_camera = False
