@@ -1038,7 +1038,7 @@ class ShapeBuilder:
     ) -> ifcopenshell.entity_instance:
         """
         :param plane: The IfcPlane representing the half space.
-        :param agreement_flag: False if +Z represents the void
+        :param agreement_flag: If False (default), the plane normal points toward the **removed** material (the void). The kept region is on the opposite side from the normal.
         :return: IfcHalfSpaceSolid
         """
         return self.file.createIfcHalfSpaceSolid(plane, AgreementFlag=agreement_flag)
