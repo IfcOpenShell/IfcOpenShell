@@ -729,6 +729,13 @@ class CreateDrawing(bpy.types.Operator):
                 no = tool.Drawing.get_extrusion_vector(element).normalized()
                 no = Vector([1.0, 0.0, 0.0])
             no *= sense_factor
+            # Detect non-conformant exports (e.g. Revit) where DirectionSense=POSITIVE
+            # but the geometry extrudes in the negative direction. If the mesh centroid
+            # in object local space is on the wrong side of the starting plane, flip no.
+            bb = [Vector(v) for v in obj.bound_box]
+            mesh_centroid = sum(bb, Vector((0.0, 0.0, 0.0))) / 8
+            if (mesh_centroid - co).dot(no) < 0:
+                no = -no
             last_i = len(layer_set.MaterialLayers) - 1
             for i, layer in enumerate(layer_set.MaterialLayers):
                 prev_co = co.copy()
