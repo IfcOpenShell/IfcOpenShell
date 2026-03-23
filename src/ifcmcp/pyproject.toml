@@ -9,6 +9,7 @@ authors = [
   { name="Bruno Postle", email="bruno@postle.net" },
 ]
 description = "MCP server for querying and editing IFC building models"
+readme = "README.md"
 keywords = ["IFC", "BIM", "MCP"]
 classifiers = [
     "Programming Language :: Python :: 3",
