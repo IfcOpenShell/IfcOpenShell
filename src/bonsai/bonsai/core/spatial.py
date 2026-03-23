@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
+import ifcopenshell.util.element
+
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
@@ -159,8 +161,87 @@ def delete_container(
     spatial: type[tool.Spatial],
     geometry: type[tool.Geometry],
     container: ifcopenshell.entity_instance,
+    root: Optional[type[tool.Root]] = None,
 ) -> None:
-    geometry.delete_ifc_object(ifc.get_object(container))
+    ifc_file = ifc.get()
+    decomposition = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+
+    spatial_subtree_ids = {container.id()}
+    spatial_subtree_queue = [container]
+    while spatial_subtree_queue:
+        current = spatial_subtree_queue.pop()
+        for rel in getattr(current, "IsDecomposedBy", []) or []:
+            for child in rel.RelatedObjects or []:
+                if not (
+                    child.is_a("IfcSpatialElement")
+                    or child.is_a("IfcSpatialStructureElement")
+                    or child.is_a("IfcExternalSpatialStructureElement")
+                ):
+                    continue
+                child_id = child.id()
+                if child_id in spatial_subtree_ids:
+                    continue
+                spatial_subtree_ids.add(child_id)
+                spatial_subtree_queue.append(child)
+
+    container_ids = set(spatial_subtree_ids)
+    for element in decomposition:
+        if element.id() in spatial_subtree_ids:
+            continue
+        element_container = ifcopenshell.util.element.get_container(element)
+        if element_container and element_container.id() in spatial_subtree_ids:
+            container_ids.add(element.id())
+
+    dependent_annotation_ids: set[int] = set()
+    for element_id in container_ids:
+        try:
+            element = ifc_file.by_id(element_id)
+        except RuntimeError:
+            continue
+        for inverse in ifc_file.get_inverse(element):
+            if not inverse.is_a("IfcRelAssignsToProduct") or inverse.RelatingProduct != element:
+                continue
+            for related_object in inverse.RelatedObjects or []:
+                if (
+                    related_object.is_a("IfcAnnotation")
+                    and related_object.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+                ):
+                    dependent_annotation_ids.add(related_object.id())
+
+    for annotation_id in sorted(dependent_annotation_ids):
+        try:
+            annotation = ifc_file.by_id(annotation_id)
+        except RuntimeError:
+            continue
+        if obj := ifc.get_object(annotation):
+            geometry.delete_ifc_object(
+                obj,
+                allow_auto_annotation_deletion=True,
+                suppress_spatial_import=True,
+            )
+        else:
+            ifc.run("root.remove_product", product=annotation)
+
+    for element_id in sorted(container_ids):
+        try:
+            element = ifc_file.by_id(element_id)
+        except RuntimeError:
+            continue
+        if obj := ifc.get_object(element):
+            geometry.delete_ifc_object(obj, suppress_spatial_import=True)
+        else:
+            ifc.run("root.remove_product", product=element)
+
+    if root:
+        default_container = root.get_default_container()
+        should_reassign_default = not default_container or default_container.id() in container_ids
+        if should_reassign_default:
+            if new_default_container := spatial.guess_default_container():
+                spatial.set_default_container(new_default_container)
+            else:
+                props = spatial.get_spatial_props()
+                props.default_container = 0
+
     spatial.import_spatial_decomposition()
 
 

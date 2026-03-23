@@ -385,7 +385,13 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
+        core.delete_container(
+            tool.Ifc,
+            tool.Spatial,
+            tool.Geometry,
+            container=tool.Ifc.get().by_id(self.container),
+            root=tool.Root,
+        )
 
 
 class ToggleContainerElement(bpy.types.Operator):

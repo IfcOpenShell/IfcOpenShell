@@ -427,7 +427,7 @@ class Geometry:
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass
     def delete_data(cls, data): pass
-    def delete_ifc_object(cls, obj): pass
+    def delete_ifc_object(cls, obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False): pass
     def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
