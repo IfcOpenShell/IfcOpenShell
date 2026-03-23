@@ -11,7 +11,7 @@ sessions.
 pip install ifcmcp
 ```
 
-Requires `ifcopenshell`, `ifcquery`, `ifcedit`, and `mcp`.
+Requires `ifcopenshell`, `ifcquery`, and `ifcedit`. The `mcp` package is an optional dependency needed to run the server; install it with `pip install ifcmcp[mcp]` or add `mcp` separately.
 
 ## Running the server
 
@@ -55,6 +55,17 @@ load model.ifc using ifc_load
 
 ### Session
 
+#### ifc_new
+
+Create a new empty IFC model in memory, replacing any currently loaded model.
+
+```
+ifc_new()
+ifc_new(schema="IFC4X3")
+```
+
+Default schema is `IFC4`.
+
 #### ifc_load
 
 Open an IFC file into memory.
@@ -62,6 +73,14 @@ Open an IFC file into memory.
 ```
 ifc_load(path="/path/to/model.ifc")
 -> "Loaded /path/to/model.ifc: schema IFC4, 1847 entities"
+```
+
+#### ifc_reset
+
+Unload the current model from memory, freeing all session state.
+
+```
+ifc_reset()
 ```
 
 #### ifc_save
@@ -141,6 +160,22 @@ ifc_relations(element_id=10, traverse="up")
 ```
 
 With `traverse="up"`, walks the hierarchy from element up to IfcProject.
+
+#### ifc_contexts
+
+List all geometric representation contexts and subcontexts in the loaded model.
+
+```
+ifc_contexts()
+```
+
+#### ifc_materials
+
+List all materials and material sets in the loaded model, with their assigned elements.
+
+```
+ifc_materials()
+```
 
 #### ifc_clash
 
@@ -224,6 +259,78 @@ Available rules: `IFC4QtoBaseQuantities`, `IFC4X3QtoBaseQuantities`.
 are quantified (default: all `IfcElement`).
 
 Returns `{"ok": true, "rule": "...", "elements_quantified": 42}`.
+
+### Drawing and rendering tools
+
+#### ifc_plot
+
+Generate a 2D technical drawing of the loaded model and return it as an inline image.
+
+```
+ifc_plot()
+ifc_plot(selector="IfcWall", view="floorplan", scale=0.01, output_path="/tmp/plan.svg")
+ifc_plot(element_ids=[10, 11], view="floorplan")
+```
+
+Parameters:
+
+- `selector` -- ifcopenshell selector to restrict plotted elements
+- `element_ids` -- step IDs of elements to highlight; others are faded
+- `view` -- `"floorplan"` (default), `"elevation"`, `"section"`, or `"auto"`
+- `width_mm`, `height_mm` -- paper size in mm (default: 297 x 420)
+- `scale` -- model-to-paper ratio (default: 0.01 = 1:100)
+- `png_width`, `png_height` -- raster output size in pixels (default: 1024 x 1024)
+- `output_path` -- optional path to also save to disk (`.svg` for vector, otherwise PNG)
+
+Returns an inline PNG the LLM can inspect. Requires `ifcopenshell.draw`.
+
+#### ifc_render
+
+Render the loaded model to a 3D PNG image.
+
+```
+ifc_render()
+ifc_render(selector="IfcWall", view="iso", output_path="/tmp/model.png")
+ifc_render(element_ids=[10, 11], view="south")
+```
+
+Parameters:
+
+- `selector` -- ifcopenshell selector to restrict rendered elements
+- `element_ids` -- step IDs of elements to highlight; others are shown translucent
+- `view` -- `"iso"` (default), `"top"`, `"south"`, `"north"`, `"east"`, or `"west"`
+- `output_path` -- optional path to save the PNG to disk
+
+Returns an inline PNG. Requires `pyvista` and the IfcOpenShell C++ geometry bindings.
+
+### Shape builder tools
+
+#### ifc_shape_list
+
+List all available `ShapeBuilder` methods with brief descriptions.
+
+```
+ifc_shape_list()
+```
+
+#### ifc_shape_docs
+
+Show full documentation for a specific `ShapeBuilder` method.
+
+```
+ifc_shape_docs(method="extrude")
+ifc_shape_docs(method="create_ellipse")
+```
+
+#### ifc_shape
+
+Execute a `ShapeBuilder` method on the loaded model.
+
+```
+ifc_shape(method="extrude", params='{"profile": "42", "magnitude": 3.0}')
+```
+
+`params` is a JSON string; entity references are resolved by step ID (same coercion as `ifc_edit`).
 
 ### Edit discovery tools
 
