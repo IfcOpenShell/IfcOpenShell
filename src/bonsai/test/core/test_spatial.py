@@ -124,493 +124,230 @@ class TestSelectSimilarContainer:
 
 
 class TestDeleteContainer:
-    def test_run_cascades_container_and_dependent_annotations(self, monkeypatch):
-        class FakeElement:
-            def __init__(self, element_id, ifc_class, object_type=None):
-                self._id = element_id
-                self._ifc_class = ifc_class
-                self.ObjectType = object_type
-                self.IsDecomposedBy = []
+    SPATIAL_TYPES = {"IfcProject", "IfcSite", "IfcBuilding", "IfcBuildingStorey", "IfcSpace"}
 
-            def id(self):
-                return self._id
+    class _Element:
+        def __init__(self, element_id, ifc_class, object_type=None):
+            self._id = element_id
+            self._ifc_class = ifc_class
+            self.ObjectType = object_type
+            self.IsDecomposedBy = []
 
-            def is_a(self, ifc_class):
-                if self._ifc_class == ifc_class:
-                    return True
-                spatial_classes = {
-                    "IfcSpatialElement",
-                    "IfcSpatialStructureElement",
-                    "IfcExternalSpatialStructureElement",
-                }
-                if ifc_class in spatial_classes and self._ifc_class in {
-                    "IfcProject",
-                    "IfcSite",
-                    "IfcBuilding",
-                    "IfcBuildingStorey",
-                    "IfcSpace",
-                }:
-                    return True
-                return False
+        def id(self):
+            return self._id
 
-        class FakeRelAssignsToProduct:
-            def __init__(self, relating_product, related_objects):
-                self.RelatingProduct = relating_product
-                self.RelatedObjects = tuple(related_objects)
+        def is_a(self, ifc_class):
+            if self._ifc_class == ifc_class:
+                return True
+            if ifc_class in {"IfcSpatialElement", "IfcSpatialStructureElement", "IfcExternalSpatialStructureElement"}:
+                return self._ifc_class in TestDeleteContainer.SPATIAL_TYPES
+            return False
 
-            def is_a(self, ifc_class):
-                return ifc_class == "IfcRelAssignsToProduct"
+    class _RelAssignsToProduct:
+        def __init__(self, relating_product, related_objects):
+            self.RelatingProduct = relating_product
+            self.RelatedObjects = tuple(related_objects)
 
-        class FakeRelAggregates:
-            def __init__(self, related_objects):
-                self.RelatedObjects = tuple(related_objects)
+        def is_a(self, ifc_class):
+            return ifc_class == "IfcRelAssignsToProduct"
 
-        class FakeIfcFile:
-            def __init__(self, elements, inverse_map):
-                self.elements = elements
-                self.inverse_map = inverse_map
+    class _RelAggregates:
+        def __init__(self, related_objects):
+            self.RelatedObjects = tuple(related_objects)
 
-            def by_id(self, element_id):
-                return self.elements[element_id]
+    class _IfcFile:
+        def __init__(self, elements, inverse_map=None):
+            self.elements = elements
+            self.inverse_map = inverse_map or {}
 
-            def get_inverse(self, element):
-                return self.inverse_map.get(element.id(), [])
+        def by_id(self, element_id):
+            return self.elements[element_id]
 
-        container = FakeElement(1, "IfcBuilding")
-        storey = FakeElement(2, "IfcBuildingStorey")
-        wall = FakeElement(3, "IfcWall")
-        section_level = FakeElement(4, "IfcAnnotation", object_type="SECTION_LEVEL")
-        container.IsDecomposedBy = [FakeRelAggregates([storey])]
+        def get_inverse(self, element):
+            return self.inverse_map.get(element.id(), [])
 
-        fake_file = FakeIfcFile(
-            {1: container, 2: storey, 3: wall, 4: section_level},
-            {2: [FakeRelAssignsToProduct(storey, [section_level])]},
-        )
+    @staticmethod
+    def _run_delete(
+        monkeypatch,
+        *,
+        container,
+        ifc_file,
+        decomposition,
+        container_lookup=None,
+        missing_obj_ids=None,
+        default_container=None,
+        guessed_default=None,
+        include_root=False,
+        props_default_container=0,
+    ):
+        container_lookup = container_lookup or {}
+        missing_obj_ids = missing_obj_ids or set()
+        events = {"deleted_objects": [], "run_calls": [], "imported": [], "set_default_calls": []}
 
         monkeypatch.setattr(
-            subject.ifcopenshell.util.element,
-            "get_decomposition",
-            lambda element, is_recursive=True: {storey, wall},
+            subject.ifcopenshell.util.element, "get_decomposition", lambda element, is_recursive=True: decomposition
         )
         monkeypatch.setattr(
-            subject.ifcopenshell.util.element,
-            "get_container",
-            lambda element: storey if element == wall else None,
+            subject.ifcopenshell.util.element, "get_container", lambda element: container_lookup.get(element)
         )
-
-        deleted_objects = []
-        run_calls = []
-        imported = []
 
         class FakeIfc:
             @staticmethod
             def get():
-                return fake_file
+                return ifc_file
 
             @staticmethod
             def get_object(element):
-                return None if element.id() == 3 else f"obj-{element.id()}"
+                return None if element.id() in missing_obj_ids else f"obj-{element.id()}"
 
             @staticmethod
             def run(usecase, **kwargs):
-                run_calls.append((usecase, kwargs))
+                events["run_calls"].append((usecase, kwargs))
 
         class FakeGeometry:
             @staticmethod
-            def delete_ifc_object(
-                obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False
-            ):
-                deleted_objects.append((obj, allow_auto_annotation_deletion, suppress_spatial_import))
+            def delete_ifc_object(obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False):
+                events["deleted_objects"].append((obj, allow_auto_annotation_deletion, suppress_spatial_import))
+
+        class FakeSpatialProps:
+            default_container = props_default_container
 
         class FakeSpatial:
             @staticmethod
             def import_spatial_decomposition():
-                imported.append(True)
+                events["imported"].append(True)
 
-        subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container)
+            @staticmethod
+            def guess_default_container():
+                return guessed_default
 
-        assert deleted_objects == [
-            ("obj-4", True, True),  # dependent SECTION_LEVEL annotation
-            ("obj-1", False, True),  # container
-            ("obj-2", False, True),  # decomposed storey
+            @staticmethod
+            def set_default_container(new_container):
+                events["set_default_calls"].append(new_container)
+
+            @staticmethod
+            def get_spatial_props():
+                return FakeSpatialProps
+
+        if include_root:
+            class FakeRoot:
+                @staticmethod
+                def get_default_container():
+                    return default_container
+
+            subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container, root=FakeRoot)
+        else:
+            subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container)
+
+        return events, FakeSpatialProps
+
+    def test_run_cascades_container_and_dependent_annotations(self, monkeypatch):
+        container = self._Element(1, "IfcBuilding")
+        storey = self._Element(2, "IfcBuildingStorey")
+        wall = self._Element(3, "IfcWall")
+        section_level = self._Element(4, "IfcAnnotation", object_type="SECTION_LEVEL")
+        container.IsDecomposedBy = [self._RelAggregates([storey])]
+
+        ifc_file = self._IfcFile(
+            {1: container, 2: storey, 3: wall, 4: section_level},
+            {2: [self._RelAssignsToProduct(storey, [section_level])]},
+        )
+        events, _ = self._run_delete(
+            monkeypatch,
+            container=container,
+            ifc_file=ifc_file,
+            decomposition={storey, wall},
+            container_lookup={wall: storey},
+            missing_obj_ids={3},
+        )
+
+        assert events["deleted_objects"] == [
+            ("obj-4", True, True),
+            ("obj-1", False, True),
+            ("obj-2", False, True),
         ]
-        assert run_calls == [("root.remove_product", {"product": wall})]
-        assert imported == [True]
+        assert events["run_calls"] == [("root.remove_product", {"product": wall})]
+        assert events["imported"] == [True]
 
     def test_does_not_delete_elements_outside_spatial_subtree(self, monkeypatch):
-        class FakeElement:
-            def __init__(self, element_id, ifc_class):
-                self._id = element_id
-                self._ifc_class = ifc_class
-                self.IsDecomposedBy = []
+        container = self._Element(1, "IfcBuilding")
+        own_storey = self._Element(2, "IfcBuildingStorey")
+        other_storey = self._Element(3, "IfcBuildingStorey")
+        own_wall = self._Element(4, "IfcWall")
+        outside_wall = self._Element(5, "IfcWall")
+        container.IsDecomposedBy = [self._RelAggregates([own_storey])]
 
-            def id(self):
-                return self._id
-
-            def is_a(self, ifc_class):
-                if self._ifc_class == ifc_class:
-                    return True
-                spatial_classes = {
-                    "IfcSpatialElement",
-                    "IfcSpatialStructureElement",
-                    "IfcExternalSpatialStructureElement",
-                }
-                if ifc_class in spatial_classes and self._ifc_class in {"IfcBuilding", "IfcBuildingStorey"}:
-                    return True
-                return False
-
-        class FakeRelAggregates:
-            def __init__(self, related_objects):
-                self.RelatedObjects = tuple(related_objects)
-
-        class FakeIfcFile:
-            def __init__(self, elements):
-                self.elements = elements
-
-            def by_id(self, element_id):
-                return self.elements[element_id]
-
-            def get_inverse(self, element):
-                return []
-
-        container = FakeElement(1, "IfcBuilding")
-        own_storey = FakeElement(2, "IfcBuildingStorey")
-        other_storey = FakeElement(3, "IfcBuildingStorey")
-        own_wall = FakeElement(4, "IfcWall")
-        outside_wall = FakeElement(5, "IfcWall")
-        container.IsDecomposedBy = [FakeRelAggregates([own_storey])]
-
-        fake_file = FakeIfcFile({1: container, 2: own_storey, 3: other_storey, 4: own_wall, 5: outside_wall})
-
-        monkeypatch.setattr(
-            subject.ifcopenshell.util.element,
-            "get_decomposition",
-            lambda element, is_recursive=True: {own_storey, own_wall, outside_wall},
-        )
-        monkeypatch.setattr(
-            subject.ifcopenshell.util.element,
-            "get_container",
-            lambda element: own_storey if element == own_wall else (other_storey if element == outside_wall else None),
+        ifc_file = self._IfcFile({1: container, 2: own_storey, 3: other_storey, 4: own_wall, 5: outside_wall})
+        events, _ = self._run_delete(
+            monkeypatch,
+            container=container,
+            ifc_file=ifc_file,
+            decomposition={own_storey, own_wall, outside_wall},
+            container_lookup={own_wall: own_storey, outside_wall: other_storey},
         )
 
-        deleted_objects = []
-        run_calls = []
-        imported = []
-
-        class FakeIfc:
-            @staticmethod
-            def get():
-                return fake_file
-
-            @staticmethod
-            def get_object(element):
-                return f"obj-{element.id()}"
-
-            @staticmethod
-            def run(usecase, **kwargs):
-                run_calls.append((usecase, kwargs))
-
-        class FakeGeometry:
-            @staticmethod
-            def delete_ifc_object(
-                obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False
-            ):
-                deleted_objects.append((obj, allow_auto_annotation_deletion, suppress_spatial_import))
-
-        class FakeSpatial:
-            @staticmethod
-            def import_spatial_decomposition():
-                imported.append(True)
-
-        subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container)
-
-        assert deleted_objects == [
-            ("obj-1", False, True),  # container
-            ("obj-2", False, True),  # own storey
-            ("obj-4", False, True),  # own wall
+        assert events["deleted_objects"] == [
+            ("obj-1", False, True),
+            ("obj-2", False, True),
+            ("obj-4", False, True),
         ]
-        assert run_calls == []
-        assert imported == [True]
+        assert events["run_calls"] == []
+        assert events["imported"] == [True]
 
     def test_reassigns_default_container_after_cascade_if_deleted(self, monkeypatch):
-        class FakeElement:
-            def __init__(self, element_id, ifc_class):
-                self._id = element_id
-                self._ifc_class = ifc_class
-                self.IsDecomposedBy = []
+        container = self._Element(1, "IfcBuilding")
+        storey = self._Element(2, "IfcBuildingStorey")
+        replacement_storey = self._Element(3, "IfcBuildingStorey")
+        container.IsDecomposedBy = [self._RelAggregates([storey])]
+        ifc_file = self._IfcFile({1: container, 2: storey, 3: replacement_storey})
 
-            def id(self):
-                return self._id
-
-            def is_a(self, ifc_class):
-                if self._ifc_class == ifc_class:
-                    return True
-                if ifc_class in {"IfcSpatialElement", "IfcSpatialStructureElement"} and self._ifc_class in {
-                    "IfcBuilding",
-                    "IfcBuildingStorey",
-                }:
-                    return True
-                return False
-
-        class FakeRelAggregates:
-            def __init__(self, related_objects):
-                self.RelatedObjects = tuple(related_objects)
-
-        class FakeIfcFile:
-            def __init__(self, elements):
-                self.elements = elements
-
-            def by_id(self, element_id):
-                return self.elements[element_id]
-
-            def get_inverse(self, element):
-                return []
-
-        container = FakeElement(1, "IfcBuilding")
-        storey = FakeElement(2, "IfcBuildingStorey")
-        replacement_storey = FakeElement(3, "IfcBuildingStorey")
-        container.IsDecomposedBy = [FakeRelAggregates([storey])]
-
-        fake_file = FakeIfcFile({1: container, 2: storey, 3: replacement_storey})
-
-        monkeypatch.setattr(
-            subject.ifcopenshell.util.element, "get_decomposition", lambda element, is_recursive=True: {storey}
+        events, _ = self._run_delete(
+            monkeypatch,
+            container=container,
+            ifc_file=ifc_file,
+            decomposition={storey},
+            include_root=True,
+            default_container=storey,
+            guessed_default=replacement_storey,
+            props_default_container=2,
         )
-        monkeypatch.setattr(subject.ifcopenshell.util.element, "get_container", lambda element: None)
-
-        class FakeIfc:
-            @staticmethod
-            def get():
-                return fake_file
-
-            @staticmethod
-            def get_object(element):
-                return f"obj-{element.id()}"
-
-            @staticmethod
-            def run(usecase, **kwargs):
-                return None
-
-        class FakeGeometry:
-            @staticmethod
-            def delete_ifc_object(
-                obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False
-            ):
-                return None
-
-        imported = []
-        set_default_calls = []
-
-        class FakeSpatialProps:
-            default_container = 2
-
-        class FakeSpatial:
-            @staticmethod
-            def get_spatial_props():
-                return FakeSpatialProps
-
-            @staticmethod
-            def guess_default_container():
-                return replacement_storey
-
-            @staticmethod
-            def set_default_container(container):
-                set_default_calls.append(container)
-
-            @staticmethod
-            def import_spatial_decomposition():
-                imported.append(True)
-
-        class FakeRoot:
-            @staticmethod
-            def get_default_container():
-                return storey
-
-        subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container, root=FakeRoot)
-
-        assert set_default_calls == [replacement_storey]
-        assert imported == [True]
+        assert events["set_default_calls"] == [replacement_storey]
+        assert events["imported"] == [True]
 
     def test_keeps_default_container_if_not_deleted(self, monkeypatch):
-        class FakeElement:
-            def __init__(self, element_id, ifc_class):
-                self._id = element_id
-                self._ifc_class = ifc_class
-                self.IsDecomposedBy = []
+        container = self._Element(1, "IfcBuilding")
+        deleted_storey = self._Element(2, "IfcBuildingStorey")
+        surviving_storey = self._Element(3, "IfcBuildingStorey")
+        container.IsDecomposedBy = [self._RelAggregates([deleted_storey])]
+        ifc_file = self._IfcFile({1: container, 2: deleted_storey, 3: surviving_storey})
 
-            def id(self):
-                return self._id
-
-            def is_a(self, ifc_class):
-                if self._ifc_class == ifc_class:
-                    return True
-                if ifc_class in {"IfcSpatialElement", "IfcSpatialStructureElement"} and self._ifc_class in {
-                    "IfcBuilding",
-                    "IfcBuildingStorey",
-                }:
-                    return True
-                return False
-
-        class FakeRelAggregates:
-            def __init__(self, related_objects):
-                self.RelatedObjects = tuple(related_objects)
-
-        class FakeIfcFile:
-            def __init__(self, elements):
-                self.elements = elements
-
-            def by_id(self, element_id):
-                return self.elements[element_id]
-
-            def get_inverse(self, element):
-                return []
-
-        container = FakeElement(1, "IfcBuilding")
-        deleted_storey = FakeElement(2, "IfcBuildingStorey")
-        surviving_storey = FakeElement(3, "IfcBuildingStorey")
-        container.IsDecomposedBy = [FakeRelAggregates([deleted_storey])]
-
-        fake_file = FakeIfcFile({1: container, 2: deleted_storey, 3: surviving_storey})
-
-        monkeypatch.setattr(
-            subject.ifcopenshell.util.element, "get_decomposition", lambda element, is_recursive=True: {deleted_storey}
+        events, _ = self._run_delete(
+            monkeypatch,
+            container=container,
+            ifc_file=ifc_file,
+            decomposition={deleted_storey},
+            include_root=True,
+            default_container=surviving_storey,
+            guessed_default=deleted_storey,
+            props_default_container=3,
         )
-        monkeypatch.setattr(subject.ifcopenshell.util.element, "get_container", lambda element: None)
-
-        class FakeIfc:
-            @staticmethod
-            def get():
-                return fake_file
-
-            @staticmethod
-            def get_object(element):
-                return f"obj-{element.id()}"
-
-            @staticmethod
-            def run(usecase, **kwargs):
-                return None
-
-        class FakeGeometry:
-            @staticmethod
-            def delete_ifc_object(
-                obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False
-            ):
-                return None
-
-        set_default_calls = []
-
-        class FakeSpatial:
-            @staticmethod
-            def guess_default_container():
-                return deleted_storey
-
-            @staticmethod
-            def set_default_container(container):
-                set_default_calls.append(container)
-
-            @staticmethod
-            def import_spatial_decomposition():
-                return None
-
-        class FakeRoot:
-            @staticmethod
-            def get_default_container():
-                return surviving_storey
-
-        subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container, root=FakeRoot)
-
-        assert set_default_calls == []
+        assert events["set_default_calls"] == []
 
     def test_clears_default_container_if_deleted_and_no_replacement(self, monkeypatch):
-        class FakeElement:
-            def __init__(self, element_id, ifc_class):
-                self._id = element_id
-                self._ifc_class = ifc_class
-                self.IsDecomposedBy = []
+        container = self._Element(1, "IfcBuilding")
+        storey = self._Element(2, "IfcBuildingStorey")
+        container.IsDecomposedBy = [self._RelAggregates([storey])]
+        ifc_file = self._IfcFile({1: container, 2: storey})
 
-            def id(self):
-                return self._id
-
-            def is_a(self, ifc_class):
-                if self._ifc_class == ifc_class:
-                    return True
-                if ifc_class in {"IfcSpatialElement", "IfcSpatialStructureElement"} and self._ifc_class in {
-                    "IfcBuilding",
-                    "IfcBuildingStorey",
-                }:
-                    return True
-                return False
-
-        class FakeRelAggregates:
-            def __init__(self, related_objects):
-                self.RelatedObjects = tuple(related_objects)
-
-        class FakeIfcFile:
-            def __init__(self, elements):
-                self.elements = elements
-
-            def by_id(self, element_id):
-                return self.elements[element_id]
-
-            def get_inverse(self, element):
-                return []
-
-        container = FakeElement(1, "IfcBuilding")
-        storey = FakeElement(2, "IfcBuildingStorey")
-        container.IsDecomposedBy = [FakeRelAggregates([storey])]
-
-        fake_file = FakeIfcFile({1: container, 2: storey})
-
-        monkeypatch.setattr(
-            subject.ifcopenshell.util.element, "get_decomposition", lambda element, is_recursive=True: {storey}
+        events, props = self._run_delete(
+            monkeypatch,
+            container=container,
+            ifc_file=ifc_file,
+            decomposition={storey},
+            include_root=True,
+            default_container=storey,
+            guessed_default=None,
+            props_default_container=2,
         )
-        monkeypatch.setattr(subject.ifcopenshell.util.element, "get_container", lambda element: None)
-
-        class FakeIfc:
-            @staticmethod
-            def get():
-                return fake_file
-
-            @staticmethod
-            def get_object(element):
-                return f"obj-{element.id()}"
-
-            @staticmethod
-            def run(usecase, **kwargs):
-                return None
-
-        class FakeGeometry:
-            @staticmethod
-            def delete_ifc_object(
-                obj, allow_auto_annotation_deletion=False, suppress_spatial_import=False
-            ):
-                return None
-
-        class FakeSpatialProps:
-            default_container = 2
-
-        class FakeSpatial:
-            @staticmethod
-            def get_spatial_props():
-                return FakeSpatialProps
-
-            @staticmethod
-            def guess_default_container():
-                return None
-
-            @staticmethod
-            def set_default_container(container):
-                raise AssertionError("set_default_container should not be called when no replacement exists")
-
-            @staticmethod
-            def import_spatial_decomposition():
-                return None
-
-        class FakeRoot:
-            @staticmethod
-            def get_default_container():
-                return storey
-
-        subject.delete_container(FakeIfc, FakeSpatial, FakeGeometry, container=container, root=FakeRoot)
-
-        assert FakeSpatialProps.default_container == 0
+        assert events["set_default_calls"] == []
+        assert props.default_container == 0
