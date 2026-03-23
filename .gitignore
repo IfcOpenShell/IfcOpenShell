@@ -113,3 +113,4 @@ dev_environment.bat
 
 src/ifcopenshell-python/ifcopenshell/express/*.exp
 src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
+src/ifcquery/build/
