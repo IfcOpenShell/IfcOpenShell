@@ -626,7 +626,8 @@ def sync_references(
 
     for reference_element in potential_reference_elements:
         if not drawing_tool.get_drawing_reference_annotation(drawing, reference_element):
-            if annotation := drawing_tool.generate_reference_annotation(drawing, reference_element, context):
+            annotation = drawing_tool.generate_reference_annotation(drawing, reference_element, context)
+            if annotation:
                 ifc.run("drawing.assign_product", relating_product=reference_element, related_object=annotation)
                 ifc.run("group.assign_group", group=group, products=[annotation])
                 collector.assign(ifc.get_object(annotation))

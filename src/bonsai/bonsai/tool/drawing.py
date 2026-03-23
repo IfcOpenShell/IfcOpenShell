@@ -1958,14 +1958,19 @@ class Drawing(bonsai.core.tool.Drawing):
         geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
         verts = ifcopenshell.util.shape.get_vertices(geometry)
         grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
-        m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+        grid_obj = tool.Ifc.get_object(grid)
+        if grid_obj:
+            m = np.array(grid_obj.matrix_world)
+        else:
+            m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
         im = camera.matrix_world.inverted()
         v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
             bounds = helper.ortho_view_frame(camera.data)
-            if not (points := helper.clip_segment(bounds, [v1, v2])):
+            points = helper.clip_segment(bounds, [v1, v2])
+            if not points:
                 return
         elif target_view in ("ELEVATION_VIEW", "SECTION_VIEW"):
             bounds = helper.ortho_view_frame(camera.data)
