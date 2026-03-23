@@ -1953,18 +1953,23 @@ class Drawing(bonsai.core.tool.Drawing):
         if camera.data.type != "ORTHO":
             return
 
-        settings = ifcopenshell.geom.settings()
-        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
-        verts = ifcopenshell.util.shape.get_vertices(geometry)
         grid = (axis.PartOfU or axis.PartOfV or axis.PartOfW)[0]
-        grid_obj = tool.Ifc.get_object(grid)
-        if grid_obj:
-            m = np.array(grid_obj.matrix_world)
+        axis_obj = tool.Ifc.get_object(axis)
+        if axis_obj and axis_obj.data and len(axis_obj.data.vertices) >= 2:
+            m = np.array(axis_obj.matrix_world)
+            verts = [np.array(v.co) for v in axis_obj.data.vertices[:2]]
         else:
-            m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+            settings = ifcopenshell.geom.settings()
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            geometry = ifcopenshell.geom.create_shape(settings, axis.AxisCurve)
+            verts = list(ifcopenshell.util.shape.get_vertices(geometry)[:2])
+            grid_obj = tool.Ifc.get_object(grid)
+            if grid_obj:
+                m = np.array(grid_obj.matrix_world)
+            else:
+                m = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
         im = camera.matrix_world.inverted()
-        v1, v2 = [im @ Vector((m @ np.append(v, 1.0))[:3]) for v in verts[:2]]
+        v1, v2 = [im @ Vector((m @ np.append(v[:3], 1.0))[:3]) for v in verts]
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
@@ -2188,6 +2193,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def sync_object_placement(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         blender_matrix = np.array(obj.matrix_world)
         element = tool.Ifc.get_entity(obj)
+        is_moved = tool.Ifc.is_moved(obj)
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
@@ -2204,7 +2210,8 @@ class Drawing(bonsai.core.tool.Drawing):
         grid_obj = tool.Ifc.get_object(grid)
         if grid_obj:
             cls.sync_object_placement(grid_obj)
-            if grid_obj.matrix_world != obj.matrix_world:
+            matrices_differ = grid_obj.matrix_world != obj.matrix_world
+            if matrices_differ:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
 

@@ -134,7 +134,8 @@ class IfcExporter:
         grid_obj = tool.Ifc.get_object(grid)
         if grid_obj:
             self.sync_object_placement(grid_obj)
-            if grid_obj.matrix_world != obj.matrix_world:
+            matrices_differ = grid_obj.matrix_world != obj.matrix_world
+            if matrices_differ:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
 

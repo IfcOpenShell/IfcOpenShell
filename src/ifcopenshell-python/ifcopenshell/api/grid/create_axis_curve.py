@@ -78,7 +78,8 @@ def create_axis_curve(
         points /= unit_scale
 
     grid = next(i for i in file.get_inverse(grid_axis) if i.is_a("IfcGrid"))
-    grid_matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement))
+    grid_placement = ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement)
+    grid_matrix_i = np.linalg.inv(grid_placement)
     p1, p2 = ifc_safe_vector_type(np_apply_matrix(points, grid_matrix_i))
     grid_axis.AxisCurve = file.create_entity(
         "IfcPolyline",
