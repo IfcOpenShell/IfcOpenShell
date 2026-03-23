@@ -26,6 +26,8 @@ geometry extrusions).
 from .. import wrap_usecases
 from .add_axis_representation import add_axis_representation
 from .add_boolean import add_boolean
+from .clip_solid import clip_solid
+from .clip_solid_bounded import clip_solid_bounded
 from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
 from .add_mesh_representation import add_mesh_representation
@@ -50,6 +52,7 @@ from .disconnect_element import disconnect_element
 from .disconnect_path import disconnect_path
 from .edit_object_placement import edit_object_placement
 from .map_representation import map_representation
+from .copy_representation import copy_representation
 from .regenerate_wall_representation import regenerate_wall_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation
@@ -61,6 +64,9 @@ wrap_usecases(__path__, __name__)
 __all__ = [
     "add_axis_representation",
     "add_boolean",
+    "clip_solid",
+    "clip_solid_bounded",
+    "copy_representation",
     "add_door_representation",
     "add_footprint_representation",
     "add_mesh_representation",
