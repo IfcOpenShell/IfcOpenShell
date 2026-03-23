@@ -248,7 +248,8 @@ class DumbSlabPlaner:
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        if tool.Model.get_usage_type(element) != "LAYER3":
+        usage_type = tool.Model.get_usage_type(element)
+        if usage_type != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
         ifc_file = tool.Ifc.get()
@@ -304,11 +305,15 @@ class DumbSlabPlaner:
                 ifc_position = extrusion.Position
                 position = offset_direction * perpendicular_offset
                 material = ifcopenshell.util.element.get_material(element)
-                if material:
-                    if material.is_a("IfcMaterialLayerSetUsage"):
-                        material.OffsetFromReferenceLine = position.z
                 if ifc_position:
-                    ifc_position.Location.Coordinates = position
+                    orig = Vector(ifc_position.Location.Coordinates)
+                    layer_normal = offset_direction.normalized()
+                    perp = orig - orig.dot(layer_normal) * layer_normal
+                    new_coords = perp + layer_normal * perpendicular_offset
+                    ifc_position.Location.Coordinates = new_coords
+                    if material:
+                        if material.is_a("IfcMaterialLayerSetUsage"):
+                            material.OffsetFromReferenceLine = new_coords.z
                 else:
                     tool.Model.add_extrusion_position(extrusion, position)
 
