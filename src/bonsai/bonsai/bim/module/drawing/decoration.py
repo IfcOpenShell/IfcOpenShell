@@ -1903,16 +1903,18 @@ class CutDecorator:
         # in object local space is on the wrong side of the starting plane, flip no.
         bb = [Vector(v) for v in obj.bound_box]
         mesh_centroid = sum(bb, Vector((0.0, 0.0, 0.0))) / 8
+        layers = list(layer_set.MaterialLayers)
         if (mesh_centroid - co).dot(no) < 0:
             no = -no
-        last_i = len(layer_set.MaterialLayers) - 1
+            layers = list(reversed(layers))
+        last_i = len(layers) - 1
 
         vert_map = {}
         verts = []
         edges = []
         j = 0
 
-        for i, layer in enumerate(layer_set.MaterialLayers):
+        for i, layer in enumerate(layers):
             prev_co = co.copy()
             co += no * layer.LayerThickness * self.unit_scale
             if i != last_i:
