@@ -235,6 +235,7 @@ if(USD_SUPPORT)
     find_package(USD REQUIRED)
     set(USD_LIBRARIES pxr::USD)
     add_definitions(-DWITH_USD)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)
 endif(USD_SUPPORT)
 
 set(ROCKSDB_LIBRARIES "")
