@@ -7212,526 +7212,657 @@ const IfcParse::select_type& Ifc4x3_tc1::IfcWarpingStiffnessSelect::Class() { re
 // Function implementations for IfcAbsorbedDoseMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAbsorbedDoseMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[0]); }
 void Ifc4x3_tc1::IfcAbsorbedDoseMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAbsorbedDoseMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAccelerationMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAccelerationMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1]); }
 void Ifc4x3_tc1::IfcAccelerationMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAccelerationMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAmountOfSubstanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAmountOfSubstanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[42]); }
 void Ifc4x3_tc1::IfcAmountOfSubstanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAmountOfSubstanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAngularVelocityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAngularVelocityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[45]); }
 void Ifc4x3_tc1::IfcAngularVelocityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAngularVelocityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcArcIndex
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcArcIndex::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[57]); }
 void Ifc4x3_tc1::IfcArcIndex::initialize(std::vector< int > /*[3:3]*/ v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcArcIndex::operator std::vector< int > /*[3:3]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAreaDensityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAreaDensityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[58]); }
 void Ifc4x3_tc1::IfcAreaDensityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAreaDensityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcAreaMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcAreaMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[59]); }
 void Ifc4x3_tc1::IfcAreaMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcAreaMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcBinary
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcBinary::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[80]); }
 void Ifc4x3_tc1::IfcBinary::initialize(boost::dynamic_bitset<> v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcBinary::operator boost::dynamic_bitset<>() const { return get_attribute_value(0); }
 
 // Function implementations for IfcBoolean
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcBoolean::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[86]); }
 void Ifc4x3_tc1::IfcBoolean::initialize(bool v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcBoolean::operator bool() const { return get_attribute_value(0); }
 
 // Function implementations for IfcBoxAlignment
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcBoxAlignment::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[101]); }
+void Ifc4x3_tc1::IfcBoxAlignment::initialize(std::string v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcBoxAlignment::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcCardinalPointReference
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcCardinalPointReference::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[145]); }
 void Ifc4x3_tc1::IfcCardinalPointReference::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcCardinalPointReference::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcComplexNumber
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcComplexNumber::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[188]); }
 void Ifc4x3_tc1::IfcComplexNumber::initialize(std::vector< double > /*[1:2]*/ v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcComplexNumber::operator std::vector< double > /*[1:2]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcCompoundPlaneAngleMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcCompoundPlaneAngleMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[196]); }
 void Ifc4x3_tc1::IfcCompoundPlaneAngleMeasure::initialize(std::vector< int > /*[3:4]*/ v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcCompoundPlaneAngleMeasure::operator std::vector< int > /*[3:4]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcContextDependentMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcContextDependentMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[226]); }
 void Ifc4x3_tc1::IfcContextDependentMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcContextDependentMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcCountMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcCountMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[252]); }
 void Ifc4x3_tc1::IfcCountMeasure::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcCountMeasure::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcCurvatureMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcCurvatureMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[270]); }
 void Ifc4x3_tc1::IfcCurvatureMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcCurvatureMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDate
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDate::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[290]); }
 void Ifc4x3_tc1::IfcDate::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDate::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDateTime
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDateTime::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[291]); }
 void Ifc4x3_tc1::IfcDateTime::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDateTime::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDayInMonthNumber
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDayInMonthNumber::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[292]); }
 void Ifc4x3_tc1::IfcDayInMonthNumber::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDayInMonthNumber::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDayInWeekNumber
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDayInWeekNumber::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[293]); }
 void Ifc4x3_tc1::IfcDayInWeekNumber::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDayInWeekNumber::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDescriptiveMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDescriptiveMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[302]); }
 void Ifc4x3_tc1::IfcDescriptiveMeasure::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDescriptiveMeasure::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDimensionCount
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDimensionCount::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[304]); }
 void Ifc4x3_tc1::IfcDimensionCount::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDimensionCount::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDoseEquivalentMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDoseEquivalentMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[343]); }
 void Ifc4x3_tc1::IfcDoseEquivalentMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDoseEquivalentMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDuration
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDuration::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[355]); }
 void Ifc4x3_tc1::IfcDuration::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDuration::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcDynamicViscosityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcDynamicViscosityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[356]); }
 void Ifc4x3_tc1::IfcDynamicViscosityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcDynamicViscosityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricCapacitanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricCapacitanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[368]); }
 void Ifc4x3_tc1::IfcElectricCapacitanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricCapacitanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricChargeMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricChargeMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[369]); }
 void Ifc4x3_tc1::IfcElectricChargeMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricChargeMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricConductanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricConductanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[370]); }
 void Ifc4x3_tc1::IfcElectricConductanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricConductanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricCurrentMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricCurrentMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[371]); }
 void Ifc4x3_tc1::IfcElectricCurrentMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricCurrentMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricResistanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricResistanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[387]); }
 void Ifc4x3_tc1::IfcElectricResistanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricResistanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcElectricVoltageMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcElectricVoltageMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[391]); }
 void Ifc4x3_tc1::IfcElectricVoltageMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcElectricVoltageMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcEnergyMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcEnergyMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[406]); }
 void Ifc4x3_tc1::IfcEnergyMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcEnergyMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcFontStyle
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcFontStyle::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[487]); }
 void Ifc4x3_tc1::IfcFontStyle::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcFontStyle::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcFontVariant
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcFontVariant::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[488]); }
 void Ifc4x3_tc1::IfcFontVariant::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcFontVariant::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcFontWeight
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcFontWeight::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[489]); }
 void Ifc4x3_tc1::IfcFontWeight::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcFontWeight::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcForceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcForceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[493]); }
 void Ifc4x3_tc1::IfcForceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcForceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcFrequencyMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcFrequencyMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[494]); }
 void Ifc4x3_tc1::IfcFrequencyMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcFrequencyMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcGloballyUniqueId
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcGloballyUniqueId::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[516]); }
 void Ifc4x3_tc1::IfcGloballyUniqueId::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcGloballyUniqueId::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcHeatFluxDensityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcHeatFluxDensityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[530]); }
 void Ifc4x3_tc1::IfcHeatFluxDensityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcHeatFluxDensityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcHeatingValueMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcHeatingValueMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[531]); }
 void Ifc4x3_tc1::IfcHeatingValueMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcHeatingValueMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIdentifier
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcIdentifier::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[535]); }
 void Ifc4x3_tc1::IfcIdentifier::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcIdentifier::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIlluminanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcIlluminanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[536]); }
 void Ifc4x3_tc1::IfcIlluminanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcIlluminanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcInductanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcInductanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[548]); }
 void Ifc4x3_tc1::IfcInductanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcInductanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcInteger
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcInteger::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[549]); }
 void Ifc4x3_tc1::IfcInteger::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcInteger::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIntegerCountRateMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcIntegerCountRateMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[550]); }
 void Ifc4x3_tc1::IfcIntegerCountRateMeasure::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcIntegerCountRateMeasure::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIonConcentrationMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcIonConcentrationMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[559]); }
 void Ifc4x3_tc1::IfcIonConcentrationMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcIonConcentrationMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcIsothermalMoistureCapacityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcIsothermalMoistureCapacityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[563]); }
 void Ifc4x3_tc1::IfcIsothermalMoistureCapacityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcIsothermalMoistureCapacityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcKinematicViscosityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcKinematicViscosityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[570]); }
 void Ifc4x3_tc1::IfcKinematicViscosityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcKinematicViscosityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLabel
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLabel::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[572]); }
 void Ifc4x3_tc1::IfcLabel::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLabel::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLanguageId
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLanguageId::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[580]); }
+void Ifc4x3_tc1::IfcLanguageId::initialize(std::string v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcLanguageId::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLengthMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLengthMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[583]); }
 void Ifc4x3_tc1::IfcLengthMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLengthMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLineIndex
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLineIndex::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[609]); }
 void Ifc4x3_tc1::IfcLineIndex::initialize(std::vector< int > /*[2:?]*/ v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLineIndex::operator std::vector< int > /*[2:?]*/() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLinearForceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLinearForceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[603]); }
 void Ifc4x3_tc1::IfcLinearForceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLinearForceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLinearMomentMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLinearMomentMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[604]); }
 void Ifc4x3_tc1::IfcLinearMomentMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLinearMomentMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLinearStiffnessMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLinearStiffnessMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[607]); }
 void Ifc4x3_tc1::IfcLinearStiffnessMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLinearStiffnessMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLinearVelocityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLinearVelocityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[608]); }
 void Ifc4x3_tc1::IfcLinearVelocityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLinearVelocityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLogical
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLogical::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[615]); }
 void Ifc4x3_tc1::IfcLogical::initialize(boost::logic::tribool v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLogical::operator boost::logic::tribool() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLuminousFluxMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLuminousFluxMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[619]); }
 void Ifc4x3_tc1::IfcLuminousFluxMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLuminousFluxMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLuminousIntensityDistributionMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLuminousIntensityDistributionMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[620]); }
 void Ifc4x3_tc1::IfcLuminousIntensityDistributionMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLuminousIntensityDistributionMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcLuminousIntensityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcLuminousIntensityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[621]); }
 void Ifc4x3_tc1::IfcLuminousIntensityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcLuminousIntensityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMagneticFluxDensityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMagneticFluxDensityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[622]); }
 void Ifc4x3_tc1::IfcMagneticFluxDensityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMagneticFluxDensityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMagneticFluxMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMagneticFluxMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[623]); }
 void Ifc4x3_tc1::IfcMagneticFluxMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMagneticFluxMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMassDensityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMassDensityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[631]); }
 void Ifc4x3_tc1::IfcMassDensityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMassDensityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMassFlowRateMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMassFlowRateMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[632]); }
 void Ifc4x3_tc1::IfcMassFlowRateMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMassFlowRateMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMassMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMassMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[633]); }
 void Ifc4x3_tc1::IfcMassMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMassMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMassPerLengthMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMassPerLengthMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[634]); }
 void Ifc4x3_tc1::IfcMassPerLengthMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMassPerLengthMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcModulusOfElasticityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcModulusOfElasticityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[672]); }
 void Ifc4x3_tc1::IfcModulusOfElasticityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcModulusOfElasticityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcModulusOfLinearSubgradeReactionMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcModulusOfLinearSubgradeReactionMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[673]); }
 void Ifc4x3_tc1::IfcModulusOfLinearSubgradeReactionMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcModulusOfLinearSubgradeReactionMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcModulusOfRotationalSubgradeReactionMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcModulusOfRotationalSubgradeReactionMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[674]); }
 void Ifc4x3_tc1::IfcModulusOfRotationalSubgradeReactionMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcModulusOfRotationalSubgradeReactionMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcModulusOfSubgradeReactionMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcModulusOfSubgradeReactionMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[676]); }
 void Ifc4x3_tc1::IfcModulusOfSubgradeReactionMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcModulusOfSubgradeReactionMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMoistureDiffusivityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMoistureDiffusivityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[679]); }
 void Ifc4x3_tc1::IfcMoistureDiffusivityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMoistureDiffusivityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMolecularWeightMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMolecularWeightMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[680]); }
 void Ifc4x3_tc1::IfcMolecularWeightMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMolecularWeightMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMomentOfInertiaMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMomentOfInertiaMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[681]); }
 void Ifc4x3_tc1::IfcMomentOfInertiaMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMomentOfInertiaMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMonetaryMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMonetaryMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[682]); }
 void Ifc4x3_tc1::IfcMonetaryMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMonetaryMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcMonthInYearNumber
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcMonthInYearNumber::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[684]); }
 void Ifc4x3_tc1::IfcMonthInYearNumber::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcMonthInYearNumber::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcNonNegativeLengthMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcNonNegativeLengthMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[695]); }
+void Ifc4x3_tc1::IfcNonNegativeLengthMeasure::initialize(double v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcNonNegativeLengthMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcNormalisedRatioMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcNormalisedRatioMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[696]); }
+void Ifc4x3_tc1::IfcNormalisedRatioMeasure::initialize(double v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcNormalisedRatioMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcNumericMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcNumericMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[697]); }
 void Ifc4x3_tc1::IfcNumericMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcNumericMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPHMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPHMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[737]); }
 void Ifc4x3_tc1::IfcPHMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPHMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcParameterValue
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcParameterValue::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[723]); }
 void Ifc4x3_tc1::IfcParameterValue::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcParameterValue::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPlanarForceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPlanarForceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[756]); }
 void Ifc4x3_tc1::IfcPlanarForceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPlanarForceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPlaneAngleMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPlaneAngleMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[758]); }
 void Ifc4x3_tc1::IfcPlaneAngleMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPlaneAngleMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPositiveInteger
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPositiveInteger::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[774]); }
+void Ifc4x3_tc1::IfcPositiveInteger::initialize(int v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcPositiveInteger::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPositiveLengthMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPositiveLengthMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[775]); }
+void Ifc4x3_tc1::IfcPositiveLengthMeasure::initialize(double v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcPositiveLengthMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPositivePlaneAngleMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPositivePlaneAngleMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[776]); }
+void Ifc4x3_tc1::IfcPositivePlaneAngleMeasure::initialize(double v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcPositivePlaneAngleMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPositiveRatioMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPositiveRatioMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[777]); }
+void Ifc4x3_tc1::IfcPositiveRatioMeasure::initialize(double v) { set_attribute_value(0, (v)); }
 Ifc4x3_tc1::IfcPositiveRatioMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPowerMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPowerMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[779]); }
 void Ifc4x3_tc1::IfcPowerMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPowerMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPresentableText
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPresentableText::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[787]); }
 void Ifc4x3_tc1::IfcPresentableText::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPresentableText::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPressureMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPressureMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[792]); }
 void Ifc4x3_tc1::IfcPressureMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcPressureMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcPropertySetDefinitionSet
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcPropertySetDefinitionSet::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[826]); }
 void Ifc4x3_tc1::IfcPropertySetDefinitionSet::initialize(std::vector< ::Ifc4x3_tc1::IfcPropertySetDefinition > v) { set_attribute_value(0, cast_vector<express::Base>(v)); }
+Ifc4x3_tc1::IfcPropertySetDefinitionSet::operator std::vector< ::Ifc4x3_tc1::IfcPropertySetDefinition >() const { std::vector<express::Base> es = get_attribute_value(0); return cast_vector<::Ifc4x3_tc1::IfcPropertySetDefinition>(es); }
 
 // Function implementations for IfcRadioActivityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcRadioActivityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[850]); }
 void Ifc4x3_tc1::IfcRadioActivityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcRadioActivityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcRatioMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcRatioMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[867]); }
 void Ifc4x3_tc1::IfcRatioMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcRatioMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcReal
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcReal::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[870]); }
 void Ifc4x3_tc1::IfcReal::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcReal::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcRotationalFrequencyMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcRotationalFrequencyMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[972]); }
 void Ifc4x3_tc1::IfcRotationalFrequencyMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcRotationalFrequencyMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcRotationalMassMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcRotationalMassMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[973]); }
 void Ifc4x3_tc1::IfcRotationalMassMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcRotationalMassMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcRotationalStiffnessMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcRotationalStiffnessMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[974]); }
 void Ifc4x3_tc1::IfcRotationalStiffnessMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcRotationalStiffnessMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSectionModulusMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSectionModulusMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[988]); }
 void Ifc4x3_tc1::IfcSectionModulusMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSectionModulusMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSectionalAreaIntegralMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSectionalAreaIntegralMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[983]); }
 void Ifc4x3_tc1::IfcSectionalAreaIntegralMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSectionalAreaIntegralMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcShearModulusMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcShearModulusMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1006]); }
 void Ifc4x3_tc1::IfcShearModulusMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcShearModulusMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSolidAngleMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSolidAngleMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1032]); }
 void Ifc4x3_tc1::IfcSolidAngleMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSolidAngleMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSoundPowerLevelMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSoundPowerLevelMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1035]); }
 void Ifc4x3_tc1::IfcSoundPowerLevelMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSoundPowerLevelMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSoundPowerMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSoundPowerMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1036]); }
 void Ifc4x3_tc1::IfcSoundPowerMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSoundPowerMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSoundPressureLevelMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSoundPressureLevelMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1037]); }
 void Ifc4x3_tc1::IfcSoundPressureLevelMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSoundPressureLevelMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSoundPressureMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSoundPressureMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1038]); }
 void Ifc4x3_tc1::IfcSoundPressureMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSoundPressureMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSpecificHeatCapacityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSpecificHeatCapacityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1054]); }
 void Ifc4x3_tc1::IfcSpecificHeatCapacityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSpecificHeatCapacityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSpecularExponent
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSpecularExponent::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1055]); }
 void Ifc4x3_tc1::IfcSpecularExponent::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSpecularExponent::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcSpecularRoughness
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcSpecularRoughness::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1057]); }
 void Ifc4x3_tc1::IfcSpecularRoughness::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcSpecularRoughness::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcStrippedOptional
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcStrippedOptional::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1071]); }
 void Ifc4x3_tc1::IfcStrippedOptional::initialize(bool v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcStrippedOptional::operator bool() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTemperatureGradientMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTemperatureGradientMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1163]); }
 void Ifc4x3_tc1::IfcTemperatureGradientMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTemperatureGradientMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTemperatureRateOfChangeMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTemperatureRateOfChangeMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1164]); }
 void Ifc4x3_tc1::IfcTemperatureRateOfChangeMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTemperatureRateOfChangeMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcText
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcText::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1176]); }
 void Ifc4x3_tc1::IfcText::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcText::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTextAlignment
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTextAlignment::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1177]); }
 void Ifc4x3_tc1::IfcTextAlignment::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTextAlignment::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTextDecoration
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTextDecoration::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1178]); }
 void Ifc4x3_tc1::IfcTextDecoration::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTextDecoration::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTextFontName
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTextFontName::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1179]); }
 void Ifc4x3_tc1::IfcTextFontName::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTextFontName::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTextTransformation
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTextTransformation::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1188]); }
 void Ifc4x3_tc1::IfcTextTransformation::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTextTransformation::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermalAdmittanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermalAdmittanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1196]); }
 void Ifc4x3_tc1::IfcThermalAdmittanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermalAdmittanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermalConductivityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermalConductivityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1197]); }
 void Ifc4x3_tc1::IfcThermalConductivityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermalConductivityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermalExpansionCoefficientMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermalExpansionCoefficientMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1198]); }
 void Ifc4x3_tc1::IfcThermalExpansionCoefficientMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermalExpansionCoefficientMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermalResistanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermalResistanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1199]); }
 void Ifc4x3_tc1::IfcThermalResistanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermalResistanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermalTransmittanceMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermalTransmittanceMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1200]); }
 void Ifc4x3_tc1::IfcThermalTransmittanceMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermalTransmittanceMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcThermodynamicTemperatureMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcThermodynamicTemperatureMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1201]); }
 void Ifc4x3_tc1::IfcThermodynamicTemperatureMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcThermodynamicTemperatureMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTime
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTime::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1203]); }
 void Ifc4x3_tc1::IfcTime::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTime::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTimeMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTimeMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1204]); }
 void Ifc4x3_tc1::IfcTimeMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTimeMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTimeStamp
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTimeStamp::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1210]); }
 void Ifc4x3_tc1::IfcTimeStamp::initialize(int v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTimeStamp::operator int() const { return get_attribute_value(0); }
 
 // Function implementations for IfcTorqueMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcTorqueMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1214]); }
 void Ifc4x3_tc1::IfcTorqueMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcTorqueMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcURIReference
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcURIReference::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1251]); }
 void Ifc4x3_tc1::IfcURIReference::initialize(std::string v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcURIReference::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for IfcVaporPermeabilityMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcVaporPermeabilityMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1257]); }
 void Ifc4x3_tc1::IfcVaporPermeabilityMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcVaporPermeabilityMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcVolumeMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcVolumeMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1277]); }
 void Ifc4x3_tc1::IfcVolumeMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcVolumeMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcVolumetricFlowRateMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcVolumetricFlowRateMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1278]); }
 void Ifc4x3_tc1::IfcVolumetricFlowRateMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcVolumetricFlowRateMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcWarpingConstantMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcWarpingConstantMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1283]); }
 void Ifc4x3_tc1::IfcWarpingConstantMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcWarpingConstantMeasure::operator double() const { return get_attribute_value(0); }
 
 // Function implementations for IfcWarpingMomentMeasure
 const IfcParse::type_declaration& Ifc4x3_tc1::IfcWarpingMomentMeasure::Class() { return *((IfcParse::type_declaration*)IFC4X3_TC1_types[1284]); }
 void Ifc4x3_tc1::IfcWarpingMomentMeasure::initialize(double v) { set_attribute_value(0, (v)); }
+Ifc4x3_tc1::IfcWarpingMomentMeasure::operator double() const { return get_attribute_value(0); }
 
 
 // Function implementations for IfcActionRequest
@@ -8250,8 +8381,8 @@ int Ifc4x3_tc1::IfcBSplineSurface::UDegree() const {  int v = get_attribute_valu
 void Ifc4x3_tc1::IfcBSplineSurface::setUDegree(const int& v) { set_attribute_value(0, v);if constexpr (false)unset_attribute_value(0); }
 int Ifc4x3_tc1::IfcBSplineSurface::VDegree() const {  int v = get_attribute_value(1); return v; }
 void Ifc4x3_tc1::IfcBSplineSurface::setVDegree(const int& v) { set_attribute_value(1, v);if constexpr (false)unset_attribute_value(1); }
-std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > Ifc4x3_tc1::IfcBSplineSurface::ControlPointsList() const {  std::vector<std::vector<express::Base>> es = get_attribute_value(2); return cast_vector_vector<::Ifc4x3_tc1::IfcCartesianPoint>(es); }
-void Ifc4x3_tc1::IfcBSplineSurface::setControlPointsList(const std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > >& v) { set_attribute_value(2, cast_vector_vector<express::Base>(v));if constexpr (false)unset_attribute_value(2); }
+std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > > Ifc4x3_tc1::IfcBSplineSurface::ControlPointsList() const {  std::vector<std::vector<express::Base>> es = get_attribute_value(2); return cast_vector<::Ifc4x3_tc1::IfcCartesianPoint>(es); }
+void Ifc4x3_tc1::IfcBSplineSurface::setControlPointsList(const std::vector< std::vector< ::Ifc4x3_tc1::IfcCartesianPoint > >& v) { set_attribute_value(2, cast_vector<express::Base>(v));if constexpr (false)unset_attribute_value(2); }
 ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value Ifc4x3_tc1::IfcBSplineSurface::SurfaceForm() const {  return ::Ifc4x3_tc1::IfcBSplineSurfaceForm::FromString(get_attribute_value(3)); }
 void Ifc4x3_tc1::IfcBSplineSurface::setSurfaceForm(const ::Ifc4x3_tc1::IfcBSplineSurfaceForm::Value& v) { set_attribute_value(3, EnumerationReference(&::Ifc4x3_tc1::IfcBSplineSurfaceForm::Class(), (size_t) v));if constexpr (false)unset_attribute_value(3); }
 boost::logic::tribool Ifc4x3_tc1::IfcBSplineSurface::UClosed() const {  boost::logic::tribool v = get_attribute_value(4); return v; }

@@ -18,10 +18,12 @@ extern declaration* HEADER_SECTION_SCHEMA_types[5];
 // Function implementations for schema_name
 const IfcParse::type_declaration& Header_section_schema::schema_name::Class() { return *((IfcParse::type_declaration*)HEADER_SECTION_SCHEMA_types[3]); }
 void Header_section_schema::schema_name::initialize(std::string v) { set_attribute_value(0, (v)); }
+Header_section_schema::schema_name::operator std::string() const { return get_attribute_value(0); }
 
 // Function implementations for time_stamp_text
 const IfcParse::type_declaration& Header_section_schema::time_stamp_text::Class() { return *((IfcParse::type_declaration*)HEADER_SECTION_SCHEMA_types[4]); }
 void Header_section_schema::time_stamp_text::initialize(std::string v) { set_attribute_value(0, (v)); }
+Header_section_schema::time_stamp_text::operator std::string() const { return get_attribute_value(0); }
 
 
 // Function implementations for file_description
