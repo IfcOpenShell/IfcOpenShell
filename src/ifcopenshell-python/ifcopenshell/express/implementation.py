@@ -371,7 +371,7 @@ class Implementation(codegen.Base):
                             #     ("const std::weak_ptr<InstanceData>& e",),
                             #     "",
                             # ),
-                            ("", "", initializer, "", ("%s v" % type_str,), ("set_attribute_value(0, %s(v));" % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else ""))) if mapping.simple_type_parent(class_name) is None else \
+                            ("", "", initializer, "", ("%s v" % type_str,), ("set_attribute_value(0, %s(v));" % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else ""))),
                             # ("v", "", constructor, "", ("%s v" % type_str,), ""),
                             ("", "", templates.cast_function, type_str, (), simpletype_impl_cast),
                         ),

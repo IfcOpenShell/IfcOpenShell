@@ -264,7 +264,7 @@ get_attr_stmt = "%(null_check)s %(non_optional_type)s v = get_attribute_value(%(
 get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(get_attribute_value(%(index)d));"
 get_attr_stmt_entity = "%(null_check)s return ((express::Base)(get_attribute_value(%(index)d))).as<%(non_optional_type_no_pointer)s>();"
 get_attr_stmt_array = "%(null_check)s std::vector<express::Base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
-get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector_vector<%(list_instance_type)s>(es);"
+get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 
 get_inverse = "return cast_vector<%(type)s>(file()->getInverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
 
@@ -279,7 +279,7 @@ set_attr_stmt_array = (
     "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
 set_attr_stmt_nested_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+    "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
 
 constructor_stmt = (
