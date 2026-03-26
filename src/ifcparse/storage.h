@@ -134,37 +134,71 @@ namespace IfcParse {
     class IfcSpfLexer;
     class FileReader;
 
-    enum TokenType {
-        Token_NONE,
-        Token_STRING,
-        Token_IDENTIFIER,
-        Token_OPERATOR,
-        Token_ENUMERATION,
-        Token_KEYWORD,
-        Token_INT,
-        Token_BOOL,
-        Token_FLOAT,
-        Token_BINARY
-    };
-
     struct Token {
-        IfcSpfLexer* lexer; //TODO: remove it from here
-        size_t startPos;
+        enum TokenType {
+            Token_NONE,
+            Token_STRING,
+            Token_IDENTIFIER,
+            Token_OPERATOR,
+            Token_ENUMERATION,
+            Token_KEYWORD,
+            Token_INT,
+            Token_BOOL,
+            Token_FLOAT,
+            Token_BINARY
+        };
+
+        size_t start_pos;
         TokenType type;
+
         union {
             char value_char;     //types: OPERATOR
             int value_int;       //types: INT, IDENTIFIER
             double value_double; //types: FLOAT
+            const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by IfcSpfLexer::string_pool_
         };
 
-        Token() : lexer(0),
-            startPos(0),
-            type(Token_NONE) {
-        }
-        Token(IfcSpfLexer* _lexer, size_t _startPos, TokenType _type)
-            : lexer(_lexer),
-            startPos(_startPos),
-            type(_type) {
+        Token() : start_pos(0),
+                  type(Token_NONE) {}
+        
+        Token(size_t start, TokenType ty, const std::string& str)
+            : start_pos(start), type(ty), value_string(&str) {}
+
+        Token(size_t start, TokenType ty, int i)
+            : start_pos(start), type(ty), value_int(i) {}
+
+        Token(size_t start, double d)
+            : start_pos(start), type(Token_FLOAT), value_double(d) {}
+
+        Token(size_t start, char op)
+            : start_pos(start), type(Token_OPERATOR), value_char(op) {}
+        
+        Token(size_t start, TokenType ty, char c)
+            : start_pos(start), type(ty), value_char(c) {}
+
+        bool is_string();
+        bool is_identifier();
+        bool is_operator();
+        bool is_operator(char character);
+        bool is_enumeration();
+        bool is_keyword();
+        bool is_int();
+        bool is_bool();
+        bool is_logical();
+        bool is_float();
+        bool is_binary();
+
+        int as_int();
+        unsigned as_identifier();
+        bool as_bool();
+        boost::logic::tribool as_logical();
+        double as_float();
+        const std::string& as_string();
+        boost::dynamic_bitset<> as_binary();
+        std::string to_string();
+
+        operator bool() const {
+            return type != Token_NONE;
         }
     };
 
@@ -275,8 +309,6 @@ namespace IfcParse {
             void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
             void unregister_inverse(unsigned, const IfcParse::entity* from_entity, const express::Base&, int attribute_index);
 
-            // @todo is this still used
-            std::shared_ptr<InstanceData> read(unsigned int index);
             void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;

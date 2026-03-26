@@ -45,7 +45,7 @@ namespace {
 
 void IfcSpfHeader::readSemicolon() {
     if (storage_ != nullptr) {
-        if (!TokenFunc::isOperator(storage_->tokens->Next(), ';')) {
+        if (!storage_->tokens->Next().is_operator(';')) {
             throw IfcException(std::string("Expected ;"));
         }
     } else {
@@ -55,7 +55,7 @@ void IfcSpfHeader::readSemicolon() {
 
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
     if (storage_ != nullptr) {
-        if (TokenFunc::asStringRef(storage_->tokens->Next()) != term) {
+        if (storage_->tokens->Next().as_string() != term) {
             throw IfcException(std::string("Expected " + term));
         }
         if (trail == TRAILING_SEMICOLON) {

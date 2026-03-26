@@ -54,9 +54,6 @@ class IFC_PARSE_API IfcCharacterDecoder {
     static char substitution_character;
     IfcCharacterDecoder(IfcParse::FileReader* stream);
     ~IfcCharacterDecoder();
-    // Only advances the underlying token stream read pointer
-    // to the next token.
-    void skip();
     // Gets a decoded string representation at the token stream
     // read pointer and advances the underlying token stream.
     operator std::string();

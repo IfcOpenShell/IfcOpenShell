@@ -57,32 +57,33 @@ namespace {
 
     template <typename Fn>
     void dispatch_token(std::optional<size_t> instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
-        if (t.type == IfcParse::Token_BINARY) {
-            fn(IfcParse::TokenFunc::asBinary(t));
-        } else if (IfcParse::TokenFunc::isBool(t)) {
-            fn(IfcParse::TokenFunc::asBool(t));
-        } else if (IfcParse::TokenFunc::isLogical(t)) {
-            fn(IfcParse::TokenFunc::asLogical(t));
-        } else if (t.type == IfcParse::Token_ENUMERATION) {
-            auto& s = IfcParse::TokenFunc::asStringRef(t);
+        if (t.is_binary()) {
+            fn(t.as_binary());
+        } else if (t.is_bool()) {
+            fn(t.as_bool());
+        } else if (t.is_logical()) {
+            fn(t.as_logical());
+        } else if (t.is_enumeration()) {
+            const auto& s = t.as_string();
             if (decl && decl->as_enumeration_type()) {
                 try {
                     fn(EnumerationReference(decl->as_enumeration_type(), decl->as_enumeration_type()->lookup_enum_offset(s)));
                 } catch (IfcParse::IfcException& e) {
-                    Logger::Error("An enumeration literal '" + s + "' is not valid for type '" + decl->name() + "' at offset " + std::to_string(t.startPos));
+                    Logger::Error("An enumeration literal '" + s + "' is not valid for type '" + decl->name() + "' at offset " + std::to_string(t.start_pos));
                 }
             } else {
-                Logger::Error("An enumeration literal '" + s + "' is not expected at attribute index '" + std::to_string(attribute_id) + "' at offset " + std::to_string(t.startPos));
+                Logger::Error("An enumeration literal '" + s + "' is not expected at attribute index '" + std::to_string(attribute_id) + "' at offset " + std::to_string(t.start_pos));
             }
-        } else if (t.type == IfcParse::Token_FLOAT) {
-            fn(IfcParse::TokenFunc::asFloat(t));
-        } else if (t.type == IfcParse::Token_IDENTIFIER) {
-            fn(IfcParse::reference_or_simple_type{ IfcParse::InstanceReference{ IfcParse::TokenFunc::asIdentifier(t), t.startPos } });
-        } else if (t.type == IfcParse::Token_INT) {
-            fn(IfcParse::TokenFunc::asInt(t));
-        } else if (t.type == IfcParse::Token_STRING) {
-            fn(IfcParse::TokenFunc::asStringRef(t));
-        } else if (t.type == IfcParse::Token_OPERATOR && t.value_char == '*') {
+        } else if (t.is_int()) {
+            // @nb make sure is_int() comes before is_float()
+            fn(t.as_int());
+        } else if (t.is_float()) {
+            fn(t.as_float());
+        } else if (t.is_identifier()) {
+            fn(IfcParse::reference_or_simple_type{IfcParse::InstanceReference{(int) t.as_identifier(), t.start_pos}});
+        } else if (t.is_string()) {
+            fn(t.as_string());
+        } else if (t.is_operator('*')) {
             // This is only in place for the validator
             fn(Derived{});
         }
@@ -681,22 +682,22 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<I
 
     unsigned current_id = 0;
     while (good_ && !lexer_->stream->eof() && !current_id) {
-        if (token_stream_[0].type == IfcParse::Token_IDENTIFIER &&
-            token_stream_[1].type == IfcParse::Token_OPERATOR &&
+        if (token_stream_[0].type == IfcParse::Token::Token_IDENTIFIER &&
+            token_stream_[1].type == IfcParse::Token::Token_OPERATOR &&
             token_stream_[1].value_char == '=' &&
-            token_stream_[2].type == IfcParse::Token_KEYWORD) {
-            current_id = (unsigned)TokenFunc::asIdentifier(token_stream_[0]);
+            token_stream_[2].type == IfcParse::Token::Token_KEYWORD) {
+            current_id = token_stream_[0].as_identifier();
             const IfcParse::declaration* entity_type;
             try {
-                entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream_[2]));
+                entity_type = schema_->declaration_by_name(token_stream_[2].as_string());
             } catch (const IfcException& ex) {
-                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
+                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
                 current_id = 0;
                 goto advance;
             }
 
             if (entity_type->as_entity() == nullptr) {
-                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
+                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
                 goto advance;
             }
 
@@ -745,7 +746,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<I
             Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
         }
 
-        if (!lexer_->stream->eof() && next_token.type == Token_NONE) {
+        if (!lexer_->stream->eof() && !next_token) {
             good_ = file_open_status::INVALID_SYNTAX;
             break;
         }
@@ -755,6 +756,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<I
 
     // Free pages in front of cursor when variable-width tokens are materialized into entity instance data objects
     (stream_ ? stream_ : (lexer_)->stream)->dropPages();
+    lexer_->resetPool();
 
     return return_value;
 }

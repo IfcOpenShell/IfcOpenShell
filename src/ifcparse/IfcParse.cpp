@@ -153,6 +153,45 @@ size_t IfcSpfLexer::skipComment() const {
     return index;
 }
 
+std::string& IfcSpfLexer::getTempString() const {
+    const size_t idx = pool_index++;
+    const size_t slice = idx >> 4;
+    const size_t offset = idx & 0xF;
+
+    while (stringpool_.size() <= slice) {
+        stringpool_.push_back(std::make_unique<std::array<std::string, 16>>());
+    }
+    return (*stringpool_[slice])[offset];
+}
+
+namespace {
+
+bool parse_int_(const char* pStart, int& val) {
+    char* pEnd;
+    long result = strtol(pStart, &pEnd, 10);
+    if (*pEnd != 0) {
+        return false;
+    }
+    val = (int)result;
+    return true;
+}
+
+bool parse_float_(const char* pStart, double& val) {
+    char* pEnd;
+#ifdef _MSC_VER
+    double result = _strtod_l(pStart, &pEnd, locale);
+#else
+    double result = strtod_l(pStart, &pEnd, locale);
+#endif
+    if (*pEnd != 0) {
+        return false;
+    }
+    val = result;
+    return true;
+}
+
+} // namespace
+
 //
 // Returns the offset of the current Token and moves cursor to next
 //
@@ -169,7 +208,6 @@ Token IfcSpfLexer::Next() {
         return Token{};
     }
 
-    auto& str = GetTempString();
     auto pos = stream->tell();
     char character = stream->read();
 
@@ -182,14 +220,30 @@ Token IfcSpfLexer::Next() {
         character == '$' ||
         character == '*')
     {
-        return OperatorTokenPtr(this, pos, character);
+        return Token(pos, character);
     }
+
+    auto& str = getTempString();
 
     if (character == '\'') {
         // If a string is encountered defer processing to the IfcCharacterDecoder
         str = *decoder_;
+        return Token(pos, Token::Token_STRING, str);
     } else {
-        str.assign(&character, 1);
+        auto ttype = Token::Token_NONE;
+        if (character == '"' || character == '.') {
+            if (character == '"') {
+                ttype = Token::Token_BINARY;
+            } else {
+                ttype = Token::Token_ENUMERATION;
+            }
+            str.clear();
+        } else if (character == '#') {
+            ttype = Token::Token_IDENTIFIER;
+            str.clear();
+        } else {
+            str.assign(&character, 1);
+        }
 
         while (!stream->eof()) {
             // Read character and increment pointer if not starting a new token
@@ -203,267 +257,157 @@ Token IfcSpfLexer::Next() {
                 break;
             }
             if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
-                str.push_back(character);
+                if ((ttype == Token::Token_BINARY && character == '"') || (ttype == Token::Token_ENUMERATION && character == '.')) {
+                    // Skip
+                } else {
+                    str.push_back(character);
+                }
             }
             stream->increment();
         }
-    }
-    return GeneralTokenPtr(this, pos, str);
-}
 
-//
-// Reads a std::string from the file at specified offset
-// Omits whitespace and comments
-//
-void IfcSpfLexer::TokenString(size_t offset, std::string& buffer) {
-    buffer.clear();
-	auto local_stream = *this->stream;
-	local_stream.seek(offset);
-    while (!local_stream.eof()) {
-        char character = local_stream.peek();
-        if (!buffer.empty() && (character == '(' ||
-                                character == ')' ||
-                                character == '=' ||
-                                character == ',' ||
-                                character == ';' ||
-                                character == '/')) {
-            break;
+        if (ttype == Token::Token_ENUMERATION && str.size() == 1 && (str[0] == 'T' || str[0] == 'F' || str[0] == 'U')) {
+            popPoolEntry();
+            return Token(pos, Token::Token_BOOL, str[0]);
+        } else if (ttype == Token::Token_IDENTIFIER) {
+            int int_val;
+            if (!parse_int_(str.c_str(), int_val)) {
+                throw IfcInvalidTokenException(pos, str, "instance name");
+            }
+            popPoolEntry();
+            return Token(pos, ttype, int_val);
+        } else if (ttype == Token::Token_NONE && !str.empty()) {
+            int int_val;
+            double float_val;
+            auto& first = str.front();
+            if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
+                ttype = Token::Token_KEYWORD;
+                return Token(pos, ttype, str);
+            } else if (parse_int_(str.c_str(), int_val)) {
+                ttype = Token::Token_INT;
+                popPoolEntry();
+                return Token(pos, ttype, int_val);
+            } else if (parse_float_(str.c_str(), float_val)) {
+                ttype = Token::Token_FLOAT;
+                popPoolEntry();
+                return Token(pos, float_val);
+            }
+        } else if (ttype == Token::Token_BINARY || ttype == Token::Token_ENUMERATION) {
+            return Token(pos, ttype, str);
         }
-        local_stream.increment();
-        if (character == ' ' ||
-            character == '\r' ||
-            character == '\n' ||
-            character == '\t') {
-            continue;
-        }
-        if (character == '\'') {
-            // todo, make decoder use local offset ptr
-            auto local_offset = local_stream.tell();
-            buffer = decoder_->get(local_offset);
-            break;
-        }
-        buffer.push_back(character);
+
+        throw IfcInvalidTokenException(pos, str, "valid token");
     }
 }
 
-//Note: according to STEP standard, there may be newlines in tokens
-/*
-inline void RemoveTokenSeparators(FileReader* stream, size_t start, size_t end, std::string& oDestination) {
-    oDestination.clear();
-    for (unsigned i = start; i < end; i++) {
-        char character = stream->get(i);
-        if (character == ' ' ||
-            character == '\r' ||
-            character == '\n' ||
-            character == '\t') {
-            continue;
-        }
-        oDestination += character;
-    }
-}
-*/
-
-bool ParseInt(const char* pStart, int& val) {
-    char* pEnd;
-    long result = strtol(pStart, &pEnd, 10);
-    if (*pEnd != 0) {
-        return false;
-    }
-    val = (int)result;
-    return true;
+bool Token::is_operator() {
+    return type == Token_OPERATOR;
 }
 
-bool ParseFloat(const char* pStart, double& val) {
-    char* pEnd;
-#ifdef _MSC_VER
-    double result = _strtod_l(pStart, &pEnd, locale);
-#else
-    double result = strtod_l(pStart, &pEnd, locale);
-#endif
-    if (*pEnd != 0) {
-        return false;
-    }
-    val = result;
-    return true;
+bool Token::is_operator(char character) {
+    return type == Token_OPERATOR && value_char == character;
 }
 
-bool ParseBool(const char* pStart, int& val) {
-    if (strlen(pStart) != 3 || pStart[0] != '.' || pStart[2] != '.') {
-        return false;
-    }
-    char mid = pStart[1];
-
-    if (mid == 'T') {
-        val = 1;
-    } else if (mid == 'F') {
-        val = 0;
-    } else if (mid == 'U') {
-        val = 2;
-    } else {
-        return false;
-    }
-
-    return true;
+bool Token::is_identifier() {
+    return type == Token_IDENTIFIER;
 }
 
-Token IfcParse::OperatorTokenPtr(IfcSpfLexer* lexer, size_t start, char data) {
-    Token token(lexer, start, Token_OPERATOR);
-    token.value_char = data;
-    return token;
+bool Token::is_string() {
+    return type == Token_STRING;
 }
 
-Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, size_t start, const std::string& tokenStr) {
-    Token token(lexer, start, Token_NONE);
-
-    //determine type of the token
-    const char& first = tokenStr.front();
-    if (first == '#') {
-        token.type = Token_IDENTIFIER;
-        if (!ParseInt(tokenStr.c_str() + 1, token.value_int)) {
-            Logger::Message(Logger::LOG_ERROR, "Token '" + tokenStr + "' at offset " + std::to_string(token.startPos) + " is not valid");
-            token.type = Token_OPERATOR;
-            token.value_char = '$';
-        }
-    } else if (first == '\'') {
-        token.type = Token_STRING;
-    } else if (first == '.') {
-        token.type = Token_ENUMERATION;
-        if (ParseBool(tokenStr.c_str(), token.value_int)) { //bool is also enumeration
-            token.type = Token_BOOL;
-        }
-    } else if (first == '"') {
-        token.type = Token_BINARY;
-    } else if (ParseInt(tokenStr.c_str(), token.value_int)) {
-        token.type = Token_INT;
-    } else if (ParseFloat(tokenStr.c_str(), token.value_double)) {
-        token.type = Token_FLOAT;
-    } else {
-        token.type = Token_KEYWORD;
-    }
-
-    return token;
+bool Token::is_enumeration() {
+    // @nb this is a bit confusing?
+    return type == Token_ENUMERATION || type == Token_BOOL;
 }
 
-bool TokenFunc::isOperator(const Token& token) {
-    return token.type == Token_OPERATOR;
+bool Token::is_binary() {
+    return type == Token_BINARY;
 }
 
-bool TokenFunc::isOperator(const Token& token, char character) {
-    return token.type == Token_OPERATOR && token.value_char == character;
+bool Token::is_keyword() {
+    return type == Token_KEYWORD;
 }
 
-bool TokenFunc::isIdentifier(const Token& token) {
-    return token.type == Token_IDENTIFIER;
+bool Token::is_int() {
+    return type == Token_INT;
 }
 
-bool TokenFunc::isString(const Token& token) {
-    return token.type == Token_STRING;
+bool Token::is_bool() {
+    // Bool and logical share the same storage type, just logical unknown is stored as 'U'.
+    return type == Token_BOOL && value_char != 'U';
 }
 
-bool TokenFunc::isEnumeration(const Token& token) {
-    return token.type == Token_ENUMERATION || token.type == Token_BOOL;
+bool Token::is_logical() {
+    return type == Token_BOOL;
 }
 
-bool TokenFunc::isBinary(const Token& token) {
-    return token.type == Token_BINARY;
-}
-
-bool TokenFunc::isKeyword(const Token& token) {
-    return token.type == Token_KEYWORD;
-}
-
-bool TokenFunc::isInt(const Token& token) {
-    return token.type == Token_INT;
-}
-
-bool TokenFunc::isBool(const Token& token) {
-    // Bool and logical share the same storage type, just logical unknown is stored as 2.
-    return token.type == Token_BOOL && token.value_int != 2;
-}
-
-bool TokenFunc::isLogical(const Token& token) {
-    return token.type == Token_BOOL;
-}
-
-bool TokenFunc::isFloat(const Token& token) {
+bool Token::is_float() {
 #ifdef PERMISSIVE_FLOAT
     /// NB: We are being more permissive here then allowed by the standard
-    return token.type == Token_FLOAT || token.type == Token_INT;
+    return type == Token_FLOAT || type == Token_INT;
 #else
-    return token.type == Token_FLOAT;
+    return type == Token_FLOAT;
 #endif
 }
 
-int TokenFunc::asInt(const Token& token) {
-    if (token.type != Token_INT) {
-        throw IfcInvalidTokenException(token.startPos, toString(token), "integer");
+int Token::as_int() {
+    if (type != Token_INT) {
+        throw IfcInvalidTokenException(start_pos, to_string(), "integer");
     }
-    return token.value_int;
+    return value_int;
 }
 
-int TokenFunc::asIdentifier(const Token& token) {
-    if (token.type != Token_IDENTIFIER) {
-        throw IfcInvalidTokenException(token.startPos, toString(token), "instance name");
+unsigned Token::as_identifier() {
+    if (type != Token_IDENTIFIER) {
+        throw IfcInvalidTokenException(start_pos, to_string(), "instance name");
     }
-    return token.value_int;
+    return (unsigned) value_int;
 }
 
-bool TokenFunc::asBool(const Token& token) {
-    if (token.type != Token_BOOL) {
-        throw IfcInvalidTokenException(token.startPos, toString(token), "boolean");
+bool Token::as_bool() {
+    if (type != Token_BOOL) {
+        throw IfcInvalidTokenException(start_pos, to_string(), "boolean");
     }
-    return token.value_int == 1;
+    return value_char == 'T';
 }
 
-boost::logic::tribool TokenFunc::asLogical(const Token& token) {
-    if (token.type != Token_BOOL) {
-        throw IfcInvalidTokenException(token.startPos, toString(token), "boolean");
+boost::logic::tribool Token::as_logical() {
+    if (type != Token_BOOL) {
+        throw IfcInvalidTokenException(start_pos, to_string(), "logical");
     }
-    if (token.value_int == 0) {
+    if (value_int == 'F') {
         return false;
     }
-    if (token.value_int == 1) {
+    if (value_int == 'T') {
         return true;
     }
     return boost::logic::indeterminate;
 }
 
-double TokenFunc::asFloat(const Token& token) {
+double Token::as_float() {
 #ifdef PERMISSIVE_FLOAT
-    if (token.type == Token_INT) {
+    if (type == Token_INT) {
         /// NB: We are being more permissive here then allowed by the standard
-        return token.value_int;
+        return value_int;
     } // ----> continues beyond preprocessor directive
 #endif
-    if (token.type == Token_FLOAT) {
-        return token.value_double;
+    if (type == Token_FLOAT) {
+        return value_double;
     }
-    throw IfcInvalidTokenException(token.startPos, toString(token), "real");
+    throw IfcInvalidTokenException(start_pos, to_string(), "real");
 }
 
-const std::string& TokenFunc::asStringRef(const Token& token) {
-    if (token.type == Token_NONE) {
-        throw IfcParse::IfcException("Null token encountered, premature end of file?");
+const std::string& Token::as_string() {
+    if (is_string() || is_enumeration() || is_binary() || is_keyword()) {
+        // @todo quotes
+        return *value_string;
     }
-    std::string& str = token.lexer->GetTempString();
-    token.lexer->TokenString(token.startPos, str);
-    if ((isString(token) || isEnumeration(token) || isBinary(token)) && !str.empty()) {
-        //remove start+end characters in-place
-        str.erase(str.end() - 1);
-        str.erase(str.begin());
-    }
-    return str;
+    throw IfcInvalidTokenException(start_pos, to_string(), "string");
 }
 
-std::string TokenFunc::asString(const Token& token) {
-    if (isString(token) || isEnumeration(token) || isBinary(token)) {
-        return asStringRef(token);
-    }
-    throw IfcInvalidTokenException(token.startPos, toString(token), "string");
-}
-
-boost::dynamic_bitset<> TokenFunc::asBinary(const Token& token) {
-    const std::string& str = asStringRef(token);
+boost::dynamic_bitset<> Token::as_binary() {
+    const std::string& str = as_string();
     if (str.empty()) {
         throw IfcException("Token is not a valid binary sequence");
     }
@@ -475,7 +419,7 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& token) {
     }
 
     ++it;
-    unsigned i = ((unsigned)str.size() - 1) * 4 - n;
+    unsigned i = (str.size() - 1) * 4 - n;
     boost::dynamic_bitset<> bitset(i);
 
     for (; it != str.end(); ++it) {
@@ -494,26 +438,18 @@ boost::dynamic_bitset<> TokenFunc::asBinary(const Token& token) {
     return bitset;
 }
 
-std::string TokenFunc::toString(const Token& token) {
+std::string Token::to_string() {
     std::string result;
-    if (token.type == Token_OPERATOR) {
-		result.push_back(token.value_char);
-    } else if (token.type == Token_INT) {
-        result = std::to_string(token.value_int);
-    } else if (token.type == Token_BOOL) {
-        if (token.value_int == 1) {
-            result = ".T.";
-        } else if (token.value_int == 0) {
-            result = ".F.";
-        } else {
-            result = ".U.";
-        }
-    } else if (token.type == Token_FLOAT) {
+    if (type == Token_OPERATOR || type == Token_BOOL) {
+		result.push_back(value_char);
+    } else if (type == Token_INT) {
+        result = std::to_string(value_int);
+    } else if (type == Token_FLOAT) {
         std::ostringstream oss;
-        oss << std::setprecision(15) << token.value_double;
+        oss << std::setprecision(15) << value_double;
         result = oss.str();
 	} else {
-        token.lexer->TokenString(token.startPos, result);
+        return as_string();
     }
     return result;
 }
@@ -525,34 +461,28 @@ std::string TokenFunc::toString(const Token& token) {
 void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context& context, int attribute_index) {
     Token next = tokens->Next();
 
-    /*
-    if (TokenFunc::isOperator(next, '(')) {
-        next = tokens->Next();
-    }
-    */
-
     size_t attribute_index_within_data = 0;
     size_t return_value = 0;
 
-    while ((next.startPos != 0U) || (next.lexer != nullptr)) {
-        if (TokenFunc::isOperator(next, ',')) {
+    while (next) {
+        if (next.is_operator(',')) {
             if (attribute_index == -1) {
                 attribute_index_within_data += 1;
             }
-        } else if (TokenFunc::isOperator(next, ')')) {
+        } else if (next.is_operator(')')) {
             break;
-        } else if (TokenFunc::isOperator(next, '(')) {
+        } else if (next.is_operator('(')) {
             return_value++;
             load(entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
         } else {
             return_value++;
-            if (TokenFunc::isIdentifier(next) && entity && entity_instance_name) {
+            if (next.is_identifier() && entity && entity_instance_name) {
                 register_inverse(*entity_instance_name, entity, next.value_int, attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
             }
 
-            if (TokenFunc::isKeyword(next)) {
+            if (next.is_keyword()) {
                 try {
-                    const auto* decl = (schema ? schema : file->schema())->declaration_by_name(TokenFunc::asStringRef(next));
+                    const auto* decl = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
                     parse_context ps;
                     tokens->Next();
                     // The only case we know where a defined type contains entity
@@ -568,7 +498,7 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
                     // @todo do we need express::Base here? Or should we just push InstanceData?
                     context.push(simple_type_instance);
                 } catch (IfcException& e) {
-                    Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.startPos));
+                    Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
                     return_value--;
                 }
@@ -580,25 +510,10 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
     }
 }
 
-//
-// Reads an Entity from the list of Tokens at the specified offset in the file
-//
-std::shared_ptr<InstanceData> IfcParse::impl::in_memory_file_storage::read(unsigned int i) {
-    Token datatype = tokens->Next();
-    if (!TokenFunc::isKeyword(datatype)) {
-        throw IfcException("Unexpected token while parsing entity");
-    }
-    const IfcParse::declaration* ty = file->schema()->declaration_by_name(TokenFunc::asStringRef(datatype));
-    parse_context pc;
-    tokens->Next();
-    load(i, ty->as_entity(), pc, -1);
-    return pc.construct(file, i, *references_to_resolve, ty, std::nullopt, -1);
-}
-
 void IfcParse::impl::in_memory_file_storage::try_read_semicolon() const {
     auto old_offset = tokens->stream->tell();
     Token semilocon = tokens->Next();
-    if (!TokenFunc::isOperator(semilocon, ';')) {
+    if (!semilocon.is_operator(';')) {
         tokens->stream->seek(old_offset);
     }
 }
@@ -1354,8 +1269,8 @@ bool IfcParse::InstanceStreamer::hasSemicolon() const {
     } catch (const std::out_of_range&) {
         return false;
     }
-    while (t.type != Token_NONE) {
-        if (TokenFunc::isOperator(t, ';')) {
+    while (t.type != Token::Token_NONE) {
+        if (t.is_operator(';')) {
             return true;
 		}
         try {
@@ -1378,8 +1293,8 @@ size_t IfcParse::InstanceStreamer::semicolonCount() const {
     } catch (const std::out_of_range&) {
         return false;
     }
-    while (t.type != Token_NONE) {
-        if (TokenFunc::isOperator(t, ';')) {
+    while (t.type != Token::Token_NONE) {
+        if (t.is_operator(';')) {
             count++;
         }
         try {

@@ -91,7 +91,7 @@ namespace {
 
         unsigned int parse_state = 0;
         builder_.clear();
-        builder_.push_back('\'');
+        // builder_.push_back('\'');
         char current_char;
         int codepage = 1;
         unsigned int hex = 0;
@@ -169,7 +169,7 @@ namespace {
             }
             stream_.increment();
         }
-        builder_.push_back('\'');
+        // builder_.push_back('\'');
 
         if (mode == IfcParse::IfcCharacterDecoder::UTF8) {
             if (builder_.empty()) {
@@ -220,73 +220,6 @@ std::string IfcCharacterDecoder::get(size_t& ptr) {
     auto s = read_string(local_stream, mode, substitution_character);
 	ptr = local_stream.tell();
     return s;
-}
-
-void IfcCharacterDecoder::skip() {
-    unsigned int parse_state = 0;
-    char current_char;
-    unsigned int hex_count = 0;
-    while ((current_char = stream_->peek()) != 0) {
-        if (EXPECTS_CHARACTER(parse_state)) {
-            parse_state = 0;
-        } else if (current_char == '\'' && (parse_state == 0U)) {
-            parse_state = APOSTROPHE;
-        } else if (current_char == '\\' && (parse_state == 0U)) {
-            parse_state = FIRST_SOLIDUS;
-        } else if (current_char == '\\' && EXPECTS_SOLIDUS(parse_state)) {
-            if (((parse_state & ALPHABET_DEFINITION) != 0U) ||
-                ((parse_state & IGNORED_DIRECTIVE) != 0U) ||
-                ((parse_state & ENDEXTENDED_0) != 0U)) {
-                parse_state = hex_count = 0;
-            } else if ((parse_state & ENCOUNTERED_HEX) != 0U) {
-                parse_state += THIRD_SOLIDUS;
-                parse_state -= ENCOUNTERED_HEX;
-            } else {
-                parse_state += SECOND_SOLIDUS;
-            }
-        } else if (current_char == 'X' && EXPECTS_ENDEXTENDED_X(parse_state)) {
-            parse_state += ENDEXTENDED_X;
-        } else if (current_char == '0' && EXPECTS_ENDEXTENDED_0(parse_state)) {
-            parse_state += ENDEXTENDED_0;
-        } else if (current_char == 'X' && EXPECTS_ARBITRARY(parse_state)) {
-            parse_state += ARBITRARY;
-        } else if (current_char == '2' && EXPECTS_ARBITRARY2(parse_state)) {
-            parse_state += EXTENDED2;
-        } else if (current_char == '4' && EXPECTS_ARBITRARY2(parse_state)) {
-            parse_state += EXTENDED2 + EXTENDED4;
-        } else if (current_char == 'P' && EXPECTS_ALPHABET(parse_state)) {
-            parse_state += ALPHABET;
-        } else if ((current_char == 'N' || current_char == 'F') && EXPECTS_N_OR_F(parse_state)) {
-            parse_state += IGNORED_DIRECTIVE;
-        } else if (IS_VALID_ALPHABET_DEFINITION(current_char) && EXPECTS_ALPHABET_DEFINITION(parse_state)) {
-            parse_state += ALPHABET_DEFINITION;
-        } else if (current_char == 'S' && EXPECTS_PAGE(parse_state)) {
-            parse_state += PAGE;
-        } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
-            parse_state += HEX((++hex_count));
-            if ((hex_count == 2 && ((parse_state & EXTENDED2) == 0U)) ||
-                (hex_count == 4 && ((parse_state & EXTENDED4) == 0U)) ||
-                (hex_count == 8)) {
-                if (hex_count == 2) {
-                    parse_state = 0;
-                } else {
-                    CLEAR_HEX(parse_state);
-                    parse_state |= ENCOUNTERED_HEX;
-                }
-                hex_count = 0;
-            }
-        } else if ((parse_state != 0U) && !(
-                                              (current_char == '\\' && parse_state == FIRST_SOLIDUS) ||
-                                              (current_char == '\'' && parse_state == APOSTROPHE))) {
-            if (parse_state == APOSTROPHE && current_char != '\'') {
-                break;
-            }
-            throw IfcInvalidTokenException(stream_->tell(), current_char);
-        } else {
-            parse_state = hex_count = 0;
-        }
-        stream_->increment();
-    }
 }
 
 IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::UTF8;
