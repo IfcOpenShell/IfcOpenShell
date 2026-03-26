@@ -248,7 +248,7 @@ auto get_related(T t, F f, G g) {
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, const IfcSchema::IfcObjectDefinition& product, ptree& tree, express::Base parent) {
+ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::Base parent) {
 	if (product.declaration().is(IfcSchema::IfcElement::Class())) {
 		auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
 		if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
