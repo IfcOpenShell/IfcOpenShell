@@ -226,7 +226,11 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 }
 
 template <typename T, typename U>
-auto cast_vector(const std::vector<U>& vs) {
+typename std::conditional_t<
+    is_std_vector<U>::value,
+    std::vector<std::vector<T>>,
+    std::vector<T>>
+cast_vector(const std::vector<U>& vs) {
     if constexpr (is_std_vector<U>::value) {
         using V = typename U::value_type;
         std::vector<std::vector<T>> result;
