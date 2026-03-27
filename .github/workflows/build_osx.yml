@@ -53,7 +53,7 @@ jobs:
           python ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.21
+        uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: mac-${{ matrix.arch }}
 
