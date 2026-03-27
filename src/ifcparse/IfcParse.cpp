@@ -243,6 +243,7 @@ constexpr uint64_t quote = splat('"');
 constexpr uint64_t dot = splat('.');
 } // namespace chars
 
+template <bool IncludeDot = true>
 inline uint64_t has_special_char(uint64_t x) {
     return eq_mask(x, chars::lpar) |
            eq_mask(x, chars::rpar) |
@@ -255,9 +256,10 @@ inline uint64_t has_special_char(uint64_t x) {
            eq_mask(x, chars::lf) |
            eq_mask(x, chars::tab) |
            eq_mask(x, chars::quote) |
-           eq_mask(x, chars::dot);
+           (IncludeDot ? eq_mask(x, chars::dot) : uint64_t{0});
 }
 
+template <bool IncludeDot = true>
 inline uint32_t has_special_char(uint32_t x) {
     return eq_mask(x, static_cast<uint32_t>(chars::lpar)) |
            eq_mask(x, static_cast<uint32_t>(chars::rpar)) |
@@ -270,7 +272,7 @@ inline uint32_t has_special_char(uint32_t x) {
            eq_mask(x, static_cast<uint32_t>(chars::lf)) |
            eq_mask(x, static_cast<uint32_t>(chars::tab)) |
            eq_mask(x, static_cast<uint32_t>(chars::quote)) |
-           eq_mask(x, static_cast<uint32_t>(chars::dot));
+           (IncludeDot ? eq_mask(x, static_cast<uint32_t>(chars::dot)) : uint32_t{0});
 }
 
 }
@@ -332,20 +334,23 @@ Token IfcSpfLexer<Reader>::Next() {
             str.assign(&character, 1);
         }
 
-        while (!stream->eof()) {
-            if (stream->remaining() >= 8) {
+        auto remaining = stream->remaining();
+        while (remaining) {
+            if (remaining >= 8) {
                 uint64_t x = stream->peek_u64();
-                if (SWAR::has_special_char(x) == 0) {
+                if ((ttype == Token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
                     str.append(reinterpret_cast<const char*>(&x), 8);
                     stream->increment(8);
+                    remaining -= 8;
                     continue;
                 }
             }
-            if (stream->remaining() >= 4) {
+            if (remaining >= 4) {
                 uint32_t x = stream->peek_u32();
-                if (SWAR::has_special_char(x) == 0) {
+                if ((ttype == Token::Token_NONE ? SWAR::has_special_char<false>(x) : SWAR::has_special_char<true>(x)) == 0) {
                     str.append(reinterpret_cast<const char*>(&x), 4);
                     stream->increment(4);
+                    remaining -= 4;
                     continue;
                 }
             }
@@ -369,6 +374,7 @@ Token IfcSpfLexer<Reader>::Next() {
                 }
             }
             stream->increment();
+            remaining -= 1;
         }
 
         if (ttype == Token::Token_ENUMERATION && str.size() == 1 && (str[0] == 'T' || str[0] == 'F' || str[0] == 'U')) {
