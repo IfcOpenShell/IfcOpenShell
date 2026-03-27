@@ -131,11 +131,24 @@ def draw_attribute(
                 layout.prop(duration_props, "seconds", text="S")
                 break
     else:
-        layout.prop(
-            attribute,
-            value_name,
-            text=attribute.display_name,
-        )
+        from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
+
+        if is_integration_active() and attribute.data_type in ("string", "integer", "float", "boolean"):
+            binding_key = tool.Blender.get_full_data_path(attribute, value_name)
+            param_name = get_binding(binding_key)
+            if param_name:
+                sub = layout.row(align=True)
+                sub.enabled = False
+                sub.prop(attribute, value_name, text=attribute.display_name)
+            else:
+                layout.prop(attribute, value_name, text=attribute.display_name)
+            draw_bexpeng_buttons(layout, binding_key, attribute.data_type, param_name)
+        else:
+            layout.prop(
+                attribute,
+                value_name,
+                text=attribute.display_name,
+            )
 
     if attribute.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")

@@ -59,11 +59,28 @@ def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_ope
     if not value_name:
         layout.label(text=prop["Name"])
         return
-    layout.prop(
-        prop.metadata,
-        value_name,
-        text=prop.metadata.display_name,
-    )
+    from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
+
+    if is_integration_active() and prop.metadata.data_type in ("string", "integer", "float", "boolean"):
+        binding_key = tool.Blender.get_full_data_path(prop.metadata, value_name)
+        param_name = get_binding(binding_key)
+        if param_name:
+            sub = layout.row(align=True)
+            sub.enabled = False
+            sub.prop(prop.metadata, value_name, text=prop.metadata.display_name)
+        else:
+            layout.prop(
+                prop.metadata,
+                value_name,
+                text=prop.metadata.display_name,
+            )
+        draw_bexpeng_buttons(layout, binding_key, prop.metadata.data_type, param_name)
+    else:
+        layout.prop(
+            prop.metadata,
+            value_name,
+            text=prop.metadata.display_name,
+        )
     if prop.metadata.special_type == "URI":
         op = layout.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
         op.attribute_data_path = tool.Blender.get_full_data_path(prop.metadata)

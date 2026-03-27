@@ -499,6 +499,11 @@ class DefaultParameters(bpy.types.PropertyGroup):
     stair: bpy.props.PointerProperty(type=BIMStairProperties)
 
 
+def _update_bexpeng_integration(self: "BIM_ADDON_preferences", context: bpy.types.Context) -> None:
+    if "bexpeng" not in bpy.context.preferences.addons:
+        self.use_bexpeng_integration = False
+
+
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(
@@ -743,6 +748,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="Custom suffix for the metadata blend file. Will be appended to the filename (without .ifc).",
         default=".ifc.metadata.blend",
     )
+    use_bexpeng_integration: BoolProperty(
+        name="Blender Expression Engine Integration",
+        description="Enable BExpEng parametric expression engine integration. Requires the BExpEng addon to be active.",
+        default=False,
+        update=_update_bexpeng_integration,
+    )
 
     decorator_font_scale: bpy.props.FloatProperty(
         name="Decorator Font Scale",
@@ -790,6 +801,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
         metadata_blend_file_suffix: str
+        use_bexpeng_integration: bool
         decorator_font_scale: float
 
     def draw(self, context: bpy.types.Context) -> None:
@@ -1013,6 +1025,14 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             else:
                 row = layout.row()
                 row.operator("bim.manage_tab_visibility", icon="PREFERENCES")
+
+            is_bexpeng_active = "bexpeng" in bpy.context.preferences.addons
+            row = layout.row()
+            row.enabled = is_bexpeng_active
+            row.prop(self, "use_bexpeng_integration")
+            if not is_bexpeng_active:
+                row = layout.row()
+                row.label(text="BExpEng addon is not active", icon="INFO")
         layout.prop(self, "decorator_font_scale")
 
 

@@ -638,6 +638,62 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class ApplyDoorBexpeng(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_door_bexpeng"
+    bl_label = "Apply Door BExpEng"
+    bl_description = "Apply BExpEng parameter values to door and save to IFC"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def apply_on_object(self, obj: bpy.types.Object) -> None:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
+
+        # 1. Re-base props from IFC so non-bexpeng fields stay correct.
+        ifc_data = ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data")
+        if ifc_data:
+            data = json.loads(ifc_data)
+            data.update(data.pop("lining_properties"))
+            data.update(data.pop("panel_properties"))
+            data.update(tool.Model.get_constituents_props_data(element))
+            props.set_props_kwargs_from_ifc_data(data)
+
+        # 2. Re-apply all bexpeng values on top (no recursive commit).
+        try:
+            from bonsai.bim.module import bexpeng as bexpengmod
+
+            if bexpengmod.is_integration_active():
+                bexpengmod._write_door_bindings(obj)
+        except Exception:
+            pass
+
+        # 3. Rebuild IFC representation from merged props and persist.
+        door_data = props.get_general_kwargs(convert_to_project_units=True)
+        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
+        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
+        door_data["lining_properties"] = lining_props
+        door_data["panel_properties"] = panel_props
+
+        update_door_modifier_representation(obj)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.mark_thumbnail_for_update(element_type)
+
+        pset = tool.Pset.get_element_pset(element, "BBIM_Door")
+        door_ifc_text = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_ifc_text})
+        with bpy.context.temp_override(selected_objects=[obj]):
+            bpy.ops.bim.recalculate_fill()
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
+        obj = context.active_object
+        assert obj
+        self.apply_on_object(obj)
+        return {"FINISHED"}
+
+
 class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_door"
     bl_label = "Enable Editing Door on Selected Objects"
@@ -658,6 +714,15 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = True
+
+        # Re-apply any active bexpeng bindings so parametric values survive the IFC reload.
+        try:
+            from bonsai.bim.module import bexpeng as bexpengmod
+
+            if bexpengmod.is_integration_active():
+                bexpengmod._write_door_bindings(obj)
+        except Exception:
+            pass
 
     def _execute(self, context: bpy.types.Context) -> set[str]:  # noqa: ARG002
         for obj in tool.Blender.get_selected_objects():
