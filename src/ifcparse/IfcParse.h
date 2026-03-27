@@ -48,9 +48,10 @@ extern const char *IFCOPENSHELL_VERSION;
 namespace IfcParse {
 
 /// A stream of tokens to be read from a FileReader.
+template <typename Reader>
 class IFC_PARSE_API IfcSpfLexer {
   private:
-    IfcCharacterDecoder* decoder_;
+    IfcCharacterDecoder<Reader>* decoder_;
     size_t skipWhitespace() const;
     size_t skipComment() const;
 
@@ -68,9 +69,9 @@ class IFC_PARSE_API IfcSpfLexer {
         }
     }
 
-    FileReader* stream;
+    Reader* stream;
     // IfcFile* file;
-    IfcSpfLexer(FileReader* stream);
+    IfcSpfLexer(Reader* stream);
     Token Next();
     ~IfcSpfLexer();
     // void TokenString(size_t offset, std::string& result);

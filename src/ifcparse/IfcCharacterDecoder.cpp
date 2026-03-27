@@ -77,18 +77,81 @@
 
 using namespace IfcParse;
 
-IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::FileReader* stream) {
-    stream_ = stream;
-    codepage_ = 0;
+namespace SWAR {
+
+constexpr uint32_t ONES32 = 0x01010101u;
+constexpr uint32_t HIGHS32 = 0x80808080u;
+constexpr uint64_t ONES64 = 0x0101010101010101ull;
+constexpr uint64_t HIGHS64 = 0x8080808080808080ull;
+
+constexpr uint32_t splat32(unsigned char c) {
+    return ONES32 * c;
 }
 
-IfcCharacterDecoder::~IfcCharacterDecoder() {
+constexpr uint64_t splat64(unsigned char c) {
+    return ONES64 * c;
+}
+
+inline uint32_t has_zero_byte(uint32_t x) {
+    return (x - ONES32) & ~x & HIGHS32;
+}
+
+inline uint64_t has_zero_byte(uint64_t x) {
+    return (x - ONES64) & ~x & HIGHS64;
+}
+
+inline uint32_t eq_mask(uint32_t x, uint32_t c) {
+    return has_zero_byte(x ^ c);
+}
+
+inline uint64_t eq_mask(uint64_t x, uint64_t c) {
+    return has_zero_byte(x ^ c);
+}
+
+namespace chars {
+constexpr uint32_t apostrophe32 = splat32('\'');
+constexpr uint32_t solidus32 = splat32('\\');
+constexpr uint64_t apostrophe64 = splat64('\'');
+constexpr uint64_t solidus64 = splat64('\\');
+} // namespace chars
+
+inline uint32_t has_special_char(uint32_t x) {
+    return has_zero_byte(x) |
+           eq_mask(x, chars::apostrophe32) |
+           eq_mask(x, chars::solidus32) |
+           (x & HIGHS32);
+}
+
+inline uint64_t has_special_char(uint64_t x) {
+    return has_zero_byte(x) |
+           eq_mask(x, chars::apostrophe64) |
+           eq_mask(x, chars::solidus64) |
+           (x & HIGHS64);
+}
+
+inline void append_ascii(std::u32string& builder, const char* bytes, size_t count) {
+    builder.reserve(builder.size() + count);
+    for (size_t i = 0; i < count; ++i) {
+        builder.push_back(static_cast<unsigned char>(bytes[i]));
+    }
+}
+
+} // namespace SWAR
+
+template <typename Reader>
+IfcCharacterDecoder<Reader>::IfcCharacterDecoder(Reader* stream) {
+    stream_ = stream;
+    codepage_ = 0;
+    builder_.reserve(1024);
+}
+
+template <typename Reader>
+IfcCharacterDecoder<Reader>::~IfcCharacterDecoder() {
 }
 
 namespace {
-    std::string read_string(IfcParse::FileReader& stream_, IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
-        std::u32string builder_;
-
+    template <typename Reader>
+    std::string read_string(std::u32string& builder_, Reader& stream_, typename IfcParse::IfcCharacterDecoder<Reader>::ConversionMode mode, char substitution_character) {
         unsigned int parse_state = 0;
         builder_.clear();
         // builder_.push_back('\'');
@@ -97,7 +160,31 @@ namespace {
         unsigned int hex = 0;
         unsigned int hex_count = 0;
 
-        while ((current_char = stream_.peek()) != 0) {
+        while (!stream_.eof()) {
+            if (parse_state == 0U) {
+                if (stream_.remaining() >= 8) {
+                    uint64_t x = stream_.peek_u64();
+                    if (SWAR::has_special_char(x) == 0) {
+                        SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 8);
+                        stream_.increment(8);
+                        continue;
+                    }
+                }
+                if (stream_.remaining() >= 4) {
+                    uint32_t x = stream_.peek_u32();
+                    if (SWAR::has_special_char(x) == 0) {
+                        SWAR::append_ascii(builder_, reinterpret_cast<const char*>(&x), 4);
+                        stream_.increment(4);
+                        continue;
+                    }
+                }
+            }
+
+            current_char = stream_.peek();
+            if (current_char == 0) {
+                break;
+            }
+
             if (EXPECTS_CHARACTER(parse_state)) {
                 builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
                 parse_state = 0;
@@ -171,7 +258,7 @@ namespace {
         }
         // builder_.push_back('\'');
 
-        if (mode == IfcParse::IfcCharacterDecoder::UTF8) {
+        if (mode == IfcParse::IfcCharacterDecoder<Reader>::UTF8) {
             if (builder_.empty()) {
                 static std::string empty;
                 return empty;
@@ -183,7 +270,7 @@ namespace {
             }
             return IfcUtil::convert_utf8(builder_);
         }
-        if (mode == IfcParse::IfcCharacterDecoder::SUBSTITUTE) {
+        if (mode == IfcParse::IfcCharacterDecoder<Reader>::SUBSTITUTE) {
             std::string result;
             result.reserve(builder_.size());
             std::transform(builder_.begin(), builder_.end(), std::back_inserter(result), [&substitution_character](std::u32string::value_type character) {
@@ -194,7 +281,7 @@ namespace {
             });
             return result;
         }
-        if (mode == IfcParse::IfcCharacterDecoder::ESCAPE) {
+        if (mode == IfcParse::IfcCharacterDecoder<Reader>::ESCAPE) {
             std::stringstream stream;
             stream << std::hex << std::setw(4) << std::setfill('0');
             std::for_each(builder_.begin(), builder_.end(), [&stream](std::u32string::value_type character) {
@@ -210,20 +297,26 @@ namespace {
     }
 } // namespace
 
-IfcCharacterDecoder::operator std::string() {
-    return read_string(*stream_, mode, substitution_character);
+template <typename Reader>
+IfcCharacterDecoder<Reader>::operator std::string() {
+    return read_string(builder_, *stream_, mode, substitution_character);
 }
 
-std::string IfcCharacterDecoder::get(size_t& ptr) {
+template <typename Reader>
+std::string IfcCharacterDecoder<Reader>::get(size_t& ptr) {
     auto local_stream = *stream_;
     local_stream.seek(ptr);
-    auto s = read_string(local_stream, mode, substitution_character);
+    auto s = read_string(builder_, local_stream, mode, substitution_character);
 	ptr = local_stream.tell();
     return s;
 }
 
-IfcCharacterDecoder::ConversionMode IfcCharacterDecoder::mode = IfcCharacterDecoder::UTF8;
-char IfcCharacterDecoder::substitution_character = '_';
+template class IfcCharacterDecoder<FileReader<FullBufferImpl>>;
+template class IfcCharacterDecoder<FileReader<PagedFileImpl>>;
+template class IfcCharacterDecoder<FileReader<PushedSequentialImpl>>;
+#ifdef USE_MMAP
+template class IfcCharacterDecoder<MMapFileReader>;
+#endif
 
 IfcCharacterEncoder::IfcCharacterEncoder(const std::string& input)
     : str_(IfcUtil::convert_utf8(input)) {}

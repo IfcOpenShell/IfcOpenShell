@@ -23,7 +23,6 @@
 #include "ifc_parse_api.h"
 #include "InstanceData.h"
 #include "Header_section_schema.h"
-#include "storage.h"
 
 namespace IfcParse {
 
@@ -32,38 +31,21 @@ class IfcFile;
 class IFC_PARSE_API IfcSpfHeader {
   private:
     IfcFile* file_;
-	IfcParse::impl::in_memory_file_storage* storage_ = nullptr;
 
     std::array<std::shared_ptr<InstanceData>, 3> header_entities_;
 
-    /*
-    mutable Header_section_schema::file_description* file_description_;
-    mutable Header_section_schema::file_name* file_name_;
-    mutable Header_section_schema::file_schema* file_schema_;
-    */ 
-    void readSemicolon();
-    enum Trail {
-        TRAILING_SEMICOLON,
-        NONE
-    };
-    void readTerminal(const std::string& term, Trail trail);
-
   public:
     explicit IfcSpfHeader(IfcParse::IfcFile* file);
-    explicit IfcSpfHeader(IfcParse::IfcSpfLexer* lexer);
-
     ~IfcSpfHeader();
-
-    // IfcParse::IfcFile* file() { return file_; }
-    // void file(IfcParse::IfcFile* file);
-
-    void read();
-    bool tryRead();
 
     void write(std::ostream& out) const;
 
     IfcParse::IfcFile* file() { return file_; }
     void file(IfcParse::IfcFile* file);
+
+    void set_file_description(const std::shared_ptr<InstanceData>& data);
+    void set_file_name(const std::shared_ptr<InstanceData>& data);
+    void set_file_schema(const std::shared_ptr<InstanceData>& data);
 
     const Header_section_schema::file_description file_description() const;
     const Header_section_schema::file_name file_name() const;

@@ -102,16 +102,19 @@ void init_locale() {
 
 #endif
 
-IfcSpfLexer::IfcSpfLexer(IfcParse::FileReader* stream_) {
+template <typename Reader>
+IfcSpfLexer<Reader>::IfcSpfLexer(Reader* stream_) {
     stream = stream_;
-    decoder_ = new IfcCharacterDecoder(stream_);
+    decoder_ = new IfcCharacterDecoder<Reader>(stream_);
 }
 
-IfcSpfLexer::~IfcSpfLexer() {
+template <typename Reader>
+IfcSpfLexer<Reader>::~IfcSpfLexer() {
     delete decoder_;
 }
 
-size_t IfcSpfLexer::skipWhitespace() const {
+template <typename Reader>
+size_t IfcSpfLexer<Reader>::skipWhitespace() const {
     size_t index = 0;
     while (!stream->eof()) {
         char character = stream->peek();
@@ -125,7 +128,8 @@ size_t IfcSpfLexer::skipWhitespace() const {
     return index;
 }
 
-size_t IfcSpfLexer::skipComment() const {
+template <typename Reader>
+size_t IfcSpfLexer<Reader>::skipComment() const {
     if (stream->eof()) {
         return 0;
     }
@@ -153,7 +157,8 @@ size_t IfcSpfLexer::skipComment() const {
     return index;
 }
 
-std::string& IfcSpfLexer::getTempString() const {
+template <typename Reader>
+std::string& IfcSpfLexer<Reader>::getTempString() const {
     const size_t idx = pool_index++;
     const size_t slice = idx >> 4;
     const size_t offset = idx & 0xF;
@@ -161,6 +166,9 @@ std::string& IfcSpfLexer::getTempString() const {
     while (stringpool_.size() <= slice) {
         stringpool_.push_back(std::make_unique<std::array<std::string, 16>>());
     }
+
+    // std::wcout << "Num contexts: " << idx << std::endl;
+
     return (*stringpool_[slice])[offset];
 }
 
@@ -192,17 +200,86 @@ bool parse_float_(const char* pStart, double& val) {
 
 } // namespace
 
+namespace SWAR {
+constexpr uint32_t ONES32 = 0x01010101u;
+constexpr uint32_t HIGHS32 = 0x80808080u;
+constexpr uint64_t ONES = 0x0101010101010101ull;
+constexpr uint64_t HIGHS = 0x8080808080808080ull;
+
+constexpr uint64_t splat(unsigned char c) {
+    return ONES * c;
+}
+
+inline uint32_t has_zero_byte(uint32_t x) {
+    return (x - ONES32) & ~x & HIGHS32;
+}
+
+inline uint64_t has_zero_byte(uint64_t x) {
+    return (x - ONES) & ~x & HIGHS;
+}
+
+inline uint32_t eq_mask(uint32_t x, uint32_t c) {
+    return has_zero_byte(x ^ c);
+}
+
+inline uint64_t eq_mask(uint64_t x, uint64_t c) {
+    return has_zero_byte(x ^ c);
+}
+
+namespace chars {
+constexpr uint64_t lpar = splat('(');
+constexpr uint64_t rpar = splat(')');
+constexpr uint64_t eq = splat('=');
+constexpr uint64_t comma = splat(',');
+constexpr uint64_t semi = splat(';');
+constexpr uint64_t slash = splat('/');
+
+constexpr uint64_t space = splat(' ');
+constexpr uint64_t cr = splat('\r');
+constexpr uint64_t lf = splat('\n');
+constexpr uint64_t tab = splat('\t');
+
+constexpr uint64_t quote = splat('"');
+constexpr uint64_t dot = splat('.');
+} // namespace chars
+
+inline uint64_t has_special_char(uint64_t x) {
+    return eq_mask(x, chars::lpar) |
+           eq_mask(x, chars::rpar) |
+           eq_mask(x, chars::eq) |
+           eq_mask(x, chars::comma) |
+           eq_mask(x, chars::semi) |
+           eq_mask(x, chars::slash) |
+           eq_mask(x, chars::space) |
+           eq_mask(x, chars::cr) |
+           eq_mask(x, chars::lf) |
+           eq_mask(x, chars::tab) |
+           eq_mask(x, chars::quote) |
+           eq_mask(x, chars::dot);
+}
+
+inline uint32_t has_special_char(uint32_t x) {
+    return eq_mask(x, static_cast<uint32_t>(chars::lpar)) |
+           eq_mask(x, static_cast<uint32_t>(chars::rpar)) |
+           eq_mask(x, static_cast<uint32_t>(chars::eq)) |
+           eq_mask(x, static_cast<uint32_t>(chars::comma)) |
+           eq_mask(x, static_cast<uint32_t>(chars::semi)) |
+           eq_mask(x, static_cast<uint32_t>(chars::slash)) |
+           eq_mask(x, static_cast<uint32_t>(chars::space)) |
+           eq_mask(x, static_cast<uint32_t>(chars::cr)) |
+           eq_mask(x, static_cast<uint32_t>(chars::lf)) |
+           eq_mask(x, static_cast<uint32_t>(chars::tab)) |
+           eq_mask(x, static_cast<uint32_t>(chars::quote)) |
+           eq_mask(x, static_cast<uint32_t>(chars::dot));
+}
+
+}
+
 //
 // Returns the offset of the current Token and moves cursor to next
 //
-Token IfcSpfLexer::Next() {
-
-    if (stream->eof()) {
-        return Token{};
-    }
-
-    while ((skipWhitespace() != 0U) || (skipComment() != 0U)) {
-    }
+template <typename Reader>
+Token IfcSpfLexer<Reader>::Next() {
 
     if (stream->eof()) {
         return Token{};
@@ -210,6 +287,16 @@ Token IfcSpfLexer::Next() {
 
     auto pos = stream->tell();
     char character = stream->read();
+
+    if (character == '/' || character == ' ' || character == '\r' || character == '\n' || character == '\t') {
+        while ((skipWhitespace() != 0U) || (skipComment() != 0U)) {
+        }
+        if (stream->eof()) {
+            return Token{};
+        }
+        pos = stream->tell();
+        character = stream->read();
+    }
 
     // If the cursor is at [()=,;$*] we know token consists of single char
     if (character == '(' ||
@@ -246,8 +333,25 @@ Token IfcSpfLexer::Next() {
         }
 
         while (!stream->eof()) {
+            if (stream->remaining() >= 8) {
+                uint64_t x = stream->peek_u64();
+                if (SWAR::has_special_char(x) == 0) {
+                    str.append(reinterpret_cast<const char*>(&x), 8);
+                    stream->increment(8);
+                    continue;
+                }
+            }
+            if (stream->remaining() >= 4) {
+                uint32_t x = stream->peek_u32();
+                if (SWAR::has_special_char(x) == 0) {
+                    str.append(reinterpret_cast<const char*>(&x), 4);
+                    stream->increment(4);
+                    continue;
+                }
+            }
+
             // Read character and increment pointer if not starting a new token
-            character = stream->peek();
+            char character = stream->peek();
             if (character == '(' ||
                 character == ')' ||
                 character == '=' ||
@@ -257,7 +361,8 @@ Token IfcSpfLexer::Next() {
                 break;
             }
             if (!(character == ' ' || character == '\r' || character == '\n' || character == '\t')) {
-                if ((ttype == Token::Token_BINARY && character == '"') || (ttype == Token::Token_ENUMERATION && character == '.')) {
+                if ((ttype == Token::Token_BINARY && character == '"') ||
+                    (ttype == Token::Token_ENUMERATION && character == '.')) {
                     // Skip
                 } else {
                     str.push_back(character);
@@ -299,6 +404,13 @@ Token IfcSpfLexer::Next() {
         throw IfcInvalidTokenException(pos, str, "valid token");
     }
 }
+
+template class IfcSpfLexer<FileReader<FullBufferImpl>>;
+template class IfcSpfLexer<FileReader<PagedFileImpl>>;
+template class IfcSpfLexer<FileReader<PushedSequentialImpl>>;
+#ifdef USE_MMAP
+template class IfcSpfLexer<FileReader<MMapImpl>>;
+#endif
 
 bool Token::is_operator() {
     return type == Token_OPERATOR;
@@ -458,7 +570,8 @@ std::string Token::to_string() {
 // Reads the arguments from a list of token
 // Aditionally, registers the ids (i.e. #[\d]+) in the inverse map
 //
-void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context& context, int attribute_index) {
+template <typename Reader>
+void IfcParse::impl::in_memory_file_storage::load(IfcParse::IfcSpfLexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context& context, int attribute_index) {
     Token next = tokens->Next();
 
     size_t attribute_index_within_data = 0;
@@ -473,7 +586,7 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
             break;
         } else if (next.is_operator('(')) {
             return_value++;
-            load(entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
+            load(tokens, entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
         } else {
             return_value++;
             if (next.is_identifier() && entity && entity_instance_name) {
@@ -483,7 +596,7 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
             if (next.is_keyword()) {
                 try {
                     const auto* decl = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
-                    parse_context ps;
+                    parse_context ps(&context_pool_);
                     tokens->Next();
                     // The only case we know where a defined type contains entity
                     // instance references is IfcPropertySetDefinitionSet. For
@@ -491,7 +604,7 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
                     // register inverses to the host entity (and not the defined
                     // type) and to be able to actually register the references in
                     // the 2nd pass.
-                    load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
+                    load(tokens, entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
                     express::Base simple_type_instance(read_simple_type_instances.emplace_back(
                         ps.construct(file, entity_instance_name, *references_to_resolve, decl, std::nullopt, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index))
                     );
@@ -510,7 +623,8 @@ void IfcParse::impl::in_memory_file_storage::load(std::optional<size_t> entity_i
     }
 }
 
-void IfcParse::impl::in_memory_file_storage::try_read_semicolon() const {
+template <typename Reader>
+void IfcParse::impl::in_memory_file_storage::try_read_semicolon(IfcParse::IfcSpfLexer<Reader>* tokens) const {
     auto old_offset = tokens->stream->tell();
     Token semilocon = tokens->Next();
     if (!semilocon.is_operator(';')) {
@@ -1094,15 +1208,15 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
 }
 
 bool IfcParse::IfcFile::initialize(const std::string& fn, bool mmap) {
-    std::unique_ptr<FileReader> s;
     if (mmap) {
-        s = std::make_unique<FileReader>(fn, FileReader::mmap_tag{});
+        MMapFileReader s(fn);
+        storage_.emplace<1>(this);
+        std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     } else {
-        s = std::make_unique<FileReader>(fn);
+        FullBufferFileReader s(fn);
+        storage_.emplace<1>(this);
+        std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     }
-
-    storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&*s, schema_, max_id_, types_to_bypass_loading_);
 
     if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
         // @todo unify these names, it's already confusing enough as it stands
@@ -1124,7 +1238,7 @@ bool IfcParse::IfcFile::initialize(const std::string& path, filetype ty, bool re
         ty = guess_file_type(path);
     }
     if (ty == FT_IFCSPF) {
-        FileReader s(path);
+        FileReader<FullBufferImpl> s(path);
         storage_.emplace<1>(this);
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
 
@@ -1181,7 +1295,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
     , max_id_(0)
     , header_(new IfcParse::IfcSpfHeader(this))
 {
-    FileReader s(FileReader::caller_fed_tag{});
+    FileReader<PushedSequentialImpl> s(caller_fed_tag{});
 
     std::string string_data;
 	string_data.resize(length);
@@ -1203,24 +1317,10 @@ IfcFile::IfcFile(void* data, int length)
     , max_id_(0),
     header_(new IfcParse::IfcSpfHeader(this))
 {
-	FileReader s(std::string((char*)data, length), FileReader::caller_fed_tag{});
+	FileReader<PushedSequentialImpl> s(std::string((char*)data, length), caller_fed_tag{});
     
     storage_.emplace<1>(this);
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
-    good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
-    ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
-
-    byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_read_);
-    byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
-    byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
-}
-
-IfcFile::IfcFile(IfcParse::FileReader* s)
-    : schema_(nullptr)
-    , max_id_(0)
-{
-    storage_.emplace<1>(this);
-    std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
 
@@ -1260,9 +1360,127 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     setDefaultHeaderValues();
 }
 
-bool IfcParse::InstanceStreamer::hasSemicolon() const {
+namespace {
+
+template <typename Reader>
+void read_terminal(IfcSpfLexer<Reader>& lexer, const std::string& term, bool trailing_semicolon) {
+    if (lexer.Next().as_string() != term) {
+        throw IfcException(std::string("Expected " + term));
+    }
+    if (trailing_semicolon) {
+        if (!lexer.Next().is_operator(';')) {
+            throw IfcException("Expected ;");
+        }
+    }
+}
+
+template <typename Reader>
+std::shared_ptr<InstanceData> read_header_entity(
+    IfcParse::IfcFile* file,
+    IfcParse::impl::in_memory_file_storage& storage,
+    IfcSpfLexer<Reader>& lexer,
+    IfcParse::unresolved_references& references_to_resolve,
+    const IfcParse::entity& decl) {
+    parse_context pc(&storage.context_pool_);
+    lexer.Next();
+    storage.load(&lexer, std::nullopt, nullptr, pc, -1);
+    auto result = pc.construct(file, std::nullopt, references_to_resolve, &decl, decl.attribute_count(), -1);
+    storage.context_pool_.reset();
+    return result;
+}
+
+template <typename Reader>
+void parse_header(
+    IfcParse::IfcSpfHeader& header,
+    IfcParse::impl::in_memory_file_storage& storage,
+    IfcSpfLexer<Reader>& lexer,
+    IfcParse::unresolved_references& references_to_resolve) {
+    static const char* const ISO_10303_21 = "ISO-10303-21";
+    static const char* const HEADER = "HEADER";
+
+    read_terminal(lexer, ISO_10303_21, true);
+    read_terminal(lexer, HEADER, true);
+
+    read_terminal(lexer, Header_section_schema::file_description::Class().name_uc(), false);
+    header.set_file_description(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_description::Class()));
+    if (!lexer.Next().is_operator(';')) {
+        throw IfcException("Expected ;");
+    }
+
+    read_terminal(lexer, Header_section_schema::file_name::Class().name_uc(), false);
+    header.set_file_name(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_name::Class()));
+    if (!lexer.Next().is_operator(';')) {
+        throw IfcException("Expected ;");
+    }
+
+    read_terminal(lexer, Header_section_schema::file_schema::Class().name_uc(), false);
+    header.set_file_schema(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_schema::Class()));
+    if (!lexer.Next().is_operator(';')) {
+        throw IfcException("Expected ;");
+    }
+}
+
+template <typename Reader>
+bool try_parse_header(
+    IfcParse::IfcSpfHeader& header,
+    IfcParse::impl::in_memory_file_storage& storage,
+    IfcSpfLexer<Reader>& lexer,
+    IfcParse::unresolved_references& references_to_resolve) {
+    try {
+        parse_header(header, storage, lexer, references_to_resolve);
+        return true;
+    } catch (const std::exception& e) {
+        storage.context_pool_.reset();
+        Logger::Error(e);
+        return false;
+    }
+}
+
+} // namespace
+
+template <typename Reader>
+IfcSpfHeader& IfcParse::InstanceStreamer<Reader>::ensure_header() {
+    if (header_) {
+        return *header_;
+    }
+
+    if (owner_ != nullptr) {
+        header_ = &owner_->header();
+        header_->file(owner_);
+    } else {
+        owned_header_ = std::make_unique<IfcSpfHeader>(owner_);
+        header_ = owned_header_.get();
+    }
+
+    return *header_;
+}
+
+template <typename Reader>
+void IfcParse::InstanceStreamer<Reader>::initialize_header() {
+    storage_.file = owner_;
+    storage_.schema = schema_;
+    storage_.references_to_resolve = &references_to_resolve_;
+
+    if (!lexer_ || !stream_ || !stream_->size() || stream_->eof()) {
+        return;
+    }
+
+    auto& header = ensure_header();
+    if (try_parse_header(header, storage_, *lexer_, references_to_resolve_) && header.file_schema().schema_identifiers().size() == 1) {
+        try {
+            schema_ = IfcParse::schema_by_name(header.file_schema().schema_identifiers().front());
+            good_ = file_open_status::SUCCESS;
+        } catch (const IfcParse::IfcException&) {
+        }
+    }
+
+    storage_.schema = schema_;
+}
+
+template <typename Reader>
+bool IfcParse::InstanceStreamer<Reader>::hasSemicolon() const {
     auto local_stream = stream_->clone();
-	auto local_lexer = IfcSpfLexer(&local_stream);
+    auto local_lexer = IfcSpfLexer<Reader>(&local_stream);
     Token t;
     try {
         t = local_lexer.Next();
@@ -1272,20 +1490,20 @@ bool IfcParse::InstanceStreamer::hasSemicolon() const {
     while (t.type != Token::Token_NONE) {
         if (t.is_operator(';')) {
             return true;
-		}
+        }
         try {
             t = local_lexer.Next();
         } catch (const std::out_of_range&) {
-            // This most likely happens when a page boundary is contained within a string
             break;
         }
     }
-	return false;
+    return false;
 }
 
-size_t IfcParse::InstanceStreamer::semicolonCount() const {
+template <typename Reader>
+size_t IfcParse::InstanceStreamer<Reader>::semicolonCount() const {
     auto local_stream = stream_->clone();
-    auto local_lexer = IfcSpfLexer(&local_stream);
+    auto local_lexer = IfcSpfLexer<Reader>(&local_stream);
     Token t;
     size_t count = 0;
     try {
@@ -1300,145 +1518,248 @@ size_t IfcParse::InstanceStreamer::semicolonCount() const {
         try {
             t = local_lexer.Next();
         } catch (const std::out_of_range&) {
-            // This most likely happens when a page boundary is contained within a string
             break;
         }
     }
     return count;
 }
 
-void IfcParse::InstanceStreamer::pushPage(const std::string& page)
-{
+template <typename Reader>
+void IfcParse::InstanceStreamer<Reader>::pushPage(const std::string& page) {
     stream_->pushNextPage(page);
     if (good_ == file_open_status::NO_HEADER) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
-        if (header_->tryRead() && header_->file_schema().schema_identifiers().size() == 1) {
-            try {
-                schema_ = IfcParse::schema_by_name(header_->file_schema().schema_identifiers().front());
-                good_ = file_open_status::SUCCESS;
-            } catch (const IfcParse::IfcException&) {
-            }
-        }
-        storage_.file = nullptr;
-        storage_.schema = schema_;
-        storage_.tokens = lexer_;
-        storage_.references_to_resolve = &references_to_resolve_;
+        initialize_header();
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(IfcParse::IfcFile* f)
-    : stream_(new FileReader(FileReader::caller_fed_tag{}))
-    , lexer_(new IfcSpfLexer(stream_))
-    , token_stream_(3, Token{})
-    , schema_(nullptr)
-    , progress_(0)
-    , owner_(f)
-{
-    init_locale();
-    good_ = file_open_status::NO_HEADER;
-    storage_.file = f;
-}
-
-IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap, IfcParse::IfcFile* f)
-    : stream_(mmap ? new FileReader(fn, FileReader::mmap_tag{}) : new FileReader(fn))
-    , lexer_(new IfcSpfLexer(stream_))
-    , token_stream_(3, Token{})
-    , schema_(nullptr)
-    , progress_(0), owner_(f)
-{
-    init_locale();
-
-    good_ = file_open_status::NO_HEADER;
-    if (stream_->size() && !stream_->eof()) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
-        if (header_->tryRead() && header_->file_schema().schema_identifiers().size() == 1) {
-            try {
-                schema_ = IfcParse::schema_by_name(header_->file_schema().schema_identifiers().front());
-                good_ = file_open_status::SUCCESS;
-            } catch (const IfcParse::IfcException&) {
-            }
-        }
-        storage_.file = f;
-        storage_.schema = schema_;
-        storage_.tokens = lexer_;
-        storage_.references_to_resolve = &references_to_resolve_;
-    }
-}
-
-IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length, IfcParse::IfcFile* f)
-    : stream_(new FileReader(std::string((char*) data, length), FileReader::caller_fed_tag{}))
-    , lexer_(new IfcSpfLexer(stream_))
-    , token_stream_(3, Token{})
-    , schema_(nullptr)
-    , progress_(0)
-    , owner_(f)
-{
-    init_locale();
-
-    good_ = file_open_status::NO_HEADER;
-    if (stream_->size() && !stream_->eof()) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
-        if (header_->tryRead() && header_->file_schema().schema_identifiers().size() == 1) {
-            try {
-                schema_ = IfcParse::schema_by_name(header_->file_schema().schema_identifiers().front());
-                good_ = file_open_status::SUCCESS;
-            } catch (const IfcParse::IfcException&) {
-            }
-        }
-        storage_.file = f;
-        storage_.schema = schema_;
-        storage_.tokens = lexer_;
-        storage_.references_to_resolve = &references_to_resolve_;
-    }
-}
-
-IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer, IfcParse::IfcFile* f)
+template <typename Reader>
+IfcParse::InstanceStreamer<Reader>::InstanceStreamer(IfcParse::IfcFile* f)
     : stream_(nullptr)
-    , lexer_(lexer)
     , header_(nullptr)
+    , owner_(f)
     , token_stream_(3, Token{})
-    , schema_(schema)
+    , schema_(nullptr)
     , progress_(0)
-    , owner_(f) 
 {
     init_locale();
 
+    if constexpr (std::is_same_v<Reader, FileReader<PushedSequentialImpl>>) {
+        owned_stream_ = std::make_unique<Reader>(caller_fed_tag{});
+    } else {
+        static_assert(file_reader_dependent_false_v<Reader>, "Default InstanceStreamer requires a pushed sequential reader");
+    }
+
+    stream_ = owned_stream_.get();
+    lexer_ = std::make_unique<IfcSpfLexer<Reader>>(stream_);
+    good_ = file_open_status::NO_HEADER;
     storage_.file = f;
-    storage_.schema = schema_;
-    storage_.tokens = lexer_;
     storage_.references_to_resolve = &references_to_resolve_;
 }
 
-void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileReader* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
-    // Initialize a "C" locale for locale-independent
-    // number parsing. See comment above on line 41.
+template <typename Reader>
+IfcParse::InstanceStreamer<Reader>::InstanceStreamer(const std::string& fn, bool mmap, IfcParse::IfcFile* f)
+    : stream_(nullptr)
+    , header_(nullptr)
+    , owner_(f)
+    , token_stream_(3, Token{})
+    , schema_(nullptr)
+    , progress_(0) {
     init_locale();
 
-    tokens = nullptr;
+    if constexpr (std::is_same_v<Reader, FileReader<FullBufferImpl>>) {
+        (void)mmap;
+        owned_stream_ = std::make_unique<Reader>(fn);
+#ifdef USE_MMAP
+    } else if constexpr (std::is_same_v<Reader, MMapFileReader>) {
+        (void)mmap;
+        owned_stream_ = std::make_unique<Reader>(fn);
+#endif
+    } else {
+        static_assert(file_reader_dependent_false_v<Reader>, "Path-based InstanceStreamer requires a file-backed reader");
+    }
+
+    stream_ = owned_stream_.get();
+    lexer_ = std::make_unique<IfcSpfLexer<Reader>>(stream_);
+    good_ = file_open_status::NO_HEADER;
+    initialize_header();
+}
+
+template <typename Reader>
+IfcParse::InstanceStreamer<Reader>::InstanceStreamer(void* data, int length, IfcParse::IfcFile* f)
+    : stream_(nullptr)
+    , header_(nullptr)
+    , owner_(f)
+    , token_stream_(3, Token{})
+    , schema_(nullptr)
+    , progress_(0)
+{
+    init_locale();
+
+    if constexpr (std::is_same_v<Reader, FileReader<PushedSequentialImpl>>) {
+        owned_stream_ = std::make_unique<Reader>(std::string((char*)data, length), caller_fed_tag{});
+    } else {
+        static_assert(file_reader_dependent_false_v<Reader>, "Buffer-based InstanceStreamer requires a pushed sequential reader");
+    }
+
+    stream_ = owned_stream_.get();
+    lexer_ = std::make_unique<IfcSpfLexer<Reader>>(stream_);
+    good_ = file_open_status::NO_HEADER;
+    initialize_header();
+}
+
+template <typename Reader>
+IfcParse::InstanceStreamer<Reader>::InstanceStreamer(Reader* stream, IfcParse::IfcFile* f)
+    : stream_(stream)
+    , header_(nullptr)
+    , owner_(f)
+    , token_stream_(3, Token{})
+    , schema_(nullptr)
+    , progress_(0) {
+    init_locale();
+
+    lexer_ = std::make_unique<IfcSpfLexer<Reader>>(stream_);
+    good_ = file_open_status::NO_HEADER;
+    initialize_header();
+}
+
+template <typename Reader>
+void IfcParse::InstanceStreamer<Reader>::bypassTypes(const std::set<std::string>& type_names) {
+    for (auto& name : type_names) {
+        try {
+            types_to_bypass_.push_back(schema_->declaration_by_name(name));
+        } catch (const IfcException&) {
+            continue;
+        }
+    }
+}
+
+template <typename Reader>
+std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> IfcParse::InstanceStreamer<Reader>::readInstance() {
+    std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> return_value;
+
+    if (yield_header_instances_ && header_ && yielded_header_instances_ < 3) {
+        if (yielded_header_instances_ == 0) {
+            return_value.emplace(
+                0,
+                &header_->file_description().declaration(),
+                header_->file_description().data_weak().lock());
+        } else if (yielded_header_instances_ == 1) {
+            return_value.emplace(
+                0,
+                &header_->file_name().declaration(),
+                header_->file_name().data_weak().lock());
+        } else if (yielded_header_instances_ == 2) {
+            return_value.emplace(
+                0,
+                &header_->file_schema().declaration(),
+                header_->file_schema().data_weak().lock());
+        }
+        yielded_header_instances_ += 1;
+        return return_value;
+    }
+
+    unsigned current_id = 0;
+    while (good_ && !lexer_->stream->eof() && !current_id) {
+        if (token_stream_[0].type == IfcParse::Token::Token_IDENTIFIER &&
+            token_stream_[1].type == IfcParse::Token::Token_OPERATOR &&
+            token_stream_[1].value_char == '=' &&
+            token_stream_[2].type == IfcParse::Token::Token_KEYWORD) {
+            current_id = token_stream_[0].as_identifier();
+            const IfcParse::declaration* entity_type;
+            try {
+                entity_type = schema_->declaration_by_name(token_stream_[2].as_string());
+            } catch (const IfcException& ex) {
+                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
+                current_id = 0;
+                goto advance;
+            }
+
+            if (entity_type->as_entity() == nullptr) {
+                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
+                goto advance;
+            }
+
+            for (auto& ty : types_to_bypass_) {
+                if (entity_type->is(*ty)) {
+                    bypassed_instances_.push_back(current_id);
+                    current_id = 0;
+                    goto advance;
+                }
+            }
+
+            parse_context ps(&storage_.context_pool_);
+            lexer_->Next();
+            try {
+                storage_.load(lexer_.get(), current_id, entity_type->as_entity(), ps, -1);
+            } catch (const IfcInvalidTokenException& e) {
+                good_ = file_open_status::INVALID_SYNTAX;
+                Logger::Error(e);
+                break;
+            }
+
+            if (((++progress_) % 1000) == 0) {
+                std::stringstream ss;
+                ss << "\r#" << current_id;
+                Logger::Status(ss.str(), false);
+            }
+
+            auto data = ps.construct(owner_, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
+            storage_.context_pool_.reset();
+
+            return_value.emplace(
+                (size_t)current_id,
+                entity_type,
+                data);
+        }
+    advance:
+        Token next_token;
+        try {
+            next_token = lexer_->Next();
+        } catch (const IfcException& e) {
+            Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
+        } catch (...) {
+            Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
+        }
+
+        if (!lexer_->stream->eof() && !next_token) {
+            good_ = file_open_status::INVALID_SYNTAX;
+            break;
+        }
+
+        token_stream_.push_back(next_token);
+    }
+
+    stream_->dropPages();
+    lexer_->resetPool();
+
+    return return_value;
+}
+
+template <typename Reader>
+void IfcParse::impl::in_memory_file_storage::read_from_stream(Reader* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
+    init_locale();
+
+    schema = nullptr;
 
     if (!s->size() || s->eof()) {
-        // @todo set good on parent file
         good_ = file_open_status::READ_ERROR;
         return;
     }
 
-    tokens = new IfcSpfLexer(s);
-
     std::vector<std::string> schemas;
 
-    file->header().file(file);
+    InstanceStreamer<Reader> streamer(s, file);
+    streamer.yieldHeaderInstances(false);
 
-    if (file->header().tryRead()) {
+    if (const auto* header = streamer.header()) {
         try {
-            schemas = file->header().file_schema().schema_identifiers();
+            schemas = header->file_schema().schema_identifiers();
         } catch (...) {
-            // Purposely empty catch block
         }
-    } else {
-        good_ = file_open_status::NO_HEADER;
     }
 
-    if (schemas.size() == 1) {
+    schema = streamer.schema();
+    if (schema == nullptr && schemas.size() == 1) {
         try {
             schema = IfcParse::schema_by_name(schemas.front());
         } catch (const IfcParse::IfcException& e) {
@@ -1448,28 +1769,28 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
     }
 
     if (schema == nullptr) {
+        if (schemas.empty()) {
+            good_ = streamer.status();
+        } else {
+            good_ = file_open_status::UNSUPPORTED_SCHEMA;
+        }
         Logger::Message(Logger::LOG_ERROR, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
         return;
     }
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
-
-	InstanceStreamer streamer(schema, tokens, file);
     streamer.bypassTypes(typed_to_bypass);
 
     Logger::Status("Scanning file...");
 
     while (streamer) {
-
         auto inst = streamer.readInstance();
 
         if (!inst) {
-            // No more instances to read
             break;
-		}
+        }
 
         auto current_id = std::get<0>(*inst);
-
         express::Base instance(std::get<2>(*inst));
 
         if (instance.declaration().is(*ifcroot_type_)) {
@@ -1487,10 +1808,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         }
 
         const IfcParse::declaration* ty = &instance.declaration();
-
-        {
-            bytype_excl_[ty].push_back(instance);
-        }
+        bytype_excl_[ty].push_back(instance);
 
         if (byid_.find(current_id) != byid_.end()) {
             std::stringstream ss;
@@ -1499,26 +1817,14 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         }
 
         byid_.insert({(uint32_t)current_id, std::get<2>(*inst)});
-        max_id = (std::max)(max_id, (unsigned int) current_id);
+        max_id = (std::max)(max_id, (unsigned int)current_id);
     }
 
-	good_ = streamer.status();
-	byref_excl_ = streamer.inverses();
-    
-	// Move the storage of simple type instances so that they are retained during the lifetime of the file
+    good_ = streamer.status();
+    byref_excl_ = streamer.inverses();
     read_simple_type_instances = streamer.stealInstances();
 
-    // Set file ownership on simple type instances, so that when adding them to other files, proper copies are created
-    /*
-    // @todo double check whether file ownership is property set earlier on
-    for (auto& inst : read_simple_type_instances) {
-        inst->file_ = file;
-    }
-    */
-
     Logger::Status("\rDone scanning file   ");
-
-    delete tokens;
 
     if (good_ != file_open_status::SUCCESS) {
         return;
@@ -1638,6 +1944,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
 
     Logger::Status("Done resolving references");
 }
+
+template void IfcParse::impl::in_memory_file_storage::read_from_stream(FileReader<FullBufferImpl>* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+template void IfcParse::impl::in_memory_file_storage::read_from_stream(FileReader<PushedSequentialImpl>* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+#ifdef USE_MMAP
+template void IfcParse::impl::in_memory_file_storage::read_from_stream(MMapFileReader* s, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+#endif
 
 void IfcFile::recalculate_id_counter() {
     /*

@@ -522,9 +522,9 @@ int main(int argc, char** argv) {
 #ifdef HAVE_ICU
     if (!unicode_mode.empty()) {
         if (unicode_mode == "utf8") {
-            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::UTF8;
+            IfcParse::RuntimeIfcCharacterDecoder::mode = IfcParse::RuntimeIfcCharacterDecoder::UTF8;
         } else if (unicode_mode == "escape") {
-            IfcParse::IfcCharacterDecoder::mode = IfcParse::IfcCharacterDecoder::JSON;
+            IfcParse::RuntimeIfcCharacterDecoder::mode = IfcParse::RuntimeIfcCharacterDecoder::ESCAPE;
         } else {
             cerr_ << "[Error] Invalid value for --unicode" << std::endl;
             print_options(serializer_options);

@@ -31,10 +31,8 @@
 %ignore IfcParse::IfcFile::byref_excl_;
 %ignore IfcParse::IfcFile::types_to_bypass_loading_;
 
-%ignore IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer);
-
-%ignore IfcParse::InstanceStreamer::readInstance;
-%ignore IfcParse::InstanceStreamer::stealInstances;
+%ignore IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>::readInstance;
+%ignore IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>::stealInstances;
 
 %ignore express::Entity;
 %ignore express::Select;
@@ -54,9 +52,6 @@
 %ignore IfcParse::FileSchema::FileSchema;
 %ignore IfcParse::IfcFile::tokens;
 
-%ignore IfcParse::IfcSpfHeader::IfcSpfHeader(IfcSpfLexer*);
-%ignore IfcParse::IfcSpfHeader::lexer;
-%ignore IfcParse::IfcSpfHeader::stream;
 %ignore IfcParse::IfcSpfHeader::file_description;
 %ignore IfcParse::IfcSpfHeader::file_name;
 %ignore IfcParse::IfcSpfHeader::file_schema;
@@ -922,6 +917,7 @@ object = custom_base
 %}
 
 %include "../ifcparse/IfcFile.h"
+%template(InstanceStreamer) IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>;
 
 %pythoncode %{
 ### hack hack hack
@@ -977,10 +973,10 @@ object = _old_object
 		return f;
 	}
 
-	IfcParse::InstanceStreamer* stream_from_string(const std::string& data) {
+	IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>* stream_from_string(const std::string& data) {
 		char* copiedData = new char[data.length()];
 		memcpy(copiedData, data.c_str(), data.length());
-		return new IfcParse::InstanceStreamer((void *)copiedData, data.length());
+		return new IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>((void *)copiedData, data.length());
 	}
 
 	const char* version() {
@@ -1247,7 +1243,7 @@ object = _old_object
 	}
 %}
 
-%extend IfcParse::InstanceStreamer {
+%extend IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>> {
 	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
 		auto simply_type_to_dictionary = [&](const express::Base& t) -> PyObject* {
 			const auto& nm = t.declaration().name();

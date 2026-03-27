@@ -28,6 +28,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include <optional>
 
 // Forward declarations
 class InstanceData;
@@ -297,6 +298,7 @@ class IFC_PARSE_API entity : public declaration {
     std::vector<const entity*> subtypes_;
 
     std::vector<const attribute*> attributes_;
+    mutable std::optional<std::vector<const attribute*>> all_attributes_;
     std::vector<bool> derived_;
 
     std::vector<const inverse_attribute*> inverse_attributes_;
@@ -354,15 +356,17 @@ class IFC_PARSE_API entity : public declaration {
     const std::vector<const attribute*>& attributes() const { return attributes_; }
     const std::vector<bool>& derived() const { return derived_; }
 
-    const std::vector<const attribute*> all_attributes() const {
-        std::vector<const attribute*> attrs;
-        attrs.reserve(derived_.size());
-        if (supertype_ != nullptr) {
-            const std::vector<const attribute*> supertype_attrs = supertype_->all_attributes();
-            std::copy(supertype_attrs.begin(), supertype_attrs.end(), std::back_inserter(attrs));
+    const std::vector<const attribute*>& all_attributes() const {
+        if (!all_attributes_) {
+            auto& attrs = all_attributes_.emplace();
+            attrs.reserve(derived_.size());
+            if (supertype_ != nullptr) {
+                const std::vector<const attribute*> supertype_attrs = supertype_->all_attributes();
+                std::copy(supertype_attrs.begin(), supertype_attrs.end(), std::back_inserter(attrs));
+            }
+            std::copy(attributes_.begin(), attributes_.end(), std::back_inserter(attrs));
         }
-        std::copy(attributes_.begin(), attributes_.end(), std::back_inserter(attrs));
-        return attrs;
+        return *all_attributes_;
     }
 
     const std::vector<const inverse_attribute*> all_inverse_attributes() const {

@@ -21,9 +21,9 @@ IfcParse::parse_context::~parse_context() {
 }
 
 IfcParse::parse_context& IfcParse::parse_context::push() {
-    auto* pc = new IfcParse::parse_context;
-    tokens_.push_back(pc);
-    return *pc;
+    auto child = pool_->make();
+    tokens_.emplace_back(child);
+    return *child;
 }
 
 void IfcParse::parse_context::push(Token t) {
@@ -220,7 +220,7 @@ namespace {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
                     // @todo get aggregate of enumeration
                     dispatch_token(instance_id, attribute_id, v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context_handle>) {
                     // nested list
                     if constexpr (Depth < 3) {
                         construct_<Depth + 1>(instance_id, attribute_id, *v, nullptr, append_to_aggregate_storage);
@@ -245,7 +245,7 @@ std::shared_ptr<InstanceData> IfcParse::parse_context::construct(IfcParse::IfcFi
         transient_named_type.reset(new IfcParse::named_type(const_cast<IfcParse::declaration*>(decl)));
         parameter_types = { &*transient_named_type };
     } else if ((decl != nullptr) && (decl->as_entity() != nullptr)) {
-        auto entity_attrs = decl->as_entity()->all_attributes();
+        const auto& entity_attrs = decl->as_entity()->all_attributes();
         std::transform(
             entity_attrs.begin(),
             entity_attrs.end(),
@@ -307,7 +307,7 @@ std::shared_ptr<InstanceData> IfcParse::parse_context::construct(IfcParse::IfcFi
                         storage.set(index, v);
                     }
                 });
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context*>) {
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::parse_context_handle>) {
                 const auto *pt = param_type;
                 if (pt) {
                     while (pt->as_named_type() && pt->as_named_type()->declared_type()->as_type_declaration()) {
@@ -640,125 +640,6 @@ IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
         // @todo just return SPF for now, but ideally this will be augmented with all other options
         return FT_IFCSPF;
     }
-}
-
-void IfcParse::InstanceStreamer::bypassTypes(const std::set<std::string>& type_names) {
-    for (auto& name : type_names) {
-        try {
-            types_to_bypass_.push_back(schema_->declaration_by_name(name));
-        } catch (const IfcException&) {
-            continue;
-        }
-    }
- }
-
-
-std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> IfcParse::InstanceStreamer::readInstance() {
-     std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> return_value;
-
-    if (header_ && yielded_header_instances_ < 3) {
-        if (yielded_header_instances_ == 0) {
-            return_value.emplace(
-                0,
-                &header_->file_description().declaration(),
-                header_->file_description().data_weak().lock()
-             );
-        } else if (yielded_header_instances_ == 1) {
-            return_value.emplace(
-                0,
-                &header_->file_name().declaration(),
-                header_->file_name().data_weak().lock()
-            );
-        } else if (yielded_header_instances_ == 2) {
-            return_value.emplace(
-                0,
-                &header_->file_schema().declaration(),
-                header_->file_schema().data_weak().lock()
-            );
-        }
-        yielded_header_instances_ += 1;
-        return return_value;
-    }
-
-    unsigned current_id = 0;
-    while (good_ && !lexer_->stream->eof() && !current_id) {
-        if (token_stream_[0].type == IfcParse::Token::Token_IDENTIFIER &&
-            token_stream_[1].type == IfcParse::Token::Token_OPERATOR &&
-            token_stream_[1].value_char == '=' &&
-            token_stream_[2].type == IfcParse::Token::Token_KEYWORD) {
-            current_id = token_stream_[0].as_identifier();
-            const IfcParse::declaration* entity_type;
-            try {
-                entity_type = schema_->declaration_by_name(token_stream_[2].as_string());
-            } catch (const IfcException& ex) {
-                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].start_pos));
-                current_id = 0;
-                goto advance;
-            }
-
-            if (entity_type->as_entity() == nullptr) {
-                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].start_pos));
-                goto advance;
-            }
-
-            for (auto& ty : types_to_bypass_) {
-                if (entity_type->is(*ty)) {
-                    bypassed_instances_.push_back(current_id);
-                    // Why is this a conditional clause in the loop?
-                    current_id = 0;
-                    goto advance;
-                }
-            }
-
-            parse_context ps;
-            lexer_->Next();
-            try {
-                storage_.load(current_id, entity_type->as_entity(), ps, -1);
-            } catch (const IfcInvalidTokenException& e) {
-                good_ = file_open_status::INVALID_SYNTAX;
-                Logger::Error(e);
-                break;
-            }
-
-            /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
-            // Update the status after every 1000 instances parsed
-            if (((++progress_) % 1000) == 0) {
-                std::stringstream ss;
-                ss << "\r#" << current_id;
-                Logger::Status(ss.str(), false);
-            }
-
-            auto data = ps.construct(owner_, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
-
-            return_value.emplace(
-                (size_t)current_id,
-                entity_type,
-                data
-            );
-        }
-    advance:
-        Token next_token;
-        try {
-            next_token = lexer_->Next();
-        } catch (const IfcException& e) {
-            Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
-        } catch (...) {
-            Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
-        }
-
-        if (!lexer_->stream->eof() && !next_token) {
-            good_ = file_open_status::INVALID_SYNTAX;
-            break;
-        }
-
-        token_stream_.push_back(next_token);
-    }
-
-    // Free pages in front of cursor when variable-width tokens are materialized into entity instance data objects
-    (stream_ ? stream_ : (lexer_)->stream)->dropPages();
-    lexer_->resetPool();
-
-    return return_value;
 }
 
 express::Base IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl, int id) {

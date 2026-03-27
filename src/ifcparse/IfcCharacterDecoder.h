@@ -39,10 +39,12 @@ IFC_PARSE_API std::u32string convert_utf8(const std::string& string);
 
 namespace IfcParse {
 
+template <typename Reader>
 class IFC_PARSE_API IfcCharacterDecoder {
   private:
-    IfcParse::FileReader* stream_;
+    Reader* stream_;
     int codepage_;
+    std::u32string builder_;
 
   public:
     enum ConversionMode {
@@ -50,9 +52,10 @@ class IFC_PARSE_API IfcCharacterDecoder {
         UTF8,
         ESCAPE
     };
-    static ConversionMode mode;
-    static char substitution_character;
-    IfcCharacterDecoder(IfcParse::FileReader* stream);
+    inline static ConversionMode mode = UTF8;
+    inline static char substitution_character = '_';
+
+    IfcCharacterDecoder(Reader* stream);
     ~IfcCharacterDecoder();
     // Gets a decoded string representation at the token stream
     // read pointer and advances the underlying token stream.

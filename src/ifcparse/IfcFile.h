@@ -34,6 +34,7 @@
 #include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
+#include <memory>
 
 #ifdef IFOPSH_WITH_ROCKSDB
 
@@ -87,10 +88,13 @@ enum filetype {
 
 IFC_PARSE_API filetype guess_file_type(const std::string& fn);
 
+template <typename Reader = FileReader<FullBufferImpl>>
 class IFC_PARSE_API InstanceStreamer {
 private:
-    FileReader* stream_;
-    IfcSpfLexer* lexer_;
+    std::unique_ptr<Reader> owned_stream_;
+    Reader* stream_;
+    std::unique_ptr<IfcSpfLexer<Reader>> lexer_;
+    std::unique_ptr<IfcSpfHeader> owned_header_;
     IfcSpfHeader* header_;
     IfcParse::IfcFile* owner_;
     boost::circular_buffer<Token> token_stream_;
@@ -100,14 +104,18 @@ private:
     int progress_;
     IfcParse::unresolved_references references_to_resolve_;
     int yielded_header_instances_ = 0;
+    bool yield_header_instances_ = true;
     std::vector<const declaration*> types_to_bypass_;
     std::vector<unsigned> bypassed_instances_;
+
+    void initialize_header();
+    IfcSpfHeader& ensure_header();
 
   public:
 	bool coerce_attribute_count = true;
 
     operator bool() const {
-        return good_ && !lexer_->stream->eof();
+        return good_ && lexer_ && !lexer_->stream->eof();
     }
 
     IfcParse::file_open_status status() const {
@@ -151,17 +159,17 @@ private:
 
     InstanceStreamer(void* data, int length, IfcParse::IfcFile* f = nullptr);
 
-    InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer, IfcParse::IfcFile* f = nullptr);
+    InstanceStreamer(Reader* stream, IfcParse::IfcFile* f = nullptr);
 
     void bypassTypes(const std::set<std::string>& type_names);
 
-    ~InstanceStreamer() {
-        delete stream_;
-        if (stream_) {
-            delete lexer_;
-        }
-        delete header_;
-    }
+    void yieldHeaderInstances(bool value) { yield_header_instances_ = value; }
+
+    const IfcParse::schema_definition* schema() const { return schema_; }
+
+    const IfcSpfHeader* header() const { return header_; }
+
+    ~InstanceStreamer() = default;
 
     std::optional<std::tuple<size_t, const IfcParse::declaration*, std::shared_ptr<InstanceData>>> readInstance();
 };
@@ -248,12 +256,6 @@ public:
 	/// Constructs an IfcFile object from a memory buffer containing IFC-SPF data.
     /// </summary>
     IfcFile(void* data, int length);
-
-    /// <summary>
-    /// Constructs an IfcFile object from a given IFC SPF stream.
-    /// </summary>
-    /// <param name="stream">A pointer to an IfcParse::FileReader object representing the input IFC SPF data stream.</param>
-    IfcFile(IfcParse::FileReader* stream);
 
     /// <summary>
     /// Constructs an IfcFile object with the specified schema, file type, and file path.

@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -30,102 +30,242 @@
 #include "ifc_parse_api.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <deque>
+#include <list>
 #include <memory>
-#include <optional>
-#include <string>
-#include <variant>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
+
+#ifdef USE_MMAP
+#include <boost/iostreams/device/mapped_file.hpp>
+#endif
 
 namespace IfcParse {
 
-/// \brief Read-only file accessor that supports four backends:
-///  - full-buffer in RAM
-///  - paged (LRU-cached with capacity)
-///  - memory-mapped via boost::iostreams
-///  - user-pushed sequential pages (caller feeds pages intended for streaming reads in WASM)
-class IFC_PARSE_API FileReader {
+struct FileReaderPage {
+    std::vector<char> data;
+};
+
+struct caller_fed_tag {};
+
+template <typename>
+inline constexpr bool file_reader_dependent_false_v = false;
+
+class IFC_PARSE_API FullBufferImpl;
+class IFC_PARSE_API PagedFileImpl;
+#ifdef USE_MMAP
+class IFC_PARSE_API MMapImpl;
+#endif
+class IFC_PARSE_API PushedSequentialImpl;
+
+template <typename Impl>
+class FileReader {
 public:
-    struct Page { std::vector<char> data; };
+    using impl_type = Impl;
+    using Page = FileReaderPage;
 
-    /// \brief Tag to choose memory-mapped backend via boost::iostreams::mapped_file_source.
-    struct mmap_tag {};
-    /// \brief Tag to choose user-pushed sequential pages.
-    struct caller_fed_tag {};
+    FileReader() = default;
 
-    /// \brief Construct a FileReader.
-    /// \param fn File path.
-    /// \param maybe_mmaped_or_chunked
-    ///        - std::nullopt: full-buffer mode (entire file loaded into memory)
-    ///        - size_t: paged mode with this page size in bytes (e.g., 4096)
-    ///        - mmap_tag: memory-mapped mode using boost::iostreams::mapped_file_source
-    /// \param page_cache_capacity Number of pages to keep in the LRU when in paged mode.
-    FileReader(const std::string& fn);
-
-    FileReader(const std::string& fn, const mmap_tag&);
-
-    FileReader(const caller_fed_tag&);
-    FileReader(const std::string& content, const caller_fed_tag&);
-
-    FileReader(const std::string& fn, size_t page_size, size_t page_capacity);
-
-    /// \brief Copy-construct a new reader sharing the underlying storage but with its own cursor.
-    FileReader clone() const;
-
-    /// \brief Seek to an absolute byte position.
-    /// \throws std::out_of_range if pos > size().
-    void seek(size_t pos);
-
-    /// \brief Return the current cursor position.
-    size_t tell() const;
-
-    /// \brief Total file size in bytes.
-    size_t size() const;
-
-    /// \brief Peek the byte at the current cursor.
-    /// \throws std::out_of_range at EOF.
-    char peek() const;
-
-    /// \brief Advance the cursor by n bytes (default 1).
-    /// \throws std::out_of_range if advancing crosses EOF.
-    void increment(size_t n = 1);
-
-    /// \brief Push the next sequential page (pushed backend only).
-	/// \param data Contents of the page.
-    /// \throws std::logic_error if the current backend is not in pushed mode
-    void pushNextPage(const std::string& data);
-
-    /// \brief Drops pages up to cursor position or provided offset. Does nothing when current backend is not in pushed mode
-    /// \param up_to_pos Pages with an end offset before up_to_pos are dropped from memory
-    void dropPages();
-    void dropPages(size_t up_to_pos);
-
-    /// \brief Returns true if the cursor is at or beyond the end of available data.
-    /// For the pushed backend, EOF means all pushed bytes have been consumed.
-    bool eof() const;
-
-    /// \brief Equivalent of peek() followed by increment(1)
-    char read();
-
-    /// \brief Equivalent of peek() followed by increment(1)
-    char get(size_t offset) const;
-
-    struct Impl {
-        virtual ~Impl() = default;
-        virtual size_t size() const = 0;
-        virtual char get(size_t pos) const = 0;
-        /// \brief Backend may support pushing pages; default throws.
-        virtual void pushNextPage(const std::string&) {
-            throw std::logic_error("push_next_page: backend does not support pushed mode");
+    explicit FileReader(const std::string& fn)
+        : cursor_(0) {
+        if constexpr (std::is_same_v<Impl, FullBufferImpl>
+#ifdef USE_MMAP
+            || std::is_same_v<Impl, MMapImpl>
+#endif
+        ) {
+            impl_ = std::make_shared<Impl>(fn);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This FileReader constructor is not supported for the selected backend");
         }
-        virtual void dropPages(size_t) {
-            // empty on purpose
+    }
+
+    explicit FileReader(const caller_fed_tag&)
+        : cursor_(0) {
+        if constexpr (std::is_same_v<Impl, PushedSequentialImpl>) {
+            impl_ = std::make_shared<Impl>();
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This FileReader constructor is not supported for the selected backend");
         }
-    };
+    }
+
+    FileReader(const std::string& content, const caller_fed_tag&)
+        : FileReader(caller_fed_tag{}) {
+        if constexpr (std::is_same_v<Impl, PushedSequentialImpl>) {
+            impl_->pushNextPage(content);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This FileReader constructor is not supported for the selected backend");
+        }
+    }
+
+    FileReader(const std::string& fn, size_t page_size, size_t page_capacity)
+        : cursor_(0) {
+        if constexpr (std::is_same_v<Impl, PagedFileImpl>) {
+            impl_ = std::make_shared<Impl>(fn, page_size, page_capacity);
+        } else {
+            static_assert(file_reader_dependent_false_v<Impl>, "This FileReader constructor is not supported for the selected backend");
+        }
+    }
+
+    FileReader clone() const {
+        FileReader c(*this);
+        c.cursor_ = cursor_;
+        return c;
+    }
+
+    void seek(size_t pos) {
+        if (pos > size()) {
+            throw std::out_of_range("seek out of range");
+        }
+        cursor_ = pos;
+    }
+
+    size_t tell() const { return cursor_; }
+
+    size_t size() const { return impl_->size(); }
+    size_t remaining() const { return size() - cursor_; }
+
+    char peek() const {
+        if (cursor_ >= size()) {
+            throw std::out_of_range("peek at EOF");
+        }
+        return impl_->get(cursor_);
+    }
+
+    uint64_t peek_u64() const {
+        if (remaining() < sizeof(uint64_t)) {
+            throw std::out_of_range("peek_u64 at EOF");
+        }
+        return impl_->get_u64(cursor_);
+    }
+
+    uint32_t peek_u32() const {
+        if (remaining() < sizeof(uint32_t)) {
+            throw std::out_of_range("peek_u32 at EOF");
+        }
+        return impl_->get_u32(cursor_);
+    }
+
+    void increment(size_t n = 1) {
+        if (cursor_ + n > size()) {
+            throw std::out_of_range("increment past EOF");
+        }
+        cursor_ += n;
+    }
+
+    void pushNextPage(const std::string& data) {
+        impl_->pushNextPage(data);
+    }
+
+    void dropPages() {
+        impl_->dropPages(0);
+    }
+
+    void dropPages(size_t up_to_pos) {
+        impl_->dropPages(up_to_pos);
+    }
+
+    bool eof() const {
+        return cursor_ >= size();
+    }
+
+    char read() {
+        auto c = peek();
+        increment(1);
+        return c;
+    }
+
+    char get(size_t offset) const {
+        return impl_->get(offset);
+    }
 
 private:
     std::shared_ptr<Impl> impl_;
     size_t cursor_ = 0;
+};
+
+class IFC_PARSE_API FullBufferImpl {
+public:
+    explicit FullBufferImpl(const std::string& fn);
+
+    size_t size() const;
+    char get(size_t pos) const;
+    uint32_t get_u32(size_t pos) const;
+    uint64_t get_u64(size_t pos) const;
+    void pushNextPage(const std::string& data);
+    void dropPages(size_t pos);
+
+private:
+    std::vector<char> buf_;
+    size_t size_;
+};
+
+class IFC_PARSE_API PagedFileImpl {
+public:
+    struct Entry {
+        FileReaderPage page;
+        std::list<size_t>::iterator it;
+    };
+
+    PagedFileImpl(const std::string& fn, size_t page_size, size_t cap);
+    ~PagedFileImpl();
+
+    size_t size() const;
+    char get(size_t pos) const;
+    uint32_t get_u32(size_t pos) const;
+    uint64_t get_u64(size_t pos) const;
+    void pushNextPage(const std::string& data);
+    void dropPages(size_t pos);
+
+private:
+    const FileReaderPage& fetchPage_(size_t idx) const;
+    void touch_(std::unordered_map<size_t, Entry>::iterator it) const;
+    void evict_() const;
+
+    std::string fn_;
+    FILE* fp_ = nullptr;
+    size_t file_size_ = 0;
+    size_t page_size_ = 4096;
+    size_t capacity_ = 8;
+    mutable std::list<size_t> lru_;
+    mutable std::unordered_map<size_t, Entry> map_;
+};
+
+#ifdef USE_MMAP
+class IFC_PARSE_API MMapImpl {
+public:
+    explicit MMapImpl(const std::string& fn);
+
+    size_t size() const;
+    char get(size_t pos) const;
+    uint32_t get_u32(size_t pos) const;
+    uint64_t get_u64(size_t pos) const;
+    void pushNextPage(const std::string& data);
+    void dropPages(size_t pos);
+
+private:
+    boost::iostreams::mapped_file_source map_;
+    size_t size_ = 0;
+};
+#endif
+
+class IFC_PARSE_API PushedSequentialImpl {
+public:
+    size_t size() const;
+    char get(size_t pos) const;
+    uint32_t get_u32(size_t pos) const;
+    uint64_t get_u64(size_t pos) const;
+    void pushNextPage(const std::string& data);
+    void dropPages(size_t pos);
+
+private:
+    std::deque<FileReaderPage> pages_;
+    size_t discarded_page_bytes_ = 0;
 };
 
 } // namespace IfcParse

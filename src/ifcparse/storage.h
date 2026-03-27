@@ -131,8 +131,8 @@ namespace IfcParse {
     typedef std::list<std::pair<MutableAttributeValue, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
     class IfcFile;
+    template <typename Reader>
     class IfcSpfLexer;
-    class FileReader;
 
     struct Token {
         enum TokenType {
@@ -202,15 +202,36 @@ namespace IfcParse {
         }
     };
 
+    struct parse_context;
+    struct parse_context_pool;
+
+    struct parse_context_handle {
+        parse_context_pool* pool = nullptr;
+        uint32_t index = 0;
+
+        parse_context& get() const;
+        parse_context* operator->() const;
+        parse_context& operator*() const;
+        explicit operator bool() const { return pool != nullptr; }
+    };
+
     struct parse_context {
-        std::list<
+        std::vector<
             std::variant<
             express::Base,
             Token,
-            parse_context*
+            parse_context_handle
             >> tokens_;
 
-        parse_context() {};
+        void reset() {
+            tokens_.clear();
+        }
+
+        parse_context_pool* pool_;
+
+        parse_context(parse_context_pool* pool) : pool_(pool) {
+            tokens_.reserve(16);
+        };
         ~parse_context();
 
         parse_context(const parse_context&) = delete;
@@ -228,15 +249,46 @@ namespace IfcParse {
         std::shared_ptr<InstanceData> construct(IfcParse::IfcFile* owner, std::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
     };
 
+    struct parse_context_pool {
+        std::vector<parse_context> nodes_;
+        uint32_t used_ = 0;
+
+        void reset() { used_ = 0; }
+
+        parse_context_handle make() {
+            if (used_ == nodes_.size()) {
+                nodes_.emplace_back(this);
+            }
+            auto idx = used_++;
+            nodes_[idx].reset();
+            return {this, idx};
+        }
+
+        parse_context& get(uint32_t index) {
+            return nodes_[index];
+        }
+    };
+
+    inline parse_context& parse_context_handle::get() const {
+        return pool->get(index);
+    }
+
+    inline parse_context* parse_context_handle::operator->() const {
+        return &pool->get(index);
+    }
+
+    inline parse_context& parse_context_handle::operator*() const {
+        return pool->get(index);
+    }
+
     namespace impl {
         struct IFC_PARSE_API in_memory_file_storage {
+            IfcParse::parse_context_pool context_pool_;
+
             std::vector<std::shared_ptr<InstanceData>> read_simple_type_instances;
             std::vector<std::shared_ptr<InstanceData>> steal_instances() {
                 return read_simple_type_instances;
             }
-
-            IfcParse::IfcSpfLexer* tokens;
-            // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
             IfcParse::IfcFile* file;
@@ -258,7 +310,7 @@ namespace IfcParse {
             typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : tokens(nullptr), file(f), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<InstanceData>& d) { return express::Base(d); }) {};
+            in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : file(f), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<InstanceData>& d) { return express::Base(d); }) {};
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
@@ -303,13 +355,16 @@ namespace IfcParse {
             entity_instance_by_guid_t byguid_;
             entity_instance_by_name_t byid_read_;
 
-            void load(std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
-            void try_read_semicolon() const;
+            template <typename Reader>
+            void load(IfcParse::IfcSpfLexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
+            template <typename Reader>
+            void try_read_semicolon(IfcParse::IfcSpfLexer<Reader>* tokens) const;
 
             void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
             void unregister_inverse(unsigned, const IfcParse::entity* from_entity, const express::Base&, int attribute_index);
 
-            void read_from_stream(IfcParse::FileReader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+            template <typename Reader>
+            void read_from_stream(Reader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 
