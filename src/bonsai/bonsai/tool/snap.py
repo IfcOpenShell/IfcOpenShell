@@ -398,7 +398,7 @@ class Snap(bonsai.core.tool.Snap):
             for snap in closest_snaps:
                 if snap_obj.obj == snap["object"]:
                     if xray_mode:
-                        if "face_index" in snap and snap["face_index"]:
+                        if "face_index" in snap and snap["face_index"] is not None:
                             snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
                             for point in snap_points:
                                 point["group"] = "Object"
@@ -407,7 +407,7 @@ class Snap(bonsai.core.tool.Snap):
                         # If it is a solid object that is closest to camera it ignores all the rest
                         if "is_closest_to_camera" in snap and snap["is_closest_to_camera"] and snap["group"] == "Object":
                             closest_snap = [snap] # discards objects that aren't the closest
-                            if "face_index" in snap and snap["face_index"]:
+                            if "face_index" in snap and snap["face_index"] is not None:
                                 snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
                                 for point in snap_points:
                                     point["group"] = "Object"

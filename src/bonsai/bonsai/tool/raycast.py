@@ -73,8 +73,14 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         assert rv3d
         view_location = rv3d.view_matrix.inverted().translation
+        view_normal = rv3d.view_rotation @ mathutils.Vector((0.0, 0.0, -1.0))
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
+        bbox_edges = [
+            (0,1),(1,2),(2,3),(3,0),
+            (4,5),(5,6),(6,7),(7,4),
+            (0,4),(1,5),(2,6),(3,7)
+        ]
 
         transposed_bbox: list[Vector] = []
         bbox_2d: list[float] = []
@@ -98,8 +104,23 @@ class Raycast(bonsai.core.tool.Raycast):
 
         for v in bbox:
             coord_2d = tool.Cad.location_3d_to_region_2d_np(context.region, context.space_data.region_3d, v)
-            if coord_2d is not None:
-                transposed_bbox.append(coord_2d)
+            transposed_bbox.append(coord_2d)
+
+        if not any(transposed_bbox):
+            transposed_bbox = []
+        # If there are None values in transposed_bbox it means that there are vertices behind the camera
+        # so we get the intersection of the edge with the region border
+        # new_bbox = []
+        if any(transposed_bbox) and not all(transposed_bbox):
+            new_bbox = transposed_bbox.copy()
+            new_bbox = [x for x in new_bbox if x is not None]
+            for edge in bbox_edges:
+                if (transposed_bbox[edge[0]] is None) ^ (transposed_bbox[edge[1]] is None):
+                    point, _ = cls.intersect_edge_region_border(context.region, context.space_data, rv3d, bbox[edge[0]], bbox[edge[1]])
+                    if point:
+                        new_bbox.append(point)
+            if new_bbox:
+                transposed_bbox = new_bbox
 
         region = context.region
         borders = (0, region.width, 0, region.height)
@@ -120,6 +141,99 @@ class Raycast(bonsai.core.tool.Raycast):
         ):
             return (obj, bbox_2d)
         return None
+
+    def intersect_edge_region_border(region, space, rv3d, v1, v2):
+        def segment_intersect_near_plane(view_matrix, clip_start, p_world_a, p_world_b):
+            a_view = view_matrix @ p_world_a
+            b_view = view_matrix @ p_world_b
+            z_near = -clip_start
+            za = a_view.z
+            zb = b_view.z
+            denom = (zb - za)
+            if denom == 0.0:
+                return None, None
+            t = (z_near - za) / denom
+            if t < 0.0 or t > 1.0:
+                return None, None
+            p_view = a_view.lerp(b_view, t)
+            cam_world = view_matrix.inverted()
+            p_world = cam_world @ p_view
+            return p_world, t
+
+        def is_inside_region(pt2d, region):
+            return 0.0 <= pt2d.x <= region.width and 0.0 <= pt2d.y <= region.height
+
+        def clamp_to_region_border(point2d, region):
+            x, y = point2d
+            x_clamped = max(0.0, min(region.width, x))
+            y_clamped = max(0.0, min(region.height, y))
+            return Vector((x_clamped, y_clamped))
+
+        def find_nearby_onscreen_point(region, rv3d, p1, p2, initial_t_on_segment, max_iters=40, step=0.05):
+            """
+            Use iterative approach: move t toward 0. Returns the first point that is inside region border
+            """
+            t = initial_t_on_segment
+            for i in range(max_iters):
+                test_3d = p1.lerp(p2, t)
+                test_2d = view3d_utils.location_3d_to_region_2d(region, rv3d, test_3d)
+                if test_2d is not None and is_inside_region(test_2d, region):
+                    return test_3d, test_2d, t
+                # move t toward 0 by reducing it by a fraction of its current value
+                t -= step
+                # if t is already very small, break
+                if t <= 1e-6:
+                    break
+
+            return None, None, None
+
+        # Ensures that all the calculation uses the same direction based on which point is on the screen
+        if view3d_utils.location_3d_to_region_2d(region, rv3d, v1):
+            onscreen_vert = v1
+            offscreen_vert = v2
+        else:
+            onscreen_vert = v2
+            offscreen_vert = v1
+            # v2, v1 = v1, v2
+
+        clip_start = space.clip_start
+        view_mat = rv3d.view_matrix
+        inter_world, t_on_ab = segment_intersect_near_plane(view_mat, clip_start, onscreen_vert, offscreen_vert)
+
+        if inter_world is None:
+            print("No intersection with viewport near plane found for the segment.")
+            return
+
+        init_2d = view3d_utils.location_3d_to_region_2d(region, rv3d, inter_world)
+
+        if init_2d is not None and is_inside_region(init_2d, region):
+            final_world = inter_world
+            final_2d = init_2d
+            final_t = initial_t
+        else:
+            found_world, found_2d, found_t = find_nearby_onscreen_point(
+                region, rv3d,
+                onscreen_vert, offscreen_vert,
+                t_on_ab,
+                max_iters=600, step=0.01
+            )
+            if found_world is None:
+                if init_2d is None:
+                    print("Initial projection invalid and iterative search failed.")
+                    return
+                # fallback: clamp projected point to border via manual mapping
+                final_2d = clamp_to_region_border(init_2d, region)
+                final_world = None
+                final_t = None
+                # print("Iterative search failed; using clamped 2D:", final_2d)
+            else:
+                final_world = found_world
+                final_2d = found_2d
+                final_t = found_t
+                # print(f"Found onscreen point at t={final_t:.4f}")
+
+        # print("Final 2D:", final_2d)
+        return final_2d, v2
 
     @classmethod
     def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
@@ -241,7 +355,7 @@ class Raycast(bonsai.core.tool.Raycast):
         cls,
         context: bpy.types.Context,
         event: bpy.types.Event,
-        snap_obj,
+        snap_obj: SnapObj,
     ):
 
         def divide_vector(start, end, n):
@@ -258,22 +372,45 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
         points = []
 
-        verts_2d = [
-            view3d_utils.location_3d_to_region_2d(region, rv3d, v) for v in snap_obj.verts_3d
-        ]  # Numpy version is worst in performance
-        verts_2d = [
-            view3d_utils.location_3d_to_region_2d(region, rv3d, v) for v in snap_obj.verts_3d
-        ]  # Numpy version is worst in performance
-        snap_threshold = 10.0
-
         try:
             loc = tool.Cad.region_2d_to_location_3d_np(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
 
+        verts_2d = [
+            view3d_utils.location_3d_to_region_2d(region, rv3d, v) for v in snap_obj.verts_3d
+        ]  # Numpy version is worst in performance
+
+        intersected = snap_obj.raycast_boxes(
+            context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
+        )
+        edges = []
+        for it in intersected:
+            edges.extend(it.edges)
+        edges = set(edges)
+
+        edge_verts = {}
+        for e in edges:
+            verts_idx = tuple(snap_obj.obj.data.edges[e].vertices)
+            verts = snap_obj.obj.data.vertices
+            v1 = snap_obj.obj.matrix_world @ verts[verts_idx[0]].co
+            v1_2d = verts_2d[verts_idx[0]]
+            v2 = snap_obj.obj.matrix_world @ verts[verts_idx[1]].co
+            v2_2d = verts_2d[verts_idx[1]]
+            if (v1_2d is None) ^ (v2_2d is None):
+                point, _ = cls.intersect_edge_region_border(region, context.space_data, rv3d, v1, v2)
+                if v1_2d is None:
+                    edge_verts[e] = (point, v2_2d)
+                else:
+                    edge_verts[e] = (v1_2d, point)
+            else:
+                edge_verts[e] = (v1_2d, v2_2d)
+            
+        snap_threshold = 10.0
+
         for i, point in enumerate(verts_2d):
             if not point:
-                break
+                continue
             distance = (Vector(mouse_pos) - point).length
             if distance <= snap_threshold:
                 snap_point = {
@@ -284,20 +421,12 @@ class Raycast(bonsai.core.tool.Raycast):
                 }
                 points.append(snap_point)
 
-        intersected = snap_obj.raycast_boxes(
-            context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
-        )
-        edges = []
-        for it in intersected:
-            edges.extend(it.edges)
-        edges = set(edges)
         count = 0
         selected_edges = {}
         for e in edges:
-            idx = snap_obj.obj.data.edges[e].vertices
-
-            p0x, p0y = verts_2d[idx[0]][0], verts_2d[idx[0]][1]
-            p1x, p1y = verts_2d[idx[1]][0], verts_2d[idx[1]][1]
+            p0, p1 = edge_verts[e]
+            p0x, p0y = p0
+            p1x, p1y = p1
             px, py = mouse_pos
 
             # segment vector = p1 - p0
