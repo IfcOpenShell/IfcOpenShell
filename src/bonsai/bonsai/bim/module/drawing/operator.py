@@ -653,26 +653,69 @@ class CreateDrawing(bpy.types.Operator):
                 continue
             if not (element := tool.Ifc.get_entity(obj)):
                 continue
-            if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
-                continue
-            verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
+            if tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
+                verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
 
-            g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
-            g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
-            g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+                g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+                g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+                g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
 
-            lines = []
-            for edge in edges:
-                start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
-                end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
-                coords = [start, end]
-                d = " ".join(
-                    ["L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale) for p in coords]
-                )
-                d = "M{}".format(d[1:])
-                path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
-                path.attrib["d"] = d
-            group.append(g)
+                for edge in edges:
+                    start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
+                    end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
+                    coords = [start, end]
+                    d = " ".join(
+                        ["L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale) for p in coords]
+                    )
+                    d = "M{}".format(d[1:])
+                    path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                    path.attrib["d"] = d
+                group.append(g)
+            elif element.is_a("IfcSpatialElement"):
+                bm = bmesh.new()
+                bm.from_mesh(obj.data)
+                bm.transform(obj.matrix_world)
+                bm.normal_update()
+                camera_direction = context.scene.camera.matrix_world.to_3x3() @ Vector((0, 0, -1))
+                g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+                g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+                g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+                g.set("class", "projection")
+                edge_count = 0
+                for edge in bm.edges:
+                    link_faces = edge.link_faces
+                    if len(link_faces) == 1:
+                        should_draw = True
+                    elif len(link_faces) == 2:
+                        f0_front = link_faces[0].normal.dot(camera_direction) < 0
+                        f1_front = link_faces[1].normal.dot(camera_direction) < 0
+                        if f0_front != f1_front:
+                            should_draw = True  # silhouette edge
+                        elif f0_front and f1_front:
+                            # both front-facing: only draw real creases, skip flat triangulation edges
+                            should_draw = link_faces[0].normal.dot(link_faces[1].normal) < 0.99
+                        else:
+                            should_draw = False  # both back-facing
+                    else:
+                        should_draw = False
+                    if not should_draw:
+                        continue
+                    p0 = camera_matrix_i @ edge.verts[0].co
+                    p1 = camera_matrix_i @ edge.verts[1].co
+                    d = "M{},{} L{},{}".format(
+                        (x_offset + p0[0]) * svg_scale,
+                        (y_offset - p0[1]) * svg_scale,
+                        (x_offset + p1[0]) * svg_scale,
+                        (y_offset - p1[1]) * svg_scale,
+                    )
+                    path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                    path.attrib["d"] = d
+                    edge_count += 1
+                bm.free()
+                if edge_count:
+                    group.insert(0, g)
+                else:
+                    root.remove(g)
 
     def generate_material_layers(self, context: bpy.types.Context, root) -> None:
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
@@ -1002,10 +1045,9 @@ class CreateDrawing(bpy.types.Operator):
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         if group is None:
-            with open(svg_path, "wb") as svg:
-                svg.write(etree.tostring(root))
-
-            return svg_path
+            group = etree.Element("{http://www.w3.org/2000/svg}g")
+            group.tail = "\n"
+            root.insert(0, group)
 
         # Add target_view and scale classes to the parent group from IFC data
         if group is not None:
@@ -1256,49 +1298,6 @@ class CreateDrawing(bpy.types.Operator):
             results = dom1.toxml()
             results = results.encode("ascii", "xmlcharrefreplace")
             root = etree.fromstring(results)
-
-        # Spaces are handled as a special case, since they are often overlayed
-        # in addition to elements. For example, a space should not obscure
-        # other elements in projection. Spaces should also not override cut
-        # elements but instead be drawn in addition to cut elements.
-        spaces = tool.Drawing.get_drawing_spaces(self.camera_element)
-
-        group = root.findall(".//{http://www.w3.org/2000/svg}g")[0]
-
-        x_offset = self.svg_writer.raw_width / 2
-        y_offset = self.svg_writer.raw_height / 2
-
-        for space in spaces:
-            obj = tool.Ifc.get_object(space)
-            if not obj or not tool.Drawing.is_intersecting_camera(obj, self.camera):
-                continue
-            verts, edges = tool.Drawing.bisect_mesh(obj, self.camera)
-            verts = [self.svg_writer.project_point_onto_camera(Vector(v)) for v in verts]
-            line_strings = [
-                shapely.LineString(
-                    [
-                        (
-                            (x_offset + verts[e[0]][0]) * self.svg_writer.svg_scale,
-                            (y_offset - verts[e[0]][1]) * self.svg_writer.svg_scale,
-                        ),
-                        (
-                            (x_offset + verts[e[1]][0]) * self.svg_writer.svg_scale,
-                            (y_offset - verts[e[1]][1]) * self.svg_writer.svg_scale,
-                        ),
-                    ]
-                )
-                for e in edges
-            ]
-            closed_polygons = shapely.polygonize(line_strings)
-            for polygon in closed_polygons.geoms:
-                classes = self.get_svg_classes(space)
-                path = etree.Element("path")
-                d = "M" + " L".join([",".join([str(o) for o in co]) for co in polygon.exterior.coords[0:-1]]) + " Z"
-                for interior in polygon.interiors:
-                    d += " M" + " L".join([",".join([str(o) for o in co]) for co in interior.coords[0:-1]]) + " Z"
-                path.attrib["d"] = d
-                path.set("class", " ".join(list(classes)))
-                group.append(path)
 
         with open(svg_path, "wb") as svg:
             svg.write(etree.tostring(root))

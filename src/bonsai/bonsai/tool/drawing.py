@@ -2342,12 +2342,15 @@ class Drawing(bonsai.core.tool.Drawing):
                 elements = camera_view_elements
             else:
                 # This can probably be smarter
-                elements = set(ifc_file.by_type("IfcElement"))
+                if ifc_file.schema == "IFC2X3":
+                    elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
+                else:
+                    elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
-            elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
+            elements = elements & base_elements
 
         updated_set = set()
         for i in elements:
@@ -2543,7 +2546,7 @@ class Drawing(bonsai.core.tool.Drawing):
         assert drawing and isinstance(camera.data, bpy.types.Camera)
         cls.import_annotations_in_group(cls.get_drawing_group(drawing))
 
-        filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
+        filtered_elements = cls.get_drawing_elements(drawing)
         filtered_elements.add(drawing)
 
         target_view = cls.get_drawing_target_view(drawing)
