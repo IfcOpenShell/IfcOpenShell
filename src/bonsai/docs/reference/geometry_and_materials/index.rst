@@ -114,7 +114,7 @@ representations for a single IFC element.
 
 Representation Items
 ^^^^^^^^^^^^^^^^^^^^
-This section lists the items that make up the current representation. In the example, there is one item of type "IfcExtrudedAreaSolid".
+This section lists the items that make up the current representation. In the example, there is one item of type ``IfcExtrudedAreaSolid``.
 
 - You can select items to view or edit their properties.
 - The "x" button allows you to remove items from the representation.
@@ -200,9 +200,9 @@ Shows boolean operations applied to the element's geometry. The panel displays t
 
 Connections
 ^^^^^^^^^^^
-Lists other elements that are geometrically connected to the current element. In this example, "Wall.006" is connected "AT_START" to the current element.
+Lists other elements that are geometrically connected to the current element. In this example, ``Wall.006`` is connected ``AT_START`` to the current element.
 
-- The connection type (e.g., AT_START) indicates how the elements are related.
+- The connection type (e.g., ``AT_START``) indicates how the elements are related.
 - The arrow button likely allows you to navigate to the connected element.
 
 This panel is crucial for understanding and managing the geometric relationships between different elements in your IFC model,

@@ -22,10 +22,10 @@ Access new, open, save, and import functionality.
 
 .. image:: images/topbar-file.png
 
-- :ref:`reference/general/topbar:new ifc project` (:kbd:`Ctrl` + :kbd:`N`): Provides convenient presets to create new IFC projects.
+- :ref:`reference/general/topbar:new ifc project` (:kbd:`Ctrl+N`): Provides convenient presets to create new IFC projects.
 - **Open IFC Project**: Launches a file browser to open an IFC model for viewing and authoring.
 - :ref:`reference/general/topbar:open recent ifc project`: See recently opened IFC models.
-- **Save IFC Project** (:kbd:`Shift` + :kbd:`S`): saves the ``.ifc`` file, optionally launching a file browse dialog if the file has not yet been saved.
+- **Save IFC Project** (:kbd:`Shift+S`): saves the ``.ifc`` file, optionally launching a file browse dialog if the file has not yet been saved.
 - **Save IFC Project As**: launches a file browse dialog to save the ``.ifc``. This location is remembered for future saves.
 - **Revert IFC Project**: Discards all unsaved changes and reloads the currently loaded IFC model.
 - :ref:`reference/general/topbar:import`: Imports data from external sources into the Blender session or IFC model.
@@ -42,7 +42,7 @@ New IFC Project
 ---------------
 .. container:: location-scene
 
-   |location| Topbar |>| File |>| New IFC Project (:kbd:`Shift` + :kbd:`N`)
+   |location| Topbar |>| File |>| New IFC Project (:kbd:`Shift+N`)
 
 Provides convenient presets to create new IFC projects.
 

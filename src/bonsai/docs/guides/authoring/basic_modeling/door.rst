@@ -14,10 +14,10 @@ Adding a Door
 1. Select the wall where you want to place the door.
 2. Set the 3D cursor on the wall at the desired door location.
 3. Click on the "Create Door" tool in the Bonsai toolbar.
-4. In the top bar, you'll see "[No IfcDoorType Found] | Name [TYPEX] | + Add IfcDoorType".
-5. Edit [TYPEX] to use a door type name of your choice (e.g., DOOR001).
+4. In the top bar, you'll see "``No IfcDoorType Found`` | Name ``TYPEX`` | + Add IfcDoorType".
+5. Edit ``TYPEX`` to use a door type name of your choice (e.g., DOOR001).
 6. Click "+ Add IfcDoorType". The top bar will update with additional options.
-7. Click "Add" (or press SHIFT+A) to create a door with its own type.
+7. Click "Add" (or press :kbd:`Shift+A`) to create a door with its own type.
 8. Adjust the door's width and height using the parameters in the top bar.
 
 Placing a Door and Changing its Swing Direction
@@ -31,14 +31,14 @@ Placing a Door and Changing its Swing Direction
 
 2. Add a Door:
    - Use the "Create Door" tool from the toolbar.
-   - Press SHIFT+A or click "Add" to place the door on the selected wall.
+   - Press :kbd:`Shift+A` or click "Add" to place the door on the selected wall.
 
 **Applying Void**
 
 If you forgot to select the wall before placing the door, you'll need to manually create the void relation:
 
    - Select both the wall and the door.
-   - Click "Apply Void" (Shift+O) button.
+   - Click "Apply Void" (:kbd:`Shift+O`) button.
 
 .. important::
    If you need to use "Apply Void", do this before making any modifications to the door,
@@ -51,7 +51,7 @@ If you forgot to select the wall before placing the door, you'll need to manuall
 
 4. Regenerate the Wall Geometry:
    - Select the wall.
-   - Press Shift+G to regenerate the wall geometry, incorporating the door opening.
+   - Press :kbd:`Shift+G` to regenerate the wall geometry, incorporating the door opening.
 
    .. note::
       This step ensures the wall geometry is updated to include the door opening.
@@ -62,28 +62,28 @@ If you forgot to select the wall before placing the door, you'll need to manuall
 
 5. Change Door Swing Direction:
    - Select only the door.
-   - Press Shift+F to flip the door. It rotates the door by 180 degrees and moves the pivot point.
+   - Press :kbd:`Shift+F` to flip the door. It rotates the door by 180 degrees and moves the pivot point.
    - Locate the "Parametric Geometry" panel in the `Scene Properties > Geometry and Materials` subtab.
    - Find the "Door" section within this panel.
-   - Change the "Operation Type" to "SINGLE_SWING_RIGHT".
+   - Change the "Operation Type" to ``SINGLE_SWING_RIGHT``.
 
    .. note::
-      The Shift+F shortcut is currently a hidden feature and not available as a button in the Door tool interface.
+      The :kbd:`Shift+F` shortcut is currently a hidden feature and not available as a button in the Door tool interface.
 
       You may need to experiment with the combination of changing the Operation Type and using Shift+F to achieve the desired orientation.
 
 6. Final Wall Geometry Regeneration:
    - Select the wall again.
-   - Press Shift+G one more time to ensure all changes are properly applied.
+   - Press :kbd:`Shift+G` one more time to ensure all changes are properly applied.
 
 Additional Notes
 ----------------
 
-- The Shift+F shortcut for flipping the door is not visible in the Door tool interface.
+- The :kbd:`Shift+F` shortcut for flipping the door is not visible in the Door tool interface.
   This functionality may be added as a visible button in future updates.
-- Always use Shift+G (Regenerate) after making changes
+- Always use :kbd:`Shift+G` (Regenerate) after making changes
   to ensure the wall and door geometries are correctly updated.
-- Avoid using Shift+O (Apply Void) as it may cause issues
+- Avoid using :kbd:`Shift+O` (Apply Void) as it may cause issues
   with the door's orientation.
 
 
@@ -97,18 +97,18 @@ You can modify doors using various tools:
 
 - Resize: Adjust the width and height parameters in the top bar.
 - Move: Use Blender's standard move tools to reposition the door.
-- Flip: Change the opening direction using the flip tool (Shift+F).
+- Flip: Change the opening direction using the flip tool (:kbd:`Shift+F`).
 
 .. note::
    After moving a door, you need to recalculate the void in the wall. To do this:
 
 - Select the wall containing the moved door.
-- Click on the "Regen" (:kbd:`Shift` + :kbd:`G`) button in the top bar or use the appropriate shortcut.
+- Click on the "Regen" (:kbd:`Shift+G`) button in the top bar or use the appropriate shortcut.
 - This ensures that the opening in the wall is correctly positioned after moving the door.
 
 If Regen operation doesn't achive the required result, use Apply Void function:
 
-- Click on the "Apply Void" (:kbd:`Shift` + :kbd:`O`) button in the top bar or use the appropriate shortcut.
+- Click on the "Apply Void" (:kbd:`Shift+O`) button in the top bar or use the appropriate shortcut.
 - This ensures that the opening is linked to the wall.
 
 
@@ -144,7 +144,7 @@ To create multiple doors of the same type:
 1. Select the desired door type from the dropdown menu in the top bar.
 2. Set the 3D cursor on a wall where you want to place a new door.
 3. Select the wall
-4. Click "Add" (or press SHIFT+A) for each new door you want to create.
+4. Click "Add" (or press :kbd:`Shift+A`) for each new door you want to create.
 5. Adjust the 3D cursor, position and parameters for each new door as needed.
 
 See Also
