@@ -127,7 +127,7 @@ class Usecase:
         return self.file.createIfcPlane(
             self.file.createIfcAxis2Placement3D(
                 self.create_point(location),
-                self.file.createIfcDirection(axis),
-                self.file.createIfcDirection(ref_direction),
+                self.file.createIfcDirection(ifc_safe_vector_type(axis)),
+                self.file.createIfcDirection(ifc_safe_vector_type(ref_direction)),
             )
         )
