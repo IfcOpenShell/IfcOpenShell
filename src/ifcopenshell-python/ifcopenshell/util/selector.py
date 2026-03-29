@@ -449,6 +449,13 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = ifcopenshell.util.element.get_parent(value, ifc_class="IfcSite")
         elif key == "parent":
             value = ifcopenshell.util.element.get_parent(value)
+        elif key == "spatial_reference":
+            # Support for IfcRelReferencedInSpatialStructure (Issue #7806)
+            for rel in getattr(value, "ReferencedInStructures", []):
+                value = rel.RelatingStructure
+                break
+            else:
+                value = None
         elif key in ("types", "occurrences"):
             value = ifcopenshell.util.element.get_types(value)
         elif key == "count":
