@@ -382,12 +382,14 @@ ifcquery model.ifc materials
 Generate a 2D technical drawing (floor plan, elevation, or section) of the model and write it to a file.
 
 ```bash
-ifcquery model.ifc plot output.svg
-ifcquery model.ifc plot output.png --view floorplan --scale 0.01
+ifcquery model.ifc plot -o output.svg --out-format svg
+ifcquery model.ifc plot -o output.png --view floorplan --scale 0.01
 ```
 
 Options:
 
+- `-o, --output <file>` -- output file path (default: `<ifc_file>.svg` or `<ifc_file>.png`)
+- `--out-format {svg,png,base64}` -- output format (default: `png`)
 - `--view {floorplan,elevation,section,auto}` -- drawing view (default: `floorplan`)
 - `--scale <ratio>` -- model-to-paper scale ratio (default: 0.01 = 1:100)
 - `--width-mm <mm>` -- paper width in mm (default: 297)
@@ -395,16 +397,15 @@ Options:
 - `--png-width <px>` -- raster output width in pixels (default: 1024)
 - `--png-height <px>` -- raster output height in pixels (default: 1024)
 
-Writes SVG when the output path ends in `.svg`, otherwise PNG.
-Requires the IfcOpenShell drawing module (`ifcopenshell.draw`).
+Requires the IfcOpenShell drawing module (`ifcopenshell.draw`). PNG output additionally requires `cairosvg`.
 
 ### render
 
 Render a 3D view of the model geometry to a PNG file.
 
 ```bash
-ifcquery model.ifc render output.png
-ifcquery model.ifc render output.png --view iso --selector IfcWall
+ifcquery model.ifc render -o output.png
+ifcquery model.ifc render -o output.png --view iso --selector IfcWall
 ```
 
 Options:
