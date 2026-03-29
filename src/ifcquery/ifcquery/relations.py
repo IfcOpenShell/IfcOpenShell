@@ -160,10 +160,34 @@ def _all_relations(model: ifcopenshell.file, element: ifcopenshell.entity_instan
     return result
 
 
+def _collect_elements(data: Any, seen: set[int], result: list[dict[str, Any]]) -> None:
+    """Recursively collect all element refs (dicts with 'id') from a nested structure."""
+    if isinstance(data, dict):
+        if "id" in data and isinstance(data["id"], int):
+            eid = data["id"]
+            if eid not in seen:
+                seen.add(eid)
+                result.append({"id": data["id"], "type": data.get("type"), "name": data.get("name")} if "name" in data else {"id": data["id"], "type": data.get("type")})
+        for v in data.values():
+            _collect_elements(v, seen, result)
+    elif isinstance(data, list):
+        for item in data:
+            _collect_elements(item, seen, result)
+
+
 def relations(
     model: ifcopenshell.file, element: ifcopenshell.entity_instance, traverse: str | None = None
 ) -> dict[str, Any] | list[dict[str, Any]]:
     """Return relationships for an element, or hierarchy chain if traverse='up'."""
     if traverse == "up":
         return _traverse_up(element)
-    return _all_relations(model, element)
+    result = _all_relations(model, element)
+
+    # Flat list of subject + all referenced elements, deduplicated.
+    # Allows --format ids to extract all involved IDs without jq.
+    seen: set[int] = set()
+    elements: list[dict[str, Any]] = []
+    _collect_elements(result, seen, elements)
+    result["elements"] = elements
+
+    return result

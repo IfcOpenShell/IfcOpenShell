@@ -59,7 +59,26 @@ def format_output(data, fmt: str) -> str:
         return json.dumps(data, indent=2, ensure_ascii=False)
     elif fmt == "text":
         return _format_text(data)
+    elif fmt == "ids":
+        return _format_ids(data)
     return json.dumps(data, indent=2, ensure_ascii=False)
+
+
+def _format_ids(data) -> str:
+    """Extract 'id' fields from a list of dicts and return as comma-separated string.
+
+    For dicts with a top-level 'elements' key (e.g. clash, relations output),
+    extracts from that flat summary list rather than the nested structure.
+    """
+    if isinstance(data, list):
+        ids = [str(item["id"]) for item in data if isinstance(item, dict) and "id" in item]
+        return ",".join(ids)
+    if isinstance(data, dict):
+        if "elements" in data and isinstance(data["elements"], list):
+            return _format_ids(data["elements"])
+        if "id" in data:
+            return str(data["id"])
+    return ""
 
 
 def _format_text(data, indent: int = 0) -> str:
@@ -92,10 +111,10 @@ def main():
     parser.add_argument("ifc_file", help="Path to the IFC file")
     parser.add_argument(
         "--format",
-        choices=["json", "text"],
+        choices=["json", "text", "ids"],
         default="json",
         dest="output_format",
-        help="Output format (default: json)",
+        help="Output format: json (default), text (human-readable), ids (comma-separated step IDs)",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)

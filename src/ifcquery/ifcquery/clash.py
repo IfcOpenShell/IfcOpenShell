@@ -164,4 +164,17 @@ def clash(
 
     result["pass"] = all_pass
     result["checks"] = checks
+
+    # Flat list of subject + all clashing elements across all checks, deduplicated.
+    # Allows --format ids to extract all involved IDs without jq.
+    seen: set[int] = {element.id()}
+    involved = [_ref(element)]
+    for check in checks.values():
+        for clash_item in check.get("clashes", []):
+            eid = clash_item["element"]["id"]
+            if eid not in seen:
+                seen.add(eid)
+                involved.append(clash_item["element"])
+    result["elements"] = involved
+
     return result

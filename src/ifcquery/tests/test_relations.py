@@ -91,6 +91,47 @@ class TestTraverseUp:
         assert len(chain) == 4  # storey -> building -> site -> project
 
 
+class TestElementsSummary:
+    def test_wall_elements_includes_self(self, model):
+        wall = model.by_type("IfcWall")[0]
+        result = relations(model, wall)
+        ids = [e["id"] for e in result["elements"]]
+        assert wall.id() in ids
+
+    def test_wall_elements_includes_container(self, model):
+        wall = model.by_type("IfcWall")[0]
+        result = relations(model, wall)
+        ids = [e["id"] for e in result["elements"]]
+        storey = model.by_type("IfcBuildingStorey")[0]
+        assert storey.id() in ids
+
+    def test_storey_elements_includes_contained(self, model):
+        storey = model.by_type("IfcBuildingStorey")[0]
+        result = relations(model, storey)
+        ids = [e["id"] for e in result["elements"]]
+        wall = model.by_type("IfcWall")[0]
+        assert wall.id() in ids
+
+    def test_elements_no_duplicates(self, model):
+        storey = model.by_type("IfcBuildingStorey")[0]
+        result = relations(model, storey)
+        ids = [e["id"] for e in result["elements"]]
+        assert len(ids) == len(set(ids))
+
+    def test_elements_all_have_id_and_type(self, model):
+        wall = model.by_type("IfcWall")[0]
+        result = relations(model, wall)
+        for e in result["elements"]:
+            assert "id" in e
+            assert "type" in e
+
+    def test_traverse_up_has_no_elements_field(self, model):
+        wall = model.by_type("IfcWall")[0]
+        result = relations(model, wall, traverse="up")
+        assert isinstance(result, list)
+        assert not any("elements" in item for item in result)
+
+
 class TestJsonSerializable:
     def test_relations_serializable(self, model):
         wall = model.by_type("IfcWall")[0]

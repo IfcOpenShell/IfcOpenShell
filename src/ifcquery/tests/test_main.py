@@ -82,3 +82,40 @@ class TestCLI:
     def test_no_command(self, ifc_path):
         rc, stdout, stderr = run_ifcquery(ifc_path)
         assert rc != 0
+
+    def test_select_ids_format(self, ifc_path):
+        rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "select", "IfcWall")
+        assert rc == 0
+        # Should be a comma-separated string of integers with no surrounding whitespace
+        ids = stdout.strip()
+        assert ids != ""
+        for part in ids.split(","):
+            assert part.isdigit()
+
+    def test_select_ids_format_multiple(self, ifc_path, model):
+        rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "select", "IfcElement")
+        assert rc == 0
+        ids = stdout.strip().split(",")
+        assert len(ids) >= 2
+
+    def test_ids_format_empty_result(self, ifc_path):
+        rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "select", "IfcDoor")
+        assert rc == 0
+        assert stdout.strip() == ""
+
+    def test_relations_ids_format(self, ifc_path, model):
+        storey = model.by_type("IfcBuildingStorey")[0]
+        rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "relations", str(storey.id()))
+        assert rc == 0
+        ids = stdout.strip().split(",")
+        assert all(i.isdigit() for i in ids)
+        # should include the storey itself and its contained elements
+        assert str(storey.id()) in ids
+        wall_id = str(model.by_type("IfcWall")[0].id())
+        assert wall_id in ids
+
+    def test_info_ids_format(self, ifc_path, model):
+        wall = model.by_type("IfcWall")[0]
+        rc, stdout, stderr = run_ifcquery(ifc_path, "--format", "ids", "info", str(wall.id()))
+        assert rc == 0
+        assert stdout.strip() == str(wall.id())

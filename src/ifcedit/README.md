@@ -181,6 +181,50 @@ ifcedit run model.ifc pset.edit_pset --pset 15 \
     --properties '{"IsExternal": true, "FireRating": "2HR"}'
 ```
 
+### foreach
+
+Apply an API function to each element in a JSON array read from stdin.
+`{field}` placeholders in argument values are substituted with fields from
+each JSON object. The model is opened once and saved once regardless of how
+many elements are processed.
+
+```bash
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+```
+
+```json
+{"ok": true, "count": 36, "errors": []}
+```
+
+Placeholder tokens match the fields emitted by `ifcquery` — typically `{id}`,
+`{type}`, and `{name}`:
+
+```bash
+ifcquery model.ifc select 'IfcDoor' | ifcedit foreach model.ifc attribute.edit_attributes \
+    --product {id} --attributes '{"Name": "Door"}'
+```
+
+**Options:**
+
+- `-o, --output <path>` -- write to a different file instead of overwriting the input
+
+**Output:**
+
+- `count` -- number of elements successfully processed
+- `errors` -- list of per-element failures, each with `index`, `item`, and `error`; processing continues past errors
+
+```json
+{
+  "ok": false,
+  "count": 34,
+  "errors": [
+    {"index": 2, "item": {"id": 55, "type": "IfcWindow", "name": "W03"}, "error": "Entity #55 not found in model"}
+  ]
+}
+```
+
+Exit code is 1 if any element failed.
+
 ### quantify
 
 Run quantity take-off (QTO) on an IFC file, computing physical measurements
@@ -242,6 +286,19 @@ Exit code is 0 on success, 1 on error.
 
 A typical workflow: inspect with `ifcquery`, look up the right API function
 with `ifcedit docs`, then apply changes with `ifcedit run`.
+
+The two tools also compose directly in shell scripts. Use `ifcquery --format ids`
+to feed a list of IDs into a `run` parameter, or pipe `ifcquery select` JSON
+into `ifcedit foreach` to apply an operation to every matching element:
+
+```bash
+# Aggregate — pass all IDs as a list parameter
+ifcedit run model.ifc spatial.unassign_container \
+    --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
+
+# Fan-out — one operation per element, model opened and saved once
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+```
 
 ## License
 

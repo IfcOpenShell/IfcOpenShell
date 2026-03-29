@@ -28,6 +28,7 @@ import ifcopenshell
 from ifcedit.discover import function_docs, list_functions, list_modules
 from ifcedit.quantify import list_rules, run_quantify
 from ifcedit.run import run_api
+from ifcedit.foreach import run_foreach
 
 
 def format_output(data, fmt: str) -> str:
@@ -138,6 +139,42 @@ def _parse_extra_args(extra: list[str]) -> dict[str, str]:
     return kwargs
 
 
+def cmd_foreach(args, extra_args):
+    try:
+        model = ifcopenshell.open(args.ifc_file)
+    except Exception as e:
+        print(f"Error: Could not open IFC file: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    parts = args.function_path.split(".")
+    if len(parts) != 2:
+        print("Error: function path must be 'module.function' (e.g. root.create_entity)", file=sys.stderr)
+        sys.exit(1)
+    module, function = parts
+
+    raw_kwargs_template = _parse_extra_args(extra_args)
+
+    try:
+        stdin_data = json.load(sys.stdin)
+    except json.JSONDecodeError as e:
+        print(f"Error: Could not parse JSON from stdin: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(stdin_data, list):
+        print("Error: stdin must be a JSON array", file=sys.stderr)
+        sys.exit(1)
+
+    result = run_foreach(model, module, function, raw_kwargs_template, stdin_data)
+
+    if result["ok"]:
+        output_path = args.output or args.ifc_file
+        model.write(output_path)
+
+    print(format_output(result, args.output_format))
+    if not result["ok"]:
+        sys.exit(1)
+
+
 def cmd_quantify(args, extra_args):
     if args.quantify_command == "list":
         result = list_rules()
@@ -191,6 +228,15 @@ def main():
     run_parser.add_argument("-o", "--output", help="Output file path (default: overwrite input)")
     run_parser.add_argument("--dry-run", action="store_true", help="Validate without executing or saving")
 
+    # foreach
+    foreach_parser = subparsers.add_parser(
+        "foreach",
+        help="Apply an API function to each element in a JSON array read from stdin",
+    )
+    foreach_parser.add_argument("ifc_file", help="Path to the IFC file")
+    foreach_parser.add_argument("function_path", help="module.function (e.g. attribute.edit_attributes)")
+    foreach_parser.add_argument("-o", "--output", help="Output file path (default: overwrite input)")
+
     # quantify
     quantify_parser = subparsers.add_parser("quantify", help="Quantity take-off (QTO) using ifc5d rules")
     quantify_sub = quantify_parser.add_subparsers(dest="quantify_command")
@@ -209,6 +255,8 @@ def main():
         cmd_docs(args)
     elif args.command == "run":
         cmd_run(args, extra)
+    elif args.command == "foreach":
+        cmd_foreach(args, extra)
     elif args.command == "quantify":
         cmd_quantify(args, extra)
 

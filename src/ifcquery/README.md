@@ -17,11 +17,14 @@ IfcOpenShell C++ geometry bindings (`ifcopenshell.geom`).
 ## Usage
 
 ```
-ifcquery <ifc_file> <command> [options] [--format json|text]
+ifcquery <ifc_file> <command> [options] [--format json|text|ids]
 ```
 
-The `--format` flag controls output. Default is `json`; use `text` for
-indented human-readable output.
+The `--format` flag controls output:
+
+- `json` (default) -- structured JSON, suitable for piping to `jq` or `ifcedit foreach`
+- `text` -- indented human-readable output
+- `ids` -- comma-separated step IDs extracted from list results, suitable for piping directly into `ifcedit run` parameters
 
 ## Subcommands
 
@@ -149,6 +152,15 @@ ifcquery model.ifc select 'IfcWall, IfcSlab'
 ```
 
 Results are sorted by ID.
+
+Use `--format ids` to get a comma-separated list of step IDs for direct use
+in `ifcedit run` parameters:
+
+```bash
+ifcedit run model.ifc type.assign_type \
+    --related_objects "$(ifcquery model.ifc --format ids select 'IfcWall')" \
+    --relating_type 456
+```
 
 ### relations
 
@@ -448,6 +460,35 @@ Options:
 ```
 
 Requires the IfcOpenShell C++ geometry bindings.
+
+## Scripting with ifcedit
+
+`ifcquery` and `ifcedit` are designed to compose. Use `--format ids` to pass
+query results directly into `ifcedit run` parameters, or pipe JSON into
+`ifcedit foreach` to apply an operation to every matching element.
+
+```bash
+# Remove all walls from their spatial container
+ifcedit run model.ifc spatial.unassign_container \
+    --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
+
+# Delete every window (model opened and saved once)
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+
+# Bulk rename all doors
+ifcquery model.ifc select 'IfcDoor' | ifcedit foreach model.ifc attribute.edit_attributes \
+    --product {id} --attributes '{"Name": "Door"}'
+
+# Render an element highlighted against everything related to it
+ifcquery model.ifc render relations.png \
+    --element "$(ifcquery model.ifc --format ids relations 42)"
+
+# Render a clash — subject and clashing elements highlighted together
+ifcquery model.ifc render clash.png \
+    --element "$(ifcquery model.ifc --format ids clash 42)"
+```
+
+See the `ifcedit` documentation for the full `foreach` reference.
 
 ## Error handling
 
