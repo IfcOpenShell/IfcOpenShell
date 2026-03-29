@@ -24,7 +24,11 @@ Subcommands:
 - **plot** — generate a drawing (SVG or PNG) using ``ifcopenshell.draw``; PNG output requires ``cairosvg``
 - **render** — off-screen 3D render to a PNG image; requires ``pyvista`` and the IfcOpenShell C++ geometry bindings
 
-All subcommands accept ``--format json|text`` to control output (default: ``json``).
+All subcommands accept ``--format json|text|ids`` to control output (default: ``json``):
+
+- ``json`` — structured JSON, suitable for piping to ``jq`` or ``ifcedit foreach``
+- ``text`` — indented human-readable output
+- ``ids`` — comma-separated step IDs extracted from list results, suitable for piping directly into ``ifcedit run`` parameters
 
 Installation
 ------------
@@ -68,6 +72,29 @@ Usage
     $ ifcquery model.ifc plot -o floorplan.svg --out-format svg --view floorplan
     $ ifcquery model.ifc plot -o floorplan.png --view floorplan
     $ ifcquery model.ifc render -o model.png
+    $ ifcquery model.ifc --format ids select 'IfcWall'
+
+Scripting with ifcedit
+----------------------
+
+``ifcquery`` and ``ifcedit`` are designed to compose. Use ``--format ids`` to
+pass query results directly into ``ifcedit run`` parameters, or pipe JSON into
+``ifcedit foreach`` to apply an operation to every matching element::
+
+    # Aggregate — pass all IDs as a list parameter
+    $ ifcedit run model.ifc spatial.unassign_container \
+        --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
+
+    # Fan-out — one operation per element, model opened and saved once
+    $ ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+
+    # Render an element highlighted against everything related to it
+    $ ifcquery model.ifc render -o relations.png \
+        --element "$(ifcquery model.ifc --format ids relations 42)"
+
+    # Render a clash — subject and clashing elements highlighted together
+    $ ifcquery model.ifc render -o clash.png \
+        --element "$(ifcquery model.ifc --format ids clash 42)"
 
 .. seealso::
 
