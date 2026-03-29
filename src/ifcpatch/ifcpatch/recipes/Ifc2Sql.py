@@ -626,7 +626,9 @@ class Patcher(ifcpatch.BasePatcher):
     def serialise_value(self, element: ifcopenshell.entity_instance, value: Any) -> Any:
         return element.walk(
             lambda v: isinstance(v, ifcopenshell.entity_instance),
-            lambda v: v.id() if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
+            lambda v: v.id()
+            if v.id()
+            else {"type": v.is_a(), "value": v.wrappedValue if hasattr(v, "wrappedValue") else None},
             value,
         )
 

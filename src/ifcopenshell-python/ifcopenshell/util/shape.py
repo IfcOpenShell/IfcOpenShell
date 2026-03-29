@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
     import ifcopenshell.ifcopenshell_wrapper as W
     from ifcopenshell.geom import ShapeElementType
-    from ifcopenshell.util.shape_builder import VectorType
+    from ifcopenshell.util.vectors import VectorType
 
     AXIS_LITERAL = Literal["X", "Y", "Z"]
 

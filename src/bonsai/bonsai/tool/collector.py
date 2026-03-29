@@ -112,8 +112,8 @@ class Collector(bonsai.core.tool.Collector):
                 tool.Geometry.lock_object(obj)
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
-                project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
+                if project_obj := tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0]):
+                    cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
             if not tool.Spatial.get_spatial_props().is_visible:
                 obj.hide_viewport = True
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
@@ -124,12 +124,18 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
             cls.link_collection_object_safe(tool.Blender.get_object_bim_props(drawing_obj).collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
-            while container.is_a("IfcSpace"):
+            while container:
+                if container.is_a("IfcSpace"):
+                    container = ifcopenshell.util.element.get_aggregate(container)
+                    continue
+                if container_obj := tool.Ifc.get_object(container):
+                    if not (collection := tool.Blender.get_object_bim_props(container_obj).collection):
+                        cls.assign(container_obj)
+                        collection = tool.Blender.get_object_bim_props(container_obj).collection
+                    cls.link_collection_object_safe(collection, obj)
+                    return
                 container = ifcopenshell.util.element.get_aggregate(container)
-            container_obj = tool.Ifc.get_object(container)
-            if not (collection := tool.Blender.get_object_bim_props(container_obj).collection):
-                cls.assign(container_obj)
-                collection = tool.Blender.get_object_bim_props(container_obj).collection
+            collection = cls._create_project_child_collection("Unsorted")
             cls.link_collection_object_safe(collection, obj)
         else:
             collection = cls._create_project_child_collection("Unsorted")

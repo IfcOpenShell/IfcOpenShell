@@ -17,6 +17,9 @@ classifiers = [
 ]
 dependencies = ["ifcopenshell", "toposort", "numpy"]
 
+[project.scripts]
+ifcpatch = "ifcpatch.__main__:main"
+
 [project.optional-dependencies]
 advanced = [
   "sqlite3",
