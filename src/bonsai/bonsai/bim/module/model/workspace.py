@@ -937,6 +937,14 @@ class EditObjectUI:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Mitre", "S_Y", "", ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    row,
+                    "Split",
+                    "S_K",
+                    "Split selected Element into two Elements at the cursor location\n\nHotkey: ⇧ K",
+                    ui_context,
+                )
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
 
         else:
@@ -1361,6 +1369,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.split_wall()
+        elif self.active_material_usage == "PROFILE":
+            bpy.ops.bim.split_profile()
 
     def hotkey_S_T(self):
         if not bpy.context.selected_objects:
