@@ -108,7 +108,7 @@ class Usecase:
         self.rel_space_boundary.ConnectionGeometry = connection_geometry
 
     def create_point(self, point: npt.NDArray) -> ifcopenshell.entity_instance:
-        return self.file.create_enitty("IfcCartesianPoint", ifc_safe_vector_type(point / self.unit_scale))
+        return self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(point / self.unit_scale))
 
     def close_polyline(
         self, points: tuple[ifcopenshell.entity_instance, ...]
