@@ -25,6 +25,7 @@ import bmesh
 import bpy
 import mathutils
 import numpy as np
+from bpy_extras import view3d_utils
 from mathutils import Vector
 
 import bonsai.core.tool
