@@ -28,6 +28,7 @@ dist:
 	mkdir -p dist
 	cp -r $(PACKAGE_NAME) build/
 	cp pyproject.toml build/
+	if [ -f README.md ]; then cp README.md build/; fi
 ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 ifdef IS_MODULE

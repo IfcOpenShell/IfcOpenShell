@@ -21,13 +21,13 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from collections.abc import Generator, Iterable
-from math import pi
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import bmesh
 import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.geom
 import ifcopenshell.util.classification
@@ -991,114 +991,107 @@ class Spatial(bonsai.core.tool.Spatial):
         return poly
 
     @classmethod
-    def get_bmesh_from_polygon(cls, poly: Polygon, h: float, polygon_is_si: bool = False) -> bmesh.types.BMesh:
-        """
-        :param h: Height, in meters.
-        :param polygon_is_si: Should be True if `poly` is defined in meters.
-        """
-        mat = Matrix()
-        bm = bmesh.new()
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        mat_invert = mat.inverted()
-        si_conversion = 1.0 if polygon_is_si else ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        new_verts = [
-            # bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
-            bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion))
-            for v in shapely.get_exterior_ring(poly).coords[0:-1]
-        ]
-        [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-        bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.triangle_fill(bm, edges=bm.edges)
-        bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 5, verts=bm.verts, edges=bm.edges)
-
-        if h != 0:
-            extrusion = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-            extruded_verts = [g for g in extrusion["geom"] if isinstance(g, bmesh.types.BMVert)]
-            bmesh.ops.translate(bm, vec=[0.0, 0.0, h], verts=extruded_verts)
-
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-
-        return bm
-
-    @classmethod
-    def get_named_obj_from_bmesh(cls, name: str, bmesh: bmesh.types.BMesh) -> bpy.types.Object:
-        mesh = cls.get_named_mesh_from_bmesh(name, bmesh)
-        obj = cls.get_named_obj_from_mesh(name, mesh)
-        return obj
-
-    @classmethod
-    def get_named_obj_from_mesh(cls, name: str, mesh: bpy.types.Mesh) -> bpy.types.Object:
+    def create_object(cls, name: str) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new(name=name)
         obj = bpy.data.objects.new(name, mesh)
         return obj
 
     @classmethod
-    def get_named_mesh_from_bmesh(cls, name: str, bmesh: bmesh.types.BMesh) -> bpy.types.Mesh:
-        mesh = bpy.data.meshes.new(name=name)
-        bmesh.to_mesh(mesh)
-        bmesh.free()
-        return mesh
+    def set_obj_origin_to_polygon_center(
+        cls, obj: bpy.types.Object, poly: Polygon, polygon_is_si: bool = True
+    ) -> None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        centroid = poly.centroid
+        if polygon_is_si:
+            obj.location = Vector((centroid.x, centroid.y, 0))
+        else:
+            obj.location = Vector((centroid.x * unit_scale, centroid.y * unit_scale, 0))
+
 
     @classmethod
-    def get_transformed_mesh_from_local_to_global(cls, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
-        active_obj = cls.get_active_obj()
-        mat = active_obj.matrix_world
-        mesh.transform(mat.inverted())
-        mesh.update()
-        return mesh
+    def get_2d_vertices_from_polygon(
+        cls,
+        poly: Polygon,
+        obj: bpy.types.Object,
+        polygon_is_si: bool = True,
+    ) -> list[list[float]]:
+        """Convert a world-space shapely polygon to 2D vertices in obj's local space, in IFC file units.
+
+        :param poly: The polygon in world space.
+        :param obj: The Blender object whose local space is used.
+        :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        :return: List of [x, y] coordinates (not closed).
+        """
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        bpy.context.view_layer.update()
+        mat_inv = obj.matrix_world.inverted()
+        coords_2d = []
+        for v in shapely.get_exterior_ring(poly).coords[:-1]:
+            world_si = Vector((v[0], v[1], 0))
+            if not polygon_is_si:
+                world_si = world_si * unit_scale
+            local_si = mat_inv @ world_si
+            coords_2d.append([local_si.x / unit_scale, local_si.y / unit_scale])
+        return coords_2d
 
     @classmethod
-    def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
-        active_obj = bpy.context.active_object
-        old_mesh = active_obj.data
-        old_mesh_name = old_mesh.name
-        assert active_obj and isinstance(old_mesh, bpy.types.Mesh)
-        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = tool.Geometry.get_mesh_props(old_mesh).ifc_definition_id
-        tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
-        tool.Ifc.edit(active_obj)
-        tool.Blender.remove_data_block(old_mesh)
-        # Rename after old mesh is removed to avoid .001 suffix.
-        mesh.name = old_mesh_name
+    def set_extrusion_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        poly: Polygon,
+        depth_ifc: float,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create or replace the IFC body representation from a polygon extrusion.
+
+        :param obj: The Blender object.
+        :param element: The IFC product entity.
+        :param poly: The polygon in world space.
+        :param depth_ifc: The extrusion depth in IFC file units.
+        :param polygon_is_si: True if polygon coords are in SI, False if in IFC file units.
+        """
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+
+        coords_2d = cls.get_2d_vertices_from_polygon(poly, obj, polygon_is_si)
+
+        curve = builder.polyline(coords_2d, closed=True)
+        item = builder.extrude(curve, magnitude=depth_ifc)
+
+        old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if old_body:
+            context = old_body.ContextOfItems
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=element, representation=old_body)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
+        else:
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+
+        new_body = builder.get_representation(context, item)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=new_body)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_body,
+        )
 
     @classmethod
-    def set_obj_origin_to_bboxcenter(cls, obj: bpy.types.Object) -> None:
-        mat = obj.matrix_world
-        inverted = mat.inverted()
-        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
-        global_bbox_center = mat @ local_bbox_center
+    def set_space_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        element: ifcopenshell.entity_instance,
+        poly: Polygon,
+        h: float,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create or replace the IFC body representation of a space from a polygon.
 
-        oldLoc = obj.location
-        newLoc = global_bbox_center
-        diff = newLoc - oldLoc
-        for vert in obj.data.vertices:
-            aux_vector = mat @ vert.co
-            aux_vector = aux_vector - diff
-            vert.co = inverted @ aux_vector
-        obj.location = newLoc
-
-    @classmethod
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
-        mat = obj.matrix_world
-        inverted = mat.inverted()
-        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
-        global_bbox_center = mat @ local_bbox_center
-        global_obj_origin = global_bbox_center
-        global_obj_origin.z = 0
-
-        oldLoc = obj.location
-        newLoc = global_obj_origin
-        diff = newLoc - oldLoc
-        for vert in obj.data.vertices:
-            aux_vector = mat @ vert.co
-            aux_vector = aux_vector - diff
-            vert.co = inverted @ aux_vector
-        obj.location = newLoc
+        :param h: The height in SI (meters).
+        """
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        cls.set_extrusion_representation_from_polygon(obj, element, poly, h / unit_scale, polygon_is_si)
 
     @classmethod
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
@@ -1146,63 +1139,51 @@ class Spatial(bonsai.core.tool.Spatial):
             obj.location = obj.location + Vector((0, 0, z))
 
     @classmethod
-    def get_2d_vertices_from_obj(cls, obj: bpy.types.Object) -> list[tuple]:
-        points = []
-        vectors = [v.co for v in obj.data.vertices.values()]
-        for vector in vectors:
-            points.append(vector.xy)
-
-        points.append(vectors[0].xy)
-        return points
-
-    @classmethod
-    def get_scaled_2d_vertices(cls, points: list[Vector]) -> list[tuple[float, float]]:
-        model = tool.Ifc.get()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
-        _points = []
-        for p in points:
-            _p = list(p)
-            _p[0] /= unit_scale
-            _p[1] /= unit_scale
-            _points.append(_p)
-        return _points
-
-    @classmethod
-    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj: bpy.types.Object, vertices: list[Vector]) -> None:
-        body = cls.get_body_representation(obj)
-        model = tool.Ifc.get()
-        extrusion = tool.Model.get_extrusion(body)
-        area = extrusion.SweptArea
-        old_area = area.OuterCurve
-
-        builder = ifcopenshell.util.shape_builder.ShapeBuilder(model)
-        outer_curve = builder.polyline(vertices, closed=True)
-
-        area.OuterCurve = outer_curve
-        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_area)
-
-    @classmethod
-    def get_body_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        element = tool.Ifc.get_entity(obj)
-        return ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-
-    @classmethod
     def assign_ifcspace_class_to_obj(cls, obj: bpy.types.Object) -> None:
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class="IfcSpace",
+            should_add_representation=False,
+        )
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
-        # TODO this code looks in the wrong spot and suspicious
         props = tool.Model.get_model_props()
         ifc_file = tool.Ifc.get()
         relating_type_id = props.relating_type_id
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+        relating_type = ifc_file.by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, ifc_file.schema)[0]
-        bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
+        bonsai.core.root.assign_class(
+            tool.Ifc,
+            tool.Collector,
+            tool.Root,
+            obj=obj,
+            ifc_class=instance_class,
+            should_add_representation=False,
+        )
         element = tool.Ifc.get_entity(obj)
         assert element
         ifcopenshell.api.type.assign_type(ifc_file, related_objects=[element], relating_type=relating_type)
+
+    @classmethod
+    def set_covering_representation_from_polygon(
+        cls,
+        obj: bpy.types.Object,
+        poly: Polygon,
+        polygon_is_si: bool = True,
+    ) -> None:
+        """Create the covering body representation from a polygon, extruded by the type's material layer thickness."""
+        element = tool.Ifc.get_entity(obj)
+        relating_type = ifcopenshell.util.element.get_type(element)
+        material = ifcopenshell.util.element.get_material(relating_type, should_skip_usage=True)
+        depth = 0.0
+        if material and material.is_a("IfcMaterialLayerSet"):
+            depth = sum(layer.LayerThickness for layer in material.MaterialLayers)
+        cls.set_extrusion_representation_from_polygon(obj, element, poly, depth, polygon_is_si)
 
     @classmethod
     def assign_relating_type_to_element(
@@ -1214,14 +1195,6 @@ class Spatial(bonsai.core.tool.Spatial):
     ) -> None:
         bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
 
-    @classmethod
-    def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-        )
 
     @classmethod
     def set_space_visibility(cls, is_visible: bool) -> None:

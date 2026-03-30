@@ -999,14 +999,12 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
-    def get_named_obj_from_bmesh(cls, name, bmesh): pass
-    def get_named_obj_from_mesh(cls, name, mesh): pass
-    def get_named_mesh_from_bmesh(cls, name, bmesh): pass
-    def get_transformed_mesh_from_local_to_global(cls, mesh): pass
-    def edit_active_space_obj_from_mesh(cls, mesh): pass
-    def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
+    def get_2d_vertices_from_polygon(cls, poly, obj, polygon_is_si=True): pass
+    def set_extrusion_representation_from_polygon(cls, obj, element, poly, depth_ifc, polygon_is_si=True): pass
+    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True): pass
+    def set_covering_representation_from_polygon(cls, obj, poly, polygon_is_si=True): pass
+    def create_object(cls, name): pass
+    def set_obj_origin_to_polygon_center(cls, obj, poly, polygon_is_si=True): pass
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
@@ -1014,14 +1012,9 @@ class Spatial:
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
     def translate_obj_to_z_location(cls, obj, z): pass
-    def get_2d_vertices_from_obj(cls, obj): pass
-    def get_scaled_2d_vertices(cls, points): pass
-    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
-    def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
     def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
-    def regen_obj_representation(cls, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
     def toggle_hide_spaces(cls, spaces): pass
     def set_default_container(cls, container): pass

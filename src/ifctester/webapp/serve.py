@@ -22,9 +22,6 @@ import os
 import sys
 
 bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
-print(os.environ)
-print(bonsai_lib_path)
-bonsai_version = os.environ.get("BONSAI_VERSION")
 
 if bonsai_lib_path:
     sys.path.insert(0, bonsai_lib_path)

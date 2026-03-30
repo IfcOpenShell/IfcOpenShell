@@ -133,7 +133,11 @@ class PanelSpy:
             self.spied_labels.append(kwargs["text"])
             return self
         elif self.spied_attr == "prop":
-            props, name = args
+            if args:
+                props, name = args
+            else:
+                props = kwargs.get("data")
+                name = kwargs.get("property")
             props: bpy.types.bpy_struct
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
@@ -388,6 +392,32 @@ def i_look_at_the_panel_panel(panel: str) -> None:
     global panel_spy
     panel_spy = PanelSpy(panel_class)
     panel_spy.refresh_spy()
+
+
+@given(parsers.parse("I look at the tool header"))
+@when(parsers.parse("I look at the tool header"))
+@then(parsers.parse("I look at the tool header"))
+def i_look_at_the_tool_header() -> None:
+    from bonsai.bim.module.model.workspace import EditObjectUI
+
+    class MockRegion:
+        type = "UI"
+
+    class MockContext:
+        def __getattr__(self, name):
+            if name == "region":
+                return MockRegion()
+            return getattr(bpy.context, name)
+
+    global panel_spy
+    panel_spy = PanelSpy(EditObjectUI)
+    panel_spy.is_spy_dirty = False
+    panel_spy.spied_attr = None
+    panel_spy.spied_labels = []
+    panel_spy.spied_props = []
+    panel_spy.spied_operators = []
+    panel_spy.spied_lists = []
+    EditObjectUI.draw(MockContext(), panel_spy)
 
 
 @given(parsers.parse('I open the "{name}" menu'))
