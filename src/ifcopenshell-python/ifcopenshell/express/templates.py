@@ -25,12 +25,12 @@ header = """
 #include <vector>
 #include <optional>
 
-#include "../ifcparse/ifc_parse_api.h"
+#include "../../ifcparse/ifc_parse_api.h"
 
-#include "../ifcparse/express.h"
-#include "../ifcparse/IfcSchema.h"
-#include "../ifcparse/IfcException.h"
-#include "../ifcparse/Argument.h"
+#include "../../ifcparse/express.h"
+#include "../../ifcparse/IfcSchema.h"
+#include "../../ifcparse/IfcException.h"
+#include "../../ifcparse/Argument.h"
 
 namespace IfcParse {
 class IfcFile;
@@ -60,7 +60,7 @@ enum_header = """
 #ifndef %(schema_name_upper)sENUM_H
 #define %(schema_name_upper)sENUM_H
 
-#include "../ifcparse/ifc_parse_api.h"
+#include "../../ifcparse/ifc_parse_api.h"
 
 #include <string>
 #include <optional>
@@ -71,10 +71,10 @@ enum_header = """
 lb_header = """"""
 
 implementation = """
-#include "../ifcparse/%(schema_name)s.h"
-#include "../ifcparse/IfcSchema.h"
-#include "../ifcparse/IfcException.h"
-#include "../ifcparse/IfcFile.h"
+#include "../../ifcparse/schemas/%(schema_name)s.h"
+#include "../../ifcparse/IfcSchema.h"
+#include "../../ifcparse/IfcException.h"
+#include "../../ifcparse/IfcFile.h"
 
 #include <map>
 

@@ -30,7 +30,7 @@
 #include "IfcLogger.h"
 
 #ifdef HAS_SCHEMA_4x3_add2
-#include "Ifc4x3_add2.h"
+#include "schemas/Ifc4x3_add2.h"
 #endif
 
 #include "IfcHierarchyHelper.h"

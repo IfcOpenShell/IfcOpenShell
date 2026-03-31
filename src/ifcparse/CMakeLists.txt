@@ -3,29 +3,23 @@ file(GLOB IFCPARSE_CPP_FILES_ALL *.cpp)
 
 foreach(file ${IFCPARSE_H_FILES_ALL})
     get_filename_component(filename "${file}" NAME)
-
-    if(NOT "${filename}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_H_FILES "${file}")
-    endif()
+    list(APPEND IFCPARSE_H_FILES "${file}")
 endforeach()
 
 foreach(file ${IFCPARSE_CPP_FILES_ALL})
     get_filename_component(filename "${file}" NAME)
-
-    if(NOT "${filename}" MATCHES "[0-9]")
-        list(APPEND IFCPARSE_CPP_FILES "${file}")
-    endif()
+    list(APPEND IFCPARSE_CPP_FILES "${file}")
 endforeach()
 
 message(STATUS "SCHEMA_VERSIONS from ifcparse: ${SCHEMA_VERSIONS}")
 foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND IFCPARSE_H_FILES
-        Ifc${schema}.h
-        Ifc${schema}-definitions.h
+        schemas/Ifc${schema}.h
+        schemas/Ifc${schema}-definitions.h
     )
     list(APPEND IFCPARSE_CPP_FILES
-        Ifc${schema}.cpp
-        Ifc${schema}-schema.cpp
+        schemas/Ifc${schema}.cpp
+        schemas/Ifc${schema}-schema.cpp
     )
 endforeach()
 

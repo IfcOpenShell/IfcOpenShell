@@ -21,40 +21,40 @@
 #include "InstanceData.h"
 
 #ifdef HAS_SCHEMA_2x3
-#include "Ifc2x3.h"
+#include "schemas/Ifc2x3.h"
 #endif
 #ifdef HAS_SCHEMA_4
-#include "Ifc4.h"
+#include "schemas/Ifc4.h"
 #endif
 #ifdef HAS_SCHEMA_4x1
-#include "Ifc4x1.h"
+#include "schemas/Ifc4x1.h"
 #endif
 #ifdef HAS_SCHEMA_4x2
-#include "Ifc4x2.h"
+#include "schemas/Ifc4x2.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc1
-#include "Ifc4x3_rc1.h"
+#include "schemas/Ifc4x3_rc1.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc2
-#include "Ifc4x3_rc2.h"
+#include "schemas/Ifc4x3_rc2.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc3
-#include "Ifc4x3_rc3.h"
+#include "schemas/Ifc4x3_rc3.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_rc4
-#include "Ifc4x3_rc4.h"
+#include "schemas/Ifc4x3_rc4.h"
 #endif
 #ifdef HAS_SCHEMA_4x3
-#include "Ifc4x3.h"
+#include "schemas/Ifc4x3.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_tc1
-#include "Ifc4x3_tc1.h"
+#include "schemas/Ifc4x3_tc1.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_add1
-#include "Ifc4x3_add1.h"
+#include "schemas/Ifc4x3_add1.h"
 #endif
 #ifdef HAS_SCHEMA_4x3_add2
-#include "Ifc4x3_add2.h"
+#include "schemas/Ifc4x3_add2.h"
 #endif
 
 double IfcParse::IfcSIPrefixToValue(const std::string& prefix) {

@@ -144,8 +144,8 @@ class EarlyBoundCodeWriter:
 
         self.statements = [
             "",
-            '#include "../ifcparse/IfcSchema.h"',
-            '#include "../ifcparse/%(schema_name_title)s.h"' % self.__dict__,
+            '#include "../../ifcparse/IfcSchema.h"',
+            '#include "../../ifcparse/schemas/%(schema_name_title)s.h"' % self.__dict__,
             '#include <string>',
             "",
             'using namespace std::string_literals;',

@@ -8,10 +8,10 @@
 
 #include <mutex>
 
-#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/schemas/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
-#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
 

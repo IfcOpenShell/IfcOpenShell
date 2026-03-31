@@ -26,10 +26,10 @@
 #include "../../ifcparse/macros.h"
 #include "../../serializers/JsonSerializer.h"
 
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 #undef INCLUDE_PARENT_PARENT_DIR
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
 class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
