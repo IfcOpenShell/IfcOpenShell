@@ -81,26 +81,26 @@ class IFC_PARSE_API Base {
     typename std::enable_if<
         (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
         void>::type
-    set_attribute_value(size_t i, const T& t);
+    set_attribute_value(size_t attribute_index, const T& value);
 
     template <typename T>
     typename std::enable_if<
         (!std::is_base_of_v<express::Base, T> || std::is_same_v<express::Base, T>),
         void>::type
-    set_attribute_value(const std::string& name, const T& t);
+    set_attribute_value(const std::string& attribute_name, const T& value);
 
-    void set_attribute_value(size_t i, const express::Base& p);
-    void set_attribute_value(const std::string& name, const express::Base& p);
+    void set_attribute_value(size_t attribute_index, const express::Base& value);
+    void set_attribute_value(const std::string& attribute_name, const express::Base& value);
     
-    void unset_attribute_value(size_t i);
+    void unset_attribute_value(size_t attribute_index);
 
-    attribute_value get_attribute_value(size_t index) const;
+    attribute_value get_attribute_value(size_t attribute_index) const;
 
     uint32_t identity() const;
 
     uint32_t id() const;
 
-    void to_string(std::ostream&, bool upper = false) const;
+    void to_string(std::ostream& stream, bool uppercase = false) const;
 
     template <class T>
     T as() const {
@@ -135,15 +135,15 @@ class IFC_PARSE_API Entity : public Base {
     Entity() {}
     Entity(const std::weak_ptr<instance_data>& data) : Base(data) {}
 
-    attribute_value get(const std::string& name) const;
+    attribute_value get(const std::string& attribute_name) const;
 
     template <typename T>
-    T get_value(const std::string& name) const;
+    T get_value(const std::string& attribute_name) const;
 
     template <typename T>
-    T get_value(const std::string& name, const T& default_value) const;
+    T get_value(const std::string& attribute_name, const T& default_value) const;
 
-    std::vector<express::Entity> get_inverse(const std::string& name) const;
+    std::vector<express::Entity> get_inverse(const std::string& attribute_name) const;
 };
 
 class IFC_PARSE_API Select : public Base {
@@ -173,15 +173,15 @@ namespace std {
 
 template <>
 struct hash<express::Base> {
-    std::size_t operator()(const express::Base& c) const noexcept {
-        return std::hash<uint32_t>{}(c.identity());
+    std::size_t operator()(const express::Base& value) const noexcept {
+        return std::hash<uint32_t>{}(value.identity());
     }
 };
 
 template <>
 struct hash<express::Entity> {
-    std::size_t operator()(const express::Entity& c) const noexcept {
-        return std::hash<uint32_t>{}(c.identity());
+    std::size_t operator()(const express::Entity& value) const noexcept {
+        return std::hash<uint32_t>{}(value.identity());
     }
 };
 
@@ -191,15 +191,15 @@ namespace boost {
 
 template <>
 struct hash<express::Base> {
-    std::size_t operator()(const express::Base& c) const noexcept {
-        return std::hash<uint32_t>{}(c.identity());
+    std::size_t operator()(const express::Base& value) const noexcept {
+        return std::hash<uint32_t>{}(value.identity());
     }
 };
 
 template <>
 struct hash<express::Entity> {
-    std::size_t operator()(const express::Entity& c) const noexcept {
-        return std::hash<uint32_t>{}(c.identity());
+    std::size_t operator()(const express::Entity& value) const noexcept {
+        return std::hash<uint32_t>{}(value.identity());
     }
 };
 
@@ -230,27 +230,27 @@ typename std::conditional_t<
     is_std_vector<U>::value,
     std::vector<std::vector<T>>,
     std::vector<T>>
-cast_vector(const std::vector<U>& vs) {
+cast_vector(const std::vector<U>& values) {
     if constexpr (is_std_vector<U>::value) {
         using V = typename U::value_type;
         std::vector<std::vector<T>> result;
-        result.reserve(vs.size());
-        for (const auto& v : vs) {
-            result.push_back(cast_vector<T>(v));
+        result.reserve(values.size());
+        for (const auto& value : values) {
+            result.push_back(cast_vector<T>(value));
         }
         return result;
     } else {
         std::vector<T> result;
-        for (const auto& v : vs) {
+        for (const auto& value : values) {
             if constexpr (std::is_base_of_v<T, U>) {
                 // For a base or identity transform we can just rely on static cast
-                result.push_back(v);
+                result.push_back(value);
             } else if constexpr (std::is_base_of_v<express::Select, U> && std::is_same_v<T, express::Base>) {
                 // From a select to concrete we simply call the appropriate method
-                result.push_back(v.concrete());
+                result.push_back(value.concrete());
             } else {
-                if (auto u = v.template as<T>()) {
-                    result.push_back(u);
+                if (auto cast_value = value.template as<T>()) {
+                    result.push_back(cast_value);
                 }
             }
         }

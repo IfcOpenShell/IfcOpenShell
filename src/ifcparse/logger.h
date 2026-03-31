@@ -69,10 +69,10 @@ class IFC_PARSE_API logger {
     static void set_product(std::optional<const express::Base> product);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void set_output(std::wostream* stream1, std::wostream* stream2);
+    static void set_output(std::wostream* progress_stream, std::wostream* error_stream);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void set_output(std::ostream* stream1, std::ostream* stream2);
+    static void set_output(std::ostream* progress_stream, std::ostream* error_stream);
 
     /// Determines the types of log messages to get logged
     static void verbosity(Severity severity);
@@ -84,8 +84,8 @@ class IFC_PARSE_API logger {
     static Format output_format();
 
     /// Log a message to the output stream
-    static void message(Severity type, const std::string& text, const express::Base& instance = express::Base());
-    static void message(Severity type, const std::exception& exception, const express::Base& instance = express::Base());
+    static void message(Severity severity, const std::string& text, const express::Base& instance = express::Base());
+    static void message(Severity severity, const std::exception& exception, const express::Base& instance = express::Base());
 
     static void notice(const std::string& text, const express::Base& instance = express::Base()) { logger::message(LOG_NOTICE, text, instance); }
     static void warning(const std::string& text, const express::Base& instance = express::Base()) { logger::message(LOG_WARNING, text, instance); }
@@ -95,12 +95,12 @@ class IFC_PARSE_API logger {
     static void warning(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_WARNING, exception, instance); }
     static void error(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_ERROR, exception, instance); }
 
-    static void status(const std::string& message, bool new_line = true);
+    static void status(const std::string& message, bool append_newline = true);
 
-    static void progress_bar(int progress);
+    static void progress_bar(int progress_percent);
     static std::string get_log();
     static void print_performance_stats();
-    static void print_performance_stats_on_element(bool b) { print_perf_stats_on_element_ = b; }
+    static void print_performance_stats_on_element(bool enabled) { print_perf_stats_on_element_ = enabled; }
 };
 
 #define PERF(x)                                                      \

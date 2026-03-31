@@ -62,7 +62,7 @@ class IFC_PARSE_API character_decoder {
     operator std::string();
     // Gets a decoded string representation at the offset provided,
     // does not mutate the underlying token stream read pointer.
-    std::string get(size_t&);
+    std::string get(size_t& offset);
 };
 
 } // namespace ifcopenshell

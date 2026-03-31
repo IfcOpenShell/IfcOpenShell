@@ -58,8 +58,8 @@ public:
 
         iterator() = default;
 
-        explicit iterator(underlying_iterator_variant v)
-            : it_var(std::move(v)) {}
+        explicit iterator(underlying_iterator_variant iterator_variant)
+            : it_var(std::move(iterator_variant)) {}
 
         iterator(const iterator& other)
             : it_var(other.it_var), cached_value_ptr_(nullptr) {}
@@ -107,7 +107,7 @@ public:
     variant_map() {}
 
     template <typename MapT>
-    variant_map(MapT* m) : map_(m) {}
+    variant_map(MapT* map) : map_(map) {}
 
     iterator begin() const{
         return std::visit([](auto m) -> iterator {
@@ -160,11 +160,11 @@ public:
         }, map_);
     }
 
-    std::pair<iterator, bool> insert(const value_type& val) {
-        return std::visit([this, &val](auto m) -> std::pair<iterator, bool> {
+    std::pair<iterator, bool> insert(const value_type& value) {
+        return std::visit([this, &value](auto m) -> std::pair<iterator, bool> {
             // @todo is monostate still necessary here?
             if constexpr (!std::is_same_v<std::decay_t<decltype(m)>, std::monostate>) {
-                auto result = m->insert(val);
+                auto result = m->insert(value);
                 return { iterator(result.first), result.second };
             } else {
                 return { end(), false };

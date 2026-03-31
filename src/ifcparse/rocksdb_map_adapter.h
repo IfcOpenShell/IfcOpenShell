@@ -46,60 +46,60 @@ struct DefaultCodec;
 // Specialization for size_t.
 template <>
 struct DefaultCodec<size_t> {
-    std::string encode(const size_t& v) const {
-        std::string s(sizeof(v), 0);
-        memcpy(s.data(), &v, sizeof(v));
-        return s;
+    std::string encode(const size_t& value) const {
+        std::string encoded(sizeof(value), 0);
+        memcpy(encoded.data(), &value, sizeof(value));
+        return encoded;
     }
-    size_t decode(const std::string& s) const {
-        size_t v = 0;
-        // @todo take min of sizeof(v), len(s)
+    size_t decode(const std::string& encoded) const {
+        size_t value = 0;
+        // @todo take min of sizeof(value), len(encoded)
         // @todo unify all serialization primitives
-        memcpy(&v, s.data(), sizeof(v));
-        return v;
+        memcpy(&value, encoded.data(), sizeof(value));
+        return value;
     }
 };
 
 // Specialization for uint32_t.
 template <>
 struct DefaultCodec<uint32_t> {
-    std::string encode(const uint32_t& v) const {
-        std::string s(sizeof(v), 0);
-        memcpy(s.data(), &v, sizeof(v));
-        return s;
+    std::string encode(const uint32_t& value) const {
+        std::string encoded(sizeof(value), 0);
+        memcpy(encoded.data(), &value, sizeof(value));
+        return encoded;
     }
-    uint32_t decode(const std::string& s) const {
-        uint32_t v = 0;
-        // @todo take min of sizeof(v), len(s)
+    uint32_t decode(const std::string& encoded) const {
+        uint32_t value = 0;
+        // @todo take min of sizeof(value), len(encoded)
         // @todo unify all serialization primitives
-        memcpy(&v, s.data(), sizeof(v));
-        return v;
+        memcpy(&value, encoded.data(), sizeof(value));
+        return value;
     }
 };
 
 // Specialization for std::vector<int>.
 template <>
 struct DefaultCodec<std::vector<uint32_t>> {
-    std::string encode(const std::vector<uint32_t>& vs) const {
-        std::string s(sizeof(uint32_t) * vs.size(), 0);
-        memcpy(s.data(), vs.data(), s.size());
-        return s;
+    std::string encode(const std::vector<uint32_t>& values) const {
+        std::string encoded(sizeof(uint32_t) * values.size(), 0);
+        memcpy(encoded.data(), values.data(), encoded.size());
+        return encoded;
     }
-    std::vector<uint32_t> decode(const std::string& s) const {
-        std::vector<uint32_t> vs(s.size() / sizeof(uint32_t), 0);
-        memcpy(vs.data(), s.data(), s.size());
-        return vs;
+    std::vector<uint32_t> decode(const std::string& encoded) const {
+        std::vector<uint32_t> values(encoded.size() / sizeof(uint32_t), 0);
+        memcpy(values.data(), encoded.data(), encoded.size());
+        return values;
     }
 };
 
 // Specialization for std::string (identity)
 template <>
 struct DefaultCodec<std::string> {
-    std::string encode(const std::string& v) const {
-        return v;
+    std::string encode(const std::string& value) const {
+        return value;
     }
-    std::string decode(const std::string& s) const {
-        return s;
+    std::string decode(const std::string& encoded) const {
+        return encoded;
     }
 };
 
@@ -114,22 +114,23 @@ std::string key_to_string(const KeyT& key) {
 
 // Convert from a string to a key. For non-string types, we assume numeric keys.
 template <typename KeyT, typename std::enable_if<!is_std_tuple<KeyT>::value, int>::type = 0>
-KeyT key_from_string(const std::string& s) {
+KeyT key_from_string(const std::string& key_string) {
     // @todo tuples
     if constexpr (std::is_same_v<KeyT, std::string>) {
-        return s;
+        return key_string;
     } else if constexpr (std::is_integral_v<KeyT>) {
-        return static_cast<KeyT>(std::stoll(s));
+        return static_cast<KeyT>(std::stoll(key_string));
     } else {
         static_assert(sizeof(KeyT) == 0, "key_from_string not implemented for this type");
     }
 }
 
 template<typename Tuple, std::size_t... Is>
-std::string tuple_to_string_impl(const Tuple& t, std::index_sequence<Is...>) {
+std::string tuple_to_string_impl(const Tuple& tuple_value, std::index_sequence<Is...> indices) {
+    static_cast<void>(indices);
     std::ostringstream oss;
     // Unpack the tuple; add a pipe before each element except the first.
-    ((oss << (Is == 0 ? "" : "|") << std::to_string(std::get<Is>(t))), ...);
+    ((oss << (Is == 0 ? "" : "|") << std::to_string(std::get<Is>(tuple_value))), ...);
     return oss.str();
 }
 
@@ -152,14 +153,15 @@ T convert_string(const std::string& token) {
 
 // Helper: Build a tuple from a vector of string tokens.
 template <typename TupleT, std::size_t... Is>
-TupleT tuple_from_string_impl(const std::vector<std::string>& tokens, std::index_sequence<Is...>) {
+TupleT tuple_from_string_impl(const std::vector<std::string>& tokens, std::index_sequence<Is...> indices) {
+    static_cast<void>(indices);
     return std::make_tuple(convert_string<std::tuple_element_t<Is, TupleT>>(tokens[Is])...);
 }
 
 template <typename TupleT, typename std::enable_if<is_std_tuple<TupleT>::value, int>::type = 0>
-TupleT key_from_string(const std::string& s) {
+TupleT key_from_string(const std::string& key_string) {
     std::vector<std::string> tokens;
-    std::istringstream iss(s);
+    std::istringstream iss(key_string);
     std::string token;
     while (std::getline(iss, token, '|')) {
         tokens.push_back(token);
@@ -216,8 +218,8 @@ public:
         iterator() : db_(nullptr), prefix_(), codec_(Codec{}), it_(nullptr) {}
 
         iterator(rocksdb::DB* db, const std::string& prefix,
-            std::unique_ptr<rocksdb::Iterator> iter, Codec codec = Codec{})
-            : db_(db), prefix_(prefix), codec_(codec), it_(std::move(iter))
+            std::unique_ptr<rocksdb::Iterator> iterator, Codec codec = Codec{})
+            : db_(db), prefix_(prefix), codec_(codec), it_(std::move(iterator))
         {
             check_valid();
         }
@@ -341,23 +343,23 @@ public:
 #endif
     }
 
-    std::pair<iterator, bool> insert(const value_type& val) {
+    std::pair<iterator, bool> insert(const value_type& value) {
 #ifdef IFOPSH_WITH_ROCKSDB
-        std::string key_str = key_to_string(val.first);
+        std::string key_str = key_to_string(value.first);
         std::string full_key = prefix_ + key_str;
         std::string existing;
         rocksdb::Status s = db_->Get(rocksdb::ReadOptions{}, full_key, &existing);
         if (s.ok()) {
             // Key already exists.
-            return { find(val.first), false };
+            return { find(value.first), false };
         }
-        std::string encoded = codec_.encode(val.second);
+        std::string encoded = codec_.encode(value.second);
         s = db_->Put(rocksdb::WriteOptions{}, full_key, encoded);
         if (!s.ok()) {
             return { end(), false };
         }
 #endif
-        return { find(val.first), true };
+        return { find(value.first), true };
     }
 };
 

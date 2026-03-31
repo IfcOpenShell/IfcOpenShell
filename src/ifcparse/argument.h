@@ -31,10 +31,10 @@
 
 namespace ifcopenshell {
 
-IFC_PARSE_API const char* argument_type_to_string(argument_type argument_type);
+IFC_PARSE_API const char* argument_type_to_string(argument_type type);
 
 /// Returns false when the string `s` contains character outside of {'0', '1'}
-IFC_PARSE_API bool valid_binary_string(const std::string& string);
+IFC_PARSE_API bool valid_binary_string(const std::string& binary_string);
 } // namespace ifcopenshell
 
 

@@ -52,8 +52,8 @@ enum argument_type {
     Argument_UNKNOWN
 };
 
-IFC_PARSE_API argument_type from_parameter_type(const ifcopenshell::parameter_type*);
-IFC_PARSE_API argument_type make_aggregate(argument_type elem_type);
+IFC_PARSE_API argument_type from_parameter_type(const ifcopenshell::parameter_type* parameter_type);
+IFC_PARSE_API argument_type make_aggregate(argument_type element_type);
 } // namespace ifcopenshell
 
 #endif

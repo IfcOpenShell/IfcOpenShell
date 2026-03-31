@@ -72,21 +72,22 @@ public:
 
     file_reader() = default;
 
-    explicit file_reader(const std::string& fn)
+    explicit file_reader(const std::string& path)
         : cursor_(0) {
         if constexpr (std::is_same_v<Impl, full_buffer_impl>
 #ifdef USE_MMAP
             || std::is_same_v<Impl, mmap_impl>
 #endif
         ) {
-            impl_ = std::make_shared<Impl>(fn);
+            impl_ = std::make_shared<Impl>(path);
         } else {
             static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
         }
     }
 
-    explicit file_reader(const caller_fed_tag&)
+    explicit file_reader(const caller_fed_tag& tag)
         : cursor_(0) {
+        static_cast<void>(tag);
         if constexpr (std::is_same_v<Impl, full_buffer_impl>) {
             impl_ = std::make_shared<Impl>(caller_fed_tag{});
         } else if constexpr (std::is_same_v<Impl, pushed_sequential_impl>) {
@@ -96,8 +97,9 @@ public:
         }
     }
 
-    file_reader(const std::string& content, const caller_fed_tag&)
+    file_reader(const std::string& content, const caller_fed_tag& tag)
         : file_reader(caller_fed_tag{}) {
+        static_cast<void>(tag);
         if constexpr (std::is_same_v<Impl, full_buffer_impl>
             || std::is_same_v<Impl, pushed_sequential_impl>) {
             impl_->push_next_page(content);
@@ -106,10 +108,10 @@ public:
         }
     }
 
-    file_reader(const std::string& fn, size_t page_size, size_t page_capacity)
+    file_reader(const std::string& path, size_t page_size, size_t page_capacity)
         : cursor_(0) {
         if constexpr (std::is_same_v<Impl, paged_file_impl>) {
-            impl_ = std::make_shared<Impl>(fn, page_size, page_capacity);
+            impl_ = std::make_shared<Impl>(path, page_size, page_capacity);
         } else {
             static_assert(file_reader_dependent_false_v<Impl>, "This file_reader constructor is not supported for the selected backend");
         }
@@ -121,11 +123,11 @@ public:
         return c;
     }
 
-    void seek(size_t pos) {
-        if (pos > size()) {
+    void seek(size_t position) {
+        if (position > size()) {
             throw std::out_of_range("seek out of range");
         }
-        cursor_ = pos;
+        cursor_ = position;
     }
 
     size_t tell() const { return cursor_; }
@@ -154,23 +156,23 @@ public:
         return impl_->get_u32(cursor_);
     }
 
-    void increment(size_t n = 1) {
-        if (cursor_ + n > size()) {
+    void increment(size_t count = 1) {
+        if (cursor_ + count > size()) {
             throw std::out_of_range("increment past EOF");
         }
-        cursor_ += n;
+        cursor_ += count;
     }
 
-    void push_next_page(const std::string& data) {
-        impl_->push_next_page(data);
+    void push_next_page(const std::string& page_data) {
+        impl_->push_next_page(page_data);
     }
 
     void drop_pages() {
         impl_->drop_pages(0);
     }
 
-    void drop_pages(size_t up_to_pos) {
-        impl_->drop_pages(up_to_pos);
+    void drop_pages(size_t up_to_position) {
+        impl_->drop_pages(up_to_position);
     }
 
     bool eof() const {
@@ -183,8 +185,8 @@ public:
         return c;
     }
 
-    char get(size_t offset) const {
-        return impl_->get(offset);
+    char get(size_t position) const {
+        return impl_->get(position);
     }
 
 private:
@@ -195,16 +197,16 @@ private:
 class IFC_PARSE_API full_buffer_impl {
 public:
     full_buffer_impl() = default;
-    explicit full_buffer_impl(const std::string& fn);
-    explicit full_buffer_impl(const caller_fed_tag&);
-    full_buffer_impl(const std::string& content, const caller_fed_tag&);
+    explicit full_buffer_impl(const std::string& path);
+    explicit full_buffer_impl(const caller_fed_tag& tag);
+    full_buffer_impl(const std::string& content, const caller_fed_tag& tag);
 
     size_t size() const;
-    char get(size_t pos) const;
-    uint32_t get_u32(size_t pos) const;
-    uint64_t get_u64(size_t pos) const;
-    void push_next_page(const std::string& data);
-    void drop_pages(size_t pos);
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
 
 private:
     std::vector<char> buf_;
@@ -218,19 +220,19 @@ public:
         std::list<size_t>::iterator it;
     };
 
-    paged_file_impl(const std::string& fn, size_t page_size, size_t cap);
+    paged_file_impl(const std::string& path, size_t page_size, size_t page_capacity);
     ~paged_file_impl();
 
     size_t size() const;
-    char get(size_t pos) const;
-    uint32_t get_u32(size_t pos) const;
-    uint64_t get_u64(size_t pos) const;
-    void push_next_page(const std::string& data);
-    void drop_pages(size_t pos);
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
 
 private:
-    const file_reader_page& fetchPage_(size_t idx) const;
-    void touch_(std::unordered_map<size_t, Entry>::iterator it) const;
+    const file_reader_page& fetchPage_(size_t page_index) const;
+    void touch_(std::unordered_map<size_t, Entry>::iterator entry_it) const;
     void evict_() const;
 
     std::string fn_;
@@ -245,14 +247,14 @@ private:
 #ifdef USE_MMAP
 class IFC_PARSE_API mmap_impl {
 public:
-    explicit mmap_impl(const std::string& fn);
+    explicit mmap_impl(const std::string& path);
 
     size_t size() const;
-    char get(size_t pos) const;
-    uint32_t get_u32(size_t pos) const;
-    uint64_t get_u64(size_t pos) const;
-    void push_next_page(const std::string& data);
-    void drop_pages(size_t pos);
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
 
 private:
     boost::iostreams::mapped_file_source map_;
@@ -263,11 +265,11 @@ private:
 class IFC_PARSE_API pushed_sequential_impl {
 public:
     size_t size() const;
-    char get(size_t pos) const;
-    uint32_t get_u32(size_t pos) const;
-    uint64_t get_u64(size_t pos) const;
-    void push_next_page(const std::string& data);
-    void drop_pages(size_t pos);
+    char get(size_t position) const;
+    uint32_t get_u32(size_t position) const;
+    uint64_t get_u64(size_t position) const;
+    void push_next_page(const std::string& page_data);
+    void drop_pages(size_t up_to_position);
 
 private:
     std::deque<file_reader_page> pages_;

@@ -35,17 +35,17 @@ class IFC_PARSE_API spf_header {
     std::array<std::shared_ptr<instance_data>, 3> header_entities_;
 
   public:
-    explicit spf_header(ifcopenshell::file* file);
+    explicit spf_header(ifcopenshell::file* owner_file);
     ~spf_header();
 
-    void write(std::ostream& out) const;
+    void write(std::ostream& stream) const;
 
     ifcopenshell::file* file() { return file_; }
-    void file(ifcopenshell::file* file);
+    void file(ifcopenshell::file* owner_file);
 
-    void set_file_description(const std::shared_ptr<instance_data>& data);
-    void set_file_name(const std::shared_ptr<instance_data>& data);
-    void set_file_schema(const std::shared_ptr<instance_data>& data);
+    void set_file_description(const std::shared_ptr<instance_data>& description_data);
+    void set_file_name(const std::shared_ptr<instance_data>& name_data);
+    void set_file_schema(const std::shared_ptr<instance_data>& schema_data);
 
     const Header_section_schema::file_description file_description() const;
     const Header_section_schema::file_name file_name() const;

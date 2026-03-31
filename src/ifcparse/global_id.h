@@ -37,7 +37,7 @@ class IFC_PARSE_API global_id {
   public:
     static const unsigned int length = 22;
     global_id();
-    global_id(const std::string&);
+    global_id(const std::string& value);
     operator const std::string&() const;
     operator const boost::uuids::uuid&() const;
     const std::string& formatted() const;

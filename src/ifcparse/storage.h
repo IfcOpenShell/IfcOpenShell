@@ -57,7 +57,7 @@ public:
 
     // Construct from any one of the underlying iterator types.
     template <typename Iterator>
-    variant_iterator(Iterator it) : it_(it) {}
+    variant_iterator(Iterator iterator) : it_(iterator) {}
 
     // Dereference operator.
     decltype(auto) operator*() const {
@@ -161,20 +161,20 @@ namespace ifcopenshell {
         token() : start_pos(0),
                   type(Token_NONE) {}
         
-        token(size_t start, token_type ty, const std::string& str)
-            : start_pos(start), type(ty), value_string(&str) {}
+        token(size_t start_position, token_type token_kind, const std::string& string_value)
+            : start_pos(start_position), type(token_kind), value_string(&string_value) {}
 
-        token(size_t start, token_type ty, int i)
-            : start_pos(start), type(ty), value_int(i) {}
+        token(size_t start_position, token_type token_kind, int integer_value)
+            : start_pos(start_position), type(token_kind), value_int(integer_value) {}
 
-        token(size_t start, double d)
-            : start_pos(start), type(Token_FLOAT), value_double(d) {}
+        token(size_t start_position, double floating_value)
+            : start_pos(start_position), type(Token_FLOAT), value_double(floating_value) {}
 
-        token(size_t start, char op)
-            : start_pos(start), type(Token_OPERATOR), value_char(op) {}
+        token(size_t start_position, char operator_character)
+            : start_pos(start_position), type(Token_OPERATOR), value_char(operator_character) {}
         
-        token(size_t start, token_type ty, char c)
-            : start_pos(start), type(ty), value_char(c) {}
+        token(size_t start_position, token_type token_kind, char character_value)
+            : start_pos(start_position), type(token_kind), value_char(character_value) {}
 
         bool is_string();
         bool is_identifier();
@@ -234,19 +234,19 @@ namespace ifcopenshell {
         };
         ~parse_context();
 
-        parse_context(const parse_context&) = delete;
-        parse_context& operator=(const parse_context&) = delete;
+        parse_context(const parse_context& other) = delete;
+        parse_context& operator=(const parse_context& other) = delete;
 
-        parse_context(parse_context&&) = default;
-        parse_context& operator=(parse_context&&) = default;
+        parse_context(parse_context&& other) = default;
+        parse_context& operator=(parse_context&& other) = default;
 
         parse_context& push();
 
-        void push(token t);
+        void push(token next_token);
 
-        void push(const express::Base& inst);
+        void push(const express::Base& instance);
 
-        std::shared_ptr<instance_data> construct(ifcopenshell::file* owner, std::optional<size_t> name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* decl, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
+        std::shared_ptr<instance_data> construct(ifcopenshell::file* owner_file, std::optional<size_t> instance_name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* declaration, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count = true);
     };
 
     struct parse_context_pool {
@@ -310,9 +310,9 @@ namespace ifcopenshell {
             typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(ifcopenshell::file* f = nullptr) : file(f), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<instance_data>& d) { return express::Base(d); }) {};
-            in_memory_file_storage(const in_memory_file_storage&) = delete;
-            in_memory_file_storage(const in_memory_file_storage&&) = delete;
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr) : file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<instance_data>& data) { return express::Base(data); }) {};
+            in_memory_file_storage(const in_memory_file_storage& other) = delete;
+            in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
 
             class type_iterator : public entities_by_type_t::const_iterator {
@@ -325,8 +325,8 @@ namespace ifcopenshell {
 
                 type_iterator() : entities_by_type_t::const_iterator() {};
 
-                type_iterator(const entities_by_type_t::const_iterator& iter)
-                    : entities_by_type_t::const_iterator(iter) {};
+                type_iterator(const entities_by_type_t::const_iterator& iterator)
+                    : entities_by_type_t::const_iterator(iterator) {};
 
                 entities_by_type_t::key_type const* operator->() const {
                     return &entities_by_type_t::const_iterator::operator->()->first;
@@ -356,19 +356,19 @@ namespace ifcopenshell {
             entity_instance_by_name_t byid_read_;
 
             template <typename Reader>
-            void load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::entity* entity, parse_context&, int attribute_index = -1);
+            void load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::entity* entity, parse_context& context, int attribute_index = -1);
             template <typename Reader>
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
-            void register_inverse(unsigned, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const ifcopenshell::entity* from_entity, const express::Base&, int attribute_index);
+            void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
 
             template <typename Reader>
-            void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+            void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& types_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 
-            express::Base instance_by_id(int id);
+            express::Base instance_by_id(int instance_id);
 
             void add_type_ref(const express::Base& new_entity) {
                 if (auto* ty = new_entity.declaration().as_entity()) {
@@ -387,12 +387,12 @@ namespace ifcopenshell {
                 }
             }
 
-            void process_deletion_inverse(const express::Base& inst);
+            void process_deletion_inverse(const express::Base& entity);
 
             template <typename T>
-            T create(int id=-1);
+            T create(int instance_id = -1);
 
-            express::Base create(const ifcopenshell::declaration* decl, int id=-1);
+            express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
 
         class IFC_PARSE_API rocks_db_file_storage {
@@ -449,12 +449,12 @@ namespace ifcopenshell {
             entities_by_ref_t byref_excl_;
 
             // @todo naming
-            rocks_db_file_storage(const std::string& filepath, ifcopenshell::file* file, bool readonly=false);
+            rocks_db_file_storage(const std::string& path, ifcopenshell::file* owner_file, bool read_only = false);
             ~rocks_db_file_storage();
 
             bool read_schema(const ifcopenshell::schema_definition*& schema);
 
-            express::Base assert_existance(size_t instanceId, instance_ref r);
+            express::Base assert_existance(size_t instance_id, instance_ref reference_type);
 
             // @todo merge iterators (template?)
             class IFC_PARSE_API rocksdb_types_iterator {
@@ -492,11 +492,11 @@ namespace ifcopenshell {
                 {
                 }
 
-                rocksdb_types_iterator(const rocks_db_file_storage* fs)
-                    : storage_(fs)
+                rocksdb_types_iterator(const rocks_db_file_storage* storage)
+                    : storage_(storage)
                 {
 #ifdef IFOPSH_WITH_ROCKSDB
-                    state_ = fs->db->NewIterator(rocksdb::ReadOptions());
+                    state_ = storage->db->NewIterator(rocksdb::ReadOptions());
                     state_->Seek(prefix_);
                     if (!state_->Valid() || !state_->key().starts_with(prefix_)) {
                         delete state_;
@@ -555,21 +555,21 @@ namespace ifcopenshell {
             // @todo rocksdb_instance_iterator?
             using const_iterator = entity_instance_by_name_t::iterator;
 
-            void register_inverse(unsigned, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const ifcopenshell::entity* from_entity, const express::Base&, int attribute_index);
+            void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
+            void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
 
             // @todo a bit hard as a map because of value_type being an aggregate
             void add_type_ref(const express::Base& new_entity);
             void remove_type_ref(const express::Base& new_entity);
 
-            express::Base instance_by_id(int id);
+            express::Base instance_by_id(int instance_id);
 
-            void process_deletion_inverse(const express::Base& inst);
+            void process_deletion_inverse(const express::Base& entity);
 
             template <typename T>
-            T create(int id=-1);
+            T create(int instance_id = -1);
 
-            express::Base create(const ifcopenshell::declaration* decl, int id=-1);
+            express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
         };
     }
 }

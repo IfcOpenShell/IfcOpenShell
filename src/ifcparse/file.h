@@ -86,7 +86,7 @@ enum filetype {
     FT_AUTODETECT
 };
 
-IFC_PARSE_API filetype guess_file_type(const std::string& fn);
+IFC_PARSE_API filetype guess_file_type(const std::string& path);
 
 template <typename Reader = file_reader<full_buffer_impl>>
 class IFC_PARSE_API instance_streamer {
@@ -151,19 +151,19 @@ private:
 
     size_t semicolon_count() const;
 
-    void push_page(const std::string& page);
+    void push_page(const std::string& page_data);
 
-    instance_streamer(ifcopenshell::file* f = nullptr);
+    instance_streamer(ifcopenshell::file* owner_file = nullptr);
 
-    instance_streamer(const std::string& fn, bool mmap = false, ifcopenshell::file* f = nullptr);
+    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr);
 
-    instance_streamer(void* data, int length, ifcopenshell::file* f = nullptr);
+    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr);
 
-    instance_streamer(Reader* stream, ifcopenshell::file* f = nullptr);
+    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr);
 
     void bypass_types(const std::set<std::string>& type_names);
 
-    void yield_header_instances(bool value) { yield_header_instances_ = value; }
+    void yield_header_instances(bool enabled) { yield_header_instances_ = enabled; }
 
     const ifcopenshell::schema_definition* schema() const { return schema_; }
 
@@ -237,7 +237,7 @@ public:
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file</param>
     /// <param name="mmap">Whether to use memory-mapped I/O</param>
-    file(const std::string& path, bool mmap);
+    file(const std::string& path, bool use_mmap);
 #endif
     /// <summary>
 	/// Constructs an file object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
@@ -245,17 +245,17 @@ public:
     /// <param name="path">UTF-8 file path to an IFC-SPF file or RocksDB database directory</param>
     /// <param name="ty">File type of the path</param>
     /// <param name="readonly">Whether to open in read-only mode, only supported on RocksDB databases</param>
-    file(const std::string& path, filetype ty=FT_AUTODETECT, bool readonly=false);
+    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
 
     /// <summary>
 	/// Constructs an file object from a stream containing IFC-SPF data.
     /// </summary>
-    file(std::istream& stream, int length);
+    file(std::istream& stream, int data_size);
 
     /// <summary>
 	/// Constructs an file object from a memory buffer containing IFC-SPF data.
     /// </summary>
-    file(void* data, int length);
+    file(void* data, int data_size);
 
     /// <summary>
     /// Constructs an file object with the specified schema, file type, and file path.
@@ -264,16 +264,16 @@ public:
     /// <param name="schema">Pointer to the schema definition to use. Defaults to the IFC4 schema if not specified.</param>
     /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
-    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype ty = FT_AUTODETECT, const std::string& path = "");
+    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "");
 
     /// <summary>
     /// Constructs an unitialized file object. Call initialize() later on. Allows to specify which types to bypass during load.
     /// </summary>
-    file(const uninitialized_tag&);
+    file(const uninitialized_tag& tag);
 
-    bool initialize(const std::string& path, filetype ty = FT_AUTODETECT, bool readonly = false);
+    bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
 #ifdef USE_MMAP
-    bool initialize(const std::string& path, bool mmap);
+    bool initialize(const std::string& path, bool use_mmap);
 #endif
 
     /// @brief Bypass loading of all instances of the specified type name. Only applies to parsed IFC-SPF files.
@@ -325,36 +325,36 @@ public:
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const ifcopenshell::declaration*);
+    std::vector<express::Base> instances_by_type(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const ifcopenshell::declaration*);
+    std::vector<express::Base> instances_by_type_excl_subtypes(const ifcopenshell::declaration* declaration);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    std::vector<express::Base> instances_by_type(const std::string& type);
+    std::vector<express::Base> instances_by_type(const std::string& type_name);
 
     /// Returns all entities in the file that match the positional argument.
-    std::vector<express::Base> instances_by_type_excl_subtypes(const std::string& type);
+    std::vector<express::Base> instances_by_type_excl_subtypes(const std::string& type_name);
 
     /// Returns all entities in the file that reference the id
-    std::vector<express::Base> instances_by_reference(int id);
+    std::vector<express::Base> instances_by_reference(int reference_id);
 
     /// Returns the entity with the specified id
-    express::Base instance_by_id(int id);
+    express::Base instance_by_id(int instance_id);
 
     /// Returns the entity with the specified GlobalId
-    express::Base instance_by_guid(const std::string& guid);
+    express::Base instance_by_guid(const std::string& global_id);
 
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
     /// in the first function argument.
-    static std::vector<express::Base> traverse(const express::Base& instance, int max_level = -1);
+    static std::vector<express::Base> traverse(const express::Base& instance, int max_depth = -1);
 
     /// Same as traverse() but maintains topological order by using a
     /// breadth-first search
-    static std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_level = -1);
+    static std::vector<express::Base> traverse_breadth_first(const express::Base& instance, int max_depth = -1);
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by get_inverse().
@@ -365,7 +365,7 @@ public:
         return get_inverse(instance_id, &T::Class(), attribute_index)->template as<T>();
     }
 
-    std::vector<express::Entity> get_inverse(int instance_id, const ifcopenshell::declaration* type, int attribute_index);
+    std::vector<express::Entity> get_inverse(int instance_id, const ifcopenshell::declaration* declaration, int attribute_index);
 
     size_t get_total_inverses(int instance_id);
 
@@ -377,7 +377,7 @@ public:
 
     void recalculate_id_counter();
 
-    express::Base add_entity(const express::Base& entity, int id = -1);
+    express::Base add_entity(const express::Base& entity, int instance_id = -1);
 
     /// Removes entity instance from file and unsets references.
     ///
@@ -401,16 +401,16 @@ public:
 
     void build_inverses();
 
-    void register_inverse(unsigned, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index);
-    void unregister_inverse(unsigned, const ifcopenshell::entity* from_entity, const express::Base&, int attribute_index);
+    void register_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, int instance_id, int attribute_index);
+    void unregister_inverse(unsigned referenced_id, const ifcopenshell::entity* from_entity, const express::Base& entity, int attribute_index);
 
     entity_instance_by_guid_t internal_guid_map() { return byguid_; };
 
     void add_type_ref(const express::Base& new_entity);
     void remove_type_ref(const express::Base& new_entity);
-    void process_deletion_inverse(const express::Base& inst);
+    void process_deletion_inverse(const express::Base& entity);
 
-    void build_inverses_(const express::Base&);
+    void build_inverses_(const express::Base& entity);
 
     // @nb this does not support id assignment
     template <typename T, typename... Ts>
@@ -423,11 +423,11 @@ public:
     }
 
     template <typename T>
-    T create(int id = -1) {
-        return create(&T::Class(), id).template as<T>();
+    T create(int instance_id = -1) {
+        return create(&T::Class(), instance_id).template as<T>();
     }
 
-    express::Base create(const ifcopenshell::declaration* decl, int id = -1);
+    express::Base create(const ifcopenshell::declaration* declaration, int instance_id = -1);
 
     void batch() {
         batch_mode_ = true; 

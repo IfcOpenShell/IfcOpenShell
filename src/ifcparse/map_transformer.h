@@ -47,14 +47,14 @@ public:
     // read-only constructor with TransformBack=void
     template <typename TB = TransformBack,
               typename std::enable_if<std::is_void<TB>::value, int>::type = 0>
-    map_transformer(BaseMap* map, Transform transform)
-        : base_map_(map), transform_(std::move(transform)), transform_back_{} {}
+    map_transformer(BaseMap* base_map, Transform transform)
+        : base_map_(base_map), transform_(std::move(transform)), transform_back_{} {}
 
     // read-write constructor with TransformBack provided
     template <typename TB = TransformBack,
               typename std::enable_if<!std::is_void<TB>::value, int>::type = 0>
-    map_transformer(BaseMap* map, Transform transform, TB transform_back)
-        : base_map_(map), transform_(std::move(transform)), transform_back_(std::move(transform_back)) {}
+    map_transformer(BaseMap* base_map, Transform transform, TB transform_back)
+        : base_map_(base_map), transform_(std::move(transform)), transform_back_(std::move(transform_back)) {}
 
     class iterator {
     public:
@@ -73,8 +73,8 @@ public:
 
     public:
         iterator() : base_it_(), transform_ptr_(nullptr) {}
-        iterator(base_iterator base_it, Transform* transform_ptr)
-            : base_it_(base_it), transform_ptr_(transform_ptr) {}
+        iterator(base_iterator base_iterator, Transform* transform)
+            : base_it_(base_iterator), transform_ptr_(transform) {}
 
         // On dereference, return a pair where the key is unchanged and the mapped value
         // is the result of applying the transform to the underlying mapped value.
@@ -118,15 +118,15 @@ public:
         return iterator(base_map_->end(), &transform_);
     }
 
-    iterator find(const key_type& k) {
-        return iterator(base_map_->find(k), &transform_);
+    iterator find(const key_type& key) {
+        return iterator(base_map_->find(key), &transform_);
     }
 
     // @todo still not sure if this is a good idea, do we want to insert into the transformed map?
-    std::pair<iterator, bool> insert(const value_type& val) {
+    std::pair<iterator, bool> insert(const value_type& value) {
         static_assert(!read_only, "insert() requires TransformBack");
-        auto p = base_map_->insert({ val.first, transform_back_(val.second) });
-        return { iterator(p.first, &transform_), p.second };
+        auto result = base_map_->insert({ value.first, transform_back_(value.second) });
+        return { iterator(result.first, &transform_), result.second };
     }
 
     size_t erase(const key_type& key) {

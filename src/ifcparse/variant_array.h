@@ -153,9 +153,9 @@ public:
         return *this;
     }
 
-    variant_array(const variant_array&) = delete;
-    variant_array(const variant_array&&) = delete;
-    variant_array& operator= (const variant_array&) = delete;
+    variant_array(const variant_array& other) = delete;
+    variant_array(const variant_array&& other) = delete;
+    variant_array& operator= (const variant_array& other) = delete;
 
     template<typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, variant_array>>>
     void set(std::size_t index, T&& value) {
@@ -284,23 +284,27 @@ private:
         }
     }
 
-    void destroy_type_at_index(std::size_t, std::integral_constant<std::size_t, 0>) {}
+    void destroy_type_at_index(std::size_t index, std::integral_constant<std::size_t, 0>) {
+        static_cast<void>(index);
+    }
 
     template<typename Visitor, std::size_t Index>
-    auto apply_visitor_impl(Visitor&& visitor, std::size_t idx, std::integral_constant<std::size_t, Index>) const {
-        if (size_and_indices_[idx + 1] == Index - 1) {
+    auto apply_visitor_impl(Visitor&& visitor, std::size_t index, std::integral_constant<std::size_t, Index>) const {
+        if (size_and_indices_[index + 1] == Index - 1) {
             using T = typename std::tuple_element_t<Index - 1, ::impl::MapTypes_t<Types...>>;
             if constexpr (::impl::is_unique_ptr<T>::value) {
-                return visitor(**reinterpret_cast<T*>(&storage_[idx]));
+                return visitor(**reinterpret_cast<T*>(&storage_[index]));
             } else {
-                return visitor(*reinterpret_cast<T*>(&storage_[idx]));
+                return visitor(*reinterpret_cast<T*>(&storage_[index]));
             }
         }
-        return apply_visitor_impl(std::forward<Visitor>(visitor), idx, std::integral_constant<std::size_t, Index - 1>{});
+        return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, Index - 1>{});
     }
 
     template<typename Visitor>
-    auto apply_visitor_impl(Visitor&&, std::size_t, std::integral_constant<std::size_t, 0>) const {
+    auto apply_visitor_impl(Visitor&& visitor, std::size_t index, std::integral_constant<std::size_t, 0>) const {
+        static_cast<void>(visitor);
+        static_cast<void>(index);
         throw std::runtime_error("Invalid variant index");
         if constexpr (!std::is_void_v<decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::MapTypes_t<Types...>> &>()))>) {
             return decltype(std::declval<Visitor>()(std::declval<typename std::tuple_element_t<0, ::impl::MapTypes_t<Types...>> &>())){};
@@ -308,20 +312,20 @@ private:
     }
 
     template <size_t I>
-    const char* get_type_name_impl(size_t i) const {
+    const char* get_type_name_impl(size_t type_index) const {
         if constexpr (I == 0) {
             return "";
         } else {
-            if (i == I - 1) {
+            if (type_index == I - 1) {
                 return typeid(std::tuple_element_t<I - 1, std::tuple<Types...>>).name();
             } else {
-                return get_type_name_impl<I - 1>(i);
+                return get_type_name_impl<I - 1>(type_index);
             }
         }
     }
 
-    const char* get_type_name(size_t i) const {
-        return get_type_name_impl<sizeof...(Types)>(i);
+    const char* get_type_name(size_t type_index) const {
+        return get_type_name_impl<sizeof...(Types)>(type_index);
     }
 };
 

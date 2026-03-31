@@ -56,8 +56,8 @@ class IFC_PARSE_API parameter_type {
     virtual const simple_type* as_simple_type() const { return static_cast<simple_type*>(0); }
     virtual const aggregation_type* as_aggregation_type() const { return static_cast<aggregation_type*>(0); }
 
-    virtual bool is(const std::string& /*name*/) const { return false; }
-    virtual bool is(const ifcopenshell::declaration& /*decl*/) const { return false; }
+    virtual bool is(const std::string& /*type_name*/) const { return false; }
+    virtual bool is(const ifcopenshell::declaration& /*declaration*/) const { return false; }
 };
 
 class IFC_PARSE_API named_type : public parameter_type {
@@ -221,14 +221,14 @@ class IFC_PARSE_API enumeration_type : public declaration {
         return enumeration_items_[i].c_str();
     }
 
-    size_t lookup_enum_offset(const std::string& string) const {
+    size_t lookup_enum_offset(const std::string& value_name) const {
         size_t index = 0;
         for (auto it = enumeration_items_.begin(); it != enumeration_items_.end(); ++it, ++index) {
-            if (string == *it) {
+            if (value_name == *it) {
                 return index;
             }
         }
-        throw ifcopenshell::exception("Unable to find keyword in schema: " + string);
+        throw ifcopenshell::exception("Unable to find keyword in schema: " + value_name);
     }
 
     virtual const enumeration_type* as_enumeration_type() const { return this; }
@@ -308,23 +308,23 @@ class IFC_PARSE_API entity : public declaration {
         std::string name_;
 
       public:
-        attribute_by_name_cmp(const std::string name)
-            : name_(name) {}
-        bool operator()(const attribute* attr) {
-            return attr->name() == name_;
+        attribute_by_name_cmp(const std::string attribute_name)
+            : name_(attribute_name) {}
+        bool operator()(const attribute* attribute_definition) {
+            return attribute_definition->name() == name_;
         }
     };
 
-    const attribute* attribute_by_index_(size_t& index) const {
+    const attribute* attribute_by_index_(size_t& attribute_index) const {
         const attribute* attr = 0;
         if (supertype_ != nullptr) {
-            attr = supertype_->attribute_by_index_(index);
+            attr = supertype_->attribute_by_index_(attribute_index);
         }
         if (attr == 0) {
-            if (index < attributes_.size()) {
-                attr = attributes_[index];
+            if (attribute_index < attributes_.size()) {
+                attr = attributes_[attribute_index];
             }
-            index -= attributes_.size();
+            attribute_index -= attributes_.size();
         }
         return attr;
     }
@@ -395,7 +395,7 @@ class IFC_PARSE_API entity : public declaration {
         return super_count + attributes_.size();
     }
 
-    ptrdiff_t attribute_index(const attribute* attr) const {
+    ptrdiff_t attribute_index(const attribute* attribute_definition) const {
         const entity* current = this;
         ptrdiff_t index = -1;
         do {
@@ -403,7 +403,7 @@ class IFC_PARSE_API entity : public declaration {
                 index += current->attributes().size();
             } else {
                 std::vector<const attribute*>::const_iterator iter;
-                iter = std::find(current->attributes().begin(), current->attributes().end(), attr);
+                iter = std::find(current->attributes().begin(), current->attributes().end(), attribute_definition);
                 if (iter != current->attributes().end()) {
                     index = std::distance(current->attributes().begin(), iter);
                 }
@@ -448,8 +448,8 @@ class IFC_PARSE_API schema_definition {
 
     class declaration_by_name_cmp {
       public:
-        bool operator()(const declaration* decl, const std::string& name) {
-            return decl->name_uc() < name;
+        bool operator()(const declaration* declaration, const std::string& name) {
+            return declaration->name_uc() < name;
         }
     };
 
@@ -484,8 +484,8 @@ class IFC_PARSE_API schema_definition {
         return *iter;
     }
 
-    const declaration* declaration_by_name(size_t name) const {
-        return declarations_.at(name);
+    const declaration* declaration_by_name(size_t declaration_index) const {
+        return declarations_.at(declaration_index);
     }
 
     const std::vector<const declaration*>& declarations() const { return declarations_; }
@@ -497,11 +497,11 @@ class IFC_PARSE_API schema_definition {
     const std::string& name() const { return name_; }
 };
 
-IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);
+IFC_PARSE_API const schema_definition* schema_by_name(const std::string& schema_name);
 
 IFC_PARSE_API std::vector<std::string> schema_names();
 
-IFC_PARSE_API void register_schema(schema_definition*);
+IFC_PARSE_API void register_schema(schema_definition* schema);
 
 IFC_PARSE_API void clear_schemas();
 } // namespace ifcopenshell

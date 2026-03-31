@@ -89,8 +89,8 @@ public:
         iterator() : db_(nullptr), prefix_(), it_(nullptr) {}
 
         iterator(rocksdb::DB* db, const std::string& prefix,
-            std::unique_ptr<rocksdb::Iterator> iter)
-            : db_(db), prefix_(prefix), it_(std::move(iter))
+            std::unique_ptr<rocksdb::Iterator> iterator)
+            : db_(db), prefix_(prefix), it_(std::move(iterator))
         {
             check_valid();
         }
@@ -214,6 +214,7 @@ public:
     }
 
     size_t erase(const key_type& key) {
+        static_cast<void>(key);
         // @todo
         return 0;
     }

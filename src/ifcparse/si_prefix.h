@@ -28,7 +28,7 @@ namespace ifcopenshell {
 IFC_PARSE_API double si_prefix_to_value(const std::string& prefix);
 
 template <typename Schema>
-IFC_PARSE_API double get_SI_equivalent(const typename Schema::IfcNamedUnit&);
+IFC_PARSE_API double get_SI_equivalent(const typename Schema::IfcNamedUnit& unit);
 } // namespace ifcopenshell
 
 #endif

@@ -49,8 +49,8 @@ class IFC_PARSE_API exception : public std::exception {
 
 class IFC_PARSE_API attribute_out_of_range_exception : public exception {
   public:
-    attribute_out_of_range_exception(const std::string& exception)
-        : exception(exception) {}
+    attribute_out_of_range_exception(const std::string& message)
+        : exception(message) {}
     ~attribute_out_of_range_exception() override;
 };
 

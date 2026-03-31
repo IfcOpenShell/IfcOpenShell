@@ -178,105 +178,107 @@ namespace impl {
     struct is_contiguous_container<std::basic_string<CharT, Traits, Alloc>> : std::true_type {};
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
-    bool serialize(std::string& val, const T& t) {
-        auto s = sizeof(typename T::value_type) * t.size();
-        val.resize(s + 1);
-        val[0] = TypeEncoder::encode_type<T>();
-        memcpy(val.data() + 1, t.data(), s);
+    bool serialize(std::string& buffer, const T& value) {
+        auto byte_count = sizeof(typename T::value_type) * value.size();
+        buffer.resize(byte_count + 1);
+        buffer[0] = TypeEncoder::encode_type<T>();
+        memcpy(buffer.data() + 1, value.data(), byte_count);
         return true;
     }
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value&& is_contiguous_container<typename T::value_type>::value, int>::type = 0>
-    bool serialize(std::string& val, const T& t) {
-        val = std::string(1, TypeEncoder::encode_type<T>());
-        for (auto& tt : t) {
-            std::string v2;
-            serialize(v2, tt);
-            std::string len(sizeof(size_t), 0);
-            size_t s = v2.size() - 1;
-            memcpy(len.data(), &s, sizeof(size_t));
+    bool serialize(std::string& buffer, const T& value) {
+        buffer = std::string(1, TypeEncoder::encode_type<T>());
+        for (auto& nested_value : value) {
+            std::string nested_buffer;
+            serialize(nested_buffer, nested_value);
+            std::string encoded_length(sizeof(size_t), 0);
+            size_t payload_size = nested_buffer.size() - 1;
+            memcpy(encoded_length.data(), &payload_size, sizeof(size_t));
             // @todo horribly inefficient
             // @todo strip off type label?
-            val += len + v2.substr(1);
+            buffer += encoded_length + nested_buffer.substr(1);
         }
         return true;
     }
 
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
-    bool serialize(std::string& val, const T& t) {
-        val.resize(sizeof(T) + 1);
-        val[0] = TypeEncoder::encode_type<T>();
-        memcpy(val.data() + 1, &t, sizeof(T));
+    bool serialize(std::string& buffer, const T& value) {
+        buffer.resize(sizeof(T) + 1);
+        buffer[0] = TypeEncoder::encode_type<T>();
+        memcpy(buffer.data() + 1, &value, sizeof(T));
         return true;
     }
 
-    bool serialize(std::string& val, const blank& t);
+    bool serialize(std::string& buffer, const blank& value);
 
-    bool serialize(std::string& val, const derived& t);
-    bool serialize(std::string& val, const empty_aggregate_t& t);
-    bool serialize(std::string& val, const empty_aggregate_of_aggregate_t& t);
+    bool serialize(std::string& buffer, const derived& value);
+    bool serialize(std::string& buffer, const empty_aggregate_t& value);
+    bool serialize(std::string& buffer, const empty_aggregate_of_aggregate_t& value);
 
-    bool serialize(std::string& val, const boost::logic::tribool& t);
+    bool serialize(std::string& buffer, const boost::logic::tribool& value);
 
-    bool serialize(std::string& val, const boost::dynamic_bitset<>& t);
+    bool serialize(std::string& buffer, const boost::dynamic_bitset<>& value);
     
-    bool serialize(std::string& val, const express::Base& t);
+    bool serialize(std::string& buffer, const express::Base& value);
 
-    bool serialize(std::string& val, const enumeration_reference& v);
+    bool serialize(std::string& buffer, const enumeration_reference& value);
 
-    bool serialize(std::string& val, const std::vector<express::Base>& t);
+    bool serialize(std::string& buffer, const std::vector<express::Base>& value);
 
-    bool serialize(std::string& val, const std::vector<std::vector<express::Base>>& t);
+    bool serialize(std::string& buffer, const std::vector<std::vector<express::Base>>& value);
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, T& t, bool prefixed = true) {
-        if (prefixed && val[0] != TypeEncoder::encode_type<T>()) {
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value, bool has_type_prefix = true) {
+        static_cast<void>(storage);
+        if (has_type_prefix && buffer[0] != TypeEncoder::encode_type<T>()) {
             return false;
         }
-        auto s = (val.size() - (prefixed ? 1 : 0)) / sizeof(typename T::value_type);
-        t.resize(s);
-        memcpy(t.data(), val.data() + (prefixed ? 1 : 0), s * sizeof(typename T::value_type));
+        auto element_count = (buffer.size() - (has_type_prefix ? 1 : 0)) / sizeof(typename T::value_type);
+        value.resize(element_count);
+        memcpy(value.data(), buffer.data() + (has_type_prefix ? 1 : 0), element_count * sizeof(typename T::value_type));
         return true;
     }
 
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && is_contiguous_container<typename T::value_type>::value, int>::type = 0>
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& val, T& t) {
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
         // @todo
-        auto ptr = val.data();
+        auto ptr = buffer.data();
         if (*ptr != TypeEncoder::encode_type<T>()) {
             return false;
         }
         ptr++;
-        t.clear();
-        while (ptr < val.data() + val.size()) {
-            size_t s;
-            memcpy(&s, ptr, sizeof(size_t));
+        value.clear();
+        while (ptr < buffer.data() + buffer.size()) {
+            size_t payload_size;
+            memcpy(&payload_size, ptr, sizeof(size_t));
             // @todo view
             ptr += sizeof(size_t);
-            std::string part(ptr, s);
-            t.emplace_back();
-            deserialize(storage, part, t.back(), false);
-            ptr += s;
+            std::string part(ptr, payload_size);
+            value.emplace_back();
+            deserialize(storage, part, value.back(), false);
+            ptr += payload_size;
         }
         return true;
     }
 
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, T & t) {
-        if (val[0] != TypeEncoder::encode_type<T>()) {
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, T& value) {
+        static_cast<void>(storage);
+        if (buffer[0] != TypeEncoder::encode_type<T>()) {
             return false;
         }
-        memcpy(&t, val.data() + 1, sizeof(T));
+        memcpy(&value, buffer.data() + 1, sizeof(T));
         return true;
     }
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, boost::logic::tribool& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, boost::dynamic_bitset<>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, std::vector<express::Base>& t);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<express::Base>& value);
 
-    bool deserialize(ifcopenshell::impl::rocks_db_file_storage*, const std::string& val, std::vector<std::vector<express::Base>>& t);
+    bool deserialize(ifcopenshell::impl::rocks_db_file_storage* storage, const std::string& buffer, std::vector<std::vector<express::Base>>& value);
     }
 
 #endif
@@ -292,8 +294,8 @@ class IFC_PARSE_API attribute_value {
     union pointer_type {
         const in_memory_attribute_storage* storage_ptr;
         ifcopenshell::impl::rocks_db_file_storage* db_ptr;
-        pointer_type(ifcopenshell::impl::rocks_db_file_storage* db) : db_ptr(db) {}
-        pointer_type(const in_memory_attribute_storage* ims) : storage_ptr(ims) {}
+        pointer_type(ifcopenshell::impl::rocks_db_file_storage* storage) : db_ptr(storage) {}
+        pointer_type(const in_memory_attribute_storage* storage) : storage_ptr(storage) {}
     };
 
 private:
@@ -306,18 +308,18 @@ public:
         , array_((const in_memory_attribute_storage*)nullptr)
     {}
 
-    attribute_value(const in_memory_attribute_storage* arr, uint8_t index)
+    attribute_value(const in_memory_attribute_storage* storage, uint8_t index)
         : index_(index)
         , storage_model_(0)
-        , array_(arr)
+        , array_(storage)
     {}
 
-    attribute_value(ifcopenshell::impl::rocks_db_file_storage* db, size_t instance_name, const ifcopenshell::declaration* entity_or_type, uint8_t index)
+    attribute_value(ifcopenshell::impl::rocks_db_file_storage* storage, size_t instance_name, const ifcopenshell::declaration* entity_or_type, uint8_t index)
         : index_(index)
         , storage_model_(1)
         , entity_or_type_(entity_or_type)
         , instance_name_(instance_name)
-        , array_(db)
+        , array_(storage)
     {}
 
     operator int() const;
@@ -400,7 +402,7 @@ public:
 #ifdef IFOPSH_WITH_ROCKSDB
     // @todo void* is obviously very ugly here
     template<typename T>
-    IFC_PARSE_API void set(void* storage, const ifcopenshell::declaration*, std::size_t identity, std::size_t index, const T& value);
+    IFC_PARSE_API void set(void* storage, const ifcopenshell::declaration* declaration, std::size_t identity, std::size_t index, const T& value);
 
     template<typename T>
     IFC_PARSE_API bool has(void* storage, const ifcopenshell::declaration* decl, std::size_t identity, std::size_t index) const;
@@ -448,9 +450,10 @@ class IFC_PARSE_API instance_data {
             populate_derived_();
       }
 
-      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&&)
+      instance_data(ifcopenshell::file* file, const ifcopenshell::declaration* declaration, uint32_t id, rocks_db_attribute_storage&& storage)
           : file_(file), declaration_(declaration), identity_(counter_++), id_(id), storage_(nullptr)
       {
+          static_cast<void>(storage);
           populate_derived_();
       }
 
@@ -462,9 +465,9 @@ class IFC_PARSE_API instance_data {
       */
 
       // No copy-constructor/-assignment anymore because we need the instance for storage model context
-      instance_data(const instance_data&) = delete;
-      instance_data& operator=(const instance_data&) = delete;
-      instance_data& operator=(instance_data&&) = delete;
+      instance_data(const instance_data& other) = delete;
+      instance_data& operator=(const instance_data& other) = delete;
+      instance_data& operator=(instance_data&& other) = delete;
       instance_data(instance_data&& other) noexcept = delete;
 
       /*
@@ -482,33 +485,33 @@ class IFC_PARSE_API instance_data {
           delete storage_;
       }
 
-    attribute_value get_attribute_value(size_t index) const;
+    attribute_value get_attribute_value(size_t attribute_index) const;
 
     template<typename T>
-    void set_attribute_value(std::size_t index, T&& value) {
+    void set_attribute_value(std::size_t attribute_index, T&& value) {
         if (storage_) {
-            storage_->set(index, value);
+            storage_->set(attribute_index, value);
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, index, value);
+            rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, attribute_index, value);
         }
 #endif
     }
 
     template<typename T>
-    bool has_attribute_value(std::size_t index) const {
+    bool has_attribute_value(std::size_t attribute_index) const {
         if (storage_) {
-            return storage_->has<T>(index);
+            return storage_->has<T>(attribute_index);
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, index);
+            return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, attribute_index);
         }
 #endif
     }
 
-    void to_string(std::ostream&, bool upper = false) const;
+    void to_string(std::ostream& stream, bool uppercase = false) const;
 };
 
 #endif
