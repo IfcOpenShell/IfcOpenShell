@@ -63,6 +63,7 @@ option(NO_WARN "Disable all warnings" OFF)
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
+option(BUILD_IFCPARSE_EXPERIMENTAL_WRAPPER "Build the experimental Clang-generated ifcparse Python wrapper." OFF)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
 option(BUILD_EXAMPLES "Build example applications." ON)
@@ -542,6 +543,10 @@ endif()
 
 add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
+
+if(BUILD_IFCPARSE_EXPERIMENTAL_WRAPPER)
+    add_subdirectory(../src/wrappergen wrappergen)
+endif()
 
 if(BUILD_IFCGEOM)
     # CGAL::CGAL target already has dependencies resolved.
