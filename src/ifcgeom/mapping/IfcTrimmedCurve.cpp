@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 	bool trim_cartesian_failed = !trim_cartesian;
 	if (trim_cartesian) {
 		if ((pnts[0]->ccomponents() - pnts[1]->ccomponents()).norm() < (2 * tol)) {
-			Logger::Message(Logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
+			logger::message(logger::LOG_WARNING, "Skipping segment with length below tolerance level:", inst);
 			return nullptr;
 		}
 		tc->start = pnts[0];
@@ -115,9 +115,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 		// or trimmed segment would be whether there are other curve segments or this
 		// is the only one.
 		std::optional<size_t> num_segments;
-		auto segment = inst.file()->getInverse(inst.id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
+		auto segment = inst.file()->get_inverse(inst.id(),  & IfcSchema::IfcCompositeCurveSegment::Class(), -1);
 		if (segment.size() == 1) {
-            auto comp = segment.front().file()->getInverse(segment.front().id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
+            auto comp = segment.front().file()->get_inverse(segment.front().id(), &IfcSchema::IfcCompositeCurve::Class(), -1);
 			if (comp.size() == 1) {
 				num_segments = comp.front().as<IfcSchema::IfcCompositeCurve>().Segments().size();
 			}
@@ -140,7 +140,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			if (v0.IsSame(v1)) {
-				Logger::Warning("Skipping degenerate segment", l);
+				logger::warning("Skipping degenerate segment", l);
 				return false;
 			}
 		}
@@ -168,7 +168,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve& inst) {
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
 			e = TopoDS::Edge(BRepBuilderAPI_MakeEdge(v0, v1).Edge().Oriented(e.Orientation()));
-			Logger::Warning("Substituted edge with linear approximation", l);
+			logger::warning("Substituted edge with linear approximation", l);
 		}
 	}
 

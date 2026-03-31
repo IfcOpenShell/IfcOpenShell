@@ -79,7 +79,7 @@
 
 #include <Extrema_ExtPElS.hxx>
 
-#include "../ifcparse/IfcGlobalId.h"
+#include "../ifcparse/global_id.h"
 #include "../ifcgeom/kernels/opencascade/base_utils.h"
 #include "../ifcgeom/kernels/opencascade/boolean_utils.h"
 #include "../ifcgeom/kernels/opencascade/wire_utils.h"
@@ -139,13 +139,13 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
 
 				if (curve2d.IsNull()) {
-					Logger::Error("Failed to obtain 2d and 3d curve from edge");
+					logger::error("Failed to obtain 2d and 3d curve from edge");
 					continue;
 				}
 
 				Handle(Standard_Type) sty = surf->DynamicType();
 				if (sty != STANDARD_TYPE(Geom_Plane)) {
-					Logger::Error("Non-planar p-curves are not supported by this serializer");
+					logger::error("Non-planar p-curves are not supported by this serializer");
 					continue;
 				}
 
@@ -222,7 +222,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 					std::stringstream ss;
 					ss << "Skipping full circle/ellipse inside aggregated <path> (id "
 						<< p.first << ")";
-					Logger::Warning(ss.str());
+					logger::warning(ss.str());
 				}
 			}
 
@@ -512,7 +512,7 @@ namespace {
                         }
                         express::Base v = prop.as<express::Entity>().get("NominalValue");
 						auto value = v.get_attribute_value(0);
-						if (value.type() == IfcUtil::Argument_STRING) {
+						if (value.type() == ifcopenshell::Argument_STRING) {
 							std::string v_str = value;
 							*output_it++ = string_property{ pset_name, name, v_str };
 						}
@@ -649,7 +649,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
 #endif
 		} else {
-			Logger::Error("Failed to box or edge from drawing annotation");
+			logger::error("Failed to box or edge from drawing annotation");
 		}
 
 		std::vector<string_property> props;
@@ -796,7 +796,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		if (data.storey) {
 			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation,  +1. });
 		} else {
-			Logger::Warning("No global section height and unable to determine building storey for:", data.product);
+			logger::warning("No global section height and unable to determine building storey for:", data.product);
 			return;
 		}
 	}
@@ -811,7 +811,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		Bnd_OBB obb;
 		BRepBndLib::AddOBB(compound_unmirrored, obb, false, false, false);
 		if (view_box_3d_->IsOut(obb)) {
-			Logger::Notice("Not including element due to viewBox", data.product);
+			logger::notice("Not including element due to viewBox", data.product);
 			return;
 		}
 	}
@@ -858,7 +858,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 			}
 		} catch (std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 
 		if (operation_type && ((*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT"))) {
@@ -1111,7 +1111,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
-							Logger::Error("Failed to cut element for HLR", data.product);
+							logger::error("Failed to cut element for HLR", data.product);
 						}
 					}
 				}
@@ -1207,7 +1207,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						}
 						it->second.add(*compound_to_hlr, data.product);
 					} else {
-						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
+						logger::warning("Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
 					hlr->add(*compound_to_hlr, data.product);
@@ -1369,7 +1369,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 							auto l = *lit;
-							IfcUtil::escape_xml(l);
+							ifcopenshell::escape_xml(l);
 							double dy = labels.begin() == lit
 								? 0.35 - (labels.size() - 1.) / 2.
 								: 1.0; // <- dy is relative to the previous text element, so
@@ -1478,7 +1478,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					
 					std::string elev_str;
 
-					const double lu = file->getUnit("LENGTHUNIT").second;
+					const double lu = file->get_unit("LENGTHUNIT").second;
                     auto a = data.product.as<express::Entity>().get("Elevation");
 					if (!a.isNull()) {
 						double elev = a;
@@ -1538,7 +1538,7 @@ void SvgSerializer::write(const geometry_data& data) {
 					path.add("\">");
 					for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 						auto l = *lit;
-						IfcUtil::escape_xml(l);
+						ifcopenshell::escape_xml(l);
 						double dy = labels.begin() == lit
 							? 0.35 - (labels.size() - 1.) / 2.
 							: 1.0; // <- dy is relative to the previous text element, so
@@ -1656,7 +1656,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				path.add(">");
 				for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 					auto l = *lit;
-					IfcUtil::escape_xml(l);
+					ifcopenshell::escape_xml(l);
 					double dy = labels.begin() == lit
 						? 0.35 - (labels.size() - 1.) / 2.
 						: 1.0; // <- dy is relative to the previous text element, so
@@ -1680,7 +1680,7 @@ void SvgSerializer::write(const geometry_data& data) {
 	}
 
 	if (!emitted) {
-		Logger::Warning("Element not written to SVG due to section heights", data.product);
+		logger::warning("Element not written to SVG due to section heights", data.product);
 	}
 }
 
@@ -1947,7 +1947,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 
 						for (auto lit = labels.begin(); lit != labels.end(); ++lit) {
 							auto l = *lit;
-							IfcUtil::escape_xml(l);
+							ifcopenshell::escape_xml(l);
 							double dy = labels.begin() == lit
 								? 0.0  // align bottom
 								: 1.0; // <- dy is relative to the previous text element, so
@@ -2082,7 +2082,7 @@ void SvgSerializer::finalize() {
 
 			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = file->instances_by_type("IfcBuildingStorey");
-				const double lu = file->getUnit("LENGTHUNIT").second;
+				const double lu = file->get_unit("LENGTHUNIT").second;
 				for (auto& s : storeys) {
                     auto storey = s.as<express::Entity>();
 					auto a = storey.get("Elevation");
@@ -2152,7 +2152,7 @@ void SvgSerializer::finalize() {
 				svg_file.stream << "    <g " << nameElement(it->first.first) << " " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			} else {
 				auto n = it->first.second;
-				IfcUtil::escape_xml(n);
+				ifcopenshell::escape_xml(n);
 				svg_file.stream << "    <g " << namespace_prefix_  << "name=\"" << n << "\" class=\"section\" " << writeMetadata(drawing_metadata[it->first]) << ">\n";
 			}
 		}
@@ -2266,7 +2266,7 @@ return oss.str();
 
 std::string SvgSerializer::nameElement(express::Base storey, const IfcGeom::Element* elem) {
 	auto n = elem->name();
-	IfcUtil::escape_xml(n);
+	ifcopenshell::escape_xml(n);
 
 	return nameElement_({
 		{"id", with_section_heights_from_storey_ ? object_id(storey, elem) : GeometrySerializer::object_id(elem)},
@@ -2286,7 +2286,7 @@ std::string SvgSerializer::idElement(express::Base elem_) {
 			? static_cast<std::string>(elem.get("Name"))
 			: (settings().get<ifcopenshell::geometry::settings::UseElementStepIds>().get())
 			? ("id-" + boost::lexical_cast<std::string>(elem.id()))
-			: IfcParse::IfcGlobalId(elem.get("GlobalId")).formatted());
+			: ifcopenshell::global_id(elem.get("GlobalId")).formatted());
 	return type + "-" + name;
 }
 
@@ -2298,7 +2298,7 @@ std::string SvgSerializer::nameElement(express::Base elem_) {
 	std::string ifc_name;
 	if (!elem.get("Name").isNull()) {
 		ifc_name = (std::string) elem.get("Name");
-		IfcUtil::escape_xml(ifc_name);
+		ifcopenshell::escape_xml(ifc_name);
 	}
 
 	return nameElement_({
@@ -2309,14 +2309,14 @@ std::string SvgSerializer::nameElement(express::Base elem_) {
 		});
 }
 
-void SvgSerializer::setFile(IfcParse::IfcFile* f) {
+void SvgSerializer::setFile(ifcopenshell::file* f) {
 	file = f;
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (storeys.empty()) {
 		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
 
-		std::vector<const IfcParse::declaration*> to_derive_from;
+		std::vector<const ifcopenshell::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
@@ -2333,7 +2333,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 #ifdef TAXONOMY_USE_NAKED_PTR
 						delete matrix;
 #endif
-						Logger::Warning("No building storeys encountered, used for reference:", product);
+						logger::warning("No building storeys encountered, used for reference:", product);
 						return;
 					}
 				}
@@ -2342,7 +2342,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 		delete mapping;
 
-		Logger::Warning("No building storeys encountered, output might be invalid or missing");
+		logger::warning("No building storeys encountered, output might be invalid or missing");
 	}
 }
 
@@ -2353,13 +2353,13 @@ void SvgSerializer::setSectionHeight(double h, express::Base storey) {
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	if (!file) {
-		Logger::Error("No file specified");
+		logger::error("No file specified");
 		return;
 	}
 	with_section_heights_from_storey_ = true;
 	section_data_.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
-	const double lu = file->getUnit("LENGTHUNIT").second;
+	const double lu = file->get_unit("LENGTHUNIT").second;
     if (!storeys.empty()) {
         for (auto& s : storeys) {
             auto attr_value = s.as<express::Entity>().get("Elevation");	
@@ -2368,7 +2368,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
                 try {
                     elev = attr_value;
                 } catch (std::exception& e) {
-                    Logger::Error(e);
+                    logger::error(e);
                     continue;
                 }
                 if (!section_data_->empty()) {

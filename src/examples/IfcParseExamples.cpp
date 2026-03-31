@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -20,8 +20,8 @@
 // TODO: Multiple schemas
 #define IfcSchema Ifc2x3
 
-#include "../ifcparse/IfcFile.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/file.h"
+#include "../ifcparse/logger.h"
 #include "../ifcparse/Ifc2x3.h"
 
 #include <boost/preprocessor/stringize.hpp>
@@ -80,7 +80,7 @@ struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : s
 
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
 
-std::string format_string(const AttributeValue& argument) {
+std::string format_string(const attribute_value& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
 	// @todo mostly duplicated from XmlSerializer.cpp
@@ -89,21 +89,21 @@ std::string format_string(const AttributeValue& argument) {
 	}
 	auto argument_type = argument.type();
 	switch (argument_type) {
-	case IfcUtil::Argument_BOOL: {
+	case ifcopenshell::Argument_BOOL: {
 		const bool b = argument;
 		return b ? "true" : "false";
 	}
-	case IfcUtil::Argument_DOUBLE: {
+	case ifcopenshell::Argument_DOUBLE: {
 		const double d = argument;
 		std::stringstream stream;
 		stream << std::setprecision(std::numeric_limits< double >::max_digits10) << d;
 		return stream.str();
 		break; }
-	case IfcUtil::Argument_STRING:
-	case IfcUtil::Argument_ENUMERATION: {
+	case ifcopenshell::Argument_STRING:
+	case ifcopenshell::Argument_ENUMERATION: {
 		return static_cast<std::string>(argument);
 		break; }
-	case IfcUtil::Argument_INT: {
+	case ifcopenshell::Argument_INT: {
 		const int v = argument;
 		std::stringstream stream;
 		stream << v;
@@ -147,7 +147,7 @@ void process_pset(element_properties& props, const T& inst) {
 		}
 		auto qs = qset.Quantities();
 		for (auto& q : qs) {
-			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
+			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == ifcopenshell::Argument_DOUBLE) {
 				double v = q.get_attribute_value(3);
 				props[*qset.Name()][q.Name()] = std::to_string(v);
 			}
@@ -227,10 +227,10 @@ int main(int argc, char** argv) {
     }
     
     // Redirect the output (both progress and log) to stdout
-    Logger::SetOutput(&std::cout, &std::cout);
+    logger::set_output(&std::cout, &std::cout);
 
     // Parse the IFC file provided in argv[1]
-    IfcParse::IfcFile file(argv[1]);
+    ifcopenshell::file file(argv[1]);
     if (!file.good()) {
         std::cout << "Unable to parse .ifc file" << std::endl;
         return 1;
@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
     std::cout << "Found " << elements.size() << " elements in " << argv[1] << ":" << std::endl;
 
     for (auto& element : elements) {
-		element.toString(std::cout);
+		element.to_string(std::cout);
 		std::cout << std::endl;
 
         if (auto window = element.as<IfcSchema::IfcWindow>()) {

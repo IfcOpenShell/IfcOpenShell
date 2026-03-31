@@ -20,7 +20,7 @@
 #ifndef IFCGEOMTREE_H
 #define IFCGEOMTREE_H
 
-#include "../../../ifcparse/IfcFile.h"
+#include "../../../ifcparse/file.h"
 
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/Iterator.h"
@@ -1486,11 +1486,11 @@ namespace IfcGeom {
 
 		tree() {};
 
-		tree(IfcParse::IfcFile& f) {
+		tree(ifcopenshell::file& f) {
 			add_file(f, ifcopenshell::geometry::Settings{});
 		}
 
-		tree(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
+		tree(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
 			add_file(f, settings);
 		}
 
@@ -1498,7 +1498,7 @@ namespace IfcGeom {
 			add_file(it);
 		}		
 
-		void add_file(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
+		void add_file(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
 			ifcopenshell::geometry::Settings settings_ = settings;
 			settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;

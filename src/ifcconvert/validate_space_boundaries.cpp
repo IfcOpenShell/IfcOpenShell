@@ -18,29 +18,29 @@ typedef CGAL::AABB_traits<Kernel_, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
-void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress) {
 	intersection_validator v(f, { "IfcWall", "IfcSpace", "IfcSlab", "IfcCovering" }, 1.e-5, no_progress, quiet, stderr_progress);
 
 	auto rels = f.instances_by_type("IfcRelSpaceBoundary");
 
-	std::map<std::pair<const IfcUtil::IfcBaseClass*, const IfcUtil::IfcBaseClass*>, const IfcUtil::IfcBaseClass*> rel_by_space_elem;
+	std::map<std::pair<const ifcopenshell::IfcBaseClass*, const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_space_elem;
 
 
 	if (rels) {
-		std::for_each(rels->begin(), rels->end(), [&rel_by_space_elem](const IfcUtil::IfcBaseClass* rel) {
-			auto x = ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingSpace");
+		std::for_each(rels->begin(), rels->end(), [&rel_by_space_elem](const ifcopenshell::IfcBaseClass* rel) {
+			auto x = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatingSpace");
 			try {
-				auto y = ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedBuildingElement");
+				auto y = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatedBuildingElement");
 				rel_by_space_elem.insert({ { x,y }, rel });
-			} catch (IfcParse::IfcException&) {
+			} catch (ifcopenshell::exception&) {
 				// RelatedBuildingElement can be NULL
 			}
 		});
 	}
 
-	std::set<const IfcUtil::IfcBaseClass*> rels_encounted;
+	std::set<const ifcopenshell::IfcBaseClass*> rels_encounted;
 
-	IfcParse::IfcFile f2("boundaries-triangulated.ifc");
+	ifcopenshell::file f2("boundaries-triangulated.ifc");
 	if (!f2.good()) {
 		return;
 	}
@@ -59,7 +59,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 	std::map<std::set<std::string>, std::vector<Kernel_::Point_3>> elem_to_space_boundary_coords;
 
 	for (auto& i : *f2.instances_by_type("IfcProduct")) {
-		auto n = ((IfcUtil::IfcBaseEntity*)i)->get_value<std::string>("Name");
+		auto n = ((ifcopenshell::IfcBaseEntity*)i)->get_value<std::string>("Name");
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		auto item = c.mapping()->map(i);
@@ -83,7 +83,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 
 	v([&rel_by_space_elem, &elem_to_space_boundary_coords, &guid_pairs_visited](const intersection_validator::Box& a, const intersection_validator::Box& b) {
 		std::ostringstream ss;
-		// ss << id_map[a.id()]->first->data().toString() << "x" << id_map[b.id()]->first->data().toString() << std::endl;
+		// ss << id_map[a.id()]->first->data().to_string() << "x" << id_map[b.id()]->first->data().to_string() << std::endl;
 		// auto x = id_map[a.id()]->second * id_map[b.id()]->second;
 
 		auto A = a.handle()->first;
@@ -103,7 +103,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 			return;
 		}
 
-		ss << a.handle()->first->data().toString() << "x" << a.handle()->first->data().toString() << std::endl;
+		ss << a.handle()->first->data().to_string() << "x" << a.handle()->first->data().to_string() << std::endl;
 		auto x = a.handle()->second * b.handle()->second;
 
 		if (x.is_empty()) {
@@ -128,7 +128,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto itelem = elem_to_space_boundary_coords.find({ Aguid, Bguid });
 
 		if (itelem == elem_to_space_boundary_coords.end()) {
-			Logger::Error("Missing space boundary relationship " + Aguid + " " + Bguid);
+			logger::error("Missing space boundary relationship " + Aguid + " " + Bguid);
 			return;
 		}
 
@@ -141,7 +141,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		bool valid = *std::max_element(distances.begin(), distances.end()) < 0.4;
 
 		if (!valid) {
-			Logger::Error("Wrong connection geometry " + Aguid + " " + Bguid);
+			logger::error("Wrong connection geometry " + Aguid + " " + Bguid);
 		}
 
 		/*{
@@ -174,11 +174,11 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 	};
 
 	for (auto& i : *f2.instances_by_type("IfcProduct")) {
-		auto n = ((IfcUtil::IfcBaseEntity*)i)->get_value<std::string>("Name");
+		auto n = ((ifcopenshell::IfcBaseEntity*)i)->get_value<std::string>("Name");
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		if (is_wall_space_or_slab(g1) && is_wall_space_or_slab(g2) && guid_pairs_visited.find({ g1, g2 }) == guid_pairs_visited.end()) {
-			Logger::Error("Space boundary for non-bounding geometry " + g1 + " " + g2);
+			logger::error("Space boundary for non-bounding geometry " + g1 + " " + g2);
 		}
 	}
 }

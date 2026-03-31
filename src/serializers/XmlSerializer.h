@@ -2,7 +2,7 @@
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 #include <boost/function.hpp>
 
@@ -16,7 +16,7 @@ protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename);
+	XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename);
 
 	virtual ~XmlSerializer() {}
 
@@ -24,17 +24,17 @@ public:
 	void writeHeader() {}
 
 	void finalize() { implementation_->finalize(); }
-	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
+	void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
 };
 
 struct SERIALIZERS_API XmlSerializerFactory {
-	typedef boost::function2<XmlSerializer*, IfcParse::IfcFile*, std::string> fn;
+	typedef boost::function2<XmlSerializer*, ifcopenshell::file*, std::string> fn;
 
 	class Factory : public std::map<std::string, fn> {
 	public:
 		Factory();
 		void bind(const std::string& schema_name, fn);
-		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string);
+		XmlSerializer* construct(const std::string& schema_name, ifcopenshell::file*, std::string);
 	};
 
 	static Factory& implementations();

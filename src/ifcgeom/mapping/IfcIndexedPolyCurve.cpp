@@ -35,7 +35,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 
 	std::vector<taxonomy::point3::ptr> points;
 	if (coordinates.size() < 2) {
-		throw IfcParse::IfcException("IfcIndexedPolyCurve has less than 2 points.");
+		throw ifcopenshell::exception("IfcIndexedPolyCurve has less than 2 points.");
 	}
 
 	points.reserve(coordinates.size());
@@ -58,7 +58,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 				taxonomy::point3::ptr previous;
 				for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 					if (*jt < 1 || *jt > max_index) {
-						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+						throw ifcopenshell::exception("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 					}
 					auto current = points[*jt - 1];
 					if (jt != indices.begin()) {
@@ -69,12 +69,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
             } else if (auto arc = segment.as<IfcSchema::IfcArcIndex>()) {
 				std::vector<int> indices = arc;
 				if (indices.size() != 3) {
-					throw IfcParse::IfcException("Invalid IfcArcIndex encountered");
+					throw ifcopenshell::exception("Invalid IfcArcIndex encountered");
 				}
 				for (int i = 0; i < 3; ++i) {
 					const int& idx = indices[i];
 					if (idx < 1 || idx > max_index) {
-						throw IfcParse::IfcException("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
+						throw ifcopenshell::exception("IfcIndexedPolyCurve index out of bounds for index " + boost::lexical_cast<std::string>(idx));
 					}
 				}
 				const auto& a = points[indices[0] - 1];
@@ -87,10 +87,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 					e->basis = circ;
 					loop->children.push_back(e);
 				} else {
-					Logger::Warning("Ignoring segment on", inst);
+					logger::warning("Ignoring segment on", inst);
 				}
 			} else {
-				throw IfcParse::IfcException("Unexpected IfcIndexedPolyCurve segment of type " + segment.concrete().declaration().name());
+				throw ifcopenshell::exception("Unexpected IfcIndexedPolyCurve segment of type " + segment.concrete().declaration().name());
 			}
 		}
 	} else if (points.begin() < points.end()) {

@@ -28,18 +28,18 @@ header = """
 #include "../../ifcparse/ifc_parse_api.h"
 
 #include "../../ifcparse/express.h"
-#include "../../ifcparse/IfcSchema.h"
-#include "../../ifcparse/IfcException.h"
-#include "../../ifcparse/Argument.h"
+#include "../../ifcparse/schema.h"
+#include "../../ifcparse/exception.h"
+#include "../../ifcparse/argument.h"
 
-namespace IfcParse {
-class IfcFile;
-class IfcSpfHeader;
-} // namespace IfcParse
+namespace ifcopenshell {
+class file;
+class spf_header;
+} // namespace ifcopenshell
 
 struct %(schema_name)s {
 
-IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const ifcopenshell::schema_definition& get_schema();
 
 IFC_PARSE_API static void clear_schema();
 
@@ -72,15 +72,15 @@ lb_header = """"""
 
 implementation = """
 #include "../../ifcparse/schemas/%(schema_name)s.h"
-#include "../../ifcparse/IfcSchema.h"
-#include "../../ifcparse/IfcException.h"
-#include "../../ifcparse/IfcFile.h"
+#include "../../ifcparse/schema.h"
+#include "../../ifcparse/exception.h"
+#include "../../ifcparse/file.h"
 
 #include <map>
 
 const char* const %(schema_name)s::Identifier = "%(schema_name_upper)s";
 
-using namespace IfcParse;
+using namespace ifcopenshell;
 
 // External definitions
 %(external_definitions)s
@@ -114,30 +114,30 @@ simpletype = """%(documentation)s
 class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
     %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
+    explicit %(name)s (const std::weak_ptr<instance_data>& data) : %(superclass)s(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(%(type)s v);
     operator %(type)s() const;
 };
 """
 
 simpletype_impl_comment = "// Function implementations for %(name)s"
-simpletype_impl_argument_type = 'if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }'
+simpletype_impl_argument_type = 'if (i == 0) { return %(attr_type)s; } else { throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); }'
 simpletype_impl_argument = "return get_attribute_value(i);"
 simpletype_impl_is_with_supertype = "return v == %(class_name)s_type || %(superclass)s::is(v);"
 simpletype_impl_is_without_supertype = "return v == %(class_name)s_type;"
-simpletype_impl_type = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
-simpletype_impl_class = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+simpletype_impl_type = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+simpletype_impl_class = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = (
-    "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
+    "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
 )
-simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::Base>(v));"
+simpletype_impl_constructor_templated = "data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, cast_vector<express::Base>(v));"
 simpletype_impl_cast = "return get_attribute_value(0);"
 simpletype_impl_cast_templated = "std::vector<express::Base> es = get_attribute_value(0); return cast_vector<%(underlying_type)s>(es);"
 
-simpletype_impl_declaration = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+simpletype_impl_declaration = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
 select = """%(documentation)s
 class IFC_PARSE_API %(name)s : public express::Select {
@@ -145,7 +145,7 @@ public:
     %(name)s() {}
     explicit %(name)s(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
 %(template_items)s
 %(cast_functions)s
 };
@@ -163,13 +163,13 @@ enumeration = """%(documentation)s
 class IFC_PARSE_API %(name)s : public express::DeclaredType {
 public:
     %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit %(name)s (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {%(values)s} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -180,33 +180,33 @@ entity = """%(documentation)s
 class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
     %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<InstanceData>& data) : %(superclass)s(data) {}
+    explicit %(name)s (const std::weak_ptr<instance_data>& data) : %(superclass)s(data) {}
 
 %(attributes)s    %(inverse)s
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(%(constructor_arguments)s);
 };
 """
 
 select_function = """
-const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *((IfcParse::select_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+const ifcopenshell::select_type& %(schema_name)s::%(name)s::Class() { return *((ifcopenshell::select_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 """
 
 enumeration_function = """
-// const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
-const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+// const ifcopenshell::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *((ifcopenshell::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+const ifcopenshell::enumeration_type& %(schema_name)s::%(name)s::Class() { return *((ifcopenshell::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 
 /*
-%(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<InstanceData>& e)
+%(schema_name)s::%(name)s::%(name)s(const std::weak_ptr<instance_data>& e)
     : express::DeclaredType(e)
 {}
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
-    set_attribute_value(0, EnumerationReference(&Class(), static_cast<size_t>(v)));
+    set_attribute_value(0, enumeration_reference(&Class(), static_cast<size_t>(v)));
 }
 
 %(schema_name)s::%(name)s::%(name)s(const std::string& v) {
-    set_attribute_value(0, EnumerationReference(&Class(), Class().lookup_enum_offset(v)));
+    set_attribute_value(0, enumeration_reference(&Class(), Class().lookup_enum_offset(v)));
 }
 */
 
@@ -219,19 +219,19 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
-    return (%(schema_name)s::%(name)s::Value) ((EnumerationReference) get_attribute_value(0)).index();
+    return (%(schema_name)s::%(name)s::Value) ((enumeration_reference) get_attribute_value(0)).index();
 }
 """
 
 entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
-const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+const ifcopenshell::entity& %(schema_name)s::%(name)s::Class() { return *((ifcopenshell::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 void %(schema_name)s::%(name)s::initialize(%(constructor_arguments)s) { %(constructor_implementation)s }
 """
 
 # data_ = e; 
-# data_ = new const std::weak_ptr<InstanceData>&(%(schema_name_upper)s_types[%(index_in_schema)d]);
+# data_ = new const std::weak_ptr<instance_data>&(%(schema_name_upper)s_types[%(index_in_schema)d]);
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
 
@@ -266,7 +266,7 @@ get_attr_stmt_entity = "%(null_check)s return ((express::Base)(get_attribute_val
 get_attr_stmt_array = "%(null_check)s std::vector<express::Base> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 get_attr_stmt_nested_array = "%(null_check)s std::vector<std::vector<express::Base>> es = get_attribute_value(%(index)d); return cast_vector<%(list_instance_type)s>(es);"
 
-get_inverse = "return cast_vector<%(type)s>(file()->getInverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
+get_inverse = "return cast_vector<%(type)s>(file()->get_inverse(data()->id(), %(schema_name_upper)s_types[%(type_index)d], %(index)d));"
 
 set_attr_stmt = (
     "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
@@ -274,7 +274,7 @@ set_attr_stmt = (
 set_attr_instance = (
     "%(check_optional_set_begin)sset_attribute_value(%(index)d, v);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
-set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, enumeration_reference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 set_attr_stmt_array = (
     "%(check_optional_set_begin)sset_attribute_value(%(index)d, cast_vector<express::Base>(%(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 )
@@ -286,7 +286,7 @@ constructor_stmt = (
     "set_attribute_value(%(index)d, (%(name)s));"
 )
 constructor_stmt_enum = (
-    "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
+    "set_attribute_value(%(index)d, (enumeration_reference(&%(type)s::Class(),(size_t)%(name)s)));"
 )
 constructor_stmt_array = (
     "set_attribute_value(%(index)d, cast_vector<express::Base>(%(name)s));"

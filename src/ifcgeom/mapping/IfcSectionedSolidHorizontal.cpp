@@ -34,7 +34,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal& in
 	auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
 	if (!fn) {
 		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for Directrix curves based on taxonomy::function_item", inst);
+        logger::warning("IfcSectionedSolidHorizontal is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
 	}
 
@@ -91,11 +91,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal& in
 		profile_rotations.push_back(rot);
 	}
 	if (faces.size() != profile_offsets.size()) {
-		Logger::Warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
+		logger::warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
 		return nullptr;
 	}
 	if (faces.size() < 2) {
-		Logger::Warning("Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
+		logger::warning("Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
 		return nullptr;
 	}
 

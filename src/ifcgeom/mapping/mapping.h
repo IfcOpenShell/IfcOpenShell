@@ -3,8 +3,8 @@
 
 #include "../abstract_mapping.h"
 #include "../../ifcparse/macros.h"
-#include "../../ifcparse/IfcFile.h"
-#include "../../ifcparse/IfcLogger.h"
+#include "../../ifcparse/file.h"
+#include "../../ifcparse/logger.h"
 
 #include <mutex>
 
@@ -21,14 +21,14 @@ namespace geometry {
     
     class POSTFIX_SCHEMA(mapping) : public abstract_mapping {
 	private:
-		IfcParse::IfcFile* file_;
+		ifcopenshell::file* file_;
 		double length_unit_, angle_unit_;
 		std::string length_unit_name_;
 
 		std::map<uint32_t, ifcopenshell::geometry::taxonomy::ptr> cache_;
       std::mutex cache_guard_; // provides mutually exclusive access to cache_
 
-		const IfcParse::declaration* placement_rel_to_type_;
+		const ifcopenshell::declaration* placement_rel_to_type_;
 		const express::Base placement_rel_to_instance_;
 
 		Eigen::Matrix4d offset_and_rotation_ = Eigen::Matrix4d::Identity();
@@ -66,19 +66,19 @@ namespace geometry {
 								}
 							}
 						} catch (const std::exception& e) {
-							Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+							logger::message(logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
 						}
 					} else if (failed_on_purpose_.find(inst) == failed_on_purpose_.end()) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to convert:", inst);
+						logger::message(logger::LOG_ERROR, "Failed to convert:", inst);
 					}
 				} catch (const std::exception& e) {
-					Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+					logger::message(logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
 				}
 			}
 		}
 		IfcSchema::IfcStyledItem find_style(const IfcSchema::IfcRepresentationItem&);
 	public:
-		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, Settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(nullptr) {
+		POSTFIX_SCHEMA(mapping)(ifcopenshell::file* file, Settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(nullptr) {
 			initialize_units_();
 		}
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&);

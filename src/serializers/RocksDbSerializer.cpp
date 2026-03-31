@@ -4,18 +4,18 @@
 
 #include <rocksdb/options.h>
 
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 
-RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename)
+RocksDbSerializer::RocksDbSerializer(ifcopenshell::file* file, const std::string& rocksdb_filename)
 	: file_(file)
 	, rocksdb_filename_(rocksdb_filename)
 {
 	/*rocksdb::Options options;
 	options.create_if_missing = true;
 	options.merge_operator.reset(new ConcatenateIdMergeOperator());
-	rocksdb::Status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
+	rocksdb::status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
 
-	output_file_ = new IfcParse::IfcFile(file->schema(), IfcParse::FT_ROCKSDB, rocksdb_filename_);
+	output_file_ = new ifcopenshell::file(file->schema(), ifcopenshell::FT_ROCKSDB, rocksdb_filename_);
 
 	// We promise never to add the same instance twice
 	output_file_->check_existance_before_adding = false;
@@ -30,8 +30,8 @@ RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const st
 }
 
 namespace {
-	// @nb copied from InstanceData.cpp but operating on unresolved instances
-	bool serialize(std::string& val, const IfcParse::reference_or_simple_type& t)
+	// @nb copied from instance_data.cpp but operating on unresolved instances
+	bool serialize(std::string& val, const ifcopenshell::reference_or_simple_type& t)
 	{
 		auto s = sizeof(size_t);
 		val.resize(s + 2);
@@ -40,7 +40,7 @@ namespace {
 		// 2 = type - stored by identity (internal counter in class)
 		val[1] = t.index() == 0 ? 'i' : 't';
 		size_t iden;
-		if (auto* name = std::get_if<IfcParse::InstanceReference>(&t)) {
+		if (auto* name = std::get_if<ifcopenshell::instance_reference>(&t)) {
 			iden = *name;
 		} else if (auto* inst = std::get_if<express::Base>(&t)) {
 			iden = (*inst).identity();
@@ -49,7 +49,7 @@ namespace {
 		return true;
 	}
 
-	bool serialize(std::string& val, const std::vector<IfcParse::reference_or_simple_type>& t)
+	bool serialize(std::string& val, const std::vector<ifcopenshell::reference_or_simple_type>& t)
 	{
 		// no attempt at alignment
 		val.resize(t.size() * (sizeof(size_t) + 1) + 1);
@@ -59,7 +59,7 @@ namespace {
 			*ptr = it->index() == 0 ? 'i' : 't';
 			ptr++;
 			size_t iden = 0;
-			if (auto* name = std::get_if<IfcParse::InstanceReference>(&*it)) {
+			if (auto* name = std::get_if<ifcopenshell::instance_reference>(&*it)) {
 				iden = *name;
 			} else if (auto* inst = std::get_if<express::Base>(&*it)) {
 				iden = (*inst).identity();
@@ -70,7 +70,7 @@ namespace {
 		return true;
 	}
 
-	bool serialize(std::string& val, const std::vector<std::vector<IfcParse::reference_or_simple_type>>& t)
+	bool serialize(std::string& val, const std::vector<std::vector<ifcopenshell::reference_or_simple_type>>& t)
 	{
 		std::ostringstream oss;
 		oss.put(TypeEncoder::encode_type<std::vector<std::vector<express::Base>>>());
@@ -93,7 +93,7 @@ namespace {
 				char c = jt->index() == 0 ? 'i' : 't';
 				oss.put(c);
 				size_t iden = 0;
-				if (auto* name = std::get_if<IfcParse::InstanceReference>(&*jt)) {
+				if (auto* name = std::get_if<ifcopenshell::instance_reference>(&*jt)) {
 					iden = *name;
 				} else if (auto* inst = std::get_if<express::Base>(&*jt)) {
 					iden = (*inst).identity();
@@ -124,18 +124,18 @@ namespace {
 void RocksDbSerializer::write_streaming_() {
 	const auto& input_filename = std::get<std::string>(file_);
 
-	IfcParse::impl::rocks_db_file_storage storage(rocksdb_filename_, nullptr);
+	ifcopenshell::impl::rocks_db_file_storage storage(rocksdb_filename_, nullptr);
 
 	std::string tmp;
 
-	IfcParse::InstanceStreamer streamer(input_filename);
+	ifcopenshell::instance_streamer streamer(input_filename);
 
 	// We do not want to coerce attribute counts here, because we want
 	// to store exactly what is in the file for validation purposes
 	streamer.coerce_attribute_count = false;
 
 	while (streamer) {
-		auto inst = streamer.readInstance();
+		auto inst = streamer.read_instance();
 		if (inst) {
 			// name can be zero in case of header instances
 			auto name = std::get<0>(*inst);
@@ -183,18 +183,18 @@ void RocksDbSerializer::write_streaming_() {
 
 					using T = std::decay_t<decltype(v)>;
 
-					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
+					if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {
 						if (auto* inst = std::get_if<express::Base>(&v)) {
 							// So this never happens?
 							simple_type_instances.push_back(*inst);
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<IfcParse::reference_or_simple_type>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<ifcopenshell::reference_or_simple_type>>) {
 						for (auto const& inner : v) {
 							if (auto* inst = std::get_if<express::Base>(&inner)) {
 								simple_type_instances.push_back(*inst);
 							}
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<std::vector<IfcParse::reference_or_simple_type>>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
 						for (auto const& inner : v) {
 							for (auto const& innermost : inner) {
 								if (auto* inst = std::get_if<express::Base>(&innermost)) {
@@ -209,8 +209,8 @@ void RocksDbSerializer::write_streaming_() {
 					storage.wopts,
 					key, tmp);
 
-				auto write_inverse = [&](const IfcParse::reference_or_simple_type& v) {
-					if (auto* ref = std::get_if<IfcParse::InstanceReference>(&v)) {
+				auto write_inverse = [&](const ifcopenshell::reference_or_simple_type& v) {
+					if (auto* ref = std::get_if<ifcopenshell::instance_reference>(&v)) {
 						auto key = "v|" + to_string_fixed_width(*ref, 10) + "|" + to_string_fixed_width(decl->index_in_schema(), 4) + "|" + to_string_fixed_width(index, 2);
 						static std::string s;
 						uint32_t vv = name;
@@ -224,11 +224,11 @@ void RocksDbSerializer::write_streaming_() {
 				std::visit([&](auto const& val) {
 					using T = std::decay_t<decltype(val)>;
 
-					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
+					if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {
 						write_inverse(val);
-					} else if constexpr (std::is_same_v<T, std::vector<IfcParse::reference_or_simple_type>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<ifcopenshell::reference_or_simple_type>>) {
 						std::for_each(val.begin(), val.end(), write_inverse);
-					} else if constexpr (std::is_same_v<T, std::vector<std::vector<IfcParse::reference_or_simple_type>>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
 						for (auto const& inner : val) {
 							std::for_each(inner.begin(), inner.end(), write_inverse);
 						}

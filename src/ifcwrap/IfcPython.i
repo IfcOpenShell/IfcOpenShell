@@ -177,9 +177,9 @@
 %exception {
 	try {
 		$action
-	} catch(const IfcParse::IfcAttributeOutOfRangeException& e) {
+	} catch(const ifcopenshell::attribute_out_of_range_exception& e) {
 		SWIG_exception(SWIG_IndexError, e.what());
-	} catch(const IfcParse::IfcException& e) {
+	} catch(const ifcopenshell::exception& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(const std::runtime_error& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
@@ -248,8 +248,8 @@
 #endif
 
 	#include "../ifcparse/express.h"
-	#include "../ifcparse/IfcFile.h"
-	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/file.h"
+	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
 
 	#include "../ifcgeom/ConversionSettings.h"
@@ -333,8 +333,8 @@
 #endif
 
 	#include "../ifcparse/express.h"
-	#include "../ifcparse/IfcFile.h"
-	#include "../ifcparse/IfcSchema.h"
+	#include "../ifcparse/file.h"
+	#include "../ifcparse/schema.h"
 	#include "../ifcparse/utils.h"
 	
 	#include "../ifcgeom/ConversionSettings.h"

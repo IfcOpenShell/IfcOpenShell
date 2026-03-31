@@ -6,7 +6,7 @@
 #include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
 #include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
 
-#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/logger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 
 using IfcGeom::OpaqueNumber;
@@ -112,7 +112,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		auto b2 = plane.base2();
 
 		if (V.squared_length() == 0) {
-			Logger::Warning("Removed face due to self-intersections");
+			logger::warning("Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 			continue;
 		}
@@ -133,7 +133,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		}
 
 		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
-			Logger::Warning("Removed face due to self-intersections");
+			logger::warning("Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 		}
 	}
@@ -233,7 +233,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	if (!all_triangles) {
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
+			logger::message(logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
 
@@ -241,19 +241,19 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		try {
 			success = CGAL::Polygon_mesh_processing::triangulate_faces(*shape_to_use);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
+			logger::message(logger::LOG_ERROR, "Triangulation crashed");
 			return;
 		}
 
 		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_to_use);
 
 		if (!success) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
+			logger::message(logger::LOG_ERROR, "Triangulation failed");
 			return;
 		}
 
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
+			logger::message(logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
 			return;
 		}
 	}
@@ -282,7 +282,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	try {
 		CGAL::Polygon_mesh_processing::compute_face_normals(*shape_to_use, face_normals_map);
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "Face normal calculation failed");
+		logger::message(logger::LOG_ERROR, "Face normal calculation failed");
 		return;
 	}
 
@@ -296,7 +296,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	int num_faces = 0, num_vertices = 0;
 	for (auto &face : faces(*shape_to_use)) {
 		if (!face->is_triangle()) {
-			std::cout << "Warning: non-triangular face!" << std::endl;
+			std::cout << "warning: non-triangular face!" << std::endl;
 			continue;
 		}
 		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();

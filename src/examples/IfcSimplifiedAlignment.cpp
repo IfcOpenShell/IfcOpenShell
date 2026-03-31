@@ -31,7 +31,7 @@
 #pragma warning(disable : 4018 4267 4250 4984 4985)
 
 #include "../ifcparse/Ifc4x3_add2.h"
-#include "../ifcparse/IfcAlignmentHelper.h"
+#include "../ifcparse/alignment_helper.h"
 
 #include <fstream>
 
@@ -39,7 +39,7 @@
 
 // performs basic project setup including created the IfcProject object
 // and initializing the project units to FEET
-Schema::IfcProject setup_project(IfcHierarchyHelper<Schema>& file) {
+Schema::IfcProject setup_project(hierarchy_helper<Schema>& file) {
     std::vector<std::string> file_description;
     file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
     file.header().file_description().setdescription(file_description);
@@ -91,7 +91,7 @@ Schema::IfcProject setup_project(IfcHierarchyHelper<Schema>& file) {
 }
 
 int main() {
-    IfcHierarchyHelper<Schema> file;
+    hierarchy_helper<Schema> file;
 
     auto project = setup_project(file);
 
@@ -142,7 +142,7 @@ int main() {
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Aggregation/Alignment_Aggregation_To_Project/content.html
     // IfcProject <-> IfcRelAggregates <-> IfcAlignment
     auto aggregate_alignments_with_project = file.create<Schema::IfcRelAggregates>();
-    aggregate_alignments_with_project.setGlobalId(IfcParse::IfcGlobalId());
+    aggregate_alignments_with_project.setGlobalId(ifcopenshell::global_id());
     aggregate_alignments_with_project.setName("Alignments in project");
     aggregate_alignments_with_project.setRelatingObject(project);
     aggregate_alignments_with_project.setRelatedObjects({alignment});
@@ -165,7 +165,7 @@ int main() {
         description << "Alignments referenced into the spatial structure of Bridge Site " << i;
 
         auto rel_referenced_in_spatial_structure = file.create<Schema::IfcRelReferencedInSpatialStructure>();
-        rel_referenced_in_spatial_structure.setGlobalId(IfcParse::IfcGlobalId());
+        rel_referenced_in_spatial_structure.setGlobalId(ifcopenshell::global_id());
         rel_referenced_in_spatial_structure.setDescription(description.str());
         rel_referenced_in_spatial_structure.setRelatedElements(std::vector<Schema::IfcSpatialReferenceSelect>{alignment});
         rel_referenced_in_spatial_structure.setRelatingStructure(site);

@@ -29,10 +29,10 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 
 typedef struct {
@@ -44,7 +44,7 @@ typedef struct {
 
 static int i = 0;
 
-void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference pref) {
+void create_testcase_for(hierarchy_helper& file, const EllipsePie& pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference pref) {
 	const double deg = 1. / 180. * 3.141592653;
 	double flt1[] = {0.                      , 0.                      };
 	double flt2[] = {pie.r1 * cos(pie.t1*deg), pie.r2 * sin(pie.t1*deg)};
@@ -66,7 +66,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 
 	
 	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
-	file.addEntity(ellipse);
+	file.add_entity(ellipse);
 	IfcEntityList::ptr trim1(new IfcEntityList);
 	IfcEntityList::ptr trim2(new IfcEntityList);
 	if (pref == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
@@ -77,13 +77,13 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 		trim2->push(p3);
 	}
 	Ifc2x3::IfcTrimmedCurve* trim = new Ifc2x3::IfcTrimmedCurve(ellipse, trim1, trim2, true, pref);
-	file.addEntity(trim);
+	file.add_entity(trim);
 	
 	Ifc2x3::IfcCompositeCurveSegment::list::ptr segments(new Ifc2x3::IfcCompositeCurveSegment::list());
 	Ifc2x3::IfcCompositeCurveSegment* s2 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, trim);
 	
 	Ifc2x3::IfcPolyline* poly = new Ifc2x3::IfcPolyline(points);	
-	file.addEntity(poly);
+	file.add_entity(poly);
 	Ifc2x3::IfcCompositeCurveSegment* s1 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly);
 	segments->push(s1);
 	
@@ -92,8 +92,8 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	
 	Ifc2x3::IfcCompositeCurve* ccurve = new Ifc2x3::IfcCompositeCurve(segments, false);
 	Ifc2x3::IfcArbitraryClosedProfileDef* profile = new Ifc2x3::IfcArbitraryClosedProfileDef(Ifc2x3::IfcProfileTypeEnum::IfcProfileType_AREA, null, ccurve);
-	file.addEntity(ccurve);
-	file.addEntity(profile);
+	file.add_entity(ccurve);
+	file.add_entity(profile);
 
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("profile"), null, null, 0, 0, null, null);
@@ -105,7 +105,7 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile,
 		file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-	file.addEntity(solid);
+	file.add_entity(solid);
 		
 	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list());
 	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list());
@@ -116,15 +116,15 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
-	file.addEntity(rep);
-	file.addEntity(shape);
+	file.add_entity(rep);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 }
 
 int main(int argc, char** argv) {
 	const std::string filename = "ellipse_pies.ifc";
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	{ EllipsePie pie = {80., 50.,  0., 150.};
 	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
 	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}

@@ -58,7 +58,7 @@
 #ifndef IFCGEOMITERATOR_H
 #define IFCGEOMITERATOR_H
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionResult.h"
@@ -130,7 +130,7 @@ namespace IfcGeom {
 		size_t async_elements_returned_ = 0;
 		
 		ifcopenshell::geometry::Settings settings_;
-		IfcParse::IfcFile* ifc_file;
+		ifcopenshell::file* ifc_file;
 		std::vector<ifcopenshell::geometry::filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
@@ -217,7 +217,7 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -228,7 +228,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
@@ -237,7 +237,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
@@ -309,9 +309,9 @@ namespace IfcGeom {
 			return progress_;
 		}
 
-		std::string getLog() const { return Logger::GetLog(); }
+		std::string getLog() const { return logger::get_log(); }
 
-		IfcParse::IfcFile* file() const { return ifc_file; }
+		ifcopenshell::file* file() const { return ifc_file; }
 
 		const std::vector<ifcopenshell::geometry::filter_t>& filters() const { return filters_; }
         std::vector<ifcopenshell::geometry::filter_t>& filters() { return filters_; }

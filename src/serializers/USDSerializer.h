@@ -90,7 +90,7 @@ public:
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string&, float) {}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(ifcopenshell::file*) {}
 	std::string object_id_unique(const IfcGeom::Element* o);
 };
 

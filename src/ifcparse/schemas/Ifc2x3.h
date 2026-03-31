@@ -34,18 +34,18 @@
 #include "../../ifcparse/ifc_parse_api.h"
 
 #include "../../ifcparse/express.h"
-#include "../../ifcparse/IfcSchema.h"
-#include "../../ifcparse/IfcException.h"
-#include "../../ifcparse/Argument.h"
+#include "../../ifcparse/schema.h"
+#include "../../ifcparse/exception.h"
+#include "../../ifcparse/argument.h"
 
-namespace IfcParse {
-class IfcFile;
-class IfcSpfHeader;
-} // namespace IfcParse
+namespace ifcopenshell {
+class file;
+class spf_header;
+} // namespace ifcopenshell
 
 struct Ifc2x3 {
 
-IFC_PARSE_API static const IfcParse::schema_definition& get_schema();
+IFC_PARSE_API static const ifcopenshell::schema_definition& get_schema();
 
 IFC_PARSE_API static void clear_schema();
 
@@ -70,7 +70,7 @@ public:
     IfcActorSelect() {}
     explicit IfcActorSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOrganization>, int> = 0>
     // IfcOrganization as() const { return express::Base::as<IfcOrganization>(); }
@@ -109,7 +109,7 @@ public:
     IfcAppliedValueSelect() {}
     explicit IfcAppliedValueSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
     // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
@@ -139,7 +139,7 @@ public:
     IfcAxis2Placement() {}
     explicit IfcAxis2Placement(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAxis2Placement2D>, int> = 0>
     // IfcAxis2Placement2D as() const { return express::Base::as<IfcAxis2Placement2D>(); }
@@ -174,7 +174,7 @@ public:
     IfcBooleanOperand() {}
     explicit IfcBooleanOperand(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSolidModel>, int> = 0>
     // IfcSolidModel as() const { return express::Base::as<IfcSolidModel>(); }
@@ -213,7 +213,7 @@ public:
     IfcCharacterStyleSelect() {}
     explicit IfcCharacterStyleSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTextStyleForDefinedFont>, int> = 0>
     // IfcTextStyleForDefinedFont as() const { return express::Base::as<IfcTextStyleForDefinedFont>(); }
@@ -227,7 +227,7 @@ public:
     IfcClassificationNotationSelect() {}
     explicit IfcClassificationNotationSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClassificationNotation>, int> = 0>
     // IfcClassificationNotation as() const { return express::Base::as<IfcClassificationNotation>(); }
@@ -251,7 +251,7 @@ public:
     IfcColour() {}
     explicit IfcColour(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourSpecification>, int> = 0>
     // IfcColourSpecification as() const { return express::Base::as<IfcColourSpecification>(); }
@@ -273,7 +273,7 @@ public:
     IfcColourOrFactor() {}
     explicit IfcColourOrFactor(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColourRgb>, int> = 0>
     // IfcColourRgb as() const { return express::Base::as<IfcColourRgb>(); }
@@ -293,7 +293,7 @@ public:
     IfcConditionCriterionSelect() {}
     explicit IfcConditionCriterionSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLabel>, int> = 0>
     // IfcLabel as() const { return express::Base::as<IfcLabel>(); }
@@ -318,7 +318,7 @@ public:
     IfcCsgSelect() {}
     explicit IfcCsgSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBooleanResult>, int> = 0>
     // IfcBooleanResult as() const { return express::Base::as<IfcBooleanResult>(); }
@@ -342,7 +342,7 @@ public:
     IfcCurveFontOrScaledCurveFontSelect() {}
     explicit IfcCurveFontOrScaledCurveFontSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCurveStyleFontSelect>, int> = 0>
     // IfcCurveStyleFontSelect as() const { return express::Base::as<IfcCurveStyleFontSelect>(); }
@@ -381,7 +381,7 @@ public:
     IfcCurveOrEdgeCurve() {}
     explicit IfcCurveOrEdgeCurve(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcBoundedCurve>, int> = 0>
     // IfcBoundedCurve as() const { return express::Base::as<IfcBoundedCurve>(); }
@@ -405,7 +405,7 @@ public:
     IfcCurveStyleFontSelect() {}
     explicit IfcCurveStyleFontSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedCurveFont>, int> = 0>
     // IfcPreDefinedCurveFont as() const { return express::Base::as<IfcPreDefinedCurveFont>(); }
@@ -425,7 +425,7 @@ public:
     IfcDateTimeSelect() {}
     explicit IfcDateTimeSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCalendarDate>, int> = 0>
     // IfcCalendarDate as() const { return express::Base::as<IfcCalendarDate>(); }
@@ -455,7 +455,7 @@ public:
     IfcDefinedSymbolSelect() {}
     explicit IfcDefinedSymbolSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedSymbol>, int> = 0>
     // IfcPreDefinedSymbol as() const { return express::Base::as<IfcPreDefinedSymbol>(); }
@@ -548,7 +548,7 @@ public:
     IfcDerivedMeasureValue() {}
     explicit IfcDerivedMeasureValue(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumetricFlowRateMeasure>, int> = 0>
     // IfcVolumetricFlowRateMeasure as() const { return express::Base::as<IfcVolumetricFlowRateMeasure>(); }
@@ -971,7 +971,7 @@ public:
     IfcDocumentSelect() {}
     explicit IfcDocumentSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDocumentReference>, int> = 0>
     // IfcDocumentReference as() const { return express::Base::as<IfcDocumentReference>(); }
@@ -991,7 +991,7 @@ public:
     IfcDraughtingCalloutElement() {}
     explicit IfcDraughtingCalloutElement(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcAnnotationCurveOccurrence>, int> = 0>
     // IfcAnnotationCurveOccurrence as() const { return express::Base::as<IfcAnnotationCurveOccurrence>(); }
@@ -1023,7 +1023,7 @@ public:
     IfcFillAreaStyleTileShapeSelect() {}
     explicit IfcFillAreaStyleTileShapeSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleTileSymbolWithStyle>, int> = 0>
     // IfcFillAreaStyleTileSymbolWithStyle as() const { return express::Base::as<IfcFillAreaStyleTileSymbolWithStyle>(); }
@@ -1042,7 +1042,7 @@ public:
     IfcFillStyleSelect() {}
     explicit IfcFillStyleSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcFillAreaStyleHatching>, int> = 0>
     // IfcFillAreaStyleHatching as() const { return express::Base::as<IfcFillAreaStyleHatching>(); }
@@ -1090,7 +1090,7 @@ public:
     IfcGeometricSetSelect() {}
     explicit IfcGeometricSetSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
     // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
@@ -1118,7 +1118,7 @@ public:
     IfcHatchLineDistanceSelect() {}
     explicit IfcHatchLineDistanceSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcOneDirectionRepeatFactor>, int> = 0>
     // IfcOneDirectionRepeatFactor as() const { return express::Base::as<IfcOneDirectionRepeatFactor>(); }
@@ -1144,7 +1144,7 @@ public:
     IfcLayeredItem() {}
     explicit IfcLayeredItem(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRepresentationItem>, int> = 0>
     // IfcRepresentationItem as() const { return express::Base::as<IfcRepresentationItem>(); }
@@ -1173,7 +1173,7 @@ public:
     IfcLibrarySelect() {}
     explicit IfcLibrarySelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcLibraryReference>, int> = 0>
     // IfcLibraryReference as() const { return express::Base::as<IfcLibraryReference>(); }
@@ -1214,7 +1214,7 @@ public:
     IfcLightDistributionDataSourceSelect() {}
     explicit IfcLightDistributionDataSourceSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcExternalReference>, int> = 0>
     // IfcExternalReference as() const { return express::Base::as<IfcExternalReference>(); }
@@ -1259,7 +1259,7 @@ public:
     IfcMaterialSelect() {}
     explicit IfcMaterialSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterial>, int> = 0>
     // IfcMaterial as() const { return express::Base::as<IfcMaterial>(); }
@@ -1305,7 +1305,7 @@ public:
     IfcMeasureValue() {}
     explicit IfcMeasureValue(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcVolumeMeasure>, int> = 0>
     // IfcVolumeMeasure as() const { return express::Base::as<IfcVolumeMeasure>(); }
@@ -1456,7 +1456,7 @@ public:
     IfcMetricValueSelect() {}
     explicit IfcMetricValueSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDateTimeSelect>, int> = 0>
     // IfcDateTimeSelect as() const { return express::Base::as<IfcDateTimeSelect>(); }
@@ -1520,7 +1520,7 @@ public:
     IfcObjectReferenceSelect() {}
     explicit IfcObjectReferenceSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMaterial>, int> = 0>
     // IfcMaterial as() const { return express::Base::as<IfcMaterial>(); }
@@ -1606,7 +1606,7 @@ public:
     IfcOrientationSelect() {}
     explicit IfcOrientationSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPlaneAngleMeasure>, int> = 0>
     // IfcPlaneAngleMeasure as() const { return express::Base::as<IfcPlaneAngleMeasure>(); }
@@ -1632,7 +1632,7 @@ public:
     IfcPointOrVertexPoint() {}
     explicit IfcPointOrVertexPoint(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPoint>, int> = 0>
     // IfcPoint as() const { return express::Base::as<IfcPoint>(); }
@@ -1659,7 +1659,7 @@ public:
     IfcPresentationStyleSelect() {}
     explicit IfcPresentationStyleSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcNullStyle>, int> = 0>
     // IfcNullStyle as() const { return express::Base::as<IfcNullStyle>(); }
@@ -1713,7 +1713,7 @@ public:
     IfcShell() {}
     explicit IfcShell(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcClosedShell>, int> = 0>
     // IfcClosedShell as() const { return express::Base::as<IfcClosedShell>(); }
@@ -1751,7 +1751,7 @@ public:
     IfcSimpleValue() {}
     explicit IfcSimpleValue(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcInteger>, int> = 0>
     // IfcInteger as() const { return express::Base::as<IfcInteger>(); }
@@ -1812,7 +1812,7 @@ public:
     IfcSizeSelect() {}
     explicit IfcSizeSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcRatioMeasure>, int> = 0>
     // IfcRatioMeasure as() const { return express::Base::as<IfcRatioMeasure>(); }
@@ -1865,7 +1865,7 @@ public:
     IfcSpecularHighlightSelect() {}
     explicit IfcSpecularHighlightSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSpecularExponent>, int> = 0>
     // IfcSpecularExponent as() const { return express::Base::as<IfcSpecularExponent>(); }
@@ -1893,7 +1893,7 @@ public:
     IfcStructuralActivityAssignmentSelect() {}
     explicit IfcStructuralActivityAssignmentSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcStructuralItem>, int> = 0>
     // IfcStructuralItem as() const { return express::Base::as<IfcStructuralItem>(); }
@@ -1921,7 +1921,7 @@ public:
     IfcSurfaceOrFaceSurface() {}
     explicit IfcSurfaceOrFaceSurface(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurface>, int> = 0>
     // IfcSurface as() const { return express::Base::as<IfcSurface>(); }
@@ -1955,7 +1955,7 @@ public:
     IfcSurfaceStyleElementSelect() {}
     explicit IfcSurfaceStyleElementSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcSurfaceStyleShading>, int> = 0>
     // IfcSurfaceStyleShading as() const { return express::Base::as<IfcSurfaceStyleShading>(); }
@@ -1999,7 +1999,7 @@ public:
     IfcSymbolStyleSelect() {}
     explicit IfcSymbolStyleSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcColour>, int> = 0>
     // IfcColour as() const { return express::Base::as<IfcColour>(); }
@@ -2031,7 +2031,7 @@ public:
     IfcTextFontSelect() {}
     explicit IfcTextFontSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcPreDefinedTextFont>, int> = 0>
     // IfcPreDefinedTextFont as() const { return express::Base::as<IfcPreDefinedTextFont>(); }
@@ -2059,7 +2059,7 @@ public:
     IfcTextStyleSelect() {}
     explicit IfcTextStyleSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcTextStyleWithBoxCharacteristics>, int> = 0>
     // IfcTextStyleWithBoxCharacteristics as() const { return express::Base::as<IfcTextStyleWithBoxCharacteristics>(); }
@@ -2083,7 +2083,7 @@ public:
     IfcTrimmingSelect() {}
     explicit IfcTrimmingSelect(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcCartesianPoint>, int> = 0>
     // IfcCartesianPoint as() const { return express::Base::as<IfcCartesianPoint>(); }
@@ -2115,7 +2115,7 @@ public:
     IfcUnit() {}
     explicit IfcUnit(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDerivedUnit>, int> = 0>
     // IfcDerivedUnit as() const { return express::Base::as<IfcDerivedUnit>(); }
@@ -2150,7 +2150,7 @@ public:
     IfcValue() {}
     explicit IfcValue(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcMeasureValue>, int> = 0>
     // IfcMeasureValue as() const { return express::Base::as<IfcMeasureValue>(); }
@@ -2765,7 +2765,7 @@ public:
     IfcVectorOrDirection() {}
     explicit IfcVectorOrDirection(const express::Base& c) : express::Select(c) {}
 
-    static const IfcParse::select_type& Class();
+    static const ifcopenshell::select_type& Class();
     // let's just use the as<>() from Base instead directly...
     // template<class T, std::enable_if_t<std::is_same_v<T, IfcDirection>, int> = 0>
     // IfcDirection as() const { return express::Base::as<IfcDirection>(); }
@@ -2787,13 +2787,13 @@ public:
 class IFC_PARSE_API IfcActionSourceTypeEnum : public express::DeclaredType {
 public:
     IfcActionSourceTypeEnum() {}
-    explicit IfcActionSourceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcActionSourceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcActionSourceType_DEAD_LOAD_G, IfcActionSourceType_COMPLETION_G1, IfcActionSourceType_LIVE_LOAD_Q, IfcActionSourceType_SNOW_S, IfcActionSourceType_WIND_W, IfcActionSourceType_PRESTRESSING_P, IfcActionSourceType_SETTLEMENT_U, IfcActionSourceType_TEMPERATURE_T, IfcActionSourceType_EARTHQUAKE_E, IfcActionSourceType_FIRE, IfcActionSourceType_IMPULSE, IfcActionSourceType_IMPACT, IfcActionSourceType_TRANSPORT, IfcActionSourceType_ERECTION, IfcActionSourceType_PROPPING, IfcActionSourceType_SYSTEM_IMPERFECTION, IfcActionSourceType_SHRINKAGE, IfcActionSourceType_CREEP, IfcActionSourceType_LACK_OF_FIT, IfcActionSourceType_BUOYANCY, IfcActionSourceType_ICE, IfcActionSourceType_CURRENT, IfcActionSourceType_WAVE, IfcActionSourceType_RAIN, IfcActionSourceType_BRAKES, IfcActionSourceType_USERDEFINED, IfcActionSourceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2808,13 +2808,13 @@ public:
 class IFC_PARSE_API IfcActionTypeEnum : public express::DeclaredType {
 public:
     IfcActionTypeEnum() {}
-    explicit IfcActionTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcActionTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcActionType_PERMANENT_G, IfcActionType_VARIABLE_Q, IfcActionType_EXTRAORDINARY_A, IfcActionType_USERDEFINED, IfcActionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2838,13 +2838,13 @@ public:
 class IFC_PARSE_API IfcActuatorTypeEnum : public express::DeclaredType {
 public:
     IfcActuatorTypeEnum() {}
-    explicit IfcActuatorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcActuatorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcActuatorType_ELECTRICACTUATOR, IfcActuatorType_HANDOPERATEDACTUATOR, IfcActuatorType_HYDRAULICACTUATOR, IfcActuatorType_PNEUMATICACTUATOR, IfcActuatorType_THERMOSTATICACTUATOR, IfcActuatorType_USERDEFINED, IfcActuatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2863,13 +2863,13 @@ public:
 class IFC_PARSE_API IfcAddressTypeEnum : public express::DeclaredType {
 public:
     IfcAddressTypeEnum() {}
-    explicit IfcAddressTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAddressTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAddressType_OFFICE, IfcAddressType_SITE, IfcAddressType_HOME, IfcAddressType_DISTRIBUTIONPOINT, IfcAddressType_USERDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2878,13 +2878,13 @@ public:
 class IFC_PARSE_API IfcAheadOrBehind : public express::DeclaredType {
 public:
     IfcAheadOrBehind() {}
-    explicit IfcAheadOrBehind (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAheadOrBehind (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAheadOrBehind_AHEAD, IfcAheadOrBehind_BEHIND} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2903,13 +2903,13 @@ public:
 class IFC_PARSE_API IfcAirTerminalBoxTypeEnum : public express::DeclaredType {
 public:
     IfcAirTerminalBoxTypeEnum() {}
-    explicit IfcAirTerminalBoxTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAirTerminalBoxTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAirTerminalBoxType_CONSTANTFLOW, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREDEPENDANT, IfcAirTerminalBoxType_VARIABLEFLOWPRESSUREINDEPENDANT, IfcAirTerminalBoxType_USERDEFINED, IfcAirTerminalBoxType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2930,13 +2930,13 @@ public:
 class IFC_PARSE_API IfcAirTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcAirTerminalTypeEnum() {}
-    explicit IfcAirTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAirTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAirTerminalType_GRILLE, IfcAirTerminalType_REGISTER, IfcAirTerminalType_DIFFUSER, IfcAirTerminalType_EYEBALL, IfcAirTerminalType_IRIS, IfcAirTerminalType_LINEARGRILLE, IfcAirTerminalType_LINEARDIFFUSER, IfcAirTerminalType_USERDEFINED, IfcAirTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2960,13 +2960,13 @@ public:
 class IFC_PARSE_API IfcAirToAirHeatRecoveryTypeEnum : public express::DeclaredType {
 public:
     IfcAirToAirHeatRecoveryTypeEnum() {}
-    explicit IfcAirToAirHeatRecoveryTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAirToAirHeatRecoveryTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAirToAirHeatRecoveryType_FIXEDPLATECOUNTERFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATECROSSFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_FIXEDPLATEPARALLELFLOWEXCHANGER, IfcAirToAirHeatRecoveryType_ROTARYWHEEL, IfcAirToAirHeatRecoveryType_RUNAROUNDCOILLOOP, IfcAirToAirHeatRecoveryType_HEATPIPE, IfcAirToAirHeatRecoveryType_TWINTOWERENTHALPYRECOVERYLOOPS, IfcAirToAirHeatRecoveryType_THERMOSIPHONSEALEDTUBEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_THERMOSIPHONCOILTYPEHEATEXCHANGERS, IfcAirToAirHeatRecoveryType_USERDEFINED, IfcAirToAirHeatRecoveryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -2988,13 +2988,13 @@ public:
 class IFC_PARSE_API IfcAlarmTypeEnum : public express::DeclaredType {
 public:
     IfcAlarmTypeEnum() {}
-    explicit IfcAlarmTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAlarmTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAlarmType_BELL, IfcAlarmType_BREAKGLASSBUTTON, IfcAlarmType_LIGHT, IfcAlarmType_MANUALPULLBOX, IfcAlarmType_SIREN, IfcAlarmType_WHISTLE, IfcAlarmType_USERDEFINED, IfcAlarmType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3008,13 +3008,13 @@ public:
 class IFC_PARSE_API IfcAnalysisModelTypeEnum : public express::DeclaredType {
 public:
     IfcAnalysisModelTypeEnum() {}
-    explicit IfcAnalysisModelTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAnalysisModelTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAnalysisModelType_IN_PLANE_LOADING_2D, IfcAnalysisModelType_OUT_PLANE_LOADING_2D, IfcAnalysisModelType_LOADING_3D, IfcAnalysisModelType_USERDEFINED, IfcAnalysisModelType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3029,13 +3029,13 @@ public:
 class IFC_PARSE_API IfcAnalysisTheoryTypeEnum : public express::DeclaredType {
 public:
     IfcAnalysisTheoryTypeEnum() {}
-    explicit IfcAnalysisTheoryTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAnalysisTheoryTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAnalysisTheoryType_FIRST_ORDER_THEORY, IfcAnalysisTheoryType_SECOND_ORDER_THEORY, IfcAnalysisTheoryType_THIRD_ORDER_THEORY, IfcAnalysisTheoryType_FULL_NONLINEAR_THEORY, IfcAnalysisTheoryType_USERDEFINED, IfcAnalysisTheoryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3055,13 +3055,13 @@ public:
 class IFC_PARSE_API IfcArithmeticOperatorEnum : public express::DeclaredType {
 public:
     IfcArithmeticOperatorEnum() {}
-    explicit IfcArithmeticOperatorEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcArithmeticOperatorEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcArithmeticOperator_ADD, IfcArithmeticOperator_DIVIDE, IfcArithmeticOperator_MULTIPLY, IfcArithmeticOperator_SUBTRACT} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3081,13 +3081,13 @@ public:
 class IFC_PARSE_API IfcAssemblyPlaceEnum : public express::DeclaredType {
 public:
     IfcAssemblyPlaceEnum() {}
-    explicit IfcAssemblyPlaceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAssemblyPlaceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcAssemblyPlace_SITE, IfcAssemblyPlace_FACTORY, IfcAssemblyPlace_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3109,13 +3109,13 @@ public:
 class IFC_PARSE_API IfcBSplineCurveForm : public express::DeclaredType {
 public:
     IfcBSplineCurveForm() {}
-    explicit IfcBSplineCurveForm (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBSplineCurveForm (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBSplineCurveForm_POLYLINE_FORM, IfcBSplineCurveForm_CIRCULAR_ARC, IfcBSplineCurveForm_ELLIPTIC_ARC, IfcBSplineCurveForm_PARABOLIC_ARC, IfcBSplineCurveForm_HYPERBOLIC_ARC, IfcBSplineCurveForm_UNSPECIFIED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3162,13 +3162,13 @@ public:
 class IFC_PARSE_API IfcBeamTypeEnum : public express::DeclaredType {
 public:
     IfcBeamTypeEnum() {}
-    explicit IfcBeamTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBeamTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBeamType_BEAM, IfcBeamType_JOIST, IfcBeamType_LINTEL, IfcBeamType_T_BEAM, IfcBeamType_USERDEFINED, IfcBeamType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3216,13 +3216,13 @@ public:
 class IFC_PARSE_API IfcBenchmarkEnum : public express::DeclaredType {
 public:
     IfcBenchmarkEnum() {}
-    explicit IfcBenchmarkEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBenchmarkEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBenchmark_GREATERTHAN, IfcBenchmark_GREATERTHANOREQUALTO, IfcBenchmark_LESSTHAN, IfcBenchmark_LESSTHANOREQUALTO, IfcBenchmark_EQUALTO, IfcBenchmark_NOTEQUALTO} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3239,13 +3239,13 @@ public:
 class IFC_PARSE_API IfcBoilerTypeEnum : public express::DeclaredType {
 public:
     IfcBoilerTypeEnum() {}
-    explicit IfcBoilerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBoilerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBoilerType_WATER, IfcBoilerType_STEAM, IfcBoilerType_USERDEFINED, IfcBoilerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3262,13 +3262,13 @@ public:
 class IFC_PARSE_API IfcBooleanOperator : public express::DeclaredType {
 public:
     IfcBooleanOperator() {}
-    explicit IfcBooleanOperator (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBooleanOperator (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBooleanOperator_UNION, IfcBooleanOperator_INTERSECTION, IfcBooleanOperator_DIFFERENCE} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3287,13 +3287,13 @@ public:
 class IFC_PARSE_API IfcBuildingElementProxyTypeEnum : public express::DeclaredType {
 public:
     IfcBuildingElementProxyTypeEnum() {}
-    explicit IfcBuildingElementProxyTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBuildingElementProxyTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcBuildingElementProxyType_USERDEFINED, IfcBuildingElementProxyType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3311,13 +3311,13 @@ public:
 class IFC_PARSE_API IfcCableCarrierFittingTypeEnum : public express::DeclaredType {
 public:
     IfcCableCarrierFittingTypeEnum() {}
-    explicit IfcCableCarrierFittingTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCableCarrierFittingTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCableCarrierFittingType_BEND, IfcCableCarrierFittingType_CROSS, IfcCableCarrierFittingType_REDUCER, IfcCableCarrierFittingType_TEE, IfcCableCarrierFittingType_USERDEFINED, IfcCableCarrierFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3335,13 +3335,13 @@ public:
 class IFC_PARSE_API IfcCableCarrierSegmentTypeEnum : public express::DeclaredType {
 public:
     IfcCableCarrierSegmentTypeEnum() {}
-    explicit IfcCableCarrierSegmentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCableCarrierSegmentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCableCarrierSegmentType_CABLELADDERSEGMENT, IfcCableCarrierSegmentType_CABLETRAYSEGMENT, IfcCableCarrierSegmentType_CABLETRUNKINGSEGMENT, IfcCableCarrierSegmentType_CONDUITSEGMENT, IfcCableCarrierSegmentType_USERDEFINED, IfcCableCarrierSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3361,13 +3361,13 @@ public:
 class IFC_PARSE_API IfcCableSegmentTypeEnum : public express::DeclaredType {
 public:
     IfcCableSegmentTypeEnum() {}
-    explicit IfcCableSegmentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCableSegmentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCableSegmentType_CABLESEGMENT, IfcCableSegmentType_CONDUCTORSEGMENT, IfcCableSegmentType_USERDEFINED, IfcCableSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3386,13 +3386,13 @@ public:
 class IFC_PARSE_API IfcChangeActionEnum : public express::DeclaredType {
 public:
     IfcChangeActionEnum() {}
-    explicit IfcChangeActionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcChangeActionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcChangeAction_NOCHANGE, IfcChangeAction_MODIFIED, IfcChangeAction_ADDED, IfcChangeAction_DELETED, IfcChangeAction_MODIFIEDADDED, IfcChangeAction_MODIFIEDDELETED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3410,13 +3410,13 @@ public:
 class IFC_PARSE_API IfcChillerTypeEnum : public express::DeclaredType {
 public:
     IfcChillerTypeEnum() {}
-    explicit IfcChillerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcChillerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcChillerType_AIRCOOLED, IfcChillerType_WATERCOOLED, IfcChillerType_HEATRECOVERY, IfcChillerType_USERDEFINED, IfcChillerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3446,13 +3446,13 @@ public:
 class IFC_PARSE_API IfcCoilTypeEnum : public express::DeclaredType {
 public:
     IfcCoilTypeEnum() {}
-    explicit IfcCoilTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCoilTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCoilType_DXCOOLINGCOIL, IfcCoilType_WATERCOOLINGCOIL, IfcCoilType_STEAMHEATINGCOIL, IfcCoilType_WATERHEATINGCOIL, IfcCoilType_ELECTRICHEATINGCOIL, IfcCoilType_GASHEATINGCOIL, IfcCoilType_USERDEFINED, IfcCoilType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3474,13 +3474,13 @@ public:
 class IFC_PARSE_API IfcColumnTypeEnum : public express::DeclaredType {
 public:
     IfcColumnTypeEnum() {}
-    explicit IfcColumnTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcColumnTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcColumnType_COLUMN, IfcColumnType_USERDEFINED, IfcColumnType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3510,13 +3510,13 @@ public:
 class IFC_PARSE_API IfcCompressorTypeEnum : public express::DeclaredType {
 public:
     IfcCompressorTypeEnum() {}
-    explicit IfcCompressorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCompressorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCompressorType_DYNAMIC, IfcCompressorType_RECIPROCATING, IfcCompressorType_ROTARY, IfcCompressorType_SCROLL, IfcCompressorType_TROCHOIDAL, IfcCompressorType_SINGLESTAGE, IfcCompressorType_BOOSTER, IfcCompressorType_OPENTYPE, IfcCompressorType_HERMETIC, IfcCompressorType_SEMIHERMETIC, IfcCompressorType_WELDEDSHELLHERMETIC, IfcCompressorType_ROLLINGPISTON, IfcCompressorType_ROTARYVANE, IfcCompressorType_SINGLESCREW, IfcCompressorType_TWINSCREW, IfcCompressorType_USERDEFINED, IfcCompressorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3537,13 +3537,13 @@ public:
 class IFC_PARSE_API IfcCondenserTypeEnum : public express::DeclaredType {
 public:
     IfcCondenserTypeEnum() {}
-    explicit IfcCondenserTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCondenserTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCondenserType_WATERCOOLEDSHELLTUBE, IfcCondenserType_WATERCOOLEDSHELLCOIL, IfcCondenserType_WATERCOOLEDTUBEINTUBE, IfcCondenserType_WATERCOOLEDBRAZEDPLATE, IfcCondenserType_AIRCOOLED, IfcCondenserType_EVAPORATIVECOOLED, IfcCondenserType_USERDEFINED, IfcCondenserType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3571,13 +3571,13 @@ public:
 class IFC_PARSE_API IfcConnectionTypeEnum : public express::DeclaredType {
 public:
     IfcConnectionTypeEnum() {}
-    explicit IfcConnectionTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcConnectionTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcConnectionType_ATPATH, IfcConnectionType_ATSTART, IfcConnectionType_ATEND, IfcConnectionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3602,13 +3602,13 @@ public:
 class IFC_PARSE_API IfcConstraintEnum : public express::DeclaredType {
 public:
     IfcConstraintEnum() {}
-    explicit IfcConstraintEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcConstraintEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcConstraint_HARD, IfcConstraint_SOFT, IfcConstraint_ADVISORY, IfcConstraint_USERDEFINED, IfcConstraint_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3630,13 +3630,13 @@ public:
 class IFC_PARSE_API IfcControllerTypeEnum : public express::DeclaredType {
 public:
     IfcControllerTypeEnum() {}
-    explicit IfcControllerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcControllerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcControllerType_FLOATING, IfcControllerType_PROPORTIONAL, IfcControllerType_PROPORTIONALINTEGRAL, IfcControllerType_PROPORTIONALINTEGRALDERIVATIVE, IfcControllerType_TIMEDTWOPOSITION, IfcControllerType_TWOPOSITION, IfcControllerType_USERDEFINED, IfcControllerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3663,13 +3663,13 @@ public:
 class IFC_PARSE_API IfcCooledBeamTypeEnum : public express::DeclaredType {
 public:
     IfcCooledBeamTypeEnum() {}
-    explicit IfcCooledBeamTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCooledBeamTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCooledBeamType_ACTIVE, IfcCooledBeamType_PASSIVE, IfcCooledBeamType_USERDEFINED, IfcCooledBeamType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3689,13 +3689,13 @@ public:
 class IFC_PARSE_API IfcCoolingTowerTypeEnum : public express::DeclaredType {
 public:
     IfcCoolingTowerTypeEnum() {}
-    explicit IfcCoolingTowerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCoolingTowerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCoolingTowerType_NATURALDRAFT, IfcCoolingTowerType_MECHANICALINDUCEDDRAFT, IfcCoolingTowerType_MECHANICALFORCEDDRAFT, IfcCoolingTowerType_USERDEFINED, IfcCoolingTowerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3716,13 +3716,13 @@ public:
 class IFC_PARSE_API IfcCostScheduleTypeEnum : public express::DeclaredType {
 public:
     IfcCostScheduleTypeEnum() {}
-    explicit IfcCostScheduleTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCostScheduleTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCostScheduleType_BUDGET, IfcCostScheduleType_COSTPLAN, IfcCostScheduleType_ESTIMATE, IfcCostScheduleType_TENDER, IfcCostScheduleType_PRICEDBILLOFQUANTITIES, IfcCostScheduleType_UNPRICEDBILLOFQUANTITIES, IfcCostScheduleType_SCHEDULEOFRATES, IfcCostScheduleType_USERDEFINED, IfcCostScheduleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3773,13 +3773,13 @@ public:
 class IFC_PARSE_API IfcCoveringTypeEnum : public express::DeclaredType {
 public:
     IfcCoveringTypeEnum() {}
-    explicit IfcCoveringTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCoveringTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCoveringType_CEILING, IfcCoveringType_FLOORING, IfcCoveringType_CLADDING, IfcCoveringType_ROOFING, IfcCoveringType_INSULATION, IfcCoveringType_MEMBRANE, IfcCoveringType_SLEEVING, IfcCoveringType_WRAPPING, IfcCoveringType_USERDEFINED, IfcCoveringType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3788,13 +3788,13 @@ public:
 class IFC_PARSE_API IfcCurrencyEnum : public express::DeclaredType {
 public:
     IfcCurrencyEnum() {}
-    explicit IfcCurrencyEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCurrencyEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCurrency_AED, IfcCurrency_AES, IfcCurrency_ATS, IfcCurrency_AUD, IfcCurrency_BBD, IfcCurrency_BEG, IfcCurrency_BGL, IfcCurrency_BHD, IfcCurrency_BMD, IfcCurrency_BND, IfcCurrency_BRL, IfcCurrency_BSD, IfcCurrency_BWP, IfcCurrency_BZD, IfcCurrency_CAD, IfcCurrency_CBD, IfcCurrency_CHF, IfcCurrency_CLP, IfcCurrency_CNY, IfcCurrency_CYS, IfcCurrency_CZK, IfcCurrency_DDP, IfcCurrency_DEM, IfcCurrency_DKK, IfcCurrency_EGL, IfcCurrency_EST, IfcCurrency_EUR, IfcCurrency_FAK, IfcCurrency_FIM, IfcCurrency_FJD, IfcCurrency_FKP, IfcCurrency_FRF, IfcCurrency_GBP, IfcCurrency_GIP, IfcCurrency_GMD, IfcCurrency_GRX, IfcCurrency_HKD, IfcCurrency_HUF, IfcCurrency_ICK, IfcCurrency_IDR, IfcCurrency_ILS, IfcCurrency_INR, IfcCurrency_IRP, IfcCurrency_ITL, IfcCurrency_JMD, IfcCurrency_JOD, IfcCurrency_JPY, IfcCurrency_KES, IfcCurrency_KRW, IfcCurrency_KWD, IfcCurrency_KYD, IfcCurrency_LKR, IfcCurrency_LUF, IfcCurrency_MTL, IfcCurrency_MUR, IfcCurrency_MXN, IfcCurrency_MYR, IfcCurrency_NLG, IfcCurrency_NZD, IfcCurrency_OMR, IfcCurrency_PGK, IfcCurrency_PHP, IfcCurrency_PKR, IfcCurrency_PLN, IfcCurrency_PTN, IfcCurrency_QAR, IfcCurrency_RUR, IfcCurrency_SAR, IfcCurrency_SCR, IfcCurrency_SEK, IfcCurrency_SGD, IfcCurrency_SKP, IfcCurrency_THB, IfcCurrency_TRL, IfcCurrency_TTD, IfcCurrency_TWD, IfcCurrency_USD, IfcCurrency_VEB, IfcCurrency_VND, IfcCurrency_XEU, IfcCurrency_ZAR, IfcCurrency_ZWD, IfcCurrency_NOK} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3811,13 +3811,13 @@ public:
 class IFC_PARSE_API IfcCurtainWallTypeEnum : public express::DeclaredType {
 public:
     IfcCurtainWallTypeEnum() {}
-    explicit IfcCurtainWallTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCurtainWallTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcCurtainWallType_USERDEFINED, IfcCurtainWallType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3842,13 +3842,13 @@ public:
 class IFC_PARSE_API IfcDamperTypeEnum : public express::DeclaredType {
 public:
     IfcDamperTypeEnum() {}
-    explicit IfcDamperTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDamperTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDamperType_CONTROLDAMPER, IfcDamperType_FIREDAMPER, IfcDamperType_SMOKEDAMPER, IfcDamperType_FIRESMOKEDAMPER, IfcDamperType_BACKDRAFTDAMPER, IfcDamperType_RELIEFDAMPER, IfcDamperType_BLASTDAMPER, IfcDamperType_GRAVITYDAMPER, IfcDamperType_GRAVITYRELIEFDAMPER, IfcDamperType_BALANCINGDAMPER, IfcDamperType_FUMEHOODEXHAUST, IfcDamperType_USERDEFINED, IfcDamperType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3864,13 +3864,13 @@ public:
 class IFC_PARSE_API IfcDataOriginEnum : public express::DeclaredType {
 public:
     IfcDataOriginEnum() {}
-    explicit IfcDataOriginEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDataOriginEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDataOrigin_MEASURED, IfcDataOrigin_PREDICTED, IfcDataOrigin_SIMULATED, IfcDataOrigin_USERDEFINED, IfcDataOrigin_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3935,13 +3935,13 @@ public:
 class IFC_PARSE_API IfcDerivedUnitEnum : public express::DeclaredType {
 public:
     IfcDerivedUnitEnum() {}
-    explicit IfcDerivedUnitEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDerivedUnitEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDerivedUnit_ANGULARVELOCITYUNIT, IfcDerivedUnit_COMPOUNDPLANEANGLEUNIT, IfcDerivedUnit_DYNAMICVISCOSITYUNIT, IfcDerivedUnit_HEATFLUXDENSITYUNIT, IfcDerivedUnit_INTEGERCOUNTRATEUNIT, IfcDerivedUnit_ISOTHERMALMOISTURECAPACITYUNIT, IfcDerivedUnit_KINEMATICVISCOSITYUNIT, IfcDerivedUnit_LINEARVELOCITYUNIT, IfcDerivedUnit_MASSDENSITYUNIT, IfcDerivedUnit_MASSFLOWRATEUNIT, IfcDerivedUnit_MOISTUREDIFFUSIVITYUNIT, IfcDerivedUnit_MOLECULARWEIGHTUNIT, IfcDerivedUnit_SPECIFICHEATCAPACITYUNIT, IfcDerivedUnit_THERMALADMITTANCEUNIT, IfcDerivedUnit_THERMALCONDUCTANCEUNIT, IfcDerivedUnit_THERMALRESISTANCEUNIT, IfcDerivedUnit_THERMALTRANSMITTANCEUNIT, IfcDerivedUnit_VAPORPERMEABILITYUNIT, IfcDerivedUnit_VOLUMETRICFLOWRATEUNIT, IfcDerivedUnit_ROTATIONALFREQUENCYUNIT, IfcDerivedUnit_TORQUEUNIT, IfcDerivedUnit_MOMENTOFINERTIAUNIT, IfcDerivedUnit_LINEARMOMENTUNIT, IfcDerivedUnit_LINEARFORCEUNIT, IfcDerivedUnit_PLANARFORCEUNIT, IfcDerivedUnit_MODULUSOFELASTICITYUNIT, IfcDerivedUnit_SHEARMODULUSUNIT, IfcDerivedUnit_LINEARSTIFFNESSUNIT, IfcDerivedUnit_ROTATIONALSTIFFNESSUNIT, IfcDerivedUnit_MODULUSOFSUBGRADEREACTIONUNIT, IfcDerivedUnit_ACCELERATIONUNIT, IfcDerivedUnit_CURVATUREUNIT, IfcDerivedUnit_HEATINGVALUEUNIT, IfcDerivedUnit_IONCONCENTRATIONUNIT, IfcDerivedUnit_LUMINOUSINTENSITYDISTRIBUTIONUNIT, IfcDerivedUnit_MASSPERLENGTHUNIT, IfcDerivedUnit_MODULUSOFLINEARSUBGRADEREACTIONUNIT, IfcDerivedUnit_MODULUSOFROTATIONALSUBGRADEREACTIONUNIT, IfcDerivedUnit_PHUNIT, IfcDerivedUnit_ROTATIONALMASSUNIT, IfcDerivedUnit_SECTIONAREAINTEGRALUNIT, IfcDerivedUnit_SECTIONMODULUSUNIT, IfcDerivedUnit_SOUNDPOWERUNIT, IfcDerivedUnit_SOUNDPRESSUREUNIT, IfcDerivedUnit_TEMPERATUREGRADIENTUNIT, IfcDerivedUnit_THERMALEXPANSIONCOEFFICIENTUNIT, IfcDerivedUnit_WARPINGCONSTANTUNIT, IfcDerivedUnit_WARPINGMOMENTUNIT, IfcDerivedUnit_USERDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3950,13 +3950,13 @@ public:
 class IFC_PARSE_API IfcDimensionExtentUsage : public express::DeclaredType {
 public:
     IfcDimensionExtentUsage() {}
-    explicit IfcDimensionExtentUsage (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDimensionExtentUsage (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDimensionExtentUsage_ORIGIN, IfcDimensionExtentUsage_TARGET} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -3972,13 +3972,13 @@ public:
 class IFC_PARSE_API IfcDirectionSenseEnum : public express::DeclaredType {
 public:
     IfcDirectionSenseEnum() {}
-    explicit IfcDirectionSenseEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDirectionSenseEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDirectionSense_POSITIVE, IfcDirectionSense_NEGATIVE} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4002,13 +4002,13 @@ public:
 class IFC_PARSE_API IfcDistributionChamberElementTypeEnum : public express::DeclaredType {
 public:
     IfcDistributionChamberElementTypeEnum() {}
-    explicit IfcDistributionChamberElementTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDistributionChamberElementTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDistributionChamberElementType_FORMEDDUCT, IfcDistributionChamberElementType_INSPECTIONCHAMBER, IfcDistributionChamberElementType_INSPECTIONPIT, IfcDistributionChamberElementType_MANHOLE, IfcDistributionChamberElementType_METERCHAMBER, IfcDistributionChamberElementType_SUMP, IfcDistributionChamberElementType_TRENCH, IfcDistributionChamberElementType_VALVECHAMBER, IfcDistributionChamberElementType_USERDEFINED, IfcDistributionChamberElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4028,13 +4028,13 @@ public:
 class IFC_PARSE_API IfcDocumentConfidentialityEnum : public express::DeclaredType {
 public:
     IfcDocumentConfidentialityEnum() {}
-    explicit IfcDocumentConfidentialityEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDocumentConfidentialityEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDocumentConfidentiality_PUBLIC, IfcDocumentConfidentiality_RESTRICTED, IfcDocumentConfidentiality_CONFIDENTIAL, IfcDocumentConfidentiality_PERSONAL, IfcDocumentConfidentiality_USERDEFINED, IfcDocumentConfidentiality_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4045,13 +4045,13 @@ public:
 class IFC_PARSE_API IfcDocumentStatusEnum : public express::DeclaredType {
 public:
     IfcDocumentStatusEnum() {}
-    explicit IfcDocumentStatusEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDocumentStatusEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDocumentStatus_DRAFT, IfcDocumentStatus_FINALDRAFT, IfcDocumentStatus_FINAL, IfcDocumentStatus_REVISION, IfcDocumentStatus_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4092,13 +4092,13 @@ public:
 class IFC_PARSE_API IfcDoorPanelOperationEnum : public express::DeclaredType {
 public:
     IfcDoorPanelOperationEnum() {}
-    explicit IfcDoorPanelOperationEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDoorPanelOperationEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDoorPanelOperation_SWINGING, IfcDoorPanelOperation_DOUBLE_ACTING, IfcDoorPanelOperation_SLIDING, IfcDoorPanelOperation_FOLDING, IfcDoorPanelOperation_REVOLVING, IfcDoorPanelOperation_ROLLINGUP, IfcDoorPanelOperation_USERDEFINED, IfcDoorPanelOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4113,13 +4113,13 @@ public:
 class IFC_PARSE_API IfcDoorPanelPositionEnum : public express::DeclaredType {
 public:
     IfcDoorPanelPositionEnum() {}
-    explicit IfcDoorPanelPositionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDoorPanelPositionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDoorPanelPosition_LEFT, IfcDoorPanelPosition_MIDDLE, IfcDoorPanelPosition_RIGHT, IfcDoorPanelPosition_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4134,13 +4134,13 @@ public:
 class IFC_PARSE_API IfcDoorStyleConstructionEnum : public express::DeclaredType {
 public:
     IfcDoorStyleConstructionEnum() {}
-    explicit IfcDoorStyleConstructionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDoorStyleConstructionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDoorStyleConstruction_ALUMINIUM, IfcDoorStyleConstruction_HIGH_GRADE_STEEL, IfcDoorStyleConstruction_STEEL, IfcDoorStyleConstruction_WOOD, IfcDoorStyleConstruction_ALUMINIUM_WOOD, IfcDoorStyleConstruction_ALUMINIUM_PLASTIC, IfcDoorStyleConstruction_PLASTIC, IfcDoorStyleConstruction_USERDEFINED, IfcDoorStyleConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4317,13 +4317,13 @@ public:
 class IFC_PARSE_API IfcDoorStyleOperationEnum : public express::DeclaredType {
 public:
     IfcDoorStyleOperationEnum() {}
-    explicit IfcDoorStyleOperationEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDoorStyleOperationEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcDoorStyleOperation_SINGLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT, IfcDoorStyleOperation_DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, IfcDoorStyleOperation_DOUBLE_SWING_LEFT, IfcDoorStyleOperation_DOUBLE_SWING_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_DOUBLE_SWING, IfcDoorStyleOperation_SLIDING_TO_LEFT, IfcDoorStyleOperation_SLIDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_SLIDING, IfcDoorStyleOperation_FOLDING_TO_LEFT, IfcDoorStyleOperation_FOLDING_TO_RIGHT, IfcDoorStyleOperation_DOUBLE_DOOR_FOLDING, IfcDoorStyleOperation_REVOLVING, IfcDoorStyleOperation_ROLLINGUP, IfcDoorStyleOperation_USERDEFINED, IfcDoorStyleOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4364,13 +4364,13 @@ public:
 class IFC_PARSE_API IfcDuctFittingTypeEnum : public express::DeclaredType {
 public:
     IfcDuctFittingTypeEnum() {}
-    explicit IfcDuctFittingTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDuctFittingTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDuctFittingType_BEND, IfcDuctFittingType_CONNECTOR, IfcDuctFittingType_ENTRY, IfcDuctFittingType_EXIT, IfcDuctFittingType_JUNCTION, IfcDuctFittingType_OBSTRUCTION, IfcDuctFittingType_TRANSITION, IfcDuctFittingType_USERDEFINED, IfcDuctFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4393,13 +4393,13 @@ public:
 class IFC_PARSE_API IfcDuctSegmentTypeEnum : public express::DeclaredType {
 public:
     IfcDuctSegmentTypeEnum() {}
-    explicit IfcDuctSegmentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDuctSegmentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDuctSegmentType_RIGIDSEGMENT, IfcDuctSegmentType_FLEXIBLESEGMENT, IfcDuctSegmentType_USERDEFINED, IfcDuctSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4417,13 +4417,13 @@ public:
 class IFC_PARSE_API IfcDuctSilencerTypeEnum : public express::DeclaredType {
 public:
     IfcDuctSilencerTypeEnum() {}
-    explicit IfcDuctSilencerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDuctSilencerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcDuctSilencerType_FLATOVAL, IfcDuctSilencerType_RECTANGULAR, IfcDuctSilencerType_ROUND, IfcDuctSilencerType_USERDEFINED, IfcDuctSilencerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4460,13 +4460,13 @@ public:
 class IFC_PARSE_API IfcElectricApplianceTypeEnum : public express::DeclaredType {
 public:
     IfcElectricApplianceTypeEnum() {}
-    explicit IfcElectricApplianceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricApplianceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricApplianceType_COMPUTER, IfcElectricApplianceType_DIRECTWATERHEATER, IfcElectricApplianceType_DISHWASHER, IfcElectricApplianceType_ELECTRICCOOKER, IfcElectricApplianceType_ELECTRICHEATER, IfcElectricApplianceType_FACSIMILE, IfcElectricApplianceType_FREESTANDINGFAN, IfcElectricApplianceType_FREEZER, IfcElectricApplianceType_FRIDGE_FREEZER, IfcElectricApplianceType_HANDDRYER, IfcElectricApplianceType_INDIRECTWATERHEATER, IfcElectricApplianceType_MICROWAVE, IfcElectricApplianceType_PHOTOCOPIER, IfcElectricApplianceType_PRINTER, IfcElectricApplianceType_REFRIGERATOR, IfcElectricApplianceType_RADIANTHEATER, IfcElectricApplianceType_SCANNER, IfcElectricApplianceType_TELEPHONE, IfcElectricApplianceType_TUMBLEDRYER, IfcElectricApplianceType_TV, IfcElectricApplianceType_VENDINGMACHINE, IfcElectricApplianceType_WASHINGMACHINE, IfcElectricApplianceType_WATERHEATER, IfcElectricApplianceType_WATERCOOLER, IfcElectricApplianceType_USERDEFINED, IfcElectricApplianceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4475,13 +4475,13 @@ public:
 class IFC_PARSE_API IfcElectricCurrentEnum : public express::DeclaredType {
 public:
     IfcElectricCurrentEnum() {}
-    explicit IfcElectricCurrentEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricCurrentEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricCurrent_ALTERNATING, IfcElectricCurrent_DIRECT, IfcElectricCurrent_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4490,13 +4490,13 @@ public:
 class IFC_PARSE_API IfcElectricDistributionPointFunctionEnum : public express::DeclaredType {
 public:
     IfcElectricDistributionPointFunctionEnum() {}
-    explicit IfcElectricDistributionPointFunctionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricDistributionPointFunctionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricDistributionPointFunction_ALARMPANEL, IfcElectricDistributionPointFunction_CONSUMERUNIT, IfcElectricDistributionPointFunction_CONTROLPANEL, IfcElectricDistributionPointFunction_DISTRIBUTIONBOARD, IfcElectricDistributionPointFunction_GASDETECTORPANEL, IfcElectricDistributionPointFunction_INDICATORPANEL, IfcElectricDistributionPointFunction_MIMICPANEL, IfcElectricDistributionPointFunction_MOTORCONTROLCENTRE, IfcElectricDistributionPointFunction_SWITCHBOARD, IfcElectricDistributionPointFunction_USERDEFINED, IfcElectricDistributionPointFunction_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4514,13 +4514,13 @@ public:
 class IFC_PARSE_API IfcElectricFlowStorageDeviceTypeEnum : public express::DeclaredType {
 public:
     IfcElectricFlowStorageDeviceTypeEnum() {}
-    explicit IfcElectricFlowStorageDeviceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricFlowStorageDeviceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricFlowStorageDeviceType_BATTERY, IfcElectricFlowStorageDeviceType_CAPACITORBANK, IfcElectricFlowStorageDeviceType_HARMONICFILTER, IfcElectricFlowStorageDeviceType_INDUCTORBANK, IfcElectricFlowStorageDeviceType_UPS, IfcElectricFlowStorageDeviceType_USERDEFINED, IfcElectricFlowStorageDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4538,13 +4538,13 @@ public:
 class IFC_PARSE_API IfcElectricGeneratorTypeEnum : public express::DeclaredType {
 public:
     IfcElectricGeneratorTypeEnum() {}
-    explicit IfcElectricGeneratorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricGeneratorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricGeneratorType_USERDEFINED, IfcElectricGeneratorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4553,13 +4553,13 @@ public:
 class IFC_PARSE_API IfcElectricHeaterTypeEnum : public express::DeclaredType {
 public:
     IfcElectricHeaterTypeEnum() {}
-    explicit IfcElectricHeaterTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricHeaterTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricHeaterType_ELECTRICPOINTHEATER, IfcElectricHeaterType_ELECTRICCABLEHEATER, IfcElectricHeaterType_ELECTRICMATHEATER, IfcElectricHeaterType_USERDEFINED, IfcElectricHeaterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4578,13 +4578,13 @@ public:
 class IFC_PARSE_API IfcElectricMotorTypeEnum : public express::DeclaredType {
 public:
     IfcElectricMotorTypeEnum() {}
-    explicit IfcElectricMotorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricMotorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricMotorType_DC, IfcElectricMotorType_INDUCTION, IfcElectricMotorType_POLYPHASE, IfcElectricMotorType_RELUCTANCESYNCHRONOUS, IfcElectricMotorType_SYNCHRONOUS, IfcElectricMotorType_USERDEFINED, IfcElectricMotorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4601,13 +4601,13 @@ public:
 class IFC_PARSE_API IfcElectricTimeControlTypeEnum : public express::DeclaredType {
 public:
     IfcElectricTimeControlTypeEnum() {}
-    explicit IfcElectricTimeControlTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricTimeControlTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElectricTimeControlType_TIMECLOCK, IfcElectricTimeControlType_TIMEDELAY, IfcElectricTimeControlType_RELAY, IfcElectricTimeControlType_USERDEFINED, IfcElectricTimeControlType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4634,13 +4634,13 @@ public:
 class IFC_PARSE_API IfcElementAssemblyTypeEnum : public express::DeclaredType {
 public:
     IfcElementAssemblyTypeEnum() {}
-    explicit IfcElementAssemblyTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElementAssemblyTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElementAssemblyType_ACCESSORY_ASSEMBLY, IfcElementAssemblyType_ARCH, IfcElementAssemblyType_BEAM_GRID, IfcElementAssemblyType_BRACED_FRAME, IfcElementAssemblyType_GIRDER, IfcElementAssemblyType_REINFORCEMENT_UNIT, IfcElementAssemblyType_RIGID_FRAME, IfcElementAssemblyType_SLAB_FIELD, IfcElementAssemblyType_TRUSS, IfcElementAssemblyType_USERDEFINED, IfcElementAssemblyType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4660,13 +4660,13 @@ public:
 class IFC_PARSE_API IfcElementCompositionEnum : public express::DeclaredType {
 public:
     IfcElementCompositionEnum() {}
-    explicit IfcElementCompositionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElementCompositionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcElementComposition_COMPLEX, IfcElementComposition_ELEMENT, IfcElementComposition_PARTIAL} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4675,13 +4675,13 @@ public:
 class IFC_PARSE_API IfcEnergySequenceEnum : public express::DeclaredType {
 public:
     IfcEnergySequenceEnum() {}
-    explicit IfcEnergySequenceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcEnergySequenceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcEnergySequence_PRIMARY, IfcEnergySequence_SECONDARY, IfcEnergySequence_TERTIARY, IfcEnergySequence_AUXILIARY, IfcEnergySequence_USERDEFINED, IfcEnergySequence_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4690,13 +4690,13 @@ public:
 class IFC_PARSE_API IfcEnvironmentalImpactCategoryEnum : public express::DeclaredType {
 public:
     IfcEnvironmentalImpactCategoryEnum() {}
-    explicit IfcEnvironmentalImpactCategoryEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcEnvironmentalImpactCategoryEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcEnvironmentalImpactCategory_COMBINEDVALUE, IfcEnvironmentalImpactCategory_DISPOSAL, IfcEnvironmentalImpactCategory_EXTRACTION, IfcEnvironmentalImpactCategory_INSTALLATION, IfcEnvironmentalImpactCategory_MANUFACTURE, IfcEnvironmentalImpactCategory_TRANSPORTATION, IfcEnvironmentalImpactCategory_USERDEFINED, IfcEnvironmentalImpactCategory_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4720,13 +4720,13 @@ public:
 class IFC_PARSE_API IfcEvaporativeCoolerTypeEnum : public express::DeclaredType {
 public:
     IfcEvaporativeCoolerTypeEnum() {}
-    explicit IfcEvaporativeCoolerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcEvaporativeCoolerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcEvaporativeCoolerType_DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER, IfcEvaporativeCoolerType_DIRECTEVAPORATIVEAIRWASHER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEPACKAGEAIRCOOLER, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVEWETCOIL, IfcEvaporativeCoolerType_INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER, IfcEvaporativeCoolerType_INDIRECTDIRECTCOMBINATION, IfcEvaporativeCoolerType_USERDEFINED, IfcEvaporativeCoolerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4747,13 +4747,13 @@ public:
 class IFC_PARSE_API IfcEvaporatorTypeEnum : public express::DeclaredType {
 public:
     IfcEvaporatorTypeEnum() {}
-    explicit IfcEvaporatorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcEvaporatorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcEvaporatorType_DIRECTEXPANSIONSHELLANDTUBE, IfcEvaporatorType_DIRECTEXPANSIONTUBEINTUBE, IfcEvaporatorType_DIRECTEXPANSIONBRAZEDPLATE, IfcEvaporatorType_FLOODEDSHELLANDTUBE, IfcEvaporatorType_SHELLANDCOIL, IfcEvaporatorType_USERDEFINED, IfcEvaporatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4775,13 +4775,13 @@ public:
 class IFC_PARSE_API IfcFanTypeEnum : public express::DeclaredType {
 public:
     IfcFanTypeEnum() {}
-    explicit IfcFanTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFanTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFanType_CENTRIFUGALFORWARDCURVED, IfcFanType_CENTRIFUGALRADIAL, IfcFanType_CENTRIFUGALBACKWARDINCLINEDCURVED, IfcFanType_CENTRIFUGALAIRFOIL, IfcFanType_TUBEAXIAL, IfcFanType_VANEAXIAL, IfcFanType_PROPELLORAXIAL, IfcFanType_USERDEFINED, IfcFanType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4802,13 +4802,13 @@ public:
 class IFC_PARSE_API IfcFilterTypeEnum : public express::DeclaredType {
 public:
     IfcFilterTypeEnum() {}
-    explicit IfcFilterTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFilterTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFilterType_AIRPARTICLEFILTER, IfcFilterType_ODORFILTER, IfcFilterType_OILFILTER, IfcFilterType_STRAINER, IfcFilterType_WATERFILTER, IfcFilterType_USERDEFINED, IfcFilterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4829,13 +4829,13 @@ public:
 class IFC_PARSE_API IfcFireSuppressionTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcFireSuppressionTerminalTypeEnum() {}
-    explicit IfcFireSuppressionTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFireSuppressionTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFireSuppressionTerminalType_BREECHINGINLET, IfcFireSuppressionTerminalType_FIREHYDRANT, IfcFireSuppressionTerminalType_HOSEREEL, IfcFireSuppressionTerminalType_SPRINKLER, IfcFireSuppressionTerminalType_SPRINKLERDEFLECTOR, IfcFireSuppressionTerminalType_USERDEFINED, IfcFireSuppressionTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4851,13 +4851,13 @@ public:
 class IFC_PARSE_API IfcFlowDirectionEnum : public express::DeclaredType {
 public:
     IfcFlowDirectionEnum() {}
-    explicit IfcFlowDirectionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFlowDirectionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFlowDirection_SOURCE, IfcFlowDirection_SINK, IfcFlowDirection_SOURCEANDSINK, IfcFlowDirection_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4881,13 +4881,13 @@ public:
 class IFC_PARSE_API IfcFlowInstrumentTypeEnum : public express::DeclaredType {
 public:
     IfcFlowInstrumentTypeEnum() {}
-    explicit IfcFlowInstrumentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFlowInstrumentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFlowInstrumentType_PRESSUREGAUGE, IfcFlowInstrumentType_THERMOMETER, IfcFlowInstrumentType_AMMETER, IfcFlowInstrumentType_FREQUENCYMETER, IfcFlowInstrumentType_POWERFACTORMETER, IfcFlowInstrumentType_PHASEANGLEMETER, IfcFlowInstrumentType_VOLTMETER_PEAK, IfcFlowInstrumentType_VOLTMETER_RMS, IfcFlowInstrumentType_USERDEFINED, IfcFlowInstrumentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4910,13 +4910,13 @@ public:
 class IFC_PARSE_API IfcFlowMeterTypeEnum : public express::DeclaredType {
 public:
     IfcFlowMeterTypeEnum() {}
-    explicit IfcFlowMeterTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFlowMeterTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFlowMeterType_ELECTRICMETER, IfcFlowMeterType_ENERGYMETER, IfcFlowMeterType_FLOWMETER, IfcFlowMeterType_GASMETER, IfcFlowMeterType_OILMETER, IfcFlowMeterType_WATERMETER, IfcFlowMeterType_USERDEFINED, IfcFlowMeterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4938,13 +4938,13 @@ public:
 class IFC_PARSE_API IfcFootingTypeEnum : public express::DeclaredType {
 public:
     IfcFootingTypeEnum() {}
-    explicit IfcFootingTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFootingTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcFootingType_FOOTING_BEAM, IfcFootingType_PAD_FOOTING, IfcFootingType_PILE_CAP, IfcFootingType_STRIP_FOOTING, IfcFootingType_USERDEFINED, IfcFootingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -4953,13 +4953,13 @@ public:
 class IFC_PARSE_API IfcGasTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcGasTerminalTypeEnum() {}
-    explicit IfcGasTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcGasTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcGasTerminalType_GASAPPLIANCE, IfcGasTerminalType_GASBOOSTER, IfcGasTerminalType_GASBURNER, IfcGasTerminalType_USERDEFINED, IfcGasTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5008,13 +5008,13 @@ public:
 class IFC_PARSE_API IfcGeometricProjectionEnum : public express::DeclaredType {
 public:
     IfcGeometricProjectionEnum() {}
-    explicit IfcGeometricProjectionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcGeometricProjectionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcGeometricProjection_GRAPH_VIEW, IfcGeometricProjection_SKETCH_VIEW, IfcGeometricProjection_MODEL_VIEW, IfcGeometricProjection_PLAN_VIEW, IfcGeometricProjection_REFLECTED_PLAN_VIEW, IfcGeometricProjection_SECTION_VIEW, IfcGeometricProjection_ELEVATION_VIEW, IfcGeometricProjection_USERDEFINED, IfcGeometricProjection_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5028,13 +5028,13 @@ public:
 class IFC_PARSE_API IfcGlobalOrLocalEnum : public express::DeclaredType {
 public:
     IfcGlobalOrLocalEnum() {}
-    explicit IfcGlobalOrLocalEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcGlobalOrLocalEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcGlobalOrLocal_GLOBAL_COORDS, IfcGlobalOrLocal_LOCAL_COORDS} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5051,13 +5051,13 @@ public:
 class IFC_PARSE_API IfcHeatExchangerTypeEnum : public express::DeclaredType {
 public:
     IfcHeatExchangerTypeEnum() {}
-    explicit IfcHeatExchangerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcHeatExchangerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcHeatExchangerType_PLATE, IfcHeatExchangerType_SHELLANDTUBE, IfcHeatExchangerType_USERDEFINED, IfcHeatExchangerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5085,13 +5085,13 @@ public:
 class IFC_PARSE_API IfcHumidifierTypeEnum : public express::DeclaredType {
 public:
     IfcHumidifierTypeEnum() {}
-    explicit IfcHumidifierTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcHumidifierTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcHumidifierType_STEAMINJECTION, IfcHumidifierType_ADIABATICAIRWASHER, IfcHumidifierType_ADIABATICPAN, IfcHumidifierType_ADIABATICWETTEDELEMENT, IfcHumidifierType_ADIABATICATOMIZING, IfcHumidifierType_ADIABATICULTRASONIC, IfcHumidifierType_ADIABATICRIGIDMEDIA, IfcHumidifierType_ADIABATICCOMPRESSEDAIRNOZZLE, IfcHumidifierType_ASSISTEDELECTRIC, IfcHumidifierType_ASSISTEDNATURALGAS, IfcHumidifierType_ASSISTEDPROPANE, IfcHumidifierType_ASSISTEDBUTANE, IfcHumidifierType_ASSISTEDSTEAM, IfcHumidifierType_USERDEFINED, IfcHumidifierType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5154,13 +5154,13 @@ public:
 class IFC_PARSE_API IfcInternalOrExternalEnum : public express::DeclaredType {
 public:
     IfcInternalOrExternalEnum() {}
-    explicit IfcInternalOrExternalEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcInternalOrExternalEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcInternalOrExternal_INTERNAL, IfcInternalOrExternal_EXTERNAL, IfcInternalOrExternal_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5177,13 +5177,13 @@ public:
 class IFC_PARSE_API IfcInventoryTypeEnum : public express::DeclaredType {
 public:
     IfcInventoryTypeEnum() {}
-    explicit IfcInventoryTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcInventoryTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcInventoryType_ASSETINVENTORY, IfcInventoryType_SPACEINVENTORY, IfcInventoryType_FURNITUREINVENTORY, IfcInventoryType_USERDEFINED, IfcInventoryType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5198,13 +5198,13 @@ public:
 class IFC_PARSE_API IfcJunctionBoxTypeEnum : public express::DeclaredType {
 public:
     IfcJunctionBoxTypeEnum() {}
-    explicit IfcJunctionBoxTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcJunctionBoxTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcJunctionBoxType_USERDEFINED, IfcJunctionBoxType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5229,13 +5229,13 @@ public:
 class IFC_PARSE_API IfcLampTypeEnum : public express::DeclaredType {
 public:
     IfcLampTypeEnum() {}
-    explicit IfcLampTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLampTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLampType_COMPACTFLUORESCENT, IfcLampType_FLUORESCENT, IfcLampType_HIGHPRESSUREMERCURY, IfcLampType_HIGHPRESSURESODIUM, IfcLampType_METALHALIDE, IfcLampType_TUNGSTENFILAMENT, IfcLampType_USERDEFINED, IfcLampType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5252,13 +5252,13 @@ public:
 class IFC_PARSE_API IfcLayerSetDirectionEnum : public express::DeclaredType {
 public:
     IfcLayerSetDirectionEnum() {}
-    explicit IfcLayerSetDirectionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLayerSetDirectionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLayerSetDirection_AXIS1, IfcLayerSetDirection_AXIS2, IfcLayerSetDirection_AXIS3} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5280,13 +5280,13 @@ public:
 class IFC_PARSE_API IfcLightDistributionCurveEnum : public express::DeclaredType {
 public:
     IfcLightDistributionCurveEnum() {}
-    explicit IfcLightDistributionCurveEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLightDistributionCurveEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLightDistributionCurve_TYPE_A, IfcLightDistributionCurve_TYPE_B, IfcLightDistributionCurve_TYPE_C, IfcLightDistributionCurve_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5311,13 +5311,13 @@ public:
 class IFC_PARSE_API IfcLightEmissionSourceEnum : public express::DeclaredType {
 public:
     IfcLightEmissionSourceEnum() {}
-    explicit IfcLightEmissionSourceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLightEmissionSourceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLightEmissionSource_COMPACTFLUORESCENT, IfcLightEmissionSource_FLUORESCENT, IfcLightEmissionSource_HIGHPRESSUREMERCURY, IfcLightEmissionSource_HIGHPRESSURESODIUM, IfcLightEmissionSource_LIGHTEMITTINGDIODE, IfcLightEmissionSource_LOWPRESSURESODIUM, IfcLightEmissionSource_LOWVOLTAGEHALOGEN, IfcLightEmissionSource_MAINVOLTAGEHALOGEN, IfcLightEmissionSource_METALHALIDE, IfcLightEmissionSource_TUNGSTENFILAMENT, IfcLightEmissionSource_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5336,13 +5336,13 @@ public:
 class IFC_PARSE_API IfcLightFixtureTypeEnum : public express::DeclaredType {
 public:
     IfcLightFixtureTypeEnum() {}
-    explicit IfcLightFixtureTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLightFixtureTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLightFixtureType_POINTSOURCE, IfcLightFixtureType_DIRECTIONSOURCE, IfcLightFixtureType_USERDEFINED, IfcLightFixtureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5371,13 +5371,13 @@ public:
 class IFC_PARSE_API IfcLoadGroupTypeEnum : public express::DeclaredType {
 public:
     IfcLoadGroupTypeEnum() {}
-    explicit IfcLoadGroupTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLoadGroupTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLoadGroupType_LOAD_GROUP, IfcLoadGroupType_LOAD_CASE, IfcLoadGroupType_LOAD_COMBINATION_GROUP, IfcLoadGroupType_LOAD_COMBINATION, IfcLoadGroupType_USERDEFINED, IfcLoadGroupType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5629,13 +5629,13 @@ public:
 class IFC_PARSE_API IfcLogicalOperatorEnum : public express::DeclaredType {
 public:
     IfcLogicalOperatorEnum() {}
-    explicit IfcLogicalOperatorEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLogicalOperatorEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcLogicalOperator_LOGICALAND, IfcLogicalOperator_LOGICALOR} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5686,13 +5686,13 @@ public:
 class IFC_PARSE_API IfcMemberTypeEnum : public express::DeclaredType {
 public:
     IfcMemberTypeEnum() {}
-    explicit IfcMemberTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMemberTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcMemberType_BRACE, IfcMemberType_CHORD, IfcMemberType_COLLAR, IfcMemberType_MEMBER, IfcMemberType_MULLION, IfcMemberType_PLATE, IfcMemberType_POST, IfcMemberType_PURLIN, IfcMemberType_RAFTER, IfcMemberType_STRINGER, IfcMemberType_STRUT, IfcMemberType_STUD, IfcMemberType_USERDEFINED, IfcMemberType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5709,13 +5709,13 @@ public:
 class IFC_PARSE_API IfcMotorConnectionTypeEnum : public express::DeclaredType {
 public:
     IfcMotorConnectionTypeEnum() {}
-    explicit IfcMotorConnectionTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMotorConnectionTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcMotorConnectionType_BELTDRIVE, IfcMotorConnectionType_COUPLING, IfcMotorConnectionType_DIRECTDRIVE, IfcMotorConnectionType_USERDEFINED, IfcMotorConnectionType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5731,13 +5731,13 @@ public:
 class IFC_PARSE_API IfcNullStyle : public express::DeclaredType {
 public:
     IfcNullStyle() {}
-    explicit IfcNullStyle (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcNullStyle (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcNullStyle_NULL} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5748,13 +5748,13 @@ public:
 class IFC_PARSE_API IfcObjectTypeEnum : public express::DeclaredType {
 public:
     IfcObjectTypeEnum() {}
-    explicit IfcObjectTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcObjectTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcObjectType_PRODUCT, IfcObjectType_PROCESS, IfcObjectType_CONTROL, IfcObjectType_RESOURCE, IfcObjectType_ACTOR, IfcObjectType_GROUP, IfcObjectType_PROJECT, IfcObjectType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5791,13 +5791,13 @@ public:
 class IFC_PARSE_API IfcObjectiveEnum : public express::DeclaredType {
 public:
     IfcObjectiveEnum() {}
-    explicit IfcObjectiveEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcObjectiveEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcObjective_CODECOMPLIANCE, IfcObjective_DESIGNINTENT, IfcObjective_HEALTHANDSAFETY, IfcObjective_REQUIREMENT, IfcObjective_SPECIFICATION, IfcObjective_TRIGGERCONDITION, IfcObjective_USERDEFINED, IfcObjective_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5818,13 +5818,13 @@ public:
 class IFC_PARSE_API IfcOccupantTypeEnum : public express::DeclaredType {
 public:
     IfcOccupantTypeEnum() {}
-    explicit IfcOccupantTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcOccupantTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcOccupantType_ASSIGNEE, IfcOccupantType_ASSIGNOR, IfcOccupantType_LESSEE, IfcOccupantType_LESSOR, IfcOccupantType_LETTINGAGENT, IfcOccupantType_OWNER, IfcOccupantType_TENANT, IfcOccupantType_USERDEFINED, IfcOccupantType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5845,13 +5845,13 @@ public:
 class IFC_PARSE_API IfcOutletTypeEnum : public express::DeclaredType {
 public:
     IfcOutletTypeEnum() {}
-    explicit IfcOutletTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcOutletTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcOutletType_AUDIOVISUALOUTLET, IfcOutletType_COMMUNICATIONSOUTLET, IfcOutletType_POWEROUTLET, IfcOutletType_USERDEFINED, IfcOutletType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5881,13 +5881,13 @@ public:
 class IFC_PARSE_API IfcPermeableCoveringOperationEnum : public express::DeclaredType {
 public:
     IfcPermeableCoveringOperationEnum() {}
-    explicit IfcPermeableCoveringOperationEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPermeableCoveringOperationEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPermeableCoveringOperation_GRILL, IfcPermeableCoveringOperation_LOUVER, IfcPermeableCoveringOperation_SCREEN, IfcPermeableCoveringOperation_USERDEFINED, IfcPermeableCoveringOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5918,13 +5918,13 @@ public:
 class IFC_PARSE_API IfcPhysicalOrVirtualEnum : public express::DeclaredType {
 public:
     IfcPhysicalOrVirtualEnum() {}
-    explicit IfcPhysicalOrVirtualEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPhysicalOrVirtualEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPhysicalOrVirtual_PHYSICAL, IfcPhysicalOrVirtual_VIRTUAL, IfcPhysicalOrVirtual_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5954,13 +5954,13 @@ public:
 class IFC_PARSE_API IfcPileConstructionEnum : public express::DeclaredType {
 public:
     IfcPileConstructionEnum() {}
-    explicit IfcPileConstructionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPileConstructionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPileConstruction_CAST_IN_PLACE, IfcPileConstruction_COMPOSITE, IfcPileConstruction_PRECAST_CONCRETE, IfcPileConstruction_PREFAB_STEEL, IfcPileConstruction_USERDEFINED, IfcPileConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -5981,13 +5981,13 @@ public:
 class IFC_PARSE_API IfcPileTypeEnum : public express::DeclaredType {
 public:
     IfcPileTypeEnum() {}
-    explicit IfcPileTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPileTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPileType_COHESION, IfcPileType_FRICTION, IfcPileType_SUPPORT, IfcPileType_USERDEFINED, IfcPileType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6026,13 +6026,13 @@ public:
 class IFC_PARSE_API IfcPipeFittingTypeEnum : public express::DeclaredType {
 public:
     IfcPipeFittingTypeEnum() {}
-    explicit IfcPipeFittingTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPipeFittingTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPipeFittingType_BEND, IfcPipeFittingType_CONNECTOR, IfcPipeFittingType_ENTRY, IfcPipeFittingType_EXIT, IfcPipeFittingType_JUNCTION, IfcPipeFittingType_OBSTRUCTION, IfcPipeFittingType_TRANSITION, IfcPipeFittingType_USERDEFINED, IfcPipeFittingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6055,13 +6055,13 @@ public:
 class IFC_PARSE_API IfcPipeSegmentTypeEnum : public express::DeclaredType {
 public:
     IfcPipeSegmentTypeEnum() {}
-    explicit IfcPipeSegmentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPipeSegmentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPipeSegmentType_FLEXIBLESEGMENT, IfcPipeSegmentType_RIGIDSEGMENT, IfcPipeSegmentType_GUTTER, IfcPipeSegmentType_SPOOL, IfcPipeSegmentType_USERDEFINED, IfcPipeSegmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6087,13 +6087,13 @@ public:
 class IFC_PARSE_API IfcPlateTypeEnum : public express::DeclaredType {
 public:
     IfcPlateTypeEnum() {}
-    explicit IfcPlateTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPlateTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPlateType_CURTAIN_PANEL, IfcPlateType_SHEET, IfcPlateType_USERDEFINED, IfcPlateType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6115,13 +6115,13 @@ public:
 class IFC_PARSE_API IfcProcedureTypeEnum : public express::DeclaredType {
 public:
     IfcProcedureTypeEnum() {}
-    explicit IfcProcedureTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProcedureTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProcedureType_ADVICE_CAUTION, IfcProcedureType_ADVICE_NOTE, IfcProcedureType_ADVICE_WARNING, IfcProcedureType_CALIBRATION, IfcProcedureType_DIAGNOSTIC, IfcProcedureType_SHUTDOWN, IfcProcedureType_STARTUP, IfcProcedureType_USERDEFINED, IfcProcedureType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6137,13 +6137,13 @@ public:
 class IFC_PARSE_API IfcProfileTypeEnum : public express::DeclaredType {
 public:
     IfcProfileTypeEnum() {}
-    explicit IfcProfileTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProfileTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProfileType_CURVE, IfcProfileType_AREA} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6152,13 +6152,13 @@ public:
 class IFC_PARSE_API IfcProjectOrderRecordTypeEnum : public express::DeclaredType {
 public:
     IfcProjectOrderRecordTypeEnum() {}
-    explicit IfcProjectOrderRecordTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProjectOrderRecordTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProjectOrderRecordType_CHANGE, IfcProjectOrderRecordType_MAINTENANCE, IfcProjectOrderRecordType_MOVE, IfcProjectOrderRecordType_PURCHASE, IfcProjectOrderRecordType_WORK, IfcProjectOrderRecordType_USERDEFINED, IfcProjectOrderRecordType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6177,13 +6177,13 @@ public:
 class IFC_PARSE_API IfcProjectOrderTypeEnum : public express::DeclaredType {
 public:
     IfcProjectOrderTypeEnum() {}
-    explicit IfcProjectOrderTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProjectOrderTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProjectOrderType_CHANGEORDER, IfcProjectOrderType_MAINTENANCEWORKORDER, IfcProjectOrderType_MOVEORDER, IfcProjectOrderType_PURCHASEORDER, IfcProjectOrderType_WORKORDER, IfcProjectOrderType_USERDEFINED, IfcProjectOrderType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6197,13 +6197,13 @@ public:
 class IFC_PARSE_API IfcProjectedOrTrueLengthEnum : public express::DeclaredType {
 public:
     IfcProjectedOrTrueLengthEnum() {}
-    explicit IfcProjectedOrTrueLengthEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProjectedOrTrueLengthEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProjectedOrTrueLength_PROJECTED_LENGTH, IfcProjectedOrTrueLength_TRUE_LENGTH} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6212,13 +6212,13 @@ public:
 class IFC_PARSE_API IfcPropertySourceEnum : public express::DeclaredType {
 public:
     IfcPropertySourceEnum() {}
-    explicit IfcPropertySourceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPropertySourceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPropertySource_DESIGN, IfcPropertySource_DESIGNMAXIMUM, IfcPropertySource_DESIGNMINIMUM, IfcPropertySource_SIMULATED, IfcPropertySource_ASBUILT, IfcPropertySource_COMMISSIONING, IfcPropertySource_MEASURED, IfcPropertySource_USERDEFINED, IfcPropertySource_NOTKNOWN} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6241,13 +6241,13 @@ public:
 class IFC_PARSE_API IfcProtectiveDeviceTypeEnum : public express::DeclaredType {
 public:
     IfcProtectiveDeviceTypeEnum() {}
-    explicit IfcProtectiveDeviceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcProtectiveDeviceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcProtectiveDeviceType_FUSEDISCONNECTOR, IfcProtectiveDeviceType_CIRCUITBREAKER, IfcProtectiveDeviceType_EARTHFAILUREDEVICE, IfcProtectiveDeviceType_RESIDUALCURRENTCIRCUITBREAKER, IfcProtectiveDeviceType_RESIDUALCURRENTSWITCH, IfcProtectiveDeviceType_VARISTOR, IfcProtectiveDeviceType_USERDEFINED, IfcProtectiveDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6283,13 +6283,13 @@ public:
 class IFC_PARSE_API IfcPumpTypeEnum : public express::DeclaredType {
 public:
     IfcPumpTypeEnum() {}
-    explicit IfcPumpTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPumpTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcPumpType_CIRCULATOR, IfcPumpType_ENDSUCTION, IfcPumpType_SPLITCASE, IfcPumpType_VERTICALINLINE, IfcPumpType_VERTICALTURBINE, IfcPumpType_USERDEFINED, IfcPumpType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6317,13 +6317,13 @@ public:
 class IFC_PARSE_API IfcRailingTypeEnum : public express::DeclaredType {
 public:
     IfcRailingTypeEnum() {}
-    explicit IfcRailingTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRailingTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRailingType_HANDRAIL, IfcRailingType_GUARDRAIL, IfcRailingType_BALUSTRADE, IfcRailingType_USERDEFINED, IfcRailingType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6342,13 +6342,13 @@ public:
 class IFC_PARSE_API IfcRampFlightTypeEnum : public express::DeclaredType {
 public:
     IfcRampFlightTypeEnum() {}
-    explicit IfcRampFlightTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRampFlightTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRampFlightType_STRAIGHT, IfcRampFlightType_SPIRAL, IfcRampFlightType_USERDEFINED, IfcRampFlightType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6404,13 +6404,13 @@ public:
 class IFC_PARSE_API IfcRampTypeEnum : public express::DeclaredType {
 public:
     IfcRampTypeEnum() {}
-    explicit IfcRampTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRampTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRampType_STRAIGHT_RUN_RAMP, IfcRampType_TWO_STRAIGHT_RUN_RAMP, IfcRampType_QUARTER_TURN_RAMP, IfcRampType_TWO_QUARTER_TURN_RAMP, IfcRampType_HALF_TURN_RAMP, IfcRampType_SPIRAL_RAMP, IfcRampType_USERDEFINED, IfcRampType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6434,13 +6434,13 @@ public:
 class IFC_PARSE_API IfcReflectanceMethodEnum : public express::DeclaredType {
 public:
     IfcReflectanceMethodEnum() {}
-    explicit IfcReflectanceMethodEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcReflectanceMethodEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcReflectanceMethod_BLINN, IfcReflectanceMethod_FLAT, IfcReflectanceMethod_GLASS, IfcReflectanceMethod_MATT, IfcReflectanceMethod_METAL, IfcReflectanceMethod_MIRROR, IfcReflectanceMethod_PHONG, IfcReflectanceMethod_PLASTIC, IfcReflectanceMethod_STRAUSS, IfcReflectanceMethod_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6467,13 +6467,13 @@ public:
 class IFC_PARSE_API IfcReinforcingBarRoleEnum : public express::DeclaredType {
 public:
     IfcReinforcingBarRoleEnum() {}
-    explicit IfcReinforcingBarRoleEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcReinforcingBarRoleEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcReinforcingBarRole_MAIN, IfcReinforcingBarRole_SHEAR, IfcReinforcingBarRole_LIGATURE, IfcReinforcingBarRole_STUD, IfcReinforcingBarRole_PUNCHING, IfcReinforcingBarRole_EDGE, IfcReinforcingBarRole_RING, IfcReinforcingBarRole_USERDEFINED, IfcReinforcingBarRole_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6490,13 +6490,13 @@ public:
 class IFC_PARSE_API IfcReinforcingBarSurfaceEnum : public express::DeclaredType {
 public:
     IfcReinforcingBarSurfaceEnum() {}
-    explicit IfcReinforcingBarSurfaceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcReinforcingBarSurfaceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcReinforcingBarSurface_PLAIN, IfcReinforcingBarSurface_TEXTURED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6516,13 +6516,13 @@ public:
 class IFC_PARSE_API IfcResourceConsumptionEnum : public express::DeclaredType {
 public:
     IfcResourceConsumptionEnum() {}
-    explicit IfcResourceConsumptionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcResourceConsumptionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcResourceConsumption_CONSUMED, IfcResourceConsumption_PARTIALLYCONSUMED, IfcResourceConsumption_NOTCONSUMED, IfcResourceConsumption_OCCUPIED, IfcResourceConsumption_PARTIALLYOCCUPIED, IfcResourceConsumption_NOTOCCUPIED, IfcResourceConsumption_USERDEFINED, IfcResourceConsumption_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6531,13 +6531,13 @@ public:
 class IFC_PARSE_API IfcRibPlateDirectionEnum : public express::DeclaredType {
 public:
     IfcRibPlateDirectionEnum() {}
-    explicit IfcRibPlateDirectionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRibPlateDirectionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRibPlateDirection_DIRECTION_X, IfcRibPlateDirection_DIRECTION_Y} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6574,13 +6574,13 @@ public:
 class IFC_PARSE_API IfcRoleEnum : public express::DeclaredType {
 public:
     IfcRoleEnum() {}
-    explicit IfcRoleEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRoleEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRole_SUPPLIER, IfcRole_MANUFACTURER, IfcRole_CONTRACTOR, IfcRole_SUBCONTRACTOR, IfcRole_ARCHITECT, IfcRole_STRUCTURALENGINEER, IfcRole_COSTENGINEER, IfcRole_CLIENT, IfcRole_BUILDINGOWNER, IfcRole_BUILDINGOPERATOR, IfcRole_MECHANICALENGINEER, IfcRole_ELECTRICALENGINEER, IfcRole_PROJECTMANAGER, IfcRole_FACILITIESMANAGER, IfcRole_CIVILENGINEER, IfcRole_COMISSIONINGENGINEER, IfcRole_ENGINEER, IfcRole_OWNER, IfcRole_CONSULTANT, IfcRole_CONSTRUCTIONMANAGER, IfcRole_FIELDCONSTRUCTIONMANAGER, IfcRole_RESELLER, IfcRole_USERDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6654,13 +6654,13 @@ public:
 class IFC_PARSE_API IfcRoofTypeEnum : public express::DeclaredType {
 public:
     IfcRoofTypeEnum() {}
-    explicit IfcRoofTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRoofTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcRoofType_FLAT_ROOF, IfcRoofType_SHED_ROOF, IfcRoofType_GABLE_ROOF, IfcRoofType_HIP_ROOF, IfcRoofType_HIPPED_GABLE_ROOF, IfcRoofType_GAMBREL_ROOF, IfcRoofType_MANSARD_ROOF, IfcRoofType_BARREL_ROOF, IfcRoofType_RAINBOW_ROOF, IfcRoofType_BUTTERFLY_ROOF, IfcRoofType_PAVILION_ROOF, IfcRoofType_DOME_ROOF, IfcRoofType_FREEFORM, IfcRoofType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6695,13 +6695,13 @@ public:
 class IFC_PARSE_API IfcSIPrefix : public express::DeclaredType {
 public:
     IfcSIPrefix() {}
-    explicit IfcSIPrefix (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSIPrefix (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSIPrefix_EXA, IfcSIPrefix_PETA, IfcSIPrefix_TERA, IfcSIPrefix_GIGA, IfcSIPrefix_MEGA, IfcSIPrefix_KILO, IfcSIPrefix_HECTO, IfcSIPrefix_DECA, IfcSIPrefix_DECI, IfcSIPrefix_CENTI, IfcSIPrefix_MILLI, IfcSIPrefix_MICRO, IfcSIPrefix_NANO, IfcSIPrefix_PICO, IfcSIPrefix_FEMTO, IfcSIPrefix_ATTO} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6748,13 +6748,13 @@ public:
 class IFC_PARSE_API IfcSIUnitName : public express::DeclaredType {
 public:
     IfcSIUnitName() {}
-    explicit IfcSIUnitName (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSIUnitName (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSIUnitName_AMPERE, IfcSIUnitName_BECQUEREL, IfcSIUnitName_CANDELA, IfcSIUnitName_COULOMB, IfcSIUnitName_CUBIC_METRE, IfcSIUnitName_DEGREE_CELSIUS, IfcSIUnitName_FARAD, IfcSIUnitName_GRAM, IfcSIUnitName_GRAY, IfcSIUnitName_HENRY, IfcSIUnitName_HERTZ, IfcSIUnitName_JOULE, IfcSIUnitName_KELVIN, IfcSIUnitName_LUMEN, IfcSIUnitName_LUX, IfcSIUnitName_METRE, IfcSIUnitName_MOLE, IfcSIUnitName_NEWTON, IfcSIUnitName_OHM, IfcSIUnitName_PASCAL, IfcSIUnitName_RADIAN, IfcSIUnitName_SECOND, IfcSIUnitName_SIEMENS, IfcSIUnitName_SIEVERT, IfcSIUnitName_SQUARE_METRE, IfcSIUnitName_STERADIAN, IfcSIUnitName_TESLA, IfcSIUnitName_VOLT, IfcSIUnitName_WATT, IfcSIUnitName_WEBER} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6781,13 +6781,13 @@ public:
 class IFC_PARSE_API IfcSanitaryTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcSanitaryTerminalTypeEnum() {}
-    explicit IfcSanitaryTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSanitaryTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSanitaryTerminalType_BATH, IfcSanitaryTerminalType_BIDET, IfcSanitaryTerminalType_CISTERN, IfcSanitaryTerminalType_SHOWER, IfcSanitaryTerminalType_SINK, IfcSanitaryTerminalType_SANITARYFOUNTAIN, IfcSanitaryTerminalType_TOILETPAN, IfcSanitaryTerminalType_URINAL, IfcSanitaryTerminalType_WASHHANDBASIN, IfcSanitaryTerminalType_WCSEAT, IfcSanitaryTerminalType_USERDEFINED, IfcSanitaryTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6805,13 +6805,13 @@ public:
 class IFC_PARSE_API IfcSectionTypeEnum : public express::DeclaredType {
 public:
     IfcSectionTypeEnum() {}
-    explicit IfcSectionTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSectionTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSectionType_UNIFORM, IfcSectionType_TAPERED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6847,13 +6847,13 @@ public:
 class IFC_PARSE_API IfcSensorTypeEnum : public express::DeclaredType {
 public:
     IfcSensorTypeEnum() {}
-    explicit IfcSensorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSensorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSensorType_CO2SENSOR, IfcSensorType_FIRESENSOR, IfcSensorType_FLOWSENSOR, IfcSensorType_GASSENSOR, IfcSensorType_HEATSENSOR, IfcSensorType_HUMIDITYSENSOR, IfcSensorType_LIGHTSENSOR, IfcSensorType_MOISTURESENSOR, IfcSensorType_MOVEMENTSENSOR, IfcSensorType_PRESSURESENSOR, IfcSensorType_SMOKESENSOR, IfcSensorType_SOUNDSENSOR, IfcSensorType_TEMPERATURESENSOR, IfcSensorType_USERDEFINED, IfcSensorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6866,13 +6866,13 @@ public:
 class IFC_PARSE_API IfcSequenceEnum : public express::DeclaredType {
 public:
     IfcSequenceEnum() {}
-    explicit IfcSequenceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSequenceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSequence_START_START, IfcSequence_START_FINISH, IfcSequence_FINISH_START, IfcSequence_FINISH_FINISH, IfcSequence_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6881,13 +6881,13 @@ public:
 class IFC_PARSE_API IfcServiceLifeFactorTypeEnum : public express::DeclaredType {
 public:
     IfcServiceLifeFactorTypeEnum() {}
-    explicit IfcServiceLifeFactorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcServiceLifeFactorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcServiceLifeFactorType_A_QUALITYOFCOMPONENTS, IfcServiceLifeFactorType_B_DESIGNLEVEL, IfcServiceLifeFactorType_C_WORKEXECUTIONLEVEL, IfcServiceLifeFactorType_D_INDOORENVIRONMENT, IfcServiceLifeFactorType_E_OUTDOORENVIRONMENT, IfcServiceLifeFactorType_F_INUSECONDITIONS, IfcServiceLifeFactorType_G_MAINTENANCELEVEL, IfcServiceLifeFactorType_USERDEFINED, IfcServiceLifeFactorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6896,13 +6896,13 @@ public:
 class IFC_PARSE_API IfcServiceLifeTypeEnum : public express::DeclaredType {
 public:
     IfcServiceLifeTypeEnum() {}
-    explicit IfcServiceLifeTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcServiceLifeTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcServiceLifeType_ACTUALSERVICELIFE, IfcServiceLifeType_EXPECTEDSERVICELIFE, IfcServiceLifeType_OPTIMISTICREFERENCESERVICELIFE, IfcServiceLifeType_PESSIMISTICREFERENCESERVICELIFE, IfcServiceLifeType_REFERENCESERVICELIFE} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6942,13 +6942,13 @@ public:
 class IFC_PARSE_API IfcSlabTypeEnum : public express::DeclaredType {
 public:
     IfcSlabTypeEnum() {}
-    explicit IfcSlabTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSlabTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSlabType_FLOOR, IfcSlabType_ROOF, IfcSlabType_LANDING, IfcSlabType_BASESLAB, IfcSlabType_USERDEFINED, IfcSlabType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6957,13 +6957,13 @@ public:
 class IFC_PARSE_API IfcSoundScaleEnum : public express::DeclaredType {
 public:
     IfcSoundScaleEnum() {}
-    explicit IfcSoundScaleEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSoundScaleEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSoundScale_DBA, IfcSoundScale_DBB, IfcSoundScale_DBC, IfcSoundScale_NC, IfcSoundScale_NR, IfcSoundScale_USERDEFINED, IfcSoundScale_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -6983,13 +6983,13 @@ public:
 class IFC_PARSE_API IfcSpaceHeaterTypeEnum : public express::DeclaredType {
 public:
     IfcSpaceHeaterTypeEnum() {}
-    explicit IfcSpaceHeaterTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSpaceHeaterTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSpaceHeaterType_SECTIONALRADIATOR, IfcSpaceHeaterType_PANELRADIATOR, IfcSpaceHeaterType_TUBULARRADIATOR, IfcSpaceHeaterType_CONVECTOR, IfcSpaceHeaterType_BASEBOARDHEATER, IfcSpaceHeaterType_FINNEDTUBEUNIT, IfcSpaceHeaterType_UNITHEATER, IfcSpaceHeaterType_USERDEFINED, IfcSpaceHeaterType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7032,13 +7032,13 @@ public:
 class IFC_PARSE_API IfcSpaceTypeEnum : public express::DeclaredType {
 public:
     IfcSpaceTypeEnum() {}
-    explicit IfcSpaceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSpaceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSpaceType_USERDEFINED, IfcSpaceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7055,13 +7055,13 @@ public:
 class IFC_PARSE_API IfcStackTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcStackTerminalTypeEnum() {}
-    explicit IfcStackTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStackTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcStackTerminalType_BIRDCAGE, IfcStackTerminalType_COWL, IfcStackTerminalType_RAINWATERHOPPER, IfcStackTerminalType_USERDEFINED, IfcStackTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7084,13 +7084,13 @@ public:
 class IFC_PARSE_API IfcStairFlightTypeEnum : public express::DeclaredType {
 public:
     IfcStairFlightTypeEnum() {}
-    explicit IfcStairFlightTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStairFlightTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcStairFlightType_STRAIGHT, IfcStairFlightType_WINDER, IfcStairFlightType_SPIRAL, IfcStairFlightType_CURVED, IfcStairFlightType_FREEFORM, IfcStairFlightType_USERDEFINED, IfcStairFlightType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7191,13 +7191,13 @@ public:
 class IFC_PARSE_API IfcStairTypeEnum : public express::DeclaredType {
 public:
     IfcStairTypeEnum() {}
-    explicit IfcStairTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStairTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcStairType_STRAIGHT_RUN_STAIR, IfcStairType_TWO_STRAIGHT_RUN_STAIR, IfcStairType_QUARTER_WINDING_STAIR, IfcStairType_QUARTER_TURN_STAIR, IfcStairType_HALF_WINDING_STAIR, IfcStairType_HALF_TURN_STAIR, IfcStairType_TWO_QUARTER_WINDING_STAIR, IfcStairType_TWO_QUARTER_TURN_STAIR, IfcStairType_THREE_QUARTER_WINDING_STAIR, IfcStairType_THREE_QUARTER_TURN_STAIR, IfcStairType_SPIRAL_STAIR, IfcStairType_DOUBLE_RETURN_STAIR, IfcStairType_CURVED_RUN_STAIR, IfcStairType_TWO_CURVED_RUN_STAIR, IfcStairType_USERDEFINED, IfcStairType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7218,13 +7218,13 @@ public:
 class IFC_PARSE_API IfcStateEnum : public express::DeclaredType {
 public:
     IfcStateEnum() {}
-    explicit IfcStateEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStateEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcState_READWRITE, IfcState_READONLY, IfcState_LOCKED, IfcState_READWRITELOCKED, IfcState_READONLYLOCKED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7233,13 +7233,13 @@ public:
 class IFC_PARSE_API IfcStructuralCurveTypeEnum : public express::DeclaredType {
 public:
     IfcStructuralCurveTypeEnum() {}
-    explicit IfcStructuralCurveTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStructuralCurveTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcStructuralCurveType_RIGID_JOINED_MEMBER, IfcStructuralCurveType_PIN_JOINED_MEMBER, IfcStructuralCurveType_CABLE, IfcStructuralCurveType_TENSION_MEMBER, IfcStructuralCurveType_COMPRESSION_MEMBER, IfcStructuralCurveType_USERDEFINED, IfcStructuralCurveType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7248,13 +7248,13 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceTypeEnum : public express::DeclaredType {
 public:
     IfcStructuralSurfaceTypeEnum() {}
-    explicit IfcStructuralSurfaceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcStructuralSurfaceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcStructuralSurfaceType_BENDING_ELEMENT, IfcStructuralSurfaceType_MEMBRANE_ELEMENT, IfcStructuralSurfaceType_SHELL, IfcStructuralSurfaceType_USERDEFINED, IfcStructuralSurfaceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7273,13 +7273,13 @@ public:
 class IFC_PARSE_API IfcSurfaceSide : public express::DeclaredType {
 public:
     IfcSurfaceSide() {}
-    explicit IfcSurfaceSide (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSurfaceSide (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSurfaceSide_POSITIVE, IfcSurfaceSide_NEGATIVE, IfcSurfaceSide_BOTH} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7288,13 +7288,13 @@ public:
 class IFC_PARSE_API IfcSurfaceTextureEnum : public express::DeclaredType {
 public:
     IfcSurfaceTextureEnum() {}
-    explicit IfcSurfaceTextureEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSurfaceTextureEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSurfaceTexture_BUMP, IfcSurfaceTexture_OPACITY, IfcSurfaceTexture_REFLECTION, IfcSurfaceTexture_SELFILLUMINATION, IfcSurfaceTexture_SHININESS, IfcSurfaceTexture_SPECULAR, IfcSurfaceTexture_TEXTURE, IfcSurfaceTexture_TRANSPARENCYMAP, IfcSurfaceTexture_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7318,13 +7318,13 @@ public:
 class IFC_PARSE_API IfcSwitchingDeviceTypeEnum : public express::DeclaredType {
 public:
     IfcSwitchingDeviceTypeEnum() {}
-    explicit IfcSwitchingDeviceTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSwitchingDeviceTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcSwitchingDeviceType_CONTACTOR, IfcSwitchingDeviceType_EMERGENCYSTOP, IfcSwitchingDeviceType_STARTER, IfcSwitchingDeviceType_SWITCHDISCONNECTOR, IfcSwitchingDeviceType_TOGGLESWITCH, IfcSwitchingDeviceType_USERDEFINED, IfcSwitchingDeviceType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7355,13 +7355,13 @@ public:
 class IFC_PARSE_API IfcTankTypeEnum : public express::DeclaredType {
 public:
     IfcTankTypeEnum() {}
-    explicit IfcTankTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTankTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTankType_PREFORMED, IfcTankType_SECTIONAL, IfcTankType_EXPANSION, IfcTankType_PRESSUREVESSEL, IfcTankType_USERDEFINED, IfcTankType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7370,13 +7370,13 @@ public:
 class IFC_PARSE_API IfcTendonTypeEnum : public express::DeclaredType {
 public:
     IfcTendonTypeEnum() {}
-    explicit IfcTendonTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTendonTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTendonType_STRAND, IfcTendonType_WIRE, IfcTendonType_BAR, IfcTendonType_COATED, IfcTendonType_USERDEFINED, IfcTendonType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7391,13 +7391,13 @@ public:
 class IFC_PARSE_API IfcTextPath : public express::DeclaredType {
 public:
     IfcTextPath() {}
-    explicit IfcTextPath (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTextPath (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTextPath_LEFT, IfcTextPath_RIGHT, IfcTextPath_UP, IfcTextPath_DOWN} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7406,13 +7406,13 @@ public:
 class IFC_PARSE_API IfcThermalLoadSourceEnum : public express::DeclaredType {
 public:
     IfcThermalLoadSourceEnum() {}
-    explicit IfcThermalLoadSourceEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalLoadSourceEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcThermalLoadSource_PEOPLE, IfcThermalLoadSource_LIGHTING, IfcThermalLoadSource_EQUIPMENT, IfcThermalLoadSource_VENTILATIONINDOORAIR, IfcThermalLoadSource_VENTILATIONOUTSIDEAIR, IfcThermalLoadSource_RECIRCULATEDAIR, IfcThermalLoadSource_EXHAUSTAIR, IfcThermalLoadSource_AIREXCHANGERATE, IfcThermalLoadSource_DRYBULBTEMPERATURE, IfcThermalLoadSource_RELATIVEHUMIDITY, IfcThermalLoadSource_INFILTRATION, IfcThermalLoadSource_USERDEFINED, IfcThermalLoadSource_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7421,13 +7421,13 @@ public:
 class IFC_PARSE_API IfcThermalLoadTypeEnum : public express::DeclaredType {
 public:
     IfcThermalLoadTypeEnum() {}
-    explicit IfcThermalLoadTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalLoadTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcThermalLoadType_SENSIBLE, IfcThermalLoadType_LATENT, IfcThermalLoadType_RADIANT, IfcThermalLoadType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7446,13 +7446,13 @@ public:
 class IFC_PARSE_API IfcTimeSeriesDataTypeEnum : public express::DeclaredType {
 public:
     IfcTimeSeriesDataTypeEnum() {}
-    explicit IfcTimeSeriesDataTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTimeSeriesDataTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTimeSeriesDataType_CONTINUOUS, IfcTimeSeriesDataType_DISCRETE, IfcTimeSeriesDataType_DISCRETEBINARY, IfcTimeSeriesDataType_PIECEWISEBINARY, IfcTimeSeriesDataType_PIECEWISECONSTANT, IfcTimeSeriesDataType_PIECEWISECONTINUOUS, IfcTimeSeriesDataType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7461,13 +7461,13 @@ public:
 class IFC_PARSE_API IfcTimeSeriesScheduleTypeEnum : public express::DeclaredType {
 public:
     IfcTimeSeriesScheduleTypeEnum() {}
-    explicit IfcTimeSeriesScheduleTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTimeSeriesScheduleTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTimeSeriesScheduleType_ANNUAL, IfcTimeSeriesScheduleType_MONTHLY, IfcTimeSeriesScheduleType_WEEKLY, IfcTimeSeriesScheduleType_DAILY, IfcTimeSeriesScheduleType_USERDEFINED, IfcTimeSeriesScheduleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7486,13 +7486,13 @@ public:
 class IFC_PARSE_API IfcTransformerTypeEnum : public express::DeclaredType {
 public:
     IfcTransformerTypeEnum() {}
-    explicit IfcTransformerTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTransformerTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTransformerType_CURRENT, IfcTransformerType_FREQUENCY, IfcTransformerType_VOLTAGE, IfcTransformerType_USERDEFINED, IfcTransformerType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7516,13 +7516,13 @@ public:
 class IFC_PARSE_API IfcTransitionCode : public express::DeclaredType {
 public:
     IfcTransitionCode() {}
-    explicit IfcTransitionCode (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTransitionCode (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTransitionCode_DISCONTINUOUS, IfcTransitionCode_CONTINUOUS, IfcTransitionCode_CONTSAMEGRADIENT, IfcTransitionCode_CONTSAMEGRADIENTSAMECURVATURE} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7554,13 +7554,13 @@ public:
 class IFC_PARSE_API IfcTransportElementTypeEnum : public express::DeclaredType {
 public:
     IfcTransportElementTypeEnum() {}
-    explicit IfcTransportElementTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTransportElementTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTransportElementType_ELEVATOR, IfcTransportElementType_ESCALATOR, IfcTransportElementType_MOVINGWALKWAY, IfcTransportElementType_USERDEFINED, IfcTransportElementType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7579,13 +7579,13 @@ public:
 class IFC_PARSE_API IfcTrimmingPreference : public express::DeclaredType {
 public:
     IfcTrimmingPreference() {}
-    explicit IfcTrimmingPreference (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTrimmingPreference (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTrimmingPreference_CARTESIAN, IfcTrimmingPreference_PARAMETER, IfcTrimmingPreference_UNSPECIFIED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7601,13 +7601,13 @@ public:
 class IFC_PARSE_API IfcTubeBundleTypeEnum : public express::DeclaredType {
 public:
     IfcTubeBundleTypeEnum() {}
-    explicit IfcTubeBundleTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTubeBundleTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcTubeBundleType_FINNED, IfcTubeBundleType_USERDEFINED, IfcTubeBundleType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7651,13 +7651,13 @@ public:
 class IFC_PARSE_API IfcUnitEnum : public express::DeclaredType {
 public:
     IfcUnitEnum() {}
-    explicit IfcUnitEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcUnitEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcUnit_ABSORBEDDOSEUNIT, IfcUnit_AMOUNTOFSUBSTANCEUNIT, IfcUnit_AREAUNIT, IfcUnit_DOSEEQUIVALENTUNIT, IfcUnit_ELECTRICCAPACITANCEUNIT, IfcUnit_ELECTRICCHARGEUNIT, IfcUnit_ELECTRICCONDUCTANCEUNIT, IfcUnit_ELECTRICCURRENTUNIT, IfcUnit_ELECTRICRESISTANCEUNIT, IfcUnit_ELECTRICVOLTAGEUNIT, IfcUnit_ENERGYUNIT, IfcUnit_FORCEUNIT, IfcUnit_FREQUENCYUNIT, IfcUnit_ILLUMINANCEUNIT, IfcUnit_INDUCTANCEUNIT, IfcUnit_LENGTHUNIT, IfcUnit_LUMINOUSFLUXUNIT, IfcUnit_LUMINOUSINTENSITYUNIT, IfcUnit_MAGNETICFLUXDENSITYUNIT, IfcUnit_MAGNETICFLUXUNIT, IfcUnit_MASSUNIT, IfcUnit_PLANEANGLEUNIT, IfcUnit_POWERUNIT, IfcUnit_PRESSUREUNIT, IfcUnit_RADIOACTIVITYUNIT, IfcUnit_SOLIDANGLEUNIT, IfcUnit_THERMODYNAMICTEMPERATUREUNIT, IfcUnit_TIMEUNIT, IfcUnit_VOLUMEUNIT, IfcUnit_USERDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7677,13 +7677,13 @@ public:
 class IFC_PARSE_API IfcUnitaryEquipmentTypeEnum : public express::DeclaredType {
 public:
     IfcUnitaryEquipmentTypeEnum() {}
-    explicit IfcUnitaryEquipmentTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcUnitaryEquipmentTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcUnitaryEquipmentType_AIRHANDLER, IfcUnitaryEquipmentType_AIRCONDITIONINGUNIT, IfcUnitaryEquipmentType_SPLITSYSTEM, IfcUnitaryEquipmentType_ROOFTOPUNIT, IfcUnitaryEquipmentType_USERDEFINED, IfcUnitaryEquipmentType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7734,13 +7734,13 @@ public:
 class IFC_PARSE_API IfcValveTypeEnum : public express::DeclaredType {
 public:
     IfcValveTypeEnum() {}
-    explicit IfcValveTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcValveTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcValveType_AIRRELEASE, IfcValveType_ANTIVACUUM, IfcValveType_CHANGEOVER, IfcValveType_CHECK, IfcValveType_COMMISSIONING, IfcValveType_DIVERTING, IfcValveType_DRAWOFFCOCK, IfcValveType_DOUBLECHECK, IfcValveType_DOUBLEREGULATING, IfcValveType_FAUCET, IfcValveType_FLUSHING, IfcValveType_GASCOCK, IfcValveType_GASTAP, IfcValveType_ISOLATING, IfcValveType_MIXING, IfcValveType_PRESSUREREDUCING, IfcValveType_PRESSURERELIEF, IfcValveType_REGULATING, IfcValveType_SAFETYCUTOFF, IfcValveType_STEAMTRAP, IfcValveType_STOPCOCK, IfcValveType_USERDEFINED, IfcValveType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7757,13 +7757,13 @@ public:
 class IFC_PARSE_API IfcVibrationIsolatorTypeEnum : public express::DeclaredType {
 public:
     IfcVibrationIsolatorTypeEnum() {}
-    explicit IfcVibrationIsolatorTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcVibrationIsolatorTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcVibrationIsolatorType_COMPRESSION, IfcVibrationIsolatorType_SPRING, IfcVibrationIsolatorType_USERDEFINED, IfcVibrationIsolatorType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7808,13 +7808,13 @@ public:
 class IFC_PARSE_API IfcWallTypeEnum : public express::DeclaredType {
 public:
     IfcWallTypeEnum() {}
-    explicit IfcWallTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWallTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWallType_STANDARD, IfcWallType_POLYGONAL, IfcWallType_SHEAR, IfcWallType_ELEMENTEDWALL, IfcWallType_PLUMBINGWALL, IfcWallType_USERDEFINED, IfcWallType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7836,13 +7836,13 @@ public:
 class IFC_PARSE_API IfcWasteTerminalTypeEnum : public express::DeclaredType {
 public:
     IfcWasteTerminalTypeEnum() {}
-    explicit IfcWasteTerminalTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWasteTerminalTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWasteTerminalType_FLOORTRAP, IfcWasteTerminalType_FLOORWASTE, IfcWasteTerminalType_GULLYSUMP, IfcWasteTerminalType_GULLYTRAP, IfcWasteTerminalType_GREASEINTERCEPTOR, IfcWasteTerminalType_OILINTERCEPTOR, IfcWasteTerminalType_PETROLINTERCEPTOR, IfcWasteTerminalType_ROOFDRAIN, IfcWasteTerminalType_WASTEDISPOSALUNIT, IfcWasteTerminalType_WASTETRAP, IfcWasteTerminalType_USERDEFINED, IfcWasteTerminalType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -7934,13 +7934,13 @@ public:
 class IFC_PARSE_API IfcWindowPanelOperationEnum : public express::DeclaredType {
 public:
     IfcWindowPanelOperationEnum() {}
-    explicit IfcWindowPanelOperationEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWindowPanelOperationEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWindowPanelOperation_SIDEHUNGRIGHTHAND, IfcWindowPanelOperation_SIDEHUNGLEFTHAND, IfcWindowPanelOperation_TILTANDTURNRIGHTHAND, IfcWindowPanelOperation_TILTANDTURNLEFTHAND, IfcWindowPanelOperation_TOPHUNG, IfcWindowPanelOperation_BOTTOMHUNG, IfcWindowPanelOperation_PIVOTHORIZONTAL, IfcWindowPanelOperation_PIVOTVERTICAL, IfcWindowPanelOperation_SLIDINGHORIZONTAL, IfcWindowPanelOperation_SLIDINGVERTICAL, IfcWindowPanelOperation_REMOVABLECASEMENT, IfcWindowPanelOperation_FIXEDCASEMENT, IfcWindowPanelOperation_OTHEROPERATION, IfcWindowPanelOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -8012,13 +8012,13 @@ public:
 class IFC_PARSE_API IfcWindowPanelPositionEnum : public express::DeclaredType {
 public:
     IfcWindowPanelPositionEnum() {}
-    explicit IfcWindowPanelPositionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWindowPanelPositionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWindowPanelPosition_LEFT, IfcWindowPanelPosition_MIDDLE, IfcWindowPanelPosition_RIGHT, IfcWindowPanelPosition_BOTTOM, IfcWindowPanelPosition_TOP, IfcWindowPanelPosition_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -8033,13 +8033,13 @@ public:
 class IFC_PARSE_API IfcWindowStyleConstructionEnum : public express::DeclaredType {
 public:
     IfcWindowStyleConstructionEnum() {}
-    explicit IfcWindowStyleConstructionEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWindowStyleConstructionEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWindowStyleConstruction_ALUMINIUM, IfcWindowStyleConstruction_HIGH_GRADE_STEEL, IfcWindowStyleConstruction_STEEL, IfcWindowStyleConstruction_WOOD, IfcWindowStyleConstruction_ALUMINIUM_WOOD, IfcWindowStyleConstruction_PLASTIC, IfcWindowStyleConstruction_OTHER_CONSTRUCTION, IfcWindowStyleConstruction_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -8121,13 +8121,13 @@ public:
 class IFC_PARSE_API IfcWindowStyleOperationEnum : public express::DeclaredType {
 public:
     IfcWindowStyleOperationEnum() {}
-    explicit IfcWindowStyleOperationEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWindowStyleOperationEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWindowStyleOperation_SINGLE_PANEL, IfcWindowStyleOperation_DOUBLE_PANEL_VERTICAL, IfcWindowStyleOperation_DOUBLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_TRIPLE_PANEL_VERTICAL, IfcWindowStyleOperation_TRIPLE_PANEL_BOTTOM, IfcWindowStyleOperation_TRIPLE_PANEL_TOP, IfcWindowStyleOperation_TRIPLE_PANEL_LEFT, IfcWindowStyleOperation_TRIPLE_PANEL_RIGHT, IfcWindowStyleOperation_TRIPLE_PANEL_HORIZONTAL, IfcWindowStyleOperation_USERDEFINED, IfcWindowStyleOperation_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -8136,13 +8136,13 @@ public:
 class IFC_PARSE_API IfcWorkControlTypeEnum : public express::DeclaredType {
 public:
     IfcWorkControlTypeEnum() {}
-    explicit IfcWorkControlTypeEnum (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWorkControlTypeEnum (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
     typedef enum {IfcWorkControlType_ACTUAL, IfcWorkControlType_BASELINE, IfcWorkControlType_PLANNED, IfcWorkControlType_USERDEFINED, IfcWorkControlType_NOTDEFINED} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
-    static const IfcParse::enumeration_type& Class();
+    static const ifcopenshell::enumeration_type& Class();
     void initialize(Value v);
     void initialize(const std::string& v);
     operator Value() const;
@@ -8155,9 +8155,9 @@ public:
 class IFC_PARSE_API IfcAbsorbedDoseMeasure : public express::DeclaredType {
 public:
     IfcAbsorbedDoseMeasure() {}
-    explicit IfcAbsorbedDoseMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAbsorbedDoseMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8169,9 +8169,9 @@ public:
 class IFC_PARSE_API IfcAccelerationMeasure : public express::DeclaredType {
 public:
     IfcAccelerationMeasure() {}
-    explicit IfcAccelerationMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAccelerationMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8186,9 +8186,9 @@ public:
 class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public express::DeclaredType {
 public:
     IfcAmountOfSubstanceMeasure() {}
-    explicit IfcAmountOfSubstanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAmountOfSubstanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8200,9 +8200,9 @@ public:
 class IFC_PARSE_API IfcAngularVelocityMeasure : public express::DeclaredType {
 public:
     IfcAngularVelocityMeasure() {}
-    explicit IfcAngularVelocityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAngularVelocityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8216,9 +8216,9 @@ public:
 class IFC_PARSE_API IfcAreaMeasure : public express::DeclaredType {
 public:
     IfcAreaMeasure() {}
-    explicit IfcAreaMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcAreaMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8230,9 +8230,9 @@ public:
 class IFC_PARSE_API IfcBoolean : public express::DeclaredType {
 public:
     IfcBoolean() {}
-    explicit IfcBoolean (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcBoolean (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(bool v);
     operator bool() const;
 };
@@ -8250,9 +8250,9 @@ public:
 class IFC_PARSE_API IfcComplexNumber : public express::DeclaredType {
 public:
     IfcComplexNumber() {}
-    explicit IfcComplexNumber (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcComplexNumber (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::vector< double > /*[1:2]*/ v);
     operator std::vector< double > /*[1:2]*/() const;
 };
@@ -8307,9 +8307,9 @@ public:
 class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public express::DeclaredType {
 public:
     IfcCompoundPlaneAngleMeasure() {}
-    explicit IfcCompoundPlaneAngleMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCompoundPlaneAngleMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::vector< int > /*[3:4]*/ v);
     operator std::vector< int > /*[3:4]*/() const;
 };
@@ -8322,9 +8322,9 @@ public:
 class IFC_PARSE_API IfcContextDependentMeasure : public express::DeclaredType {
 public:
     IfcContextDependentMeasure() {}
-    explicit IfcContextDependentMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcContextDependentMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8337,9 +8337,9 @@ public:
 class IFC_PARSE_API IfcCountMeasure : public express::DeclaredType {
 public:
     IfcCountMeasure() {}
-    explicit IfcCountMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCountMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8353,9 +8353,9 @@ public:
 class IFC_PARSE_API IfcCurvatureMeasure : public express::DeclaredType {
 public:
     IfcCurvatureMeasure() {}
-    explicit IfcCurvatureMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcCurvatureMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8374,9 +8374,9 @@ public:
 class IFC_PARSE_API IfcDayInMonthNumber : public express::DeclaredType {
 public:
     IfcDayInMonthNumber() {}
-    explicit IfcDayInMonthNumber (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDayInMonthNumber (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8384,9 +8384,9 @@ public:
 class IFC_PARSE_API IfcDaylightSavingHour : public express::DeclaredType {
 public:
     IfcDaylightSavingHour() {}
-    explicit IfcDaylightSavingHour (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDaylightSavingHour (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8399,9 +8399,9 @@ public:
 class IFC_PARSE_API IfcDescriptiveMeasure : public express::DeclaredType {
 public:
     IfcDescriptiveMeasure() {}
-    explicit IfcDescriptiveMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDescriptiveMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8415,9 +8415,9 @@ public:
 class IFC_PARSE_API IfcDimensionCount : public express::DeclaredType {
 public:
     IfcDimensionCount() {}
-    explicit IfcDimensionCount (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDimensionCount (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8429,9 +8429,9 @@ public:
 class IFC_PARSE_API IfcDoseEquivalentMeasure : public express::DeclaredType {
 public:
     IfcDoseEquivalentMeasure() {}
-    explicit IfcDoseEquivalentMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDoseEquivalentMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8444,9 +8444,9 @@ public:
 class IFC_PARSE_API IfcDynamicViscosityMeasure : public express::DeclaredType {
 public:
     IfcDynamicViscosityMeasure() {}
-    explicit IfcDynamicViscosityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcDynamicViscosityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8458,9 +8458,9 @@ public:
 class IFC_PARSE_API IfcElectricCapacitanceMeasure : public express::DeclaredType {
 public:
     IfcElectricCapacitanceMeasure() {}
-    explicit IfcElectricCapacitanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricCapacitanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8472,9 +8472,9 @@ public:
 class IFC_PARSE_API IfcElectricChargeMeasure : public express::DeclaredType {
 public:
     IfcElectricChargeMeasure() {}
-    explicit IfcElectricChargeMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricChargeMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8486,9 +8486,9 @@ public:
 class IFC_PARSE_API IfcElectricConductanceMeasure : public express::DeclaredType {
 public:
     IfcElectricConductanceMeasure() {}
-    explicit IfcElectricConductanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricConductanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8502,9 +8502,9 @@ public:
 class IFC_PARSE_API IfcElectricCurrentMeasure : public express::DeclaredType {
 public:
     IfcElectricCurrentMeasure() {}
-    explicit IfcElectricCurrentMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricCurrentMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8516,9 +8516,9 @@ public:
 class IFC_PARSE_API IfcElectricResistanceMeasure : public express::DeclaredType {
 public:
     IfcElectricResistanceMeasure() {}
-    explicit IfcElectricResistanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricResistanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8530,9 +8530,9 @@ public:
 class IFC_PARSE_API IfcElectricVoltageMeasure : public express::DeclaredType {
 public:
     IfcElectricVoltageMeasure() {}
-    explicit IfcElectricVoltageMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcElectricVoltageMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8544,9 +8544,9 @@ public:
 class IFC_PARSE_API IfcEnergyMeasure : public express::DeclaredType {
 public:
     IfcEnergyMeasure() {}
-    explicit IfcEnergyMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcEnergyMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8567,9 +8567,9 @@ public:
 class IFC_PARSE_API IfcFontStyle : public express::DeclaredType {
 public:
     IfcFontStyle() {}
-    explicit IfcFontStyle (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFontStyle (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8588,9 +8588,9 @@ public:
 class IFC_PARSE_API IfcFontVariant : public express::DeclaredType {
 public:
     IfcFontVariant() {}
-    explicit IfcFontVariant (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFontVariant (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8620,9 +8620,9 @@ public:
 class IFC_PARSE_API IfcFontWeight : public express::DeclaredType {
 public:
     IfcFontWeight() {}
-    explicit IfcFontWeight (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFontWeight (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8634,9 +8634,9 @@ public:
 class IFC_PARSE_API IfcForceMeasure : public express::DeclaredType {
 public:
     IfcForceMeasure() {}
-    explicit IfcForceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcForceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8648,9 +8648,9 @@ public:
 class IFC_PARSE_API IfcFrequencyMeasure : public express::DeclaredType {
 public:
     IfcFrequencyMeasure() {}
-    explicit IfcFrequencyMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcFrequencyMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8670,9 +8670,9 @@ public:
 class IFC_PARSE_API IfcGloballyUniqueId : public express::DeclaredType {
 public:
     IfcGloballyUniqueId() {}
-    explicit IfcGloballyUniqueId (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcGloballyUniqueId (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8684,9 +8684,9 @@ public:
 class IFC_PARSE_API IfcHeatFluxDensityMeasure : public express::DeclaredType {
 public:
     IfcHeatFluxDensityMeasure() {}
-    explicit IfcHeatFluxDensityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcHeatFluxDensityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8696,9 +8696,9 @@ public:
 class IFC_PARSE_API IfcHeatingValueMeasure : public express::DeclaredType {
 public:
     IfcHeatingValueMeasure() {}
-    explicit IfcHeatingValueMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcHeatingValueMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8706,9 +8706,9 @@ public:
 class IFC_PARSE_API IfcHourInDay : public express::DeclaredType {
 public:
     IfcHourInDay() {}
-    explicit IfcHourInDay (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcHourInDay (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8729,9 +8729,9 @@ public:
 class IFC_PARSE_API IfcIdentifier : public express::DeclaredType {
 public:
     IfcIdentifier() {}
-    explicit IfcIdentifier (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcIdentifier (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8743,9 +8743,9 @@ public:
 class IFC_PARSE_API IfcIlluminanceMeasure : public express::DeclaredType {
 public:
     IfcIlluminanceMeasure() {}
-    explicit IfcIlluminanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcIlluminanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8757,9 +8757,9 @@ public:
 class IFC_PARSE_API IfcInductanceMeasure : public express::DeclaredType {
 public:
     IfcInductanceMeasure() {}
-    explicit IfcInductanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcInductanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8773,9 +8773,9 @@ public:
 class IFC_PARSE_API IfcInteger : public express::DeclaredType {
 public:
     IfcInteger() {}
-    explicit IfcInteger (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcInteger (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8789,9 +8789,9 @@ public:
 class IFC_PARSE_API IfcIntegerCountRateMeasure : public express::DeclaredType {
 public:
     IfcIntegerCountRateMeasure() {}
-    explicit IfcIntegerCountRateMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcIntegerCountRateMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -8801,9 +8801,9 @@ public:
 class IFC_PARSE_API IfcIonConcentrationMeasure : public express::DeclaredType {
 public:
     IfcIonConcentrationMeasure() {}
-    explicit IfcIonConcentrationMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcIonConcentrationMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8815,9 +8815,9 @@ public:
 class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public express::DeclaredType {
 public:
     IfcIsothermalMoistureCapacityMeasure() {}
-    explicit IfcIsothermalMoistureCapacityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcIsothermalMoistureCapacityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8829,9 +8829,9 @@ public:
 class IFC_PARSE_API IfcKinematicViscosityMeasure : public express::DeclaredType {
 public:
     IfcKinematicViscosityMeasure() {}
-    explicit IfcKinematicViscosityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcKinematicViscosityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8852,9 +8852,9 @@ public:
 class IFC_PARSE_API IfcLabel : public express::DeclaredType {
 public:
     IfcLabel() {}
-    explicit IfcLabel (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLabel (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -8868,9 +8868,9 @@ public:
 class IFC_PARSE_API IfcLengthMeasure : public express::DeclaredType {
 public:
     IfcLengthMeasure() {}
-    explicit IfcLengthMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLengthMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8882,9 +8882,9 @@ public:
 class IFC_PARSE_API IfcLinearForceMeasure : public express::DeclaredType {
 public:
     IfcLinearForceMeasure() {}
-    explicit IfcLinearForceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLinearForceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8896,9 +8896,9 @@ public:
 class IFC_PARSE_API IfcLinearMomentMeasure : public express::DeclaredType {
 public:
     IfcLinearMomentMeasure() {}
-    explicit IfcLinearMomentMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLinearMomentMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8910,9 +8910,9 @@ public:
 class IFC_PARSE_API IfcLinearStiffnessMeasure : public express::DeclaredType {
 public:
     IfcLinearStiffnessMeasure() {}
-    explicit IfcLinearStiffnessMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLinearStiffnessMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8924,9 +8924,9 @@ public:
 class IFC_PARSE_API IfcLinearVelocityMeasure : public express::DeclaredType {
 public:
     IfcLinearVelocityMeasure() {}
-    explicit IfcLinearVelocityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLinearVelocityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8938,9 +8938,9 @@ public:
 class IFC_PARSE_API IfcLogical : public express::DeclaredType {
 public:
     IfcLogical() {}
-    explicit IfcLogical (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLogical (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(boost::logic::tribool v);
     operator boost::logic::tribool() const;
 };
@@ -8952,9 +8952,9 @@ public:
 class IFC_PARSE_API IfcLuminousFluxMeasure : public express::DeclaredType {
 public:
     IfcLuminousFluxMeasure() {}
-    explicit IfcLuminousFluxMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLuminousFluxMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8968,9 +8968,9 @@ public:
 class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public express::DeclaredType {
 public:
     IfcLuminousIntensityDistributionMeasure() {}
-    explicit IfcLuminousIntensityDistributionMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLuminousIntensityDistributionMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8984,9 +8984,9 @@ public:
 class IFC_PARSE_API IfcLuminousIntensityMeasure : public express::DeclaredType {
 public:
     IfcLuminousIntensityMeasure() {}
-    explicit IfcLuminousIntensityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcLuminousIntensityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -8998,9 +8998,9 @@ public:
 class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public express::DeclaredType {
 public:
     IfcMagneticFluxDensityMeasure() {}
-    explicit IfcMagneticFluxDensityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMagneticFluxDensityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9012,9 +9012,9 @@ public:
 class IFC_PARSE_API IfcMagneticFluxMeasure : public express::DeclaredType {
 public:
     IfcMagneticFluxMeasure() {}
-    explicit IfcMagneticFluxMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMagneticFluxMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9026,9 +9026,9 @@ public:
 class IFC_PARSE_API IfcMassDensityMeasure : public express::DeclaredType {
 public:
     IfcMassDensityMeasure() {}
-    explicit IfcMassDensityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMassDensityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9040,9 +9040,9 @@ public:
 class IFC_PARSE_API IfcMassFlowRateMeasure : public express::DeclaredType {
 public:
     IfcMassFlowRateMeasure() {}
-    explicit IfcMassFlowRateMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMassFlowRateMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9056,9 +9056,9 @@ public:
 class IFC_PARSE_API IfcMassMeasure : public express::DeclaredType {
 public:
     IfcMassMeasure() {}
-    explicit IfcMassMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMassMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9072,9 +9072,9 @@ public:
 class IFC_PARSE_API IfcMassPerLengthMeasure : public express::DeclaredType {
 public:
     IfcMassPerLengthMeasure() {}
-    explicit IfcMassPerLengthMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMassPerLengthMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9082,9 +9082,9 @@ public:
 class IFC_PARSE_API IfcMinuteInHour : public express::DeclaredType {
 public:
     IfcMinuteInHour() {}
-    explicit IfcMinuteInHour (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMinuteInHour (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -9096,9 +9096,9 @@ public:
 class IFC_PARSE_API IfcModulusOfElasticityMeasure : public express::DeclaredType {
 public:
     IfcModulusOfElasticityMeasure() {}
-    explicit IfcModulusOfElasticityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcModulusOfElasticityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9110,9 +9110,9 @@ public:
 class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public express::DeclaredType {
 public:
     IfcModulusOfLinearSubgradeReactionMeasure() {}
-    explicit IfcModulusOfLinearSubgradeReactionMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcModulusOfLinearSubgradeReactionMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9124,9 +9124,9 @@ public:
 class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public express::DeclaredType {
 public:
     IfcModulusOfRotationalSubgradeReactionMeasure() {}
-    explicit IfcModulusOfRotationalSubgradeReactionMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcModulusOfRotationalSubgradeReactionMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9142,9 +9142,9 @@ public:
 class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public express::DeclaredType {
 public:
     IfcModulusOfSubgradeReactionMeasure() {}
-    explicit IfcModulusOfSubgradeReactionMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcModulusOfSubgradeReactionMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9156,9 +9156,9 @@ public:
 class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public express::DeclaredType {
 public:
     IfcMoistureDiffusivityMeasure() {}
-    explicit IfcMoistureDiffusivityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMoistureDiffusivityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9170,9 +9170,9 @@ public:
 class IFC_PARSE_API IfcMolecularWeightMeasure : public express::DeclaredType {
 public:
     IfcMolecularWeightMeasure() {}
-    explicit IfcMolecularWeightMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMolecularWeightMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9184,9 +9184,9 @@ public:
 class IFC_PARSE_API IfcMomentOfInertiaMeasure : public express::DeclaredType {
 public:
     IfcMomentOfInertiaMeasure() {}
-    explicit IfcMomentOfInertiaMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMomentOfInertiaMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9197,9 +9197,9 @@ public:
 class IFC_PARSE_API IfcMonetaryMeasure : public express::DeclaredType {
 public:
     IfcMonetaryMeasure() {}
-    explicit IfcMonetaryMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMonetaryMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9262,9 +9262,9 @@ public:
 class IFC_PARSE_API IfcMonthInYearNumber : public express::DeclaredType {
 public:
     IfcMonthInYearNumber() {}
-    explicit IfcMonthInYearNumber (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcMonthInYearNumber (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -9277,9 +9277,9 @@ public:
 class IFC_PARSE_API IfcNumericMeasure : public express::DeclaredType {
 public:
     IfcNumericMeasure() {}
-    explicit IfcNumericMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcNumericMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9289,9 +9289,9 @@ public:
 class IFC_PARSE_API IfcPHMeasure : public express::DeclaredType {
 public:
     IfcPHMeasure() {}
-    explicit IfcPHMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPHMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9305,9 +9305,9 @@ public:
 class IFC_PARSE_API IfcParameterValue : public express::DeclaredType {
 public:
     IfcParameterValue() {}
-    explicit IfcParameterValue (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcParameterValue (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9319,9 +9319,9 @@ public:
 class IFC_PARSE_API IfcPlanarForceMeasure : public express::DeclaredType {
 public:
     IfcPlanarForceMeasure() {}
-    explicit IfcPlanarForceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPlanarForceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9339,9 +9339,9 @@ public:
 class IFC_PARSE_API IfcPlaneAngleMeasure : public express::DeclaredType {
 public:
     IfcPlaneAngleMeasure() {}
-    explicit IfcPlaneAngleMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPlaneAngleMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9354,9 +9354,9 @@ public:
 class IFC_PARSE_API IfcPositiveLengthMeasure : public IfcLengthMeasure {
 public:
     IfcPositiveLengthMeasure() {}
-    explicit IfcPositiveLengthMeasure (const std::weak_ptr<InstanceData>& data) : IfcLengthMeasure(data) {}
+    explicit IfcPositiveLengthMeasure (const std::weak_ptr<instance_data>& data) : IfcLengthMeasure(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9369,9 +9369,9 @@ public:
 class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
 public:
     IfcPositivePlaneAngleMeasure() {}
-    explicit IfcPositivePlaneAngleMeasure (const std::weak_ptr<InstanceData>& data) : IfcPlaneAngleMeasure(data) {}
+    explicit IfcPositivePlaneAngleMeasure (const std::weak_ptr<instance_data>& data) : IfcPlaneAngleMeasure(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9383,9 +9383,9 @@ public:
 class IFC_PARSE_API IfcPowerMeasure : public express::DeclaredType {
 public:
     IfcPowerMeasure() {}
-    explicit IfcPowerMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPowerMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9401,9 +9401,9 @@ public:
 class IFC_PARSE_API IfcPresentableText : public express::DeclaredType {
 public:
     IfcPresentableText() {}
-    explicit IfcPresentableText (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPresentableText (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9415,9 +9415,9 @@ public:
 class IFC_PARSE_API IfcPressureMeasure : public express::DeclaredType {
 public:
     IfcPressureMeasure() {}
-    explicit IfcPressureMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcPressureMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9429,9 +9429,9 @@ public:
 class IFC_PARSE_API IfcRadioActivityMeasure : public express::DeclaredType {
 public:
     IfcRadioActivityMeasure() {}
-    explicit IfcRadioActivityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRadioActivityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9448,9 +9448,9 @@ public:
 class IFC_PARSE_API IfcRatioMeasure : public express::DeclaredType {
 public:
     IfcRatioMeasure() {}
-    explicit IfcRatioMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRatioMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9464,9 +9464,9 @@ public:
 class IFC_PARSE_API IfcReal : public express::DeclaredType {
 public:
     IfcReal() {}
-    explicit IfcReal (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcReal (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9478,9 +9478,9 @@ public:
 class IFC_PARSE_API IfcRotationalFrequencyMeasure : public express::DeclaredType {
 public:
     IfcRotationalFrequencyMeasure() {}
-    explicit IfcRotationalFrequencyMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRotationalFrequencyMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9493,9 +9493,9 @@ public:
 class IFC_PARSE_API IfcRotationalMassMeasure : public express::DeclaredType {
 public:
     IfcRotationalMassMeasure() {}
-    explicit IfcRotationalMassMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRotationalMassMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9507,9 +9507,9 @@ public:
 class IFC_PARSE_API IfcRotationalStiffnessMeasure : public express::DeclaredType {
 public:
     IfcRotationalStiffnessMeasure() {}
-    explicit IfcRotationalStiffnessMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcRotationalStiffnessMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9517,9 +9517,9 @@ public:
 class IFC_PARSE_API IfcSecondInMinute : public express::DeclaredType {
 public:
     IfcSecondInMinute() {}
-    explicit IfcSecondInMinute (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSecondInMinute (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9531,9 +9531,9 @@ public:
 class IFC_PARSE_API IfcSectionModulusMeasure : public express::DeclaredType {
 public:
     IfcSectionModulusMeasure() {}
-    explicit IfcSectionModulusMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSectionModulusMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9545,9 +9545,9 @@ public:
 class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public express::DeclaredType {
 public:
     IfcSectionalAreaIntegralMeasure() {}
-    explicit IfcSectionalAreaIntegralMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSectionalAreaIntegralMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9559,9 +9559,9 @@ public:
 class IFC_PARSE_API IfcShearModulusMeasure : public express::DeclaredType {
 public:
     IfcShearModulusMeasure() {}
-    explicit IfcShearModulusMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcShearModulusMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9575,9 +9575,9 @@ public:
 class IFC_PARSE_API IfcSolidAngleMeasure : public express::DeclaredType {
 public:
     IfcSolidAngleMeasure() {}
-    explicit IfcSolidAngleMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSolidAngleMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9589,9 +9589,9 @@ public:
 class IFC_PARSE_API IfcSoundPowerMeasure : public express::DeclaredType {
 public:
     IfcSoundPowerMeasure() {}
-    explicit IfcSoundPowerMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSoundPowerMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9603,9 +9603,9 @@ public:
 class IFC_PARSE_API IfcSoundPressureMeasure : public express::DeclaredType {
 public:
     IfcSoundPressureMeasure() {}
-    explicit IfcSoundPressureMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSoundPressureMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9617,9 +9617,9 @@ public:
 class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public express::DeclaredType {
 public:
     IfcSpecificHeatCapacityMeasure() {}
-    explicit IfcSpecificHeatCapacityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSpecificHeatCapacityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9633,9 +9633,9 @@ public:
 class IFC_PARSE_API IfcSpecularExponent : public express::DeclaredType {
 public:
     IfcSpecularExponent() {}
-    explicit IfcSpecularExponent (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSpecularExponent (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9651,9 +9651,9 @@ public:
 class IFC_PARSE_API IfcSpecularRoughness : public express::DeclaredType {
 public:
     IfcSpecularRoughness() {}
-    explicit IfcSpecularRoughness (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcSpecularRoughness (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9665,9 +9665,9 @@ public:
 class IFC_PARSE_API IfcTemperatureGradientMeasure : public express::DeclaredType {
 public:
     IfcTemperatureGradientMeasure() {}
-    explicit IfcTemperatureGradientMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTemperatureGradientMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9685,9 +9685,9 @@ public:
 class IFC_PARSE_API IfcText : public express::DeclaredType {
 public:
     IfcText() {}
-    explicit IfcText (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcText (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9704,9 +9704,9 @@ public:
 class IFC_PARSE_API IfcTextAlignment : public express::DeclaredType {
 public:
     IfcTextAlignment() {}
-    explicit IfcTextAlignment (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTextAlignment (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9726,9 +9726,9 @@ public:
 class IFC_PARSE_API IfcTextDecoration : public express::DeclaredType {
 public:
     IfcTextDecoration() {}
-    explicit IfcTextDecoration (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTextDecoration (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9754,9 +9754,9 @@ public:
 class IFC_PARSE_API IfcTextFontName : public express::DeclaredType {
 public:
     IfcTextFontName() {}
-    explicit IfcTextFontName (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTextFontName (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9773,9 +9773,9 @@ public:
 class IFC_PARSE_API IfcTextTransformation : public express::DeclaredType {
 public:
     IfcTextTransformation() {}
-    explicit IfcTextTransformation (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTextTransformation (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -9787,9 +9787,9 @@ public:
 class IFC_PARSE_API IfcThermalAdmittanceMeasure : public express::DeclaredType {
 public:
     IfcThermalAdmittanceMeasure() {}
-    explicit IfcThermalAdmittanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalAdmittanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9801,9 +9801,9 @@ public:
 class IFC_PARSE_API IfcThermalConductivityMeasure : public express::DeclaredType {
 public:
     IfcThermalConductivityMeasure() {}
-    explicit IfcThermalConductivityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalConductivityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9814,9 +9814,9 @@ public:
 class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public express::DeclaredType {
 public:
     IfcThermalExpansionCoefficientMeasure() {}
-    explicit IfcThermalExpansionCoefficientMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalExpansionCoefficientMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9827,9 +9827,9 @@ public:
 class IFC_PARSE_API IfcThermalResistanceMeasure : public express::DeclaredType {
 public:
     IfcThermalResistanceMeasure() {}
-    explicit IfcThermalResistanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalResistanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9841,9 +9841,9 @@ public:
 class IFC_PARSE_API IfcThermalTransmittanceMeasure : public express::DeclaredType {
 public:
     IfcThermalTransmittanceMeasure() {}
-    explicit IfcThermalTransmittanceMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermalTransmittanceMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9857,9 +9857,9 @@ public:
 class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public express::DeclaredType {
 public:
     IfcThermodynamicTemperatureMeasure() {}
-    explicit IfcThermodynamicTemperatureMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcThermodynamicTemperatureMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9873,9 +9873,9 @@ public:
 class IFC_PARSE_API IfcTimeMeasure : public express::DeclaredType {
 public:
     IfcTimeMeasure() {}
-    explicit IfcTimeMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTimeMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9886,9 +9886,9 @@ public:
 class IFC_PARSE_API IfcTimeStamp : public express::DeclaredType {
 public:
     IfcTimeStamp() {}
-    explicit IfcTimeStamp (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTimeStamp (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -9900,9 +9900,9 @@ public:
 class IFC_PARSE_API IfcTorqueMeasure : public express::DeclaredType {
 public:
     IfcTorqueMeasure() {}
-    explicit IfcTorqueMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcTorqueMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9914,9 +9914,9 @@ public:
 class IFC_PARSE_API IfcVaporPermeabilityMeasure : public express::DeclaredType {
 public:
     IfcVaporPermeabilityMeasure() {}
-    explicit IfcVaporPermeabilityMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcVaporPermeabilityMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9930,9 +9930,9 @@ public:
 class IFC_PARSE_API IfcVolumeMeasure : public express::DeclaredType {
 public:
     IfcVolumeMeasure() {}
-    explicit IfcVolumeMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcVolumeMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9944,9 +9944,9 @@ public:
 class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public express::DeclaredType {
 public:
     IfcVolumetricFlowRateMeasure() {}
-    explicit IfcVolumetricFlowRateMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcVolumetricFlowRateMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9958,9 +9958,9 @@ public:
 class IFC_PARSE_API IfcWarpingConstantMeasure : public express::DeclaredType {
 public:
     IfcWarpingConstantMeasure() {}
-    explicit IfcWarpingConstantMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWarpingConstantMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9972,9 +9972,9 @@ public:
 class IFC_PARSE_API IfcWarpingMomentMeasure : public express::DeclaredType {
 public:
     IfcWarpingMomentMeasure() {}
-    explicit IfcWarpingMomentMeasure (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcWarpingMomentMeasure (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -9982,9 +9982,9 @@ public:
 class IFC_PARSE_API IfcYearNumber : public express::DeclaredType {
 public:
     IfcYearNumber() {}
-    explicit IfcYearNumber (const std::weak_ptr<InstanceData>& data) : express::DeclaredType(data) {}
+    explicit IfcYearNumber (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(int v);
     operator int() const;
 };
@@ -10016,9 +10016,9 @@ public:
 class IFC_PARSE_API IfcBoxAlignment : public IfcLabel {
 public:
     IfcBoxAlignment() {}
-    explicit IfcBoxAlignment (const std::weak_ptr<InstanceData>& data) : IfcLabel(data) {}
+    explicit IfcBoxAlignment (const std::weak_ptr<instance_data>& data) : IfcLabel(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(std::string v);
     operator std::string() const;
 };
@@ -10030,9 +10030,9 @@ public:
 class IFC_PARSE_API IfcNormalisedRatioMeasure : public IfcRatioMeasure {
 public:
     IfcNormalisedRatioMeasure() {}
-    explicit IfcNormalisedRatioMeasure (const std::weak_ptr<InstanceData>& data) : IfcRatioMeasure(data) {}
+    explicit IfcNormalisedRatioMeasure (const std::weak_ptr<instance_data>& data) : IfcRatioMeasure(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -10045,9 +10045,9 @@ public:
 class IFC_PARSE_API IfcPositiveRatioMeasure : public IfcRatioMeasure {
 public:
     IfcPositiveRatioMeasure() {}
-    explicit IfcPositiveRatioMeasure (const std::weak_ptr<InstanceData>& data) : IfcRatioMeasure(data) {}
+    explicit IfcPositiveRatioMeasure (const std::weak_ptr<instance_data>& data) : IfcRatioMeasure(data) {}
 
-    static const IfcParse::type_declaration& Class();
+    static const ifcopenshell::type_declaration& Class();
     void initialize(double v);
     operator double() const;
 };
@@ -10066,7 +10066,7 @@ public:
 class IFC_PARSE_API IfcActorRole : public express::Entity {
 public:
     IfcActorRole() {}
-    explicit IfcActorRole (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcActorRole (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The name of the role played by an actor. If the Role has value USERDEFINED, then
     /// the user defined role shall be provided as a value of the attribute UserDefinedRole.
@@ -10082,7 +10082,7 @@ public:
     std::optional< std::string > Description() const;
     void setDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRoleEnum::Value v1_Role, std::optional< std::string > v2_UserDefinedRole, std::optional< std::string > v3_Description);
 };
 /// Definition: An abstract entity type for various kinds of postal and telecom addresses.
@@ -10093,7 +10093,7 @@ public:
 class IFC_PARSE_API IfcAddress : public express::Entity {
 public:
     IfcAddress() {}
-    explicit IfcAddress (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcAddress (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Identifies the logical location of the address.
     std::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > Purpose() const;
@@ -10110,7 +10110,7 @@ public:
         std::vector< IfcPerson > OfPerson() const; // INVERSE IfcPerson::Addresses
     std::vector< IfcOrganization > OfOrganization() const; // INVERSE IfcOrganization::Addresses
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, std::optional< std::string > v2_Description, std::optional< std::string > v3_UserDefinedPurpose);
 };
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
@@ -10119,7 +10119,7 @@ public:
 class IFC_PARSE_API IfcApplication : public express::Entity {
 public:
     IfcApplication() {}
-    explicit IfcApplication (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcApplication (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of the application developer, being requested to be member of the IAI.
     ::Ifc2x3::IfcOrganization ApplicationDeveloper() const;
@@ -10134,7 +10134,7 @@ public:
     std::string ApplicationIdentifier() const;
     void setApplicationIdentifier(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcOrganization v1_ApplicationDeveloper, std::string v2_Version, std::string v3_ApplicationFullName, std::string v4_ApplicationIdentifier);
 };
 /// IfcAppliedValue is an abstract supertype that specifies the common attributes for cost values. 
@@ -10154,7 +10154,7 @@ public:
 class IFC_PARSE_API IfcAppliedValue : public express::Entity {
 public:
     IfcAppliedValue() {}
-    explicit IfcAppliedValue (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcAppliedValue (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A name or additional clarification given to a cost value.
     std::optional< std::string > Name() const;
@@ -10186,7 +10186,7 @@ public:
     std::vector< IfcAppliedValueRelationship > ValueOfComponents() const; // INVERSE IfcAppliedValueRelationship::ComponentOfTotal
     std::vector< IfcAppliedValueRelationship > IsComponentIn() const; // INVERSE IfcAppliedValueRelationship::Components
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect v6_FixedUntilDate);
 };
 /// An IfcAppliedValueRelationship is a relationship class that enables cost values to be aggregated together as components of another cost value.
@@ -10216,7 +10216,7 @@ public:
 class IFC_PARSE_API IfcAppliedValueRelationship : public express::Entity {
 public:
     IfcAppliedValueRelationship() {}
-    explicit IfcAppliedValueRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcAppliedValueRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The applied value (total or subtotal) of which the value being considered is a component.
     ::Ifc2x3::IfcAppliedValue ComponentOfTotal() const;
@@ -10232,7 +10232,7 @@ public:
     std::optional< std::string > Description() const;
     void setDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAppliedValue v1_ComponentOfTotal, std::vector< ::Ifc2x3::IfcAppliedValue > v2_Components, ::Ifc2x3::IfcArithmeticOperatorEnum::Value v3_ArithmeticOperator, std::optional< std::string > v4_Name, std::optional< std::string > v5_Description);
 };
 /// Definition: An IfcApproval represents information about approval processes such as for a plan, a design, a proposal, or a change order in a construction or facilities management project. IfcApproval is referenced by IfcRelAssociatesApproval in IfcControlExtension schema, and thereby can be related to all subtypes of IfcRoot. An approval may also be given to resource objects using IfcResourceApprovalRelationship
@@ -10243,7 +10243,7 @@ public:
 class IFC_PARSE_API IfcApproval : public express::Entity {
 public:
     IfcApproval() {}
-    explicit IfcApproval (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcApproval (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A general textual description of a design, work task, plan, etc. that is being approved for.
     std::optional< std::string > Description() const;
@@ -10266,14 +10266,14 @@ public:
     std::vector< IfcApprovalRelationship > IsRelatedWith() const; // INVERSE IfcApprovalRelationship::RelatedApproval
     std::vector< IfcApprovalRelationship > Relates() const; // INVERSE IfcApprovalRelationship::RelatingApproval
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Description, ::Ifc2x3::IfcDateTimeSelect v2_ApprovalDateTime, std::optional< std::string > v3_ApprovalStatus, std::optional< std::string > v4_ApprovalLevel, std::optional< std::string > v5_ApprovalQualifier, std::string v6_Name, std::string v7_Identifier);
 };
 
 class IFC_PARSE_API IfcApprovalActorRelationship : public express::Entity {
 public:
     IfcApprovalActorRelationship() {}
-    explicit IfcApprovalActorRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcApprovalActorRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcActorSelect Actor() const;
     void setActor(const ::Ifc2x3::IfcActorSelect& v);
@@ -10282,21 +10282,21 @@ public:
     ::Ifc2x3::IfcActorRole Role() const;
     void setRole(const ::Ifc2x3::IfcActorRole& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcActorSelect v1_Actor, ::Ifc2x3::IfcApproval v2_Approval, ::Ifc2x3::IfcActorRole v3_Role);
 };
 
 class IFC_PARSE_API IfcApprovalPropertyRelationship : public express::Entity {
 public:
     IfcApprovalPropertyRelationship() {}
-    explicit IfcApprovalPropertyRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcApprovalPropertyRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::vector< ::Ifc2x3::IfcProperty > ApprovedProperties() const;
     void setApprovedProperties(const std::vector< ::Ifc2x3::IfcProperty >& v);
     ::Ifc2x3::IfcApproval Approval() const;
     void setApproval(const ::Ifc2x3::IfcApproval& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcProperty > v1_ApprovedProperties, ::Ifc2x3::IfcApproval v2_Approval);
 };
 /// An IfcApprovalRelationship associates approvals (one
@@ -10309,7 +10309,7 @@ public:
 class IFC_PARSE_API IfcApprovalRelationship : public express::Entity {
 public:
     IfcApprovalRelationship() {}
-    explicit IfcApprovalRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcApprovalRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcApproval RelatedApproval() const;
     void setRelatedApproval(const ::Ifc2x3::IfcApproval& v);
@@ -10321,7 +10321,7 @@ public:
     std::string Name() const;
     void setName(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcApproval v1_RelatedApproval, ::Ifc2x3::IfcApproval v2_RelatingApproval, std::optional< std::string > v3_Description, std::string v4_Name);
 };
 /// Definition
@@ -10342,13 +10342,13 @@ public:
 class IFC_PARSE_API IfcBoundaryCondition : public express::Entity {
 public:
     IfcBoundaryCondition() {}
-    explicit IfcBoundaryCondition (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcBoundaryCondition (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Optionally defines a name for this boundary condition.
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
@@ -10364,7 +10364,7 @@ public:
 class IFC_PARSE_API IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
 public:
     IfcBoundaryEdgeCondition() {}
-    explicit IfcBoundaryEdgeCondition (const std::weak_ptr<InstanceData>& data) : IfcBoundaryCondition(data) {}
+    explicit IfcBoundaryEdgeCondition (const std::weak_ptr<instance_data>& data) : IfcBoundaryCondition(data) {}
 
     std::optional< double > LinearStiffnessByLengthX() const;
     void setLinearStiffnessByLengthX(const std::optional< double >& v);
@@ -10382,7 +10382,7 @@ public:
     std::optional< double > RotationalStiffnessByLengthZ() const;
     void setRotationalStiffnessByLengthZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearStiffnessByLengthX, std::optional< double > v3_LinearStiffnessByLengthY, std::optional< double > v4_LinearStiffnessByLengthZ, std::optional< double > v5_RotationalStiffnessByLengthX, std::optional< double > v6_RotationalStiffnessByLengthY, std::optional< double > v7_RotationalStiffnessByLengthZ);
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
@@ -10398,7 +10398,7 @@ public:
 class IFC_PARSE_API IfcBoundaryFaceCondition : public IfcBoundaryCondition {
 public:
     IfcBoundaryFaceCondition() {}
-    explicit IfcBoundaryFaceCondition (const std::weak_ptr<InstanceData>& data) : IfcBoundaryCondition(data) {}
+    explicit IfcBoundaryFaceCondition (const std::weak_ptr<instance_data>& data) : IfcBoundaryCondition(data) {}
 
     std::optional< double > LinearStiffnessByAreaX() const;
     void setLinearStiffnessByAreaX(const std::optional< double >& v);
@@ -10407,7 +10407,7 @@ public:
     std::optional< double > LinearStiffnessByAreaZ() const;
     void setLinearStiffnessByAreaZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearStiffnessByAreaX, std::optional< double > v3_LinearStiffnessByAreaY, std::optional< double > v4_LinearStiffnessByAreaZ);
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions.
@@ -10423,7 +10423,7 @@ public:
 class IFC_PARSE_API IfcBoundaryNodeCondition : public IfcBoundaryCondition {
 public:
     IfcBoundaryNodeCondition() {}
-    explicit IfcBoundaryNodeCondition (const std::weak_ptr<InstanceData>& data) : IfcBoundaryCondition(data) {}
+    explicit IfcBoundaryNodeCondition (const std::weak_ptr<instance_data>& data) : IfcBoundaryCondition(data) {}
 
     std::optional< double > LinearStiffnessX() const;
     void setLinearStiffnessX(const std::optional< double >& v);
@@ -10441,7 +10441,7 @@ public:
     std::optional< double > RotationalStiffnessZ() const;
     void setRotationalStiffnessZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearStiffnessX, std::optional< double > v3_LinearStiffnessY, std::optional< double > v4_LinearStiffnessZ, std::optional< double > v5_RotationalStiffnessX, std::optional< double > v6_RotationalStiffnessY, std::optional< double > v7_RotationalStiffnessZ);
 };
 /// Definition from IAI: Describes linearly elastic support conditions or connection conditions, including linearly elastic warping restraints.
@@ -10456,20 +10456,20 @@ public:
 class IFC_PARSE_API IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
 public:
     IfcBoundaryNodeConditionWarping() {}
-    explicit IfcBoundaryNodeConditionWarping (const std::weak_ptr<InstanceData>& data) : IfcBoundaryNodeCondition(data) {}
+    explicit IfcBoundaryNodeConditionWarping (const std::weak_ptr<instance_data>& data) : IfcBoundaryNodeCondition(data) {}
 
     /// Defines the warping stiffness value.
     std::optional< double > WarpingStiffness() const;
     void setWarpingStiffness(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearStiffnessX, std::optional< double > v3_LinearStiffnessY, std::optional< double > v4_LinearStiffnessZ, std::optional< double > v5_RotationalStiffnessX, std::optional< double > v6_RotationalStiffnessY, std::optional< double > v7_RotationalStiffnessZ, std::optional< double > v8_WarpingStiffness);
 };
 
 class IFC_PARSE_API IfcCalendarDate : public express::Entity {
 public:
     IfcCalendarDate() {}
-    explicit IfcCalendarDate (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCalendarDate (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     int DayComponent() const;
     void setDayComponent(const int& v);
@@ -10478,7 +10478,7 @@ public:
     int YearComponent() const;
     void setYearComponent(const int& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_DayComponent, int v2_MonthComponent, int v3_YearComponent);
 };
 /// An IfcClassification is used for the arrangement of objects into a class or category according to a common purpose or their possession of common
@@ -10499,7 +10499,7 @@ public:
 class IFC_PARSE_API IfcClassification : public express::Entity {
 public:
     IfcClassification() {}
-    explicit IfcClassification (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcClassification (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Source (or publisher) for this classification.
     /// 
@@ -10527,14 +10527,14 @@ public:
     void setName(const std::string& v);
         std::vector< IfcClassificationItem > Contains() const; // INVERSE IfcClassificationItem::ItemOf
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Source, std::string v2_Edition, ::Ifc2x3::IfcCalendarDate v3_EditionDate, std::string v4_Name);
 };
 
 class IFC_PARSE_API IfcClassificationItem : public express::Entity {
 public:
     IfcClassificationItem() {}
-    explicit IfcClassificationItem (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcClassificationItem (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcClassificationNotationFacet Notation() const;
     void setNotation(const ::Ifc2x3::IfcClassificationNotationFacet& v);
@@ -10545,45 +10545,45 @@ public:
         std::vector< IfcClassificationItemRelationship > IsClassifiedItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatedItems
     std::vector< IfcClassificationItemRelationship > IsClassifyingItemIn() const; // INVERSE IfcClassificationItemRelationship::RelatingItem
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcClassificationNotationFacet v1_Notation, ::Ifc2x3::IfcClassification v2_ItemOf, std::string v3_Title);
 };
 
 class IFC_PARSE_API IfcClassificationItemRelationship : public express::Entity {
 public:
     IfcClassificationItemRelationship() {}
-    explicit IfcClassificationItemRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcClassificationItemRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcClassificationItem RelatingItem() const;
     void setRelatingItem(const ::Ifc2x3::IfcClassificationItem& v);
     std::vector< ::Ifc2x3::IfcClassificationItem > RelatedItems() const;
     void setRelatedItems(const std::vector< ::Ifc2x3::IfcClassificationItem >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcClassificationItem v1_RelatingItem, std::vector< ::Ifc2x3::IfcClassificationItem > v2_RelatedItems);
 };
 
 class IFC_PARSE_API IfcClassificationNotation : public express::Entity {
 public:
     IfcClassificationNotation() {}
-    explicit IfcClassificationNotation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcClassificationNotation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::vector< ::Ifc2x3::IfcClassificationNotationFacet > NotationFacets() const;
     void setNotationFacets(const std::vector< ::Ifc2x3::IfcClassificationNotationFacet >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcClassificationNotationFacet > v1_NotationFacets);
 };
 
 class IFC_PARSE_API IfcClassificationNotationFacet : public express::Entity {
 public:
     IfcClassificationNotationFacet() {}
-    explicit IfcClassificationNotationFacet (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcClassificationNotationFacet (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::string NotationValue() const;
     void setNotationValue(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_NotationValue);
 };
 /// Definition from ISO/CD 10303-46:1992: The colour specification entity contains a direct colour definition. Colour component values refer directly to a specific colour space.
@@ -10594,7 +10594,7 @@ public:
 class IFC_PARSE_API IfcColourSpecification : public express::Entity {
 public:
     IfcColourSpecification() {}
-    explicit IfcColourSpecification (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcColourSpecification (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Optional name given to a particular colour specification in addition to the colour components (like the RGB values).
     /// 
@@ -10603,7 +10603,7 @@ public:
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// IfcConnectionGeometry is used to describe the geometric and topological constraints that facilitate the physical connection of two objects. It is envisioned as a control that applies to the element connection relationships.
@@ -10623,10 +10623,10 @@ public:
 class IFC_PARSE_API IfcConnectionGeometry : public express::Entity {
 public:
     IfcConnectionGeometry() {}
-    explicit IfcConnectionGeometry (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcConnectionGeometry (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// IfcConnectionPointGeometry
@@ -10648,7 +10648,7 @@ public:
 class IFC_PARSE_API IfcConnectionPointGeometry : public IfcConnectionGeometry {
 public:
     IfcConnectionPointGeometry() {}
-    explicit IfcConnectionPointGeometry (const std::weak_ptr<InstanceData>& data) : IfcConnectionGeometry(data) {}
+    explicit IfcConnectionPointGeometry (const std::weak_ptr<instance_data>& data) : IfcConnectionGeometry(data) {}
 
     /// Point at which the connected object is aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcPointOrVertexPoint PointOnRelatingElement() const;
@@ -10657,14 +10657,14 @@ public:
     ::Ifc2x3::IfcPointOrVertexPoint PointOnRelatedElement() const;
     void setPointOnRelatedElement(const ::Ifc2x3::IfcPointOrVertexPoint& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPointOrVertexPoint v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint v2_PointOnRelatedElement);
 };
 
 class IFC_PARSE_API IfcConnectionPortGeometry : public IfcConnectionGeometry {
 public:
     IfcConnectionPortGeometry() {}
-    explicit IfcConnectionPortGeometry (const std::weak_ptr<InstanceData>& data) : IfcConnectionGeometry(data) {}
+    explicit IfcConnectionPortGeometry (const std::weak_ptr<instance_data>& data) : IfcConnectionGeometry(data) {}
 
     ::Ifc2x3::IfcAxis2Placement LocationAtRelatingElement() const;
     void setLocationAtRelatingElement(const ::Ifc2x3::IfcAxis2Placement& v);
@@ -10673,7 +10673,7 @@ public:
     ::Ifc2x3::IfcProfileDef ProfileOfPort() const;
     void setProfileOfPort(const ::Ifc2x3::IfcProfileDef& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement v1_LocationAtRelatingElement, ::Ifc2x3::IfcAxis2Placement v2_LocationAtRelatedElement, ::Ifc2x3::IfcProfileDef v3_ProfileOfPort);
 };
 /// IfcConnectionSurfaceGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a surface or at a face with surface geometry associated. It is envisioned as a control that applies to the element connection relationships. 
@@ -10687,7 +10687,7 @@ public:
 class IFC_PARSE_API IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
 public:
     IfcConnectionSurfaceGeometry() {}
-    explicit IfcConnectionSurfaceGeometry (const std::weak_ptr<InstanceData>& data) : IfcConnectionGeometry(data) {}
+    explicit IfcConnectionSurfaceGeometry (const std::weak_ptr<instance_data>& data) : IfcConnectionGeometry(data) {}
 
     /// Surface at which related object is aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcSurfaceOrFaceSurface SurfaceOnRelatingElement() const;
@@ -10696,7 +10696,7 @@ public:
     ::Ifc2x3::IfcSurfaceOrFaceSurface SurfaceOnRelatedElement() const;
     void setSurfaceOnRelatedElement(const ::Ifc2x3::IfcSurfaceOrFaceSurface& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurfaceOrFaceSurface v1_SurfaceOnRelatingElement, ::Ifc2x3::IfcSurfaceOrFaceSurface v2_SurfaceOnRelatedElement);
 };
 /// An IfcConstraint is used to define a constraint or limiting value or boundary condition that may be applied to an object or to the value of a property.  
@@ -10714,7 +10714,7 @@ public:
 class IFC_PARSE_API IfcConstraint : public express::Entity {
 public:
     IfcConstraint() {}
-    explicit IfcConstraint (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcConstraint (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A name to be used for the constraint (e.g., ChillerCoefficientOfPerformance).
     std::string Name() const;
@@ -10747,7 +10747,7 @@ public:
     std::vector< IfcConstraintAggregationRelationship > Aggregates() const; // INVERSE IfcConstraintAggregationRelationship::RelatingConstraint
     std::vector< IfcConstraintAggregationRelationship > IsAggregatedIn() const; // INVERSE IfcConstraintAggregationRelationship::RelatedConstraints
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, std::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect v6_CreationTime, std::optional< std::string > v7_UserDefinedGrade);
 };
 /// An IfcConstraintAggregationRelationship is an objectified relationship that enables instances of IfcConstraint subtypes to be aggregated together logically. 
@@ -10764,7 +10764,7 @@ public:
 class IFC_PARSE_API IfcConstraintAggregationRelationship : public express::Entity {
 public:
     IfcConstraintAggregationRelationship() {}
-    explicit IfcConstraintAggregationRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcConstraintAggregationRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
@@ -10778,21 +10778,21 @@ public:
     ::Ifc2x3::IfcLogicalOperatorEnum::Value LogicalAggregator() const;
     void setLogicalAggregator(const ::Ifc2x3::IfcLogicalOperatorEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint v3_RelatingConstraint, std::vector< ::Ifc2x3::IfcConstraint > v4_RelatedConstraints, ::Ifc2x3::IfcLogicalOperatorEnum::Value v5_LogicalAggregator);
 };
 
 class IFC_PARSE_API IfcConstraintClassificationRelationship : public express::Entity {
 public:
     IfcConstraintClassificationRelationship() {}
-    explicit IfcConstraintClassificationRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcConstraintClassificationRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcConstraint ClassifiedConstraint() const;
     void setClassifiedConstraint(const ::Ifc2x3::IfcConstraint& v);
     std::vector< ::Ifc2x3::IfcClassificationNotationSelect > RelatedClassifications() const;
     void setRelatedClassifications(const std::vector< ::Ifc2x3::IfcClassificationNotationSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcConstraint v1_ClassifiedConstraint, std::vector< ::Ifc2x3::IfcClassificationNotationSelect > v2_RelatedClassifications);
 };
 /// An IfcConstraintRelationship is an objectified relationship that enables instances of IfcConstraint and its
@@ -10807,7 +10807,7 @@ public:
 class IFC_PARSE_API IfcConstraintRelationship : public express::Entity {
 public:
     IfcConstraintRelationship() {}
-    explicit IfcConstraintRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcConstraintRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
@@ -10820,14 +10820,14 @@ public:
     std::vector< ::Ifc2x3::IfcConstraint > RelatedConstraints() const;
     void setRelatedConstraints(const std::vector< ::Ifc2x3::IfcConstraint >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint v3_RelatingConstraint, std::vector< ::Ifc2x3::IfcConstraint > v4_RelatedConstraints);
 };
 
 class IFC_PARSE_API IfcCoordinatedUniversalTimeOffset : public express::Entity {
 public:
     IfcCoordinatedUniversalTimeOffset() {}
-    explicit IfcCoordinatedUniversalTimeOffset (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCoordinatedUniversalTimeOffset (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     int HourOffset() const;
     void setHourOffset(const int& v);
@@ -10836,7 +10836,7 @@ public:
     ::Ifc2x3::IfcAheadOrBehind::Value Sense() const;
     void setSense(const ::Ifc2x3::IfcAheadOrBehind::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_HourOffset, std::optional< int > v2_MinuteOffset, ::Ifc2x3::IfcAheadOrBehind::Value v3_Sense);
 };
 /// IfcCostValue is an amount of money or a value that affects an amount of money. 
@@ -10884,7 +10884,7 @@ public:
 class IFC_PARSE_API IfcCostValue : public IfcAppliedValue {
 public:
     IfcCostValue() {}
-    explicit IfcCostValue (const std::weak_ptr<InstanceData>& data) : IfcAppliedValue(data) {}
+    explicit IfcCostValue (const std::weak_ptr<instance_data>& data) : IfcAppliedValue(data) {}
 
     /// Specification of the type of cost type used.
     /// 
@@ -10897,7 +10897,7 @@ public:
     std::optional< std::string > Condition() const;
     void setCondition(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect v6_FixedUntilDate, std::string v7_CostType, std::optional< std::string > v8_Condition);
 };
 /// IfcCurrencyRelationship defines the rate of exchange
@@ -10914,7 +10914,7 @@ public:
 class IFC_PARSE_API IfcCurrencyRelationship : public express::Entity {
 public:
     IfcCurrencyRelationship() {}
-    explicit IfcCurrencyRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCurrencyRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The monetary unit from which an exchange is derived. For instance, in the case of a conversion from GBP to USD, the relating monetary unit is GBP.
     ::Ifc2x3::IfcMonetaryUnit RelatingMonetaryUnit() const;
@@ -10934,7 +10934,7 @@ public:
     ::Ifc2x3::IfcLibraryInformation RateSource() const;
     void setRateSource(const ::Ifc2x3::IfcLibraryInformation& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMonetaryUnit v1_RelatingMonetaryUnit, ::Ifc2x3::IfcMonetaryUnit v2_RelatedMonetaryUnit, double v3_ExchangeRate, ::Ifc2x3::IfcDateAndTime v4_RateDateTime, ::Ifc2x3::IfcLibraryInformation v5_RateSource);
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font combines several curve style font pattern entities into a more complex pattern. The resulting pattern is repeated along the curve. 
@@ -10945,7 +10945,7 @@ public:
 class IFC_PARSE_API IfcCurveStyleFont : public express::Entity {
 public:
     IfcCurveStyleFont() {}
-    explicit IfcCurveStyleFont (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCurveStyleFont (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name that may be assigned with the curve font.
     std::optional< std::string > Name() const;
@@ -10954,7 +10954,7 @@ public:
     std::vector< ::Ifc2x3::IfcCurveStyleFontPattern > PatternList() const;
     void setPatternList(const std::vector< ::Ifc2x3::IfcCurveStyleFontPattern >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::vector< ::Ifc2x3::IfcCurveStyleFontPattern > v2_PatternList);
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font and scaling is a curve style font and a scalar factor for that font, so that a given curve style font may be applied at various scales.
@@ -10971,7 +10971,7 @@ public:
 class IFC_PARSE_API IfcCurveStyleFontAndScaling : public express::Entity {
 public:
     IfcCurveStyleFontAndScaling() {}
-    explicit IfcCurveStyleFontAndScaling (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCurveStyleFontAndScaling (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name that may be assigned with the scaling of a curve font.
     std::optional< std::string > Name() const;
@@ -10983,7 +10983,7 @@ public:
     double CurveFontScaling() const;
     void setCurveFontScaling(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveStyleFontSelect v2_CurveFont, double v3_CurveFontScaling);
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style font pattern is a pair of visible and invisible curve segment length measures in presentation area units. 
@@ -10994,7 +10994,7 @@ public:
 class IFC_PARSE_API IfcCurveStyleFontPattern : public express::Entity {
 public:
     IfcCurveStyleFontPattern() {}
-    explicit IfcCurveStyleFontPattern (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcCurveStyleFontPattern (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The length of the visible segment in the pattern definition.
     /// 
@@ -11007,21 +11007,21 @@ public:
     double InvisibleSegmentLength() const;
     void setInvisibleSegmentLength(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_VisibleSegmentLength, double v2_InvisibleSegmentLength);
 };
 
 class IFC_PARSE_API IfcDateAndTime : public express::Entity {
 public:
     IfcDateAndTime() {}
-    explicit IfcDateAndTime (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDateAndTime (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcCalendarDate DateComponent() const;
     void setDateComponent(const ::Ifc2x3::IfcCalendarDate& v);
     ::Ifc2x3::IfcLocalTime TimeComponent() const;
     void setTimeComponent(const ::Ifc2x3::IfcLocalTime& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCalendarDate v1_DateComponent, ::Ifc2x3::IfcLocalTime v2_TimeComponent);
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit is an expression of units.
@@ -11034,7 +11034,7 @@ public:
 class IFC_PARSE_API IfcDerivedUnit : public express::Entity {
 public:
     IfcDerivedUnit() {}
-    explicit IfcDerivedUnit (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDerivedUnit (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The group of units and their exponents that define the derived unit.
     std::vector< ::Ifc2x3::IfcDerivedUnitElement > Elements() const;
@@ -11045,7 +11045,7 @@ public:
     std::optional< std::string > UserDefinedType() const;
     void setUserDefinedType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDerivedUnitElement > v1_Elements, ::Ifc2x3::IfcDerivedUnitEnum::Value v2_UnitType, std::optional< std::string > v3_UserDefinedType);
 };
 /// Definition from ISO/CD 10303-41:1992: A derived unit element is one of the unit quantities 
@@ -11060,7 +11060,7 @@ public:
 class IFC_PARSE_API IfcDerivedUnitElement : public express::Entity {
 public:
     IfcDerivedUnitElement() {}
-    explicit IfcDerivedUnitElement (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDerivedUnitElement (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The fixed quantity which is used as the mathematical factor.
     ::Ifc2x3::IfcNamedUnit Unit() const;
@@ -11069,7 +11069,7 @@ public:
     int Exponent() const;
     void setExponent(const int& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcNamedUnit v1_Unit, int v2_Exponent);
 };
 /// Definition from ISO/CD 10303-41:1992: The dimensionality of any quantity can be expressed as a product of powers of the dimensions of base quantities. 
@@ -11092,7 +11092,7 @@ public:
 class IFC_PARSE_API IfcDimensionalExponents : public express::Entity {
 public:
     IfcDimensionalExponents() {}
-    explicit IfcDimensionalExponents (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDimensionalExponents (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The power of the length base quantity.
     int LengthExponent() const;
@@ -11116,7 +11116,7 @@ public:
     int LuminousIntensityExponent() const;
     void setLuminousIntensityExponent(const int& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_LengthExponent, int v2_MassExponent, int v3_TimeExponent, int v4_ElectricCurrentExponent, int v5_ThermodynamicTemperatureExponent, int v6_AmountOfSubstanceExponent, int v7_LuminousIntensityExponent);
 };
 /// IfcDocumentElectronicFormat captures the type of document being referenced as an external source, and for which metadata is specified by IfcDocumentInformation. 
@@ -11125,7 +11125,7 @@ public:
 class IFC_PARSE_API IfcDocumentElectronicFormat : public express::Entity {
 public:
     IfcDocumentElectronicFormat() {}
-    explicit IfcDocumentElectronicFormat (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDocumentElectronicFormat (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// File extension of electronic document used by computer operating system.
     std::optional< std::string > FileExtension() const;
@@ -11137,7 +11137,7 @@ public:
     std::optional< std::string > MimeSubtype() const;
     void setMimeSubtype(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_FileExtension, std::optional< std::string > v2_MimeContentType, std::optional< std::string > v3_MimeSubtype);
 };
 /// IfcDocumentInformation captures "metadata" of an external document. The actual content of the document is not defined in IFC; instead, it can be found following the reference given to IfcDocumentReference. 
@@ -11146,7 +11146,7 @@ public:
 class IFC_PARSE_API IfcDocumentInformation : public express::Entity {
 public:
     IfcDocumentInformation() {}
-    explicit IfcDocumentInformation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDocumentInformation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Identifier that uniquely identifies a document.
     std::string DocumentId() const;
@@ -11213,7 +11213,7 @@ public:
         std::vector< IfcDocumentInformationRelationship > IsPointedTo() const; // INVERSE IfcDocumentInformationRelationship::RelatedDocuments
     std::vector< IfcDocumentInformationRelationship > IsPointer() const; // INVERSE IfcDocumentInformationRelationship::RelatingDocument
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_DocumentId, std::string v2_Name, std::optional< std::string > v3_Description, std::optional< std::vector< ::Ifc2x3::IfcDocumentReference > > v4_DocumentReferences, std::optional< std::string > v5_Purpose, std::optional< std::string > v6_IntendedUse, std::optional< std::string > v7_Scope, std::optional< std::string > v8_Revision, ::Ifc2x3::IfcActorSelect v9_DocumentOwner, std::optional< std::vector< ::Ifc2x3::IfcActorSelect > > v10_Editors, ::Ifc2x3::IfcDateAndTime v11_CreationTime, ::Ifc2x3::IfcDateAndTime v12_LastRevisionTime, ::Ifc2x3::IfcDocumentElectronicFormat v13_ElectronicFormat, ::Ifc2x3::IfcCalendarDate v14_ValidFrom, ::Ifc2x3::IfcCalendarDate v15_ValidUntil, std::optional< ::Ifc2x3::IfcDocumentConfidentialityEnum::Value > v16_Confidentiality, std::optional< ::Ifc2x3::IfcDocumentStatusEnum::Value > v17_Status);
 };
 /// An IfcDocumentInformationRelationship is a relationship class that enables a document to have the ability to reference other documents.
@@ -11227,7 +11227,7 @@ public:
 class IFC_PARSE_API IfcDocumentInformationRelationship : public express::Entity {
 public:
     IfcDocumentInformationRelationship() {}
-    explicit IfcDocumentInformationRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDocumentInformationRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The document that acts as the parent, referencing or original document in a relationship.
     ::Ifc2x3::IfcDocumentInformation RelatingDocument() const;
@@ -11239,14 +11239,14 @@ public:
     std::optional< std::string > RelationshipType() const;
     void setRelationshipType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDocumentInformation v1_RelatingDocument, std::vector< ::Ifc2x3::IfcDocumentInformation > v2_RelatedDocuments, std::optional< std::string > v3_RelationshipType);
 };
 
 class IFC_PARSE_API IfcDraughtingCalloutRelationship : public express::Entity {
 public:
     IfcDraughtingCalloutRelationship() {}
-    explicit IfcDraughtingCalloutRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcDraughtingCalloutRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
@@ -11257,14 +11257,14 @@ public:
     ::Ifc2x3::IfcDraughtingCallout RelatedDraughtingCallout() const;
     void setRelatedDraughtingCallout(const ::Ifc2x3::IfcDraughtingCallout& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout);
 };
 
 class IFC_PARSE_API IfcEnvironmentalImpactValue : public IfcAppliedValue {
 public:
     IfcEnvironmentalImpactValue() {}
-    explicit IfcEnvironmentalImpactValue (const std::weak_ptr<InstanceData>& data) : IfcAppliedValue(data) {}
+    explicit IfcEnvironmentalImpactValue (const std::weak_ptr<instance_data>& data) : IfcAppliedValue(data) {}
 
     std::string ImpactType() const;
     void setImpactType(const std::string& v);
@@ -11273,7 +11273,7 @@ public:
     std::optional< std::string > UserDefinedCategory() const;
     void setUserDefinedCategory(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcAppliedValueSelect v3_AppliedValue, ::Ifc2x3::IfcMeasureWithUnit v4_UnitBasis, ::Ifc2x3::IfcDateTimeSelect v5_ApplicableDate, ::Ifc2x3::IfcDateTimeSelect v6_FixedUntilDate, std::string v7_ImpactType, ::Ifc2x3::IfcEnvironmentalImpactCategoryEnum::Value v8_Category, std::optional< std::string > v9_UserDefinedCategory);
 };
 /// An IfcExternalReference is the identification of information that is not explicitly represented in the current model or in the project database (as an implementation of the current model). Such information may be contained in classifications, documents or libraries. The IfcExternalReference identifies a particular item, such as a
@@ -11288,7 +11288,7 @@ public:
 class IFC_PARSE_API IfcExternalReference : public express::Entity {
 public:
     IfcExternalReference() {}
-    explicit IfcExternalReference (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcExternalReference (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Location, where the external source (classification, document or library) can be accessed by electronic means. The electronic location is provided as an URI, and would normally be given as an URL location string.
     /// 
@@ -11301,7 +11301,7 @@ public:
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined hatch style is an entity which makes an external reference to a hatching style.
@@ -11315,10 +11315,10 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
     IfcExternallyDefinedHatchStyle() {}
-    explicit IfcExternallyDefinedHatchStyle (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcExternallyDefinedHatchStyle (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// IfcExternallyDefinedSurfaceStyle is a definition of a surface style through referencing an external source, such as a material library for rendering information.
@@ -11331,10 +11331,10 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
     IfcExternallyDefinedSurfaceStyle() {}
-    explicit IfcExternallyDefinedSurfaceStyle (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcExternallyDefinedSurfaceStyle (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// An externally defined symbol is a symbol that gets its shape information by an agreed reference to an external source.
@@ -11349,10 +11349,10 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedSymbol : public IfcExternalReference {
 public:
     IfcExternallyDefinedSymbol() {}
-    explicit IfcExternallyDefinedSymbol (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcExternallyDefinedSymbol (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// Definition from ISO/CD 10303-46:1992: The externally defined text font is an external reference to a text font 
@@ -11365,10 +11365,10 @@ public:
 class IFC_PARSE_API IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
     IfcExternallyDefinedTextFont() {}
-    explicit IfcExternallyDefinedTextFont (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcExternallyDefinedTextFont (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// An individual axis, IfcGridAxis, is defined in the context of a design grid.  The axis definition is based on a curve of dimensionality 2. The grid axis is positioned within the XY plane of the position coordinate system defined by the IfcDesignGrid.
@@ -11397,7 +11397,7 @@ public:
 class IFC_PARSE_API IfcGridAxis : public express::Entity {
 public:
     IfcGridAxis() {}
-    explicit IfcGridAxis (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcGridAxis (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The tag or name for this grid axis.
     std::optional< std::string > AxisTag() const;
@@ -11413,7 +11413,7 @@ public:
     std::vector< IfcGrid > PartOfU() const; // INVERSE IfcGrid::UAxes
     std::vector< IfcVirtualGridIntersection > HasIntersections() const; // INVERSE IfcVirtualGridIntersection::IntersectingAxes
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_AxisTag, ::Ifc2x3::IfcCurve v2_AxisCurve, bool v3_SameSense);
 };
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
@@ -11422,7 +11422,7 @@ public:
 class IFC_PARSE_API IfcIrregularTimeSeriesValue : public express::Entity {
 public:
     IfcIrregularTimeSeriesValue() {}
-    explicit IfcIrregularTimeSeriesValue (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcIrregularTimeSeriesValue (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The specification of the time point.
     ::Ifc2x3::IfcDateTimeSelect TimeStamp() const;
@@ -11431,7 +11431,7 @@ public:
     std::vector< ::Ifc2x3::IfcValue > ListValues() const;
     void setListValues(const std::vector< ::Ifc2x3::IfcValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDateTimeSelect v1_TimeStamp, std::vector< ::Ifc2x3::IfcValue > v2_ListValues);
 };
 /// An IfcLibraryInformation describes a library where a library is a structured store of information, normally organized in a manner which allows information lookup through an index or reference value. IfcLibraryInformation provides the library Name and optional Version, VersionDate and Publisher attributes. A Location may be added for electronic access to the library.
@@ -11445,7 +11445,7 @@ public:
 class IFC_PARSE_API IfcLibraryInformation : public express::Entity {
 public:
     IfcLibraryInformation() {}
-    explicit IfcLibraryInformation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcLibraryInformation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The name which is used to identify the library.
     std::string Name() const;
@@ -11464,7 +11464,7 @@ public:
     std::optional< std::vector< ::Ifc2x3::IfcLibraryReference > > LibraryReference() const;
     void setLibraryReference(const std::optional< std::vector< ::Ifc2x3::IfcLibraryReference > >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Version, ::Ifc2x3::IfcOrganization v3_Publisher, ::Ifc2x3::IfcCalendarDate v4_VersionDate, std::optional< std::vector< ::Ifc2x3::IfcLibraryReference > > v5_LibraryReference);
 };
 /// An IfcLibraryReference is a reference into a library of information by Location (provided as a URI). It also provides an optional inherited Identification key to allow more specific references to library sections or tables. The inherited Name attribute allows for a human interpretable identification of the library item. Also, general information on the library from which the reference is taken, is given by the ReferencedLibrary relation which identifies the relevant occurrence of IfcLibraryInformation.
@@ -11477,11 +11477,11 @@ public:
 class IFC_PARSE_API IfcLibraryReference : public IfcExternalReference {
 public:
     IfcLibraryReference() {}
-    explicit IfcLibraryReference (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcLibraryReference (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
         std::vector< IfcLibraryInformation > ReferenceIntoLibrary() const; // INVERSE IfcLibraryInformation::LibraryReference
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// IfcLightDistributionData defines the luminous intensity of a light source given at a particular main plane angle. It is based on some standardized light distribution curves; the MainPlaneAngle is either the 
@@ -11502,7 +11502,7 @@ public:
 class IFC_PARSE_API IfcLightDistributionData : public express::Entity {
 public:
     IfcLightDistributionData() {}
-    explicit IfcLightDistributionData (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcLightDistributionData (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The main plane angle (A, B or C angles, according to the light distribution curve chosen).
     double MainPlaneAngle() const;
@@ -11516,7 +11516,7 @@ public:
     std::vector< double > /*[1:?]*/ LuminousIntensity() const;
     void setLuminousIntensity(const std::vector< double > /*[1:?]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_MainPlaneAngle, std::vector< double > /*[1:?]*/ v2_SecondaryPlaneAngle, std::vector< double > /*[1:?]*/ v3_LuminousIntensity);
 };
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
@@ -11525,7 +11525,7 @@ public:
 class IFC_PARSE_API IfcLightIntensityDistribution : public express::Entity {
 public:
     IfcLightIntensityDistribution() {}
-    explicit IfcLightIntensityDistribution (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcLightIntensityDistribution (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Standardized  light distribution curve used to define the luminous intensity of the light in all directions.
     ::Ifc2x3::IfcLightDistributionCurveEnum::Value LightDistributionCurve() const;
@@ -11534,14 +11534,14 @@ public:
     std::vector< ::Ifc2x3::IfcLightDistributionData > DistributionData() const;
     void setDistributionData(const std::vector< ::Ifc2x3::IfcLightDistributionData >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcLightDistributionCurveEnum::Value v1_LightDistributionCurve, std::vector< ::Ifc2x3::IfcLightDistributionData > v2_DistributionData);
 };
 
 class IFC_PARSE_API IfcLocalTime : public express::Entity {
 public:
     IfcLocalTime() {}
-    explicit IfcLocalTime (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcLocalTime (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     int HourComponent() const;
     void setHourComponent(const int& v);
@@ -11554,7 +11554,7 @@ public:
     std::optional< int > DaylightSavingOffset() const;
     void setDaylightSavingOffset(const std::optional< int >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_HourComponent, std::optional< int > v2_MinuteComponent, std::optional< double > v3_SecondComponent, ::Ifc2x3::IfcCoordinatedUniversalTimeOffset v4_Zone, std::optional< int > v5_DaylightSavingOffset);
 };
 /// IfcMaterial is a homogeneous or inhomogeneous
@@ -11587,7 +11587,7 @@ public:
 class IFC_PARSE_API IfcMaterial : public express::Entity {
 public:
     IfcMaterial() {}
-    explicit IfcMaterial (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterial (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of the material. 
     /// 
@@ -11599,7 +11599,7 @@ public:
         std::vector< IfcMaterialDefinitionRepresentation > HasRepresentation() const; // INVERSE IfcMaterialDefinitionRepresentation::RepresentedMaterial
     std::vector< IfcMaterialClassificationRelationship > ClassifiedAs() const; // INVERSE IfcMaterialClassificationRelationship::ClassifiedMaterial
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// IfcMaterialClassificationRelationship is a relationship assigning classifications to materials.
@@ -11610,7 +11610,7 @@ public:
 class IFC_PARSE_API IfcMaterialClassificationRelationship : public express::Entity {
 public:
     IfcMaterialClassificationRelationship() {}
-    explicit IfcMaterialClassificationRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialClassificationRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The material classifications identifying the type of material.
     std::vector< ::Ifc2x3::IfcClassificationNotationSelect > MaterialClassifications() const;
@@ -11619,7 +11619,7 @@ public:
     ::Ifc2x3::IfcMaterial ClassifiedMaterial() const;
     void setClassifiedMaterial(const ::Ifc2x3::IfcMaterial& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcClassificationNotationSelect > v1_MaterialClassifications, ::Ifc2x3::IfcMaterial v2_ClassifiedMaterial);
 };
 /// IfcMaterialLayer is a single and identifiable part of an element which is constructed of a number of layers (one or more). Each IfcMaterialLayer has a constant thickness and is located relative to the referencing IfcMaterialLayerSet along the MlsBase.
@@ -11648,7 +11648,7 @@ public:
 class IFC_PARSE_API IfcMaterialLayer : public express::Entity {
 public:
     IfcMaterialLayer() {}
-    explicit IfcMaterialLayer (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialLayer (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Optional reference to the material from which the layer is constructed. Note that if this value is not given, it does not denote a layer with no material (an air gap), it only means that the material is not specified at that point.
     ::Ifc2x3::IfcMaterial Material() const;
@@ -11669,7 +11669,7 @@ public:
     void setIsVentilated(const std::optional< boost::logic::tribool >& v);
         std::vector< IfcMaterialLayerSet > ToMaterialLayerSet() const; // INVERSE IfcMaterialLayerSet::MaterialLayers
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, double v2_LayerThickness, std::optional< boost::logic::tribool > v3_IsVentilated);
 };
 /// IfcMaterialLayerSet is a designation by which materials of an element constructed of a number of material layers is known and through which the relative positioning of individual layers can be expressed.
@@ -11708,7 +11708,7 @@ public:
 class IFC_PARSE_API IfcMaterialLayerSet : public express::Entity {
 public:
     IfcMaterialLayerSet() {}
-    explicit IfcMaterialLayerSet (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialLayerSet (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Identification of the layers from which the material layer set is composed.
     std::vector< ::Ifc2x3::IfcMaterialLayer > MaterialLayers() const;
@@ -11717,7 +11717,7 @@ public:
     std::optional< std::string > LayerSetName() const;
     void setLayerSetName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcMaterialLayer > v1_MaterialLayers, std::optional< std::string > v2_LayerSetName);
 };
 /// IfcMaterialLayerSetUsage determines the usage of
@@ -11823,7 +11823,7 @@ public:
 class IFC_PARSE_API IfcMaterialLayerSetUsage : public express::Entity {
 public:
     IfcMaterialLayerSetUsage() {}
-    explicit IfcMaterialLayerSetUsage (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialLayerSetUsage (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The IfcMaterialLayerSet set to which the usage is applied.
     ::Ifc2x3::IfcMaterialLayerSet ForLayerSet() const;
@@ -11843,7 +11843,7 @@ public:
     double OffsetFromReferenceLine() const;
     void setOffsetFromReferenceLine(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterialLayerSet v1_ForLayerSet, ::Ifc2x3::IfcLayerSetDirectionEnum::Value v2_LayerSetDirection, ::Ifc2x3::IfcDirectionSenseEnum::Value v3_DirectionSense, double v4_OffsetFromReferenceLine);
 };
 /// IfcMaterialList is a list of the different materials
@@ -11866,13 +11866,13 @@ public:
 class IFC_PARSE_API IfcMaterialList : public express::Entity {
 public:
     IfcMaterialList() {}
-    explicit IfcMaterialList (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialList (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Materials used in a composition of substances.
     std::vector< ::Ifc2x3::IfcMaterial > Materials() const;
     void setMaterials(const std::vector< ::Ifc2x3::IfcMaterial >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcMaterial > v1_Materials);
 };
 /// IfcMaterialProperties is defined as an abstract
@@ -11900,7 +11900,7 @@ public:
 class IFC_PARSE_API IfcMaterialProperties : public express::Entity {
 public:
     IfcMaterialProperties() {}
-    explicit IfcMaterialProperties (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMaterialProperties (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Reference to the material definition to which the set of properties is assigned.
     /// 
@@ -11908,7 +11908,7 @@ public:
     ::Ifc2x3::IfcMaterial Material() const;
     void setMaterial(const ::Ifc2x3::IfcMaterial& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material);
 };
 /// Definition from ISO/CD 10303-41:1992: A measure with unit is the specification of a physical quantity  as defined in ISO 31 (clause 2).
@@ -11924,7 +11924,7 @@ public:
 class IFC_PARSE_API IfcMeasureWithUnit : public express::Entity {
 public:
     IfcMeasureWithUnit() {}
-    explicit IfcMeasureWithUnit (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMeasureWithUnit (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The value of the physical quantity when expressed in the specified units.
     ::Ifc2x3::IfcValue ValueComponent() const;
@@ -11933,14 +11933,14 @@ public:
     ::Ifc2x3::IfcUnit UnitComponent() const;
     void setUnitComponent(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcValue v1_ValueComponent, ::Ifc2x3::IfcUnit v2_UnitComponent);
 };
 
 class IFC_PARSE_API IfcMechanicalMaterialProperties : public IfcMaterialProperties {
 public:
     IfcMechanicalMaterialProperties() {}
-    explicit IfcMechanicalMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcMechanicalMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > DynamicViscosity() const;
     void setDynamicViscosity(const std::optional< double >& v);
@@ -11953,14 +11953,14 @@ public:
     std::optional< double > ThermalExpansionCoefficient() const;
     void setThermalExpansionCoefficient(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_DynamicViscosity, std::optional< double > v3_YoungModulus, std::optional< double > v4_ShearModulus, std::optional< double > v5_PoissonRatio, std::optional< double > v6_ThermalExpansionCoefficient);
 };
 
 class IFC_PARSE_API IfcMechanicalSteelMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
     IfcMechanicalSteelMaterialProperties() {}
-    explicit IfcMechanicalSteelMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMechanicalMaterialProperties(data) {}
+    explicit IfcMechanicalSteelMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMechanicalMaterialProperties(data) {}
 
     std::optional< double > YieldStress() const;
     void setYieldStress(const std::optional< double >& v);
@@ -11977,7 +11977,7 @@ public:
     std::optional< std::vector< ::Ifc2x3::IfcRelaxation > > Relaxations() const;
     void setRelaxations(const std::optional< std::vector< ::Ifc2x3::IfcRelaxation > >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_DynamicViscosity, std::optional< double > v3_YoungModulus, std::optional< double > v4_ShearModulus, std::optional< double > v5_PoissonRatio, std::optional< double > v6_ThermalExpansionCoefficient, std::optional< double > v7_YieldStress, std::optional< double > v8_UltimateStress, std::optional< double > v9_UltimateStrain, std::optional< double > v10_HardeningModule, std::optional< double > v11_ProportionalStress, std::optional< double > v12_PlasticStrain, std::optional< std::vector< ::Ifc2x3::IfcRelaxation > > v13_Relaxations);
 };
 /// An IfcMetric is used to capture quantitative resultant metrics that can be applied to objectives. 
@@ -12035,7 +12035,7 @@ public:
 class IFC_PARSE_API IfcMetric : public IfcConstraint {
 public:
     IfcMetric() {}
-    explicit IfcMetric (const std::weak_ptr<InstanceData>& data) : IfcConstraint(data) {}
+    explicit IfcMetric (const std::weak_ptr<instance_data>& data) : IfcConstraint(data) {}
 
     /// Enumeration that identifies the type of benchmark data.
     ::Ifc2x3::IfcBenchmarkEnum::Value Benchmark() const;
@@ -12047,7 +12047,7 @@ public:
     ::Ifc2x3::IfcMetricValueSelect DataValue() const;
     void setDataValue(const ::Ifc2x3::IfcMetricValueSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, std::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect v6_CreationTime, std::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcBenchmarkEnum::Value v8_Benchmark, std::optional< std::string > v9_ValueSource, ::Ifc2x3::IfcMetricValueSelect v10_DataValue);
 };
 /// IfcMonetaryUnit is a unit to define currency for money.
@@ -12058,13 +12058,13 @@ public:
 class IFC_PARSE_API IfcMonetaryUnit : public express::Entity {
 public:
     IfcMonetaryUnit() {}
-    explicit IfcMonetaryUnit (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcMonetaryUnit (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Code or name of the currency.  Permissible values are the three-letter alphabetic currency codes as per ISO 4217, for example CNY, EUR, GBP, JPY, USD.
     ::Ifc2x3::IfcCurrencyEnum::Value Currency() const;
     void setCurrency(const ::Ifc2x3::IfcCurrencyEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurrencyEnum::Value v1_Currency);
 };
 /// Definition from ISO/CD 10303-41:1992: A named unit is a unit quantity associated with the word, or group of words, by which the unit is identified.
@@ -12075,7 +12075,7 @@ public:
 class IFC_PARSE_API IfcNamedUnit : public express::Entity {
 public:
     IfcNamedUnit() {}
-    explicit IfcNamedUnit (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcNamedUnit (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The dimensional exponents of the SI base units by which the named unit is defined.
     ::Ifc2x3::IfcDimensionalExponents Dimensions() const;
@@ -12084,7 +12084,7 @@ public:
     ::Ifc2x3::IfcUnitEnum::Value UnitType() const;
     void setUnitType(const ::Ifc2x3::IfcUnitEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDimensionalExponents v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType);
 };
 /// IfcObjectPlacement is an abstract supertype for the special types defining the object coordinate system. The
@@ -12101,12 +12101,12 @@ public:
 class IFC_PARSE_API IfcObjectPlacement : public express::Entity {
 public:
     IfcObjectPlacement() {}
-    explicit IfcObjectPlacement (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcObjectPlacement (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
         std::vector< IfcProduct > PlacesObject() const; // INVERSE IfcProduct::ObjectPlacement
     std::vector< IfcLocalPlacement > ReferencedByPlacements() const; // INVERSE IfcLocalPlacement::PlacementRelTo
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// An IfcObjective captures qualitative information for an objective-based constraint. 
@@ -12121,7 +12121,7 @@ public:
 class IFC_PARSE_API IfcObjective : public IfcConstraint {
 public:
     IfcObjective() {}
-    explicit IfcObjective (const std::weak_ptr<InstanceData>& data) : IfcConstraint(data) {}
+    explicit IfcObjective (const std::weak_ptr<instance_data>& data) : IfcConstraint(data) {}
 
     /// A list of any benchmark values used for comparison purposes.
     ::Ifc2x3::IfcMetric BenchmarkValues() const;
@@ -12136,14 +12136,14 @@ public:
     std::optional< std::string > UserDefinedQualifier() const;
     void setUserDefinedQualifier(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, std::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect v6_CreationTime, std::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcMetric v8_BenchmarkValues, ::Ifc2x3::IfcMetric v9_ResultValues, ::Ifc2x3::IfcObjectiveEnum::Value v10_ObjectiveQualifier, std::optional< std::string > v11_UserDefinedQualifier);
 };
 
 class IFC_PARSE_API IfcOpticalMaterialProperties : public IfcMaterialProperties {
 public:
     IfcOpticalMaterialProperties() {}
-    explicit IfcOpticalMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcOpticalMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > VisibleTransmittance() const;
     void setVisibleTransmittance(const std::optional< double >& v);
@@ -12164,7 +12164,7 @@ public:
     std::optional< double > SolarReflectanceBack() const;
     void setSolarReflectanceBack(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_VisibleTransmittance, std::optional< double > v3_SolarTransmittance, std::optional< double > v4_ThermalIrTransmittance, std::optional< double > v5_ThermalIrEmissivityBack, std::optional< double > v6_ThermalIrEmissivityFront, std::optional< double > v7_VisibleReflectanceBack, std::optional< double > v8_VisibleReflectanceFront, std::optional< double > v9_SolarReflectanceFront, std::optional< double > v10_SolarReflectanceBack);
 };
 /// A named and structured grouping with a corporate identity.
@@ -12178,7 +12178,7 @@ public:
 class IFC_PARSE_API IfcOrganization : public express::Entity {
 public:
     IfcOrganization() {}
-    explicit IfcOrganization (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcOrganization (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > Id() const;
     void setId(const std::optional< std::string >& v);
@@ -12199,7 +12199,7 @@ public:
     std::vector< IfcOrganizationRelationship > Relates() const; // INVERSE IfcOrganizationRelationship::RelatingOrganization
     std::vector< IfcPersonAndOrganization > Engages() const; // INVERSE IfcPersonAndOrganization::TheOrganization
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Id, std::string v2_Name, std::optional< std::string > v3_Description, std::optional< std::vector< ::Ifc2x3::IfcActorRole > > v4_Roles, std::optional< std::vector< ::Ifc2x3::IfcAddress > > v5_Addresses);
 };
 /// Definition: establishes an association between one relating organization and one or more related organizations.
@@ -12211,7 +12211,7 @@ public:
 class IFC_PARSE_API IfcOrganizationRelationship : public express::Entity {
 public:
     IfcOrganizationRelationship() {}
-    explicit IfcOrganizationRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcOrganizationRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The word or group of words by which the relationship is referred to.
     std::string Name() const;
@@ -12226,7 +12226,7 @@ public:
     std::vector< ::Ifc2x3::IfcOrganization > RelatedOrganizations() const;
     void setRelatedOrganizations(const std::vector< ::Ifc2x3::IfcOrganization >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcOrganization v3_RelatingOrganization, std::vector< ::Ifc2x3::IfcOrganization > v4_RelatedOrganizations);
 };
 /// IfcOwnerHistory defines all history and identification related information. In order to provide fast access it is directly attached to all independent objects, relationships and properties.
@@ -12242,7 +12242,7 @@ public:
 class IFC_PARSE_API IfcOwnerHistory : public express::Entity {
 public:
     IfcOwnerHistory() {}
-    explicit IfcOwnerHistory (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcOwnerHistory (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Direct reference to the end user who currently "owns" this object. Note that IFC includes the concept of ownership transfer from one user to another and therefore distinguishes between the Owning User and Creating User.
     ::Ifc2x3::IfcPersonAndOrganization OwningUser() const;
@@ -12269,7 +12269,7 @@ public:
     int CreationDate() const;
     void setCreationDate(const int& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPersonAndOrganization v1_OwningUser, ::Ifc2x3::IfcApplication v2_OwningApplication, std::optional< ::Ifc2x3::IfcStateEnum::Value > v3_State, ::Ifc2x3::IfcChangeActionEnum::Value v4_ChangeAction, std::optional< int > v5_LastModifiedDate, ::Ifc2x3::IfcPersonAndOrganization v6_LastModifyingUser, ::Ifc2x3::IfcApplication v7_LastModifyingApplication, int v8_CreationDate);
 };
 /// Definition: an individual human being.
@@ -12284,7 +12284,7 @@ public:
 class IFC_PARSE_API IfcPerson : public express::Entity {
 public:
     IfcPerson() {}
-    explicit IfcPerson (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPerson (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > Id() const;
     void setId(const std::optional< std::string >& v);
@@ -12317,7 +12317,7 @@ public:
     void setAddresses(const std::optional< std::vector< ::Ifc2x3::IfcAddress > >& v);
         std::vector< IfcPersonAndOrganization > EngagedIn() const; // INVERSE IfcPersonAndOrganization::ThePerson
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Id, std::optional< std::string > v2_FamilyName, std::optional< std::string > v3_GivenName, std::optional< std::vector< std::string > /*[1:?]*/ > v4_MiddleNames, std::optional< std::vector< std::string > /*[1:?]*/ > v5_PrefixTitles, std::optional< std::vector< std::string > /*[1:?]*/ > v6_SuffixTitles, std::optional< std::vector< ::Ifc2x3::IfcActorRole > > v7_Roles, std::optional< std::vector< ::Ifc2x3::IfcAddress > > v8_Addresses);
 };
 /// Definition: Identification of a person within an organization.
@@ -12328,7 +12328,7 @@ public:
 class IFC_PARSE_API IfcPersonAndOrganization : public express::Entity {
 public:
     IfcPersonAndOrganization() {}
-    explicit IfcPersonAndOrganization (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPersonAndOrganization (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The person who is related to the organization.
     ::Ifc2x3::IfcPerson ThePerson() const;
@@ -12340,7 +12340,7 @@ public:
     std::optional< std::vector< ::Ifc2x3::IfcActorRole > > Roles() const;
     void setRoles(const std::optional< std::vector< ::Ifc2x3::IfcActorRole > >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPerson v1_ThePerson, ::Ifc2x3::IfcOrganization v2_TheOrganization, std::optional< std::vector< ::Ifc2x3::IfcActorRole > > v3_Roles);
 };
 /// The physical quantity, IfcPhysicalQuantity, is an abstract entity that holds a complex or simple quantity measure together with a semantic definition of the usage for the single or several measure value. 
@@ -12351,7 +12351,7 @@ public:
 class IFC_PARSE_API IfcPhysicalQuantity : public express::Entity {
 public:
     IfcPhysicalQuantity() {}
-    explicit IfcPhysicalQuantity (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPhysicalQuantity (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of the element quantity or measure. The name attribute has to be made recognizable by further agreements.
     std::string Name() const;
@@ -12361,7 +12361,7 @@ public:
     void setDescription(const std::optional< std::string >& v);
         std::vector< IfcPhysicalComplexQuantity > PartOfComplex() const; // INVERSE IfcPhysicalComplexQuantity::HasQuantities
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description);
 };
 /// The physical quantity, IfcPhysicalSimpleQuantity, is an entity that holds a single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity) together with a semantic definition of the usage for the measure value. 
@@ -12376,13 +12376,13 @@ public:
 class IFC_PARSE_API IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     IfcPhysicalSimpleQuantity() {}
-    explicit IfcPhysicalSimpleQuantity (const std::weak_ptr<InstanceData>& data) : IfcPhysicalQuantity(data) {}
+    explicit IfcPhysicalSimpleQuantity (const std::weak_ptr<instance_data>& data) : IfcPhysicalQuantity(data) {}
 
     /// Optional assignment of a unit. If no unit is given, then the global unit assignment, as established at the IfcProject, applies to the quantity measures.
     ::Ifc2x3::IfcNamedUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcNamedUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit);
 };
 /// Definition: The address for delivery of paper based mail.
@@ -12391,7 +12391,7 @@ public:
 class IFC_PARSE_API IfcPostalAddress : public IfcAddress {
 public:
     IfcPostalAddress() {}
-    explicit IfcPostalAddress (const std::weak_ptr<InstanceData>& data) : IfcAddress(data) {}
+    explicit IfcPostalAddress (const std::weak_ptr<instance_data>& data) : IfcAddress(data) {}
 
     /// An organization defined address for internal mail delivery.
     std::optional< std::string > InternalLocation() const;
@@ -12421,7 +12421,7 @@ public:
     std::optional< std::string > Country() const;
     void setCountry(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, std::optional< std::string > v2_Description, std::optional< std::string > v3_UserDefinedPurpose, std::optional< std::string > v4_InternalLocation, std::optional< std::vector< std::string > /*[1:?]*/ > v5_AddressLines, std::optional< std::string > v6_PostalBox, std::optional< std::string > v7_Town, std::optional< std::string > v8_Region, std::optional< std::string > v9_PostalCode, std::optional< std::string > v10_Country);
 };
 /// A pre defined item is a qualified name given to a style or font which is determined within the data exchange specification by convention on using the Name attribute value (in contrary to externally defined items, which are agreed by an external source).
@@ -12434,13 +12434,13 @@ public:
 class IFC_PARSE_API IfcPreDefinedItem : public express::Entity {
 public:
     IfcPreDefinedItem() {}
-    explicit IfcPreDefinedItem (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPreDefinedItem (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The string by which the pre defined item is identified. Allowable values for the string are declared at the level of subtypes.
     std::string Name() const;
     void setName(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// A predefined symbol is a symbol that gets its shape information by a conforming name that is specified within subtypes of the entity.
@@ -12453,20 +12453,20 @@ public:
 class IFC_PARSE_API IfcPreDefinedSymbol : public IfcPreDefinedItem {
 public:
     IfcPreDefinedSymbol() {}
-    explicit IfcPreDefinedSymbol (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedItem(data) {}
+    explicit IfcPreDefinedSymbol (const std::weak_ptr<instance_data>& data) : IfcPreDefinedItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 
 class IFC_PARSE_API IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
 public:
     IfcPreDefinedTerminatorSymbol() {}
-    explicit IfcPreDefinedTerminatorSymbol (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedSymbol(data) {}
+    explicit IfcPreDefinedTerminatorSymbol (const std::weak_ptr<instance_data>& data) : IfcPreDefinedSymbol(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// The pre defined text font determines those qualified names which can be used for fonts that are in scope of the current data exchange specification (in contrary to externally defined text fonts). There are two choices:
@@ -12483,10 +12483,10 @@ public:
 class IFC_PARSE_API IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
     IfcPreDefinedTextFont() {}
-    explicit IfcPreDefinedTextFont (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedItem(data) {}
+    explicit IfcPreDefinedTextFont (const std::weak_ptr<instance_data>& data) : IfcPreDefinedItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// The presentation layer assignment provides the layer name (and optionally a description and an identifier) for a collection of geometric representation items. The IfcPresentationLayerAssignment corresponds to the term "CAD Layer" and is used mainly for grouping and visibility control.
@@ -12507,7 +12507,7 @@ public:
 class IFC_PARSE_API IfcPresentationLayerAssignment : public express::Entity {
 public:
     IfcPresentationLayerAssignment() {}
-    explicit IfcPresentationLayerAssignment (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPresentationLayerAssignment (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of the layer.
     std::string Name() const;
@@ -12522,7 +12522,7 @@ public:
     std::optional< std::string > Identifier() const;
     void setIdentifier(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcLayeredItem > v3_AssignedItems, std::optional< std::string > v4_Identifier);
 };
 /// An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.
@@ -12541,7 +12541,7 @@ public:
 class IFC_PARSE_API IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     IfcPresentationLayerWithStyle() {}
-    explicit IfcPresentationLayerWithStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationLayerAssignment(data) {}
+    explicit IfcPresentationLayerWithStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationLayerAssignment(data) {}
 
     /// A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.
     boost::logic::tribool LayerOn() const;
@@ -12560,7 +12560,7 @@ public:
     std::vector< ::Ifc2x3::IfcPresentationStyleSelect > LayerStyles() const;
     void setLayerStyles(const std::vector< ::Ifc2x3::IfcPresentationStyleSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcLayeredItem > v3_AssignedItems, std::optional< std::string > v4_Identifier, boost::logic::tribool v5_LayerOn, boost::logic::tribool v6_LayerFrozen, boost::logic::tribool v7_LayerBlocked, std::vector< ::Ifc2x3::IfcPresentationStyleSelect > v8_LayerStyles);
 };
 /// IfcPresentationStyle is an abstract generalization of style table for presentation information assigned to geometric representation items. It includes styles for curves, areas, surfaces, text and symbols. Style information may include colour, hatching, rendering, and text fonts.
@@ -12571,13 +12571,13 @@ public:
 class IFC_PARSE_API IfcPresentationStyle : public express::Entity {
 public:
     IfcPresentationStyle() {}
-    explicit IfcPresentationStyle (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPresentationStyle (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of the presentation style.
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// Definition from ISO/CD 10303-46:1992: The presentation style assignment is a set of styles which are assigned to styled items for the purpose of presenting these styled items. 
@@ -12588,13 +12588,13 @@ public:
 class IFC_PARSE_API IfcPresentationStyleAssignment : public express::Entity {
 public:
     IfcPresentationStyleAssignment() {}
-    explicit IfcPresentationStyleAssignment (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPresentationStyleAssignment (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A set of presentation styles that are assigned to styled items.
     std::vector< ::Ifc2x3::IfcPresentationStyleSelect > Styles() const;
     void setStyles(const std::vector< ::Ifc2x3::IfcPresentationStyleSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcPresentationStyleSelect > v1_Styles);
 };
 /// IfcProductRepresentation defines a representation of a
@@ -12617,7 +12617,7 @@ public:
 class IFC_PARSE_API IfcProductRepresentation : public express::Entity {
 public:
     IfcProductRepresentation() {}
-    explicit IfcProductRepresentation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcProductRepresentation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The word or group of words by which the product representation is known.
     std::optional< std::string > Name() const;
@@ -12629,14 +12629,14 @@ public:
     std::vector< ::Ifc2x3::IfcRepresentation > Representations() const;
     void setRepresentations(const std::vector< ::Ifc2x3::IfcRepresentation >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcRepresentation > v3_Representations);
 };
 
 class IFC_PARSE_API IfcProductsOfCombustionProperties : public IfcMaterialProperties {
 public:
     IfcProductsOfCombustionProperties() {}
-    explicit IfcProductsOfCombustionProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcProductsOfCombustionProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > SpecificHeatCapacity() const;
     void setSpecificHeatCapacity(const std::optional< double >& v);
@@ -12647,7 +12647,7 @@ public:
     std::optional< double > CO2Content() const;
     void setCO2Content(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_SpecificHeatCapacity, std::optional< double > v3_N20Content, std::optional< double > v4_COContent, std::optional< double > v5_CO2Content);
 };
 /// IfcProfileDef
@@ -12823,7 +12823,7 @@ public:
 class IFC_PARSE_API IfcProfileDef : public express::Entity {
 public:
     IfcProfileDef() {}
-    explicit IfcProfileDef (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcProfileDef (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Defines the type of geometry into which this profile definition shall be resolved, either a curve or a surface area. In case of curve the profile should be referenced by a swept surface, in case of area the profile should be referenced by a swept area solid.
     ::Ifc2x3::IfcProfileTypeEnum::Value ProfileType() const;
@@ -12832,7 +12832,7 @@ public:
     std::optional< std::string > ProfileName() const;
     void setProfileName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName);
 };
 /// This is a collection of properties applicable to section profile definitions.
@@ -12849,7 +12849,7 @@ public:
 class IFC_PARSE_API IfcProfileProperties : public express::Entity {
 public:
     IfcProfileProperties() {}
-    explicit IfcProfileProperties (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcProfileProperties (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::optional< std::string > ProfileName() const;
     void setProfileName(const std::optional< std::string >& v);
@@ -12857,7 +12857,7 @@ public:
     ::Ifc2x3::IfcProfileDef ProfileDefinition() const;
     void setProfileDefinition(const ::Ifc2x3::IfcProfileDef& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition);
 };
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
@@ -12866,7 +12866,7 @@ public:
 class IFC_PARSE_API IfcProperty : public express::Entity {
 public:
     IfcProperty() {}
-    explicit IfcProperty (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcProperty (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name for this property. This label is the significant name string that defines the semantic meaning for the property.
     std::string Name() const;
@@ -12878,14 +12878,14 @@ public:
     std::vector< IfcPropertyDependencyRelationship > PropertyDependsOn() const; // INVERSE IfcPropertyDependencyRelationship::DependantProperty
     std::vector< IfcComplexProperty > PartOfComplex() const; // INVERSE IfcComplexProperty::HasProperties
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description);
 };
 
 class IFC_PARSE_API IfcPropertyConstraintRelationship : public express::Entity {
 public:
     IfcPropertyConstraintRelationship() {}
-    explicit IfcPropertyConstraintRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPropertyConstraintRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcConstraint RelatingConstraint() const;
     void setRelatingConstraint(const ::Ifc2x3::IfcConstraint& v);
@@ -12896,7 +12896,7 @@ public:
     std::optional< std::string > Description() const;
     void setDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcConstraint v1_RelatingConstraint, std::vector< ::Ifc2x3::IfcProperty > v2_RelatedProperties, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// An IfcPropertyDependencyRelationship describes an identified dependency between the value of one property and that of another.
@@ -12910,7 +12910,7 @@ public:
 class IFC_PARSE_API IfcPropertyDependencyRelationship : public express::Entity {
 public:
     IfcPropertyDependencyRelationship() {}
-    explicit IfcPropertyDependencyRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPropertyDependencyRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The property on which the relationship depends.
     ::Ifc2x3::IfcProperty DependingProperty() const;
@@ -12926,7 +12926,7 @@ public:
     std::optional< std::string > Expression() const;
     void setExpression(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProperty v1_DependingProperty, ::Ifc2x3::IfcProperty v2_DependantProperty, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_Expression);
 };
 /// IfcPropertyEnumeration is a collection of simple
@@ -12978,7 +12978,7 @@ public:
 class IFC_PARSE_API IfcPropertyEnumeration : public express::Entity {
 public:
     IfcPropertyEnumeration() {}
-    explicit IfcPropertyEnumeration (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcPropertyEnumeration (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Name of this enumeration.
     std::string Name() const;
@@ -12990,7 +12990,7 @@ public:
     ::Ifc2x3::IfcUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::vector< ::Ifc2x3::IfcValue > v2_EnumerationValues, ::Ifc2x3::IfcUnit v3_Unit);
 };
 /// IfcQuantityArea is a physical quantity that defines a derived area measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
@@ -13001,13 +13001,13 @@ public:
 class IFC_PARSE_API IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityArea() {}
-    explicit IfcQuantityArea (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityArea (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Area measure value of this quantity.
     double AreaValue() const;
     void setAreaValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_AreaValue);
 };
 /// IfcQuantityCount is a physical quantity that defines a derived count measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
@@ -13018,13 +13018,13 @@ public:
 class IFC_PARSE_API IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityCount() {}
-    explicit IfcQuantityCount (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityCount (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Count measure value of this quantity.
     double CountValue() const;
     void setCountValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_CountValue);
 };
 /// IfcQuantityLength is a physical quantity that defines a derived length measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement.
@@ -13035,13 +13035,13 @@ public:
 class IFC_PARSE_API IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityLength() {}
-    explicit IfcQuantityLength (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityLength (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Length measure value of this quantity.
     double LengthValue() const;
     void setLengthValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_LengthValue);
 };
 /// IfcQuantityTime is an element quantity that defines a time measure to provide an property of time related to an element. It is normally given by the recipe information of the element under the specific measure rules given by a method of measurement.
@@ -13052,13 +13052,13 @@ public:
 class IFC_PARSE_API IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityTime() {}
-    explicit IfcQuantityTime (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityTime (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Time measure value of this quantity.
     double TimeValue() const;
     void setTimeValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_TimeValue);
 };
 /// IfcQuantityVolume is a physical quantity that defines a derived volume measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
@@ -13069,13 +13069,13 @@ public:
 class IFC_PARSE_API IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityVolume() {}
-    explicit IfcQuantityVolume (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityVolume (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Volume measure value of this quantity.
     double VolumeValue() const;
     void setVolumeValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_VolumeValue);
 };
 /// IfcQuantityWeight is a physical element quantity that defines a derived weight measure to provide an element's physical property. It is normally derived from the physical properties of the element under the specific measure rules given by a method of measurement. 
@@ -13086,20 +13086,20 @@ public:
 class IFC_PARSE_API IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     IfcQuantityWeight() {}
-    explicit IfcQuantityWeight (const std::weak_ptr<InstanceData>& data) : IfcPhysicalSimpleQuantity(data) {}
+    explicit IfcQuantityWeight (const std::weak_ptr<instance_data>& data) : IfcPhysicalSimpleQuantity(data) {}
 
     /// Mass measure value of this quantity.
     double WeightValue() const;
     void setWeightValue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_WeightValue);
 };
 
 class IFC_PARSE_API IfcReferencesValueDocument : public express::Entity {
 public:
     IfcReferencesValueDocument() {}
-    explicit IfcReferencesValueDocument (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcReferencesValueDocument (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcDocumentSelect ReferencedDocument() const;
     void setReferencedDocument(const ::Ifc2x3::IfcDocumentSelect& v);
@@ -13110,7 +13110,7 @@ public:
     std::optional< std::string > Description() const;
     void setDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDocumentSelect v1_ReferencedDocument, std::vector< ::Ifc2x3::IfcAppliedValue > v2_ReferencingValues, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// IfcReinforcementProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth. 
@@ -13121,7 +13121,7 @@ public:
 class IFC_PARSE_API IfcReinforcementBarProperties : public express::Entity {
 public:
     IfcReinforcementBarProperties() {}
-    explicit IfcReinforcementBarProperties (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcReinforcementBarProperties (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The total effective cross-section area of the reinforcement of a specific steel grade.
     double TotalCrossSectionArea() const;
@@ -13142,21 +13142,21 @@ public:
     std::optional< double > BarCount() const;
     void setBarCount(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_TotalCrossSectionArea, std::string v2_SteelGrade, std::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, std::optional< double > v4_EffectiveDepth, std::optional< double > v5_NominalBarDiameter, std::optional< double > v6_BarCount);
 };
 
 class IFC_PARSE_API IfcRelaxation : public express::Entity {
 public:
     IfcRelaxation() {}
-    explicit IfcRelaxation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRelaxation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     double RelaxationValue() const;
     void setRelaxationValue(const double& v);
     double InitialStress() const;
     void setInitialStress(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_RelaxationValue, double v2_InitialStress);
 };
 /// Definition from ISO/CD 10303-43:1992: A
@@ -13208,7 +13208,7 @@ public:
 class IFC_PARSE_API IfcRepresentation : public express::Entity {
 public:
     IfcRepresentation() {}
-    explicit IfcRepresentation (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRepresentation (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Definition of the representation context for which the different subtypes of representation are valid.
     ::Ifc2x3::IfcRepresentationContext ContextOfItems() const;
@@ -13227,7 +13227,7 @@ public:
     std::vector< IfcPresentationLayerAssignment > LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     std::vector< IfcProductRepresentation > OfProductRepresentation() const; // INVERSE IfcProductRepresentation::Representations
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// Definition from ISO/CD 10303-42:1992: A representation context is a context in which a set of representation items are related.
@@ -13243,7 +13243,7 @@ public:
 class IFC_PARSE_API IfcRepresentationContext : public express::Entity {
 public:
     IfcRepresentationContext() {}
-    explicit IfcRepresentationContext (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRepresentationContext (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The optional identifier of the representation context as used within a project.
     std::optional< std::string > ContextIdentifier() const;
@@ -13253,7 +13253,7 @@ public:
     void setContextType(const std::optional< std::string >& v);
         std::vector< IfcRepresentation > RepresentationsInContext() const; // INVERSE IfcRepresentation::ContextOfItems
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType);
 };
 /// Definition from ISO/CD
@@ -13291,12 +13291,12 @@ public:
 class IFC_PARSE_API IfcRepresentationItem : public express::Entity {
 public:
     IfcRepresentationItem() {}
-    explicit IfcRepresentationItem (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRepresentationItem (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
         std::vector< IfcPresentationLayerAssignment > LayerAssignments() const; // INVERSE IfcPresentationLayerAssignment::AssignedItems
     std::vector< IfcStyledItem > StyledByItem() const; // INVERSE IfcStyledItem::Item
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO/CD 10303-43:1992: A representation map is the identification of a representation and a representation item in that representation for the purpose of mapping. The representation item defines the origin of the mapping. The representation map is used as the source of a mapping by a mapped item.
@@ -13313,7 +13313,7 @@ public:
 class IFC_PARSE_API IfcRepresentationMap : public express::Entity {
 public:
     IfcRepresentationMap() {}
-    explicit IfcRepresentationMap (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRepresentationMap (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// An axis2 placement that defines the position about which the mapped
     /// representation is mapped.
@@ -13324,14 +13324,14 @@ public:
     void setMappedRepresentation(const ::Ifc2x3::IfcRepresentation& v);
         std::vector< IfcMappedItem > MapUsage() const; // INVERSE IfcMappedItem::MappingSource
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement v1_MappingOrigin, ::Ifc2x3::IfcRepresentation v2_MappedRepresentation);
 };
 
 class IFC_PARSE_API IfcRibPlateProfileProperties : public IfcProfileProperties {
 public:
     IfcRibPlateProfileProperties() {}
-    explicit IfcRibPlateProfileProperties (const std::weak_ptr<InstanceData>& data) : IfcProfileProperties(data) {}
+    explicit IfcRibPlateProfileProperties (const std::weak_ptr<instance_data>& data) : IfcProfileProperties(data) {}
 
     std::optional< double > Thickness() const;
     void setThickness(const std::optional< double >& v);
@@ -13344,7 +13344,7 @@ public:
     ::Ifc2x3::IfcRibPlateDirectionEnum::Value Direction() const;
     void setDirection(const ::Ifc2x3::IfcRibPlateDirectionEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition, std::optional< double > v3_Thickness, std::optional< double > v4_RibHeight, std::optional< double > v5_RibWidth, std::optional< double > v6_RibSpacing, ::Ifc2x3::IfcRibPlateDirectionEnum::Value v7_Direction);
 };
 /// IfcRoot is the most abstract and root class for all IFC entity definitions that roots in the kernel or in subsequent layers of the IFC object model. It is therefore the common supertype of all IFC entities, beside those defined in an IFC resource schema. All entities that are subtypes of IfcRoot can be used independently, whereas resource schema entities, that are not subtypes of IfcRoot, are not supposed to be independent entities.
@@ -13359,7 +13359,7 @@ public:
 class IFC_PARSE_API IfcRoot : public express::Entity {
 public:
     IfcRoot() {}
-    explicit IfcRoot (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcRoot (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Assignment of a globally unique identifier within the entire software world.
     std::string GlobalId() const;
@@ -13378,7 +13378,7 @@ public:
     std::optional< std::string > Description() const;
     void setDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// Definition from ISO/CD 10303-41:1992: An SI unit is the fixed quantity used as a standard in terms of which items are measured as defined by ISO 1000 (clause 2).
@@ -13391,7 +13391,7 @@ public:
 class IFC_PARSE_API IfcSIUnit : public IfcNamedUnit {
 public:
     IfcSIUnit() {}
-    explicit IfcSIUnit (const std::weak_ptr<InstanceData>& data) : IfcNamedUnit(data) {}
+    explicit IfcSIUnit (const std::weak_ptr<instance_data>& data) : IfcNamedUnit(data) {}
 
     /// The SI Prefix for defining decimal multiples and submultiples of the unit.
     std::optional< ::Ifc2x3::IfcSIPrefix::Value > Prefix() const;
@@ -13402,7 +13402,7 @@ public:
     ::Ifc2x3::IfcSIUnitName::Value Name() const;
     void setName(const ::Ifc2x3::IfcSIUnitName::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::optional< ::Ifc2x3::IfcSIPrefix::Value > v3_Prefix, ::Ifc2x3::IfcSIUnitName::Value v4_Name);
 };
 /// IfcSectionProperties defines the cross section properties for a single longitudinal piece of a cross section.  It is a special-purpose helper class for IfcSectionReinforcementProperties.
@@ -13413,7 +13413,7 @@ public:
 class IFC_PARSE_API IfcSectionProperties : public express::Entity {
 public:
     IfcSectionProperties() {}
-    explicit IfcSectionProperties (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSectionProperties (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// An indicator whether a specific piece of a cross section is uniform or tapered in longitudinal direction.
     ::Ifc2x3::IfcSectionTypeEnum::Value SectionType() const;
@@ -13425,7 +13425,7 @@ public:
     ::Ifc2x3::IfcProfileDef EndProfile() const;
     void setEndProfile(const ::Ifc2x3::IfcProfileDef& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSectionTypeEnum::Value v1_SectionType, ::Ifc2x3::IfcProfileDef v2_StartProfile, ::Ifc2x3::IfcProfileDef v3_EndProfile);
 };
 /// IfcSectionReinforcementProperties defines the cross section properties of reinforcement for a single longitudinal piece of a cross section with a specific reinforcement usage type.  
@@ -13438,7 +13438,7 @@ public:
 class IFC_PARSE_API IfcSectionReinforcementProperties : public express::Entity {
 public:
     IfcSectionReinforcementProperties() {}
-    explicit IfcSectionReinforcementProperties (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSectionReinforcementProperties (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The start position in longitudinal direction for the section reinforcement properties.
     double LongitudinalStartPosition() const;
@@ -13459,7 +13459,7 @@ public:
     std::vector< ::Ifc2x3::IfcReinforcementBarProperties > CrossSectionReinforcementDefinitions() const;
     void setCrossSectionReinforcementDefinitions(const std::vector< ::Ifc2x3::IfcReinforcementBarProperties >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_LongitudinalStartPosition, double v2_LongitudinalEndPosition, std::optional< double > v3_TransversePosition, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v4_ReinforcementRole, ::Ifc2x3::IfcSectionProperties v5_SectionDefinition, std::vector< ::Ifc2x3::IfcReinforcementBarProperties > v6_CrossSectionReinforcementDefinitions);
 };
 /// Definition from ISO/CD 10303-41:1992: The shape
@@ -13502,7 +13502,7 @@ public:
 class IFC_PARSE_API IfcShapeAspect : public express::Entity {
 public:
     IfcShapeAspect() {}
-    explicit IfcShapeAspect (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcShapeAspect (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// List of shape representations. Each member defines a valid representation of a particular type within a particular representation context as being an aspect (or part) of a product definition.
     /// IFC2x Edition 3 CHANGE  The data type has been changed from IfcShapeRepresentation to IfcShapeModel with upward compatibility
@@ -13524,7 +13524,7 @@ public:
     ::Ifc2x3::IfcProductDefinitionShape PartOfProductDefinitionShape() const;
     void setPartOfProductDefinitionShape(const ::Ifc2x3::IfcProductDefinitionShape& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcShapeModel > v1_ShapeRepresentations, std::optional< std::string > v2_Name, std::optional< std::string > v3_Description, boost::logic::tribool v4_ProductDefinitional, ::Ifc2x3::IfcProductDefinitionShape v5_PartOfProductDefinitionShape);
 };
 /// IfcShapeModel represents
@@ -13548,11 +13548,11 @@ public:
 class IFC_PARSE_API IfcShapeModel : public IfcRepresentation {
 public:
     IfcShapeModel() {}
-    explicit IfcShapeModel (const std::weak_ptr<InstanceData>& data) : IfcRepresentation(data) {}
+    explicit IfcShapeModel (const std::weak_ptr<instance_data>& data) : IfcRepresentation(data) {}
 
         std::vector< IfcShapeAspect > OfShapeAspect() const; // INVERSE IfcShapeAspect::ShapeRepresentations
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// The IfcShapeRepresentation represents the concept of a
@@ -13693,10 +13693,10 @@ public:
 class IFC_PARSE_API IfcShapeRepresentation : public IfcShapeModel {
 public:
     IfcShapeRepresentation() {}
-    explicit IfcShapeRepresentation (const std::weak_ptr<InstanceData>& data) : IfcShapeModel(data) {}
+    explicit IfcShapeRepresentation (const std::weak_ptr<instance_data>& data) : IfcShapeModel(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
@@ -13705,10 +13705,10 @@ public:
 class IFC_PARSE_API IfcSimpleProperty : public IfcProperty {
 public:
     IfcSimpleProperty() {}
-    explicit IfcSimpleProperty (const std::weak_ptr<InstanceData>& data) : IfcProperty(data) {}
+    explicit IfcSimpleProperty (const std::weak_ptr<instance_data>& data) : IfcProperty(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description);
 };
 /// Definition from IAI: Describe more rarely needed connection properties.
@@ -13717,13 +13717,13 @@ public:
 class IFC_PARSE_API IfcStructuralConnectionCondition : public express::Entity {
 public:
     IfcStructuralConnectionCondition() {}
-    explicit IfcStructuralConnectionCondition (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcStructuralConnectionCondition (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Optionally defines a name for this connection condition.
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
@@ -13732,13 +13732,13 @@ public:
 class IFC_PARSE_API IfcStructuralLoad : public express::Entity {
 public:
     IfcStructuralLoad() {}
-    explicit IfcStructuralLoad (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcStructuralLoad (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Optionally defines a name for this load.
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// Definition from IAI: The abstract entity IfcStructuralLoadStatic is the supertype of all static loads (actions or reactions) which can be defined.  Within scope are single i.e. concentrated forces and moments, linear i.e. one-dimensionally distributed forces and moments, planar i.e. two-dimensionally distributed forces, furthermore displacements and temperature loads.
@@ -13747,10 +13747,10 @@ public:
 class IFC_PARSE_API IfcStructuralLoadStatic : public IfcStructuralLoad {
 public:
     IfcStructuralLoadStatic() {}
-    explicit IfcStructuralLoadStatic (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoad(data) {}
+    explicit IfcStructuralLoadStatic (const std::weak_ptr<instance_data>& data) : IfcStructuralLoad(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name);
 };
 /// An instance of the entity IfcStructuralLoadTemperature shall be used to define actions which are caused by a temperature change. As shown in Figure 332, the change of temperature is given with a constant value which is applied to the complete section and values for temperature differences between outer fibres of the section.
@@ -13761,7 +13761,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
 public:
     IfcStructuralLoadTemperature() {}
-    explicit IfcStructuralLoadTemperature (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadStatic(data) {}
+    explicit IfcStructuralLoadTemperature (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadStatic(data) {}
 
     std::optional< double > DeltaT_Constant() const;
     void setDeltaT_Constant(const std::optional< double >& v);
@@ -13770,7 +13770,7 @@ public:
     std::optional< double > DeltaT_Z() const;
     void setDeltaT_Z(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_DeltaT_Constant, std::optional< double > v3_DeltaT_Y, std::optional< double > v4_DeltaT_Z);
 };
 /// IfcStyleModel represents the concept of a particular presentation style defined for a material (or other characteristic) of a product or a product component within a representation context. This representation context may (but has not to be) a geometric representation context.
@@ -13781,10 +13781,10 @@ public:
 class IFC_PARSE_API IfcStyleModel : public IfcRepresentation {
 public:
     IfcStyleModel() {}
-    explicit IfcStyleModel (const std::weak_ptr<InstanceData>& data) : IfcRepresentation(data) {}
+    explicit IfcStyleModel (const std::weak_ptr<instance_data>& data) : IfcRepresentation(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// Definition from ISO/CD 10303-46:1992: The styled item is an assignment of style for presentation to a geometric representation item as it is used in a representation.
@@ -13818,7 +13818,7 @@ public:
 class IFC_PARSE_API IfcStyledItem : public IfcRepresentationItem {
 public:
     IfcStyledItem() {}
-    explicit IfcStyledItem (const std::weak_ptr<InstanceData>& data) : IfcRepresentationItem(data) {}
+    explicit IfcStyledItem (const std::weak_ptr<instance_data>& data) : IfcRepresentationItem(data) {}
 
     /// A geometric representation item to which the style is assigned.
     /// 
@@ -13837,7 +13837,7 @@ public:
     std::optional< std::string > Name() const;
     void setName(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 /// The IfcStyledRepresentation represents the concept of a styled presentation being a representation of a product or a product component, like material. within a representation context. This representation context does not need to be (but may be) a geometric representation context.
@@ -13850,10 +13850,10 @@ public:
 class IFC_PARSE_API IfcStyledRepresentation : public IfcStyleModel {
 public:
     IfcStyledRepresentation() {}
-    explicit IfcStyledRepresentation (const std::weak_ptr<InstanceData>& data) : IfcStyleModel(data) {}
+    explicit IfcStyledRepresentation (const std::weak_ptr<instance_data>& data) : IfcStyleModel(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// IfcSurfaceStyle is an assignment of one or many surface style elements to a surface, defined by subtypes of IfcSurface, IfcFaceBasedSurfaceModel, IfcShellBasedSurfaceModel, or by subtypes of IfcSolidModel. The positive direction of the surface normal relates to the positive side. In case of solids the outside of the solid is to be taken as positive side. 
@@ -13866,7 +13866,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyle : public IfcPresentationStyle {
 public:
     IfcSurfaceStyle() {}
-    explicit IfcSurfaceStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationStyle(data) {}
+    explicit IfcSurfaceStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationStyle(data) {}
 
     /// An indication of which side of the surface to apply the style.
     ::Ifc2x3::IfcSurfaceSide::Value Side() const;
@@ -13875,7 +13875,7 @@ public:
     std::vector< ::Ifc2x3::IfcSurfaceStyleElementSelect > Styles() const;
     void setStyles(const std::vector< ::Ifc2x3::IfcSurfaceStyleElementSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcSurfaceSide::Value v2_Side, std::vector< ::Ifc2x3::IfcSurfaceStyleElementSelect > v3_Styles);
 };
 /// IfcSurfaceStyleLighting is a container class for properties for calculation of physically exact illuminance related to a particular surface style.
@@ -13892,7 +13892,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleLighting : public express::Entity {
 public:
     IfcSurfaceStyleLighting() {}
-    explicit IfcSurfaceStyleLighting (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSurfaceStyleLighting (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The degree of diffusion of the transmitted light. In the case of completely transparent materials there is no diffusion. The greater the diffusing power, the smaller the direct component of the transmitted light, up to the point where only diffuse light is produced.A value of 1 means totally diffuse for that colour part of the light.
     /// The factor can be measured physically and has three ratios for the red, green and blue part of the light.
@@ -13911,7 +13911,7 @@ public:
     ::Ifc2x3::IfcColourRgb ReflectanceColour() const;
     void setReflectanceColour(const ::Ifc2x3::IfcColourRgb& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcColourRgb v1_DiffuseTransmissionColour, ::Ifc2x3::IfcColourRgb v2_DiffuseReflectionColour, ::Ifc2x3::IfcColourRgb v3_TransmissionColour, ::Ifc2x3::IfcColourRgb v4_ReflectanceColour);
 };
 /// IfcSurfaceStyleRefraction extends the surface style lighting, or the surface style rendering definition for properties for calculation of physically exact illuminance by adding seldomly used properties. Currently this includes the refraction index (by which the light ray refracts when passing through a prism) and the dispersion factor (or Abbe constant) which takes into account the wavelength dependency of the refraction.
@@ -13922,7 +13922,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleRefraction : public express::Entity {
 public:
     IfcSurfaceStyleRefraction() {}
-    explicit IfcSurfaceStyleRefraction (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSurfaceStyleRefraction (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The index of refraction for all wave lengths of light. The refraction index is the ratio between the speed of light in a vacuum and the speed of light in the medium. E.g. glass has a refraction index of 1.5, whereas water has an index of 1.33
     std::optional< double > RefractionIndex() const;
@@ -13931,7 +13931,7 @@ public:
     std::optional< double > DispersionFactor() const;
     void setDispersionFactor(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< double > v1_RefractionIndex, std::optional< double > v2_DispersionFactor);
 };
 /// Definition from ISO/CD 10303-46:1992: The surface style rendering allows the realistic visualization of surfaces referring to rendering techniques based on the laws of physics and mathematics. 
@@ -13944,13 +13944,13 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleShading : public express::Entity {
 public:
     IfcSurfaceStyleShading() {}
-    explicit IfcSurfaceStyleShading (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSurfaceStyleShading (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The colour used to render the surface. The surface colour for visualisation is defined by specifying the intensity of red, green and blue.
     ::Ifc2x3::IfcColourRgb SurfaceColour() const;
     void setSurfaceColour(const ::Ifc2x3::IfcColourRgb& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcColourRgb v1_SurfaceColour);
 };
 /// The entity IfcSurfaceStyleWithTextures allows to include image textures in surface styles. These image textures can be applied repeating across the surface or mapped with a particular scale upon the surface.
@@ -13974,13 +13974,13 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleWithTextures : public express::Entity {
 public:
     IfcSurfaceStyleWithTextures() {}
-    explicit IfcSurfaceStyleWithTextures (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSurfaceStyleWithTextures (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture.
     std::vector< ::Ifc2x3::IfcSurfaceTexture > Textures() const;
     void setTextures(const std::vector< ::Ifc2x3::IfcSurfaceTexture >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcSurfaceTexture > v1_Textures);
 };
 /// An IfcSurfaceTexture provides a 2-dimensional
@@ -14078,7 +14078,7 @@ public:
 class IFC_PARSE_API IfcSurfaceTexture : public express::Entity {
 public:
     IfcSurfaceTexture() {}
-    explicit IfcSurfaceTexture (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcSurfaceTexture (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The RepeatS field specifies how the texture wraps in the S direction. If RepeatS is TRUE (the default), the texture map is repeated outside the [0.0, 1.0] texture coordinate range in the S direction so that it fills the shape. If RepeatS is FALSE, the texture coordinates are clamped in the S direction to lie within the [0.0, 1.0] range.
     bool RepeatS() const;
@@ -14094,7 +14094,7 @@ public:
     ::Ifc2x3::IfcCartesianTransformationOperator2D TextureTransform() const;
     void setTextureTransform(const ::Ifc2x3::IfcCartesianTransformationOperator2D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform);
 };
 /// Definition from ISO/CD 10303-46:1992: The symbol style is the presentation style that indicates the presentation of annotation symbols. 
@@ -14105,13 +14105,13 @@ public:
 class IFC_PARSE_API IfcSymbolStyle : public IfcPresentationStyle {
 public:
     IfcSymbolStyle() {}
-    explicit IfcSymbolStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationStyle(data) {}
+    explicit IfcSymbolStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationStyle(data) {}
 
     /// The style applied to the symbol for its visual appearance.
     ::Ifc2x3::IfcSymbolStyleSelect StyleOfSymbol() const;
     void setStyleOfSymbol(const ::Ifc2x3::IfcSymbolStyleSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcSymbolStyleSelect v2_StyleOfSymbol);
 };
 /// An IfcTable is a data structure for the provision of information in the form of rows and columns. Each instance may have IfcTableColumn instances that define the name, description and units for each column. The rows of information are stored as a list of IfcTableRow objects. 
@@ -14132,7 +14132,7 @@ public:
 class IFC_PARSE_API IfcTable : public express::Entity {
 public:
     IfcTable() {}
-    explicit IfcTable (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTable (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A unique name which is intended to describe the usage of the Table.
     std::string Name() const;
@@ -14141,7 +14141,7 @@ public:
     std::vector< ::Ifc2x3::IfcTableRow > Rows() const;
     void setRows(const std::vector< ::Ifc2x3::IfcTableRow >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::vector< ::Ifc2x3::IfcTableRow > v2_Rows);
 };
 /// IfcTableRow contains data for a single row within an IfcTable. 
@@ -14160,7 +14160,7 @@ public:
 class IFC_PARSE_API IfcTableRow : public express::Entity {
 public:
     IfcTableRow() {}
-    explicit IfcTableRow (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTableRow (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The data value of the table cell..
     std::vector< ::Ifc2x3::IfcValue > RowCells() const;
@@ -14170,7 +14170,7 @@ public:
     void setIsHeading(const bool& v);
         std::vector< IfcTable > OfTable() const; // INVERSE IfcTable::Rows
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcValue > v1_RowCells, bool v2_IsHeading);
 };
 /// Definition: Address to which telephone, electronic mail and other forms of telecommunications should be addressed.
@@ -14182,7 +14182,7 @@ public:
 class IFC_PARSE_API IfcTelecomAddress : public IfcAddress {
 public:
     IfcTelecomAddress() {}
-    explicit IfcTelecomAddress (const std::weak_ptr<InstanceData>& data) : IfcAddress(data) {}
+    explicit IfcTelecomAddress (const std::weak_ptr<instance_data>& data) : IfcAddress(data) {}
 
     /// The list of telephone numbers at which telephone messages may be received.
     std::optional< std::vector< std::string > /*[1:?]*/ > TelephoneNumbers() const;
@@ -14203,7 +14203,7 @@ public:
     std::optional< std::string > WWWHomePageURL() const;
     void setWWWHomePageURL(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< ::Ifc2x3::IfcAddressTypeEnum::Value > v1_Purpose, std::optional< std::string > v2_Description, std::optional< std::string > v3_UserDefinedPurpose, std::optional< std::vector< std::string > /*[1:?]*/ > v4_TelephoneNumbers, std::optional< std::vector< std::string > /*[1:?]*/ > v5_FacsimileNumbers, std::optional< std::string > v6_PagerNumber, std::optional< std::vector< std::string > /*[1:?]*/ > v7_ElectronicMailAddresses, std::optional< std::string > v8_WWWHomePageURL);
 };
 /// Definition from ISO/CD 10303-46:1992: The text style is a presentation style for annotation text.
@@ -14237,7 +14237,7 @@ public:
 class IFC_PARSE_API IfcTextStyle : public IfcPresentationStyle {
 public:
     IfcTextStyle() {}
-    explicit IfcTextStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationStyle(data) {}
+    explicit IfcTextStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationStyle(data) {}
 
     /// A character style to be used for presented text.
     ::Ifc2x3::IfcCharacterStyleSelect TextCharacterAppearance() const;
@@ -14255,7 +14255,7 @@ public:
     ::Ifc2x3::IfcTextFontSelect TextFontStyle() const;
     void setTextFontStyle(const ::Ifc2x3::IfcTextFontSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcCharacterStyleSelect v2_TextCharacterAppearance, ::Ifc2x3::IfcTextStyleSelect v3_TextStyle, ::Ifc2x3::IfcTextFontSelect v4_TextFontStyle);
 };
 /// Definition from CSS1 (W3C Recommendation): Setting font properties will be among the most common uses of style sheets. Unfortunately, there exists no well-defined and universally accepted taxonomy for classifying fonts, and terms that apply to one font family may not be appropriate for others. For example, 'italic' is commonly used to label slanted text, but slanted text may also be labeled as being Oblique, Slanted, Incline, Cursive or Kursiv. Therefore it is not a simple problem to map typical font selection properties to a specific font.
@@ -14326,7 +14326,7 @@ public:
 class IFC_PARSE_API IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
     IfcTextStyleFontModel() {}
-    explicit IfcTextStyleFontModel (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedTextFont(data) {}
+    explicit IfcTextStyleFontModel (const std::weak_ptr<instance_data>& data) : IfcPreDefinedTextFont(data) {}
 
     /// The value is a prioritized list of font family names and/or generic family names. The first list entry has the highest priority, if this font fails, the next list item shall be used. The last list item should (if possible) be a generic family.
     std::optional< std::vector< std::string > /*[1:?]*/ > FontFamily() const;
@@ -14347,7 +14347,7 @@ public:
     ::Ifc2x3::IfcSizeSelect FontSize() const;
     void setFontSize(const ::Ifc2x3::IfcSizeSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::vector< std::string > /*[1:?]*/ > v2_FontFamily, std::optional< std::string > v3_FontStyle, std::optional< std::string > v4_FontVariant, std::optional< std::string > v5_FontWeight, ::Ifc2x3::IfcSizeSelect v6_FontSize);
 };
 /// Definition from ISO/CD 10303-46:1992: A text style for defined font is a character glyph style for pre-defined or externally defined text fonts.
@@ -14370,7 +14370,7 @@ public:
 class IFC_PARSE_API IfcTextStyleForDefinedFont : public express::Entity {
 public:
     IfcTextStyleForDefinedFont() {}
-    explicit IfcTextStyleForDefinedFont (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTextStyleForDefinedFont (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// This property describes the text color of an element (often referred to as the foreground color).
     ::Ifc2x3::IfcColour Colour() const;
@@ -14379,7 +14379,7 @@ public:
     ::Ifc2x3::IfcColour BackgroundColour() const;
     void setBackgroundColour(const ::Ifc2x3::IfcColour& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcColour v1_Colour, ::Ifc2x3::IfcColour v2_BackgroundColour);
 };
 /// Definition from CSS1 (W3C Recommendation): The properties defined in the text model affect the visual presentation of characters, spaces, words, and paragraphs.
@@ -14392,7 +14392,7 @@ public:
 class IFC_PARSE_API IfcTextStyleTextModel : public express::Entity {
 public:
     IfcTextStyleTextModel() {}
-    explicit IfcTextStyleTextModel (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTextStyleTextModel (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The property specifies the indentation that appears before the first formatted line.
     ///   NOTE  It has been introduced for later compliance to full CSS1 support.
@@ -14423,7 +14423,7 @@ public:
     ::Ifc2x3::IfcSizeSelect LineHeight() const;
     void setLineHeight(const ::Ifc2x3::IfcSizeSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSizeSelect v1_TextIndent, std::optional< std::string > v2_TextAlign, std::optional< std::string > v3_TextDecoration, ::Ifc2x3::IfcSizeSelect v4_LetterSpacing, ::Ifc2x3::IfcSizeSelect v5_WordSpacing, std::optional< std::string > v6_TextTransform, ::Ifc2x3::IfcSizeSelect v7_LineHeight);
 };
 /// The text style with box characteristics allows the presentation of annotated text by specifying the characteristics of the character boxes of the text and the spacing between the character boxes.
@@ -14446,7 +14446,7 @@ public:
 class IFC_PARSE_API IfcTextStyleWithBoxCharacteristics : public express::Entity {
 public:
     IfcTextStyleWithBoxCharacteristics() {}
-    explicit IfcTextStyleWithBoxCharacteristics (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTextStyleWithBoxCharacteristics (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// It is the height scaling factor in the definition of a character glyph.
     std::optional< double > BoxHeight() const;
@@ -14464,7 +14464,7 @@ public:
     ::Ifc2x3::IfcSizeSelect CharacterSpacing() const;
     void setCharacterSpacing(const ::Ifc2x3::IfcSizeSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< double > v1_BoxHeight, std::optional< double > v2_BoxWidth, std::optional< double > v3_BoxSlantAngle, std::optional< double > v4_BoxRotateAngle, ::Ifc2x3::IfcSizeSelect v5_CharacterSpacing);
 };
 /// The IfcTextureCoordinate a an abstract supertype of the different kinds to apply texture coordinates to geometries. For vertex based geometries an explicit assignment of 2D texture vertices to the 3D geometry points is supported by the subtype IfcTextureMap, in addition there can be a procedural description of how texture coordinates shall be applied to geometric items. If no IfcTextureCoordinate is provided for the IfcSurfaceTexture, the default mapping shall be used.
@@ -14481,11 +14481,11 @@ public:
 class IFC_PARSE_API IfcTextureCoordinate : public express::Entity {
 public:
     IfcTextureCoordinate() {}
-    explicit IfcTextureCoordinate (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTextureCoordinate (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
         std::vector< IfcAnnotationSurface > AnnotatedSurface() const; // INVERSE IfcAnnotationSurface::TextureCoordinates
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// The IfcTextureCoordinateGenerator describes a procedurally defined mapping function with input parameter to map 2D texture coordinates to 3D geometry vertices. The allowable Mode values and input Parameter need to be agreed upon in view definitions and implementer agreements.
@@ -14517,7 +14517,7 @@ public:
 class IFC_PARSE_API IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     IfcTextureCoordinateGenerator() {}
-    explicit IfcTextureCoordinateGenerator (const std::weak_ptr<InstanceData>& data) : IfcTextureCoordinate(data) {}
+    explicit IfcTextureCoordinateGenerator (const std::weak_ptr<instance_data>& data) : IfcTextureCoordinate(data) {}
 
     /// The Mode attribute describes the algorithm used to compute texture coordinates.
     /// 
@@ -14530,7 +14530,7 @@ public:
     std::vector< ::Ifc2x3::IfcSimpleValue > Parameter() const;
     void setParameter(const std::vector< ::Ifc2x3::IfcSimpleValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Mode, std::vector< ::Ifc2x3::IfcSimpleValue > v2_Parameter);
 };
 /// An IfcTextureMap provides the mapping of the
@@ -14587,12 +14587,12 @@ public:
 class IFC_PARSE_API IfcTextureMap : public IfcTextureCoordinate {
 public:
     IfcTextureMap() {}
-    explicit IfcTextureMap (const std::weak_ptr<InstanceData>& data) : IfcTextureCoordinate(data) {}
+    explicit IfcTextureMap (const std::weak_ptr<instance_data>& data) : IfcTextureCoordinate(data) {}
 
     std::vector< ::Ifc2x3::IfcVertexBasedTextureMap > TextureMaps() const;
     void setTextureMaps(const std::vector< ::Ifc2x3::IfcVertexBasedTextureMap >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcVertexBasedTextureMap > v1_TextureMaps);
 };
 /// An IfcTextureVertex is a list of 2 (S, T) texture coordinates. 
@@ -14625,20 +14625,20 @@ public:
 class IFC_PARSE_API IfcTextureVertex : public express::Entity {
 public:
     IfcTextureVertex() {}
-    explicit IfcTextureVertex (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTextureVertex (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// The first coordinate[1] is the S, the second coordinate[2] is the T parameter value.
     std::vector< double > /*[2:2]*/ Coordinates() const;
     void setCoordinates(const std::vector< double > /*[2:2]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< double > /*[2:2]*/ v1_Coordinates);
 };
 
 class IFC_PARSE_API IfcThermalMaterialProperties : public IfcMaterialProperties {
 public:
     IfcThermalMaterialProperties() {}
-    explicit IfcThermalMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcThermalMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > SpecificHeatCapacity() const;
     void setSpecificHeatCapacity(const std::optional< double >& v);
@@ -14649,7 +14649,7 @@ public:
     std::optional< double > ThermalConductivity() const;
     void setThermalConductivity(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_SpecificHeatCapacity, std::optional< double > v3_BoilingPoint, std::optional< double > v4_FreezingPoint, std::optional< double > v5_ThermalConductivity);
 };
 /// A time series is a set of a time-stamped data entries. It allows a natural association of data collected over intervals of time. Time series can be regular or irregular. In regular time series data arrive predictably at predefined intervals.  In irregular time series  some or all time stamps do not follow a repetitive pattern and unpredictable bursts of data may arrive at unspecified points in time.
@@ -14660,7 +14660,7 @@ public:
 class IFC_PARSE_API IfcTimeSeries : public express::Entity {
 public:
     IfcTimeSeries() {}
-    explicit IfcTimeSeries (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTimeSeries (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// An unique name for the time series.
     std::string Name() const;
@@ -14688,21 +14688,21 @@ public:
     void setUnit(const ::Ifc2x3::IfcUnit& v);
         std::vector< IfcTimeSeriesReferenceRelationship > DocumentedBy() const; // INVERSE IfcTimeSeriesReferenceRelationship::ReferencedTimeSeries
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect v3_StartTime, ::Ifc2x3::IfcDateTimeSelect v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, std::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit v8_Unit);
 };
 
 class IFC_PARSE_API IfcTimeSeriesReferenceRelationship : public express::Entity {
 public:
     IfcTimeSeriesReferenceRelationship() {}
-    explicit IfcTimeSeriesReferenceRelationship (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTimeSeriesReferenceRelationship (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     ::Ifc2x3::IfcTimeSeries ReferencedTimeSeries() const;
     void setReferencedTimeSeries(const ::Ifc2x3::IfcTimeSeries& v);
     std::vector< ::Ifc2x3::IfcDocumentSelect > TimeSeriesReferences() const;
     void setTimeSeriesReferences(const std::vector< ::Ifc2x3::IfcDocumentSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcTimeSeries v1_ReferencedTimeSeries, std::vector< ::Ifc2x3::IfcDocumentSelect > v2_TimeSeriesReferences);
 };
 /// A time series value is a list of values that comprise the time series. At least one value must be supplied. Applications are expected to normalize values by applying the following three rules:
@@ -14717,13 +14717,13 @@ public:
 class IFC_PARSE_API IfcTimeSeriesValue : public express::Entity {
 public:
     IfcTimeSeriesValue() {}
-    explicit IfcTimeSeriesValue (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcTimeSeriesValue (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// A list of time-series values. At least one value is required.
     std::vector< ::Ifc2x3::IfcValue > ListValues() const;
     void setListValues(const std::vector< ::Ifc2x3::IfcValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcValue > v1_ListValues);
 };
 /// Definition from ISO/CD 10303-42:1992: The topological representation item is the supertype for all the topological representation items in the geometry resource. 
@@ -14734,10 +14734,10 @@ public:
 class IFC_PARSE_API IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
     IfcTopologicalRepresentationItem() {}
-    explicit IfcTopologicalRepresentationItem (const std::weak_ptr<InstanceData>& data) : IfcRepresentationItem(data) {}
+    explicit IfcTopologicalRepresentationItem (const std::weak_ptr<instance_data>& data) : IfcRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// IfcTopologyRepresentation
@@ -14777,10 +14777,10 @@ public:
 class IFC_PARSE_API IfcTopologyRepresentation : public IfcShapeModel {
 public:
     IfcTopologyRepresentation() {}
-    explicit IfcTopologyRepresentation (const std::weak_ptr<InstanceData>& data) : IfcShapeModel(data) {}
+    explicit IfcTopologyRepresentation (const std::weak_ptr<instance_data>& data) : IfcShapeModel(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationContext v1_ContextOfItems, std::optional< std::string > v2_RepresentationIdentifier, std::optional< std::string > v3_RepresentationType, std::vector< ::Ifc2x3::IfcRepresentationItem > v4_Items);
 };
 /// IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssigment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.
@@ -14791,13 +14791,13 @@ public:
 class IFC_PARSE_API IfcUnitAssignment : public express::Entity {
 public:
     IfcUnitAssignment() {}
-    explicit IfcUnitAssignment (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcUnitAssignment (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Units to be included within a unit assignment.
     std::vector< ::Ifc2x3::IfcUnit > Units() const;
     void setUnits(const std::vector< ::Ifc2x3::IfcUnit >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcUnit > v1_Units);
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex is the topological construct corresponding to a point. It has dimensionality 0 and extent 0. The domain of a vertex, if present, is a point in m dimensional real space RM; this is represented by the vertex point subtype. 
@@ -14813,24 +14813,24 @@ public:
 class IFC_PARSE_API IfcVertex : public IfcTopologicalRepresentationItem {
 public:
     IfcVertex() {}
-    explicit IfcVertex (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcVertex (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 
 class IFC_PARSE_API IfcVertexBasedTextureMap : public express::Entity {
 public:
     IfcVertexBasedTextureMap() {}
-    explicit IfcVertexBasedTextureMap (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcVertexBasedTextureMap (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     std::vector< ::Ifc2x3::IfcTextureVertex > TextureVertices() const;
     void setTextureVertices(const std::vector< ::Ifc2x3::IfcTextureVertex >& v);
     std::vector< ::Ifc2x3::IfcCartesianPoint > TexturePoints() const;
     void setTexturePoints(const std::vector< ::Ifc2x3::IfcCartesianPoint >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcTextureVertex > v1_TextureVertices, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_TexturePoints);
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex point is a vertex which has its geometry defined as a point.  
@@ -14845,13 +14845,13 @@ public:
 class IFC_PARSE_API IfcVertexPoint : public IfcVertex {
 public:
     IfcVertexPoint() {}
-    explicit IfcVertexPoint (const std::weak_ptr<InstanceData>& data) : IfcVertex(data) {}
+    explicit IfcVertexPoint (const std::weak_ptr<instance_data>& data) : IfcVertex(data) {}
 
     /// The geometric point, which defines the position in geometric space of the vertex.
     ::Ifc2x3::IfcPoint VertexGeometry() const;
     void setVertexGeometry(const ::Ifc2x3::IfcPoint& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPoint v1_VertexGeometry);
 };
 /// IfcVirtualGridIntersection defines the derived location of the intersection between two grid axes. Offset values may be given to set an offset distance to the grid axis for the calculation of the virtual grid intersection.
@@ -14916,7 +14916,7 @@ public:
 class IFC_PARSE_API IfcVirtualGridIntersection : public express::Entity {
 public:
     IfcVirtualGridIntersection() {}
-    explicit IfcVirtualGridIntersection (const std::weak_ptr<InstanceData>& data) : express::Entity(data) {}
+    explicit IfcVirtualGridIntersection (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
 
     /// Two grid axes which intersects at exactly one intersection (see also informal proposition at IfcGrid). If attribute OffsetDistances is omitted, the intersection defines the placement or ref direction of a grid placement directly. If OffsetDistances are given, the intersection is defined by the offset curves to the grid axes.
     std::vector< ::Ifc2x3::IfcGridAxis > IntersectingAxes() const;
@@ -14925,14 +14925,14 @@ public:
     std::vector< double > /*[2:3]*/ OffsetDistances() const;
     void setOffsetDistances(const std::vector< double > /*[2:3]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcGridAxis > v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
 };
 
 class IFC_PARSE_API IfcWaterProperties : public IfcMaterialProperties {
 public:
     IfcWaterProperties() {}
-    explicit IfcWaterProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcWaterProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< bool > IsPotable() const;
     void setIsPotable(const std::optional< bool >& v);
@@ -14949,47 +14949,47 @@ public:
     std::optional< double > DissolvedSolidsContent() const;
     void setDissolvedSolidsContent(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< bool > v2_IsPotable, std::optional< double > v3_Hardness, std::optional< double > v4_AlkalinityConcentration, std::optional< double > v5_AcidityConcentration, std::optional< double > v6_ImpuritiesContent, std::optional< double > v7_PHLevel, std::optional< double > v8_DissolvedSolidsContent);
 };
 
 class IFC_PARSE_API IfcAnnotationOccurrence : public IfcStyledItem {
 public:
     IfcAnnotationOccurrence() {}
-    explicit IfcAnnotationOccurrence (const std::weak_ptr<InstanceData>& data) : IfcStyledItem(data) {}
+    explicit IfcAnnotationOccurrence (const std::weak_ptr<instance_data>& data) : IfcStyledItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
 class IFC_PARSE_API IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
 public:
     IfcAnnotationSurfaceOccurrence() {}
-    explicit IfcAnnotationSurfaceOccurrence (const std::weak_ptr<InstanceData>& data) : IfcAnnotationOccurrence(data) {}
+    explicit IfcAnnotationSurfaceOccurrence (const std::weak_ptr<instance_data>& data) : IfcAnnotationOccurrence(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
 class IFC_PARSE_API IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
 public:
     IfcAnnotationSymbolOccurrence() {}
-    explicit IfcAnnotationSymbolOccurrence (const std::weak_ptr<InstanceData>& data) : IfcAnnotationOccurrence(data) {}
+    explicit IfcAnnotationSymbolOccurrence (const std::weak_ptr<instance_data>& data) : IfcAnnotationOccurrence(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
 class IFC_PARSE_API IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
 public:
     IfcAnnotationTextOccurrence() {}
-    explicit IfcAnnotationTextOccurrence (const std::weak_ptr<InstanceData>& data) : IfcAnnotationOccurrence(data) {}
+    explicit IfcAnnotationTextOccurrence (const std::weak_ptr<instance_data>& data) : IfcAnnotationOccurrence(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 /// The closed profile IfcArbitraryClosedProfileDef defines an arbitrary two-dimensional profile for the use within the swept surface geometry, the swept area solid or a sectioned spine. It is given by an outer boundary from which the surface or solid can be constructed. 
@@ -15013,13 +15013,13 @@ public:
 class IFC_PARSE_API IfcArbitraryClosedProfileDef : public IfcProfileDef {
 public:
     IfcArbitraryClosedProfileDef() {}
-    explicit IfcArbitraryClosedProfileDef (const std::weak_ptr<InstanceData>& data) : IfcProfileDef(data) {}
+    explicit IfcArbitraryClosedProfileDef (const std::weak_ptr<instance_data>& data) : IfcProfileDef(data) {}
 
     /// Bounded curve, defining the outer boundaries of the arbitrary profile.
     ::Ifc2x3::IfcCurve OuterCurve() const;
     void setOuterCurve(const ::Ifc2x3::IfcCurve& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve v3_OuterCurve);
 };
 /// The open profile IfcArbitraryOpenProfileDef defines an arbitrary two-dimensional open profile for the use within the swept surface geometry. It is given by an open boundary from with the surface can be constructed. 
@@ -15040,13 +15040,13 @@ public:
 class IFC_PARSE_API IfcArbitraryOpenProfileDef : public IfcProfileDef {
 public:
     IfcArbitraryOpenProfileDef() {}
-    explicit IfcArbitraryOpenProfileDef (const std::weak_ptr<InstanceData>& data) : IfcProfileDef(data) {}
+    explicit IfcArbitraryOpenProfileDef (const std::weak_ptr<instance_data>& data) : IfcProfileDef(data) {}
 
     /// Open bounded curve defining the profile.
     ::Ifc2x3::IfcBoundedCurve Curve() const;
     void setCurve(const ::Ifc2x3::IfcBoundedCurve& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve v3_Curve);
 };
 /// The IfcArbitraryProfileDefWithVoids defines an arbitrary closed two-dimensional profile with holes defined for the use for the swept area solid or a sectioned spine. It is given by an outer boundary and inner boundaries from with the solid the can be constructed.
@@ -15071,13 +15071,13 @@ public:
 class IFC_PARSE_API IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     IfcArbitraryProfileDefWithVoids() {}
-    explicit IfcArbitraryProfileDefWithVoids (const std::weak_ptr<InstanceData>& data) : IfcArbitraryClosedProfileDef(data) {}
+    explicit IfcArbitraryProfileDefWithVoids (const std::weak_ptr<instance_data>& data) : IfcArbitraryClosedProfileDef(data) {}
 
     /// Set of bounded curves, defining the inner boundaries of the arbitrary profile.
     std::vector< ::Ifc2x3::IfcCurve > InnerCurves() const;
     void setInnerCurves(const std::vector< ::Ifc2x3::IfcCurve >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcCurve v3_OuterCurve, std::vector< ::Ifc2x3::IfcCurve > v4_InnerCurves);
 };
 /// An IfcBlobTexture provides a 2-dimensional distribution of the lighting parameters of a surface onto which it is mapped. The texture itself is given as a single binary blob, representing the content of a pixel format file. The file format of the pixel file is given by the RasterFormat attribute and allowable formats are guided by where rule SupportedRasterFormat.
@@ -15092,7 +15092,7 @@ public:
 class IFC_PARSE_API IfcBlobTexture : public IfcSurfaceTexture {
 public:
     IfcBlobTexture() {}
-    explicit IfcBlobTexture (const std::weak_ptr<InstanceData>& data) : IfcSurfaceTexture(data) {}
+    explicit IfcBlobTexture (const std::weak_ptr<instance_data>& data) : IfcSurfaceTexture(data) {}
 
     /// The format of the RasterCode often using a compression.
     std::string RasterFormat() const;
@@ -15101,7 +15101,7 @@ public:
     bool RasterCode() const;
     void setRasterCode(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, std::string v5_RasterFormat, bool v6_RasterCode);
 };
 /// The profile IfcCenterLineProfileDef defines an arbitrary two-dimensional open, not self intersecting profile for the use within the swept solid geometry. It is given by an area defined by applying a constant thickness to a centerline, generating an area from which the solid can be constructed.
@@ -15136,13 +15136,13 @@ public:
 class IFC_PARSE_API IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
 public:
     IfcCenterLineProfileDef() {}
-    explicit IfcCenterLineProfileDef (const std::weak_ptr<InstanceData>& data) : IfcArbitraryOpenProfileDef(data) {}
+    explicit IfcCenterLineProfileDef (const std::weak_ptr<instance_data>& data) : IfcArbitraryOpenProfileDef(data) {}
 
     /// Constant thickness applied along the center line.
     double Thickness() const;
     void setThickness(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcBoundedCurve v3_Curve, double v4_Thickness);
 };
 /// An IfcClassificationReference is a reference into a classification system or source (see IfcClassification) for a specific classification key (or notation).
@@ -15169,13 +15169,13 @@ public:
 class IFC_PARSE_API IfcClassificationReference : public IfcExternalReference {
 public:
     IfcClassificationReference() {}
-    explicit IfcClassificationReference (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcClassificationReference (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
     /// The classification system or source that is referenced.
     ::Ifc2x3::IfcClassification ReferencedSource() const;
     void setReferencedSource(const ::Ifc2x3::IfcClassification& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name, ::Ifc2x3::IfcClassification v4_ReferencedSource);
 };
 /// Definition from ISO/CD 10303-46:1992: A colour rgb as a subtype of colour specifications is defined by three colour component values for red, green, and blue in the RGB colour model.
@@ -15189,7 +15189,7 @@ public:
 class IFC_PARSE_API IfcColourRgb : public IfcColourSpecification {
 public:
     IfcColourRgb() {}
-    explicit IfcColourRgb (const std::weak_ptr<InstanceData>& data) : IfcColourSpecification(data) {}
+    explicit IfcColourRgb (const std::weak_ptr<instance_data>& data) : IfcColourSpecification(data) {}
 
     /// The intensity of the red colour component.
     /// 
@@ -15207,7 +15207,7 @@ public:
     double Blue() const;
     void setBlue(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, double v2_Red, double v3_Green, double v4_Blue);
 };
 /// IfcComplexProperty is used to define complex properties to be handled completely within a property set. The included set of properties may be a mixed or consistent collection of IfcProperty subtypes. This enables the definition of a set of properties to be included as a single 'property' entry in an IfcPropertySet. The definition of such an IfcComplexProperty can be reused in many different IfcPropertySet's.
@@ -15218,7 +15218,7 @@ public:
 class IFC_PARSE_API IfcComplexProperty : public IfcProperty {
 public:
     IfcComplexProperty() {}
-    explicit IfcComplexProperty (const std::weak_ptr<InstanceData>& data) : IfcProperty(data) {}
+    explicit IfcComplexProperty (const std::weak_ptr<instance_data>& data) : IfcProperty(data) {}
 
     /// Usage description of the IfcComplexProperty within the property set which references the IfcComplexProperty.
     ///   NOTE: Consider a complex property for glazing properties. The Name attribute of the IfcComplexProperty could be Pset_GlazingProperties, and the UsageName attribute could be OuterGlazingPane.
@@ -15228,7 +15228,7 @@ public:
     std::vector< ::Ifc2x3::IfcProperty > HasProperties() const;
     void setHasProperties(const std::vector< ::Ifc2x3::IfcProperty >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::string v3_UsageName, std::vector< ::Ifc2x3::IfcProperty > v4_HasProperties);
 };
 /// The IfcCompositeProfileDef
@@ -15270,7 +15270,7 @@ public:
 class IFC_PARSE_API IfcCompositeProfileDef : public IfcProfileDef {
 public:
     IfcCompositeProfileDef() {}
-    explicit IfcCompositeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcProfileDef(data) {}
+    explicit IfcCompositeProfileDef (const std::weak_ptr<instance_data>& data) : IfcProfileDef(data) {}
 
     /// The profiles which are used to define the composite profile.
     std::vector< ::Ifc2x3::IfcProfileDef > Profiles() const;
@@ -15279,7 +15279,7 @@ public:
     std::optional< std::string > Label() const;
     void setLabel(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, std::vector< ::Ifc2x3::IfcProfileDef > v3_Profiles, std::optional< std::string > v4_Label);
 };
 /// Definition from ISO/CD 10303-42:1992: A connected_face_set is a set of faces such that the domain of faces together with their bounding edges and vertices is connected.  
@@ -15294,13 +15294,13 @@ public:
 class IFC_PARSE_API IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     IfcConnectedFaceSet() {}
-    explicit IfcConnectedFaceSet (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcConnectedFaceSet (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     /// The set of faces arcwise connected along common edges or vertices.
     std::vector< ::Ifc2x3::IfcFace > CfsFaces() const;
     void setCfsFaces(const std::vector< ::Ifc2x3::IfcFace >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcFace > v1_CfsFaces);
 };
 /// IfcConnectionCurveGeometry is used to describe the geometric constraints that facilitate the physical connection of two objects at a curve or at an edge with curve geometry associated. It is envisioned as a control that applies to the element connection relationships. 
@@ -15319,7 +15319,7 @@ public:
 class IFC_PARSE_API IfcConnectionCurveGeometry : public IfcConnectionGeometry {
 public:
     IfcConnectionCurveGeometry() {}
-    explicit IfcConnectionCurveGeometry (const std::weak_ptr<InstanceData>& data) : IfcConnectionGeometry(data) {}
+    explicit IfcConnectionCurveGeometry (const std::weak_ptr<instance_data>& data) : IfcConnectionGeometry(data) {}
 
     /// The bounded curve at which the connected objects are aligned at the relating element, given in the LCS of the relating element.
     ::Ifc2x3::IfcCurveOrEdgeCurve CurveOnRelatingElement() const;
@@ -15328,7 +15328,7 @@ public:
     ::Ifc2x3::IfcCurveOrEdgeCurve CurveOnRelatedElement() const;
     void setCurveOnRelatedElement(const ::Ifc2x3::IfcCurveOrEdgeCurve& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurveOrEdgeCurve v1_CurveOnRelatingElement, ::Ifc2x3::IfcCurveOrEdgeCurve v2_CurveOnRelatedElement);
 };
 /// IfcConnectionPointEccentricity is used to describe the geometric constraints that facilitate the physical connection of two objects at a point or vertex point with associated point coordinates. There is a physical distance, or eccentricity, etween the connection points of both object. The eccentricity can be either given by:
@@ -15353,7 +15353,7 @@ public:
 class IFC_PARSE_API IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
 public:
     IfcConnectionPointEccentricity() {}
-    explicit IfcConnectionPointEccentricity (const std::weak_ptr<InstanceData>& data) : IfcConnectionPointGeometry(data) {}
+    explicit IfcConnectionPointEccentricity (const std::weak_ptr<instance_data>& data) : IfcConnectionPointGeometry(data) {}
 
     /// Distance in x direction between the two points (or vertex points) engaged in the point connection.
     std::optional< double > EccentricityInX() const;
@@ -15365,7 +15365,7 @@ public:
     std::optional< double > EccentricityInZ() const;
     void setEccentricityInZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPointOrVertexPoint v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint v2_PointOnRelatedElement, std::optional< double > v3_EccentricityInX, std::optional< double > v4_EccentricityInY, std::optional< double > v5_EccentricityInZ);
 };
 /// Definition from ISO/CD 10303-41:1992: A context dependent unit is a unit which is not related to the SI system.
@@ -15378,13 +15378,13 @@ public:
 class IFC_PARSE_API IfcContextDependentUnit : public IfcNamedUnit {
 public:
     IfcContextDependentUnit() {}
-    explicit IfcContextDependentUnit (const std::weak_ptr<InstanceData>& data) : IfcNamedUnit(data) {}
+    explicit IfcContextDependentUnit (const std::weak_ptr<instance_data>& data) : IfcNamedUnit(data) {}
 
     /// The word, or group of words, by which the context dependent unit is referred to.
     std::string Name() const;
     void setName(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDimensionalExponents v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name);
 };
 /// Definition from ISO/CD 10303-41:1992: A conversion based unit is a unit that is defined based on a measure with unit.
@@ -15437,7 +15437,7 @@ public:
 class IFC_PARSE_API IfcConversionBasedUnit : public IfcNamedUnit {
 public:
     IfcConversionBasedUnit() {}
-    explicit IfcConversionBasedUnit (const std::weak_ptr<InstanceData>& data) : IfcNamedUnit(data) {}
+    explicit IfcConversionBasedUnit (const std::weak_ptr<instance_data>& data) : IfcNamedUnit(data) {}
 
     /// The word, or group of words, by which the conversion based unit is referred to.
     std::string Name() const;
@@ -15446,7 +15446,7 @@ public:
     ::Ifc2x3::IfcMeasureWithUnit ConversionFactor() const;
     void setConversionFactor(const ::Ifc2x3::IfcMeasureWithUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDimensionalExponents v1_Dimensions, ::Ifc2x3::IfcUnitEnum::Value v2_UnitType, std::string v3_Name, ::Ifc2x3::IfcMeasureWithUnit v4_ConversionFactor);
 };
 /// Definition from ISO/CD 10303-46:1992: A curve style specifies the visual appearance of curves.
@@ -15469,7 +15469,7 @@ public:
 class IFC_PARSE_API IfcCurveStyle : public IfcPresentationStyle {
 public:
     IfcCurveStyle() {}
-    explicit IfcCurveStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationStyle(data) {}
+    explicit IfcCurveStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationStyle(data) {}
 
     /// A curve style font which is used to present a curve. It can either be a predefined curve font, or an explicitly defined curve font. Both may be scaled. If not given, then the curve font should be taken from the layer assignment with style, if that is not given either, then the default curve font applies.
     ::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect CurveFont() const;
@@ -15481,7 +15481,7 @@ public:
     ::Ifc2x3::IfcColour CurveColour() const;
     void setCurveColour(const ::Ifc2x3::IfcColour& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcCurveFontOrScaledCurveFontSelect v2_CurveFont, ::Ifc2x3::IfcSizeSelect v3_CurveWidth, ::Ifc2x3::IfcColour v4_CurveColour);
 };
 /// IfcDerivedProfileDef defines the profile by transformation from the parent profile. The transformation is given by a two dimensional transformation operator. Transformation includes translation, rotation, mirror and scaling. The latter can be uniform or non uniform. The derived profiles may be used to define swept surfaces, swept area solids or sectioned spines.
@@ -15571,7 +15571,7 @@ public:
 class IFC_PARSE_API IfcDerivedProfileDef : public IfcProfileDef {
 public:
     IfcDerivedProfileDef() {}
-    explicit IfcDerivedProfileDef (const std::weak_ptr<InstanceData>& data) : IfcProfileDef(data) {}
+    explicit IfcDerivedProfileDef (const std::weak_ptr<instance_data>& data) : IfcProfileDef(data) {}
 
     /// The parent profile provides the origin of the transformation.
     ::Ifc2x3::IfcProfileDef ParentProfile() const;
@@ -15583,27 +15583,27 @@ public:
     std::optional< std::string > Label() const;
     void setLabel(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcProfileDef v3_ParentProfile, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_Operator, std::optional< std::string > v5_Label);
 };
 
 class IFC_PARSE_API IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
 public:
     IfcDimensionCalloutRelationship() {}
-    explicit IfcDimensionCalloutRelationship (const std::weak_ptr<InstanceData>& data) : IfcDraughtingCalloutRelationship(data) {}
+    explicit IfcDimensionCalloutRelationship (const std::weak_ptr<instance_data>& data) : IfcDraughtingCalloutRelationship(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout);
 };
 
 class IFC_PARSE_API IfcDimensionPair : public IfcDraughtingCalloutRelationship {
 public:
     IfcDimensionPair() {}
-    explicit IfcDimensionPair (const std::weak_ptr<InstanceData>& data) : IfcDraughtingCalloutRelationship(data) {}
+    explicit IfcDimensionPair (const std::weak_ptr<instance_data>& data) : IfcDraughtingCalloutRelationship(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout);
 };
 /// An IfcDocumentReference is a reference 
@@ -15620,11 +15620,11 @@ public:
 class IFC_PARSE_API IfcDocumentReference : public IfcExternalReference {
 public:
     IfcDocumentReference() {}
-    explicit IfcDocumentReference (const std::weak_ptr<InstanceData>& data) : IfcExternalReference(data) {}
+    explicit IfcDocumentReference (const std::weak_ptr<instance_data>& data) : IfcExternalReference(data) {}
 
         std::vector< IfcDocumentInformation > ReferenceToDocument() const; // INVERSE IfcDocumentInformation::DocumentReferences
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Location, std::optional< std::string > v2_ItemReference, std::optional< std::string > v3_Name);
 };
 /// The draughting pre defined text font is a pre defined text font for the purpose to identify a font by name. Allowable names are:
@@ -15640,10 +15640,10 @@ public:
 class IFC_PARSE_API IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
     IfcDraughtingPreDefinedTextFont() {}
-    explicit IfcDraughtingPreDefinedTextFont (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedTextFont(data) {}
+    explicit IfcDraughtingPreDefinedTextFont (const std::weak_ptr<instance_data>& data) : IfcPreDefinedTextFont(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// Definition from ISO/CD 10303-42:1992: An edge is the
@@ -15698,7 +15698,7 @@ public:
 class IFC_PARSE_API IfcEdge : public IfcTopologicalRepresentationItem {
 public:
     IfcEdge() {}
-    explicit IfcEdge (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcEdge (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     /// Start point (vertex) of the edge.
     ::Ifc2x3::IfcVertex EdgeStart() const;
@@ -15707,7 +15707,7 @@ public:
     ::Ifc2x3::IfcVertex EdgeEnd() const;
     void setEdgeEnd(const ::Ifc2x3::IfcVertex& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVertex v1_EdgeStart, ::Ifc2x3::IfcVertex v2_EdgeEnd);
 };
 /// Definition from ISO/CD 10303-42:1992: An edge curve is
@@ -15746,7 +15746,7 @@ public:
 class IFC_PARSE_API IfcEdgeCurve : public IfcEdge {
 public:
     IfcEdgeCurve() {}
-    explicit IfcEdgeCurve (const std::weak_ptr<InstanceData>& data) : IfcEdge(data) {}
+    explicit IfcEdgeCurve (const std::weak_ptr<instance_data>& data) : IfcEdge(data) {}
 
     /// The curve which defines the shape and spatial location of the edge. This curve may be unbounded and is implicitly trimmed by the vertices of the edge; this defines the edge domain. Multiple edges can reference the same curve.
     ::Ifc2x3::IfcCurve EdgeGeometry() const;
@@ -15755,7 +15755,7 @@ public:
     bool SameSense() const;
     void setSameSense(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVertex v1_EdgeStart, ::Ifc2x3::IfcVertex v2_EdgeEnd, ::Ifc2x3::IfcCurve v3_EdgeGeometry, bool v4_SameSense);
 };
 /// The IfcExtendedMaterialProperties assign a set of
@@ -15796,7 +15796,7 @@ public:
 class IFC_PARSE_API IfcExtendedMaterialProperties : public IfcMaterialProperties {
 public:
     IfcExtendedMaterialProperties() {}
-    explicit IfcExtendedMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcExtendedMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::vector< ::Ifc2x3::IfcProperty > ExtendedProperties() const;
     void setExtendedProperties(const std::vector< ::Ifc2x3::IfcProperty >& v);
@@ -15805,7 +15805,7 @@ public:
     std::string Name() const;
     void setName(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::vector< ::Ifc2x3::IfcProperty > v2_ExtendedProperties, std::optional< std::string > v3_Description, std::string v4_Name);
 };
 /// Definition from ISO/CD 10303-42:1992: A face is a topological
@@ -15855,13 +15855,13 @@ public:
 class IFC_PARSE_API IfcFace : public IfcTopologicalRepresentationItem {
 public:
     IfcFace() {}
-    explicit IfcFace (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcFace (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     /// Boundaries of the face.
     std::vector< ::Ifc2x3::IfcFaceBound > Bounds() const;
     void setBounds(const std::vector< ::Ifc2x3::IfcFaceBound >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcFaceBound > v1_Bounds);
 };
 /// Definition from ISO/CD 10303-42:1992: A face bound is a loop which is intended to be used for bounding a face.  
@@ -15872,7 +15872,7 @@ public:
 class IFC_PARSE_API IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
     IfcFaceBound() {}
-    explicit IfcFaceBound (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcFaceBound (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     /// The loop which will be used as a face boundary.
     ::Ifc2x3::IfcLoop Bound() const;
@@ -15881,7 +15881,7 @@ public:
     bool Orientation() const;
     void setOrientation(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcLoop v1_Bound, bool v2_Orientation);
 };
 /// Definition from ISO/CD 10303-42:1992: A face outer bound is a special subtype of face bound which carries the additional semantics of defining an outer boundary on the face. No more than one boundary of a face shall be of this type.  
@@ -15892,10 +15892,10 @@ public:
 class IFC_PARSE_API IfcFaceOuterBound : public IfcFaceBound {
 public:
     IfcFaceOuterBound() {}
-    explicit IfcFaceOuterBound (const std::weak_ptr<InstanceData>& data) : IfcFaceBound(data) {}
+    explicit IfcFaceOuterBound (const std::weak_ptr<instance_data>& data) : IfcFaceBound(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcLoop v1_Bound, bool v2_Orientation);
 };
 /// Definition from ISO/CD 10303-42:1992: A face surface
@@ -15937,7 +15937,7 @@ public:
 class IFC_PARSE_API IfcFaceSurface : public IfcFace {
 public:
     IfcFaceSurface() {}
-    explicit IfcFaceSurface (const std::weak_ptr<InstanceData>& data) : IfcFace(data) {}
+    explicit IfcFaceSurface (const std::weak_ptr<instance_data>& data) : IfcFace(data) {}
 
     /// The surface which defines the internal shape of the face. This surface may be unbounded. The domain of the face is defined by this surface and the bounding loops in the inherited attribute SELF\FaceBounds.
     ::Ifc2x3::IfcSurface FaceSurface() const;
@@ -15946,7 +15946,7 @@ public:
     bool SameSense() const;
     void setSameSense(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcFaceBound > v1_Bounds, ::Ifc2x3::IfcSurface v2_FaceSurface, bool v3_SameSense);
 };
 /// Definition from IAI: Defines forces at which a support or connection fails.
@@ -15959,7 +15959,7 @@ public:
 class IFC_PARSE_API IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     IfcFailureConnectionCondition() {}
-    explicit IfcFailureConnectionCondition (const std::weak_ptr<InstanceData>& data) : IfcStructuralConnectionCondition(data) {}
+    explicit IfcFailureConnectionCondition (const std::weak_ptr<instance_data>& data) : IfcStructuralConnectionCondition(data) {}
 
     /// Tension force in x-direction leading to failure of the connection.
     std::optional< double > TensionFailureX() const;
@@ -15980,7 +15980,7 @@ public:
     std::optional< double > CompressionFailureZ() const;
     void setCompressionFailureZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_TensionFailureX, std::optional< double > v3_TensionFailureY, std::optional< double > v4_TensionFailureZ, std::optional< double > v5_CompressionFailureX, std::optional< double > v6_CompressionFailureY, std::optional< double > v7_CompressionFailureZ);
 };
 /// Definition from ISO/CD 10303-46:1992: The style for filling visible curve segments, annotation fill areas or surfaces with tiles or hatches.
@@ -16020,20 +16020,20 @@ public:
 class IFC_PARSE_API IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     IfcFillAreaStyle() {}
-    explicit IfcFillAreaStyle (const std::weak_ptr<InstanceData>& data) : IfcPresentationStyle(data) {}
+    explicit IfcFillAreaStyle (const std::weak_ptr<instance_data>& data) : IfcPresentationStyle(data) {}
 
     /// The set of fill area styles to use in presenting visible curve segments, annotation fill areas or surfaces.
     std::vector< ::Ifc2x3::IfcFillStyleSelect > FillStyles() const;
     void setFillStyles(const std::vector< ::Ifc2x3::IfcFillStyleSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::vector< ::Ifc2x3::IfcFillStyleSelect > v2_FillStyles);
 };
 
 class IFC_PARSE_API IfcFuelProperties : public IfcMaterialProperties {
 public:
     IfcFuelProperties() {}
-    explicit IfcFuelProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcFuelProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > CombustionTemperature() const;
     void setCombustionTemperature(const std::optional< double >& v);
@@ -16044,14 +16044,14 @@ public:
     std::optional< double > HigherHeatingValue() const;
     void setHigherHeatingValue(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_CombustionTemperature, std::optional< double > v3_CarbonContent, std::optional< double > v4_LowerHeatingValue, std::optional< double > v5_HigherHeatingValue);
 };
 
 class IFC_PARSE_API IfcGeneralMaterialProperties : public IfcMaterialProperties {
 public:
     IfcGeneralMaterialProperties() {}
-    explicit IfcGeneralMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcGeneralMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > MolecularWeight() const;
     void setMolecularWeight(const std::optional< double >& v);
@@ -16060,14 +16060,14 @@ public:
     std::optional< double > MassDensity() const;
     void setMassDensity(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_MolecularWeight, std::optional< double > v3_Porosity, std::optional< double > v4_MassDensity);
 };
 
 class IFC_PARSE_API IfcGeneralProfileProperties : public IfcProfileProperties {
 public:
     IfcGeneralProfileProperties() {}
-    explicit IfcGeneralProfileProperties (const std::weak_ptr<InstanceData>& data) : IfcProfileProperties(data) {}
+    explicit IfcGeneralProfileProperties (const std::weak_ptr<instance_data>& data) : IfcProfileProperties(data) {}
 
     std::optional< double > PhysicalWeight() const;
     void setPhysicalWeight(const std::optional< double >& v);
@@ -16080,7 +16080,7 @@ public:
     std::optional< double > CrossSectionArea() const;
     void setCrossSectionArea(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition, std::optional< double > v3_PhysicalWeight, std::optional< double > v4_Perimeter, std::optional< double > v5_MinimumPlateThickness, std::optional< double > v6_MaximumPlateThickness, std::optional< double > v7_CrossSectionArea);
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric
@@ -16133,7 +16133,7 @@ public:
 class IFC_PARSE_API IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     IfcGeometricRepresentationContext() {}
-    explicit IfcGeometricRepresentationContext (const std::weak_ptr<InstanceData>& data) : IfcRepresentationContext(data) {}
+    explicit IfcGeometricRepresentationContext (const std::weak_ptr<instance_data>& data) : IfcRepresentationContext(data) {}
 
     /// The integer dimension count of the coordinate space modeled in a geometric representation context.
     int CoordinateSpaceDimension() const;
@@ -16151,7 +16151,7 @@ public:
     void setTrueNorth(const ::Ifc2x3::IfcDirection& v);
         std::vector< IfcGeometricRepresentationSubContext > HasSubContexts() const; // INVERSE IfcGeometricRepresentationSubContext::ParentContext
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, int v3_CoordinateSpaceDimension, std::optional< double > v4_Precision, ::Ifc2x3::IfcAxis2Placement v5_WorldCoordinateSystem, ::Ifc2x3::IfcDirection v6_TrueNorth);
 };
 /// Definition from ISO/CD 10303-43:1992: An geometric representation item is a representation item that has the additional meaning of having geometric position or orientation or both. This meaning is present by virtue of:  
@@ -16176,10 +16176,10 @@ public:
 class IFC_PARSE_API IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
     IfcGeometricRepresentationItem() {}
-    explicit IfcGeometricRepresentationItem (const std::weak_ptr<InstanceData>& data) : IfcRepresentationItem(data) {}
+    explicit IfcGeometricRepresentationItem (const std::weak_ptr<instance_data>& data) : IfcRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// IfcGeometricRepresentationSubContext defines the context that applies to several shape representations of a product being a sub context, sharing the WorldCoordinateSystem, CoordinateSpaceDimension, Precision and TrueNorth attributes with the parent IfcGeometricRepresentationContext.
@@ -16198,7 +16198,7 @@ public:
 class IFC_PARSE_API IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
     IfcGeometricRepresentationSubContext() {}
-    explicit IfcGeometricRepresentationSubContext (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationContext(data) {}
+    explicit IfcGeometricRepresentationSubContext (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationContext(data) {}
 
     /// Parent context from which the sub context derives its world coordinate system, precision, space coordinate dimension and true north.
     ::Ifc2x3::IfcGeometricRepresentationContext ParentContext() const;
@@ -16223,7 +16223,7 @@ public:
     std::optional< std::string > UserDefinedTargetView() const;
     void setUserDefinedTargetView(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ContextIdentifier, std::optional< std::string > v2_ContextType, ::Ifc2x3::IfcGeometricRepresentationContext v7_ParentContext, std::optional< double > v8_TargetScale, ::Ifc2x3::IfcGeometricProjectionEnum::Value v9_TargetView, std::optional< std::string > v10_UserDefinedTargetView);
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is intended for the transfer of models when a topological structure is not available. 
@@ -16236,13 +16236,13 @@ public:
 class IFC_PARSE_API IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     IfcGeometricSet() {}
-    explicit IfcGeometricSet (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcGeometricSet (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The geometric elements which make up the geometric set, these may be points, curves or surfaces; but are required to be of the same coordinate space dimensionality.
     std::vector< ::Ifc2x3::IfcGeometricSetSelect > Elements() const;
     void setElements(const std::vector< ::Ifc2x3::IfcGeometricSetSelect >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcGeometricSetSelect > v1_Elements);
 };
 /// IfcGridPlacement provides a specialization of IfcObjectPlacement in which
@@ -16293,7 +16293,7 @@ public:
 class IFC_PARSE_API IfcGridPlacement : public IfcObjectPlacement {
 public:
     IfcGridPlacement() {}
-    explicit IfcGridPlacement (const std::weak_ptr<InstanceData>& data) : IfcObjectPlacement(data) {}
+    explicit IfcGridPlacement (const std::weak_ptr<instance_data>& data) : IfcObjectPlacement(data) {}
 
     /// Placement of the object coordinate system defined by the intersection of two grid axes.
     ::Ifc2x3::IfcVirtualGridIntersection PlacementLocation() const;
@@ -16304,7 +16304,7 @@ public:
     ::Ifc2x3::IfcVirtualGridIntersection PlacementRefDirection() const;
     void setPlacementRefDirection(const ::Ifc2x3::IfcVirtualGridIntersection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVirtualGridIntersection v1_PlacementLocation, ::Ifc2x3::IfcVirtualGridIntersection v2_PlacementRefDirection);
 };
 /// Definition from ISO/CD 10303-42:1992: A half space solid is defined by the half space which is the regular subset of the domain which lies on one side of an unbounded surface. The side of the surface which is in the half space is determined by the surface normal and the agreement flag. If the agreement flag is TRUE, then the subset is the one the normal points away from. If the agreement flag is FALSE, then the subset is the one the normal points into. For a valid half space solid the surface shall divide the domain into exactly two subsets. Also, within the domain the surface shall be manifold and all surface normals shall point into the same subset.  
@@ -16325,7 +16325,7 @@ public:
 class IFC_PARSE_API IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
 public:
     IfcHalfSpaceSolid() {}
-    explicit IfcHalfSpaceSolid (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcHalfSpaceSolid (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// Surface defining side of half space.
     ::Ifc2x3::IfcSurface BaseSurface() const;
@@ -16334,14 +16334,14 @@ public:
     bool AgreementFlag() const;
     void setAgreementFlag(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurface v1_BaseSurface, bool v2_AgreementFlag);
 };
 
 class IFC_PARSE_API IfcHygroscopicMaterialProperties : public IfcMaterialProperties {
 public:
     IfcHygroscopicMaterialProperties() {}
-    explicit IfcHygroscopicMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMaterialProperties(data) {}
+    explicit IfcHygroscopicMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMaterialProperties(data) {}
 
     std::optional< double > UpperVaporResistanceFactor() const;
     void setUpperVaporResistanceFactor(const std::optional< double >& v);
@@ -16354,7 +16354,7 @@ public:
     std::optional< double > MoistureDiffusivity() const;
     void setMoistureDiffusivity(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_UpperVaporResistanceFactor, std::optional< double > v3_LowerVaporResistanceFactor, std::optional< double > v4_IsothermalMoistureCapacity, std::optional< double > v5_VaporPermeability, std::optional< double > v6_MoistureDiffusivity);
 };
 /// An IfcImageTexture provides a 2-dimensional texture that can be applied to a surface of an geometric item and that provides lighting parameters of a surface onto which it is mapped. The texture is provided as an image file at an external location for which an URL is provided.
@@ -16395,13 +16395,13 @@ public:
 class IFC_PARSE_API IfcImageTexture : public IfcSurfaceTexture {
 public:
     IfcImageTexture() {}
-    explicit IfcImageTexture (const std::weak_ptr<InstanceData>& data) : IfcSurfaceTexture(data) {}
+    explicit IfcImageTexture (const std::weak_ptr<instance_data>& data) : IfcSurfaceTexture(data) {}
 
     /// Location, provided as an URI, at which the image texture is electronically published.
     std::string UrlReference() const;
     void setUrlReference(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, std::string v5_UrlReference);
 };
 /// In an irregular time series, unpredictable bursts of data arrive at unspecified points in time, or most time stamps cannot be characterized by a repeating pattern.
@@ -16412,13 +16412,13 @@ public:
 class IFC_PARSE_API IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     IfcIrregularTimeSeries() {}
-    explicit IfcIrregularTimeSeries (const std::weak_ptr<InstanceData>& data) : IfcTimeSeries(data) {}
+    explicit IfcIrregularTimeSeries (const std::weak_ptr<instance_data>& data) : IfcTimeSeries(data) {}
 
     /// The collection of time series values.
     std::vector< ::Ifc2x3::IfcIrregularTimeSeriesValue > Values() const;
     void setValues(const std::vector< ::Ifc2x3::IfcIrregularTimeSeriesValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect v3_StartTime, ::Ifc2x3::IfcDateTimeSelect v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, std::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit v8_Unit, std::vector< ::Ifc2x3::IfcIrregularTimeSeriesValue > v9_Values);
 };
 /// Definition from ISO/CD 10303-46:1992: The light source entity is determined by the reflectance specified in the surface style rendering. Lighting is applied on a surface by surface basis: no interactions between surfaces such as shadows or reflections are defined. 
@@ -16431,7 +16431,7 @@ public:
 class IFC_PARSE_API IfcLightSource : public IfcGeometricRepresentationItem {
 public:
     IfcLightSource() {}
-    explicit IfcLightSource (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcLightSource (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The name given to the light source in presentation.
     std::optional< std::string > Name() const;
@@ -16447,7 +16447,7 @@ public:
     std::optional< double > Intensity() const;
     void setIntensity(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity);
 };
 /// Definition from ISO/CD 10303-46:1992: The light source ambient entity is a subtype of light source. It lights a surface independent of the surface's orientation and position. 
@@ -16460,10 +16460,10 @@ public:
 class IFC_PARSE_API IfcLightSourceAmbient : public IfcLightSource {
 public:
     IfcLightSourceAmbient() {}
-    explicit IfcLightSourceAmbient (const std::weak_ptr<InstanceData>& data) : IfcLightSource(data) {}
+    explicit IfcLightSourceAmbient (const std::weak_ptr<instance_data>& data) : IfcLightSource(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity);
 };
 /// Definition from ISO/CD 10303-46:1992: The light source directional is a subtype of light source. This entity has a light source direction. With a conceptual origin at infinity, all the rays of the light are parallel to this direction. This kind of light source lights a surface based on the surface's orientation, but not position. 
@@ -16478,14 +16478,14 @@ public:
 class IFC_PARSE_API IfcLightSourceDirectional : public IfcLightSource {
 public:
     IfcLightSourceDirectional() {}
-    explicit IfcLightSourceDirectional (const std::weak_ptr<InstanceData>& data) : IfcLightSource(data) {}
+    explicit IfcLightSourceDirectional (const std::weak_ptr<instance_data>& data) : IfcLightSource(data) {}
 
     /// Definition from ISO/CD 10303-46:1992: This direction is the direction of the light source.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the illumination emanating from the light source in the local coordinate system. Light is emitted along parallel rays from an infinite distance away.
     ::Ifc2x3::IfcDirection Orientation() const;
     void setOrientation(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity, ::Ifc2x3::IfcDirection v5_Orientation);
 };
 /// IfcLightSourceGoniometric defines a light source for which exact lighting data is available. It specifies the type of a light emitter, defines the position and orientation of a light distribution curve and the data concerning lamp and photometric information. 
@@ -16498,7 +16498,7 @@ public:
 class IFC_PARSE_API IfcLightSourceGoniometric : public IfcLightSource {
 public:
     IfcLightSourceGoniometric() {}
-    explicit IfcLightSourceGoniometric (const std::weak_ptr<InstanceData>& data) : IfcLightSource(data) {}
+    explicit IfcLightSourceGoniometric (const std::weak_ptr<instance_data>& data) : IfcLightSource(data) {}
 
     /// The position of the light source. It is used to orientate the light distribution curves.
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
@@ -16519,7 +16519,7 @@ public:
     ::Ifc2x3::IfcLightDistributionDataSourceSelect LightDistributionDataSource() const;
     void setLightDistributionDataSource(const ::Ifc2x3::IfcLightDistributionDataSourceSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity, ::Ifc2x3::IfcAxis2Placement3D v5_Position, ::Ifc2x3::IfcColourRgb v6_ColourAppearance, double v7_ColourTemperature, double v8_LuminousFlux, ::Ifc2x3::IfcLightEmissionSourceEnum::Value v9_LightEmissionSource, ::Ifc2x3::IfcLightDistributionDataSourceSelect v10_LightDistributionDataSource);
 };
 /// Definition from ISO/CD 10303-46:1992: The light source positional entity is a subtype of light source. This entity has a light source position and attenuation coefficients. A positional light source affects a surface based on the surface's orientation and position. 
@@ -16540,7 +16540,7 @@ public:
 class IFC_PARSE_API IfcLightSourcePositional : public IfcLightSource {
 public:
     IfcLightSourcePositional() {}
-    explicit IfcLightSourcePositional (const std::weak_ptr<InstanceData>& data) : IfcLightSource(data) {}
+    explicit IfcLightSourcePositional (const std::weak_ptr<instance_data>& data) : IfcLightSource(data) {}
 
     /// Definition from ISO/CD 10303-46:1992: The Cartesian point indicates the position of the light source.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: A Point light node illuminates geometry within radius of its location.
@@ -16560,7 +16560,7 @@ public:
     double QuadricAttenuation() const;
     void setQuadricAttenuation(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation);
 };
 /// Definition from ISO/CD 10303-46:1992: The light source spot entity is a subtype of light source. Spot light source entities have a light source colour, position, direction, attenuation coefficients, concentration exponent, and spread angle. If a point lies outside the cone of influence of a light source of this type as determined by the light source position, direction and spread angle its colour is not affected by that light source. 
@@ -16581,7 +16581,7 @@ public:
 class IFC_PARSE_API IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
     IfcLightSourceSpot() {}
-    explicit IfcLightSourceSpot (const std::weak_ptr<InstanceData>& data) : IfcLightSourcePositional(data) {}
+    explicit IfcLightSourceSpot (const std::weak_ptr<instance_data>& data) : IfcLightSourcePositional(data) {}
 
     /// Definition from ISO/CD 10303-46:1992: This is the direction of the axis of the cone of the light source specified in the coordinate space of the representation being projected..
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The direction field specifies the direction vector of the light's central axis defined in the local coordinate system.
@@ -16599,7 +16599,7 @@ public:
     double BeamWidthAngle() const;
     void setBeamWidthAngle(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, ::Ifc2x3::IfcColourRgb v2_LightColour, std::optional< double > v3_AmbientIntensity, std::optional< double > v4_Intensity, ::Ifc2x3::IfcCartesianPoint v5_Position, double v6_Radius, double v7_ConstantAttenuation, double v8_DistanceAttenuation, double v9_QuadricAttenuation, ::Ifc2x3::IfcDirection v10_Orientation, std::optional< double > v11_ConcentrationExponent, double v12_SpreadAngle, double v13_BeamWidthAngle);
 };
 /// IfcLocalPlacement defines the relative placement of a product in relation to the
@@ -16657,7 +16657,7 @@ public:
 class IFC_PARSE_API IfcLocalPlacement : public IfcObjectPlacement {
 public:
     IfcLocalPlacement() {}
-    explicit IfcLocalPlacement (const std::weak_ptr<InstanceData>& data) : IfcObjectPlacement(data) {}
+    explicit IfcLocalPlacement (const std::weak_ptr<instance_data>& data) : IfcObjectPlacement(data) {}
 
     /// Reference to Object that provides the relative placement by its local coordinate system. If it is omitted, then the local placement is given to the WCS, established by the geometric representation context.
     ::Ifc2x3::IfcObjectPlacement PlacementRelTo() const;
@@ -16666,7 +16666,7 @@ public:
     ::Ifc2x3::IfcAxis2Placement RelativePlacement() const;
     void setRelativePlacement(const ::Ifc2x3::IfcAxis2Placement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcObjectPlacement v1_PlacementRelTo, ::Ifc2x3::IfcAxis2Placement v2_RelativePlacement);
 };
 /// Definition from ISO/CD 10303-42:1992: A loop is a topological
@@ -16698,10 +16698,10 @@ public:
 class IFC_PARSE_API IfcLoop : public IfcTopologicalRepresentationItem {
 public:
     IfcLoop() {}
-    explicit IfcLoop (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcLoop (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO/CD 10303-43:1992: A mapped item is the use of an existing representation (the mapping source - mapped representation) as a representation item in a second representation. 
@@ -16726,7 +16726,7 @@ public:
 class IFC_PARSE_API IfcMappedItem : public IfcRepresentationItem {
 public:
     IfcMappedItem() {}
-    explicit IfcMappedItem (const std::weak_ptr<InstanceData>& data) : IfcRepresentationItem(data) {}
+    explicit IfcMappedItem (const std::weak_ptr<instance_data>& data) : IfcRepresentationItem(data) {}
 
     /// A representation map that is the source of the mapped item. It can be seen as a block (or cell or marco) definition.
     ::Ifc2x3::IfcRepresentationMap MappingSource() const;
@@ -16735,7 +16735,7 @@ public:
     ::Ifc2x3::IfcCartesianTransformationOperator MappingTarget() const;
     void setMappingTarget(const ::Ifc2x3::IfcCartesianTransformationOperator& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationMap v1_MappingSource, ::Ifc2x3::IfcCartesianTransformationOperator v2_MappingTarget);
 };
 /// IfcMaterialDefinitionRepresentation defines presentation information relating to IfcMaterial. It allows for multiple presentations of the same material for different geometric representation contexts.
@@ -16771,20 +16771,20 @@ public:
 class IFC_PARSE_API IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
 public:
     IfcMaterialDefinitionRepresentation() {}
-    explicit IfcMaterialDefinitionRepresentation (const std::weak_ptr<InstanceData>& data) : IfcProductRepresentation(data) {}
+    explicit IfcMaterialDefinitionRepresentation (const std::weak_ptr<instance_data>& data) : IfcProductRepresentation(data) {}
 
     /// Reference to the material to which the representation applies.
     ::Ifc2x3::IfcMaterial RepresentedMaterial() const;
     void setRepresentedMaterial(const ::Ifc2x3::IfcMaterial& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcRepresentation > v3_Representations, ::Ifc2x3::IfcMaterial v4_RepresentedMaterial);
 };
 
 class IFC_PARSE_API IfcMechanicalConcreteMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
     IfcMechanicalConcreteMaterialProperties() {}
-    explicit IfcMechanicalConcreteMaterialProperties (const std::weak_ptr<InstanceData>& data) : IfcMechanicalMaterialProperties(data) {}
+    explicit IfcMechanicalConcreteMaterialProperties (const std::weak_ptr<instance_data>& data) : IfcMechanicalMaterialProperties(data) {}
 
     std::optional< double > CompressiveStrength() const;
     void setCompressiveStrength(const std::optional< double >& v);
@@ -16799,7 +16799,7 @@ public:
     std::optional< std::string > WaterImpermeability() const;
     void setWaterImpermeability(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_DynamicViscosity, std::optional< double > v3_YoungModulus, std::optional< double > v4_ShearModulus, std::optional< double > v5_PoissonRatio, std::optional< double > v6_ThermalExpansionCoefficient, std::optional< double > v7_CompressiveStrength, std::optional< double > v8_MaxAggregateSize, std::optional< std::string > v9_AdmixturesDescription, std::optional< std::string > v10_Workability, std::optional< double > v11_ProtectivePoreRatio, std::optional< std::string > v12_WaterImpermeability);
 };
 /// An IfcObjectDefinition is the generalization of any
@@ -16855,14 +16855,14 @@ public:
 class IFC_PARSE_API IfcObjectDefinition : public IfcRoot {
 public:
     IfcObjectDefinition() {}
-    explicit IfcObjectDefinition (const std::weak_ptr<InstanceData>& data) : IfcRoot(data) {}
+    explicit IfcObjectDefinition (const std::weak_ptr<instance_data>& data) : IfcRoot(data) {}
 
         std::vector< IfcRelAssigns > HasAssignments() const; // INVERSE IfcRelAssigns::RelatedObjects
     std::vector< IfcRelDecomposes > IsDecomposedBy() const; // INVERSE IfcRelDecomposes::RelatingObject
     std::vector< IfcRelDecomposes > Decomposes() const; // INVERSE IfcRelDecomposes::RelatedObjects
     std::vector< IfcRelAssociates > HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// Definition from ISO/CD 10303-46:1992: A one time repeat factor is a vector used in the fill area style hatching and fill area style tiles entities for determining the origin of the repeated hatch line relative to the origin of the previous hatch line, Given the initial position of any hatch line, the one direction repeat factor determines two new positions according to the equation: 
@@ -16875,13 +16875,13 @@ public:
 class IFC_PARSE_API IfcOneDirectionRepeatFactor : public IfcGeometricRepresentationItem {
 public:
     IfcOneDirectionRepeatFactor() {}
-    explicit IfcOneDirectionRepeatFactor (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcOneDirectionRepeatFactor (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// A vector which specifies the relative positioning of hatch lines.
     ::Ifc2x3::IfcVector RepeatFactor() const;
     void setRepeatFactor(const ::Ifc2x3::IfcVector& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVector v1_RepeatFactor);
 };
 /// Definition from ISO/CD 10303-42:1992: An open shell is a shell of
@@ -16946,10 +16946,10 @@ public:
 class IFC_PARSE_API IfcOpenShell : public IfcConnectedFaceSet {
 public:
     IfcOpenShell() {}
-    explicit IfcOpenShell (const std::weak_ptr<InstanceData>& data) : IfcConnectedFaceSet(data) {}
+    explicit IfcOpenShell (const std::weak_ptr<instance_data>& data) : IfcConnectedFaceSet(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcFace > v1_CfsFaces);
 };
 /// Definition from ISO/CD 10303-42:1992: An oriented edge is an edge constructed from another edge and contains a BOOLEAN direction flag to indicate whether or not the orientation of the constructed edge agrees with the orientation of the original edge. Except for perhaps orientation, the oriented edge is equivalent to the original edge.  
@@ -16962,7 +16962,7 @@ public:
 class IFC_PARSE_API IfcOrientedEdge : public IfcEdge {
 public:
     IfcOrientedEdge() {}
-    explicit IfcOrientedEdge (const std::weak_ptr<InstanceData>& data) : IfcEdge(data) {}
+    explicit IfcOrientedEdge (const std::weak_ptr<instance_data>& data) : IfcEdge(data) {}
 
     /// Edge entity used to construct this oriented edge.
     ::Ifc2x3::IfcEdge EdgeElement() const;
@@ -16971,7 +16971,7 @@ public:
     bool Orientation() const;
     void setOrientation(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcEdge v3_EdgeElement, bool v4_Orientation);
 };
 /// The parameterized profile definition
@@ -17019,13 +17019,13 @@ public:
 class IFC_PARSE_API IfcParameterizedProfileDef : public IfcProfileDef {
 public:
     IfcParameterizedProfileDef() {}
-    explicit IfcParameterizedProfileDef (const std::weak_ptr<InstanceData>& data) : IfcProfileDef(data) {}
+    explicit IfcParameterizedProfileDef (const std::weak_ptr<instance_data>& data) : IfcProfileDef(data) {}
 
     /// Position coordinate system of the parameterized profile definition. If unspecified, no translation and no rotation is applied.
     ::Ifc2x3::IfcAxis2Placement2D Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement2D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position);
 };
 /// Definition from ISO/CD 10303-42:1992: A path is a topological entity consisting of an ordered collection of oriented edges, such that the edge start vertex of each edge coincides with the edge end of its predecessor. The path is ordered from the edge start of the first oriented edge to the edge end of the last edge. The BOOLEAN value sense in the oriented edge indicates whether the edge direction agrees with the direction of the path (TRUE) or is the opposite direction (FALSE).  
@@ -17045,13 +17045,13 @@ public:
 class IFC_PARSE_API IfcPath : public IfcTopologicalRepresentationItem {
 public:
     IfcPath() {}
-    explicit IfcPath (const std::weak_ptr<InstanceData>& data) : IfcTopologicalRepresentationItem(data) {}
+    explicit IfcPath (const std::weak_ptr<instance_data>& data) : IfcTopologicalRepresentationItem(data) {}
 
     /// The list of oriented edges which are concatenated together to form this path.
     std::vector< ::Ifc2x3::IfcOrientedEdge > EdgeList() const;
     void setEdgeList(const std::vector< ::Ifc2x3::IfcOrientedEdge >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcOrientedEdge > v1_EdgeList);
 };
 /// The complex physical quantity, IfcPhysicalComplexQuantity, is an entity that holds a set of single quantity measure value (as defined at the subtypes of IfcPhysicalSimpleQuantity), that all apply to a given component or aspect of the element. 
@@ -17066,7 +17066,7 @@ public:
 class IFC_PARSE_API IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     IfcPhysicalComplexQuantity() {}
-    explicit IfcPhysicalComplexQuantity (const std::weak_ptr<InstanceData>& data) : IfcPhysicalQuantity(data) {}
+    explicit IfcPhysicalComplexQuantity (const std::weak_ptr<instance_data>& data) : IfcPhysicalQuantity(data) {}
 
     /// Set of physical quantities that are grouped by this complex physical quantity according to a given discrimination.
     std::vector< ::Ifc2x3::IfcPhysicalQuantity > HasQuantities() const;
@@ -17081,7 +17081,7 @@ public:
     std::optional< std::string > Usage() const;
     void setUsage(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcPhysicalQuantity > v3_HasQuantities, std::string v4_Discrimination, std::optional< std::string > v5_Quality, std::optional< std::string > v6_Usage);
 };
 /// An IfcPixelTexture provides a 2D image-based texture map as an explicit array of pixel values (list of Pixel binary attributes). In contrary to the IfcImageTexture the IfcPixelTexture holds a 2 dimensional list of pixel color
@@ -17105,7 +17105,7 @@ public:
 class IFC_PARSE_API IfcPixelTexture : public IfcSurfaceTexture {
 public:
     IfcPixelTexture() {}
-    explicit IfcPixelTexture (const std::weak_ptr<InstanceData>& data) : IfcSurfaceTexture(data) {}
+    explicit IfcPixelTexture (const std::weak_ptr<instance_data>& data) : IfcSurfaceTexture(data) {}
 
     /// The number of pixels in width (S) direction.
     int Width() const;
@@ -17122,7 +17122,7 @@ public:
     std::vector< boost::dynamic_bitset<> > /*[1:?]*/ Pixel() const;
     void setPixel(const std::vector< boost::dynamic_bitset<> > /*[1:?]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(bool v1_RepeatS, bool v2_RepeatT, ::Ifc2x3::IfcSurfaceTextureEnum::Value v3_TextureType, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_TextureTransform, int v5_Width, int v6_Height, int v7_ColourComponents, std::vector< boost::dynamic_bitset<> > /*[1:?]*/ v8_Pixel);
 };
 /// Definition from ISO/CD 10303-42:1992: A placement entity defines the local environment for the definition of a geometry item. It locates the item to be defined and, in the case of the axis placement subtypes, gives its orientation. 
@@ -17137,13 +17137,13 @@ public:
 class IFC_PARSE_API IfcPlacement : public IfcGeometricRepresentationItem {
 public:
     IfcPlacement() {}
-    explicit IfcPlacement (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcPlacement (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The geometric position of a reference point, such as the center of a circle, of the item to be located.
     ::Ifc2x3::IfcCartesianPoint Location() const;
     void setLocation(const ::Ifc2x3::IfcCartesianPoint& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Location);
 };
 /// The planar extent defines the extent along the two axes of the two-dimensional coordinate system, independently of its position.
@@ -17154,7 +17154,7 @@ public:
 class IFC_PARSE_API IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     IfcPlanarExtent() {}
-    explicit IfcPlanarExtent (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcPlanarExtent (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The extent in the direction of the x-axis.
     double SizeInX() const;
@@ -17163,7 +17163,7 @@ public:
     double SizeInY() const;
     void setSizeInY(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_SizeInX, double v2_SizeInY);
 };
 /// Definition from ISO/CD 10303-42:1992: A point is a location in some real Cartesian coordinate space Rm, for m = 1, 2 or 3.  
@@ -17174,10 +17174,10 @@ public:
 class IFC_PARSE_API IfcPoint : public IfcGeometricRepresentationItem {
 public:
     IfcPoint() {}
-    explicit IfcPoint (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcPoint (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO/CD 10303-42:1992: A point on curve is a point which lies on a curve. The point is determined by evaluating the curve at a specific parameter value. The coordinate space dimensionality of the point is that of the basis curve. 
@@ -17192,7 +17192,7 @@ public:
 class IFC_PARSE_API IfcPointOnCurve : public IfcPoint {
 public:
     IfcPointOnCurve() {}
-    explicit IfcPointOnCurve (const std::weak_ptr<InstanceData>& data) : IfcPoint(data) {}
+    explicit IfcPointOnCurve (const std::weak_ptr<instance_data>& data) : IfcPoint(data) {}
 
     /// The curve to which point parameter relates.
     ::Ifc2x3::IfcCurve BasisCurve() const;
@@ -17201,7 +17201,7 @@ public:
     double PointParameter() const;
     void setPointParameter(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_BasisCurve, double v2_PointParameter);
 };
 /// Definition from ISO/CD 10303-42:1992: A point on surface is a point which lies on a parametric surface. The point is determined by evaluating the surface at a particular pair of parameter values. 
@@ -17216,7 +17216,7 @@ public:
 class IFC_PARSE_API IfcPointOnSurface : public IfcPoint {
 public:
     IfcPointOnSurface() {}
-    explicit IfcPointOnSurface (const std::weak_ptr<InstanceData>& data) : IfcPoint(data) {}
+    explicit IfcPointOnSurface (const std::weak_ptr<instance_data>& data) : IfcPoint(data) {}
 
     /// The surface to which the parameter values relate.
     ::Ifc2x3::IfcSurface BasisSurface() const;
@@ -17228,7 +17228,7 @@ public:
     double PointParameterV() const;
     void setPointParameterV(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurface v1_BasisSurface, double v2_PointParameterU, double v3_PointParameterV);
 };
 /// Definition from ISO/CD 10303-42:1992: A
@@ -17273,13 +17273,13 @@ public:
 class IFC_PARSE_API IfcPolyLoop : public IfcLoop {
 public:
     IfcPolyLoop() {}
-    explicit IfcPolyLoop (const std::weak_ptr<InstanceData>& data) : IfcLoop(data) {}
+    explicit IfcPolyLoop (const std::weak_ptr<instance_data>& data) : IfcLoop(data) {}
 
     /// List of points defining the loop. There are no repeated points in the list.
     std::vector< ::Ifc2x3::IfcCartesianPoint > Polygon() const;
     void setPolygon(const std::vector< ::Ifc2x3::IfcCartesianPoint >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcCartesianPoint > v1_Polygon);
 };
 /// The polygonal bounded
@@ -17341,7 +17341,7 @@ public:
 class IFC_PARSE_API IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
 public:
     IfcPolygonalBoundedHalfSpace() {}
-    explicit IfcPolygonalBoundedHalfSpace (const std::weak_ptr<InstanceData>& data) : IfcHalfSpaceSolid(data) {}
+    explicit IfcPolygonalBoundedHalfSpace (const std::weak_ptr<instance_data>& data) : IfcHalfSpaceSolid(data) {}
 
     /// Definition of the position coordinate system for the bounding polyline and the base surface.
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
@@ -17352,7 +17352,7 @@ public:
     ::Ifc2x3::IfcBoundedCurve PolygonalBoundary() const;
     void setPolygonalBoundary(const ::Ifc2x3::IfcBoundedCurve& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurface v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcAxis2Placement3D v3_Position, ::Ifc2x3::IfcBoundedCurve v4_PolygonalBoundary);
 };
 /// The pre defined colour determines those qualified names which can be used to identify a colour that is in scope of the current data exchange specification (in contrary to colour specification which defines the colour directly by its colour components).
@@ -17363,10 +17363,10 @@ public:
 class IFC_PARSE_API IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
     IfcPreDefinedColour() {}
-    explicit IfcPreDefinedColour (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedItem(data) {}
+    explicit IfcPreDefinedColour (const std::weak_ptr<instance_data>& data) : IfcPreDefinedItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// Definition from ISO/CD 10303-46:1992: The predefined curve font type is an abstract supertype provided to define an application specific curve font. The name label shall be constrained in the application protocol to values that are given specific meaning for curve fonts in that application protocol.
@@ -17379,30 +17379,30 @@ public:
 class IFC_PARSE_API IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
     IfcPreDefinedCurveFont() {}
-    explicit IfcPreDefinedCurveFont (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedItem(data) {}
+    explicit IfcPreDefinedCurveFont (const std::weak_ptr<instance_data>& data) : IfcPreDefinedItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 
 class IFC_PARSE_API IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
 public:
     IfcPreDefinedDimensionSymbol() {}
-    explicit IfcPreDefinedDimensionSymbol (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedSymbol(data) {}
+    explicit IfcPreDefinedDimensionSymbol (const std::weak_ptr<instance_data>& data) : IfcPreDefinedSymbol(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 
 class IFC_PARSE_API IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
 public:
     IfcPreDefinedPointMarkerSymbol() {}
-    explicit IfcPreDefinedPointMarkerSymbol (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedSymbol(data) {}
+    explicit IfcPreDefinedPointMarkerSymbol (const std::weak_ptr<instance_data>& data) : IfcPreDefinedSymbol(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// The IfcProductDefinitionShape defines all shape relevant information about an IfcProduct. It allows for multiple geometric shape representations of the same product. The shape relevant information includes:
@@ -17420,12 +17420,12 @@ public:
 class IFC_PARSE_API IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
     IfcProductDefinitionShape() {}
-    explicit IfcProductDefinitionShape (const std::weak_ptr<InstanceData>& data) : IfcProductRepresentation(data) {}
+    explicit IfcProductDefinitionShape (const std::weak_ptr<instance_data>& data) : IfcProductRepresentation(data) {}
 
         std::vector< IfcProduct > ShapeOfProduct() const; // INVERSE IfcProduct::Representation
     std::vector< IfcShapeAspect > HasShapeAspects() const; // INVERSE IfcShapeAspect::PartOfProductDefinitionShape
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcRepresentation > v3_Representations);
 };
 /// A property with a bounded
@@ -17535,7 +17535,7 @@ public:
 class IFC_PARSE_API IfcPropertyBoundedValue : public IfcSimpleProperty {
 public:
     IfcPropertyBoundedValue() {}
-    explicit IfcPropertyBoundedValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertyBoundedValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// Upper bound value for the interval defining the property value. If the value is not given, it indicates an open bound (all values to be greater than or equal to LowerBoundValue).
     ::Ifc2x3::IfcValue UpperBoundValue() const;
@@ -17547,7 +17547,7 @@ public:
     ::Ifc2x3::IfcUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcValue v3_UpperBoundValue, ::Ifc2x3::IfcValue v4_LowerBoundValue, ::Ifc2x3::IfcUnit v5_Unit);
 };
 /// IfcPropertyDefinition defines the generalization of
@@ -17603,11 +17603,11 @@ public:
 class IFC_PARSE_API IfcPropertyDefinition : public IfcRoot {
 public:
     IfcPropertyDefinition() {}
-    explicit IfcPropertyDefinition (const std::weak_ptr<InstanceData>& data) : IfcRoot(data) {}
+    explicit IfcPropertyDefinition (const std::weak_ptr<instance_data>& data) : IfcRoot(data) {}
 
         std::vector< IfcRelAssociates > HasAssociations() const; // INVERSE IfcRelAssociates::RelatedObjects
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// A property with an enumerated
@@ -17690,7 +17690,7 @@ public:
 class IFC_PARSE_API IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     IfcPropertyEnumeratedValue() {}
-    explicit IfcPropertyEnumeratedValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertyEnumeratedValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// Enumeration values, which shall be listed in the referenced IfcPropertyEnumeration, if such a reference is provided.
     /// 
@@ -17701,7 +17701,7 @@ public:
     ::Ifc2x3::IfcPropertyEnumeration EnumerationReference() const;
     void setEnumerationReference(const ::Ifc2x3::IfcPropertyEnumeration& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcValue > v3_EnumerationValues, ::Ifc2x3::IfcPropertyEnumeration v4_EnumerationReference);
 };
 /// An IfcPropertyListValue
@@ -17772,7 +17772,7 @@ public:
 class IFC_PARSE_API IfcPropertyListValue : public IfcSimpleProperty {
 public:
     IfcPropertyListValue() {}
-    explicit IfcPropertyListValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertyListValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// List of property values.
     /// 
@@ -17783,7 +17783,7 @@ public:
     ::Ifc2x3::IfcUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcValue > v3_ListValues, ::Ifc2x3::IfcUnit v4_Unit);
 };
 /// IfcPropertyReferenceValue allows a property value to
@@ -17804,7 +17804,7 @@ public:
 class IFC_PARSE_API IfcPropertyReferenceValue : public IfcSimpleProperty {
 public:
     IfcPropertyReferenceValue() {}
-    explicit IfcPropertyReferenceValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertyReferenceValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// Description of the use of the referenced value within the property.
     std::optional< std::string > UsageName() const;
@@ -17815,7 +17815,7 @@ public:
     ::Ifc2x3::IfcObjectReferenceSelect PropertyReference() const;
     void setPropertyReference(const ::Ifc2x3::IfcObjectReferenceSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::optional< std::string > v3_UsageName, ::Ifc2x3::IfcObjectReferenceSelect v4_PropertyReference);
 };
 /// IfcPropertySetDefinition is a generalization of all
@@ -17863,12 +17863,12 @@ public:
 class IFC_PARSE_API IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
     IfcPropertySetDefinition() {}
-    explicit IfcPropertySetDefinition (const std::weak_ptr<InstanceData>& data) : IfcPropertyDefinition(data) {}
+    explicit IfcPropertySetDefinition (const std::weak_ptr<instance_data>& data) : IfcPropertyDefinition(data) {}
 
         std::vector< IfcRelDefinesByProperties > PropertyDefinitionOf() const; // INVERSE IfcRelDefinesByProperties::RelatingPropertyDefinition
     std::vector< IfcTypeObject > DefinesType() const; // INVERSE IfcTypeObject::HasPropertySets
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// The property with a single value
@@ -17918,7 +17918,7 @@ public:
 class IFC_PARSE_API IfcPropertySingleValue : public IfcSimpleProperty {
 public:
     IfcPropertySingleValue() {}
-    explicit IfcPropertySingleValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertySingleValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// Value and measure type of this property. 
     /// 
@@ -17931,7 +17931,7 @@ public:
     ::Ifc2x3::IfcUnit Unit() const;
     void setUnit(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcValue v3_NominalValue, ::Ifc2x3::IfcUnit v4_Unit);
 };
 /// A property with a range value
@@ -18053,7 +18053,7 @@ public:
 class IFC_PARSE_API IfcPropertyTableValue : public IfcSimpleProperty {
 public:
     IfcPropertyTableValue() {}
-    explicit IfcPropertyTableValue (const std::weak_ptr<InstanceData>& data) : IfcSimpleProperty(data) {}
+    explicit IfcPropertyTableValue (const std::weak_ptr<instance_data>& data) : IfcSimpleProperty(data) {}
 
     /// List of defining values, which determine the defined values. This list shall have unique values only.
     /// 
@@ -18075,7 +18075,7 @@ public:
     ::Ifc2x3::IfcUnit DefinedUnit() const;
     void setDefinedUnit(const ::Ifc2x3::IfcUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcValue > v3_DefiningValues, std::vector< ::Ifc2x3::IfcValue > v4_DefinedValues, std::optional< std::string > v5_Expression, ::Ifc2x3::IfcUnit v6_DefiningUnit, ::Ifc2x3::IfcUnit v7_DefinedUnit);
 };
 /// IfcRectangleProfileDef defines a rectangle as the profile definition used by the swept surface geometry or the swept area solid. It is given by its X extent and its Y extent, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system. 
@@ -18115,7 +18115,7 @@ public:
 class IFC_PARSE_API IfcRectangleProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcRectangleProfileDef() {}
-    explicit IfcRectangleProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcRectangleProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// The extent of the rectangle in the direction of the x-axis.
     double XDim() const;
@@ -18124,7 +18124,7 @@ public:
     double YDim() const;
     void setYDim(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_XDim, double v5_YDim);
 };
 /// In a regular time series, the data arrives predictably at predefined intervals. In a regular time series there is no need to store multiple time stamps and the algorithms for analyzing the time series are therefore significantly simpler.  Using the start time provided in the supertype, the time step is used to identify the frequency of the occurrences of the list of values.
@@ -18135,7 +18135,7 @@ public:
 class IFC_PARSE_API IfcRegularTimeSeries : public IfcTimeSeries {
 public:
     IfcRegularTimeSeries() {}
-    explicit IfcRegularTimeSeries (const std::weak_ptr<InstanceData>& data) : IfcTimeSeries(data) {}
+    explicit IfcRegularTimeSeries (const std::weak_ptr<instance_data>& data) : IfcTimeSeries(data) {}
 
     /// A duration of time intervals between values.
     double TimeStep() const;
@@ -18144,7 +18144,7 @@ public:
     std::vector< ::Ifc2x3::IfcTimeSeriesValue > Values() const;
     void setValues(const std::vector< ::Ifc2x3::IfcTimeSeriesValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect v3_StartTime, ::Ifc2x3::IfcDateTimeSelect v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, std::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit v8_Unit, double v9_TimeStep, std::vector< ::Ifc2x3::IfcTimeSeriesValue > v10_Values);
 };
 /// Definition from IAI: An
@@ -18176,7 +18176,7 @@ public:
 class IFC_PARSE_API IfcReinforcementDefinitionProperties : public IfcPropertySetDefinition {
 public:
     IfcReinforcementDefinitionProperties() {}
-    explicit IfcReinforcementDefinitionProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcReinforcementDefinitionProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Descriptive type name applied to reinforcement definition properties.
     std::optional< std::string > DefinitionType() const;
@@ -18185,7 +18185,7 @@ public:
     std::vector< ::Ifc2x3::IfcSectionReinforcementProperties > ReinforcementSectionDefinitions() const;
     void setReinforcementSectionDefinitions(const std::vector< ::Ifc2x3::IfcSectionReinforcementProperties >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_DefinitionType, std::vector< ::Ifc2x3::IfcSectionReinforcementProperties > v6_ReinforcementSectionDefinitions);
 };
 /// IfcRelationship is the abstract generalization of all objectified relationships in IFC. Objectified relationships are the preferred way to handle relationships among objects. This allows to keep relationship specific properties directly at the relationship and opens the possibility to later handle relationship specific behavior.  
@@ -18199,10 +18199,10 @@ public:
 class IFC_PARSE_API IfcRelationship : public IfcRoot {
 public:
     IfcRelationship() {}
-    explicit IfcRelationship (const std::weak_ptr<InstanceData>& data) : IfcRoot(data) {}
+    explicit IfcRelationship (const std::weak_ptr<instance_data>& data) : IfcRoot(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// IfcRoundedRectangleProfileDef defines a rectangle with equally rounded corners as the profile definition used by the swept surface geometry or the swept area solid. It is given by the X extent, the Y extent, and the radius for the rounded corners, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box.
@@ -18245,13 +18245,13 @@ public:
 class IFC_PARSE_API IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
 public:
     IfcRoundedRectangleProfileDef() {}
-    explicit IfcRoundedRectangleProfileDef (const std::weak_ptr<InstanceData>& data) : IfcRectangleProfileDef(data) {}
+    explicit IfcRoundedRectangleProfileDef (const std::weak_ptr<instance_data>& data) : IfcRectangleProfileDef(data) {}
 
     /// Radius of the circular arcs by which all four corners of the rectangle are equally rounded.
     double RoundingRadius() const;
     void setRoundingRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_XDim, double v5_YDim, double v6_RoundingRadius);
 };
 /// Definition from ISO 10303-42:1999: A sectioned
@@ -18310,7 +18310,7 @@ public:
 class IFC_PARSE_API IfcSectionedSpine : public IfcGeometricRepresentationItem {
 public:
     IfcSectionedSpine() {}
-    explicit IfcSectionedSpine (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcSectionedSpine (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// A single composite curve, that defines the spine curve. Each of the composite curve segments correspond to the part between two cross-sections.
     ::Ifc2x3::IfcCompositeCurve SpineCurve() const;
@@ -18322,14 +18322,14 @@ public:
     std::vector< ::Ifc2x3::IfcAxis2Placement3D > CrossSectionPositions() const;
     void setCrossSectionPositions(const std::vector< ::Ifc2x3::IfcAxis2Placement3D >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCompositeCurve v1_SpineCurve, std::vector< ::Ifc2x3::IfcProfileDef > v2_CrossSections, std::vector< ::Ifc2x3::IfcAxis2Placement3D > v3_CrossSectionPositions);
 };
 
 class IFC_PARSE_API IfcServiceLifeFactor : public IfcPropertySetDefinition {
 public:
     IfcServiceLifeFactor() {}
-    explicit IfcServiceLifeFactor (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcServiceLifeFactor (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value& v);
@@ -18340,7 +18340,7 @@ public:
     ::Ifc2x3::IfcMeasureValue LowerValue() const;
     void setLowerValue(const ::Ifc2x3::IfcMeasureValue& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcServiceLifeFactorTypeEnum::Value v5_PredefinedType, ::Ifc2x3::IfcMeasureValue v6_UpperValue, ::Ifc2x3::IfcMeasureValue v7_MostUsedValue, ::Ifc2x3::IfcMeasureValue v8_LowerValue);
 };
 /// Definition from ISO/CD 10303-42:1992: A shell based surface model is described by a set of open or closed shells of dimensionality 2. The shells shall not intersect except at edges and vertices. In particular, distinct faces may not intersect. A complete face of one shell may be shared with another shell. Coincident portions of shells shall both reference the same faces, edges and vertices defining the coincident region. There shall be at least one shell. 
@@ -18358,12 +18358,12 @@ public:
 class IFC_PARSE_API IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     IfcShellBasedSurfaceModel() {}
-    explicit IfcShellBasedSurfaceModel (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcShellBasedSurfaceModel (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     std::vector< ::Ifc2x3::IfcShell > SbsmBoundary() const;
     void setSbsmBoundary(const std::vector< ::Ifc2x3::IfcShell >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcShell > v1_SbsmBoundary);
 };
 /// Definition from IAI: Describes slippage in support conditions or connection conditions.  Slippage means that a relative displacement may occur in a support or connection before support or connection reactions are awoken.
@@ -18378,7 +18378,7 @@ public:
 class IFC_PARSE_API IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     IfcSlippageConnectionCondition() {}
-    explicit IfcSlippageConnectionCondition (const std::weak_ptr<InstanceData>& data) : IfcStructuralConnectionCondition(data) {}
+    explicit IfcSlippageConnectionCondition (const std::weak_ptr<instance_data>& data) : IfcStructuralConnectionCondition(data) {}
 
     /// Slippage in x-direction of the coordinate system defined by the instance which uses this resource object.
     std::optional< double > SlippageX() const;
@@ -18390,7 +18390,7 @@ public:
     std::optional< double > SlippageZ() const;
     void setSlippageZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_SlippageX, std::optional< double > v3_SlippageY, std::optional< double > v4_SlippageZ);
 };
 /// Definition from ISO/CD 10303-42:1992: A solid model is a complete representation of the nominal shape of a product such that all points in the interior are connected. Any point can be classified as being inside, outside, or on the boundary of a solid. There are several different types of solid model representations. 
@@ -18401,17 +18401,17 @@ public:
 class IFC_PARSE_API IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
     IfcSolidModel() {}
-    explicit IfcSolidModel (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcSolidModel (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 
 class IFC_PARSE_API IfcSoundProperties : public IfcPropertySetDefinition {
 public:
     IfcSoundProperties() {}
-    explicit IfcSoundProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcSoundProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     bool IsAttenuating() const;
     void setIsAttenuating(const bool& v);
@@ -18420,14 +18420,14 @@ public:
     std::vector< ::Ifc2x3::IfcSoundValue > SoundValues() const;
     void setSoundValues(const std::vector< ::Ifc2x3::IfcSoundValue >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, bool v5_IsAttenuating, std::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v6_SoundScale, std::vector< ::Ifc2x3::IfcSoundValue > v7_SoundValues);
 };
 
 class IFC_PARSE_API IfcSoundValue : public IfcPropertySetDefinition {
 public:
     IfcSoundValue() {}
-    explicit IfcSoundValue (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcSoundValue (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     ::Ifc2x3::IfcTimeSeries SoundLevelTimeSeries() const;
     void setSoundLevelTimeSeries(const ::Ifc2x3::IfcTimeSeries& v);
@@ -18436,14 +18436,14 @@ public:
     ::Ifc2x3::IfcDerivedMeasureValue SoundLevelSingleValue() const;
     void setSoundLevelSingleValue(const ::Ifc2x3::IfcDerivedMeasureValue& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcTimeSeries v5_SoundLevelTimeSeries, double v6_Frequency, ::Ifc2x3::IfcDerivedMeasureValue v7_SoundLevelSingleValue);
 };
 
 class IFC_PARSE_API IfcSpaceThermalLoadProperties : public IfcPropertySetDefinition {
 public:
     IfcSpaceThermalLoadProperties() {}
-    explicit IfcSpaceThermalLoadProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcSpaceThermalLoadProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     std::optional< double > ApplicableValueRatio() const;
     void setApplicableValueRatio(const std::optional< double >& v);
@@ -18466,7 +18466,7 @@ public:
     ::Ifc2x3::IfcThermalLoadTypeEnum::Value ThermalLoadType() const;
     void setThermalLoadType(const ::Ifc2x3::IfcThermalLoadTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< double > v5_ApplicableValueRatio, ::Ifc2x3::IfcThermalLoadSourceEnum::Value v6_ThermalLoadSource, ::Ifc2x3::IfcPropertySourceEnum::Value v7_PropertySource, std::optional< std::string > v8_SourceDescription, double v9_MaximumValue, std::optional< double > v10_MinimumValue, ::Ifc2x3::IfcTimeSeries v11_ThermalLoadTimeSeriesValues, std::optional< std::string > v12_UserDefinedThermalLoadSource, std::optional< std::string > v13_UserDefinedPropertySource, ::Ifc2x3::IfcThermalLoadTypeEnum::Value v14_ThermalLoadType);
 };
 /// Definition from IAI: An instance of the entity
@@ -18477,7 +18477,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
 public:
     IfcStructuralLoadLinearForce() {}
-    explicit IfcStructuralLoadLinearForce (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadStatic(data) {}
+    explicit IfcStructuralLoadLinearForce (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadStatic(data) {}
 
     /// Linear force value in x-direction.
     std::optional< double > LinearForceX() const;
@@ -18498,7 +18498,7 @@ public:
     std::optional< double > LinearMomentZ() const;
     void setLinearMomentZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearForceX, std::optional< double > v3_LinearForceY, std::optional< double > v4_LinearForceZ, std::optional< double > v5_LinearMomentX, std::optional< double > v6_LinearMomentY, std::optional< double > v7_LinearMomentZ);
 };
 /// Definition from IAI: An instance of the entity
@@ -18509,7 +18509,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
 public:
     IfcStructuralLoadPlanarForce() {}
-    explicit IfcStructuralLoadPlanarForce (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadStatic(data) {}
+    explicit IfcStructuralLoadPlanarForce (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadStatic(data) {}
 
     /// Planar force value in x-direction.
     std::optional< double > PlanarForceX() const;
@@ -18521,7 +18521,7 @@ public:
     std::optional< double > PlanarForceZ() const;
     void setPlanarForceZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_PlanarForceX, std::optional< double > v3_PlanarForceY, std::optional< double > v4_PlanarForceZ);
 };
 /// Definition from IAI: Instances of the entity
@@ -18532,7 +18532,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
 public:
     IfcStructuralLoadSingleDisplacement() {}
-    explicit IfcStructuralLoadSingleDisplacement (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadStatic(data) {}
+    explicit IfcStructuralLoadSingleDisplacement (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadStatic(data) {}
 
     /// Displacement in x-direction.
     std::optional< double > DisplacementX() const;
@@ -18553,7 +18553,7 @@ public:
     std::optional< double > RotationalDisplacementRZ() const;
     void setRotationalDisplacementRZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_DisplacementX, std::optional< double > v3_DisplacementY, std::optional< double > v4_DisplacementZ, std::optional< double > v5_RotationalDisplacementRX, std::optional< double > v6_RotationalDisplacementRY, std::optional< double > v7_RotationalDisplacementRZ);
 };
 /// Definition from IAI: Defines a displacement with warping.
@@ -18562,13 +18562,13 @@ public:
 class IFC_PARSE_API IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
 public:
     IfcStructuralLoadSingleDisplacementDistortion() {}
-    explicit IfcStructuralLoadSingleDisplacementDistortion (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadSingleDisplacement(data) {}
+    explicit IfcStructuralLoadSingleDisplacementDistortion (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadSingleDisplacement(data) {}
 
     /// The distortion curvature (warping, i.e. a cross-sectional deplanation) given to the displacement load.
     std::optional< double > Distortion() const;
     void setDistortion(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_DisplacementX, std::optional< double > v3_DisplacementY, std::optional< double > v4_DisplacementZ, std::optional< double > v5_RotationalDisplacementRX, std::optional< double > v6_RotationalDisplacementRY, std::optional< double > v7_RotationalDisplacementRZ, std::optional< double > v8_Distortion);
 };
 /// Definition from IAI: Instances of the entity
@@ -18580,7 +18580,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
 public:
     IfcStructuralLoadSingleForce() {}
-    explicit IfcStructuralLoadSingleForce (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadStatic(data) {}
+    explicit IfcStructuralLoadSingleForce (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadStatic(data) {}
 
     /// Force value in x-direction.
     std::optional< double > ForceX() const;
@@ -18601,7 +18601,7 @@ public:
     std::optional< double > MomentZ() const;
     void setMomentZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_ForceX, std::optional< double > v3_ForceY, std::optional< double > v4_ForceZ, std::optional< double > v5_MomentX, std::optional< double > v6_MomentY, std::optional< double > v7_MomentZ);
 };
 /// Definition from IAI: Instances of the entity
@@ -18615,20 +18615,20 @@ public:
 class IFC_PARSE_API IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
 public:
     IfcStructuralLoadSingleForceWarping() {}
-    explicit IfcStructuralLoadSingleForceWarping (const std::weak_ptr<InstanceData>& data) : IfcStructuralLoadSingleForce(data) {}
+    explicit IfcStructuralLoadSingleForceWarping (const std::weak_ptr<instance_data>& data) : IfcStructuralLoadSingleForce(data) {}
 
     /// The warping moment at the point load.
     std::optional< double > WarpingMoment() const;
     void setWarpingMoment(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_Name, std::optional< double > v2_ForceX, std::optional< double > v3_ForceY, std::optional< double > v4_ForceZ, std::optional< double > v5_MomentX, std::optional< double > v6_MomentY, std::optional< double > v7_MomentZ, std::optional< double > v8_WarpingMoment);
 };
 
 class IFC_PARSE_API IfcStructuralProfileProperties : public IfcGeneralProfileProperties {
 public:
     IfcStructuralProfileProperties() {}
-    explicit IfcStructuralProfileProperties (const std::weak_ptr<InstanceData>& data) : IfcGeneralProfileProperties(data) {}
+    explicit IfcStructuralProfileProperties (const std::weak_ptr<instance_data>& data) : IfcGeneralProfileProperties(data) {}
 
     std::optional< double > TorsionalConstantX() const;
     void setTorsionalConstantX(const std::optional< double >& v);
@@ -18663,14 +18663,14 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition, std::optional< double > v3_PhysicalWeight, std::optional< double > v4_Perimeter, std::optional< double > v5_MinimumPlateThickness, std::optional< double > v6_MaximumPlateThickness, std::optional< double > v7_CrossSectionArea, std::optional< double > v8_TorsionalConstantX, std::optional< double > v9_MomentOfInertiaYZ, std::optional< double > v10_MomentOfInertiaY, std::optional< double > v11_MomentOfInertiaZ, std::optional< double > v12_WarpingConstant, std::optional< double > v13_ShearCentreZ, std::optional< double > v14_ShearCentreY, std::optional< double > v15_ShearDeformationAreaZ, std::optional< double > v16_ShearDeformationAreaY, std::optional< double > v17_MaximumSectionModulusY, std::optional< double > v18_MinimumSectionModulusY, std::optional< double > v19_MaximumSectionModulusZ, std::optional< double > v20_MinimumSectionModulusZ, std::optional< double > v21_TorsionalSectionModulus, std::optional< double > v22_CentreOfGravityInX, std::optional< double > v23_CentreOfGravityInY);
 };
 
 class IFC_PARSE_API IfcStructuralSteelProfileProperties : public IfcStructuralProfileProperties {
 public:
     IfcStructuralSteelProfileProperties() {}
-    explicit IfcStructuralSteelProfileProperties (const std::weak_ptr<InstanceData>& data) : IfcStructuralProfileProperties(data) {}
+    explicit IfcStructuralSteelProfileProperties (const std::weak_ptr<instance_data>& data) : IfcStructuralProfileProperties(data) {}
 
     std::optional< double > ShearAreaZ() const;
     void setShearAreaZ(const std::optional< double >& v);
@@ -18681,7 +18681,7 @@ public:
     std::optional< double > PlasticShapeFactorZ() const;
     void setPlasticShapeFactorZ(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition, std::optional< double > v3_PhysicalWeight, std::optional< double > v4_Perimeter, std::optional< double > v5_MinimumPlateThickness, std::optional< double > v6_MaximumPlateThickness, std::optional< double > v7_CrossSectionArea, std::optional< double > v8_TorsionalConstantX, std::optional< double > v9_MomentOfInertiaYZ, std::optional< double > v10_MomentOfInertiaY, std::optional< double > v11_MomentOfInertiaZ, std::optional< double > v12_WarpingConstant, std::optional< double > v13_ShearCentreZ, std::optional< double > v14_ShearCentreY, std::optional< double > v15_ShearDeformationAreaZ, std::optional< double > v16_ShearDeformationAreaY, std::optional< double > v17_MaximumSectionModulusY, std::optional< double > v18_MinimumSectionModulusY, std::optional< double > v19_MaximumSectionModulusZ, std::optional< double > v20_MinimumSectionModulusZ, std::optional< double > v21_TorsionalSectionModulus, std::optional< double > v22_CentreOfGravityInX, std::optional< double > v23_CentreOfGravityInY, std::optional< double > v24_ShearAreaZ, std::optional< double > v25_ShearAreaY, std::optional< double > v26_PlasticShapeFactorY, std::optional< double > v27_PlasticShapeFactorZ);
 };
 /// Definition from ISO/DIS 10303-42:1999(E): A subedge is an edge whose domain is a connected portion of the domain of an existing edge. The topological constraints on a subedge are the same as those on an edge. 
@@ -18697,13 +18697,13 @@ public:
 class IFC_PARSE_API IfcSubedge : public IfcEdge {
 public:
     IfcSubedge() {}
-    explicit IfcSubedge (const std::weak_ptr<InstanceData>& data) : IfcEdge(data) {}
+    explicit IfcSubedge (const std::weak_ptr<instance_data>& data) : IfcEdge(data) {}
 
     /// The Edge, or Subedge, which contains the Subedge.
     ::Ifc2x3::IfcEdge ParentEdge() const;
     void setParentEdge(const ::Ifc2x3::IfcEdge& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVertex v1_EdgeStart, ::Ifc2x3::IfcVertex v2_EdgeEnd, ::Ifc2x3::IfcEdge v3_ParentEdge);
 };
 /// Definition from ISO/CD 10303-42:1992: A surface can be envisioned as a set of connected points in 3-dimensional space which is always locally 2-dimensional, but need not be a manifold.  
@@ -18719,10 +18719,10 @@ public:
 class IFC_PARSE_API IfcSurface : public IfcGeometricRepresentationItem {
 public:
     IfcSurface() {}
-    explicit IfcSurface (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcSurface (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// IfcSurfaceStyleRendering holds the properties for visualization related to a particular surface side style.  
@@ -18773,7 +18773,7 @@ public:
 class IFC_PARSE_API IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
 public:
     IfcSurfaceStyleRendering() {}
-    explicit IfcSurfaceStyleRendering (const std::weak_ptr<InstanceData>& data) : IfcSurfaceStyleShading(data) {}
+    explicit IfcSurfaceStyleRendering (const std::weak_ptr<instance_data>& data) : IfcSurfaceStyleShading(data) {}
 
     /// Definition from ISO/CD 10303-46: The degree of transparency is indicated by the percentage of light traversing the surface.
     /// Definition from VRML97 - ISO/IEC 14772-1:1997: The transparency field specifies how "clear" an object is, with 1.0 being completely transparent, and 0.0 completely opaque. If not given, the value 0.0 (opaque) is assumed.
@@ -18811,7 +18811,7 @@ public:
     ::Ifc2x3::IfcReflectanceMethodEnum::Value ReflectanceMethod() const;
     void setReflectanceMethod(const ::Ifc2x3::IfcReflectanceMethodEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcColourRgb v1_SurfaceColour, std::optional< double > v2_Transparency, ::Ifc2x3::IfcColourOrFactor v3_DiffuseColour, ::Ifc2x3::IfcColourOrFactor v4_TransmissionColour, ::Ifc2x3::IfcColourOrFactor v5_DiffuseTransmissionColour, ::Ifc2x3::IfcColourOrFactor v6_ReflectionColour, ::Ifc2x3::IfcColourOrFactor v7_SpecularColour, ::Ifc2x3::IfcSpecularHighlightSelect v8_SpecularHighlight, ::Ifc2x3::IfcReflectanceMethodEnum::Value v9_ReflectanceMethod);
 };
 /// Definition from ISO/CD 10303-42:1992: The swept area
@@ -18835,7 +18835,7 @@ public:
 class IFC_PARSE_API IfcSweptAreaSolid : public IfcSolidModel {
 public:
     IfcSweptAreaSolid() {}
-    explicit IfcSweptAreaSolid (const std::weak_ptr<InstanceData>& data) : IfcSolidModel(data) {}
+    explicit IfcSweptAreaSolid (const std::weak_ptr<instance_data>& data) : IfcSolidModel(data) {}
 
     /// The surface defining the area to be swept. It is given as a profile definition within the xy plane of the position coordinate system.
     ::Ifc2x3::IfcProfileDef SweptArea() const;
@@ -18844,7 +18844,7 @@ public:
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement3D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D v2_Position);
 };
 /// Definition from ISO 10303-42:2002: A swept
@@ -18903,7 +18903,7 @@ public:
 class IFC_PARSE_API IfcSweptDiskSolid : public IfcSolidModel {
 public:
     IfcSweptDiskSolid() {}
-    explicit IfcSweptDiskSolid (const std::weak_ptr<InstanceData>& data) : IfcSolidModel(data) {}
+    explicit IfcSweptDiskSolid (const std::weak_ptr<instance_data>& data) : IfcSolidModel(data) {}
 
     /// The curve used to define the sweeping operation. The solid is generated by sweeping a circular disk along the Directrix.
     ::Ifc2x3::IfcCurve Directrix() const;
@@ -18925,7 +18925,7 @@ public:
     double EndParam() const;
     void setEndParam(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_Directrix, double v2_Radius, std::optional< double > v3_InnerRadius, double v4_StartParam, double v5_EndParam);
 };
 /// Definition from ISO/CD 10303-42:1992: A swept surface is one that is constructed by sweeping a curve along another curve.  
@@ -18936,7 +18936,7 @@ public:
 class IFC_PARSE_API IfcSweptSurface : public IfcSurface {
 public:
     IfcSweptSurface() {}
-    explicit IfcSweptSurface (const std::weak_ptr<InstanceData>& data) : IfcSurface(data) {}
+    explicit IfcSweptSurface (const std::weak_ptr<instance_data>& data) : IfcSurface(data) {}
 
     /// The curve to be swept in defining the surface. The curve is defined as a profile within the position coordinate system.
     ::Ifc2x3::IfcProfileDef SweptCurve() const;
@@ -18945,7 +18945,7 @@ public:
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement3D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D v2_Position);
 };
 /// IfcTShapeProfileDef defines
@@ -18979,7 +18979,7 @@ public:
 class IFC_PARSE_API IfcTShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcTShapeProfileDef() {}
-    explicit IfcTShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcTShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Web lengths, see illustration above (= h).
     double Depth() const;
@@ -19011,19 +19011,19 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, std::optional< double > v9_FlangeEdgeRadius, std::optional< double > v10_WebEdgeRadius, std::optional< double > v11_WebSlope, std::optional< double > v12_FlangeSlope, std::optional< double > v13_CentreOfGravityInY);
 };
 
 class IFC_PARSE_API IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
 public:
     IfcTerminatorSymbol() {}
-    explicit IfcTerminatorSymbol (const std::weak_ptr<InstanceData>& data) : IfcAnnotationSymbolOccurrence(data) {}
+    explicit IfcTerminatorSymbol (const std::weak_ptr<instance_data>& data) : IfcAnnotationSymbolOccurrence(data) {}
 
     ::Ifc2x3::IfcAnnotationCurveOccurrence AnnotatedCurve() const;
     void setAnnotatedCurve(const ::Ifc2x3::IfcAnnotationCurveOccurrence& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence v4_AnnotatedCurve);
 };
 /// The text literal is a geometric representation item which describes a text string using a string literal and additional position and path information.
@@ -19039,7 +19039,7 @@ public:
 class IFC_PARSE_API IfcTextLiteral : public IfcGeometricRepresentationItem {
 public:
     IfcTextLiteral() {}
-    explicit IfcTextLiteral (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcTextLiteral (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The text literal to be presented.
     std::string Literal() const;
@@ -19052,7 +19052,7 @@ public:
     ::Ifc2x3::IfcTextPath::Value Path() const;
     void setPath(const ::Ifc2x3::IfcTextPath::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path);
 };
 /// The text literal with extent is a text literal with the additional explicit information of the planar extent (or surrounding text box). An alignment attribute defines, how the text box is aligned to the placement and how it may expand.
@@ -19067,7 +19067,7 @@ public:
 class IFC_PARSE_API IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
     IfcTextLiteralWithExtent() {}
-    explicit IfcTextLiteralWithExtent (const std::weak_ptr<InstanceData>& data) : IfcTextLiteral(data) {}
+    explicit IfcTextLiteralWithExtent (const std::weak_ptr<instance_data>& data) : IfcTextLiteral(data) {}
 
     /// The extent in the x and y direction of the text literal.
     ::Ifc2x3::IfcPlanarExtent Extent() const;
@@ -19076,7 +19076,7 @@ public:
     std::string BoxAlignment() const;
     void setBoxAlignment(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Literal, ::Ifc2x3::IfcAxis2Placement v2_Placement, ::Ifc2x3::IfcTextPath::Value v3_Path, ::Ifc2x3::IfcPlanarExtent v4_Extent, std::string v5_BoxAlignment);
 };
 /// IfcTrapeziumProfileDef defines a trapezium as the profile definition used by the swept surface geometry or the swept area solid. It is given by its Top X and Bottom X extent and its Y extent as well as by the offset of the Top X extend, and placed within the 2D position coordinate system, established by the Position attribute. It is placed centric within the position coordinate system, that is, in the center of the bounding box. 
@@ -19120,7 +19120,7 @@ public:
 class IFC_PARSE_API IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcTrapeziumProfileDef() {}
-    explicit IfcTrapeziumProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcTrapeziumProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// The extent of the bottom line measured along the implicit x-axis.
     double BottomXDim() const;
@@ -19135,7 +19135,7 @@ public:
     double TopXOffset() const;
     void setTopXOffset(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_BottomXDim, double v5_TopXDim, double v6_YDim, double v7_TopXOffset);
 };
 /// Definition from ISO/CD 10303-46:1992: A two direction repeat factor combines two vectors which are used in the fill area style tiles entity for determining the shape and relative location of tiles. Given the initial position of any tile, the two direction repeat factor determines eight new positions according to the equation:
@@ -19149,13 +19149,13 @@ public:
 class IFC_PARSE_API IfcTwoDirectionRepeatFactor : public IfcOneDirectionRepeatFactor {
 public:
     IfcTwoDirectionRepeatFactor() {}
-    explicit IfcTwoDirectionRepeatFactor (const std::weak_ptr<InstanceData>& data) : IfcOneDirectionRepeatFactor(data) {}
+    explicit IfcTwoDirectionRepeatFactor (const std::weak_ptr<instance_data>& data) : IfcOneDirectionRepeatFactor(data) {}
 
     /// A vector which specifies the relative positioning of tiles in the second direction.
     ::Ifc2x3::IfcVector SecondRepeatFactor() const;
     void setSecondRepeatFactor(const ::Ifc2x3::IfcVector& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVector v1_RepeatFactor, ::Ifc2x3::IfcVector v2_SecondRepeatFactor);
 };
 /// The object type defines the
@@ -19192,7 +19192,7 @@ public:
 class IFC_PARSE_API IfcTypeObject : public IfcObjectDefinition {
 public:
     IfcTypeObject() {}
-    explicit IfcTypeObject (const std::weak_ptr<InstanceData>& data) : IfcObjectDefinition(data) {}
+    explicit IfcTypeObject (const std::weak_ptr<instance_data>& data) : IfcObjectDefinition(data) {}
 
     /// The attribute optionally defines the data type of the occurrence object, to which the assigned type object can relate. If not present, no instruction is given to which occurrence object the type object is applicable. The following conventions are used:
     /// 
@@ -19210,7 +19210,7 @@ public:
     void setHasPropertySets(const std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > >& v);
         std::vector< IfcRelDefinesByType > ObjectTypeOf() const; // INVERSE IfcRelDefinesByType::RelatingType
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets);
 };
 /// IfcTypeProduct defines a type
@@ -19282,7 +19282,7 @@ public:
 class IFC_PARSE_API IfcTypeProduct : public IfcTypeObject {
 public:
     IfcTypeProduct() {}
-    explicit IfcTypeProduct (const std::weak_ptr<InstanceData>& data) : IfcTypeObject(data) {}
+    explicit IfcTypeProduct (const std::weak_ptr<instance_data>& data) : IfcTypeObject(data) {}
 
     /// List of unique representation maps. Each representation map describes a block definition of the shape of the product style. By providing more than one representation map, a multi-view block definition can be given.
     std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > RepresentationMaps() const;
@@ -19291,7 +19291,7 @@ public:
     std::optional< std::string > Tag() const;
     void setTag(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag);
 };
 /// IfcUShapeProfileDef defines
@@ -19325,7 +19325,7 @@ public:
 class IFC_PARSE_API IfcUShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcUShapeProfileDef() {}
-    explicit IfcUShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcUShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Web lengths, see illustration above (= h).
     double Depth() const;
@@ -19351,7 +19351,7 @@ public:
     std::optional< double > CentreOfGravityInX() const;
     void setCentreOfGravityInX(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, std::optional< double > v9_EdgeRadius, std::optional< double > v10_FlangeSlope, std::optional< double > v11_CentreOfGravityInX);
 };
 /// Definition from ISO/CD 10303-42:1992: The vector is defined in terms of the direction and magnitude of the vector. The value of the magnitude attribute defines the magnitude of the vector. 
@@ -19364,7 +19364,7 @@ public:
 class IFC_PARSE_API IfcVector : public IfcGeometricRepresentationItem {
 public:
     IfcVector() {}
-    explicit IfcVector (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcVector (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The direction of the vector.
     ::Ifc2x3::IfcDirection Orientation() const;
@@ -19373,7 +19373,7 @@ public:
     double Magnitude() const;
     void setMagnitude(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Orientation, double v2_Magnitude);
 };
 /// Definition from ISO/CD 10303-42:1992: A vertex_loop is a loop of
@@ -19391,13 +19391,13 @@ public:
 class IFC_PARSE_API IfcVertexLoop : public IfcLoop {
 public:
     IfcVertexLoop() {}
-    explicit IfcVertexLoop (const std::weak_ptr<InstanceData>& data) : IfcLoop(data) {}
+    explicit IfcVertexLoop (const std::weak_ptr<instance_data>& data) : IfcLoop(data) {}
 
     /// The vertex which defines the entire loop.
     ::Ifc2x3::IfcVertex LoopVertex() const;
     void setLoopVertex(const ::Ifc2x3::IfcVertex& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcVertex v1_LoopVertex);
 };
 /// The window lining is the outer
@@ -19501,7 +19501,7 @@ public:
 class IFC_PARSE_API IfcWindowLiningProperties : public IfcPropertySetDefinition {
 public:
     IfcWindowLiningProperties() {}
-    explicit IfcWindowLiningProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcWindowLiningProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Depth of the window lining (dimension measured perpendicular to window elevation plane).
     std::optional< double > LiningDepth() const;
@@ -19533,7 +19533,7 @@ public:
     ::Ifc2x3::IfcShapeAspect ShapeAspectStyle() const;
     void setShapeAspectStyle(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< double > v5_LiningDepth, std::optional< double > v6_LiningThickness, std::optional< double > v7_TransomThickness, std::optional< double > v8_MullionThickness, std::optional< double > v9_FirstTransomOffset, std::optional< double > v10_SecondTransomOffset, std::optional< double > v11_FirstMullionOffset, std::optional< double > v12_SecondMullionOffset, ::Ifc2x3::IfcShapeAspect v13_ShapeAspectStyle);
 };
 /// A window panel is a casement, that is, a component, fixed or opening,
@@ -19584,7 +19584,7 @@ public:
 class IFC_PARSE_API IfcWindowPanelProperties : public IfcPropertySetDefinition {
 public:
     IfcWindowPanelProperties() {}
-    explicit IfcWindowPanelProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcWindowPanelProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Types of window panel operations. Also used to assign standard symbolic presentations according to national building standards.
     ::Ifc2x3::IfcWindowPanelOperationEnum::Value OperationType() const;
@@ -19604,7 +19604,7 @@ public:
     ::Ifc2x3::IfcShapeAspect ShapeAspectStyle() const;
     void setShapeAspectStyle(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcWindowPanelOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, std::optional< double > v7_FrameDepth, std::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect v9_ShapeAspectStyle);
 };
 /// Definition: The window style defines a particular style of windows, which may be included into the spatial context of the building model through instances of IfcWindow. A window style defines the overall parameter of the window style and refers to the particular parameter of the lining and one (or several) panels through IfcWindowLiningProperties and IfcWindowPanelProperties.
@@ -19628,7 +19628,7 @@ public:
 class IFC_PARSE_API IfcWindowStyle : public IfcTypeProduct {
 public:
     IfcWindowStyle() {}
-    explicit IfcWindowStyle (const std::weak_ptr<InstanceData>& data) : IfcTypeProduct(data) {}
+    explicit IfcWindowStyle (const std::weak_ptr<instance_data>& data) : IfcTypeProduct(data) {}
 
     /// Type defining the basic construction and material type of the window.
     ::Ifc2x3::IfcWindowStyleConstructionEnum::Value ConstructionType() const;
@@ -19643,7 +19643,7 @@ public:
     bool Sizeable() const;
     void setSizeable(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcWindowStyleConstructionEnum::Value v9_ConstructionType, ::Ifc2x3::IfcWindowStyleOperationEnum::Value v10_OperationType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
 };
 /// IfcZShapeProfileDef defines
@@ -19674,7 +19674,7 @@ public:
 class IFC_PARSE_API IfcZShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcZShapeProfileDef() {}
-    explicit IfcZShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcZShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Web length, see illustration above (= h).
     double Depth() const;
@@ -19695,17 +19695,17 @@ public:
     std::optional< double > EdgeRadius() const;
     void setEdgeRadius(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, std::optional< double > v9_EdgeRadius);
 };
 
 class IFC_PARSE_API IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
 public:
     IfcAnnotationCurveOccurrence() {}
-    explicit IfcAnnotationCurveOccurrence (const std::weak_ptr<InstanceData>& data) : IfcAnnotationOccurrence(data) {}
+    explicit IfcAnnotationCurveOccurrence (const std::weak_ptr<instance_data>& data) : IfcAnnotationOccurrence(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 /// Definition from ISO/CD 10303-46:1992: An annotation fill area is a set of curves that may be filled with hatching, colour or tiling. The annotation fill are is described by boundaries which consist of non-intersecting, non-self-intersecting closed curves. These curves form the boundary of planar areas to be filled according to the style for the annotation fill area.
@@ -19731,7 +19731,7 @@ public:
 class IFC_PARSE_API IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
     IfcAnnotationFillArea() {}
-    explicit IfcAnnotationFillArea (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcAnnotationFillArea (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// A closed curve that defines the outer boundary of the fill area. The areas defined by the outer boundary (minus potentially defined inner boundaries) is filled by the fill area style.
     /// 
@@ -19744,35 +19744,35 @@ public:
     std::optional< std::vector< ::Ifc2x3::IfcCurve > > InnerBoundaries() const;
     void setInnerBoundaries(const std::optional< std::vector< ::Ifc2x3::IfcCurve > >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_OuterBoundary, std::optional< std::vector< ::Ifc2x3::IfcCurve > > v2_InnerBoundaries);
 };
 
 class IFC_PARSE_API IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
 public:
     IfcAnnotationFillAreaOccurrence() {}
-    explicit IfcAnnotationFillAreaOccurrence (const std::weak_ptr<InstanceData>& data) : IfcAnnotationOccurrence(data) {}
+    explicit IfcAnnotationFillAreaOccurrence (const std::weak_ptr<instance_data>& data) : IfcAnnotationOccurrence(data) {}
 
     ::Ifc2x3::IfcPoint FillStyleTarget() const;
     void setFillStyleTarget(const ::Ifc2x3::IfcPoint& v);
     std::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > GlobalOrLocal() const;
     void setGlobalOrLocal(const std::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name, ::Ifc2x3::IfcPoint v4_FillStyleTarget, std::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v5_GlobalOrLocal);
 };
 
 class IFC_PARSE_API IfcAnnotationSurface : public IfcGeometricRepresentationItem {
 public:
     IfcAnnotationSurface() {}
-    explicit IfcAnnotationSurface (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcAnnotationSurface (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     ::Ifc2x3::IfcGeometricRepresentationItem Item() const;
     void setItem(const ::Ifc2x3::IfcGeometricRepresentationItem& v);
     ::Ifc2x3::IfcTextureCoordinate TextureCoordinates() const;
     void setTextureCoordinates(const ::Ifc2x3::IfcTextureCoordinate& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcGeometricRepresentationItem v1_Item, ::Ifc2x3::IfcTextureCoordinate v2_TextureCoordinates);
 };
 /// Definition from ISO/CD 10303-42:1992: The direction and location in three dimensional space of a single axis. An axis1_placement is defined in terms of a locating point (inherited from placement supertype) and an axis direction: this is either the direction of axis or defaults to (0.0,0.0,1.0). The actual direction for the axis placement is given by the derived attribute z (Z).  
@@ -19787,13 +19787,13 @@ public:
 class IFC_PARSE_API IfcAxis1Placement : public IfcPlacement {
 public:
     IfcAxis1Placement() {}
-    explicit IfcAxis1Placement (const std::weak_ptr<InstanceData>& data) : IfcPlacement(data) {}
+    explicit IfcAxis1Placement (const std::weak_ptr<instance_data>& data) : IfcPlacement(data) {}
 
     /// The direction of the local Z axis.
     ::Ifc2x3::IfcDirection Axis() const;
     void setAxis(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Location, ::Ifc2x3::IfcDirection v2_Axis);
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in two dimensional space of two mutually perpendicular axes. An axis2_placement_2d is defined in terms of a point, (inherited from the placement supertype), and an axis. It can be used to locate and originate an object in two dimensional space and to define a placement coordinate system. The class includes a point which forms the origin of the placement coordinate system. A direction vector is required to complete the definition of the placement coordinate system. The reference direction defines the placement X axis direction, the placement Y axis is derived from this.  
@@ -19810,13 +19810,13 @@ public:
 class IFC_PARSE_API IfcAxis2Placement2D : public IfcPlacement {
 public:
     IfcAxis2Placement2D() {}
-    explicit IfcAxis2Placement2D (const std::weak_ptr<InstanceData>& data) : IfcPlacement(data) {}
+    explicit IfcAxis2Placement2D (const std::weak_ptr<instance_data>& data) : IfcPlacement(data) {}
 
     /// The direction used to determine the direction of the local X axis. If a value is omited that it defaults to [1.0, 0.0.].
     ::Ifc2x3::IfcDirection RefDirection() const;
     void setRefDirection(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Location, ::Ifc2x3::IfcDirection v2_RefDirection);
 };
 /// Definition from ISO/CD 10303-42:1992: The location and orientation in three dimensional space of three mutually perpendicular axes. An axis2_placement_3D is defined in terms of a point (inherited from placement supertype) and two (ideally orthogonal) axes. It can be used to locate and originate an object in three dimensional space and to define a placement coordinate system. The entity includes a point which forms the origin of the placement coordinate system. Two direction vectors are required to complete the definition of the placement coordinate system. The axis is the placement Z axis direction and the ref_direction is an approximation to the placement X axis direction.
@@ -19835,7 +19835,7 @@ public:
 class IFC_PARSE_API IfcAxis2Placement3D : public IfcPlacement {
 public:
     IfcAxis2Placement3D() {}
-    explicit IfcAxis2Placement3D (const std::weak_ptr<InstanceData>& data) : IfcPlacement(data) {}
+    explicit IfcAxis2Placement3D (const std::weak_ptr<instance_data>& data) : IfcPlacement(data) {}
 
     /// The exact direction of the local Z Axis.
     ::Ifc2x3::IfcDirection Axis() const;
@@ -19844,7 +19844,7 @@ public:
     ::Ifc2x3::IfcDirection RefDirection() const;
     void setRefDirection(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Location, ::Ifc2x3::IfcDirection v2_Axis, ::Ifc2x3::IfcDirection v3_RefDirection);
 };
 /// Definition from ISO/CD 10303-42:1992: A Boolean result
@@ -19876,7 +19876,7 @@ public:
 class IFC_PARSE_API IfcBooleanResult : public IfcGeometricRepresentationItem {
 public:
     IfcBooleanResult() {}
-    explicit IfcBooleanResult (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcBooleanResult (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The Boolean operator used in the operation to create the result.
     ::Ifc2x3::IfcBooleanOperator::Value Operator() const;
@@ -19888,7 +19888,7 @@ public:
     ::Ifc2x3::IfcBooleanOperand SecondOperand() const;
     void setSecondOperand(const ::Ifc2x3::IfcBooleanOperand& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand v3_SecondOperand);
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded surface is a surface of finite area with identifiable boundaries.
@@ -19906,10 +19906,10 @@ public:
 class IFC_PARSE_API IfcBoundedSurface : public IfcSurface {
 public:
     IfcBoundedSurface() {}
-    explicit IfcBoundedSurface (const std::weak_ptr<InstanceData>& data) : IfcSurface(data) {}
+    explicit IfcBoundedSurface (const std::weak_ptr<instance_data>& data) : IfcSurface(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO/CD 10303-42:1992: A box domain
@@ -19937,7 +19937,7 @@ public:
 class IFC_PARSE_API IfcBoundingBox : public IfcGeometricRepresentationItem {
 public:
     IfcBoundingBox() {}
-    explicit IfcBoundingBox (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcBoundingBox (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// Location of the bottom left corner (having the minimum values).
     ::Ifc2x3::IfcCartesianPoint Corner() const;
@@ -19952,7 +19952,7 @@ public:
     double ZDim() const;
     void setZDim(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Corner, double v2_XDim, double v3_YDim, double v4_ZDim);
 };
 /// Definition from ISO/CD 10303-42:1992: This entity is a subtype of the half space solid which is trimmed by a surrounding rectangular box. The box has its edges parallel to the coordinate axes of the geometric coordinate system.
@@ -19988,13 +19988,13 @@ public:
 class IFC_PARSE_API IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
 public:
     IfcBoxedHalfSpace() {}
-    explicit IfcBoxedHalfSpace (const std::weak_ptr<InstanceData>& data) : IfcHalfSpaceSolid(data) {}
+    explicit IfcBoxedHalfSpace (const std::weak_ptr<instance_data>& data) : IfcHalfSpaceSolid(data) {}
 
     /// The box which bounds the resulting solid of the Boolean operation involving the half space solid for computational purposes only.
     ::Ifc2x3::IfcBoundingBox Enclosure() const;
     void setEnclosure(const ::Ifc2x3::IfcBoundingBox& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurface v1_BaseSurface, bool v2_AgreementFlag, ::Ifc2x3::IfcBoundingBox v3_Enclosure);
 };
 /// IfcCShapeProfileDef defines
@@ -20022,7 +20022,7 @@ public:
 class IFC_PARSE_API IfcCShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcCShapeProfileDef() {}
-    explicit IfcCShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcCShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Profile depth, see illustration above (= h).
     double Depth() const;
@@ -20042,7 +20042,7 @@ public:
     std::optional< double > CentreOfGravityInX() const;
     void setCentreOfGravityInX(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_Width, double v6_WallThickness, double v7_Girth, std::optional< double > v8_InternalFilletRadius, std::optional< double > v9_CentreOfGravityInX);
 };
 /// Definition from ISO/CD 10303-42:1992: A point defined by its coordinates in a two or three dimensional rectangular Cartesian coordinate system, or in a two dimensional parameter space. The entity is defined in a two or three dimensional space.  
@@ -20055,13 +20055,13 @@ public:
 class IFC_PARSE_API IfcCartesianPoint : public IfcPoint {
 public:
     IfcCartesianPoint() {}
-    explicit IfcCartesianPoint (const std::weak_ptr<InstanceData>& data) : IfcPoint(data) {}
+    explicit IfcCartesianPoint (const std::weak_ptr<instance_data>& data) : IfcPoint(data) {}
 
     /// The first, second, and third coordinate of the point location. If placed in a two or three dimensional rectangular Cartesian coordinate system, Coordinates[1] is the X coordinate, Coordinates[2] is the Y coordinate, and Coordinates[3] is the Z coordinate.
     std::vector< double > /*[1:3]*/ Coordinates() const;
     void setCoordinates(const std::vector< double > /*[1:3]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< double > /*[1:3]*/ v1_Coordinates);
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator defines a geometric transformation composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed, by the base axis function, from the direction attributes axis1, axis2 and, in Cartesian transformation operator 3d, axis3. If |T|= -1, the transformation includes mirroring. The local origin point A, the scale value S and the matrix T together define a transformation.  
@@ -20097,7 +20097,7 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
 public:
     IfcCartesianTransformationOperator() {}
-    explicit IfcCartesianTransformationOperator (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcCartesianTransformationOperator (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The direction used to determine U[1], the derived X axis direction.
     ::Ifc2x3::IfcDirection Axis1() const;
@@ -20112,7 +20112,7 @@ public:
     std::optional< double > Scale() const;
     void setScale(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Axis1, ::Ifc2x3::IfcDirection v2_Axis2, ::Ifc2x3::IfcCartesianPoint v3_LocalOrigin, std::optional< double > v4_Scale);
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 2d defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1 and axis2 by the base axis function. If |T|= -1, the transformation includes mirroring.  
@@ -20123,10 +20123,10 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
     IfcCartesianTransformationOperator2D() {}
-    explicit IfcCartesianTransformationOperator2D (const std::weak_ptr<InstanceData>& data) : IfcCartesianTransformationOperator(data) {}
+    explicit IfcCartesianTransformationOperator2D (const std::weak_ptr<instance_data>& data) : IfcCartesianTransformationOperator(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Axis1, ::Ifc2x3::IfcDirection v2_Axis2, ::Ifc2x3::IfcCartesianPoint v3_LocalOrigin, std::optional< double > v4_Scale);
 };
 /// A Cartesian transformation operator 2d non uniform defines a geometric transformation in two-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by two different scaling factors: 
@@ -20142,13 +20142,13 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
 public:
     IfcCartesianTransformationOperator2DnonUniform() {}
-    explicit IfcCartesianTransformationOperator2DnonUniform (const std::weak_ptr<InstanceData>& data) : IfcCartesianTransformationOperator2D(data) {}
+    explicit IfcCartesianTransformationOperator2DnonUniform (const std::weak_ptr<instance_data>& data) : IfcCartesianTransformationOperator2D(data) {}
 
     /// The scaling value specified for the transformation along the axis 2. This is normally the y scale factor.
     std::optional< double > Scale2() const;
     void setScale2(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Axis1, ::Ifc2x3::IfcDirection v2_Axis2, ::Ifc2x3::IfcCartesianPoint v3_LocalOrigin, std::optional< double > v4_Scale, std::optional< double > v5_Scale2);
 };
 /// Definition from ISO/CD 10303-42:1992: A Cartesian transformation operator 3d defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and uniform scaling. The list of normalized vectors u defines the columns of an orthogonal matrix T. These vectors are computed from the direction attributes axis1, axis2 and axis3 by the base axis function. If |T|= -1, the transformation includes mirroring.  
@@ -20159,13 +20159,13 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
 public:
     IfcCartesianTransformationOperator3D() {}
-    explicit IfcCartesianTransformationOperator3D (const std::weak_ptr<InstanceData>& data) : IfcCartesianTransformationOperator(data) {}
+    explicit IfcCartesianTransformationOperator3D (const std::weak_ptr<instance_data>& data) : IfcCartesianTransformationOperator(data) {}
 
     /// The exact direction of U[3], the derived Z axis direction.
     ::Ifc2x3::IfcDirection Axis3() const;
     void setAxis3(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Axis1, ::Ifc2x3::IfcDirection v2_Axis2, ::Ifc2x3::IfcCartesianPoint v3_LocalOrigin, std::optional< double > v4_Scale, ::Ifc2x3::IfcDirection v5_Axis3);
 };
 /// A Cartesian transformation operator 3d non uniform defines a geometric transformation in three-dimensional space composed of translation, rotation, mirroring and non uniform scaling. Non uniform scaling is given by three different scaling factors:
@@ -20182,7 +20182,7 @@ public:
 class IFC_PARSE_API IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
 public:
     IfcCartesianTransformationOperator3DnonUniform() {}
-    explicit IfcCartesianTransformationOperator3DnonUniform (const std::weak_ptr<InstanceData>& data) : IfcCartesianTransformationOperator3D(data) {}
+    explicit IfcCartesianTransformationOperator3DnonUniform (const std::weak_ptr<instance_data>& data) : IfcCartesianTransformationOperator3D(data) {}
 
     /// The scaling value specified for the transformation along the axis 2. This is normally the y scale factor.
     std::optional< double > Scale2() const;
@@ -20191,7 +20191,7 @@ public:
     std::optional< double > Scale3() const;
     void setScale3(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDirection v1_Axis1, ::Ifc2x3::IfcDirection v2_Axis2, ::Ifc2x3::IfcCartesianPoint v3_LocalOrigin, std::optional< double > v4_Scale, ::Ifc2x3::IfcDirection v5_Axis3, std::optional< double > v6_Scale2, std::optional< double > v7_Scale3);
 };
 /// IfcCircleProfileDef defines a circle as the profile definition used by the swept surface geometry or by the swept area solid. It is given by its Radius attribute and placed within the 2D position coordinate system, established by the Position attribute. 
@@ -20209,13 +20209,13 @@ public:
 class IFC_PARSE_API IfcCircleProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcCircleProfileDef() {}
-    explicit IfcCircleProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcCircleProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// The radius of the circle.
     double Radius() const;
     void setRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Radius);
 };
 /// Definition from ISO/CD 10303-42:1992: A closed shell is a shell
@@ -20270,10 +20270,10 @@ public:
 class IFC_PARSE_API IfcClosedShell : public IfcConnectedFaceSet {
 public:
     IfcClosedShell() {}
-    explicit IfcClosedShell (const std::weak_ptr<InstanceData>& data) : IfcConnectedFaceSet(data) {}
+    explicit IfcClosedShell (const std::weak_ptr<instance_data>& data) : IfcConnectedFaceSet(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcFace > v1_CfsFaces);
 };
 /// Definition from ISO/CD 10303-42:1992: A composite curve segment is a bounded curve together with transition information which is used to construct a composite curve (IfcCompositeCurve).
@@ -20286,7 +20286,7 @@ public:
 class IFC_PARSE_API IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
 public:
     IfcCompositeCurveSegment() {}
-    explicit IfcCompositeCurveSegment (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcCompositeCurveSegment (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The state of transition (i.e., geometric continuity from the last point of this segment to the first point of the next segment) in a composite curve.
     ::Ifc2x3::IfcTransitionCode::Value Transition() const;
@@ -20301,14 +20301,14 @@ public:
     void setParentCurve(const ::Ifc2x3::IfcCurve& v);
         std::vector< IfcCompositeCurve > UsingCurves() const; // INVERSE IfcCompositeCurve::Segments
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcTransitionCode::Value v1_Transition, bool v2_SameSense, ::Ifc2x3::IfcCurve v3_ParentCurve);
 };
 
 class IFC_PARSE_API IfcCraneRailAShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcCraneRailAShapeProfileDef() {}
-    explicit IfcCraneRailAShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcCraneRailAShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     double OverallHeight() const;
     void setOverallHeight(const double& v);
@@ -20335,14 +20335,14 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_OverallHeight, double v5_BaseWidth2, std::optional< double > v6_Radius, double v7_HeadWidth, double v8_HeadDepth2, double v9_HeadDepth3, double v10_WebThickness, double v11_BaseWidth4, double v12_BaseDepth1, double v13_BaseDepth2, double v14_BaseDepth3, std::optional< double > v15_CentreOfGravityInY);
 };
 
 class IFC_PARSE_API IfcCraneRailFShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcCraneRailFShapeProfileDef() {}
-    explicit IfcCraneRailFShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcCraneRailFShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     double OverallHeight() const;
     void setOverallHeight(const double& v);
@@ -20363,7 +20363,7 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_OverallHeight, double v5_HeadWidth, std::optional< double > v6_Radius, double v7_HeadDepth2, double v8_HeadDepth3, double v9_WebThickness, double v10_BaseDepth1, double v11_BaseDepth2, std::optional< double > v12_CentreOfGravityInY);
 };
 /// IfcCsgPrimitive3D is an abstract supertype of all three dimensional primitives used as either tree root item, or as Boolean results within a CSG solid model. All 3D CSG primitives are defined within a three-dimensional placement coordinate system.
@@ -20374,13 +20374,13 @@ public:
 class IFC_PARSE_API IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
     IfcCsgPrimitive3D() {}
-    explicit IfcCsgPrimitive3D (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcCsgPrimitive3D (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The placement coordinate system to which the parameters of each individual CSG primitive apply.
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement3D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position);
 };
 /// Definition from ISO/CD 10303-42:1992: A solid
@@ -20427,13 +20427,13 @@ public:
 class IFC_PARSE_API IfcCsgSolid : public IfcSolidModel {
 public:
     IfcCsgSolid() {}
-    explicit IfcCsgSolid (const std::weak_ptr<InstanceData>& data) : IfcSolidModel(data) {}
+    explicit IfcCsgSolid (const std::weak_ptr<instance_data>& data) : IfcSolidModel(data) {}
 
     /// Boolean expression of primitives and regularized operators describing the solid. The root of the tree of Boolean expressions is given explicitly as an IfcBooleanResult entitiy or as a primitive (subtypes of IfcCsgPrimitive3D).
     ::Ifc2x3::IfcCsgSelect TreeRootExpression() const;
     void setTreeRootExpression(const ::Ifc2x3::IfcCsgSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCsgSelect v1_TreeRootExpression);
 };
 /// Definition from ISO/CD 10303-42:1992: A curve can be envisioned as the path of a point moving in its coordinate space.  
@@ -20449,10 +20449,10 @@ public:
 class IFC_PARSE_API IfcCurve : public IfcGeometricRepresentationItem {
 public:
     IfcCurve() {}
-    explicit IfcCurve (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcCurve (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO/CD 10303-42:1992: The curve bounded surface is a parametric surface with curved boundaries defined by one or more boundary curves. The bounded surface is defined to be the portion of the basis surface in the direction of N x T from any point on the boundary, where N is the surface normal and T the boundary curve tangent vector at this point. The region so defined shall be arcwise connected. 
@@ -20471,7 +20471,7 @@ public:
 class IFC_PARSE_API IfcCurveBoundedPlane : public IfcBoundedSurface {
 public:
     IfcCurveBoundedPlane() {}
-    explicit IfcCurveBoundedPlane (const std::weak_ptr<InstanceData>& data) : IfcBoundedSurface(data) {}
+    explicit IfcCurveBoundedPlane (const std::weak_ptr<instance_data>& data) : IfcBoundedSurface(data) {}
 
     /// The surface to be bound.
     ::Ifc2x3::IfcPlane BasisSurface() const;
@@ -20483,7 +20483,7 @@ public:
     std::vector< ::Ifc2x3::IfcCurve > InnerBoundaries() const;
     void setInnerBoundaries(const std::vector< ::Ifc2x3::IfcCurve >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcPlane v1_BasisSurface, ::Ifc2x3::IfcCurve v2_OuterBoundary, std::vector< ::Ifc2x3::IfcCurve > v3_InnerBoundaries);
 };
 /// A defined symbol is a symbolic representation that gets its shape information by an established convention, either through a predefined symbol, or an externally defined symbol.
@@ -20496,7 +20496,7 @@ public:
 class IFC_PARSE_API IfcDefinedSymbol : public IfcGeometricRepresentationItem {
 public:
     IfcDefinedSymbol() {}
-    explicit IfcDefinedSymbol (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcDefinedSymbol (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// An implicit description of the symbol, either predefined or externally defined.
     ::Ifc2x3::IfcDefinedSymbolSelect Definition() const;
@@ -20505,30 +20505,30 @@ public:
     ::Ifc2x3::IfcCartesianTransformationOperator2D Target() const;
     void setTarget(const ::Ifc2x3::IfcCartesianTransformationOperator2D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcDefinedSymbolSelect v1_Definition, ::Ifc2x3::IfcCartesianTransformationOperator2D v2_Target);
 };
 
 class IFC_PARSE_API IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
     IfcDimensionCurve() {}
-    explicit IfcDimensionCurve (const std::weak_ptr<InstanceData>& data) : IfcAnnotationCurveOccurrence(data) {}
+    explicit IfcDimensionCurve (const std::weak_ptr<instance_data>& data) : IfcAnnotationCurveOccurrence(data) {}
 
         std::vector< IfcTerminatorSymbol > AnnotatedBySymbols() const; // INVERSE IfcTerminatorSymbol::AnnotatedCurve
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
 class IFC_PARSE_API IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
 public:
     IfcDimensionCurveTerminator() {}
-    explicit IfcDimensionCurveTerminator (const std::weak_ptr<InstanceData>& data) : IfcTerminatorSymbol(data) {}
+    explicit IfcDimensionCurveTerminator (const std::weak_ptr<instance_data>& data) : IfcTerminatorSymbol(data) {}
 
     ::Ifc2x3::IfcDimensionExtentUsage::Value Role() const;
     void setRole(const ::Ifc2x3::IfcDimensionExtentUsage::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name, ::Ifc2x3::IfcAnnotationCurveOccurrence v4_AnnotatedCurve, ::Ifc2x3::IfcDimensionExtentUsage::Value v5_Role);
 };
 /// Definition from ISO/CD 10303-42:1992: This entity defines a general direction vector in two or three dimensional space. The actual magnitudes of the components have no effect upon the direction being defined, only the ratios X:Y:Z or X:Y are significant.  
@@ -20541,13 +20541,13 @@ public:
 class IFC_PARSE_API IfcDirection : public IfcGeometricRepresentationItem {
 public:
     IfcDirection() {}
-    explicit IfcDirection (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcDirection (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The components in the direction of X axis (DirectionRatios[1]), of Y axis (DirectionRatios[2]), and of Z axis (DirectionRatios[3])
     std::vector< double > /*[2:3]*/ DirectionRatios() const;
     void setDirectionRatios(const std::vector< double > /*[2:3]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< double > /*[2:3]*/ v1_DirectionRatios);
 };
 /// The door lining is the frame which
@@ -20648,7 +20648,7 @@ public:
 class IFC_PARSE_API IfcDoorLiningProperties : public IfcPropertySetDefinition {
 public:
     IfcDoorLiningProperties() {}
-    explicit IfcDoorLiningProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcDoorLiningProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Depth of the door lining, measured perpendicular to the plane of the door lining. If omitted (and with a given value to lining thickness) it indicates an adjustable depth (i.e. a depth that adjusts to the thickness of the wall into which the occurrence of this door style is inserted).
     std::optional< double > LiningDepth() const;
@@ -20686,7 +20686,7 @@ public:
     ::Ifc2x3::IfcShapeAspect ShapeAspectStyle() const;
     void setShapeAspectStyle(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< double > v5_LiningDepth, std::optional< double > v6_LiningThickness, std::optional< double > v7_ThresholdDepth, std::optional< double > v8_ThresholdThickness, std::optional< double > v9_TransomThickness, std::optional< double > v10_TransomOffset, std::optional< double > v11_LiningOffset, std::optional< double > v12_ThresholdOffset, std::optional< double > v13_CasingThickness, std::optional< double > v14_CasingDepth, ::Ifc2x3::IfcShapeAspect v15_ShapeAspectStyle);
 };
 /// A door panel is normally a door leaf that opens to allow people or
@@ -20737,7 +20737,7 @@ public:
 class IFC_PARSE_API IfcDoorPanelProperties : public IfcPropertySetDefinition {
 public:
     IfcDoorPanelProperties() {}
-    explicit IfcDoorPanelProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcDoorPanelProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Depth of the door panel, measured perpendicular to the plane of the door leaf.
     std::optional< double > PanelDepth() const;
@@ -20757,7 +20757,7 @@ public:
     ::Ifc2x3::IfcShapeAspect ShapeAspectStyle() const;
     void setShapeAspectStyle(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< double > v5_PanelDepth, ::Ifc2x3::IfcDoorPanelOperationEnum::Value v6_PanelOperation, std::optional< double > v7_PanelWidth, ::Ifc2x3::IfcDoorPanelPositionEnum::Value v8_PanelPosition, ::Ifc2x3::IfcShapeAspect v9_ShapeAspectStyle);
 };
 /// Definition: The door style, IfcDoorStyle, defines a particular style of doors, which may be included into the spatial context of the building model through instances of IfcDoor. A door style defines the overall parameter of the door style and refers to the particular parameter of the lining and one (or several) panels through the IfcDoorLiningProperties and the IfcDoorPanelProperties.
@@ -20789,7 +20789,7 @@ public:
 class IFC_PARSE_API IfcDoorStyle : public IfcTypeProduct {
 public:
     IfcDoorStyle() {}
-    explicit IfcDoorStyle (const std::weak_ptr<InstanceData>& data) : IfcTypeProduct(data) {}
+    explicit IfcDoorStyle (const std::weak_ptr<instance_data>& data) : IfcTypeProduct(data) {}
 
     /// Type defining the general layout and operation of the door style.
     ::Ifc2x3::IfcDoorStyleOperationEnum::Value OperationType() const;
@@ -20804,21 +20804,21 @@ public:
     bool Sizeable() const;
     void setSizeable(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcDoorStyleOperationEnum::Value v9_OperationType, ::Ifc2x3::IfcDoorStyleConstructionEnum::Value v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
 };
 
 class IFC_PARSE_API IfcDraughtingCallout : public IfcGeometricRepresentationItem {
 public:
     IfcDraughtingCallout() {}
-    explicit IfcDraughtingCallout (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcDraughtingCallout (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > Contents() const;
     void setContents(const std::vector< ::Ifc2x3::IfcDraughtingCalloutElement >& v);
         std::vector< IfcDraughtingCalloutRelationship > IsRelatedFromCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatedDraughtingCallout
     std::vector< IfcDraughtingCalloutRelationship > IsRelatedToCallout() const; // INVERSE IfcDraughtingCalloutRelationship::RelatingDraughtingCallout
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// The draughting pre defined colour is a pre defined colour for the purpose to identify a colour by name. Allowable names are:
@@ -20896,10 +20896,10 @@ public:
 class IFC_PARSE_API IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
     IfcDraughtingPreDefinedColour() {}
-    explicit IfcDraughtingPreDefinedColour (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedColour(data) {}
+    explicit IfcDraughtingPreDefinedColour (const std::weak_ptr<instance_data>& data) : IfcPreDefinedColour(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// The draughting predefined curve font type defines a selection of widely used curve fonts for draughting purposes by name. 
@@ -20918,10 +20918,10 @@ public:
 class IFC_PARSE_API IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
     IfcDraughtingPreDefinedCurveFont() {}
-    explicit IfcDraughtingPreDefinedCurveFont (const std::weak_ptr<InstanceData>& data) : IfcPreDefinedCurveFont(data) {}
+    explicit IfcDraughtingPreDefinedCurveFont (const std::weak_ptr<instance_data>& data) : IfcPreDefinedCurveFont(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_Name);
 };
 /// Definition from ISO/CD 10303-42:1992: An edge_loop is a loop with nonzero extent. It is a path in which the start and end vertices are the same. Its domain, if present, is a closed curve. An edge_loop may overlap itself.
@@ -20938,13 +20938,13 @@ public:
 class IFC_PARSE_API IfcEdgeLoop : public IfcLoop {
 public:
     IfcEdgeLoop() {}
-    explicit IfcEdgeLoop (const std::weak_ptr<InstanceData>& data) : IfcLoop(data) {}
+    explicit IfcEdgeLoop (const std::weak_ptr<instance_data>& data) : IfcLoop(data) {}
 
     /// A list of oriented edge entities which are concatenated together to form this path.
     std::vector< ::Ifc2x3::IfcOrientedEdge > EdgeList() const;
     void setEdgeList(const std::vector< ::Ifc2x3::IfcOrientedEdge >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcOrientedEdge > v1_EdgeList);
 };
 /// Definition from IAI: An IfcElementQuantity
@@ -21027,7 +21027,7 @@ public:
 class IFC_PARSE_API IfcElementQuantity : public IfcPropertySetDefinition {
 public:
     IfcElementQuantity() {}
-    explicit IfcElementQuantity (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcElementQuantity (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Name of the method of measurement used to calculate the element quantity. The method of measurement attribute has to be made recognizable by further agreements.
     /// 
@@ -21038,7 +21038,7 @@ public:
     std::vector< ::Ifc2x3::IfcPhysicalQuantity > Quantities() const;
     void setQuantities(const std::vector< ::Ifc2x3::IfcPhysicalQuantity >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_MethodOfMeasurement, std::vector< ::Ifc2x3::IfcPhysicalQuantity > v6_Quantities);
 };
 /// Definition from IAI: The IfcElementType
@@ -21066,13 +21066,13 @@ public:
 class IFC_PARSE_API IfcElementType : public IfcTypeProduct {
 public:
     IfcElementType() {}
-    explicit IfcElementType (const std::weak_ptr<InstanceData>& data) : IfcTypeProduct(data) {}
+    explicit IfcElementType (const std::weak_ptr<instance_data>& data) : IfcTypeProduct(data) {}
 
     /// The type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute 'PredefinedType' is set to USERDEFINED.
     std::optional< std::string > ElementType() const;
     void setElementType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from ISO/CD 10303-42:1992: An elementary surface (IfcElementarySurface) is a simple analytic surface with defined parametric representation. 
@@ -21083,13 +21083,13 @@ public:
 class IFC_PARSE_API IfcElementarySurface : public IfcSurface {
 public:
     IfcElementarySurface() {}
-    explicit IfcElementarySurface (const std::weak_ptr<InstanceData>& data) : IfcSurface(data) {}
+    explicit IfcElementarySurface (const std::weak_ptr<instance_data>& data) : IfcSurface(data) {}
 
     /// The position and orientation of the surface. This attribute is used in the definition of the parameterization of the surface.
     ::Ifc2x3::IfcAxis2Placement3D Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement3D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position);
 };
 /// IfcEllipseProfileDef defines an ellipse as the profile definition used by the swept surface geometry
@@ -21111,7 +21111,7 @@ public:
 class IFC_PARSE_API IfcEllipseProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcEllipseProfileDef() {}
-    explicit IfcEllipseProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcEllipseProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// The first radius of the ellipse. It is measured along the direction of Position.P[1].
     double SemiAxis1() const;
@@ -21120,21 +21120,21 @@ public:
     double SemiAxis2() const;
     void setSemiAxis2(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_SemiAxis1, double v5_SemiAxis2);
 };
 
 class IFC_PARSE_API IfcEnergyProperties : public IfcPropertySetDefinition {
 public:
     IfcEnergyProperties() {}
-    explicit IfcEnergyProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcEnergyProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > EnergySequence() const;
     void setEnergySequence(const std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value >& v);
     std::optional< std::string > UserDefinedEnergySequence() const;
     void setUserDefinedEnergySequence(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence);
 };
 /// The IfcExtrudedAreaSolid is defined by sweeping a cross
@@ -21208,7 +21208,7 @@ public:
 class IFC_PARSE_API IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
 public:
     IfcExtrudedAreaSolid() {}
-    explicit IfcExtrudedAreaSolid (const std::weak_ptr<InstanceData>& data) : IfcSweptAreaSolid(data) {}
+    explicit IfcExtrudedAreaSolid (const std::weak_ptr<instance_data>& data) : IfcSweptAreaSolid(data) {}
 
     /// The direction in which the surface, provided by SweptArea is to be swept.
     ::Ifc2x3::IfcDirection ExtrudedDirection() const;
@@ -21218,7 +21218,7 @@ public:
     double Depth() const;
     void setDepth(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D v2_Position, ::Ifc2x3::IfcDirection v3_ExtrudedDirection, double v4_Depth);
 };
 /// Definition from ISO/CD 10303-42:1992: A face based surface model is described by a set of connected face sets of dimensionality 2. The connected face sets shall not intersect except at edges and vertices, except that a face in one connected face set may overlap a face in another connected face set, provided the face boundaries are identical. There shall be at least one connected face set.  
@@ -21236,13 +21236,13 @@ public:
 class IFC_PARSE_API IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     IfcFaceBasedSurfaceModel() {}
-    explicit IfcFaceBasedSurfaceModel (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcFaceBasedSurfaceModel (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The set of connected face sets comprising the face based surface model.
     std::vector< ::Ifc2x3::IfcConnectedFaceSet > FbsmFaces() const;
     void setFbsmFaces(const std::vector< ::Ifc2x3::IfcConnectedFaceSet >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcConnectedFaceSet > v1_FbsmFaces);
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style hatching defines a styled pattern of curves for hatching an annotation fill area or a surface.
@@ -21295,7 +21295,7 @@ public:
 class IFC_PARSE_API IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
     IfcFillAreaStyleHatching() {}
-    explicit IfcFillAreaStyleHatching (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcFillAreaStyleHatching (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// The curve style of the hatching lines. Any curve style pattern shall start at the origin of each hatch line.
     ::Ifc2x3::IfcCurveStyle HatchLineAppearance() const;
@@ -21321,7 +21321,7 @@ public:
     double HatchLineAngle() const;
     void setHatchLineAngle(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurveStyle v1_HatchLineAppearance, ::Ifc2x3::IfcHatchLineDistanceSelect v2_StartOfNextHatchLine, ::Ifc2x3::IfcCartesianPoint v3_PointOfReferenceHatchLine, ::Ifc2x3::IfcCartesianPoint v4_PatternStart, double v5_HatchLineAngle);
 };
 /// The fill area style tile symbol with style is a symbol that is used as a tile within an annotated tiling. 
@@ -21334,7 +21334,7 @@ public:
 class IFC_PARSE_API IfcFillAreaStyleTileSymbolWithStyle : public IfcGeometricRepresentationItem {
 public:
     IfcFillAreaStyleTileSymbolWithStyle() {}
-    explicit IfcFillAreaStyleTileSymbolWithStyle (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcFillAreaStyleTileSymbolWithStyle (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// A styled item that is used as the annotation symbol for tiling the filled area.
     /// 
@@ -21344,7 +21344,7 @@ public:
     ::Ifc2x3::IfcAnnotationSymbolOccurrence Symbol() const;
     void setSymbol(const ::Ifc2x3::IfcAnnotationSymbolOccurrence& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAnnotationSymbolOccurrence v1_Symbol);
 };
 /// Definition from ISO/CD 10303-46:1992: The fill area style tiles defines a two dimensional tile to be used for the filling of annotation fill areas or other closed regions. The content of a tile is defined by the tile set, and the placement of each tile determined by the filling pattern which indicates how to place tiles next to each other. Tiles or parts of tiles outside of the annotation fill area or closed region shall be clipped at the of the area or region. 
@@ -21355,7 +21355,7 @@ public:
 class IFC_PARSE_API IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
 public:
     IfcFillAreaStyleTiles() {}
-    explicit IfcFillAreaStyleTiles (const std::weak_ptr<InstanceData>& data) : IfcGeometricRepresentationItem(data) {}
+    explicit IfcFillAreaStyleTiles (const std::weak_ptr<instance_data>& data) : IfcGeometricRepresentationItem(data) {}
 
     /// A two direction repeat factor defining the shape and relative positioning of the tiles.
     ::Ifc2x3::IfcOneDirectionRepeatFactor TilingPattern() const;
@@ -21367,14 +21367,14 @@ public:
     double TilingScale() const;
     void setTilingScale(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcOneDirectionRepeatFactor v1_TilingPattern, std::vector< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect > v2_Tiles, double v3_TilingScale);
 };
 
 class IFC_PARSE_API IfcFluidFlowProperties : public IfcPropertySetDefinition {
 public:
     IfcFluidFlowProperties() {}
-    explicit IfcFluidFlowProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcFluidFlowProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     ::Ifc2x3::IfcPropertySourceEnum::Value PropertySource() const;
     void setPropertySource(const ::Ifc2x3::IfcPropertySourceEnum::Value& v);
@@ -21407,7 +21407,7 @@ public:
     std::optional< double > PressureSingleValue() const;
     void setPressureSingleValue(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcPropertySourceEnum::Value v5_PropertySource, ::Ifc2x3::IfcTimeSeries v6_FlowConditionTimeSeries, ::Ifc2x3::IfcTimeSeries v7_VelocityTimeSeries, ::Ifc2x3::IfcTimeSeries v8_FlowrateTimeSeries, ::Ifc2x3::IfcMaterial v9_Fluid, ::Ifc2x3::IfcTimeSeries v10_PressureTimeSeries, std::optional< std::string > v11_UserDefinedPropertySource, std::optional< double > v12_TemperatureSingleValue, std::optional< double > v13_WetBulbTemperatureSingleValue, ::Ifc2x3::IfcTimeSeries v14_WetBulbTemperatureTimeSeries, ::Ifc2x3::IfcTimeSeries v15_TemperatureTimeSeries, ::Ifc2x3::IfcDerivedMeasureValue v16_FlowrateSingleValue, std::optional< double > v17_FlowConditionSingleValue, std::optional< double > v18_VelocitySingleValue, std::optional< double > v19_PressureSingleValue);
 };
 /// Definition from IAI: The
@@ -21441,10 +21441,10 @@ public:
 class IFC_PARSE_API IfcFurnishingElementType : public IfcElementType {
 public:
     IfcFurnishingElementType() {}
-    explicit IfcFurnishingElementType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcFurnishingElementType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The furnishing element type IfcFurnitureType defines commonly shared information for occurrences of furnitures.  The set of shared information may include: 
@@ -21487,13 +21487,13 @@ public:
 class IFC_PARSE_API IfcFurnitureType : public IfcFurnishingElementType {
 public:
     IfcFurnitureType() {}
-    explicit IfcFurnitureType (const std::weak_ptr<InstanceData>& data) : IfcFurnishingElementType(data) {}
+    explicit IfcFurnitureType (const std::weak_ptr<instance_data>& data) : IfcFurnishingElementType(data) {}
 
     /// A designation of where the assembly is intended to take place. A selection of alternatives s provided in an enumerated list.
     ::Ifc2x3::IfcAssemblyPlaceEnum::Value AssemblyPlace() const;
     void setAssemblyPlace(const ::Ifc2x3::IfcAssemblyPlaceEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAssemblyPlaceEnum::Value v10_AssemblyPlace);
 };
 /// Definition from ISO/CD 10303-42:1992: A geometric curve set is a collection of two or three dimensional points and curves.
@@ -21506,10 +21506,10 @@ public:
 class IFC_PARSE_API IfcGeometricCurveSet : public IfcGeometricSet {
 public:
     IfcGeometricCurveSet() {}
-    explicit IfcGeometricCurveSet (const std::weak_ptr<InstanceData>& data) : IfcGeometricSet(data) {}
+    explicit IfcGeometricCurveSet (const std::weak_ptr<instance_data>& data) : IfcGeometricSet(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcGeometricSetSelect > v1_Elements);
 };
 /// IfcIShapeProfileDef
@@ -21578,7 +21578,7 @@ public:
 class IFC_PARSE_API IfcIShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcIShapeProfileDef() {}
-    explicit IfcIShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcIShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Total extent of the width, defined parallel to the x axis of the position coordinate system.
     double OverallWidth() const;
@@ -21596,7 +21596,7 @@ public:
     std::optional< double > FilletRadius() const;
     void setFilletRadius(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius);
 };
 /// IfcLShapeProfileDef
@@ -21653,7 +21653,7 @@ public:
 class IFC_PARSE_API IfcLShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     IfcLShapeProfileDef() {}
-    explicit IfcLShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcParameterizedProfileDef(data) {}
+    explicit IfcLShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcParameterizedProfileDef(data) {}
 
     /// Leg length, see illustration above (= h). Same as the overall depth.
     double Depth() const;
@@ -21678,7 +21678,7 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, std::optional< double > v5_Width, double v6_Thickness, std::optional< double > v7_FilletRadius, std::optional< double > v8_EdgeRadius, std::optional< double > v9_LegSlope, std::optional< double > v10_CentreOfGravityInX, std::optional< double > v11_CentreOfGravityInY);
 };
 /// Definition from ISO/CD 10303-42:1992: A line is an unbounded curve with constant tangent direction. A line is defined by a point and a direction. The positive direction of the line is in the direction of the Dir vector. The line is parameterized as follows:
@@ -21697,7 +21697,7 @@ public:
 class IFC_PARSE_API IfcLine : public IfcCurve {
 public:
     IfcLine() {}
-    explicit IfcLine (const std::weak_ptr<InstanceData>& data) : IfcCurve(data) {}
+    explicit IfcLine (const std::weak_ptr<instance_data>& data) : IfcCurve(data) {}
 
     /// The location of the line.
     ::Ifc2x3::IfcCartesianPoint Pnt() const;
@@ -21706,7 +21706,7 @@ public:
     ::Ifc2x3::IfcVector Dir() const;
     void setDir(const ::Ifc2x3::IfcVector& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCartesianPoint v1_Pnt, ::Ifc2x3::IfcVector v2_Dir);
 };
 /// Definition from ISO/CD 10303-42:1992: A manifold solid
@@ -21775,13 +21775,13 @@ public:
 class IFC_PARSE_API IfcManifoldSolidBrep : public IfcSolidModel {
 public:
     IfcManifoldSolidBrep() {}
-    explicit IfcManifoldSolidBrep (const std::weak_ptr<InstanceData>& data) : IfcSolidModel(data) {}
+    explicit IfcManifoldSolidBrep (const std::weak_ptr<instance_data>& data) : IfcSolidModel(data) {}
 
     /// A closed shell defining the exterior boundary of the solid. The shell normal shall point away from the interior of the solid.
     ::Ifc2x3::IfcClosedShell Outer() const;
     void setOuter(const ::Ifc2x3::IfcClosedShell& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcClosedShell v1_Outer);
 };
 /// An IfcObject is the
@@ -21869,14 +21869,14 @@ public:
 class IFC_PARSE_API IfcObject : public IfcObjectDefinition {
 public:
     IfcObject() {}
-    explicit IfcObject (const std::weak_ptr<InstanceData>& data) : IfcObjectDefinition(data) {}
+    explicit IfcObject (const std::weak_ptr<instance_data>& data) : IfcObjectDefinition(data) {}
 
     /// The type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute PredefinedType is set to USERDEFINED.
     std::optional< std::string > ObjectType() const;
     void setObjectType(const std::optional< std::string >& v);
         std::vector< IfcRelDefines > IsDefinedBy() const; // INVERSE IfcRelDefines::RelatedObjects
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 2d (IfcOffsetCurve2d) is a curve at a constant distance from a basis curve in two-dimensional space. This entity defines a simple plane-offset curve by offsetting by distance along the normal to basis curve in the plane of basis curve. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve, the transition code between each segment shall be cont same gradient or cont same gradient same curvature. 
@@ -21893,7 +21893,7 @@ public:
 class IFC_PARSE_API IfcOffsetCurve2D : public IfcCurve {
 public:
     IfcOffsetCurve2D() {}
-    explicit IfcOffsetCurve2D (const std::weak_ptr<InstanceData>& data) : IfcCurve(data) {}
+    explicit IfcOffsetCurve2D (const std::weak_ptr<instance_data>& data) : IfcCurve(data) {}
 
     /// The curve that is being offset.
     ::Ifc2x3::IfcCurve BasisCurve() const;
@@ -21905,7 +21905,7 @@ public:
     boost::logic::tribool SelfIntersect() const;
     void setSelfIntersect(const boost::logic::tribool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect);
 };
 /// Definition from ISO/CD 10303-42:1992: An offset curve 3d is a curve at a constant distance from a basis curve in three-dimensional space. The underlying curve shall have a well-defined tangent direction at every point. In the case of a composite curve the transition code between each segment shall be cont same gradient or cont same gradient same curvature. The offset curve at any point (parameter) on the basis curve is in the direction V x T where V is the fixed reference direction and T is the unit tangent to the basis curve. For the offset direction to be well defined, T shall not at any point of the curve be in the same, or opposite, direction as V. 
@@ -21926,7 +21926,7 @@ public:
 class IFC_PARSE_API IfcOffsetCurve3D : public IfcCurve {
 public:
     IfcOffsetCurve3D() {}
-    explicit IfcOffsetCurve3D (const std::weak_ptr<InstanceData>& data) : IfcCurve(data) {}
+    explicit IfcOffsetCurve3D (const std::weak_ptr<instance_data>& data) : IfcCurve(data) {}
 
     /// The curve that is being offset.
     ::Ifc2x3::IfcCurve BasisCurve() const;
@@ -21941,7 +21941,7 @@ public:
     ::Ifc2x3::IfcDirection RefDirection() const;
     void setRefDirection(const ::Ifc2x3::IfcDirection& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_BasisCurve, double v2_Distance, boost::logic::tribool v3_SelfIntersect, ::Ifc2x3::IfcDirection v4_RefDirection);
 };
 /// This entity is a description of a panel within a
@@ -21978,7 +21978,7 @@ public:
 class IFC_PARSE_API IfcPermeableCoveringProperties : public IfcPropertySetDefinition {
 public:
     IfcPermeableCoveringProperties() {}
-    explicit IfcPermeableCoveringProperties (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcPermeableCoveringProperties (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Types of permeable covering operations. Also used to assign standard symbolic presentations according to national building standards.
     ::Ifc2x3::IfcPermeableCoveringOperationEnum::Value OperationType() const;
@@ -21996,7 +21996,7 @@ public:
     ::Ifc2x3::IfcShapeAspect ShapeAspectStyle() const;
     void setShapeAspectStyle(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcPermeableCoveringOperationEnum::Value v5_OperationType, ::Ifc2x3::IfcWindowPanelPositionEnum::Value v6_PanelPosition, std::optional< double > v7_FrameDepth, std::optional< double > v8_FrameThickness, ::Ifc2x3::IfcShapeAspect v9_ShapeAspectStyle);
 };
 /// Definition from ISO/CD 10303-46:1992: A planar box specifies an arbitrary rectangular box and its location in a two dimensional Cartesian coordinate system.
@@ -22008,14 +22008,14 @@ public:
 class IFC_PARSE_API IfcPlanarBox : public IfcPlanarExtent {
 public:
     IfcPlanarBox() {}
-    explicit IfcPlanarBox (const std::weak_ptr<InstanceData>& data) : IfcPlanarExtent(data) {}
+    explicit IfcPlanarBox (const std::weak_ptr<instance_data>& data) : IfcPlanarExtent(data) {}
 
     /// The IfcAxis2Placement positions a local coordinate system for the definition of the rectangle. The origin of this local coordinate system serves as the lower left corner of the rectangular box.
     ///   NOTE  In case of a 3D placement by IfcAxisPlacement3D the IfcPlanarBox is defined within the xy plane of the definition coordinate system.
     ::Ifc2x3::IfcAxis2Placement Placement() const;
     void setPlacement(const ::Ifc2x3::IfcAxis2Placement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(double v1_SizeInX, double v2_SizeInY, ::Ifc2x3::IfcAxis2Placement v3_Placement);
 };
 /// Definition from ISO/CD 10303-42:1992: A plane is an unbounded surface with a constant normal. A plane is defined by a point on the plane and the normal direction to the plane. The data is to be interpreted as follows:
@@ -22057,10 +22057,10 @@ public:
 class IFC_PARSE_API IfcPlane : public IfcElementarySurface {
 public:
     IfcPlane() {}
-    explicit IfcPlane (const std::weak_ptr<InstanceData>& data) : IfcElementarySurface(data) {}
+    explicit IfcPlane (const std::weak_ptr<instance_data>& data) : IfcElementarySurface(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position);
 };
 /// Definition from ISO9000: A process is a set of
@@ -22106,13 +22106,13 @@ public:
 class IFC_PARSE_API IfcProcess : public IfcObject {
 public:
     IfcProcess() {}
-    explicit IfcProcess (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcProcess (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
         std::vector< IfcRelAssignsToProcess > OperatesOn() const; // INVERSE IfcRelAssignsToProcess::RelatingProcess
     std::vector< IfcRelSequence > IsSuccessorFrom() const; // INVERSE IfcRelSequence::RelatedProcess
     std::vector< IfcRelSequence > IsPredecessorTo() const; // INVERSE IfcRelSequence::RelatingProcess
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// Any object that relates to a
@@ -22209,7 +22209,7 @@ public:
 class IFC_PARSE_API IfcProduct : public IfcObject {
 public:
     IfcProduct() {}
-    explicit IfcProduct (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcProduct (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
     /// Placement of the product in space, the placement can either be absolute (relative to the world coordinate system), relative (relative to the object placement of another product), or constraint (e.g. relative to grid axes). It is determined by the various subtypes of IfcObjectPlacement, which includes the axis placement information to determine the  transformation for the object coordinate system.
     ::Ifc2x3::IfcObjectPlacement ObjectPlacement() const;
@@ -22219,7 +22219,7 @@ public:
     void setRepresentation(const ::Ifc2x3::IfcProductRepresentation& v);
         std::vector< IfcRelAssignsToProduct > ReferencedBy() const; // INVERSE IfcRelAssignsToProduct::RelatingProduct
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation);
 };
 /// IfcProject indicates the undertaking of some design, engineering, construction, or
@@ -22269,7 +22269,7 @@ public:
 class IFC_PARSE_API IfcProject : public IfcObject {
 public:
     IfcProject() {}
-    explicit IfcProject (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcProject (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
     std::optional< std::string > LongName() const;
     void setLongName(const std::optional< std::string >& v);
@@ -22280,17 +22280,17 @@ public:
     ::Ifc2x3::IfcUnitAssignment UnitsInContext() const;
     void setUnitsInContext(const ::Ifc2x3::IfcUnitAssignment& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_LongName, std::optional< std::string > v7_Phase, std::vector< ::Ifc2x3::IfcRepresentationContext > v8_RepresentationContexts, ::Ifc2x3::IfcUnitAssignment v9_UnitsInContext);
 };
 
 class IFC_PARSE_API IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
 public:
     IfcProjectionCurve() {}
-    explicit IfcProjectionCurve (const std::weak_ptr<InstanceData>& data) : IfcAnnotationCurveOccurrence(data) {}
+    explicit IfcProjectionCurve (const std::weak_ptr<instance_data>& data) : IfcAnnotationCurveOccurrence(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 /// IfcPropertySet defines all dynamically extensible
@@ -22349,13 +22349,13 @@ public:
 class IFC_PARSE_API IfcPropertySet : public IfcPropertySetDefinition {
 public:
     IfcPropertySet() {}
-    explicit IfcPropertySet (const std::weak_ptr<InstanceData>& data) : IfcPropertySetDefinition(data) {}
+    explicit IfcPropertySet (const std::weak_ptr<instance_data>& data) : IfcPropertySetDefinition(data) {}
 
     /// Contained set of properties. For property sets defined as part of the IFC Object model, the property objects within a property set are defined as part of the standard. If a property is not contained within the set of predefined properties, its value has not been set at this time.
     std::vector< ::Ifc2x3::IfcProperty > HasProperties() const;
     void setHasProperties(const std::vector< ::Ifc2x3::IfcProperty >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcProperty > v5_HasProperties);
 };
 /// IfcProxy is intended to be a kind of a container for wrapping objects which are defined by associated properties, which may or may not have a geometric representation and placement in space. A proxy may have a semantic meaning, defined by the Name attribute, and property definitions, attached through the property assignment relationship, which definition may be outside of the definitions given by the current release of IFC.
@@ -22377,7 +22377,7 @@ public:
 class IFC_PARSE_API IfcProxy : public IfcProduct {
 public:
     IfcProxy() {}
-    explicit IfcProxy (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcProxy (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
     /// High level (and only) semantic meaning attached to the IfcProxy, defining the basic construct type behind the Proxy, e.g. Product or Process.
     ::Ifc2x3::IfcObjectTypeEnum::Value ProxyType() const;
@@ -22386,7 +22386,7 @@ public:
     std::optional< std::string > Tag() const;
     void setTag(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcObjectTypeEnum::Value v8_ProxyType, std::optional< std::string > v9_Tag);
 };
 /// IfcRectangleHollowProfileDef defines a section profile that provides the defining parameters of a rectangular (or square) hollow section to be used by the swept surface geometry or the swept area solid. Its parameters and orientation relative to the position coordinate system are according to the following illustration. A square hollow section can be defined by equal values for h and b. The centre of the position coordinate system is in the profiles centre of the bounding box (for symmetric profiles identical with the centre of gravity). Normally, the longer sides are parallel to the y-axis, the shorter sides parallel to the x-axis.
@@ -22412,7 +22412,7 @@ public:
 class IFC_PARSE_API IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
 public:
     IfcRectangleHollowProfileDef() {}
-    explicit IfcRectangleHollowProfileDef (const std::weak_ptr<InstanceData>& data) : IfcRectangleProfileDef(data) {}
+    explicit IfcRectangleHollowProfileDef (const std::weak_ptr<instance_data>& data) : IfcRectangleProfileDef(data) {}
 
     /// Thickness of the material.
     double WallThickness() const;
@@ -22424,7 +22424,7 @@ public:
     std::optional< double > OuterFilletRadius() const;
     void setOuterFilletRadius(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_XDim, double v5_YDim, double v6_WallThickness, std::optional< double > v7_InnerFilletRadius, std::optional< double > v8_OuterFilletRadius);
 };
 /// The IfcRectangularPyramid is a Construction Solid
@@ -22518,7 +22518,7 @@ public:
 class IFC_PARSE_API IfcRectangularPyramid : public IfcCsgPrimitive3D {
 public:
     IfcRectangularPyramid() {}
-    explicit IfcRectangularPyramid (const std::weak_ptr<InstanceData>& data) : IfcCsgPrimitive3D(data) {}
+    explicit IfcRectangularPyramid (const std::weak_ptr<instance_data>& data) : IfcCsgPrimitive3D(data) {}
 
     /// The length of the base measured along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
     double XLength() const;
@@ -22530,7 +22530,7 @@ public:
     double Height() const;
     void setHeight(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position, double v2_XLength, double v3_YLength, double v4_Height);
 };
 /// Definition from ISO/CD 10303-42:1992: The trimmed surface is a simple bounded surface in which the boundaries are the constant parametric lines u1 = u1, u2 = u2, v1 = v1 and v2 = v2. All these values shall be within the parametric range of the referenced surface. Cyclic properties of the parameter range are assumed.
@@ -22551,7 +22551,7 @@ public:
 class IFC_PARSE_API IfcRectangularTrimmedSurface : public IfcBoundedSurface {
 public:
     IfcRectangularTrimmedSurface() {}
-    explicit IfcRectangularTrimmedSurface (const std::weak_ptr<InstanceData>& data) : IfcBoundedSurface(data) {}
+    explicit IfcRectangularTrimmedSurface (const std::weak_ptr<instance_data>& data) : IfcBoundedSurface(data) {}
 
     /// Surface being trimmed.
     ::Ifc2x3::IfcSurface BasisSurface() const;
@@ -22575,7 +22575,7 @@ public:
     bool Vsense() const;
     void setVsense(const bool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcSurface v1_BasisSurface, double v2_U1, double v3_V1, double v4_U2, double v5_V2, bool v6_Usense, bool v7_Vsense);
 };
 /// The assignment relationship, IfcRelAssigns, is a generalization of "link" relationships among instances of IfcObject and its various 1st level subtypes. A link denotes the specific association through which one object (the client) applies the services of other objects (the suppliers), or through which one object may navigate to other objects.
@@ -22592,7 +22592,7 @@ public:
 class IFC_PARSE_API IfcRelAssigns : public IfcRelationship {
 public:
     IfcRelAssigns() {}
-    explicit IfcRelAssigns (const std::weak_ptr<InstanceData>& data) : IfcRelationship(data) {}
+    explicit IfcRelAssigns (const std::weak_ptr<instance_data>& data) : IfcRelationship(data) {}
 
     /// Related objects, which are assigned to a single object. The type of the single (or relating) object is defined in the subtypes of IfcRelAssigns.
     std::vector< ::Ifc2x3::IfcObjectDefinition > RelatedObjects() const;
@@ -22602,7 +22602,7 @@ public:
     std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > RelatedObjectsType() const;
     void setRelatedObjectsType(const std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType);
 };
 /// The objectified relationship IfcRelAssignsToActor handles the assignment of objects (subtypes of IfcObject) to an actor (subtypes of IfcActor).
@@ -22617,7 +22617,7 @@ public:
 class IFC_PARSE_API IfcRelAssignsToActor : public IfcRelAssigns {
 public:
     IfcRelAssignsToActor() {}
-    explicit IfcRelAssignsToActor (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToActor (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to the information about the actor. It comprises the information about the person or organization and its addresses.
     ::Ifc2x3::IfcActor RelatingActor() const;
@@ -22626,7 +22626,7 @@ public:
     ::Ifc2x3::IfcActorRole ActingRole() const;
     void setActingRole(const ::Ifc2x3::IfcActorRole& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor v7_RelatingActor, ::Ifc2x3::IfcActorRole v8_ActingRole);
 };
 /// The objectified relationship IfcRelAssignsToControl handles the assignment of a control (represented by subtypes of IfcControl) to other objects (represented by subtypes of IfcObject, with the exception of controls).
@@ -22637,13 +22637,13 @@ public:
 class IFC_PARSE_API IfcRelAssignsToControl : public IfcRelAssigns {
 public:
     IfcRelAssignsToControl() {}
-    explicit IfcRelAssignsToControl (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToControl (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to the IfcControl that applies a control upon objects.
     ::Ifc2x3::IfcControl RelatingControl() const;
     void setRelatingControl(const ::Ifc2x3::IfcControl& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl v7_RelatingControl);
 };
 /// The objectified relationship IfcRelAssignsToGroup handles the assignment of object definitions (individual object occurrences as subtypes of IfcObject, and object types as subtypes of IfcTypeObject) to a group (subtypes of IfcGroup).
@@ -22662,13 +22662,13 @@ public:
 class IFC_PARSE_API IfcRelAssignsToGroup : public IfcRelAssigns {
 public:
     IfcRelAssignsToGroup() {}
-    explicit IfcRelAssignsToGroup (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToGroup (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to group that contains all assigned group members.
     ::Ifc2x3::IfcGroup RelatingGroup() const;
     void setRelatingGroup(const ::Ifc2x3::IfcGroup& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcGroup v7_RelatingGroup);
 };
 /// The objectified relationship IfcRelAssignsToProcess handles the assignment of one or many objects to a process or activity. An object can be a product that is the item the process operates on. Processes and activities can operate on things other than products, and can operate in ways other than input and output.
@@ -22696,7 +22696,7 @@ public:
 class IFC_PARSE_API IfcRelAssignsToProcess : public IfcRelAssigns {
 public:
     IfcRelAssignsToProcess() {}
-    explicit IfcRelAssignsToProcess (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToProcess (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to the process to which the objects are assigned to.
     /// 
@@ -22707,7 +22707,7 @@ public:
     ::Ifc2x3::IfcMeasureWithUnit QuantityInProcess() const;
     void setQuantityInProcess(const ::Ifc2x3::IfcMeasureWithUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProcess v7_RelatingProcess, ::Ifc2x3::IfcMeasureWithUnit v8_QuantityInProcess);
 };
 /// The objectified relationshipIfcRelAssignsToProduct handles the assignment of objects (subtypes of IfcObject) to a product (subtypes of IfcProduct). The Name attribute should be used to classify the usage of the IfcRelAssignsToProduct objectified relationship. The following Name values are proposed:
@@ -22721,7 +22721,7 @@ public:
 class IFC_PARSE_API IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
     IfcRelAssignsToProduct() {}
-    explicit IfcRelAssignsToProduct (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToProduct (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to the product or product type to which the objects are assigned to.
     /// 
@@ -22729,17 +22729,17 @@ public:
     ::Ifc2x3::IfcProduct RelatingProduct() const;
     void setRelatingProduct(const ::Ifc2x3::IfcProduct& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProduct v7_RelatingProduct);
 };
 
 class IFC_PARSE_API IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
 public:
     IfcRelAssignsToProjectOrder() {}
-    explicit IfcRelAssignsToProjectOrder (const std::weak_ptr<InstanceData>& data) : IfcRelAssignsToControl(data) {}
+    explicit IfcRelAssignsToProjectOrder (const std::weak_ptr<instance_data>& data) : IfcRelAssignsToControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl v7_RelatingControl);
 };
 /// The objectified relationship IfcRelAssignsToResource handles the assignment of objects
@@ -22751,7 +22751,7 @@ public:
 class IFC_PARSE_API IfcRelAssignsToResource : public IfcRelAssigns {
 public:
     IfcRelAssignsToResource() {}
-    explicit IfcRelAssignsToResource (const std::weak_ptr<InstanceData>& data) : IfcRelAssigns(data) {}
+    explicit IfcRelAssignsToResource (const std::weak_ptr<instance_data>& data) : IfcRelAssigns(data) {}
 
     /// Reference to the resource to which the objects are assigned to.
     /// 
@@ -22759,7 +22759,7 @@ public:
     ::Ifc2x3::IfcResource RelatingResource() const;
     void setRelatingResource(const ::Ifc2x3::IfcResource& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcResource v7_RelatingResource);
 };
 /// The association relationship
@@ -22806,7 +22806,7 @@ public:
 class IFC_PARSE_API IfcRelAssociates : public IfcRelationship {
 public:
     IfcRelAssociates() {}
-    explicit IfcRelAssociates (const std::weak_ptr<InstanceData>& data) : IfcRelationship(data) {}
+    explicit IfcRelAssociates (const std::weak_ptr<instance_data>& data) : IfcRelationship(data) {}
 
     /// Set of object or property definitions to which the external references or information is associated. It includes object and type objects, property set templates, property templates and property sets and contexts.
     /// 
@@ -22814,19 +22814,19 @@ public:
     std::vector< ::Ifc2x3::IfcRoot > RelatedObjects() const;
     void setRelatedObjects(const std::vector< ::Ifc2x3::IfcRoot >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects);
 };
 
 class IFC_PARSE_API IfcRelAssociatesAppliedValue : public IfcRelAssociates {
 public:
     IfcRelAssociatesAppliedValue() {}
-    explicit IfcRelAssociatesAppliedValue (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesAppliedValue (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     ::Ifc2x3::IfcAppliedValue RelatingAppliedValue() const;
     void setRelatingAppliedValue(const ::Ifc2x3::IfcAppliedValue& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcAppliedValue v6_RelatingAppliedValue);
 };
 /// The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.
@@ -22835,13 +22835,13 @@ public:
 class IFC_PARSE_API IfcRelAssociatesApproval : public IfcRelAssociates {
 public:
     IfcRelAssociatesApproval() {}
-    explicit IfcRelAssociatesApproval (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesApproval (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// Reference to approval that is being applied using this relationship.
     ::Ifc2x3::IfcApproval RelatingApproval() const;
     void setRelatingApproval(const ::Ifc2x3::IfcApproval& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcApproval v6_RelatingApproval);
 };
 /// The objectified relationship
@@ -22877,13 +22877,13 @@ public:
 class IFC_PARSE_API IfcRelAssociatesClassification : public IfcRelAssociates {
 public:
     IfcRelAssociatesClassification() {}
-    explicit IfcRelAssociatesClassification (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesClassification (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// Classification applied to the objects.
     ::Ifc2x3::IfcClassificationNotationSelect RelatingClassification() const;
     void setRelatingClassification(const ::Ifc2x3::IfcClassificationNotationSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcClassificationNotationSelect v6_RelatingClassification);
 };
 /// The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.
@@ -22892,7 +22892,7 @@ public:
 class IFC_PARSE_API IfcRelAssociatesConstraint : public IfcRelAssociates {
 public:
     IfcRelAssociatesConstraint() {}
-    explicit IfcRelAssociatesConstraint (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesConstraint (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// The intent of the constraint usage with regard to its related IfcConstraint and IfcObjects, IfcPropertyDefinitions or IfcRelationships. Typical values can be e.g. RATIONALE or EXPECTED PERFORMANCE.
     std::string Intent() const;
@@ -22901,7 +22901,7 @@ public:
     ::Ifc2x3::IfcConstraint RelatingConstraint() const;
     void setRelatingConstraint(const ::Ifc2x3::IfcConstraint& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, std::string v6_Intent, ::Ifc2x3::IfcConstraint v7_RelatingConstraint);
 };
 /// The objectified relationship (IfcRelAssociatesDocument) handles the assignment of a document information (items of the select IfcDocumentSelect) to objects occurrences (subtypes of IfcObject) or object types (subtypes of IfcTypeObject).
@@ -22914,13 +22914,13 @@ public:
 class IFC_PARSE_API IfcRelAssociatesDocument : public IfcRelAssociates {
 public:
     IfcRelAssociatesDocument() {}
-    explicit IfcRelAssociatesDocument (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesDocument (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// Document information or reference which is applied to the objects.
     ::Ifc2x3::IfcDocumentSelect RelatingDocument() const;
     void setRelatingDocument(const ::Ifc2x3::IfcDocumentSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcDocumentSelect v6_RelatingDocument);
 };
 /// The objectified relationship (IfcRelAssociatesLibrary) handles the assignment of a library item (items of the select IfcLibrarySelect) to subtypes of IfcObjectDefinition or IfcPropertyDefinition. 
@@ -22933,13 +22933,13 @@ public:
 class IFC_PARSE_API IfcRelAssociatesLibrary : public IfcRelAssociates {
 public:
     IfcRelAssociatesLibrary() {}
-    explicit IfcRelAssociatesLibrary (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesLibrary (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// Reference to a library, from which the definition of the property set is taken.
     ::Ifc2x3::IfcLibrarySelect RelatingLibrary() const;
     void setRelatingLibrary(const ::Ifc2x3::IfcLibrarySelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcLibrarySelect v6_RelatingLibrary);
 };
 /// Definition from IAI: Objectified relationship between a
@@ -23039,20 +23039,20 @@ public:
 class IFC_PARSE_API IfcRelAssociatesMaterial : public IfcRelAssociates {
 public:
     IfcRelAssociatesMaterial() {}
-    explicit IfcRelAssociatesMaterial (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesMaterial (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     /// Material definition assigned to the elements or element types.
     ::Ifc2x3::IfcMaterialSelect RelatingMaterial() const;
     void setRelatingMaterial(const ::Ifc2x3::IfcMaterialSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcMaterialSelect v6_RelatingMaterial);
 };
 
 class IFC_PARSE_API IfcRelAssociatesProfileProperties : public IfcRelAssociates {
 public:
     IfcRelAssociatesProfileProperties() {}
-    explicit IfcRelAssociatesProfileProperties (const std::weak_ptr<InstanceData>& data) : IfcRelAssociates(data) {}
+    explicit IfcRelAssociatesProfileProperties (const std::weak_ptr<instance_data>& data) : IfcRelAssociates(data) {}
 
     ::Ifc2x3::IfcProfileProperties RelatingProfileProperties() const;
     void setRelatingProfileProperties(const ::Ifc2x3::IfcProfileProperties& v);
@@ -23061,7 +23061,7 @@ public:
     ::Ifc2x3::IfcOrientationSelect ProfileOrientation() const;
     void setProfileOrientation(const ::Ifc2x3::IfcOrientationSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcProfileProperties v6_RelatingProfileProperties, ::Ifc2x3::IfcShapeAspect v7_ProfileSectionLocation, ::Ifc2x3::IfcOrientationSelect v8_ProfileOrientation);
 };
 /// IfcRelConnects is a connectivity relationship that connects objects under some criteria. As a general connectivity it does not imply constraints, however subtypes of the relationship define the applicable object types for the connectivity relationship and the semantics of the particular connectivity. 
@@ -23070,10 +23070,10 @@ public:
 class IFC_PARSE_API IfcRelConnects : public IfcRelationship {
 public:
     IfcRelConnects() {}
-    explicit IfcRelConnects (const std::weak_ptr<InstanceData>& data) : IfcRelationship(data) {}
+    explicit IfcRelConnects (const std::weak_ptr<instance_data>& data) : IfcRelationship(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description);
 };
 /// Definition from IAI: The
@@ -23101,7 +23101,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsElements : public IfcRelConnects {
 public:
     IfcRelConnectsElements() {}
-    explicit IfcRelConnectsElements (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsElements (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// The geometric shape representation of the connection geometry that is provided in the object coordinate system of the RelatingElement (mandatory) and in the object coordinate system of the RelatedElement (optionally).
     ::Ifc2x3::IfcConnectionGeometry ConnectionGeometry() const;
@@ -23113,7 +23113,7 @@ public:
     ::Ifc2x3::IfcElement RelatedElement() const;
     void setRelatedElement(const ::Ifc2x3::IfcElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement);
 };
 /// The
@@ -23149,7 +23149,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     IfcRelConnectsPathElements() {}
-    explicit IfcRelConnectsPathElements (const std::weak_ptr<InstanceData>& data) : IfcRelConnectsElements(data) {}
+    explicit IfcRelConnectsPathElements (const std::weak_ptr<instance_data>& data) : IfcRelConnectsElements(data) {}
 
     /// Priorities for connection. It refers to the layers of the RelatingObject.
     std::vector< int > /*[0:?]*/ RelatingPriorities() const;
@@ -23164,7 +23164,7 @@ public:
     ::Ifc2x3::IfcConnectionTypeEnum::Value RelatingConnectionType() const;
     void setRelatingConnectionType(const ::Ifc2x3::IfcConnectionTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< int > /*[0:?]*/ v8_RelatingPriorities, std::vector< int > /*[0:?]*/ v9_RelatedPriorities, ::Ifc2x3::IfcConnectionTypeEnum::Value v10_RelatedConnectionType, ::Ifc2x3::IfcConnectionTypeEnum::Value v11_RelatingConnectionType);
 };
 /// The objectified relationship
@@ -23195,7 +23195,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
     IfcRelConnectsPortToElement() {}
-    explicit IfcRelConnectsPortToElement (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsPortToElement (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to an Port that is connected by the objectified relationship.
     ::Ifc2x3::IfcPort RelatingPort() const;
@@ -23206,7 +23206,7 @@ public:
     ::Ifc2x3::IfcElement RelatedElement() const;
     void setRelatedElement(const ::Ifc2x3::IfcElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcPort v5_RelatingPort, ::Ifc2x3::IfcElement v6_RelatedElement);
 };
 /// Definition from IAI: An IfcRelConnectsPorts
@@ -23225,7 +23225,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsPorts : public IfcRelConnects {
 public:
     IfcRelConnectsPorts() {}
-    explicit IfcRelConnectsPorts (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsPorts (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to the first port that is connected by the objectified relationship.
     ::Ifc2x3::IfcPort RelatingPort() const;
@@ -23237,7 +23237,7 @@ public:
     ::Ifc2x3::IfcElement RealizingElement() const;
     void setRealizingElement(const ::Ifc2x3::IfcElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcPort v5_RelatingPort, ::Ifc2x3::IfcPort v6_RelatedPort, ::Ifc2x3::IfcElement v7_RealizingElement);
 };
 /// Definition from IAI: The IfcRelConnectsStructuralActivity relationship connects a structural activity (either an action or reaction) to a structural member, structural connection, or element.
@@ -23246,7 +23246,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsStructuralActivity : public IfcRelConnects {
 public:
     IfcRelConnectsStructuralActivity() {}
-    explicit IfcRelConnectsStructuralActivity (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsStructuralActivity (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to a structural item or element to which the specified activity is applied.
     ::Ifc2x3::IfcStructuralActivityAssignmentSelect RelatingElement() const;
@@ -23255,21 +23255,21 @@ public:
     ::Ifc2x3::IfcStructuralActivity RelatedStructuralActivity() const;
     void setRelatedStructuralActivity(const ::Ifc2x3::IfcStructuralActivity& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralActivityAssignmentSelect v5_RelatingElement, ::Ifc2x3::IfcStructuralActivity v6_RelatedStructuralActivity);
 };
 
 class IFC_PARSE_API IfcRelConnectsStructuralElement : public IfcRelConnects {
 public:
     IfcRelConnectsStructuralElement() {}
-    explicit IfcRelConnectsStructuralElement (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsStructuralElement (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     ::Ifc2x3::IfcElement RelatingElement() const;
     void setRelatingElement(const ::Ifc2x3::IfcElement& v);
     ::Ifc2x3::IfcStructuralMember RelatedStructuralMember() const;
     void setRelatedStructuralMember(const ::Ifc2x3::IfcStructuralMember& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcElement v5_RelatingElement, ::Ifc2x3::IfcStructuralMember v6_RelatedStructuralMember);
 };
 /// The entity IfcRelConnectsStructuralMember defines all needed properties describing the connection between structural members and structural connection objects (nodes or supports).
@@ -23299,7 +23299,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsStructuralMember : public IfcRelConnects {
 public:
     IfcRelConnectsStructuralMember() {}
-    explicit IfcRelConnectsStructuralMember (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelConnectsStructuralMember (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to an instance of IfcStructuralMember (or its subclasses) which is connected to the specified structural connection.
     ::Ifc2x3::IfcStructuralMember RelatingStructuralMember() const;
@@ -23320,7 +23320,7 @@ public:
     ::Ifc2x3::IfcAxis2Placement3D ConditionCoordinateSystem() const;
     void setConditionCoordinateSystem(const ::Ifc2x3::IfcAxis2Placement3D& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition v8_AdditionalConditions, std::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D v10_ConditionCoordinateSystem);
 };
 /// Definition from IAI: The entity IfcRelConnectsWithEccentricity adds the definition of eccentricity to the connection between a structural member and a structural connection (representing either a node or support).
@@ -23343,13 +23343,13 @@ public:
 class IFC_PARSE_API IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
 public:
     IfcRelConnectsWithEccentricity() {}
-    explicit IfcRelConnectsWithEccentricity (const std::weak_ptr<InstanceData>& data) : IfcRelConnectsStructuralMember(data) {}
+    explicit IfcRelConnectsWithEccentricity (const std::weak_ptr<instance_data>& data) : IfcRelConnectsStructuralMember(data) {}
 
     /// The connection constraint explicitly states the eccentricity between a structural member and a structural connection by means of two topological objects (vertex and vertex, or edge and edge, or face and face).
     ::Ifc2x3::IfcConnectionGeometry ConnectionConstraint() const;
     void setConnectionConstraint(const ::Ifc2x3::IfcConnectionGeometry& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralMember v5_RelatingStructuralMember, ::Ifc2x3::IfcStructuralConnection v6_RelatedStructuralConnection, ::Ifc2x3::IfcBoundaryCondition v7_AppliedCondition, ::Ifc2x3::IfcStructuralConnectionCondition v8_AdditionalConditions, std::optional< double > v9_SupportedLength, ::Ifc2x3::IfcAxis2Placement3D v10_ConditionCoordinateSystem, ::Ifc2x3::IfcConnectionGeometry v11_ConnectionConstraint);
 };
 /// Definition from IAI:
@@ -23378,7 +23378,7 @@ public:
 class IFC_PARSE_API IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
 public:
     IfcRelConnectsWithRealizingElements() {}
-    explicit IfcRelConnectsWithRealizingElements (const std::weak_ptr<InstanceData>& data) : IfcRelConnectsElements(data) {}
+    explicit IfcRelConnectsWithRealizingElements (const std::weak_ptr<instance_data>& data) : IfcRelConnectsElements(data) {}
 
     /// Defines the elements that realize a connection relationship.
     std::vector< ::Ifc2x3::IfcElement > RealizingElements() const;
@@ -23387,7 +23387,7 @@ public:
     std::optional< std::string > ConnectionType() const;
     void setConnectionType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcConnectionGeometry v5_ConnectionGeometry, ::Ifc2x3::IfcElement v6_RelatingElement, ::Ifc2x3::IfcElement v7_RelatedElement, std::vector< ::Ifc2x3::IfcElement > v8_RealizingElements, std::optional< std::string > v9_ConnectionType);
 };
 /// This objectified relationship,
@@ -23453,7 +23453,7 @@ public:
 class IFC_PARSE_API IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     IfcRelContainedInSpatialStructure() {}
-    explicit IfcRelContainedInSpatialStructure (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelContainedInSpatialStructure (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Set of elements products, which are contained within this level of the spatial structure hierarchy.
     /// 
@@ -23464,7 +23464,7 @@ public:
     ::Ifc2x3::IfcSpatialStructureElement RelatingStructure() const;
     void setRelatingStructure(const ::Ifc2x3::IfcSpatialStructureElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcProduct > v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement v6_RelatingStructure);
 };
 /// Definition from IAI: The
@@ -23486,7 +23486,7 @@ public:
 class IFC_PARSE_API IfcRelCoversBldgElements : public IfcRelConnects {
 public:
     IfcRelCoversBldgElements() {}
-    explicit IfcRelCoversBldgElements (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelCoversBldgElements (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Relationship to the building element that is covered. 
     /// 
@@ -23497,7 +23497,7 @@ public:
     std::vector< ::Ifc2x3::IfcCovering > RelatedCoverings() const;
     void setRelatedCoverings(const std::vector< ::Ifc2x3::IfcCovering >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcElement v5_RelatingBuildingElement, std::vector< ::Ifc2x3::IfcCovering > v6_RelatedCoverings);
 };
 /// Definition from IAI: The objectified relationship,
@@ -23529,7 +23529,7 @@ public:
 class IFC_PARSE_API IfcRelCoversSpaces : public IfcRelConnects {
 public:
     IfcRelCoversSpaces() {}
-    explicit IfcRelCoversSpaces (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelCoversSpaces (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     ::Ifc2x3::IfcSpace RelatedSpace() const;
     void setRelatedSpace(const ::Ifc2x3::IfcSpace& v);
@@ -23537,7 +23537,7 @@ public:
     std::vector< ::Ifc2x3::IfcCovering > RelatedCoverings() const;
     void setRelatedCoverings(const std::vector< ::Ifc2x3::IfcCovering >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace v5_RelatedSpace, std::vector< ::Ifc2x3::IfcCovering > v6_RelatedCoverings);
 };
 /// The decomposition relationship,
@@ -23573,14 +23573,14 @@ public:
 class IFC_PARSE_API IfcRelDecomposes : public IfcRelationship {
 public:
     IfcRelDecomposes() {}
-    explicit IfcRelDecomposes (const std::weak_ptr<InstanceData>& data) : IfcRelationship(data) {}
+    explicit IfcRelDecomposes (const std::weak_ptr<instance_data>& data) : IfcRelationship(data) {}
 
     ::Ifc2x3::IfcObjectDefinition RelatingObject() const;
     void setRelatingObject(const ::Ifc2x3::IfcObjectDefinition& v);
     std::vector< ::Ifc2x3::IfcObjectDefinition > RelatedObjects() const;
     void setRelatedObjects(const std::vector< ::Ifc2x3::IfcObjectDefinition >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition v5_RelatingObject, std::vector< ::Ifc2x3::IfcObjectDefinition > v6_RelatedObjects);
 };
 /// A generic and abstract relationship which subtypes are used to:
@@ -23613,12 +23613,12 @@ public:
 class IFC_PARSE_API IfcRelDefines : public IfcRelationship {
 public:
     IfcRelDefines() {}
-    explicit IfcRelDefines (const std::weak_ptr<InstanceData>& data) : IfcRelationship(data) {}
+    explicit IfcRelDefines (const std::weak_ptr<instance_data>& data) : IfcRelationship(data) {}
 
     std::vector< ::Ifc2x3::IfcObject > RelatedObjects() const;
     void setRelatedObjects(const std::vector< ::Ifc2x3::IfcObject >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObject > v5_RelatedObjects);
 };
 /// The objectified relationship
@@ -23639,13 +23639,13 @@ public:
 class IFC_PARSE_API IfcRelDefinesByProperties : public IfcRelDefines {
 public:
     IfcRelDefinesByProperties() {}
-    explicit IfcRelDefinesByProperties (const std::weak_ptr<InstanceData>& data) : IfcRelDefines(data) {}
+    explicit IfcRelDefinesByProperties (const std::weak_ptr<instance_data>& data) : IfcRelDefines(data) {}
 
     /// Reference to the property set definition for that object or set of objects.
     ::Ifc2x3::IfcPropertySetDefinition RelatingPropertyDefinition() const;
     void setRelatingPropertyDefinition(const ::Ifc2x3::IfcPropertySetDefinition& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObject > v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition v6_RelatingPropertyDefinition);
 };
 /// The objectified relationship
@@ -23720,13 +23720,13 @@ public:
 class IFC_PARSE_API IfcRelDefinesByType : public IfcRelDefines {
 public:
     IfcRelDefinesByType() {}
-    explicit IfcRelDefinesByType (const std::weak_ptr<InstanceData>& data) : IfcRelDefines(data) {}
+    explicit IfcRelDefinesByType (const std::weak_ptr<instance_data>& data) : IfcRelDefines(data) {}
 
     /// Reference to the type (or style) information for that object or set of objects.
     ::Ifc2x3::IfcTypeObject RelatingType() const;
     void setRelatingType(const ::Ifc2x3::IfcTypeObject& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObject > v5_RelatedObjects, ::Ifc2x3::IfcTypeObject v6_RelatingType);
 };
 /// IfcRelFillsElement is an objectified relationship between an opening element and an element that fills (or partially fills) the opening element. It is an one-to-one relationship.
@@ -23741,7 +23741,7 @@ public:
 class IFC_PARSE_API IfcRelFillsElement : public IfcRelConnects {
 public:
     IfcRelFillsElement() {}
-    explicit IfcRelFillsElement (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelFillsElement (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Opening Element being filled by virtue of this relationship.
     ::Ifc2x3::IfcOpeningElement RelatingOpeningElement() const;
@@ -23752,7 +23752,7 @@ public:
     ::Ifc2x3::IfcElement RelatedBuildingElement() const;
     void setRelatedBuildingElement(const ::Ifc2x3::IfcElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcOpeningElement v5_RelatingOpeningElement, ::Ifc2x3::IfcElement v6_RelatedBuildingElement);
 };
 /// Objectified relationship between a distribution flow element occurrence instance and one-to-many control element occurrence instances indicating that the control element(s) sense or control some aspect of the flow element. It is applied to IfcDistributionFlowElement and IfcDistributionControlElement.
@@ -23765,7 +23765,7 @@ public:
 class IFC_PARSE_API IfcRelFlowControlElements : public IfcRelConnects {
 public:
     IfcRelFlowControlElements() {}
-    explicit IfcRelFlowControlElements (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelFlowControlElements (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// References control elements which may be used to impart control on the Distribution Element.
     std::vector< ::Ifc2x3::IfcDistributionControlElement > RelatedControlElements() const;
@@ -23774,14 +23774,14 @@ public:
     ::Ifc2x3::IfcDistributionFlowElement RelatingFlowElement() const;
     void setRelatingFlowElement(const ::Ifc2x3::IfcDistributionFlowElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcDistributionControlElement > v5_RelatedControlElements, ::Ifc2x3::IfcDistributionFlowElement v6_RelatingFlowElement);
 };
 
 class IFC_PARSE_API IfcRelInteractionRequirements : public IfcRelConnects {
 public:
     IfcRelInteractionRequirements() {}
-    explicit IfcRelInteractionRequirements (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelInteractionRequirements (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     std::optional< double > DailyInteraction() const;
     void setDailyInteraction(const std::optional< double >& v);
@@ -23794,7 +23794,7 @@ public:
     ::Ifc2x3::IfcSpaceProgram RelatingSpaceProgram() const;
     void setRelatingSpaceProgram(const ::Ifc2x3::IfcSpaceProgram& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< double > v5_DailyInteraction, std::optional< double > v6_ImportanceRating, ::Ifc2x3::IfcSpatialStructureElement v7_LocationOfInteraction, ::Ifc2x3::IfcSpaceProgram v8_RelatedSpaceProgram, ::Ifc2x3::IfcSpaceProgram v9_RelatingSpaceProgram);
 };
 /// The nesting relationship
@@ -23825,32 +23825,32 @@ public:
 class IFC_PARSE_API IfcRelNests : public IfcRelDecomposes {
 public:
     IfcRelNests() {}
-    explicit IfcRelNests (const std::weak_ptr<InstanceData>& data) : IfcRelDecomposes(data) {}
+    explicit IfcRelNests (const std::weak_ptr<instance_data>& data) : IfcRelDecomposes(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition v5_RelatingObject, std::vector< ::Ifc2x3::IfcObjectDefinition > v6_RelatedObjects);
 };
 
 class IFC_PARSE_API IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
 public:
     IfcRelOccupiesSpaces() {}
-    explicit IfcRelOccupiesSpaces (const std::weak_ptr<InstanceData>& data) : IfcRelAssignsToActor(data) {}
+    explicit IfcRelOccupiesSpaces (const std::weak_ptr<instance_data>& data) : IfcRelAssignsToActor(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor v7_RelatingActor, ::Ifc2x3::IfcActorRole v8_ActingRole);
 };
 
 class IFC_PARSE_API IfcRelOverridesProperties : public IfcRelDefinesByProperties {
 public:
     IfcRelOverridesProperties() {}
-    explicit IfcRelOverridesProperties (const std::weak_ptr<InstanceData>& data) : IfcRelDefinesByProperties(data) {}
+    explicit IfcRelOverridesProperties (const std::weak_ptr<instance_data>& data) : IfcRelDefinesByProperties(data) {}
 
     std::vector< ::Ifc2x3::IfcProperty > OverridingProperties() const;
     void setOverridingProperties(const std::vector< ::Ifc2x3::IfcProperty >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObject > v5_RelatedObjects, ::Ifc2x3::IfcPropertySetDefinition v6_RelatingPropertyDefinition, std::vector< ::Ifc2x3::IfcProperty > v7_OverridingProperties);
 };
 /// The IfcRelProjectsElement is an objectified relationship
@@ -23888,7 +23888,7 @@ public:
 class IFC_PARSE_API IfcRelProjectsElement : public IfcRelConnects {
 public:
     IfcRelProjectsElement() {}
-    explicit IfcRelProjectsElement (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelProjectsElement (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Element at which a projection is created by the associated IfcProjectionElement.
     ::Ifc2x3::IfcElement RelatingElement() const;
@@ -23897,7 +23897,7 @@ public:
     ::Ifc2x3::IfcFeatureElementAddition RelatedFeatureElement() const;
     void setRelatedFeatureElement(const ::Ifc2x3::IfcFeatureElementAddition& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcElement v5_RelatingElement, ::Ifc2x3::IfcFeatureElementAddition v6_RelatedFeatureElement);
 };
 /// The objectified relationship,
@@ -23952,7 +23952,7 @@ public:
 class IFC_PARSE_API IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     IfcRelReferencedInSpatialStructure() {}
-    explicit IfcRelReferencedInSpatialStructure (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelReferencedInSpatialStructure (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Set of products, which are referenced within this level of the spatial structure hierarchy.
     /// NOTE  Referenced elements are contained elsewhere within the spatial structure, they are referenced additionally by this spatial structure element, e.g., because they span several stories.
@@ -23964,17 +23964,17 @@ public:
     ::Ifc2x3::IfcSpatialStructureElement RelatingStructure() const;
     void setRelatingStructure(const ::Ifc2x3::IfcSpatialStructureElement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcProduct > v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement v6_RelatingStructure);
 };
 
 class IFC_PARSE_API IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
 public:
     IfcRelSchedulesCostItems() {}
-    explicit IfcRelSchedulesCostItems (const std::weak_ptr<InstanceData>& data) : IfcRelAssignsToControl(data) {}
+    explicit IfcRelSchedulesCostItems (const std::weak_ptr<instance_data>& data) : IfcRelAssignsToControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl v7_RelatingControl);
 };
 /// IfcRelSequence is a
@@ -24034,7 +24034,7 @@ public:
 class IFC_PARSE_API IfcRelSequence : public IfcRelConnects {
 public:
     IfcRelSequence() {}
-    explicit IfcRelSequence (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelSequence (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to the process, that is the predecessor.
     ::Ifc2x3::IfcProcess RelatingProcess() const;
@@ -24051,7 +24051,7 @@ public:
     ::Ifc2x3::IfcSequenceEnum::Value SequenceType() const;
     void setSequenceType(const ::Ifc2x3::IfcSequenceEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcProcess v5_RelatingProcess, ::Ifc2x3::IfcProcess v6_RelatedProcess, double v7_TimeLag, ::Ifc2x3::IfcSequenceEnum::Value v8_SequenceType);
 };
 /// Definition from IAI: An objectified relationship
@@ -24078,7 +24078,7 @@ public:
 class IFC_PARSE_API IfcRelServicesBuildings : public IfcRelConnects {
 public:
     IfcRelServicesBuildings() {}
-    explicit IfcRelServicesBuildings (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelServicesBuildings (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// System that services the Buildings.
     ::Ifc2x3::IfcSystem RelatingSystem() const;
@@ -24091,7 +24091,7 @@ public:
     std::vector< ::Ifc2x3::IfcSpatialStructureElement > RelatedBuildings() const;
     void setRelatedBuildings(const std::vector< ::Ifc2x3::IfcSpatialStructureElement >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcSystem v5_RelatingSystem, std::vector< ::Ifc2x3::IfcSpatialStructureElement > v6_RelatedBuildings);
 };
 /// The space boundary defines the
@@ -24259,7 +24259,7 @@ public:
 class IFC_PARSE_API IfcRelSpaceBoundary : public IfcRelConnects {
 public:
     IfcRelSpaceBoundary() {}
-    explicit IfcRelSpaceBoundary (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelSpaceBoundary (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     /// Reference to one spaces that is delimited by this boundary.
     ::Ifc2x3::IfcSpace RelatingSpace() const;
@@ -24283,7 +24283,7 @@ public:
     ::Ifc2x3::IfcInternalOrExternalEnum::Value InternalOrExternalBoundary() const;
     void setInternalOrExternalBoundary(const ::Ifc2x3::IfcInternalOrExternalEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcSpace v5_RelatingSpace, ::Ifc2x3::IfcElement v6_RelatedBuildingElement, ::Ifc2x3::IfcConnectionGeometry v7_ConnectionGeometry, ::Ifc2x3::IfcPhysicalOrVirtualEnum::Value v8_PhysicalOrVirtualBoundary, ::Ifc2x3::IfcInternalOrExternalEnum::Value v9_InternalOrExternalBoundary);
 };
 /// IfcRelVoidsElement is an objectified relationship between a building element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a Boolean operation of subtraction between the geometric bodies of the element and the opening.
@@ -24296,14 +24296,14 @@ public:
 class IFC_PARSE_API IfcRelVoidsElement : public IfcRelConnects {
 public:
     IfcRelVoidsElement() {}
-    explicit IfcRelVoidsElement (const std::weak_ptr<InstanceData>& data) : IfcRelConnects(data) {}
+    explicit IfcRelVoidsElement (const std::weak_ptr<instance_data>& data) : IfcRelConnects(data) {}
 
     ::Ifc2x3::IfcElement RelatingBuildingElement() const;
     void setRelatingBuildingElement(const ::Ifc2x3::IfcElement& v);
     ::Ifc2x3::IfcFeatureElementSubtraction RelatedOpeningElement() const;
     void setRelatedOpeningElement(const ::Ifc2x3::IfcFeatureElementSubtraction& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcElement v5_RelatingBuildingElement, ::Ifc2x3::IfcFeatureElementSubtraction v6_RelatedOpeningElement);
 };
 /// IfcResource contains the information needed to represent the costs, schedule, and other impacts from the use of a thing in a process. It is not intended to use IfcResource to model the general properties of the things themselves, while an optional linkage from IfcResource to the things to be used can be specified (specifically, the relationship from subtypes of IfcResource to IfcProduct through the IfcRelAssignsToResource relationship).  
@@ -24322,11 +24322,11 @@ public:
 class IFC_PARSE_API IfcResource : public IfcObject {
 public:
     IfcResource() {}
-    explicit IfcResource (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcResource (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
         std::vector< IfcRelAssignsToResource > ResourceOf() const; // INVERSE IfcRelAssignsToResource::RelatingResource
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// An IfcRevolvedAreaSolid is a solid created by revolving
@@ -24408,7 +24408,7 @@ public:
 class IFC_PARSE_API IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
 public:
     IfcRevolvedAreaSolid() {}
-    explicit IfcRevolvedAreaSolid (const std::weak_ptr<InstanceData>& data) : IfcSweptAreaSolid(data) {}
+    explicit IfcRevolvedAreaSolid (const std::weak_ptr<instance_data>& data) : IfcSweptAreaSolid(data) {}
 
     /// Axis about which revolution will take place.
     ::Ifc2x3::IfcAxis1Placement Axis() const;
@@ -24417,7 +24417,7 @@ public:
     double Angle() const;
     void setAngle(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D v2_Position, ::Ifc2x3::IfcAxis1Placement v3_Axis, double v4_Angle);
 };
 /// The IfcRightCircularCone is a Construction Solid
@@ -24488,7 +24488,7 @@ public:
 class IFC_PARSE_API IfcRightCircularCone : public IfcCsgPrimitive3D {
 public:
     IfcRightCircularCone() {}
-    explicit IfcRightCircularCone (const std::weak_ptr<InstanceData>& data) : IfcCsgPrimitive3D(data) {}
+    explicit IfcRightCircularCone (const std::weak_ptr<instance_data>& data) : IfcCsgPrimitive3D(data) {}
 
     /// The distance between the base of the cone and the apex.
     double Height() const;
@@ -24497,7 +24497,7 @@ public:
     double BottomRadius() const;
     void setBottomRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position, double v2_Height, double v3_BottomRadius);
 };
 /// The IfcRightCircularCylinder is a Construction Solid
@@ -24584,7 +24584,7 @@ public:
 class IFC_PARSE_API IfcRightCircularCylinder : public IfcCsgPrimitive3D {
 public:
     IfcRightCircularCylinder() {}
-    explicit IfcRightCircularCylinder (const std::weak_ptr<InstanceData>& data) : IfcCsgPrimitive3D(data) {}
+    explicit IfcRightCircularCylinder (const std::weak_ptr<instance_data>& data) : IfcCsgPrimitive3D(data) {}
 
     /// The distance between the planar circular faces of the cylinder.
     double Height() const;
@@ -24593,7 +24593,7 @@ public:
     double Radius() const;
     void setRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position, double v2_Height, double v3_Radius);
 };
 /// A spatial structure element
@@ -24673,7 +24673,7 @@ public:
 class IFC_PARSE_API IfcSpatialStructureElement : public IfcProduct {
 public:
     IfcSpatialStructureElement() {}
-    explicit IfcSpatialStructureElement (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcSpatialStructureElement (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
     std::optional< std::string > LongName() const;
     void setLongName(const std::optional< std::string >& v);
@@ -24687,7 +24687,7 @@ public:
     std::vector< IfcRelServicesBuildings > ServicedBySystems() const; // INVERSE IfcRelServicesBuildings::RelatedBuildings
     std::vector< IfcRelContainedInSpatialStructure > ContainsElements() const; // INVERSE IfcRelContainedInSpatialStructure::RelatingStructure
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType);
 };
 /// Definition from IAI: The element type
@@ -24727,10 +24727,10 @@ public:
 class IFC_PARSE_API IfcSpatialStructureElementType : public IfcElementType {
 public:
     IfcSpatialStructureElementType() {}
-    explicit IfcSpatialStructureElementType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcSpatialStructureElementType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The IfcSphere is a Construction Solid Geometry (CSG) 3D
@@ -24786,13 +24786,13 @@ public:
 class IFC_PARSE_API IfcSphere : public IfcCsgPrimitive3D {
 public:
     IfcSphere() {}
-    explicit IfcSphere (const std::weak_ptr<InstanceData>& data) : IfcCsgPrimitive3D(data) {}
+    explicit IfcSphere (const std::weak_ptr<instance_data>& data) : IfcCsgPrimitive3D(data) {}
 
     /// The radius of the sphere.
     double Radius() const;
     void setRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position, double v2_Radius);
 };
 /// Definition from IAI: The abstract entity IfcStructuralActivity combines the definition of actions (such as forces, displacements, etc.) and reactions (support reactions, internal forces, deflections, etc.) which are specified by using the basic load definitions from the IfcStructuralLoadResource.
@@ -24891,7 +24891,7 @@ public:
 class IFC_PARSE_API IfcStructuralActivity : public IfcProduct {
 public:
     IfcStructuralActivity() {}
-    explicit IfcStructuralActivity (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcStructuralActivity (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
     /// Load or result resource object which defines the load type, direction, and load values.
     /// 
@@ -24919,7 +24919,7 @@ public:
     void setGlobalOrLocal(const ::Ifc2x3::IfcGlobalOrLocalEnum::Value& v);
         std::vector< IfcRelConnectsStructuralActivity > AssignedToStructuralItem() const; // INVERSE IfcRelConnectsStructuralActivity::RelatedStructuralActivity
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
 };
 /// Definition from IAI: The abstract entity IfcStructuralItem is the generalization of structural members and structural connections, i.e. analysis idealizations of elements in the building model.  It defines the relation between structural members and connections with structural activities (actions and reactions).
@@ -25012,11 +25012,11 @@ public:
 class IFC_PARSE_API IfcStructuralItem : public IfcProduct {
 public:
     IfcStructuralItem() {}
-    explicit IfcStructuralItem (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcStructuralItem (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
         std::vector< IfcRelConnectsStructuralActivity > AssignedStructuralActivity() const; // INVERSE IfcRelConnectsStructuralActivity::RelatingElement
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation);
 };
 /// Definition from IAI: The abstract entity IfcStructuralMember is the superclass of all structural items which represent the idealized structural behavior of building elements.
@@ -25026,12 +25026,12 @@ public:
 class IFC_PARSE_API IfcStructuralMember : public IfcStructuralItem {
 public:
     IfcStructuralMember() {}
-    explicit IfcStructuralMember (const std::weak_ptr<InstanceData>& data) : IfcStructuralItem(data) {}
+    explicit IfcStructuralMember (const std::weak_ptr<instance_data>& data) : IfcStructuralItem(data) {}
 
         std::vector< IfcRelConnectsStructuralElement > ReferencesElement() const; // INVERSE IfcRelConnectsStructuralElement::RelatedStructuralMember
     std::vector< IfcRelConnectsStructuralMember > ConnectedBy() const; // INVERSE IfcRelConnectsStructuralMember::RelatingStructuralMember
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation);
 };
 /// Definition from IAI: A structural reaction is a structural activity that results from a
@@ -25057,11 +25057,11 @@ public:
 class IFC_PARSE_API IfcStructuralReaction : public IfcStructuralActivity {
 public:
     IfcStructuralReaction() {}
-    explicit IfcStructuralReaction (const std::weak_ptr<InstanceData>& data) : IfcStructuralActivity(data) {}
+    explicit IfcStructuralReaction (const std::weak_ptr<instance_data>& data) : IfcStructuralActivity(data) {}
 
         std::vector< IfcStructuralAction > Causes() const; // INVERSE IfcStructuralAction::CausedBy
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceMember describe face members, i.e. structural analysis idealizations of slabs, walls, shells, etc..  Surface members may be planar or curved.
@@ -25087,7 +25087,7 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceMember : public IfcStructuralMember {
 public:
     IfcStructuralSurfaceMember() {}
-    explicit IfcStructuralSurfaceMember (const std::weak_ptr<InstanceData>& data) : IfcStructuralMember(data) {}
+    explicit IfcStructuralSurfaceMember (const std::weak_ptr<instance_data>& data) : IfcStructuralMember(data) {}
 
     /// Type of member with respect to its load carrying behavior in this analysis idealization.
     ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value PredefinedType() const;
@@ -25096,7 +25096,7 @@ public:
     std::optional< double > Thickness() const;
     void setThickness(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, std::optional< double > v9_Thickness);
 };
 /// Definition from IAI: Describes surface members with varying section properties.  The properties are provided by means of a property set and IfcRelDefinesByProperties or by means of aggregation:  An instance of IfcStructuralSurfaceMemberVarying may be composed of two or more instances of IfcStructuralSurfaceMember with differing section properties.  These subordinate members relate to the instance of IfcStructuralSurfaceMemberVarying by IfcRelAggregates.
@@ -25120,24 +25120,24 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
     IfcStructuralSurfaceMemberVarying() {}
-    explicit IfcStructuralSurfaceMemberVarying (const std::weak_ptr<InstanceData>& data) : IfcStructuralSurfaceMember(data) {}
+    explicit IfcStructuralSurfaceMemberVarying (const std::weak_ptr<instance_data>& data) : IfcStructuralSurfaceMember(data) {}
 
     std::vector< double > /*[2:?]*/ SubsequentThickness() const;
     void setSubsequentThickness(const std::vector< double > /*[2:?]*/& v);
     ::Ifc2x3::IfcShapeAspect VaryingThicknessLocation() const;
     void setVaryingThicknessLocation(const ::Ifc2x3::IfcShapeAspect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, std::optional< double > v9_Thickness, std::vector< double > /*[2:?]*/ v10_SubsequentThickness, ::Ifc2x3::IfcShapeAspect v11_VaryingThicknessLocation);
 };
 
 class IFC_PARSE_API IfcStructuredDimensionCallout : public IfcDraughtingCallout {
 public:
     IfcStructuredDimensionCallout() {}
-    explicit IfcStructuredDimensionCallout (const std::weak_ptr<InstanceData>& data) : IfcDraughtingCallout(data) {}
+    explicit IfcStructuredDimensionCallout (const std::weak_ptr<instance_data>& data) : IfcDraughtingCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// The IfcSurfaceCurveSweptAreaSolid is the result of
@@ -25205,7 +25205,7 @@ public:
 class IFC_PARSE_API IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
 public:
     IfcSurfaceCurveSweptAreaSolid() {}
-    explicit IfcSurfaceCurveSweptAreaSolid (const std::weak_ptr<InstanceData>& data) : IfcSweptAreaSolid(data) {}
+    explicit IfcSurfaceCurveSweptAreaSolid (const std::weak_ptr<instance_data>& data) : IfcSweptAreaSolid(data) {}
 
     /// The curve used to define the sweeping operation. The solid is generated by sweeping the SELF\IfcSweptAreaSolid.SweptArea along the Directrix.
     ::Ifc2x3::IfcCurve Directrix() const;
@@ -25224,7 +25224,7 @@ public:
     ::Ifc2x3::IfcSurface ReferenceSurface() const;
     void setReferenceSurface(const ::Ifc2x3::IfcSurface& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptArea, ::Ifc2x3::IfcAxis2Placement3D v2_Position, ::Ifc2x3::IfcCurve v3_Directrix, double v4_StartParam, double v5_EndParam, ::Ifc2x3::IfcSurface v6_ReferenceSurface);
 };
 /// Definition from ISO/CD 10303-42:1992: This surface is a simple swept surface or a generalized cylinder obtained by sweeping a curve in a given direction. The parameterization is as follows where the curve has a parameterization l(u): 
@@ -25243,7 +25243,7 @@ public:
 class IFC_PARSE_API IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
 public:
     IfcSurfaceOfLinearExtrusion() {}
-    explicit IfcSurfaceOfLinearExtrusion (const std::weak_ptr<InstanceData>& data) : IfcSweptSurface(data) {}
+    explicit IfcSurfaceOfLinearExtrusion (const std::weak_ptr<instance_data>& data) : IfcSweptSurface(data) {}
 
     /// The direction of the extrusion.
     ::Ifc2x3::IfcDirection ExtrudedDirection() const;
@@ -25252,7 +25252,7 @@ public:
     double Depth() const;
     void setDepth(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D v2_Position, ::Ifc2x3::IfcDirection v3_ExtrudedDirection, double v4_Depth);
 };
 /// Definition from ISO/CD 10303-42:1992: A surface of revolution (IfcSurfaceOfRevolution) is the surface obtained by rotating a curve one complete revolution about an axis. The data shall be interpreted as below. 
@@ -25275,13 +25275,13 @@ public:
 class IFC_PARSE_API IfcSurfaceOfRevolution : public IfcSweptSurface {
 public:
     IfcSurfaceOfRevolution() {}
-    explicit IfcSurfaceOfRevolution (const std::weak_ptr<InstanceData>& data) : IfcSweptSurface(data) {}
+    explicit IfcSurfaceOfRevolution (const std::weak_ptr<instance_data>& data) : IfcSweptSurface(data) {}
 
     /// A point on the axis of revolution and the direction of the axis of revolution.
     ::Ifc2x3::IfcAxis1Placement AxisPosition() const;
     void setAxisPosition(const ::Ifc2x3::IfcAxis1Placement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileDef v1_SweptCurve, ::Ifc2x3::IfcAxis2Placement3D v2_Position, ::Ifc2x3::IfcAxis1Placement v3_AxisPosition);
 };
 /// The furnishing element type IfcSystemFurnitureElementType defines commonly shared information for occurrences of furniture elements.  The set of shared information may include: 
@@ -25317,10 +25317,10 @@ public:
 class IFC_PARSE_API IfcSystemFurnitureElementType : public IfcFurnishingElementType {
 public:
     IfcSystemFurnitureElementType() {}
-    explicit IfcSystemFurnitureElementType (const std::weak_ptr<InstanceData>& data) : IfcFurnishingElementType(data) {}
+    explicit IfcSystemFurnitureElementType (const std::weak_ptr<instance_data>& data) : IfcFurnishingElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// An IfcTask is an identifiable unit of work to be
@@ -25571,7 +25571,7 @@ public:
 class IFC_PARSE_API IfcTask : public IfcProcess {
 public:
     IfcTask() {}
-    explicit IfcTask (const std::weak_ptr<InstanceData>& data) : IfcProcess(data) {}
+    explicit IfcTask (const std::weak_ptr<instance_data>& data) : IfcProcess(data) {}
 
     std::string TaskId() const;
     void setTaskId(const std::string& v);
@@ -25604,7 +25604,7 @@ public:
     std::optional< int > Priority() const;
     void setPriority(const std::optional< int >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority);
 };
 /// Definition from IAI: The element type
@@ -25673,13 +25673,13 @@ public:
 class IFC_PARSE_API IfcTransportElementType : public IfcElementType {
 public:
     IfcTransportElementType() {}
-    explicit IfcTransportElementType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcTransportElementType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     /// Predefined types to define the particular type of the transport element. There may be property set definitions available for each predefined type.
     ::Ifc2x3::IfcTransportElementTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcTransportElementTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransportElementTypeEnum::Value v10_PredefinedType);
 };
 /// The IfcActor defines all actors or human agents involved in a project during its full life cycle. It facilitates the use of person and organization definitions in the resource part of the IFC object model. This includes name, address, telecommunication addresses, and roles.
@@ -25700,14 +25700,14 @@ public:
 class IFC_PARSE_API IfcActor : public IfcObject {
 public:
     IfcActor() {}
-    explicit IfcActor (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcActor (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
     /// Information about the actor.
     ::Ifc2x3::IfcActorSelect TheActor() const;
     void setTheActor(const ::Ifc2x3::IfcActorSelect& v);
         std::vector< IfcRelAssignsToActor > IsActingUpon() const; // INVERSE IfcRelAssignsToActor::RelatingActor
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect v6_TheActor);
 };
 /// Definition from IAI: An annotation is a graphical
@@ -25886,11 +25886,11 @@ public:
 class IFC_PARSE_API IfcAnnotation : public IfcProduct {
 public:
     IfcAnnotation() {}
-    explicit IfcAnnotation (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcAnnotation (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
         std::vector< IfcRelContainedInSpatialStructure > ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation);
 };
 /// IfcAsymmetricIShapeProfileDef
@@ -25933,7 +25933,7 @@ public:
 class IFC_PARSE_API IfcAsymmetricIShapeProfileDef : public IfcIShapeProfileDef {
 public:
     IfcAsymmetricIShapeProfileDef() {}
-    explicit IfcAsymmetricIShapeProfileDef (const std::weak_ptr<InstanceData>& data) : IfcIShapeProfileDef(data) {}
+    explicit IfcAsymmetricIShapeProfileDef (const std::weak_ptr<instance_data>& data) : IfcIShapeProfileDef(data) {}
 
     /// Extent of the top flange, defined parallel to the x axis of the position coordinate system.
     double TopFlangeWidth() const;
@@ -25947,7 +25947,7 @@ public:
     std::optional< double > CentreOfGravityInY() const;
     void setCentreOfGravityInY(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_OverallWidth, double v5_OverallDepth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, double v9_TopFlangeWidth, std::optional< double > v10_TopFlangeThickness, std::optional< double > v11_TopFlangeFilletRadius, std::optional< double > v12_CentreOfGravityInY);
 };
 /// The IfcBlock is a Construction Solid Geometry (CSG) 3D
@@ -26050,7 +26050,7 @@ public:
 class IFC_PARSE_API IfcBlock : public IfcCsgPrimitive3D {
 public:
     IfcBlock() {}
-    explicit IfcBlock (const std::weak_ptr<InstanceData>& data) : IfcCsgPrimitive3D(data) {}
+    explicit IfcBlock (const std::weak_ptr<instance_data>& data) : IfcCsgPrimitive3D(data) {}
 
     /// The size of the block along the placement X axis. It is provided by the inherited axis placement through SELF\IfcCsgPrimitive3D.Position.P[1].
     double XLength() const;
@@ -26062,7 +26062,7 @@ public:
     double ZLength() const;
     void setZLength(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement3D v1_Position, double v2_XLength, double v3_YLength, double v4_ZLength);
 };
 /// A clipping result is defined as a special subtype of the general Boolean result (IfcBooleanResult). It constrains the operands and the operator of the Boolean result. 
@@ -26075,10 +26075,10 @@ public:
 class IFC_PARSE_API IfcBooleanClippingResult : public IfcBooleanResult {
 public:
     IfcBooleanClippingResult() {}
-    explicit IfcBooleanClippingResult (const std::weak_ptr<InstanceData>& data) : IfcBooleanResult(data) {}
+    explicit IfcBooleanClippingResult (const std::weak_ptr<instance_data>& data) : IfcBooleanResult(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcBooleanOperator::Value v1_Operator, ::Ifc2x3::IfcBooleanOperand v2_FirstOperand, ::Ifc2x3::IfcBooleanOperand v3_SecondOperand);
 };
 /// Definition from ISO/CD 10303-42:1992: A bounded curve is a curve of finite arc length with identifiable end points. 
@@ -26094,10 +26094,10 @@ public:
 class IFC_PARSE_API IfcBoundedCurve : public IfcCurve {
 public:
     IfcBoundedCurve() {}
-    explicit IfcBoundedCurve (const std::weak_ptr<InstanceData>& data) : IfcCurve(data) {}
+    explicit IfcBoundedCurve (const std::weak_ptr<instance_data>& data) : IfcCurve(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize();
 };
 /// Definition from ISO 6707-1:1989: Construction work that
@@ -26277,7 +26277,7 @@ public:
 class IFC_PARSE_API IfcBuilding : public IfcSpatialStructureElement {
 public:
     IfcBuilding() {}
-    explicit IfcBuilding (const std::weak_ptr<InstanceData>& data) : IfcSpatialStructureElement(data) {}
+    explicit IfcBuilding (const std::weak_ptr<instance_data>& data) : IfcSpatialStructureElement(data) {}
 
     /// Elevation above sea level of the reference height used for all storey elevation measures, equals to height 0.0. It is usually the ground floor level.
     std::optional< double > ElevationOfRefHeight() const;
@@ -26289,7 +26289,7 @@ public:
     ::Ifc2x3::IfcPostalAddress BuildingAddress() const;
     void setBuildingAddress(const ::Ifc2x3::IfcPostalAddress& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< double > v10_ElevationOfRefHeight, std::optional< double > v11_ElevationOfTerrain, ::Ifc2x3::IfcPostalAddress v12_BuildingAddress);
 };
 /// Definition from IAI: The element type
@@ -26324,10 +26324,10 @@ public:
 class IFC_PARSE_API IfcBuildingElementType : public IfcElementType {
 public:
     IfcBuildingElementType() {}
-    explicit IfcBuildingElementType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcBuildingElementType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The building storey has an
@@ -26510,13 +26510,13 @@ public:
 class IFC_PARSE_API IfcBuildingStorey : public IfcSpatialStructureElement {
 public:
     IfcBuildingStorey() {}
-    explicit IfcBuildingStorey (const std::weak_ptr<InstanceData>& data) : IfcSpatialStructureElement(data) {}
+    explicit IfcBuildingStorey (const std::weak_ptr<instance_data>& data) : IfcSpatialStructureElement(data) {}
 
     /// Elevation of the base of this storey, relative to the 0,00 internal reference height of the building. The 0.00 level is given by the absolute above sea level height by the ElevationOfRefHeight attribute given at IfcBuilding.
     std::optional< double > Elevation() const;
     void setElevation(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< double > v10_Elevation);
 };
 /// IfcCircleHollowProfileDef
@@ -26540,13 +26540,13 @@ public:
 class IFC_PARSE_API IfcCircleHollowProfileDef : public IfcCircleProfileDef {
 public:
     IfcCircleHollowProfileDef() {}
-    explicit IfcCircleHollowProfileDef (const std::weak_ptr<InstanceData>& data) : IfcCircleProfileDef(data) {}
+    explicit IfcCircleHollowProfileDef (const std::weak_ptr<instance_data>& data) : IfcCircleProfileDef(data) {}
 
     /// Thickness of the material, it is the difference between the outer and inner radius.
     double WallThickness() const;
     void setWallThickness(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Radius, double v5_WallThickness);
 };
 /// Definition from IAI: The element type
@@ -26650,13 +26650,13 @@ public:
 class IFC_PARSE_API IfcColumnType : public IfcBuildingElementType {
 public:
     IfcColumnType() {}
-    explicit IfcColumnType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcColumnType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a column element from which the type required may be set.
     ::Ifc2x3::IfcColumnTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcColumnTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcColumnTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO/CD 10303-42:1992: A composite
@@ -26728,7 +26728,7 @@ public:
 class IFC_PARSE_API IfcCompositeCurve : public IfcBoundedCurve {
 public:
     IfcCompositeCurve() {}
-    explicit IfcCompositeCurve (const std::weak_ptr<InstanceData>& data) : IfcBoundedCurve(data) {}
+    explicit IfcCompositeCurve (const std::weak_ptr<instance_data>& data) : IfcBoundedCurve(data) {}
 
     /// The component bounded curves, their transitions and senses. The transition attribute for the last segment defines the transition between the end of the last segment and the start of the first; this transition attribute may take the value discontinuous, which indicates an open curve.
     std::vector< ::Ifc2x3::IfcCompositeCurveSegment > Segments() const;
@@ -26737,7 +26737,7 @@ public:
     boost::logic::tribool SelfIntersect() const;
     void setSelfIntersect(const boost::logic::tribool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcCompositeCurveSegment > v1_Segments, boost::logic::tribool v2_SelfIntersect);
 };
 /// Definition from ISO/CD 10303-42:1992: A conic (IfcConic) is a planar curve which could be produced by intersecting a plane with a cone. A conic is defined in terms of its intrinsic geometric properties rather than being described in terms of other geometry. A conic class always has a placement coordinate system defined by a two or three dimensional placement. The parametric representation is defined in terms of this placement coordinate system.
@@ -26748,13 +26748,13 @@ public:
 class IFC_PARSE_API IfcConic : public IfcCurve {
 public:
     IfcConic() {}
-    explicit IfcConic (const std::weak_ptr<InstanceData>& data) : IfcCurve(data) {}
+    explicit IfcConic (const std::weak_ptr<instance_data>& data) : IfcCurve(data) {}
 
     /// The location and orientation of the conic. Further details of the interpretation of this attribute are given for the individual subtypes."
     ::Ifc2x3::IfcAxis2Placement Position() const;
     void setPosition(const ::Ifc2x3::IfcAxis2Placement& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement v1_Position);
 };
 /// IfcConstructionResource is an abstract generalization of the different resources used in
@@ -26832,7 +26832,7 @@ public:
 class IFC_PARSE_API IfcConstructionResource : public IfcResource {
 public:
     IfcConstructionResource() {}
-    explicit IfcConstructionResource (const std::weak_ptr<InstanceData>& data) : IfcResource(data) {}
+    explicit IfcConstructionResource (const std::weak_ptr<instance_data>& data) : IfcResource(data) {}
 
     std::optional< std::string > ResourceIdentifier() const;
     void setResourceIdentifier(const std::optional< std::string >& v);
@@ -26844,7 +26844,7 @@ public:
     ::Ifc2x3::IfcMeasureWithUnit BaseQuantity() const;
     void setBaseQuantity(const ::Ifc2x3::IfcMeasureWithUnit& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity);
 };
 /// IfcControl is the abstract generalization of all concepts that control or constrain the utilization of products, processes, or resources in general. It can be seen as a regulation, cost schedule, request or order, or other requirements applied to a product, process or resource whose requirements and provisions must be fulfilled.
@@ -26860,11 +26860,11 @@ public:
 class IFC_PARSE_API IfcControl : public IfcObject {
 public:
     IfcControl() {}
-    explicit IfcControl (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcControl (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
         std::vector< IfcRelAssignsToControl > Controls() const; // INVERSE IfcRelAssignsToControl::RelatingControl
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// An IfcCostItem describes a cost or financial value together with descriptive information that describes its context in a form that enables it to be used within a cost schedule. An IfcCostItem can be used to represent the cost of goods and services, the execution of works by a process, lifecycle cost and more.
@@ -26906,10 +26906,10 @@ public:
 class IFC_PARSE_API IfcCostItem : public IfcControl {
 public:
     IfcCostItem() {}
-    explicit IfcCostItem (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcCostItem (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// An IfcCostSchedule brings together instances of IfcCostItem either for the purpose of identifying purely cost information as in an estimate for constructions costs or for including cost information within another presentation form such as a work order.
@@ -26938,7 +26938,7 @@ public:
 class IFC_PARSE_API IfcCostSchedule : public IfcControl {
 public:
     IfcCostSchedule() {}
-    explicit IfcCostSchedule (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcCostSchedule (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     ::Ifc2x3::IfcActorSelect SubmittedBy() const;
     void setSubmittedBy(const ::Ifc2x3::IfcActorSelect& v);
@@ -26973,7 +26973,7 @@ public:
     ::Ifc2x3::IfcCostScheduleTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCostScheduleTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect v6_SubmittedBy, ::Ifc2x3::IfcActorSelect v7_PreparedBy, ::Ifc2x3::IfcDateTimeSelect v8_SubmittedOn, std::optional< std::string > v9_Status, std::optional< std::vector< ::Ifc2x3::IfcActorSelect > > v10_TargetUsers, ::Ifc2x3::IfcDateTimeSelect v11_UpdateDate, std::string v12_ID, ::Ifc2x3::IfcCostScheduleTypeEnum::Value v13_PredefinedType);
 };
 /// Definition from IAI: The element type
@@ -27058,13 +27058,13 @@ public:
 class IFC_PARSE_API IfcCoveringType : public IfcBuildingElementType {
 public:
     IfcCoveringType() {}
-    explicit IfcCoveringType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcCoveringType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type.
     ::Ifc2x3::IfcCoveringTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCoveringTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoveringTypeEnum::Value v10_PredefinedType);
 };
 /// IfcCrewResource represents a collection of internal resources used in construction processes. 
@@ -27080,10 +27080,10 @@ public:
 class IFC_PARSE_API IfcCrewResource : public IfcConstructionResource {
 public:
     IfcCrewResource() {}
-    explicit IfcCrewResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcCrewResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity);
 };
 /// Definition from IAI: The element type (IfcCurtainWallType)
@@ -27110,23 +27110,23 @@ public:
 class IFC_PARSE_API IfcCurtainWallType : public IfcBuildingElementType {
 public:
     IfcCurtainWallType() {}
-    explicit IfcCurtainWallType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcCurtainWallType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a curtain wall element from which the type required may be set.
     ::Ifc2x3::IfcCurtainWallTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCurtainWallTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCurtainWallTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
 public:
     IfcDimensionCurveDirectedCallout() {}
-    explicit IfcDimensionCurveDirectedCallout (const std::weak_ptr<InstanceData>& data) : IfcDraughtingCallout(data) {}
+    explicit IfcDimensionCurveDirectedCallout (const std::weak_ptr<instance_data>& data) : IfcDraughtingCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// Definition from IAI: The
@@ -27160,10 +27160,10 @@ public:
 class IFC_PARSE_API IfcDistributionElementType : public IfcElementType {
 public:
     IfcDistributionElementType() {}
-    explicit IfcDistributionElementType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcDistributionElementType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcDistributionFlowElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
@@ -27234,17 +27234,17 @@ public:
 class IFC_PARSE_API IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
     IfcDistributionFlowElementType() {}
-    explicit IfcDistributionFlowElementType (const std::weak_ptr<InstanceData>& data) : IfcDistributionElementType(data) {}
+    explicit IfcDistributionFlowElementType (const std::weak_ptr<instance_data>& data) : IfcDistributionElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 
 class IFC_PARSE_API IfcElectricalBaseProperties : public IfcEnergyProperties {
 public:
     IfcElectricalBaseProperties() {}
-    explicit IfcElectricalBaseProperties (const std::weak_ptr<InstanceData>& data) : IfcEnergyProperties(data) {}
+    explicit IfcElectricalBaseProperties (const std::weak_ptr<instance_data>& data) : IfcEnergyProperties(data) {}
 
     std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > ElectricCurrentType() const;
     void setElectricCurrentType(const std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value >& v);
@@ -27263,7 +27263,7 @@ public:
     int InputPhase() const;
     void setInputPhase(const int& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< ::Ifc2x3::IfcEnergySequenceEnum::Value > v5_EnergySequence, std::optional< std::string > v6_UserDefinedEnergySequence, std::optional< ::Ifc2x3::IfcElectricCurrentEnum::Value > v7_ElectricCurrentType, double v8_InputVoltage, double v9_InputFrequency, std::optional< double > v10_FullLoadCurrent, std::optional< double > v11_MinimumCircuitCurrent, std::optional< double > v12_MaximumPowerInput, std::optional< double > v13_RatedPowerInput, int v14_InputPhase);
 };
 /// Definition from IAI: Generalization of all components
@@ -27322,7 +27322,7 @@ public:
 class IFC_PARSE_API IfcElement : public IfcProduct {
 public:
     IfcElement() {}
-    explicit IfcElement (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcElement (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
     /// The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level.
     std::optional< std::string > Tag() const;
@@ -27340,7 +27340,7 @@ public:
     std::vector< IfcRelConnectsElements > ConnectedFrom() const; // INVERSE IfcRelConnectsElements::RelatedElement
     std::vector< IfcRelContainedInSpatialStructure > ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The IfcElementAssembly
@@ -27440,7 +27440,7 @@ public:
 class IFC_PARSE_API IfcElementAssembly : public IfcElement {
 public:
     IfcElementAssembly() {}
-    explicit IfcElementAssembly (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcElementAssembly (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     /// A designation of where the assembly is intended to take place defined by an Enum.
     std::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > AssemblyPlace() const;
@@ -27451,7 +27451,7 @@ public:
     ::Ifc2x3::IfcElementAssemblyTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElementAssemblyTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcAssemblyPlaceEnum::Value > v9_AssemblyPlace, ::Ifc2x3::IfcElementAssemblyTypeEnum::Value v10_PredefinedType);
 };
 /// An element component is a representation for minor items included in, added to or connecting to or between
@@ -27534,10 +27534,10 @@ public:
 class IFC_PARSE_API IfcElementComponent : public IfcElement {
 public:
     IfcElementComponent() {}
-    explicit IfcElementComponent (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcElementComponent (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI:
@@ -27552,10 +27552,10 @@ public:
 class IFC_PARSE_API IfcElementComponentType : public IfcElementType {
 public:
     IfcElementComponentType() {}
-    explicit IfcElementComponentType (const std::weak_ptr<InstanceData>& data) : IfcElementType(data) {}
+    explicit IfcElementComponentType (const std::weak_ptr<instance_data>& data) : IfcElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from ISO/CD 10303-42:1992: An ellipse (IfcEllipse) is a conic section defined by the lengths of the semi-major and semi-minor diameters and the position (center or mid point of the line joining the foci) and orientation of the curve. Interpretation of the data shall be as follows:
@@ -27588,7 +27588,7 @@ public:
 class IFC_PARSE_API IfcEllipse : public IfcConic {
 public:
     IfcEllipse() {}
-    explicit IfcEllipse (const std::weak_ptr<InstanceData>& data) : IfcConic(data) {}
+    explicit IfcEllipse (const std::weak_ptr<instance_data>& data) : IfcConic(data) {}
 
     /// The first radius of the ellipse which shall be positive. Placement.Axes[1] gives the direction of the SemiAxis1.
     double SemiAxis1() const;
@@ -27597,7 +27597,7 @@ public:
     double SemiAxis2() const;
     void setSemiAxis2(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement v1_Position, double v2_SemiAxis1, double v3_SemiAxis2);
 };
 /// The element type IfcEnergyConversionType defines a list of commonly shared property
@@ -27626,30 +27626,30 @@ public:
 class IFC_PARSE_API IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
     IfcEnergyConversionDeviceType() {}
-    explicit IfcEnergyConversionDeviceType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcEnergyConversionDeviceType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 
 class IFC_PARSE_API IfcEquipmentElement : public IfcElement {
 public:
     IfcEquipmentElement() {}
-    explicit IfcEquipmentElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcEquipmentElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcEquipmentStandard : public IfcControl {
 public:
     IfcEquipmentStandard() {}
-    explicit IfcEquipmentStandard (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcEquipmentStandard (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// The energy conversion device type IfcEvaporativeCoolerType defines commonly shared information for occurrences of evaporative coolers.  The set of shared information may include: 
@@ -27681,13 +27681,13 @@ public:
 class IFC_PARSE_API IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
 public:
     IfcEvaporativeCoolerType() {}
-    explicit IfcEvaporativeCoolerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcEvaporativeCoolerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of evaporative cooler.
     ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporativeCoolerTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcEvaporatorType defines commonly shared information for occurrences of evaporators.  The set of shared information may include: 
@@ -27719,13 +27719,13 @@ public:
 class IFC_PARSE_API IfcEvaporatorType : public IfcEnergyConversionDeviceType {
 public:
     IfcEvaporatorType() {}
-    explicit IfcEvaporatorType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcEvaporatorType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of evaporator.
     ::Ifc2x3::IfcEvaporatorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcEvaporatorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcEvaporatorTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO/CD 10303-42:1992: A faceted B-rep
@@ -27755,10 +27755,10 @@ public:
 class IFC_PARSE_API IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
     IfcFacetedBrep() {}
-    explicit IfcFacetedBrep (const std::weak_ptr<InstanceData>& data) : IfcManifoldSolidBrep(data) {}
+    explicit IfcFacetedBrep (const std::weak_ptr<instance_data>& data) : IfcManifoldSolidBrep(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcClosedShell v1_Outer);
 };
 /// The IfcFacetedBrepWithVoids
@@ -27788,13 +27788,13 @@ public:
 class IFC_PARSE_API IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
 public:
     IfcFacetedBrepWithVoids() {}
-    explicit IfcFacetedBrepWithVoids (const std::weak_ptr<InstanceData>& data) : IfcManifoldSolidBrep(data) {}
+    explicit IfcFacetedBrepWithVoids (const std::weak_ptr<instance_data>& data) : IfcManifoldSolidBrep(data) {}
 
     /// Set of closed shells defining voids within the solid.
     std::vector< ::Ifc2x3::IfcClosedShell > Voids() const;
     void setVoids(const std::vector< ::Ifc2x3::IfcClosedShell >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcClosedShell v1_Outer, std::vector< ::Ifc2x3::IfcClosedShell > v2_Voids);
 };
 /// Definition from IAI:
@@ -27808,10 +27808,10 @@ public:
 class IFC_PARSE_API IfcFastener : public IfcElementComponent {
 public:
     IfcFastener() {}
-    explicit IfcFastener (const std::weak_ptr<InstanceData>& data) : IfcElementComponent(data) {}
+    explicit IfcFastener (const std::weak_ptr<instance_data>& data) : IfcElementComponent(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI:
@@ -27840,10 +27840,10 @@ public:
 class IFC_PARSE_API IfcFastenerType : public IfcElementComponentType {
 public:
     IfcFastenerType() {}
-    explicit IfcFastenerType (const std::weak_ptr<InstanceData>& data) : IfcElementComponentType(data) {}
+    explicit IfcFastenerType (const std::weak_ptr<instance_data>& data) : IfcElementComponentType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from IAI: Generalization of all existence
@@ -27943,10 +27943,10 @@ public:
 class IFC_PARSE_API IfcFeatureElement : public IfcElement {
 public:
     IfcFeatureElement() {}
-    explicit IfcFeatureElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcFeatureElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI: A specialization of the general
@@ -28007,11 +28007,11 @@ public:
 class IFC_PARSE_API IfcFeatureElementAddition : public IfcFeatureElement {
 public:
     IfcFeatureElementAddition() {}
-    explicit IfcFeatureElementAddition (const std::weak_ptr<InstanceData>& data) : IfcFeatureElement(data) {}
+    explicit IfcFeatureElementAddition (const std::weak_ptr<instance_data>& data) : IfcFeatureElement(data) {}
 
         std::vector< IfcRelProjectsElement > ProjectsElements() const; // INVERSE IfcRelProjectsElement::RelatedFeatureElement
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The IfcFeatureElementSubtraction is specialization of
@@ -28067,11 +28067,11 @@ public:
 class IFC_PARSE_API IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
     IfcFeatureElementSubtraction() {}
-    explicit IfcFeatureElementSubtraction (const std::weak_ptr<InstanceData>& data) : IfcFeatureElement(data) {}
+    explicit IfcFeatureElementSubtraction (const std::weak_ptr<instance_data>& data) : IfcFeatureElement(data) {}
 
         std::vector< IfcRelVoidsElement > VoidsElements() const; // INVERSE IfcRelVoidsElement::RelatedOpeningElement
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The element type IfcFlowControllerType defines a list of commonly shared property
@@ -28099,10 +28099,10 @@ public:
 class IFC_PARSE_API IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
     IfcFlowControllerType() {}
-    explicit IfcFlowControllerType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowControllerType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcFlowFittingType defines a list of commonly shared property
@@ -28131,10 +28131,10 @@ public:
 class IFC_PARSE_API IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
     IfcFlowFittingType() {}
-    explicit IfcFlowFittingType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowFittingType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The flow controller type IfcFlowMeterType defines commonly shared information for occurrences of flow meters.  The set of shared information may include: 
@@ -28172,13 +28172,13 @@ public:
 class IFC_PARSE_API IfcFlowMeterType : public IfcFlowControllerType {
 public:
     IfcFlowMeterType() {}
-    explicit IfcFlowMeterType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcFlowMeterType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// Defines the type of flow meter.
     ::Ifc2x3::IfcFlowMeterTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFlowMeterTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowMeterTypeEnum::Value v10_PredefinedType);
 };
 /// The element type IfcFlowMovingDeviceType defines a list of commonly shared property
@@ -28206,10 +28206,10 @@ public:
 class IFC_PARSE_API IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
     IfcFlowMovingDeviceType() {}
-    explicit IfcFlowMovingDeviceType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowMovingDeviceType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcFlowSegmentType defines a list of commonly shared property
@@ -28246,10 +28246,10 @@ public:
 class IFC_PARSE_API IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
     IfcFlowSegmentType() {}
-    explicit IfcFlowSegmentType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowSegmentType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcFlowStorageDeviceType defines a list of commonly shared property set definitions of a flow storage device and an optional set of product representations.  It is used to define a flow storage device specification (the specific product information that is common to all occurrences of that product type). 
@@ -28262,10 +28262,10 @@ public:
 class IFC_PARSE_API IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
     IfcFlowStorageDeviceType() {}
-    explicit IfcFlowStorageDeviceType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowStorageDeviceType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcFlowTerminalType defines a list of commonly shared property set definitions of a flow terminal and an optional set of product representations.  It is used to define a flow terminal specification (the specific product information that is common to all occurrences of that product type). 
@@ -28278,10 +28278,10 @@ public:
 class IFC_PARSE_API IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
     IfcFlowTerminalType() {}
-    explicit IfcFlowTerminalType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowTerminalType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The element type IfcFlowTreatmentDeviceType defines a list of commonly shared property set definitions of a flow treatment device and an optional set of product representations. It is used to define a flow treatment device specification (the specific product information that is common to all occurrences of that product type). 
@@ -28295,10 +28295,10 @@ public:
 class IFC_PARSE_API IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
     IfcFlowTreatmentDeviceType() {}
-    explicit IfcFlowTreatmentDeviceType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcFlowTreatmentDeviceType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from IAI: Generalization of all furniture
@@ -28408,32 +28408,32 @@ public:
 class IFC_PARSE_API IfcFurnishingElement : public IfcElement {
 public:
     IfcFurnishingElement() {}
-    explicit IfcFurnishingElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcFurnishingElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcFurnitureStandard : public IfcControl {
 public:
     IfcFurnitureStandard() {}
-    explicit IfcFurnitureStandard (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcFurnitureStandard (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
 class IFC_PARSE_API IfcGasTerminalType : public IfcFlowTerminalType {
 public:
     IfcGasTerminalType() {}
-    explicit IfcGasTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcGasTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     ::Ifc2x3::IfcGasTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcGasTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcGasTerminalTypeEnum::Value v10_PredefinedType);
 };
 /// IfcGrid ia a planar design
@@ -28535,7 +28535,7 @@ public:
 class IFC_PARSE_API IfcGrid : public IfcProduct {
 public:
     IfcGrid() {}
-    explicit IfcGrid (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcGrid (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
     /// List of grid axes defining the first row of grid lines.
     std::vector< ::Ifc2x3::IfcGridAxis > UAxes() const;
@@ -28548,7 +28548,7 @@ public:
     void setWAxes(const std::optional< std::vector< ::Ifc2x3::IfcGridAxis > >& v);
         std::vector< IfcRelContainedInSpatialStructure > ContainedInStructure() const; // INVERSE IfcRelContainedInSpatialStructure::RelatedElements
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::vector< ::Ifc2x3::IfcGridAxis > v8_UAxes, std::vector< ::Ifc2x3::IfcGridAxis > v9_VAxes, std::optional< std::vector< ::Ifc2x3::IfcGridAxis > > v10_WAxes);
 };
 /// IfcGroup is an generalization of any arbitrary group. A group is a logical collection of objects. It does not have its own position, nor can it hold its own shape representation. Therefore a group is an aggregation under some non-geometrical / topological grouping aspects.
@@ -28584,11 +28584,11 @@ public:
 class IFC_PARSE_API IfcGroup : public IfcObject {
 public:
     IfcGroup() {}
-    explicit IfcGroup (const std::weak_ptr<InstanceData>& data) : IfcObject(data) {}
+    explicit IfcGroup (const std::weak_ptr<instance_data>& data) : IfcObject(data) {}
 
         std::vector< IfcRelAssignsToGroup > IsGroupedBy() const; // INVERSE IfcRelAssignsToGroup::RelatingGroup
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// The energy conversion device type IfcHeatExchangerType defines commonly shared information for occurrences of heat exchangers.  The set of shared information may include: 
@@ -28623,13 +28623,13 @@ public:
 class IFC_PARSE_API IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
 public:
     IfcHeatExchangerType() {}
-    explicit IfcHeatExchangerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcHeatExchangerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the basic types of heat exchanger (e.g., plate, shell and tube, etc.).
     ::Ifc2x3::IfcHeatExchangerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcHeatExchangerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHeatExchangerTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcHumidifierType defines commonly shared information for occurrences of humidifiers.  The set of shared information may include: 
@@ -28661,13 +28661,13 @@ public:
 class IFC_PARSE_API IfcHumidifierType : public IfcEnergyConversionDeviceType {
 public:
     IfcHumidifierType() {}
-    explicit IfcHumidifierType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcHumidifierType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of humidifier.
     ::Ifc2x3::IfcHumidifierTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcHumidifierTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcHumidifierTypeEnum::Value v10_PredefinedType);
 };
 /// An inventory is a list of items within an enterprise. 
@@ -28684,7 +28684,7 @@ public:
 class IFC_PARSE_API IfcInventory : public IfcGroup {
 public:
     IfcInventory() {}
-    explicit IfcInventory (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcInventory (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     ::Ifc2x3::IfcInventoryTypeEnum::Value InventoryType() const;
     void setInventoryType(const ::Ifc2x3::IfcInventoryTypeEnum::Value& v);
@@ -28706,7 +28706,7 @@ public:
     ::Ifc2x3::IfcCostValue OriginalValue() const;
     void setOriginalValue(const ::Ifc2x3::IfcCostValue& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcInventoryTypeEnum::Value v6_InventoryType, ::Ifc2x3::IfcActorSelect v7_Jurisdiction, std::vector< ::Ifc2x3::IfcPerson > v8_ResponsiblePersons, ::Ifc2x3::IfcCalendarDate v9_LastUpdateDate, ::Ifc2x3::IfcCostValue v10_CurrentValue, ::Ifc2x3::IfcCostValue v11_OriginalValue);
 };
 /// The flow fitting type IfcJunctionBoxType defines commonly shared information for occurrences of junction boxs.  The set of shared information may include: 
@@ -28739,13 +28739,13 @@ public:
 class IFC_PARSE_API IfcJunctionBoxType : public IfcFlowFittingType {
 public:
     IfcJunctionBoxType() {}
-    explicit IfcJunctionBoxType (const std::weak_ptr<InstanceData>& data) : IfcFlowFittingType(data) {}
+    explicit IfcJunctionBoxType (const std::weak_ptr<instance_data>& data) : IfcFlowFittingType(data) {}
 
     /// Identifies the predefined types of junction boxes from which the type required may be set.
     ::Ifc2x3::IfcJunctionBoxTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcJunctionBoxTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcJunctionBoxTypeEnum::Value v10_PredefinedType);
 };
 /// An IfcLaborResource is used in construction with particular skills or crafts required to perform certain types of construction or management related work.  
@@ -28775,12 +28775,12 @@ public:
 class IFC_PARSE_API IfcLaborResource : public IfcConstructionResource {
 public:
     IfcLaborResource() {}
-    explicit IfcLaborResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcLaborResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     std::optional< std::string > SkillSet() const;
     void setSkillSet(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity, std::optional< std::string > v10_SkillSet);
 };
 /// The flow terminal type IfcLampType defines commonly shared information for occurrences of lamps.  The set of shared information may include: 
@@ -28815,13 +28815,13 @@ public:
 class IFC_PARSE_API IfcLampType : public IfcFlowTerminalType {
 public:
     IfcLampType() {}
-    explicit IfcLampType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcLampType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of lamp from which the type required may be set.
     ::Ifc2x3::IfcLampTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcLampTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLampTypeEnum::Value v10_PredefinedType);
 };
 /// The flow terminal type IfcLightFixtureType defines commonly shared information for occurrences of light fixtures.  The set of shared information may include: 
@@ -28858,23 +28858,23 @@ public:
 class IFC_PARSE_API IfcLightFixtureType : public IfcFlowTerminalType {
 public:
     IfcLightFixtureType() {}
-    explicit IfcLightFixtureType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcLightFixtureType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of light fixture from which the type required may be set.
     ::Ifc2x3::IfcLightFixtureTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcLightFixtureTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLightFixtureTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
 public:
     IfcLinearDimension() {}
-    explicit IfcLinearDimension (const std::weak_ptr<InstanceData>& data) : IfcDimensionCurveDirectedCallout(data) {}
+    explicit IfcLinearDimension (const std::weak_ptr<instance_data>& data) : IfcDimensionCurveDirectedCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// Definition from IAI: Fasteners connecting building elements mechanically.  A single instance of this class may represent one or many of actual mechanical fasteners, for example an array of bolts or a row of nails.
@@ -28909,14 +28909,14 @@ public:
 class IFC_PARSE_API IfcMechanicalFastener : public IfcFastener {
 public:
     IfcMechanicalFastener() {}
-    explicit IfcMechanicalFastener (const std::weak_ptr<InstanceData>& data) : IfcFastener(data) {}
+    explicit IfcMechanicalFastener (const std::weak_ptr<instance_data>& data) : IfcFastener(data) {}
 
     std::optional< double > NominalDiameter() const;
     void setNominalDiameter(const std::optional< double >& v);
     std::optional< double > NominalLength() const;
     void setNominalLength(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_NominalDiameter, std::optional< double > v10_NominalLength);
 };
 /// Definition from IAI: The element type (IfcMechanicalFastenerType) defines a list of commonly shared property set definitions of a fastener and an optional set of product representations. It is used to define mechanical fasteners mainly within structural and building services domains (i.e. the specific type information common to all occurrences of that type). 
@@ -28957,10 +28957,10 @@ public:
 class IFC_PARSE_API IfcMechanicalFastenerType : public IfcFastenerType {
 public:
     IfcMechanicalFastenerType() {}
-    explicit IfcMechanicalFastenerType (const std::weak_ptr<InstanceData>& data) : IfcFastenerType(data) {}
+    explicit IfcMechanicalFastenerType (const std::weak_ptr<instance_data>& data) : IfcFastenerType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from IAI: The element type
@@ -29067,13 +29067,13 @@ public:
 class IFC_PARSE_API IfcMemberType : public IfcBuildingElementType {
 public:
     IfcMemberType() {}
-    explicit IfcMemberType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcMemberType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a linear structural member element from which the type required may be set.
     ::Ifc2x3::IfcMemberTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcMemberTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMemberTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcMotorConnectionType defines commonly shared information for occurrences of motor connections.  The set of shared information may include: 
@@ -29106,20 +29106,20 @@ public:
 class IFC_PARSE_API IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
 public:
     IfcMotorConnectionType() {}
-    explicit IfcMotorConnectionType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcMotorConnectionType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Identifies the predefined types of motor connection from which the type required may be set.
     ::Ifc2x3::IfcMotorConnectionTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcMotorConnectionTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMotorConnectionTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcMove : public IfcTask {
 public:
     IfcMove() {}
-    explicit IfcMove (const std::weak_ptr<InstanceData>& data) : IfcTask(data) {}
+    explicit IfcMove (const std::weak_ptr<instance_data>& data) : IfcTask(data) {}
 
     ::Ifc2x3::IfcSpatialStructureElement MoveFrom() const;
     void setMoveFrom(const ::Ifc2x3::IfcSpatialStructureElement& v);
@@ -29128,7 +29128,7 @@ public:
     std::optional< std::vector< std::string > /*[1:?]*/ > PunchList() const;
     void setPunchList(const std::optional< std::vector< std::string > /*[1:?]*/ >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, ::Ifc2x3::IfcSpatialStructureElement v11_MoveFrom, ::Ifc2x3::IfcSpatialStructureElement v12_MoveTo, std::optional< std::vector< std::string > /*[1:?]*/ > v13_PunchList);
 };
 /// An occupant is a type of actor that defines the form of occupancy of a property. 
@@ -29141,7 +29141,7 @@ public:
 class IFC_PARSE_API IfcOccupant : public IfcActor {
 public:
     IfcOccupant() {}
-    explicit IfcOccupant (const std::weak_ptr<InstanceData>& data) : IfcActor(data) {}
+    explicit IfcOccupant (const std::weak_ptr<instance_data>& data) : IfcActor(data) {}
 
     /// Predefined occupant types from which that required may be set.
     /// 
@@ -29149,7 +29149,7 @@ public:
     ::Ifc2x3::IfcOccupantTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcOccupantTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcActorSelect v6_TheActor, ::Ifc2x3::IfcOccupantTypeEnum::Value v7_PredefinedType);
 };
 /// The opening element stands for
@@ -29357,23 +29357,23 @@ public:
 class IFC_PARSE_API IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
     IfcOpeningElement() {}
-    explicit IfcOpeningElement (const std::weak_ptr<InstanceData>& data) : IfcFeatureElementSubtraction(data) {}
+    explicit IfcOpeningElement (const std::weak_ptr<instance_data>& data) : IfcFeatureElementSubtraction(data) {}
 
         std::vector< IfcRelFillsElement > HasFillings() const; // INVERSE IfcRelFillsElement::RelatingOpeningElement
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcOrderAction : public IfcTask {
 public:
     IfcOrderAction() {}
-    explicit IfcOrderAction (const std::weak_ptr<InstanceData>& data) : IfcTask(data) {}
+    explicit IfcOrderAction (const std::weak_ptr<instance_data>& data) : IfcTask(data) {}
 
     std::string ActionID() const;
     void setActionID(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_TaskId, std::optional< std::string > v7_Status, std::optional< std::string > v8_WorkMethod, bool v9_IsMilestone, std::optional< int > v10_Priority, std::string v11_ActionID);
 };
 /// The flow terminal type IfcOutletType defines commonly shared information for occurrences of outlets.  The set of shared information may include: 
@@ -29408,13 +29408,13 @@ public:
 class IFC_PARSE_API IfcOutletType : public IfcFlowTerminalType {
 public:
     IfcOutletType() {}
-    explicit IfcOutletType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcOutletType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of outlet from which the type required may be set.
     ::Ifc2x3::IfcOutletTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcOutletTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcOutletTypeEnum::Value v10_PredefinedType);
 };
 /// IfcPerformanceHistory is used to document the actual performance of an occurrence instance over time. In practice, performance-related data are generally not easy to obtain as they can originate from different sources (predicted, simulated, or measured) and occur during different stages of the building life-cycle. Such time-related data cover a large spectrum, including meteorological data, schedules, operational status measurements, trend reports, etc.
@@ -29425,13 +29425,13 @@ public:
 class IFC_PARSE_API IfcPerformanceHistory : public IfcControl {
 public:
     IfcPerformanceHistory() {}
-    explicit IfcPerformanceHistory (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcPerformanceHistory (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     /// Describes the applicable building life-cycle phase. Typical values should be DESIGNDEVELOPMENT, SCHEMATICDEVELOPMENT, CONSTRUCTIONDOCUMENT, CONSTRUCTION, ASBUILT, COMMISSIONING, OPERATION, etc.
     std::string LifeCyclePhase() const;
     void setLifeCyclePhase(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_LifeCyclePhase);
 };
 /// A permit is a permission to perform work in places and on artifacts where regulatory, security or other access restrictions apply. 
@@ -29474,12 +29474,12 @@ public:
 class IFC_PARSE_API IfcPermit : public IfcControl {
 public:
     IfcPermit() {}
-    explicit IfcPermit (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcPermit (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::string PermitID() const;
     void setPermitID(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_PermitID);
 };
 /// The flow fitting type IfcPipeFittingType defines commonly shared information for occurrences of pipe fittings.  The set of shared information may include: 
@@ -29514,13 +29514,13 @@ public:
 class IFC_PARSE_API IfcPipeFittingType : public IfcFlowFittingType {
 public:
     IfcPipeFittingType() {}
-    explicit IfcPipeFittingType (const std::weak_ptr<InstanceData>& data) : IfcFlowFittingType(data) {}
+    explicit IfcPipeFittingType (const std::weak_ptr<instance_data>& data) : IfcFlowFittingType(data) {}
 
     /// The type of pipe fitting.
     ::Ifc2x3::IfcPipeFittingTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcPipeFittingTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeFittingTypeEnum::Value v10_PredefinedType);
 };
 /// The flow segment type IfcPipeSegmentType defines commonly shared information for occurrences of pipe segments.  The set of shared information may include: 
@@ -29559,13 +29559,13 @@ public:
 class IFC_PARSE_API IfcPipeSegmentType : public IfcFlowSegmentType {
 public:
     IfcPipeSegmentType() {}
-    explicit IfcPipeSegmentType (const std::weak_ptr<InstanceData>& data) : IfcFlowSegmentType(data) {}
+    explicit IfcPipeSegmentType (const std::weak_ptr<instance_data>& data) : IfcFlowSegmentType(data) {}
 
     /// The type of pipe segment.
     ::Ifc2x3::IfcPipeSegmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcPipeSegmentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPipeSegmentTypeEnum::Value v10_PredefinedType);
 };
 /// The element type IfcPlateType defines commonly shared
@@ -29648,13 +29648,13 @@ public:
 class IFC_PARSE_API IfcPlateType : public IfcBuildingElementType {
 public:
     IfcPlateType() {}
-    explicit IfcPlateType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcPlateType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a planar member element from which the type required may be set.
     ::Ifc2x3::IfcPlateTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcPlateTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPlateTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO/CD 10303-42:1992: A polyline
@@ -29674,13 +29674,13 @@ public:
 class IFC_PARSE_API IfcPolyline : public IfcBoundedCurve {
 public:
     IfcPolyline() {}
-    explicit IfcPolyline (const std::weak_ptr<InstanceData>& data) : IfcBoundedCurve(data) {}
+    explicit IfcPolyline (const std::weak_ptr<instance_data>& data) : IfcBoundedCurve(data) {}
 
     /// The points defining the polyline.
     std::vector< ::Ifc2x3::IfcCartesianPoint > Points() const;
     void setPoints(const std::vector< ::Ifc2x3::IfcCartesianPoint >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcCartesianPoint > v1_Points);
 };
 /// Definition from IAI: An IfcPort provides the
@@ -29739,13 +29739,13 @@ public:
 class IFC_PARSE_API IfcPort : public IfcProduct {
 public:
     IfcPort() {}
-    explicit IfcPort (const std::weak_ptr<InstanceData>& data) : IfcProduct(data) {}
+    explicit IfcPort (const std::weak_ptr<instance_data>& data) : IfcProduct(data) {}
 
         std::vector< IfcRelConnectsPortToElement > ContainedIn() const; // INVERSE IfcRelConnectsPortToElement::RelatingPort
     std::vector< IfcRelConnectsPorts > ConnectedFrom() const; // INVERSE IfcRelConnectsPorts::RelatedPort
     std::vector< IfcRelConnectsPorts > ConnectedTo() const; // INVERSE IfcRelConnectsPorts::RelatingPort
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation);
 };
 /// An IfcProcedure is a
@@ -29855,7 +29855,7 @@ public:
 class IFC_PARSE_API IfcProcedure : public IfcProcess {
 public:
     IfcProcedure() {}
-    explicit IfcProcedure (const std::weak_ptr<InstanceData>& data) : IfcProcess(data) {}
+    explicit IfcProcedure (const std::weak_ptr<instance_data>& data) : IfcProcess(data) {}
 
     std::string ProcedureID() const;
     void setProcedureID(const std::string& v);
@@ -29864,7 +29864,7 @@ public:
     std::optional< std::string > UserDefinedProcedureType() const;
     void setUserDefinedProcedureType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_ProcedureID, ::Ifc2x3::IfcProcedureTypeEnum::Value v7_ProcedureType, std::optional< std::string > v8_UserDefinedProcedureType);
 };
 /// A project order is a directive to purchase products and/or perform work, such as for construction or facilities management. 
@@ -29913,7 +29913,7 @@ public:
 class IFC_PARSE_API IfcProjectOrder : public IfcControl {
 public:
     IfcProjectOrder() {}
-    explicit IfcProjectOrder (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcProjectOrder (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::string ID() const;
     void setID(const std::string& v);
@@ -29934,21 +29934,21 @@ public:
     std::optional< std::string > Status() const;
     void setStatus(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_ID, ::Ifc2x3::IfcProjectOrderTypeEnum::Value v7_PredefinedType, std::optional< std::string > v8_Status);
 };
 
 class IFC_PARSE_API IfcProjectOrderRecord : public IfcControl {
 public:
     IfcProjectOrderRecord() {}
-    explicit IfcProjectOrderRecord (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcProjectOrderRecord (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::vector< ::Ifc2x3::IfcRelAssignsToProjectOrder > Records() const;
     void setRecords(const std::vector< ::Ifc2x3::IfcRelAssignsToProjectOrder >& v);
     ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::vector< ::Ifc2x3::IfcRelAssignsToProjectOrder > v6_Records, ::Ifc2x3::IfcProjectOrderRecordTypeEnum::Value v7_PredefinedType);
 };
 /// The projection element is a
@@ -30061,10 +30061,10 @@ public:
 class IFC_PARSE_API IfcProjectionElement : public IfcFeatureElementAddition {
 public:
     IfcProjectionElement() {}
-    explicit IfcProjectionElement (const std::weak_ptr<InstanceData>& data) : IfcFeatureElementAddition(data) {}
+    explicit IfcProjectionElement (const std::weak_ptr<instance_data>& data) : IfcFeatureElementAddition(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The flow controller type IfcProtectiveDeviceType defines commonly shared information for occurrences of protective devices.  The set of shared information may include: 
@@ -30105,13 +30105,13 @@ public:
 class IFC_PARSE_API IfcProtectiveDeviceType : public IfcFlowControllerType {
 public:
     IfcProtectiveDeviceType() {}
-    explicit IfcProtectiveDeviceType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcProtectiveDeviceType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// Identifies the predefined types of protective device from which the type required may be set.
     ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcProtectiveDeviceTypeEnum::Value v10_PredefinedType);
 };
 /// The flow moving device type IfcPumpType defines commonly shared information for occurrences of pumps.  The set of shared information may include: 
@@ -30145,23 +30145,23 @@ public:
 class IFC_PARSE_API IfcPumpType : public IfcFlowMovingDeviceType {
 public:
     IfcPumpType() {}
-    explicit IfcPumpType (const std::weak_ptr<InstanceData>& data) : IfcFlowMovingDeviceType(data) {}
+    explicit IfcPumpType (const std::weak_ptr<instance_data>& data) : IfcFlowMovingDeviceType(data) {}
 
     /// Defines the type of pump typically used in building services.
     ::Ifc2x3::IfcPumpTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcPumpTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPumpTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
 public:
     IfcRadiusDimension() {}
-    explicit IfcRadiusDimension (const std::weak_ptr<InstanceData>& data) : IfcDimensionCurveDirectedCallout(data) {}
+    explicit IfcRadiusDimension (const std::weak_ptr<instance_data>& data) : IfcDimensionCurveDirectedCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// Definition from IAI: The element type (IfcRailingType)
@@ -30187,13 +30187,13 @@ public:
 class IFC_PARSE_API IfcRailingType : public IfcBuildingElementType {
 public:
     IfcRailingType() {}
-    explicit IfcRailingType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcRailingType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a railing element from which the type required may be set.
     ::Ifc2x3::IfcRailingTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcRailingTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRailingTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from IAI: The element type (IfcRampFlightType)
@@ -30219,13 +30219,13 @@ public:
 class IFC_PARSE_API IfcRampFlightType : public IfcBuildingElementType {
 public:
     IfcRampFlightType() {}
-    explicit IfcRampFlightType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcRampFlightType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a ramp flight element from which the type required may be set.
     ::Ifc2x3::IfcRampFlightTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcRampFlightTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcRampFlightTypeEnum::Value v10_PredefinedType);
 };
 /// The aggregation relationship
@@ -30253,22 +30253,22 @@ public:
 class IFC_PARSE_API IfcRelAggregates : public IfcRelDecomposes {
 public:
     IfcRelAggregates() {}
-    explicit IfcRelAggregates (const std::weak_ptr<InstanceData>& data) : IfcRelDecomposes(data) {}
+    explicit IfcRelAggregates (const std::weak_ptr<instance_data>& data) : IfcRelDecomposes(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition v5_RelatingObject, std::vector< ::Ifc2x3::IfcObjectDefinition > v6_RelatedObjects);
 };
 
 class IFC_PARSE_API IfcRelAssignsTasks : public IfcRelAssignsToControl {
 public:
     IfcRelAssignsTasks() {}
-    explicit IfcRelAssignsTasks (const std::weak_ptr<InstanceData>& data) : IfcRelAssignsToControl(data) {}
+    explicit IfcRelAssignsTasks (const std::weak_ptr<instance_data>& data) : IfcRelAssignsToControl(data) {}
 
     ::Ifc2x3::IfcScheduleTimeControl TimeForTask() const;
     void setTimeForTask(const ::Ifc2x3::IfcScheduleTimeControl& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcControl v7_RelatingControl, ::Ifc2x3::IfcScheduleTimeControl v8_TimeForTask);
 };
 /// The flow terminal type IfcSanitaryTerminalType defines commonly shared information for occurrences of sanitary terminals.  The set of shared information may include: 
@@ -30311,20 +30311,20 @@ public:
 class IFC_PARSE_API IfcSanitaryTerminalType : public IfcFlowTerminalType {
 public:
     IfcSanitaryTerminalType() {}
-    explicit IfcSanitaryTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcSanitaryTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of sanitary terminal from which the type required may be set.
     ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcScheduleTimeControl : public IfcControl {
 public:
     IfcScheduleTimeControl() {}
-    explicit IfcScheduleTimeControl (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcScheduleTimeControl (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     ::Ifc2x3::IfcDateTimeSelect ActualStart() const;
     void setActualStart(const ::Ifc2x3::IfcDateTimeSelect& v);
@@ -30364,21 +30364,21 @@ public:
     void setCompletion(const std::optional< double >& v);
         std::vector< IfcRelAssignsTasks > ScheduleTimeControlAssigned() const; // INVERSE IfcRelAssignsTasks::TimeForTask
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcDateTimeSelect v6_ActualStart, ::Ifc2x3::IfcDateTimeSelect v7_EarlyStart, ::Ifc2x3::IfcDateTimeSelect v8_LateStart, ::Ifc2x3::IfcDateTimeSelect v9_ScheduleStart, ::Ifc2x3::IfcDateTimeSelect v10_ActualFinish, ::Ifc2x3::IfcDateTimeSelect v11_EarlyFinish, ::Ifc2x3::IfcDateTimeSelect v12_LateFinish, ::Ifc2x3::IfcDateTimeSelect v13_ScheduleFinish, std::optional< double > v14_ScheduleDuration, std::optional< double > v15_ActualDuration, std::optional< double > v16_RemainingTime, std::optional< double > v17_FreeFloat, std::optional< double > v18_TotalFloat, std::optional< bool > v19_IsCritical, ::Ifc2x3::IfcDateTimeSelect v20_StatusTime, std::optional< double > v21_StartFloat, std::optional< double > v22_FinishFloat, std::optional< double > v23_Completion);
 };
 
 class IFC_PARSE_API IfcServiceLife : public IfcControl {
 public:
     IfcServiceLife() {}
-    explicit IfcServiceLife (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcServiceLife (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     ::Ifc2x3::IfcServiceLifeTypeEnum::Value ServiceLifeType() const;
     void setServiceLifeType(const ::Ifc2x3::IfcServiceLifeTypeEnum::Value& v);
     double ServiceLifeDuration() const;
     void setServiceLifeDuration(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcServiceLifeTypeEnum::Value v6_ServiceLifeType, double v7_ServiceLifeDuration);
 };
 /// Definition from ISO 6707-1:1989: Area where construction
@@ -30573,7 +30573,7 @@ public:
 class IFC_PARSE_API IfcSite : public IfcSpatialStructureElement {
 public:
     IfcSite() {}
-    explicit IfcSite (const std::weak_ptr<InstanceData>& data) : IfcSpatialStructureElement(data) {}
+    explicit IfcSite (const std::weak_ptr<instance_data>& data) : IfcSpatialStructureElement(data) {}
 
     /// World Latitude at reference point (most likely defined in legal description). Defined as integer values for degrees, minutes, seconds, and, optionally, millionths of seconds with respect to the world geodetic system WGS84.
     ///   Latitudes are measured relative to the geodetic equator, north of the equator by positive values - from 0 till +90,   south of the equator by negative values - from 0 till  -90.
@@ -30594,7 +30594,7 @@ public:
     ::Ifc2x3::IfcPostalAddress SiteAddress() const;
     void setSiteAddress(const ::Ifc2x3::IfcPostalAddress& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, std::optional< std::vector< int > /*[3:4]*/ > v10_RefLatitude, std::optional< std::vector< int > /*[3:4]*/ > v11_RefLongitude, std::optional< double > v12_RefElevation, std::optional< std::string > v13_LandTitleNumber, ::Ifc2x3::IfcPostalAddress v14_SiteAddress);
 };
 /// The element type IfcSlabType defines commonly shared
@@ -30677,13 +30677,13 @@ public:
 class IFC_PARSE_API IfcSlabType : public IfcBuildingElementType {
 public:
     IfcSlabType() {}
-    explicit IfcSlabType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcSlabType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a slab element from which the type required may be set.
     ::Ifc2x3::IfcSlabTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSlabTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSlabTypeEnum::Value v10_PredefinedType);
 };
 /// A space represents an area or volume
@@ -30939,7 +30939,7 @@ public:
 class IFC_PARSE_API IfcSpace : public IfcSpatialStructureElement {
 public:
     IfcSpace() {}
-    explicit IfcSpace (const std::weak_ptr<InstanceData>& data) : IfcSpatialStructureElement(data) {}
+    explicit IfcSpace (const std::weak_ptr<instance_data>& data) : IfcSpatialStructureElement(data) {}
 
     ::Ifc2x3::IfcInternalOrExternalEnum::Value InteriorOrExteriorSpace() const;
     void setInteriorOrExteriorSpace(const ::Ifc2x3::IfcInternalOrExternalEnum::Value& v);
@@ -30949,7 +30949,7 @@ public:
         std::vector< IfcRelCoversSpaces > HasCoverings() const; // INVERSE IfcRelCoversSpaces::RelatedSpace
     std::vector< IfcRelSpaceBoundary > BoundedBy() const; // INVERSE IfcRelSpaceBoundary::RelatingSpace
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_LongName, ::Ifc2x3::IfcElementCompositionEnum::Value v9_CompositionType, ::Ifc2x3::IfcInternalOrExternalEnum::Value v10_InteriorOrExteriorSpace, std::optional< double > v11_ElevationWithFlooring);
 };
 /// The energy conversion device type IfcSpaceHeaterType defines commonly shared information for occurrences of space heaters.  The set of shared information may include: 
@@ -30985,20 +30985,20 @@ public:
 class IFC_PARSE_API IfcSpaceHeaterType : public IfcEnergyConversionDeviceType {
 public:
     IfcSpaceHeaterType() {}
-    explicit IfcSpaceHeaterType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcSpaceHeaterType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Enumeration of possible types of space heater (e.g., baseboard heater, convector, radiator, etc.).
     ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcSpaceProgram : public IfcControl {
 public:
     IfcSpaceProgram() {}
-    explicit IfcSpaceProgram (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcSpaceProgram (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::string SpaceProgramIdentifier() const;
     void setSpaceProgramIdentifier(const std::string& v);
@@ -31013,7 +31013,7 @@ public:
         std::vector< IfcRelInteractionRequirements > HasInteractionReqsFrom() const; // INVERSE IfcRelInteractionRequirements::RelatedSpaceProgram
     std::vector< IfcRelInteractionRequirements > HasInteractionReqsTo() const; // INVERSE IfcRelInteractionRequirements::RelatingSpaceProgram
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_SpaceProgramIdentifier, std::optional< double > v7_MaxRequiredArea, std::optional< double > v8_MinRequiredArea, ::Ifc2x3::IfcSpatialStructureElement v9_RequestedLocation, double v10_StandardRequiredArea);
 };
 /// Definition from IAI: A space represents an area or
@@ -31100,13 +31100,13 @@ public:
 class IFC_PARSE_API IfcSpaceType : public IfcSpatialStructureElementType {
 public:
     IfcSpaceType() {}
-    explicit IfcSpaceType (const std::weak_ptr<InstanceData>& data) : IfcSpatialStructureElementType(data) {}
+    explicit IfcSpaceType (const std::weak_ptr<instance_data>& data) : IfcSpatialStructureElementType(data) {}
 
     /// Predefined types to define the particular type of space. There may be property set definitions available for each predefined type.
     ::Ifc2x3::IfcSpaceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSpaceTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceTypeEnum::Value v10_PredefinedType);
 };
 /// The flow terminal type IfcStackTerminalType defines commonly shared information for occurrences of stack terminals.  The set of shared information may include: 
@@ -31138,13 +31138,13 @@ public:
 class IFC_PARSE_API IfcStackTerminalType : public IfcFlowTerminalType {
 public:
     IfcStackTerminalType() {}
-    explicit IfcStackTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcStackTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of stack terminal from which the type required may be set.
     ::Ifc2x3::IfcStackTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcStackTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStackTerminalTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from IAI: The element type (IfcStairFlightType)
@@ -31170,13 +31170,13 @@ public:
 class IFC_PARSE_API IfcStairFlightType : public IfcBuildingElementType {
 public:
     IfcStairFlightType() {}
-    explicit IfcStairFlightType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcStairFlightType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a stair flight element from which the type required may be set.
     ::Ifc2x3::IfcStairFlightTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcStairFlightTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcStairFlightTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from IAI: A structural action is a structural activity that acts upon
@@ -31201,7 +31201,7 @@ public:
 class IFC_PARSE_API IfcStructuralAction : public IfcStructuralActivity {
 public:
     IfcStructuralAction() {}
-    explicit IfcStructuralAction (const std::weak_ptr<InstanceData>& data) : IfcStructuralActivity(data) {}
+    explicit IfcStructuralAction (const std::weak_ptr<instance_data>& data) : IfcStructuralActivity(data) {}
 
     /// Indicates if this action may cause a stability problem. If it is 'FALSE', no further investigations regarding stability problems are necessary.
     bool DestabilizingLoad() const;
@@ -31209,7 +31209,7 @@ public:
     ::Ifc2x3::IfcStructuralReaction CausedBy() const;
     void setCausedBy(const ::Ifc2x3::IfcStructuralReaction& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy);
 };
 /// Definition from IAI: An IfcStructuralConnection represents a structural connection object (node i.e. vertex connection, or edge connection, or surface connection) or supports.
@@ -31218,14 +31218,14 @@ public:
 class IFC_PARSE_API IfcStructuralConnection : public IfcStructuralItem {
 public:
     IfcStructuralConnection() {}
-    explicit IfcStructuralConnection (const std::weak_ptr<InstanceData>& data) : IfcStructuralItem(data) {}
+    explicit IfcStructuralConnection (const std::weak_ptr<instance_data>& data) : IfcStructuralItem(data) {}
 
     /// Optional boundary conditions which define support conditions of this connection object, given in local coordinate directions of the connection object.  If left unspecified, the connection object is assumed to have no supports besides being connected with members.
     ::Ifc2x3::IfcBoundaryCondition AppliedCondition() const;
     void setAppliedCondition(const ::Ifc2x3::IfcBoundaryCondition& v);
         std::vector< IfcRelConnectsStructuralMember > ConnectsStructuralMembers() const; // INVERSE IfcRelConnectsStructuralMember::RelatedStructuralConnection
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcBoundaryCondition v8_AppliedCondition);
 };
 /// Definition from IAI: Instances of IfcStructuralCurveConnection describe edge 'nodes', i.e. edges where two or more surface members are joined, or edge supports.  Edge curves may be straight or curved.
@@ -31248,10 +31248,10 @@ public:
 class IFC_PARSE_API IfcStructuralCurveConnection : public IfcStructuralConnection {
 public:
     IfcStructuralCurveConnection() {}
-    explicit IfcStructuralCurveConnection (const std::weak_ptr<InstanceData>& data) : IfcStructuralConnection(data) {}
+    explicit IfcStructuralCurveConnection (const std::weak_ptr<instance_data>& data) : IfcStructuralConnection(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcBoundaryCondition v8_AppliedCondition);
 };
 /// Definition from IAI: Instances of IfcStructuralCurveMember describe edge members, i.e. structural analysis idealizations of beams, columns, rods etc..  Curve members may be straight or curved.
@@ -31294,13 +31294,13 @@ public:
 class IFC_PARSE_API IfcStructuralCurveMember : public IfcStructuralMember {
 public:
     IfcStructuralCurveMember() {}
-    explicit IfcStructuralCurveMember (const std::weak_ptr<InstanceData>& data) : IfcStructuralMember(data) {}
+    explicit IfcStructuralCurveMember (const std::weak_ptr<instance_data>& data) : IfcStructuralMember(data) {}
 
     /// Type of member with respect to its load carrying behavior in this analysis idealization.
     ::Ifc2x3::IfcStructuralCurveTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcStructuralCurveTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
 };
 /// Definition from IAI: Describes edge members with varying profile properties.  Each instance of IfcStructuralCurveMemberVarying is composed of two or more instances of IfcStructuralCurveMember with differing profile properties.  These subordinate members relate to the instance of IfcStructuralCurveMemberVarying by IfcRelAggregates.
@@ -31326,10 +31326,10 @@ public:
 class IFC_PARSE_API IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
     IfcStructuralCurveMemberVarying() {}
-    explicit IfcStructuralCurveMemberVarying (const std::weak_ptr<InstanceData>& data) : IfcStructuralCurveMember(data) {}
+    explicit IfcStructuralCurveMemberVarying (const std::weak_ptr<instance_data>& data) : IfcStructuralCurveMember(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralCurveTypeEnum::Value v8_PredefinedType);
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a curve.
@@ -31342,26 +31342,26 @@ public:
 class IFC_PARSE_API IfcStructuralLinearAction : public IfcStructuralAction {
 public:
     IfcStructuralLinearAction() {}
-    explicit IfcStructuralLinearAction (const std::weak_ptr<InstanceData>& data) : IfcStructuralAction(data) {}
+    explicit IfcStructuralLinearAction (const std::weak_ptr<instance_data>& data) : IfcStructuralAction(data) {}
 
     ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value ProjectedOrTrue() const;
     void setProjectedOrTrue(const ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
 };
 
 class IFC_PARSE_API IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
 public:
     IfcStructuralLinearActionVarying() {}
-    explicit IfcStructuralLinearActionVarying (const std::weak_ptr<InstanceData>& data) : IfcStructuralLinearAction(data) {}
+    explicit IfcStructuralLinearActionVarying (const std::weak_ptr<instance_data>& data) : IfcStructuralLinearAction(data) {}
 
     ::Ifc2x3::IfcShapeAspect VaryingAppliedLoadLocation() const;
     void setVaryingAppliedLoadLocation(const ::Ifc2x3::IfcShapeAspect& v);
     std::vector< ::Ifc2x3::IfcStructuralLoad > SubsequentAppliedLoads() const;
     void setSubsequentAppliedLoads(const std::vector< ::Ifc2x3::IfcStructuralLoad >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect v13_VaryingAppliedLoadLocation, std::vector< ::Ifc2x3::IfcStructuralLoad > v14_SubsequentAppliedLoads);
 };
 /// Definition from IAI: The entity IfcStructuralLoadGroup is used to structure the
@@ -31400,7 +31400,7 @@ public:
 class IFC_PARSE_API IfcStructuralLoadGroup : public IfcGroup {
 public:
     IfcStructuralLoadGroup() {}
-    explicit IfcStructuralLoadGroup (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcStructuralLoadGroup (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     /// Selects a predefined type for the load group.  It can be differentiated between load groups, load cases, load combinations, or userdefined grouping levels.
     ::Ifc2x3::IfcLoadGroupTypeEnum::Value PredefinedType() const;
@@ -31420,7 +31420,7 @@ public:
         std::vector< IfcStructuralResultGroup > SourceOfResultGroup() const; // INVERSE IfcStructuralResultGroup::ResultForLoadGroup
     std::vector< IfcStructuralAnalysisModel > LoadGroupFor() const; // INVERSE IfcStructuralAnalysisModel::LoadedBy
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcLoadGroupTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcActionTypeEnum::Value v7_ActionType, ::Ifc2x3::IfcActionSourceTypeEnum::Value v8_ActionSource, std::optional< double > v9_Coefficient, std::optional< std::string > v10_Purpose);
 };
 /// Definition from IAI: Defines an action with constant value which is distributed over a surface.
@@ -31433,26 +31433,26 @@ public:
 class IFC_PARSE_API IfcStructuralPlanarAction : public IfcStructuralAction {
 public:
     IfcStructuralPlanarAction() {}
-    explicit IfcStructuralPlanarAction (const std::weak_ptr<InstanceData>& data) : IfcStructuralAction(data) {}
+    explicit IfcStructuralPlanarAction (const std::weak_ptr<instance_data>& data) : IfcStructuralAction(data) {}
 
     ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value ProjectedOrTrue() const;
     void setProjectedOrTrue(const ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
 };
 
 class IFC_PARSE_API IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
 public:
     IfcStructuralPlanarActionVarying() {}
-    explicit IfcStructuralPlanarActionVarying (const std::weak_ptr<InstanceData>& data) : IfcStructuralPlanarAction(data) {}
+    explicit IfcStructuralPlanarActionVarying (const std::weak_ptr<instance_data>& data) : IfcStructuralPlanarAction(data) {}
 
     ::Ifc2x3::IfcShapeAspect VaryingAppliedLoadLocation() const;
     void setVaryingAppliedLoadLocation(const ::Ifc2x3::IfcShapeAspect& v);
     std::vector< ::Ifc2x3::IfcStructuralLoad > SubsequentAppliedLoads() const;
     void setSubsequentAppliedLoads(const std::vector< ::Ifc2x3::IfcStructuralLoad >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue, ::Ifc2x3::IfcShapeAspect v13_VaryingAppliedLoadLocation, std::vector< ::Ifc2x3::IfcStructuralLoad > v14_SubsequentAppliedLoads);
 };
 /// Definition from IAI: Defines an action which acts on a point.
@@ -31503,10 +31503,10 @@ public:
 class IFC_PARSE_API IfcStructuralPointAction : public IfcStructuralAction {
 public:
     IfcStructuralPointAction() {}
-    explicit IfcStructuralPointAction (const std::weak_ptr<InstanceData>& data) : IfcStructuralAction(data) {}
+    explicit IfcStructuralPointAction (const std::weak_ptr<instance_data>& data) : IfcStructuralAction(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy);
 };
 /// Definition from IAI: Instances of IfcStructuralPointConnection describe structural nodes or point supports.
@@ -31525,10 +31525,10 @@ public:
 class IFC_PARSE_API IfcStructuralPointConnection : public IfcStructuralConnection {
 public:
     IfcStructuralPointConnection() {}
-    explicit IfcStructuralPointConnection (const std::weak_ptr<InstanceData>& data) : IfcStructuralConnection(data) {}
+    explicit IfcStructuralPointConnection (const std::weak_ptr<instance_data>& data) : IfcStructuralConnection(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcBoundaryCondition v8_AppliedCondition);
 };
 /// Definition from IAI: Defines a reaction which occurs at a point.
@@ -31577,10 +31577,10 @@ public:
 class IFC_PARSE_API IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
     IfcStructuralPointReaction() {}
-    explicit IfcStructuralPointReaction (const std::weak_ptr<InstanceData>& data) : IfcStructuralReaction(data) {}
+    explicit IfcStructuralPointReaction (const std::weak_ptr<instance_data>& data) : IfcStructuralReaction(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal);
 };
 /// Definition from IAI: Instances of the entity IfcStructuralResultGroup are used to group results of structural analysis calculations and to capture the connection to the underlying basic load group.  The basic functionality for grouping inherited from IfcGroup is used to collect instances from IfcStructuralReaction or its respective subclasses.
@@ -31590,7 +31590,7 @@ public:
 class IFC_PARSE_API IfcStructuralResultGroup : public IfcGroup {
 public:
     IfcStructuralResultGroup() {}
-    explicit IfcStructuralResultGroup (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcStructuralResultGroup (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     /// Specifies the analysis theory used to obtain the respective results.
     ::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value TheoryType() const;
@@ -31603,7 +31603,7 @@ public:
     void setIsLinear(const bool& v);
         std::vector< IfcStructuralAnalysisModel > ResultGroupFor() const; // INVERSE IfcStructuralAnalysisModel::HasResults
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisTheoryTypeEnum::Value v6_TheoryType, ::Ifc2x3::IfcStructuralLoadGroup v7_ResultForLoadGroup, bool v8_IsLinear);
 };
 /// Definition from IAI: Instances of IfcStructuralSurfaceConnection describe face 'nodes', i.e. faces where two or more surface members are joined, or face supports.  Face surfaces may be planar or curved.
@@ -31621,10 +31621,10 @@ public:
 class IFC_PARSE_API IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
     IfcStructuralSurfaceConnection() {}
-    explicit IfcStructuralSurfaceConnection (const std::weak_ptr<InstanceData>& data) : IfcStructuralConnection(data) {}
+    explicit IfcStructuralSurfaceConnection (const std::weak_ptr<instance_data>& data) : IfcStructuralConnection(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcBoundaryCondition v8_AppliedCondition);
 };
 /// IfcSubContractResource is a construction resource needed in a construction process that represents a sub-contractor.  
@@ -31654,14 +31654,14 @@ public:
 class IFC_PARSE_API IfcSubContractResource : public IfcConstructionResource {
 public:
     IfcSubContractResource() {}
-    explicit IfcSubContractResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcSubContractResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     ::Ifc2x3::IfcActorSelect SubContractor() const;
     void setSubContractor(const ::Ifc2x3::IfcActorSelect& v);
     std::optional< std::string > JobDescription() const;
     void setJobDescription(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity, ::Ifc2x3::IfcActorSelect v10_SubContractor, std::optional< std::string > v11_JobDescription);
 };
 /// The flow controller type IfcSwitchingDeviceType defines commonly shared information for occurrences of switching devices.  The set of shared information may include: 
@@ -31707,13 +31707,13 @@ public:
 class IFC_PARSE_API IfcSwitchingDeviceType : public IfcFlowControllerType {
 public:
     IfcSwitchingDeviceType() {}
-    explicit IfcSwitchingDeviceType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcSwitchingDeviceType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// Identifies the predefined types of switch from which the type required may be set.
     ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSwitchingDeviceTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from IAI: Organized combination of
@@ -31736,11 +31736,11 @@ public:
 class IFC_PARSE_API IfcSystem : public IfcGroup {
 public:
     IfcSystem() {}
-    explicit IfcSystem (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcSystem (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
         std::vector< IfcRelServicesBuildings > ServicesBuildings() const; // INVERSE IfcRelServicesBuildings::RelatingSystem
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 /// The flow storage device type IfcTankType defines commonly shared information for occurrences of tanks.  The set of shared information may include: 
@@ -31778,20 +31778,20 @@ public:
 class IFC_PARSE_API IfcTankType : public IfcFlowStorageDeviceType {
 public:
     IfcTankType() {}
-    explicit IfcTankType (const std::weak_ptr<InstanceData>& data) : IfcFlowStorageDeviceType(data) {}
+    explicit IfcTankType (const std::weak_ptr<instance_data>& data) : IfcFlowStorageDeviceType(data) {}
 
     /// Defines the type of tank.
     ::Ifc2x3::IfcTankTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcTankTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTankTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcTimeSeriesSchedule : public IfcControl {
 public:
     IfcTimeSeriesSchedule() {}
-    explicit IfcTimeSeriesSchedule (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcTimeSeriesSchedule (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::optional< std::vector< ::Ifc2x3::IfcDateTimeSelect > > ApplicableDates() const;
     void setApplicableDates(const std::optional< std::vector< ::Ifc2x3::IfcDateTimeSelect > >& v);
@@ -31800,7 +31800,7 @@ public:
     ::Ifc2x3::IfcTimeSeries TimeSeries() const;
     void setTimeSeries(const ::Ifc2x3::IfcTimeSeries& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::vector< ::Ifc2x3::IfcDateTimeSelect > > v6_ApplicableDates, ::Ifc2x3::IfcTimeSeriesScheduleTypeEnum::Value v7_TimeSeriesScheduleType, ::Ifc2x3::IfcTimeSeries v8_TimeSeries);
 };
 /// The energy conversion device type IfcTransformerType defines commonly shared information for occurrences of transformers.  The set of shared information may include: 
@@ -31833,13 +31833,13 @@ public:
 class IFC_PARSE_API IfcTransformerType : public IfcEnergyConversionDeviceType {
 public:
     IfcTransformerType() {}
-    explicit IfcTransformerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcTransformerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Identifies the predefined types of transformer from which the type required may be set.
     ::Ifc2x3::IfcTransformerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcTransformerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTransformerTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from IAI: Generalization of all transport
@@ -31961,7 +31961,7 @@ public:
 class IFC_PARSE_API IfcTransportElement : public IfcElement {
 public:
     IfcTransportElement() {}
-    explicit IfcTransportElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcTransportElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     std::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > OperationType() const;
     void setOperationType(const std::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value >& v);
@@ -31972,7 +31972,7 @@ public:
     std::optional< double > CapacityByNumber() const;
     void setCapacityByNumber(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcTransportElementTypeEnum::Value > v9_OperationType, std::optional< double > v10_CapacityByWeight, std::optional< double > v11_CapacityByNumber);
 };
 /// Definition from ISO/CD 10303-42:1992:
@@ -32056,7 +32056,7 @@ public:
 class IFC_PARSE_API IfcTrimmedCurve : public IfcBoundedCurve {
 public:
     IfcTrimmedCurve() {}
-    explicit IfcTrimmedCurve (const std::weak_ptr<InstanceData>& data) : IfcBoundedCurve(data) {}
+    explicit IfcTrimmedCurve (const std::weak_ptr<instance_data>& data) : IfcBoundedCurve(data) {}
 
     /// The curve to be trimmed. For curves with multiple representations any parameter values given as Trim1 or Trim2 refer to the master representation of the BasisCurve only.
     ::Ifc2x3::IfcCurve BasisCurve() const;
@@ -32074,7 +32074,7 @@ public:
     ::Ifc2x3::IfcTrimmingPreference::Value MasterRepresentation() const;
     void setMasterRepresentation(const ::Ifc2x3::IfcTrimmingPreference::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcCurve v1_BasisCurve, std::vector< ::Ifc2x3::IfcTrimmingSelect > v2_Trim1, std::vector< ::Ifc2x3::IfcTrimmingSelect > v3_Trim2, bool v4_SenseAgreement, ::Ifc2x3::IfcTrimmingPreference::Value v5_MasterRepresentation);
 };
 /// The energy conversion device type IfcTubeBundleType defines commonly shared information for occurrences of tube bundles.  The set of shared information may include: 
@@ -32109,13 +32109,13 @@ public:
 class IFC_PARSE_API IfcTubeBundleType : public IfcEnergyConversionDeviceType {
 public:
     IfcTubeBundleType() {}
-    explicit IfcTubeBundleType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcTubeBundleType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of tube bundle.
     ::Ifc2x3::IfcTubeBundleTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcTubeBundleTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTubeBundleTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcUnitaryEquipmentType defines commonly shared information for occurrences of unitary equipments.  The set of shared information may include: 
@@ -32149,13 +32149,13 @@ public:
 class IFC_PARSE_API IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
 public:
     IfcUnitaryEquipmentType() {}
-    explicit IfcUnitaryEquipmentType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcUnitaryEquipmentType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// The type of unitary equipment.
     ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcUnitaryEquipmentTypeEnum::Value v10_PredefinedType);
 };
 /// The flow controller type IfcValveType defines commonly shared information for occurrences of valves.  The set of shared information may include: 
@@ -32199,13 +32199,13 @@ public:
 class IFC_PARSE_API IfcValveType : public IfcFlowControllerType {
 public:
     IfcValveType() {}
-    explicit IfcValveType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcValveType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// The type of valve.
     ::Ifc2x3::IfcValveTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcValveTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcValveTypeEnum::Value v10_PredefinedType);
 };
 /// A virtual element is a special element used to provide imaginary boundaries, such as between two adjacent, but not separated, spaces. Virtual elements are usually not displayed and does not have quantities and other measures. Therefore IfcVirtualElement does not have material information and quantities attached.
@@ -32297,10 +32297,10 @@ public:
 class IFC_PARSE_API IfcVirtualElement : public IfcElement {
 public:
     IfcVirtualElement() {}
-    explicit IfcVirtualElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcVirtualElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI: The element type
@@ -32390,13 +32390,13 @@ public:
 class IFC_PARSE_API IfcWallType : public IfcBuildingElementType {
 public:
     IfcWallType() {}
-    explicit IfcWallType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcWallType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a wall element from which the type required may be set.
     ::Ifc2x3::IfcWallTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcWallTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWallTypeEnum::Value v10_PredefinedType);
 };
 /// The flow terminal type IfcWasteTerminalType defines commonly shared information for occurrences of waste terminals.  The set of shared information may include: 
@@ -32438,13 +32438,13 @@ public:
 class IFC_PARSE_API IfcWasteTerminalType : public IfcFlowTerminalType {
 public:
     IfcWasteTerminalType() {}
-    explicit IfcWasteTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcWasteTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of waste terminal from which the type required may be set.
     ::Ifc2x3::IfcWasteTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcWasteTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcWasteTerminalTypeEnum::Value v10_PredefinedType);
 };
 /// An IfcWorkControl is an abstract supertype which captures information that is common to both IfcWorkPlan and IfcWorkSchedule.
@@ -32494,7 +32494,7 @@ public:
 class IFC_PARSE_API IfcWorkControl : public IfcControl {
 public:
     IfcWorkControl() {}
-    explicit IfcWorkControl (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcWorkControl (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::string Identifier() const;
     void setIdentifier(const std::string& v);
@@ -32524,7 +32524,7 @@ public:
     std::optional< std::string > UserDefinedControlType() const;
     void setUserDefinedControlType(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect v7_CreationDate, std::optional< std::vector< ::Ifc2x3::IfcPerson > > v8_Creators, std::optional< std::string > v9_Purpose, std::optional< double > v10_Duration, std::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect v12_StartTime, ::Ifc2x3::IfcDateTimeSelect v13_FinishTime, std::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, std::optional< std::string > v15_UserDefinedControlType);
 };
 /// An IfcWorkPlan represents work plans in a construction or a facilities management project.
@@ -32555,10 +32555,10 @@ public:
 class IFC_PARSE_API IfcWorkPlan : public IfcWorkControl {
 public:
     IfcWorkPlan() {}
-    explicit IfcWorkPlan (const std::weak_ptr<InstanceData>& data) : IfcWorkControl(data) {}
+    explicit IfcWorkPlan (const std::weak_ptr<instance_data>& data) : IfcWorkControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect v7_CreationDate, std::optional< std::vector< ::Ifc2x3::IfcPerson > > v8_Creators, std::optional< std::string > v9_Purpose, std::optional< double > v10_Duration, std::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect v12_StartTime, ::Ifc2x3::IfcDateTimeSelect v13_FinishTime, std::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, std::optional< std::string > v15_UserDefinedControlType);
 };
 /// An IfcWorkSchedule
@@ -32604,10 +32604,10 @@ public:
 class IFC_PARSE_API IfcWorkSchedule : public IfcWorkControl {
 public:
     IfcWorkSchedule() {}
-    explicit IfcWorkSchedule (const std::weak_ptr<InstanceData>& data) : IfcWorkControl(data) {}
+    explicit IfcWorkSchedule (const std::weak_ptr<instance_data>& data) : IfcWorkControl(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_Identifier, ::Ifc2x3::IfcDateTimeSelect v7_CreationDate, std::optional< std::vector< ::Ifc2x3::IfcPerson > > v8_Creators, std::optional< std::string > v9_Purpose, std::optional< double > v10_Duration, std::optional< double > v11_TotalFloat, ::Ifc2x3::IfcDateTimeSelect v12_StartTime, ::Ifc2x3::IfcDateTimeSelect v13_FinishTime, std::optional< ::Ifc2x3::IfcWorkControlTypeEnum::Value > v14_WorkControlType, std::optional< std::string > v15_UserDefinedControlType);
 };
 /// Definition from IAI: A zone isa group of spaces,
@@ -32698,20 +32698,20 @@ public:
 class IFC_PARSE_API IfcZone : public IfcGroup {
 public:
     IfcZone() {}
-    explicit IfcZone (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcZone (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
 class IFC_PARSE_API Ifc2DCompositeCurve : public IfcCompositeCurve {
 public:
     Ifc2DCompositeCurve() {}
-    explicit Ifc2DCompositeCurve (const std::weak_ptr<InstanceData>& data) : IfcCompositeCurve(data) {}
+    explicit Ifc2DCompositeCurve (const std::weak_ptr<instance_data>& data) : IfcCompositeCurve(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcCompositeCurveSegment > v1_Segments, boost::logic::tribool v2_SelfIntersect);
 };
 /// A request is the act or instance of asking for something, such as a request for information, bid submission, or performance of work. 
@@ -32755,12 +32755,12 @@ public:
 class IFC_PARSE_API IfcActionRequest : public IfcControl {
 public:
     IfcActionRequest() {}
-    explicit IfcActionRequest (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcActionRequest (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     std::string RequestID() const;
     void setRequestID(const std::string& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_RequestID);
 };
 /// The flow controller type IfcAirTerminalBoxType defines commonly shared information for occurrences of air boxes.  The set of shared information may include: 
@@ -32792,13 +32792,13 @@ public:
 class IFC_PARSE_API IfcAirTerminalBoxType : public IfcFlowControllerType {
 public:
     IfcAirTerminalBoxType() {}
-    explicit IfcAirTerminalBoxType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcAirTerminalBoxType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// The air terminal box type.
     ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalBoxTypeEnum::Value v10_PredefinedType);
 };
 /// The flow terminal type IfcAirTerminalType defines commonly shared information for occurrences of air terminals.  The set of shared information may include: 
@@ -32830,12 +32830,12 @@ public:
 class IFC_PARSE_API IfcAirTerminalType : public IfcFlowTerminalType {
 public:
     IfcAirTerminalType() {}
-    explicit IfcAirTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcAirTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     ::Ifc2x3::IfcAirTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcAirTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirTerminalTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcAirToAirHeatRecoveryType defines commonly shared information for occurrences of air-to-air heat recovery devices.  The set of shared information may include: 
@@ -32867,23 +32867,23 @@ public:
 class IFC_PARSE_API IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
 public:
     IfcAirToAirHeatRecoveryType() {}
-    explicit IfcAirToAirHeatRecoveryType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcAirToAirHeatRecoveryType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of air to air heat recovery device.
     ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
 public:
     IfcAngularDimension() {}
-    explicit IfcAngularDimension (const std::weak_ptr<InstanceData>& data) : IfcDimensionCurveDirectedCallout(data) {}
+    explicit IfcAngularDimension (const std::weak_ptr<instance_data>& data) : IfcDimensionCurveDirectedCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// An asset is a uniquely identifiable grouping of elements acting as a single entity that has a financial value or that can be operated on as a single unit. 
@@ -32913,7 +32913,7 @@ public:
 class IFC_PARSE_API IfcAsset : public IfcGroup {
 public:
     IfcAsset() {}
-    explicit IfcAsset (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcAsset (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     std::string AssetID() const;
     void setAssetID(const std::string& v);
@@ -32946,7 +32946,7 @@ public:
     ::Ifc2x3::IfcCostValue DepreciatedValue() const;
     void setDepreciatedValue(const ::Ifc2x3::IfcCostValue& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_AssetID, ::Ifc2x3::IfcCostValue v7_OriginalValue, ::Ifc2x3::IfcCostValue v8_CurrentValue, ::Ifc2x3::IfcCostValue v9_TotalReplacementCost, ::Ifc2x3::IfcActorSelect v10_Owner, ::Ifc2x3::IfcActorSelect v11_User, ::Ifc2x3::IfcPerson v12_ResponsiblePerson, ::Ifc2x3::IfcCalendarDate v13_IncorporationDate, ::Ifc2x3::IfcCostValue v14_DepreciatedValue);
 };
 /// Definition from ISO/CD 10303-42:1992: A B-spline curve is a piecewise parametric polynomial or rational curve described in terms of control points and basis functions. The B-spline curve has been selected as the most stable format to represent all types of polynomial or rational parametric curves. With appropriate attribute values it is capable of representing single span or spline curves of explicit polynomial, rational, Bezier or B-spline type. 
@@ -33001,7 +33001,7 @@ public:
 class IFC_PARSE_API IfcBSplineCurve : public IfcBoundedCurve {
 public:
     IfcBSplineCurve() {}
-    explicit IfcBSplineCurve (const std::weak_ptr<InstanceData>& data) : IfcBoundedCurve(data) {}
+    explicit IfcBSplineCurve (const std::weak_ptr<instance_data>& data) : IfcBoundedCurve(data) {}
 
     /// The algebraic degree of the basis functions.
     int Degree() const;
@@ -33019,7 +33019,7 @@ public:
     boost::logic::tribool SelfIntersect() const;
     void setSelfIntersect(const boost::logic::tribool& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
 };
 /// Definition from IAI: The element type
@@ -33123,23 +33123,23 @@ public:
 class IFC_PARSE_API IfcBeamType : public IfcBuildingElementType {
 public:
     IfcBeamType() {}
-    explicit IfcBeamType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcBeamType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Identifies the predefined types of a beam element from which the type required may be set.
     ::Ifc2x3::IfcBeamTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcBeamTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBeamTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcBezierCurve : public IfcBSplineCurve {
 public:
     IfcBezierCurve() {}
-    explicit IfcBezierCurve (const std::weak_ptr<InstanceData>& data) : IfcBSplineCurve(data) {}
+    explicit IfcBezierCurve (const std::weak_ptr<instance_data>& data) : IfcBSplineCurve(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect);
 };
 /// The energy conversion device type IfcBoilerType defines commonly shared information for occurrences of boilers.  The set of shared information may include: 
@@ -33174,13 +33174,13 @@ public:
 class IFC_PARSE_API IfcBoilerType : public IfcEnergyConversionDeviceType {
 public:
     IfcBoilerType() {}
-    explicit IfcBoilerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcBoilerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines types of boilers.
     ::Ifc2x3::IfcBoilerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcBoilerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBoilerTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Major functional part
@@ -33549,20 +33549,20 @@ public:
 class IFC_PARSE_API IfcBuildingElement : public IfcElement {
 public:
     IfcBuildingElement() {}
-    explicit IfcBuildingElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcBuildingElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcBuildingElementComponent : public IfcBuildingElement {
 public:
     IfcBuildingElementComponent() {}
-    explicit IfcBuildingElementComponent (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcBuildingElementComponent (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI: Layers or major components as subordinate
@@ -33585,10 +33585,10 @@ public:
 class IFC_PARSE_API IfcBuildingElementPart : public IfcBuildingElementComponent {
 public:
     IfcBuildingElementPart() {}
-    explicit IfcBuildingElementPart (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementComponent(data) {}
+    explicit IfcBuildingElementPart (const std::weak_ptr<instance_data>& data) : IfcBuildingElementComponent(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI: The IfcBuildingElementProxy
@@ -33784,12 +33784,12 @@ public:
 class IFC_PARSE_API IfcBuildingElementProxy : public IfcBuildingElement {
 public:
     IfcBuildingElementProxy() {}
-    explicit IfcBuildingElementProxy (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcBuildingElementProxy (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     std::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > CompositionType() const;
     void setCompositionType(const std::optional< ::Ifc2x3::IfcElementCompositionEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcElementCompositionEnum::Value > v9_CompositionType);
 };
 /// Definition from IAI:
@@ -33829,13 +33829,13 @@ public:
 class IFC_PARSE_API IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
     IfcBuildingElementProxyType() {}
-    explicit IfcBuildingElementProxyType (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementType(data) {}
+    explicit IfcBuildingElementProxyType (const std::weak_ptr<instance_data>& data) : IfcBuildingElementType(data) {}
 
     /// Predefined types to define the particular type of an building element proxy. There may be property set definitions available for each predefined or user defined type.
     ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBuildingElementProxyTypeEnum::Value v10_PredefinedType);
 };
 /// The flow fitting type IfcCableCarrierFittingType defines commonly shared information for occurrences of cable carrier fittings.  The set of shared information may include: 
@@ -33867,13 +33867,13 @@ public:
 class IFC_PARSE_API IfcCableCarrierFittingType : public IfcFlowFittingType {
 public:
     IfcCableCarrierFittingType() {}
-    explicit IfcCableCarrierFittingType (const std::weak_ptr<InstanceData>& data) : IfcFlowFittingType(data) {}
+    explicit IfcCableCarrierFittingType (const std::weak_ptr<instance_data>& data) : IfcFlowFittingType(data) {}
 
     /// Identifies the predefined types of cable carrier fitting from which the type required may be set.
     ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierFittingTypeEnum::Value v10_PredefinedType);
 };
 /// The flow segment type IfcCableCarrierSegmentType defines commonly shared information for occurrences of cable carrier segments.  The set of shared information may include: 
@@ -33911,13 +33911,13 @@ public:
 class IFC_PARSE_API IfcCableCarrierSegmentType : public IfcFlowSegmentType {
 public:
     IfcCableCarrierSegmentType() {}
-    explicit IfcCableCarrierSegmentType (const std::weak_ptr<InstanceData>& data) : IfcFlowSegmentType(data) {}
+    explicit IfcCableCarrierSegmentType (const std::weak_ptr<instance_data>& data) : IfcFlowSegmentType(data) {}
 
     /// Identifies the predefined types of cable carrier segment from which the type required may be set.
     ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableCarrierSegmentTypeEnum::Value v10_PredefinedType);
 };
 /// The flow segment type IfcCableSegmentType defines commonly shared information for occurrences of cable segments.  The set of shared information may include: 
@@ -33964,13 +33964,13 @@ public:
 class IFC_PARSE_API IfcCableSegmentType : public IfcFlowSegmentType {
 public:
     IfcCableSegmentType() {}
-    explicit IfcCableSegmentType (const std::weak_ptr<InstanceData>& data) : IfcFlowSegmentType(data) {}
+    explicit IfcCableSegmentType (const std::weak_ptr<instance_data>& data) : IfcFlowSegmentType(data) {}
 
     /// Identifies the predefined types of cable segment from which the type required may be set.
     ::Ifc2x3::IfcCableSegmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCableSegmentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCableSegmentTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcChillerType defines commonly shared information for occurrences of chillers.  The set of shared information may include: 
@@ -34008,13 +34008,13 @@ public:
 class IFC_PARSE_API IfcChillerType : public IfcEnergyConversionDeviceType {
 public:
     IfcChillerType() {}
-    explicit IfcChillerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcChillerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the typical types of chillers (e.g., air-cooled, water-cooled, etc.).
     ::Ifc2x3::IfcChillerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcChillerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcChillerTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO/CD 10303-42:1992: An IfcCircle is defined by a radius and the location and orientation of the circle. Interpretation of data should be as follows: 
@@ -34047,13 +34047,13 @@ public:
 class IFC_PARSE_API IfcCircle : public IfcConic {
 public:
     IfcCircle() {}
-    explicit IfcCircle (const std::weak_ptr<InstanceData>& data) : IfcConic(data) {}
+    explicit IfcCircle (const std::weak_ptr<instance_data>& data) : IfcConic(data) {}
 
     /// The radius of the circle, which shall be greater than zero.
     double Radius() const;
     void setRadius(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(::Ifc2x3::IfcAxis2Placement v1_Position, double v2_Radius);
 };
 /// The energy conversion device type IfcCoilType defines commonly shared information for occurrences of coils.  The set of shared information may include: 
@@ -34086,13 +34086,13 @@ public:
 class IFC_PARSE_API IfcCoilType : public IfcEnergyConversionDeviceType {
 public:
     IfcCoilType() {}
-    explicit IfcCoilType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcCoilType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines typical types of coils (e.g., Cooling, Heating, etc.)
     ::Ifc2x3::IfcCoilTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCoilTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoilTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Structural member of
@@ -34369,10 +34369,10 @@ public:
 class IFC_PARSE_API IfcColumn : public IfcBuildingElement {
 public:
     IfcColumn() {}
-    explicit IfcColumn (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcColumn (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The flow moving device type IfcCompressorType defines commonly shared information for occurrences of compressors.  The set of shared information may include: 
@@ -34405,13 +34405,13 @@ public:
 class IFC_PARSE_API IfcCompressorType : public IfcFlowMovingDeviceType {
 public:
     IfcCompressorType() {}
-    explicit IfcCompressorType (const std::weak_ptr<InstanceData>& data) : IfcFlowMovingDeviceType(data) {}
+    explicit IfcCompressorType (const std::weak_ptr<instance_data>& data) : IfcFlowMovingDeviceType(data) {}
 
     /// Defines the type of compressor (e.g., hermetic, reciprocating, etc.).
     ::Ifc2x3::IfcCompressorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCompressorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCompressorTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcCondenserType defines commonly shared information for occurrences of condensers.  The set of shared information may include: 
@@ -34444,37 +34444,37 @@ public:
 class IFC_PARSE_API IfcCondenserType : public IfcEnergyConversionDeviceType {
 public:
     IfcCondenserType() {}
-    explicit IfcCondenserType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcCondenserType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of condenser.
     ::Ifc2x3::IfcCondenserTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCondenserTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCondenserTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcCondition : public IfcGroup {
 public:
     IfcCondition() {}
-    explicit IfcCondition (const std::weak_ptr<InstanceData>& data) : IfcGroup(data) {}
+    explicit IfcCondition (const std::weak_ptr<instance_data>& data) : IfcGroup(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
 class IFC_PARSE_API IfcConditionCriterion : public IfcControl {
 public:
     IfcConditionCriterion() {}
-    explicit IfcConditionCriterion (const std::weak_ptr<InstanceData>& data) : IfcControl(data) {}
+    explicit IfcConditionCriterion (const std::weak_ptr<instance_data>& data) : IfcControl(data) {}
 
     ::Ifc2x3::IfcConditionCriterionSelect Criterion() const;
     void setCriterion(const ::Ifc2x3::IfcConditionCriterionSelect& v);
     ::Ifc2x3::IfcDateTimeSelect CriterionDateTime() const;
     void setCriterionDateTime(const ::Ifc2x3::IfcDateTimeSelect& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcConditionCriterionSelect v6_Criterion, ::Ifc2x3::IfcDateTimeSelect v7_CriterionDateTime);
 };
 /// IfcConstructionEquipmentResource is usage of construction equipment to assist in the performance of construction. Construction Equipment resources are wholly or partially consumed or occupied in the performance of construction.
@@ -34502,10 +34502,10 @@ public:
 class IFC_PARSE_API IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
     IfcConstructionEquipmentResource() {}
-    explicit IfcConstructionEquipmentResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcConstructionEquipmentResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity);
 };
 /// IfcConstructionMaterialResource identifies a material resource type in a construction project. 
@@ -34537,14 +34537,14 @@ public:
 class IFC_PARSE_API IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
     IfcConstructionMaterialResource() {}
-    explicit IfcConstructionMaterialResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcConstructionMaterialResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     std::optional< std::vector< ::Ifc2x3::IfcActorSelect > > Suppliers() const;
     void setSuppliers(const std::optional< std::vector< ::Ifc2x3::IfcActorSelect > >& v);
     std::optional< double > UsageRatio() const;
     void setUsageRatio(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity, std::optional< std::vector< ::Ifc2x3::IfcActorSelect > > v10_Suppliers, std::optional< double > v11_UsageRatio);
 };
 /// IfcConstructionProductResource defines the role of a product that is consumed (wholly or partially), or occupied in the performance of construction. 
@@ -34565,10 +34565,10 @@ public:
 class IFC_PARSE_API IfcConstructionProductResource : public IfcConstructionResource {
 public:
     IfcConstructionProductResource() {}
-    explicit IfcConstructionProductResource (const std::weak_ptr<InstanceData>& data) : IfcConstructionResource(data) {}
+    explicit IfcConstructionProductResource (const std::weak_ptr<instance_data>& data) : IfcConstructionResource(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_ResourceIdentifier, std::optional< std::string > v7_ResourceGroup, std::optional< ::Ifc2x3::IfcResourceConsumptionEnum::Value > v8_ResourceConsumption, ::Ifc2x3::IfcMeasureWithUnit v9_BaseQuantity);
 };
 /// The energy conversion device type IfcCooledBeamType defines commonly shared information for occurrences of cooled beams.  The set of shared information may include: 
@@ -34603,13 +34603,13 @@ public:
 class IFC_PARSE_API IfcCooledBeamType : public IfcEnergyConversionDeviceType {
 public:
     IfcCooledBeamType() {}
-    explicit IfcCooledBeamType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcCooledBeamType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the type of cooled beam.
     ::Ifc2x3::IfcCooledBeamTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCooledBeamTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCooledBeamTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcCoolingTowerType defines commonly shared information for occurrences of cooling towers.  The set of shared information may include: 
@@ -34648,13 +34648,13 @@ public:
 class IFC_PARSE_API IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
 public:
     IfcCoolingTowerType() {}
-    explicit IfcCoolingTowerType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcCoolingTowerType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Defines the typical types of cooling towers (e.g., OpenTower, ClosedTower, CrossFlow, etc.).
     ::Ifc2x3::IfcCoolingTowerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcCoolingTowerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCoolingTowerTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: term used: Finishing -
@@ -34884,7 +34884,7 @@ public:
 class IFC_PARSE_API IfcCovering : public IfcBuildingElement {
 public:
     IfcCovering() {}
-    explicit IfcCovering (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcCovering (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Predefined types to define the particular type of the covering. There may be property set definitions available for each predefined type.
     std::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > PredefinedType() const;
@@ -34892,7 +34892,7 @@ public:
         std::vector< IfcRelCoversSpaces > CoversSpaces() const; // INVERSE IfcRelCoversSpaces::RelatedCoverings
     std::vector< IfcRelCoversBldgElements > Covers() const; // INVERSE IfcRelCoversBldgElements::RelatedCoverings
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcCoveringTypeEnum::Value > v9_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Non load bearing wall
@@ -35036,10 +35036,10 @@ public:
 class IFC_PARSE_API IfcCurtainWall : public IfcBuildingElement {
 public:
     IfcCurtainWall() {}
-    explicit IfcCurtainWall (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcCurtainWall (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The flow controller type IfcDamperType defines commonly shared information for occurrences of dampers.  The set of shared information may include: 
@@ -35079,23 +35079,23 @@ public:
 class IFC_PARSE_API IfcDamperType : public IfcFlowControllerType {
 public:
     IfcDamperType() {}
-    explicit IfcDamperType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcDamperType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// Type of damper.
     ::Ifc2x3::IfcDamperTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcDamperTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDamperTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
 public:
     IfcDiameterDimension() {}
-    explicit IfcDiameterDimension (const std::weak_ptr<InstanceData>& data) : IfcDimensionCurveDirectedCallout(data) {}
+    explicit IfcDiameterDimension (const std::weak_ptr<instance_data>& data) : IfcDimensionCurveDirectedCallout(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::vector< ::Ifc2x3::IfcDraughtingCalloutElement > v1_Contents);
 };
 /// Definition from IAI: Representation of different kinds of
@@ -35274,10 +35274,10 @@ public:
 class IFC_PARSE_API IfcDiscreteAccessory : public IfcElementComponent {
 public:
     IfcDiscreteAccessory() {}
-    explicit IfcDiscreteAccessory (const std::weak_ptr<InstanceData>& data) : IfcElementComponent(data) {}
+    explicit IfcDiscreteAccessory (const std::weak_ptr<instance_data>& data) : IfcElementComponent(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition from IAI: The element type
@@ -35471,10 +35471,10 @@ public:
 class IFC_PARSE_API IfcDiscreteAccessoryType : public IfcElementComponentType {
 public:
     IfcDiscreteAccessoryType() {}
-    explicit IfcDiscreteAccessoryType (const std::weak_ptr<InstanceData>& data) : IfcElementComponentType(data) {}
+    explicit IfcDiscreteAccessoryType (const std::weak_ptr<instance_data>& data) : IfcElementComponentType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// The distribution flow element type IfcDistributionChamberElementType defines commonly shared information for occurrences of distribution chamber elements.  The set of shared information may include:
@@ -35517,13 +35517,13 @@ public:
 class IFC_PARSE_API IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
 public:
     IfcDistributionChamberElementType() {}
-    explicit IfcDistributionChamberElementType (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElementType(data) {}
+    explicit IfcDistributionChamberElementType (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElementType(data) {}
 
     /// Predefined types of distribution chambers.
     ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDistributionChamberElementTypeEnum::Value v10_PredefinedType);
 };
 /// The element type IfcDistributionControlElementType defines a list of commonly shared property set definitions of an element and an optional set of product representations.  It is used to define an element specification (the specific product information that is common to all occurrences of that product type). 
@@ -35583,10 +35583,10 @@ public:
 class IFC_PARSE_API IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
     IfcDistributionControlElementType() {}
-    explicit IfcDistributionControlElementType (const std::weak_ptr<InstanceData>& data) : IfcDistributionElementType(data) {}
+    explicit IfcDistributionControlElementType (const std::weak_ptr<instance_data>& data) : IfcDistributionElementType(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 /// Definition from IAI: Generalization of all elements
@@ -35754,10 +35754,10 @@ public:
 class IFC_PARSE_API IfcDistributionElement : public IfcElement {
 public:
     IfcDistributionElement() {}
-    explicit IfcDistributionElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcDistributionElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution element IfcDistributionFlowElement defines occurrence elements of a distribution system that facilitate the distribution of energy or matter, such as air, water or power.
@@ -35831,11 +35831,11 @@ public:
 class IFC_PARSE_API IfcDistributionFlowElement : public IfcDistributionElement {
 public:
     IfcDistributionFlowElement() {}
-    explicit IfcDistributionFlowElement (const std::weak_ptr<InstanceData>& data) : IfcDistributionElement(data) {}
+    explicit IfcDistributionFlowElement (const std::weak_ptr<instance_data>& data) : IfcDistributionElement(data) {}
 
         std::vector< IfcRelFlowControlElements > HasControlElements() const; // INVERSE IfcRelFlowControlElements::RelatingFlowElement
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// A distribution port is an inlet or outlet of a product through which a particular substance may flow.
@@ -35923,13 +35923,13 @@ public:
 class IFC_PARSE_API IfcDistributionPort : public IfcPort {
 public:
     IfcDistributionPort() {}
-    explicit IfcDistributionPort (const std::weak_ptr<InstanceData>& data) : IfcPort(data) {}
+    explicit IfcDistributionPort (const std::weak_ptr<instance_data>& data) : IfcPort(data) {}
 
     /// Enumeration that identifies if this port is a Sink (inlet), a Source (outlet) or both a SinkAndSource.
     std::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > FlowDirection() const;
     void setFlowDirection(const std::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< ::Ifc2x3::IfcFlowDirectionEnum::Value > v8_FlowDirection);
 };
 /// Definition from ISO 6707-1:1989: Construction for
@@ -36291,7 +36291,7 @@ public:
 class IFC_PARSE_API IfcDoor : public IfcBuildingElement {
 public:
     IfcDoor() {}
-    explicit IfcDoor (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcDoor (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the door is inserted. 
     /// 
@@ -36304,7 +36304,7 @@ public:
     std::optional< double > OverallWidth() const;
     void setOverallWidth(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_OverallHeight, std::optional< double > v10_OverallWidth);
 };
 /// The flow fitting type IfcDuctFittingType defines commonly shared information for occurrences of duct fittings.  The set of shared information may include: 
@@ -36339,13 +36339,13 @@ public:
 class IFC_PARSE_API IfcDuctFittingType : public IfcFlowFittingType {
 public:
     IfcDuctFittingType() {}
-    explicit IfcDuctFittingType (const std::weak_ptr<InstanceData>& data) : IfcFlowFittingType(data) {}
+    explicit IfcDuctFittingType (const std::weak_ptr<instance_data>& data) : IfcFlowFittingType(data) {}
 
     /// The type of duct fitting.
     ::Ifc2x3::IfcDuctFittingTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcDuctFittingTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctFittingTypeEnum::Value v10_PredefinedType);
 };
 /// The flow segment type IfcDuctSegmentType defines commonly shared information for occurrences of duct segments.  The set of shared information may include: 
@@ -36380,13 +36380,13 @@ public:
 class IFC_PARSE_API IfcDuctSegmentType : public IfcFlowSegmentType {
 public:
     IfcDuctSegmentType() {}
-    explicit IfcDuctSegmentType (const std::weak_ptr<InstanceData>& data) : IfcFlowSegmentType(data) {}
+    explicit IfcDuctSegmentType (const std::weak_ptr<instance_data>& data) : IfcFlowSegmentType(data) {}
 
     /// The type of duct segment.
     ::Ifc2x3::IfcDuctSegmentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcDuctSegmentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSegmentTypeEnum::Value v10_PredefinedType);
 };
 /// The flow treatment device type IfcDuctSilencerType defines commonly shared information for occurrences of duct silencers.  The set of shared information may include: 
@@ -36418,25 +36418,25 @@ public:
 class IFC_PARSE_API IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
 public:
     IfcDuctSilencerType() {}
-    explicit IfcDuctSilencerType (const std::weak_ptr<InstanceData>& data) : IfcFlowTreatmentDeviceType(data) {}
+    explicit IfcDuctSilencerType (const std::weak_ptr<instance_data>& data) : IfcFlowTreatmentDeviceType(data) {}
 
     /// The type of duct silencer.
     ::Ifc2x3::IfcDuctSilencerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcDuctSilencerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSilencerTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcEdgeFeature : public IfcFeatureElementSubtraction {
 public:
     IfcEdgeFeature() {}
-    explicit IfcEdgeFeature (const std::weak_ptr<InstanceData>& data) : IfcFeatureElementSubtraction(data) {}
+    explicit IfcEdgeFeature (const std::weak_ptr<instance_data>& data) : IfcFeatureElementSubtraction(data) {}
 
     std::optional< double > FeatureLength() const;
     void setFeatureLength(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_FeatureLength);
 };
 /// The flow terminal type IfcElectricApplianceType defines commonly shared information for occurrences of electric appliances.  The set of shared information may include: 
@@ -36471,13 +36471,13 @@ public:
 class IFC_PARSE_API IfcElectricApplianceType : public IfcFlowTerminalType {
 public:
     IfcElectricApplianceType() {}
-    explicit IfcElectricApplianceType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcElectricApplianceType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of electrical appliance from which the type required may be set.
     ::Ifc2x3::IfcElectricApplianceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricApplianceTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricApplianceTypeEnum::Value v10_PredefinedType);
 };
 /// The flow storage device type IfcElectricFlowStorageDeviceType defines commonly shared information for occurrences of electric flow storage devices.  The set of shared information may include: 
@@ -36510,13 +36510,13 @@ public:
 class IFC_PARSE_API IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
 public:
     IfcElectricFlowStorageDeviceType() {}
-    explicit IfcElectricFlowStorageDeviceType (const std::weak_ptr<InstanceData>& data) : IfcFlowStorageDeviceType(data) {}
+    explicit IfcElectricFlowStorageDeviceType (const std::weak_ptr<instance_data>& data) : IfcFlowStorageDeviceType(data) {}
 
     /// Identifies the predefined types of electric flow storage devices from which the type required may be set.
     ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricFlowStorageDeviceTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcElectricGeneratorType defines commonly shared information for occurrences of electric generators.  The set of shared information may include: 
@@ -36554,25 +36554,25 @@ public:
 class IFC_PARSE_API IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
 public:
     IfcElectricGeneratorType() {}
-    explicit IfcElectricGeneratorType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcElectricGeneratorType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Identifies the predefined types of electric generators from which the type required may be set.
     ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcElectricHeaterType : public IfcFlowTerminalType {
 public:
     IfcElectricHeaterType() {}
-    explicit IfcElectricHeaterType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcElectricHeaterType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     ::Ifc2x3::IfcElectricHeaterTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricHeaterTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricHeaterTypeEnum::Value v10_PredefinedType);
 };
 /// The energy conversion device type IfcElectricMotorType defines commonly shared information for occurrences of electric motors.  The set of shared information may include: 
@@ -36605,13 +36605,13 @@ public:
 class IFC_PARSE_API IfcElectricMotorType : public IfcEnergyConversionDeviceType {
 public:
     IfcElectricMotorType() {}
-    explicit IfcElectricMotorType (const std::weak_ptr<InstanceData>& data) : IfcEnergyConversionDeviceType(data) {}
+    explicit IfcElectricMotorType (const std::weak_ptr<instance_data>& data) : IfcEnergyConversionDeviceType(data) {}
 
     /// Identifies the predefined types of electric motor from which the type required may be set.
     ::Ifc2x3::IfcElectricMotorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricMotorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricMotorTypeEnum::Value v10_PredefinedType);
 };
 /// The flow controller type IfcElectricTimeControlType defines commonly shared information for occurrences of electric time controls.  The set of shared information may include: 
@@ -36644,33 +36644,33 @@ public:
 class IFC_PARSE_API IfcElectricTimeControlType : public IfcFlowControllerType {
 public:
     IfcElectricTimeControlType() {}
-    explicit IfcElectricTimeControlType (const std::weak_ptr<InstanceData>& data) : IfcFlowControllerType(data) {}
+    explicit IfcElectricTimeControlType (const std::weak_ptr<instance_data>& data) : IfcFlowControllerType(data) {}
 
     /// Identifies the predefined types of electrical time control from which the type required may be set.
     ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v10_PredefinedType);
 };
 
 class IFC_PARSE_API IfcElectricalCircuit : public IfcSystem {
 public:
     IfcElectricalCircuit() {}
-    explicit IfcElectricalCircuit (const std::weak_ptr<InstanceData>& data) : IfcSystem(data) {}
+    explicit IfcElectricalCircuit (const std::weak_ptr<instance_data>& data) : IfcSystem(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
 class IFC_PARSE_API IfcElectricalElement : public IfcElement {
 public:
     IfcElectricalElement() {}
-    explicit IfcElectricalElement (const std::weak_ptr<InstanceData>& data) : IfcElement(data) {}
+    explicit IfcElectricalElement (const std::weak_ptr<instance_data>& data) : IfcElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcEnergyConversionDevice defines 
@@ -36685,10 +36685,10 @@ public:
 class IFC_PARSE_API IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
     IfcEnergyConversionDevice() {}
-    explicit IfcEnergyConversionDevice (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcEnergyConversionDevice (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The flow moving device type IfcFanType defines commonly shared information for occurrences of fans.  The set of shared information may include: 
@@ -36722,13 +36722,13 @@ public:
 class IFC_PARSE_API IfcFanType : public IfcFlowMovingDeviceType {
 public:
     IfcFanType() {}
-    explicit IfcFanType (const std::weak_ptr<InstanceData>& data) : IfcFlowMovingDeviceType(data) {}
+    explicit IfcFanType (const std::weak_ptr<instance_data>& data) : IfcFlowMovingDeviceType(data) {}
 
     /// Defines the type of fan typically used in building services.
     ::Ifc2x3::IfcFanTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFanTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFanTypeEnum::Value v10_PredefinedType);
 };
 /// The flow treatment device type IfcFilterType defines commonly shared information for occurrences of filters.  The set of shared information may include: 
@@ -36763,13 +36763,13 @@ public:
 class IFC_PARSE_API IfcFilterType : public IfcFlowTreatmentDeviceType {
 public:
     IfcFilterType() {}
-    explicit IfcFilterType (const std::weak_ptr<InstanceData>& data) : IfcFlowTreatmentDeviceType(data) {}
+    explicit IfcFilterType (const std::weak_ptr<instance_data>& data) : IfcFlowTreatmentDeviceType(data) {}
 
     /// The type of air filter.
     ::Ifc2x3::IfcFilterTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFilterTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFilterTypeEnum::Value v10_PredefinedType);
 };
 /// The flow terminal type IfcFireSuppressionTerminalType defines commonly shared information for occurrences of fire suppression terminals.  The set of shared information may include: 
@@ -36808,13 +36808,13 @@ public:
 class IFC_PARSE_API IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
 public:
     IfcFireSuppressionTerminalType() {}
-    explicit IfcFireSuppressionTerminalType (const std::weak_ptr<InstanceData>& data) : IfcFlowTerminalType(data) {}
+    explicit IfcFireSuppressionTerminalType (const std::weak_ptr<instance_data>& data) : IfcFlowTerminalType(data) {}
 
     /// Identifies the predefined types of fire suppression terminal from which the type required may be set.
     ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFireSuppressionTerminalTypeEnum::Value v10_PredefinedType);
 };
 /// The distribution flow element IfcFlowController defines
@@ -36829,10 +36829,10 @@ public:
 class IFC_PARSE_API IfcFlowController : public IfcDistributionFlowElement {
 public:
     IfcFlowController() {}
-    explicit IfcFlowController (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowController (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcFlowFitting defines the occurrence of a junction or transition in a flow distribution system, such as an elbow or tee. Its type is defined by IfcFlowFittingType or its subtypes.
@@ -36843,10 +36843,10 @@ public:
 class IFC_PARSE_API IfcFlowFitting : public IfcDistributionFlowElement {
 public:
     IfcFlowFitting() {}
-    explicit IfcFlowFitting (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowFitting (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution control element type IfcFlowInstrumentType defines commonly shared information for occurrences of flow instruments.  The set of shared information may include: 
@@ -36882,13 +36882,13 @@ public:
 class IFC_PARSE_API IfcFlowInstrumentType : public IfcDistributionControlElementType {
 public:
     IfcFlowInstrumentType() {}
-    explicit IfcFlowInstrumentType (const std::weak_ptr<InstanceData>& data) : IfcDistributionControlElementType(data) {}
+    explicit IfcFlowInstrumentType (const std::weak_ptr<instance_data>& data) : IfcDistributionControlElementType(data) {}
 
     /// Identifies the predefined types of flow instrument from which the type required may be set.
     ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcFlowInstrumentTypeEnum::Value v10_PredefinedType);
 };
 /// The distribution flow element IfcFlowMovingDevice defines the occurrence of an apparatus used to distribute, circulate or perform conveyance of fluids, including liquids and gases (such as a pump or fan), and typically participates in a flow distribution system. Its type is defined by IfcFlowMovingDeviceType or its subtypes.
@@ -36899,10 +36899,10 @@ public:
 class IFC_PARSE_API IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
     IfcFlowMovingDevice() {}
-    explicit IfcFlowMovingDevice (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowMovingDevice (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcFlowSegment defines the occurrence of a segment of a flow distribution system.
@@ -36931,10 +36931,10 @@ public:
 class IFC_PARSE_API IfcFlowSegment : public IfcDistributionFlowElement {
 public:
     IfcFlowSegment() {}
-    explicit IfcFlowSegment (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowSegment (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcFlowStorageDevice defines
@@ -36949,10 +36949,10 @@ public:
 class IFC_PARSE_API IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
     IfcFlowStorageDevice() {}
-    explicit IfcFlowStorageDevice (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowStorageDevice (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcFlowTerminal defines the
@@ -36969,10 +36969,10 @@ public:
 class IFC_PARSE_API IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
     IfcFlowTerminal() {}
-    explicit IfcFlowTerminal (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowTerminal (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution flow element IfcFlowTreatmentDevice defines the occurrence of a device typically used to remove unwanted matter from a fluid, either liquid or gas, and typically participates in a flow distribution system.  Its type is defined by IfcFlowTreatmentDeviceType or its subtypes.
@@ -36983,10 +36983,10 @@ public:
 class IFC_PARSE_API IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
     IfcFlowTreatmentDevice() {}
-    explicit IfcFlowTreatmentDevice (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcFlowTreatmentDevice (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// A footing is a part of the foundation of a structure that spreads and transmits the load to the soil, either directly or via piles.
@@ -37014,7 +37014,7 @@ public:
 class IFC_PARSE_API IfcFooting : public IfcBuildingElement {
 public:
     IfcFooting() {}
-    explicit IfcFooting (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcFooting (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// The generic type of the footing.
     /// 
@@ -37022,7 +37022,7 @@ public:
     ::Ifc2x3::IfcFootingTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcFootingTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcFootingTypeEnum::Value v9_PredefinedType);
 };
 /// An IfcMember is a
@@ -37278,10 +37278,10 @@ public:
 class IFC_PARSE_API IfcMember : public IfcBuildingElement {
 public:
     IfcMember() {}
-    explicit IfcMember (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcMember (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// A pile is a slender timber, concrete, or steel structural element, driven, jetted, or otherwise embedded on end in the ground for the purpose of supporting a load.
@@ -37305,7 +37305,7 @@ public:
 class IFC_PARSE_API IfcPile : public IfcBuildingElement {
 public:
     IfcPile() {}
-    explicit IfcPile (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcPile (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// The predefined generic type of the pile according to function.
     /// 
@@ -37318,7 +37318,7 @@ public:
     std::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > ConstructionType() const;
     void setConstructionType(const std::optional< ::Ifc2x3::IfcPileConstructionEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcPileTypeEnum::Value v9_PredefinedType, std::optional< ::Ifc2x3::IfcPileConstructionEnum::Value > v10_ConstructionType);
 };
 /// Definition from IAI: An IfcPlate is a planar and
@@ -37552,10 +37552,10 @@ public:
 class IFC_PARSE_API IfcPlate : public IfcBuildingElement {
 public:
     IfcPlate() {}
-    explicit IfcPlate (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcPlate (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition of IAI: The railing is a frame assembly
@@ -37693,7 +37693,7 @@ public:
 class IFC_PARSE_API IfcRailing : public IfcBuildingElement {
 public:
     IfcRailing() {}
-    explicit IfcRailing (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcRailing (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Predefined generic types for a railing that are specified in an enumeration. There may be a property set given for the predefined types.
     ///   NOTE: The use of the predefined type directly at the occurrence object level of IfcRailing is only permitted, if no type object IfcRailingType is assigned.
@@ -37701,7 +37701,7 @@ public:
     std::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > PredefinedType() const;
     void setPredefinedType(const std::optional< ::Ifc2x3::IfcRailingTypeEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcRailingTypeEnum::Value > v9_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Inclined way or floor
@@ -37840,12 +37840,12 @@ public:
 class IFC_PARSE_API IfcRamp : public IfcBuildingElement {
 public:
     IfcRamp() {}
-    explicit IfcRamp (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcRamp (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     ::Ifc2x3::IfcRampTypeEnum::Value ShapeType() const;
     void setShapeType(const ::Ifc2x3::IfcRampTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcRampTypeEnum::Value v9_ShapeType);
 };
 /// A ramp is an inclined slab segment, normally
@@ -38039,22 +38039,22 @@ public:
 class IFC_PARSE_API IfcRampFlight : public IfcBuildingElement {
 public:
     IfcRampFlight() {}
-    explicit IfcRampFlight (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcRampFlight (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcRationalBezierCurve : public IfcBezierCurve {
 public:
     IfcRationalBezierCurve() {}
-    explicit IfcRationalBezierCurve (const std::weak_ptr<InstanceData>& data) : IfcBezierCurve(data) {}
+    explicit IfcRationalBezierCurve (const std::weak_ptr<instance_data>& data) : IfcBezierCurve(data) {}
 
     std::vector< double > /*[2:?]*/ WeightsData() const;
     void setWeightsData(const std::vector< double > /*[2:?]*/& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(int v1_Degree, std::vector< ::Ifc2x3::IfcCartesianPoint > v2_ControlPointsList, ::Ifc2x3::IfcBSplineCurveForm::Value v3_CurveForm, boost::logic::tribool v4_ClosedCurve, boost::logic::tribool v5_SelfIntersect, std::vector< double > /*[2:?]*/ v6_WeightsData);
 };
 /// Definition from IAI: Bars, wires, strands, meshes, tendons, and other components embedded in concrete in such a manner that the reinforcement and the concrete act together in resisting forces.
@@ -38068,12 +38068,12 @@ public:
 class IFC_PARSE_API IfcReinforcingElement : public IfcBuildingElementComponent {
 public:
     IfcReinforcingElement() {}
-    explicit IfcReinforcingElement (const std::weak_ptr<InstanceData>& data) : IfcBuildingElementComponent(data) {}
+    explicit IfcReinforcingElement (const std::weak_ptr<instance_data>& data) : IfcBuildingElementComponent(data) {}
 
     std::optional< std::string > SteelGrade() const;
     void setSteelGrade(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade);
 };
 /// Definition from IAI: A series of longitudinal and transverse wires or bars of various gauges, arranged at right angles to each other and welded at all points of intersection; usually used for concrete slab reinforcement. Also known as welded wire fabric.
@@ -38103,7 +38103,7 @@ public:
 class IFC_PARSE_API IfcReinforcingMesh : public IfcReinforcingElement {
 public:
     IfcReinforcingMesh() {}
-    explicit IfcReinforcingMesh (const std::weak_ptr<InstanceData>& data) : IfcReinforcingElement(data) {}
+    explicit IfcReinforcingMesh (const std::weak_ptr<instance_data>& data) : IfcReinforcingElement(data) {}
 
     std::optional< double > MeshLength() const;
     void setMeshLength(const std::optional< double >& v);
@@ -38122,7 +38122,7 @@ public:
     double TransverseBarSpacing() const;
     void setTransverseBarSpacing(const double& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade, std::optional< double > v10_MeshLength, std::optional< double > v11_MeshWidth, double v12_LongitudinalBarNominalDiameter, double v13_TransverseBarNominalDiameter, double v14_LongitudinalBarCrossSectionArea, double v15_TransverseBarCrossSectionArea, double v16_LongitudinalBarSpacing, double v17_TransverseBarSpacing);
 };
 /// Definition from ISO 6707-1:1989: Construction enclosing the building from above.
@@ -38273,24 +38273,24 @@ public:
 class IFC_PARSE_API IfcRoof : public IfcBuildingElement {
 public:
     IfcRoof() {}
-    explicit IfcRoof (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcRoof (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     ::Ifc2x3::IfcRoofTypeEnum::Value ShapeType() const;
     void setShapeType(const ::Ifc2x3::IfcRoofTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcRoofTypeEnum::Value v9_ShapeType);
 };
 
 class IFC_PARSE_API IfcRoundedEdgeFeature : public IfcEdgeFeature {
 public:
     IfcRoundedEdgeFeature() {}
-    explicit IfcRoundedEdgeFeature (const std::weak_ptr<InstanceData>& data) : IfcEdgeFeature(data) {}
+    explicit IfcRoundedEdgeFeature (const std::weak_ptr<instance_data>& data) : IfcEdgeFeature(data) {}
 
     std::optional< double > Radius() const;
     void setRadius(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_FeatureLength, std::optional< double > v10_Radius);
 };
 /// The distribution control element type IfcSensorType defines commonly shared information for occurrences of sensors.  The set of shared information may include: 
@@ -38344,13 +38344,13 @@ public:
 class IFC_PARSE_API IfcSensorType : public IfcDistributionControlElementType {
 public:
     IfcSensorType() {}
-    explicit IfcSensorType (const std::weak_ptr<InstanceData>& data) : IfcDistributionControlElementType(data) {}
+    explicit IfcSensorType (const std::weak_ptr<instance_data>& data) : IfcDistributionControlElementType(data) {}
 
     /// Identifies the predefined types of sensor from which the type required may be set.
     ::Ifc2x3::IfcSensorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcSensorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSensorTypeEnum::Value v10_PredefinedType);
 };
 /// A slab is a component of the
@@ -38616,7 +38616,7 @@ public:
 class IFC_PARSE_API IfcSlab : public IfcBuildingElement {
 public:
     IfcSlab() {}
-    explicit IfcSlab (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcSlab (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Predefined generic type for a slab that is specified in an enumeration. There may be a property set given specifically for the predefined types.
     ///   NOTE The PredefinedType shall only be used, if no type object IfcSlabType is assigned, providing its own IfcSlabType.PredefinedType.
@@ -38625,7 +38625,7 @@ public:
     std::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > PredefinedType() const;
     void setPredefinedType(const std::optional< ::Ifc2x3::IfcSlabTypeEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< ::Ifc2x3::IfcSlabTypeEnum::Value > v9_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Construction comprising
@@ -38796,12 +38796,12 @@ public:
 class IFC_PARSE_API IfcStair : public IfcBuildingElement {
 public:
     IfcStair() {}
-    explicit IfcStair (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcStair (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     ::Ifc2x3::IfcStairTypeEnum::Value ShapeType() const;
     void setShapeType(const ::Ifc2x3::IfcStairTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcStairTypeEnum::Value v9_ShapeType);
 };
 /// A stair flight is an assembly of
@@ -38974,7 +38974,7 @@ public:
 class IFC_PARSE_API IfcStairFlight : public IfcBuildingElement {
 public:
     IfcStairFlight() {}
-    explicit IfcStairFlight (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcStairFlight (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Number of the risers included in the stair flight
     /// 
@@ -38997,7 +38997,7 @@ public:
     std::optional< double > TreadLength() const;
     void setTreadLength(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< int > v9_NumberOfRiser, std::optional< int > v10_NumberOfTreads, std::optional< double > v11_RiserHeight, std::optional< double > v12_TreadLength);
 };
 /// Definition from IAI: The IfcStructuralAnalysisModel is used to assemble all information needed to represent a structural analysis model.  It encompasses certain general properties (such as analysis type), references to all contained structural members, structural supports or connections, as well as loads and the respective load results.
@@ -39026,7 +39026,7 @@ public:
 class IFC_PARSE_API IfcStructuralAnalysisModel : public IfcSystem {
 public:
     IfcStructuralAnalysisModel() {}
-    explicit IfcStructuralAnalysisModel (const std::weak_ptr<InstanceData>& data) : IfcSystem(data) {}
+    explicit IfcStructuralAnalysisModel (const std::weak_ptr<instance_data>& data) : IfcSystem(data) {}
 
     /// Defines the type of the structural analysis model.
     ::Ifc2x3::IfcAnalysisModelTypeEnum::Value PredefinedType() const;
@@ -39050,14 +39050,14 @@ public:
     std::optional< std::vector< ::Ifc2x3::IfcStructuralResultGroup > > HasResults() const;
     void setHasResults(const std::optional< std::vector< ::Ifc2x3::IfcStructuralResultGroup > >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisModelTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcAxis2Placement3D v7_OrientationOf2DPlane, std::optional< std::vector< ::Ifc2x3::IfcStructuralLoadGroup > > v8_LoadedBy, std::optional< std::vector< ::Ifc2x3::IfcStructuralResultGroup > > v9_HasResults);
 };
 
 class IFC_PARSE_API IfcTendon : public IfcReinforcingElement {
 public:
     IfcTendon() {}
-    explicit IfcTendon (const std::weak_ptr<InstanceData>& data) : IfcReinforcingElement(data) {}
+    explicit IfcTendon (const std::weak_ptr<instance_data>& data) : IfcReinforcingElement(data) {}
 
     ::Ifc2x3::IfcTendonTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcTendonTypeEnum::Value& v);
@@ -39076,17 +39076,17 @@ public:
     std::optional< double > MinCurvatureRadius() const;
     void setMinCurvatureRadius(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade, ::Ifc2x3::IfcTendonTypeEnum::Value v10_PredefinedType, double v11_NominalDiameter, double v12_CrossSectionArea, std::optional< double > v13_TensionForce, std::optional< double > v14_PreStress, std::optional< double > v15_FrictionCoefficient, std::optional< double > v16_AnchorageSlip, std::optional< double > v17_MinCurvatureRadius);
 };
 
 class IFC_PARSE_API IfcTendonAnchor : public IfcReinforcingElement {
 public:
     IfcTendonAnchor() {}
-    explicit IfcTendonAnchor (const std::weak_ptr<InstanceData>& data) : IfcReinforcingElement(data) {}
+    explicit IfcTendonAnchor (const std::weak_ptr<instance_data>& data) : IfcReinforcingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade);
 };
 /// The element component type IfcVibrationIsolatorType defines commonly shared information for occurrences of vibration isolators.  The set of shared information may include: 
@@ -39114,13 +39114,13 @@ public:
 class IFC_PARSE_API IfcVibrationIsolatorType : public IfcDiscreteAccessoryType {
 public:
     IfcVibrationIsolatorType() {}
-    explicit IfcVibrationIsolatorType (const std::weak_ptr<InstanceData>& data) : IfcDiscreteAccessoryType(data) {}
+    explicit IfcVibrationIsolatorType (const std::weak_ptr<instance_data>& data) : IfcDiscreteAccessoryType(data) {}
 
     /// Defines the type of vibration isolator.
     ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcVibrationIsolatorTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Vertical construction
@@ -39368,10 +39368,10 @@ public:
 class IFC_PARSE_API IfcWall : public IfcBuildingElement {
 public:
     IfcWall() {}
-    explicit IfcWall (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcWall (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The IfcWallStandardCase defines a wall with certain
@@ -39579,10 +39579,10 @@ public:
 class IFC_PARSE_API IfcWallStandardCase : public IfcWall {
 public:
     IfcWallStandardCase() {}
-    explicit IfcWallStandardCase (const std::weak_ptr<InstanceData>& data) : IfcWall(data) {}
+    explicit IfcWallStandardCase (const std::weak_ptr<instance_data>& data) : IfcWall(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// Definition form ISO 6707-1:1989: Construction for
@@ -39946,7 +39946,7 @@ public:
 class IFC_PARSE_API IfcWindow : public IfcBuildingElement {
 public:
     IfcWindow() {}
-    explicit IfcWindow (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcWindow (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     /// Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the window is inserted. 
     /// 
@@ -39959,7 +39959,7 @@ public:
     std::optional< double > OverallWidth() const;
     void setOverallWidth(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_OverallHeight, std::optional< double > v10_OverallWidth);
 };
 /// The distribution control element type IfcActuatorType defines commonly shared information for occurrences of actuators.  The set of shared information may include: 
@@ -39996,13 +39996,13 @@ public:
 class IFC_PARSE_API IfcActuatorType : public IfcDistributionControlElementType {
 public:
     IfcActuatorType() {}
-    explicit IfcActuatorType (const std::weak_ptr<InstanceData>& data) : IfcDistributionControlElementType(data) {}
+    explicit IfcActuatorType (const std::weak_ptr<instance_data>& data) : IfcDistributionControlElementType(data) {}
 
     /// Identifies the predefined types of actuator from which the type required may be set.
     ::Ifc2x3::IfcActuatorTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcActuatorTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcActuatorTypeEnum::Value v10_PredefinedType);
 };
 /// The distribution control element type IfcAlarmType defines commonly shared information for occurrences of alarms.  The set of shared information may include: 
@@ -40034,13 +40034,13 @@ public:
 class IFC_PARSE_API IfcAlarmType : public IfcDistributionControlElementType {
 public:
     IfcAlarmType() {}
-    explicit IfcAlarmType (const std::weak_ptr<InstanceData>& data) : IfcDistributionControlElementType(data) {}
+    explicit IfcAlarmType (const std::weak_ptr<instance_data>& data) : IfcDistributionControlElementType(data) {}
 
     /// Identifies the predefined types of alarm from which the type required may be set.
     ::Ifc2x3::IfcAlarmTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcAlarmTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAlarmTypeEnum::Value v10_PredefinedType);
 };
 /// Definition from ISO 6707-1:1989: Structural member designed to carry loads between or beyond points of support, usually narrow in relation to its length and horizontal or nearly so.
@@ -40283,24 +40283,24 @@ public:
 class IFC_PARSE_API IfcBeam : public IfcBuildingElement {
 public:
     IfcBeam() {}
-    explicit IfcBeam (const std::weak_ptr<InstanceData>& data) : IfcBuildingElement(data) {}
+    explicit IfcBeam (const std::weak_ptr<instance_data>& data) : IfcBuildingElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
 class IFC_PARSE_API IfcChamferEdgeFeature : public IfcEdgeFeature {
 public:
     IfcChamferEdgeFeature() {}
-    explicit IfcChamferEdgeFeature (const std::weak_ptr<InstanceData>& data) : IfcEdgeFeature(data) {}
+    explicit IfcChamferEdgeFeature (const std::weak_ptr<instance_data>& data) : IfcEdgeFeature(data) {}
 
     std::optional< double > Width() const;
     void setWidth(const std::optional< double >& v);
     std::optional< double > Height() const;
     void setHeight(const std::optional< double >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< double > v9_FeatureLength, std::optional< double > v10_Width, std::optional< double > v11_Height);
 };
 /// The distribution control element type IfcControllerType defines commonly shared information for occurrences of controllers.  The set of shared information may include: 
@@ -40342,13 +40342,13 @@ public:
 class IFC_PARSE_API IfcControllerType : public IfcDistributionControlElementType {
 public:
     IfcControllerType() {}
-    explicit IfcControllerType (const std::weak_ptr<InstanceData>& data) : IfcDistributionControlElementType(data) {}
+    explicit IfcControllerType (const std::weak_ptr<instance_data>& data) : IfcDistributionControlElementType(data) {}
 
     /// Identifies the predefined types of controller from which the type required may be set.
     ::Ifc2x3::IfcControllerTypeEnum::Value PredefinedType() const;
     void setPredefinedType(const ::Ifc2x3::IfcControllerTypeEnum::Value& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcControllerTypeEnum::Value v10_PredefinedType);
 };
 /// A distribution chamber element defines a place at which distribution systems and their constituent elements may be inspected or through which they may travel.
@@ -40385,10 +40385,10 @@ public:
 class IFC_PARSE_API IfcDistributionChamberElement : public IfcDistributionFlowElement {
 public:
     IfcDistributionChamberElement() {}
-    explicit IfcDistributionChamberElement (const std::weak_ptr<InstanceData>& data) : IfcDistributionFlowElement(data) {}
+    explicit IfcDistributionChamberElement (const std::weak_ptr<instance_data>& data) : IfcDistributionFlowElement(data) {}
 
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 /// The distribution element IfcDistributionControlElement defines occurrence elements of a building automation control system that are used to impart control over elements of a distribution system.
@@ -40472,27 +40472,27 @@ public:
 class IFC_PARSE_API IfcDistributionControlElement : public IfcDistributionElement {
 public:
     IfcDistributionControlElement() {}
-    explicit IfcDistributionControlElement (const std::weak_ptr<InstanceData>& data) : IfcDistributionElement(data) {}
+    explicit IfcDistributionControlElement (const std::weak_ptr<instance_data>& data) : IfcDistributionElement(data) {}
 
     std::optional< std::string > ControlElementId() const;
     void setControlElementId(const std::optional< std::string >& v);
         std::vector< IfcRelFlowControlElements > AssignedToFlowElement() const; // INVERSE IfcRelFlowControlElements::RelatedControlElements
 
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ControlElementId);
 };
 
 class IFC_PARSE_API IfcElectricDistributionPoint : public IfcFlowController {
 public:
     IfcElectricDistributionPoint() {}
-    explicit IfcElectricDistributionPoint (const std::weak_ptr<InstanceData>& data) : IfcFlowController(data) {}
+    explicit IfcElectricDistributionPoint (const std::weak_ptr<instance_data>& data) : IfcFlowController(data) {}
 
     ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value DistributionPointFunction() const;
     void setDistributionPointFunction(const ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value& v);
     std::optional< std::string > UserDefinedFunction() const;
     void setUserDefinedFunction(const std::optional< std::string >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcElectricDistributionPointFunctionEnum::Value v9_DistributionPointFunction, std::optional< std::string > v10_UserDefinedFunction);
 };
 /// Definition from IAI: A steel bar, usually with manufactured deformations in the surface,
@@ -40526,7 +40526,7 @@ public:
 class IFC_PARSE_API IfcReinforcingBar : public IfcReinforcingElement {
 public:
     IfcReinforcingBar() {}
-    explicit IfcReinforcingBar (const std::weak_ptr<InstanceData>& data) : IfcReinforcingElement(data) {}
+    explicit IfcReinforcingBar (const std::weak_ptr<instance_data>& data) : IfcReinforcingElement(data) {}
 
     double NominalDiameter() const;
     void setNominalDiameter(const double& v);
@@ -40539,7 +40539,7 @@ public:
     std::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > BarSurface() const;
     void setBarSurface(const std::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value >& v);
     
-    static const IfcParse::entity& Class();
+    static const ifcopenshell::entity& Class();
     void initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade, double v10_NominalDiameter, double v11_CrossSectionArea, std::optional< double > v12_BarLength, ::Ifc2x3::IfcReinforcingBarRoleEnum::Value v13_BarRole, std::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v14_BarSurface);
 };
 

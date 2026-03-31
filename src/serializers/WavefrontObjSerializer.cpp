@@ -63,7 +63,7 @@ void WaveFrontOBJSerializer::writeMaterial(const ifcopenshell::geometry::taxonom
 {
 	auto& style = *styleptr;
 	std::string material_name = style.name;
-    IfcUtil::sanitate_material_name(material_name);
+    ifcopenshell::sanitate_material_name(material_name);
     mtl_stream.stream << "newmtl " << material_name << "\n";
 
 	{
@@ -132,7 +132,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style::ptr material = mesh.materials()[material_id];
 			std::string material_name = material->name;
-            IfcUtil::sanitate_material_name(material_name);
+            ifcopenshell::sanitate_material_name(material_name);
 			obj_stream.stream << "usemtl " << material_name << "\n";
 			if (materials.find(material_name) == materials.end()) {
 				writeMaterial(material);
@@ -178,7 +178,7 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style::ptr material = mesh.materials()[material_id];
 			std::string material_name = material->name;
-            IfcUtil::sanitate_material_name(material_name);
+            ifcopenshell::sanitate_material_name(material_name);
 			obj_stream.stream << "usemtl " << material_name << "\n";
 			if (materials.find(material_name) == materials.end()) {
 				writeMaterial(material);

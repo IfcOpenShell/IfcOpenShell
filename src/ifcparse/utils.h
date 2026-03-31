@@ -24,7 +24,7 @@
 #ifndef IFCPARSE_UTILS_H
 #define IFCPARSE_UTILS_H
 
-namespace IfcUtil {
+namespace ifcopenshell {
 
 /// Replaces spaces and potentially other problem causing characters with underscores.
 IFC_PARSE_API void sanitate_material_name(std::string& str);
@@ -54,6 +54,6 @@ IFC_PARSE_API inline std::string from_utf8(const std::string& str) { return str;
 
 } // namespace path
 
-} // namespace IfcUtil
+} // namespace ifcopenshell
 
 #endif

@@ -449,7 +449,7 @@ assign_matrix_access(revolve);
 
 	std::vector<express::Base> select_box(const express::Base& e, bool completely_within = false, double extend=-1.e-5) const {
 		if (!e.declaration().is("IfcProduct")) {
-			throw IfcParse::IfcException("Instance should be an IfcProduct");
+			throw ifcopenshell::exception("Instance should be an IfcProduct");
 		}
 		return cast_vector<express::Base>($self->select_box(e.as<express::Entity>(), completely_within, extend));
 	}
@@ -464,7 +464,7 @@ assign_matrix_access(revolve);
 
 	std::vector<express::Base> select(const express::Base& e, bool completely_within = false, double extend = 0.0) const {
 		if (!e.declaration().is("IfcProduct")) {
-			throw IfcParse::IfcException("Instance should be an IfcProduct");
+			throw ifcopenshell::exception("Instance should be an IfcProduct");
 		}
 		return cast_vector<express::Base>($self->select(e.as<express::Entity>(), completely_within, extend));
 	}
@@ -512,13 +512,13 @@ assign_matrix_access(revolve);
         std::vector<express::Entity> set_b_entities;
         for (auto& e : set_a) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_a_entities.push_back(e.as<express::Entity>());
         }
         for (auto& e : set_b) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_b_entities.push_back(e.as<express::Entity>());
         }
@@ -530,13 +530,13 @@ assign_matrix_access(revolve);
         std::vector<express::Entity> set_b_entities;
         for (auto& e : set_a) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_a_entities.push_back(e.as<express::Entity>());
         }
         for (auto& e : set_b) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_b_entities.push_back(e.as<express::Entity>());
         }
@@ -548,13 +548,13 @@ assign_matrix_access(revolve);
         std::vector<express::Entity> set_b_entities;
         for (auto& e : set_a) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_a_entities.push_back(e.as<express::Entity>());
         }
         for (auto& e : set_b) {
             if (!e.declaration().is("IfcProduct")) {
-                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+                throw ifcopenshell::exception("All instances should be of type IfcProduct");
             }
             set_b_entities.push_back(e.as<express::Entity>());
         }
@@ -618,17 +618,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
-	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, int num_threads) {
+	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, int num_threads) {
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
@@ -637,7 +637,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
@@ -864,19 +864,19 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 	template <typename Schema>
 	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, const express::Base& instance, const express::Base& representation = express::Base()) {
-		IfcParse::IfcFile* file = instance.file();
+		ifcopenshell::file* file = instance.file();
 			
 		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
 			
 		if (auto product = instance.as<typename Schema::IfcProduct>()) {
 			if (representation) {
 				if (!representation.declaration().is(Schema::IfcRepresentation::Class())) {
-					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
+					throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
 				}
 			}
 		
 			if (!representation && !product.Representation()) {
-				throw IfcParse::IfcException("Representation is NULL");
+				throw ifcopenshell::exception("Representation is NULL");
 			}
 			
 			auto prodrep = product.Representation();
@@ -936,16 +936,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// Return a random representation
 					ifc_representation = reps.front();
 				} else {
-					throw IfcParse::IfcException("No suitable IfcRepresentation found");
+					throw ifcopenshell::exception("No suitable IfcRepresentation found");
 				}
 			}
 
 			IfcGeom::BRepElement* brep = kernel.create_brep_for_representation_and_product(ifc_representation, product);
 			if (!brep) {
 				std::ostringstream oss_repr, oss_product;
-				ifc_representation.toString(oss_repr);
-				product.toString(oss_product);
-				throw IfcParse::IfcException("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
+				ifc_representation.to_string(oss_repr);
+				product.to_string(oss_product);
+				throw ifcopenshell::exception("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
 			}
 			if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
@@ -961,7 +961,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		} else if (instance.as<typename Schema::IfcPlacement>() || instance.as<typename Schema::IfcObjectPlacement>()) {
 			auto item = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(kernel.mapping()->map(instance));
 			if (item == nullptr) {
-				throw IfcParse::IfcException("Failed to convert placement");
+				throw ifcopenshell::exception("Failed to convert placement");
 			}
             if (st.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
                 // we pass the settings to the Transformation object, but access the data just offloads to the
@@ -982,8 +982,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 						shapes = kernel.convert(instance);
 					} catch (...) {
 						std::ostringstream oss;
-						instance.toString(oss);
-						throw IfcParse::IfcException("Failed to process shape. Instance: " + oss.str());
+						instance.to_string(oss);
+						throw ifcopenshell::exception("Failed to process shape. Instance: " + oss.str());
 					}
 
 					IfcGeom::Representation::BRep brep(kernel.settings(), instance.declaration().name(), to_locale_invariant_string(instance.id()), shapes);
@@ -994,11 +994,11 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 							return new IfcGeom::Representation::Triangulation(brep);
 						}
 					} catch (...) {
-						throw IfcParse::IfcException("Error during shape serialization");
+						throw ifcopenshell::exception("error during shape serialization");
 					}
 				}
 			} else {
-				throw IfcParse::IfcException("Invalid additional representation specified");
+				throw ifcopenshell::exception("Invalid additional representation specified");
 			}
 		}
 		return std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*>();
@@ -1104,7 +1104,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}
 		#endif
 
-		throw IfcParse::IfcException("No geometry support for " + schema_name);
+		throw ifcopenshell::exception("No geometry support for " + schema_name);
 	}
 
 	// Manual definition of overload without representation argument
@@ -1116,7 +1116,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 %inline %{
-	express::Base serialise(IfcParse::IfcFile& f, const std::string& shape_str, bool advanced=true) {
+	express::Base serialise(ifcopenshell::file& f, const std::string& shape_str, bool advanced=true) {
 		std::stringstream stream(shape_str);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);
@@ -1125,7 +1125,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		return IfcGeom::serialise(f, shp, advanced);
 	}
 
-	express::Base tesselate(IfcParse::IfcFile& f, const std::string& shape_str, double d) {
+	express::Base tesselate(ifcopenshell::file& f, const std::string& shape_str, double d) {
 		std::stringstream stream(shape_str);
 		BRepTools_ShapeSet shapes;
 		shapes.Read(stream);

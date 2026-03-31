@@ -38,8 +38,8 @@
 
 static std::string& collada_id(std::string& s)
 {
-    IfcUtil::sanitate_material_name(s);
-    IfcUtil::escape_xml(s);
+    ifcopenshell::sanitate_material_name(s);
+    ifcopenshell::escape_xml(s);
 	return s;
 }
 
@@ -219,7 +219,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
     BOOST_FOREACH(const std::string &material_name, material_ids) {
 		// Unescape to avoid double escaping because OpenCollada's material URI parameter escapes XML internally
     	std::string unescaped = material_name;
-    	IfcUtil::unescape_xml(unescaped);
+    	ifcopenshell::unescape_xml(unescaped);
 
         COLLADASW::InstanceMaterial material(material_name, "#" + unescaped);
 		instanceGeometry.getBindMaterial().getInstanceMaterialList().push_back(material);
@@ -366,7 +366,7 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 		openMaterial(material_name);
 
 		// Unescape to avoid double escaping because OpenCollada's addInstanceEffect escapes XML internally
-		IfcUtil::unescape_xml(material_name);
+		ifcopenshell::unescape_xml(material_name);
 
         addInstanceEffect("#" + material_name + "-fx");
 		closeMaterial();

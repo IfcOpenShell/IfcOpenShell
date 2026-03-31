@@ -1,7 +1,7 @@
 #ifndef ITERATOR_KERNEL_H
 #define ITERATOR_KERNEL_H
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/ConversionResult.h"
 #include "../ifcgeom/abstract_mapping.h"
@@ -25,7 +25,7 @@ namespace ifcopenshell { namespace geometry {
 	public:
 		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return &*kernel_; }
 
-		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
+		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geometry::Settings& settings);
 		
 		~Converter();
 

@@ -41,7 +41,7 @@
 #define IfcSchema Ifc2x3
 #include "../ifcparse/macros.h"
 #include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
 
@@ -56,9 +56,9 @@ void createGroundShape(TopoDS_Shape& shape);
 
 int main() {
 
-	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
+	// The hierarchy_helper is a subclass of the regular file that provides several
 	// convenience functions for working with geometry in IFC files.
-	IfcHierarchyHelper<IfcSchema> file;
+	hierarchy_helper<IfcSchema> file;
 	file.header().file_name().setname("IfcAdvancedHouse.ifc");
 
 	auto building = file.addBuilding();
@@ -92,7 +92,7 @@ int main() {
 	// return `0` otherwise.
 	auto building_shape = IfcGeom::serialise(file, building_shell, false).as<IfcSchema::IfcProductDefinitionShape>();
 	
-	file.addEntity(building_shape);
+	file.add_entity(building_shape);
 	auto rep = building_shape.Representations().begin();
 	rep->setContextOfItems(file.getRepresentationContext("model"));
 
@@ -116,7 +116,7 @@ int main() {
 	for (auto& rep : ground_reps) {
 		rep.setContextOfItems(file.getRepresentationContext("Model"));
 	}
-	file.addEntity(ground_representation);
+	file.add_entity(ground_representation);
 	setSurfaceColour(file, ground_representation.as<IfcSchema::IfcProductDefinitionShape>(), 0.15, 0.25, 0.05);
 
     /*

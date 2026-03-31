@@ -90,7 +90,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (mapped_fallback != result) {
-            Logger::Warning("Computed placement differs from fallback", inst);
+            logger::warning("Computed placement differs from fallback", inst);
         }
     }
 
@@ -98,7 +98,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		Logger::Warning("Ignoring singular matrix:", inst);
+		logger::warning("Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 
@@ -122,7 +122,7 @@ if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 	convert(l->PlacementRelTo(), grid_position);
 #else
 	IfcSchema::IfcGrid* grid = nullptr;
-	auto grids = (*axes->begin())->data().file->getInverse<IfcSchema::IfcGrid>((*axes->begin())->data().id(), -1);
+	auto grids = (*axes->begin())->data().file->get_inverse<IfcSchema::IfcGrid>((*axes->begin())->data().id(), -1);
 	if (grids && grids->size()) {
 		grid = *grids->begin();
 		if (grid->ObjectPlacement()) {
@@ -136,11 +136,11 @@ if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 		auto offsets = x->OffsetDistances();
 
 		if (axes->size() != 2) {
-			Logger::Message(Logger::LOG_WARNING, "Unexpected grid axes count:" + std::to_string(axes->size()), x);
+			logger::message(logger::LOG_WARNING, "Unexpected grid axes count:" + std::to_string(axes->size()), x);
 			return false;
 		}
 		if (offsets.size() != 3) {
-			Logger::Message(Logger::LOG_WARNING, "Unexpected offset count:" + std::to_string(offsets.size()), x);
+			logger::message(logger::LOG_WARNING, "Unexpected offset count:" + std::to_string(offsets.size()), x);
 			return false;
 		}
 		auto first = *axes->begin();
@@ -171,7 +171,7 @@ if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 		gp_Pnt pp1, pp2;
 		ecc->Points(1, pp1, pp2);
 		if (pp1.Distance(pp2) > getValue(GV_PRECISION)) {
-			Logger::Message(Logger::LOG_WARNING, "No axis intersection:", x);
+			logger::message(logger::LOG_WARNING, "No axis intersection:", x);
 			return false;
 		}
 		P = pp1;
@@ -202,7 +202,7 @@ if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 			if (V.Magnitude() > 1.e-9) {
 				D = V;
 			} else {
-				Logger::Message(Logger::LOG_ERROR, "Unable to obtain ref direction:", l);
+				logger::message(logger::LOG_ERROR, "Unable to obtain ref direction:", l);
 				return false;
 			}
 		}
@@ -215,7 +215,7 @@ if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 		if (V.Magnitude() > 1.e-9) {
 			D = V;
 		} else {
-			Logger::Message(Logger::LOG_ERROR, "Unable to obtain ref direction:", l);
+			logger::message(logger::LOG_ERROR, "Unable to obtain ref direction:", l);
 			return false;
 		}
 	}

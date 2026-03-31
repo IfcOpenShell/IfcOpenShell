@@ -67,7 +67,7 @@ HdfSerializer::HdfSerializer(const std::string& hdf_filename, const ifcopenshell
 			? H5F_ACC_RDONLY
 			: (H5F_ACC_RDWR | H5F_ACC_CREAT));
 	} catch (H5::Exception& e) {
-		throw IfcParse::IfcException(e.getDetailMsg());
+		throw ifcopenshell::exception(e.getDetailMsg());
 	}
 	
 	str_type = H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
@@ -236,7 +236,7 @@ namespace {
 
 void HdfSerializer::read_surface_style(const surface_style_serialization& s,
                                        ifcopenshell::geometry::taxonomy::style& gss,
-                                       IfcParse::IfcFile& f) {
+                                       ifcopenshell::file& f) {
 	if (strlen(s.name) || s.id) {
 		if (!std::isnan(s.diffuse[0])) {
 			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
@@ -263,7 +263,7 @@ void HdfSerializer::remove(const std::string& guid) {
 	}
 }
 
-IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& guid, const std::string& representation_id_str, read_type rt) {
+IfcGeom::Element* HdfSerializer::read(ifcopenshell::file& f, const std::string& guid, const std::string& representation_id_str, read_type rt) {
 	if (!H5Lexists(file.getId(), guid.c_str(), H5P_DEFAULT)) {
 		return nullptr;
 	}

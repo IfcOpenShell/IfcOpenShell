@@ -23,6 +23,14 @@ foreach(schema ${SCHEMA_VERSIONS})
     )
 endforeach()
 
+list(APPEND IFCPARSE_H_FILES
+    schemas/Header_section_schema.h
+)
+list(APPEND IFCPARSE_CPP_FILES
+    schemas/Header_section_schema.cpp
+    schemas/Header_section_schema-schema.cpp
+)
+
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})

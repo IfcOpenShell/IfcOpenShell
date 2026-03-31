@@ -29,7 +29,7 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
 typedef IfcWrite::IfcGuidHelper guid;
@@ -40,7 +40,7 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 	const std::string profile_type = IfcSchema::Type::ToString(profile->type());
 	const std::string filename = profile_type + ".ifc";
 	
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	file.filename(filename);
 	
 	int i = 0;
@@ -61,8 +61,8 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile,
 			file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-		file.addEntity(profile);
-		file.addEntity(solid);
+		file.add_entity(profile);
+		file.add_entity(solid);
 		
 		IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
 		IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
@@ -73,8 +73,8 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 		reps->push(rep);
 
 		IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-		file.addEntity(rep);
-		file.addEntity(shape);
+		file.add_entity(rep);
+		file.add_entity(shape);
 		
 		product->setRepresentation(shape);
 	}

@@ -62,9 +62,9 @@ namespace ifcopenshell {
 			class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
 				std::vector<std::unique_ptr<AbstractKernel>> kernels_;
 				ifcopenshell::geometry::abstract_mapping* mapping_;
-				IfcParse::IfcFile* file_;
+				ifcopenshell::file* file_;
 			public:
-				HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
+				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
 					: AbstractKernel(name, settings)
 					, kernels_(std::move(kernels))
 					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings))
@@ -167,7 +167,7 @@ namespace ifcopenshell {
 				}
 			};
 
-			inline std::unique_ptr<AbstractKernel> construct(IfcParse::IfcFile* file, const std::string& geometry_library, Settings& conv_settings) {
+			inline std::unique_ptr<AbstractKernel> construct(ifcopenshell::file* file, const std::string& geometry_library, Settings& conv_settings) {
 				std::string geometry_library_lower = boost::to_lower_copy(geometry_library);
 
 #ifdef IFOPSH_WITH_OPENCASCADE
@@ -193,7 +193,7 @@ namespace ifcopenshell {
 						if (geometry_library_lower.find("-", 0) == 0) {
 							geometry_library_lower = geometry_library_lower.substr(strlen("-"));
 						} else {
-							throw IfcParse::IfcException("Invalid hybrid kernel " + geometry_library);
+							throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
 						}
 						auto n = kernels.size();
 #ifdef IFOPSH_WITH_OPENCASCADE
@@ -215,7 +215,7 @@ namespace ifcopenshell {
 						}
 #endif
 						if (kernels.size() != n + 1) {
-							throw IfcParse::IfcException("Invalid hybrid kernel " + geometry_library);
+							throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
 						}
 					}
 
@@ -229,7 +229,7 @@ namespace ifcopenshell {
 					}
 				}
 
-				throw IfcParse::IfcException("No geometry kernel registered for " + geometry_library);
+				throw ifcopenshell::exception("No geometry kernel registered for " + geometry_library);
 			}
 
 		}

@@ -40,7 +40,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol || d1 < tol || d2 < tol) {
-		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		logger::message(logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 	
@@ -88,7 +88,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTShapeProfileDef& inst) {
 		const double det = a1*b2 - a2*b1;
 
 		if (std::fabs(det) < 1.e-5) {
-			Logger::Message(Logger::LOG_NOTICE, "Web and flange do not intersect for:", inst);
+			logger::message(logger::LOG_NOTICE, "Web and flange do not intersect for:", inst);
 			return nullptr;
 		}
 

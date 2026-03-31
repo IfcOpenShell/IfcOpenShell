@@ -26,15 +26,15 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../ifcparse/IfcSIPrefix.h"
+#include "../../ifcparse/si_prefix.h"
 #include "../../ifcparse/utils.h"
-#include "../../ifcparse/IfcLogger.h"
+#include "../../ifcparse/logger.h"
 
 using json = nlohmann::json;
 
 namespace {
 	struct POSTFIX_SCHEMA(factory_t) {
-		JsonSerializer* operator()(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect) const {
+		JsonSerializer* operator()(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect) const {
             POSTFIX_SCHEMA(JsonSerializer)* s = new POSTFIX_SCHEMA(JsonSerializer)(file, json_filename, dialect);
 			s->setFile(file);
 			return s;
@@ -56,14 +56,14 @@ class format_value_visitor : public boost::static_visitor<std::string> {
 
     template <typename T>
     json operator()(const T& t) const {
-        if constexpr (std::is_same_v<std::decay_t<T>, Derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::Base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::Base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::Base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, Blank>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, derived> || std::is_same_v<std::decay_t<T>, boost::dynamic_bitset<>> || std::is_same_v<std::decay_t<T>, express::Base> || std::is_same_v<std::decay_t<T>, std::vector<int>> || std::is_same_v<std::decay_t<T>, std::vector<double>> || std::is_same_v<std::decay_t<T>, std::vector<std::string>> || std::is_same_v<std::decay_t<T>, std::vector<boost::dynamic_bitset<>>> || std::is_same_v<std::decay_t<T>, std::vector<express::Base>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<express::Base>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<int>>> || std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>> || std::is_same_v<std::decay_t<T>, empty_aggregate_t> || std::is_same_v<std::decay_t<T>, empty_aggregate_of_aggregate_t> || std::is_same_v<std::decay_t<T>, blank>) {
             return "";
         } else if constexpr (std::is_same_v<std::decay_t<T>, boost::logic::tribool>) {
             // @todo handle indeterminate
             return "";
         } else if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
             return t;
-        } else if constexpr (std::is_same_v<std::decay_t<T>, EnumerationReference>) {
+        } else if constexpr (std::is_same_v<std::decay_t<T>, enumeration_reference>) {
             return t.value();
         } else {
             return t;
@@ -106,8 +106,8 @@ auto get_related(T t, F f, G g) {
                     }
                 }
             }
-        } catch (IfcParse::IfcException& e) {
-            Logger::Error(e);
+        } catch (ifcopenshell::exception& e) {
+            logger::error(e);
         }
     }
     return acc;
@@ -135,10 +135,10 @@ void format_entity_instance(express::Base instance, json& tree, express::Base pa
     json child;
 
     auto write_to_json = [&](const std::string& keyJson, const std::string& keyIfc) {
-        AttributeValue val;
+        attribute_value val;
         try {
             val = instance.as<express::Entity>().get(keyIfc);
-        } catch (const IfcParse::IfcException&) {
+        } catch (const ifcopenshell::exception&) {
             // simply laziness like no attribute Tag on IfcProject
             return;
         }
@@ -278,7 +278,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     auto projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects.size() != 1) {
-        Logger::Message(Logger::LOG_ERROR, "Expected a single IfcProject");
+        logger::message(logger::LOG_ERROR, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject project = projects.front();
@@ -287,7 +287,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         try {
             return fn();
         } catch (const std::exception& e) {
-            Logger::Error(e);
+            logger::error(e);
             static std::invoke_result_t<decltype(fn)> v;
             return v;
         }
@@ -594,7 +594,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     descend(project, output["metaObjects"]);
 
-    std::ofstream f(IfcUtil::path::from_utf8(json_filename).c_str());
+    std::ofstream f(ifcopenshell::path::from_utf8(json_filename).c_str());
     f << output.dump(4);
 }
 

@@ -107,7 +107,7 @@ class Implementation(codegen.Base):
                             return templates.get_attr_stmt_nested_array
                         elif arg["is_templated_list"] and not (simple or express):
                             return templates.get_attr_stmt_array
-                        elif arg["argument_type_enum"] == 'IfcUtil::Argument_ENTITY_INSTANCE':
+                        elif arg["argument_type_enum"] == 'ifcopenshell::Argument_ENTITY_INSTANCE':
                             return templates.get_attr_stmt_entity
                         else:
                             return templates.get_attr_stmt
@@ -154,7 +154,7 @@ class Implementation(codegen.Base):
                             return templates.set_attr_stmt_nested_array
                         elif arg["is_templated_list"] and not (simple or express):
                             return templates.set_attr_stmt_array
-                        elif arg["argument_type_enum"] == 'IfcUtil::Argument_ENTITY_INSTANCE':
+                        elif arg["argument_type_enum"] == 'ifcopenshell::Argument_ENTITY_INSTANCE':
                             return templates.set_attr_instance
                         else:
                             return templates.set_attr_stmt
@@ -243,9 +243,9 @@ class Implementation(codegen.Base):
             )
 
             superclass_num_attrs = (
-                "%s(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
+                "%s(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%%d)))" % type.supertypes[0]
                 if len(type.supertypes) == 1
-                else "express::Entity(const std::weak_ptr<InstanceData>&(in_memory_attribute_storage(%d)))"
+                else "express::Entity(const std::weak_ptr<instance_data>&(in_memory_attribute_storage(%d)))"
             ) % len(constructor_arguments)
 
             write(
@@ -351,7 +351,7 @@ class Implementation(codegen.Base):
                                 "",
                                 "Class",
                                 templates.function,
-                                "const IfcParse::type_declaration&",
+                                "const ifcopenshell::type_declaration&",
                                 (),
                                 templates.simpletype_impl_class,
                             ),
@@ -359,7 +359,7 @@ class Implementation(codegen.Base):
                             #     "",
                             #     "declaration",
                             #     templates.const_function,
-                            #     "const IfcParse::type_declaration&",
+                            #     "const ifcopenshell::type_declaration&",
                             #     (),
                             #     templates.simpletype_impl_declaration,
                             # ),
@@ -368,7 +368,7 @@ class Implementation(codegen.Base):
                             #     "",
                             #     constructor,
                             #     "",
-                            #     ("const std::weak_ptr<InstanceData>& e",),
+                            #     ("const std::weak_ptr<instance_data>& e",),
                             #     "",
                             # ),
                             ("", "", initializer, "", ("%s v" % type_str,), ("set_attribute_value(0, %s(v));" % ("cast_vector<express::Base>" if mapping.is_templated_list(type) else ""))),

@@ -26,9 +26,9 @@
 
 #include <algorithm>
 
-#include "../../ifcparse/IfcSIPrefix.h"
+#include "../../ifcparse/si_prefix.h"
 #include "../../ifcparse/utils.h"
-#include "../../ifcparse/IfcLogger.h"
+#include "../../ifcparse/logger.h"
 
 using boost::property_tree::ptree;
 
@@ -36,7 +36,7 @@ using boost::property_tree::ptree;
 
 namespace {
 	struct POSTFIX_SCHEMA(factory_t) {
-		XmlSerializer* operator()(IfcParse::IfcFile* file, const std::string& xml_filename) const {
+		XmlSerializer* operator()(ifcopenshell::file* file, const std::string& xml_filename) const {
 			POSTFIX_SCHEMA(XmlSerializer)* s = new POSTFIX_SCHEMA(XmlSerializer)(file, xml_filename);
 			s->setFile(file);
 			return s;
@@ -57,7 +57,7 @@ std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, AttributeValue argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
+std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, attribute_value argument, ifcopenshell::argument_type argument_type, const std::string& argument_name) {
 	std::optional<std::string> value;
 	
 	// Hard-code lat-lon as it represents an array
@@ -82,28 +82,28 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 	}
 
 	switch(argument_type) {
-		case IfcUtil::Argument_BOOL:
-		case IfcUtil::Argument_LOGICAL:{
+		case ifcopenshell::Argument_BOOL:
+		case ifcopenshell::Argument_LOGICAL:{
 			const boost::logic::tribool b = argument;
 			value = b.value == boost::logic::tribool::indeterminate_value ? "unknown" : b ? "true" : "false";
 			break; }
-		case IfcUtil::Argument_DOUBLE: {
+		case ifcopenshell::Argument_DOUBLE: {
 			const double d = argument;
 			std::stringstream stream;
 			stream << std::setprecision (std::numeric_limits< double >::max_digits10) << d;
 			value = stream.str();
 			break; }
-		case IfcUtil::Argument_STRING:
-		case IfcUtil::Argument_ENUMERATION: {
+		case ifcopenshell::Argument_STRING:
+		case ifcopenshell::Argument_ENUMERATION: {
 			value = static_cast<std::string>(argument);
 			break; }
-		case IfcUtil::Argument_INT: {
+		case ifcopenshell::Argument_INT: {
 			const int v = argument;
 			std::stringstream stream;
 			stream << v;
 			value = stream.str();
 			break; }
-		case IfcUtil::Argument_ENTITY_INSTANCE: {
+		case ifcopenshell::Argument_ENTITY_INSTANCE: {
 			express::Base e = argument;
 			if (e.declaration().as_entity() == nullptr) {
 				auto f = e.as<express::DeclaredType>();
@@ -155,7 +155,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		try {
 		    instance.get_attribute_value(i);
 		} catch (const std::exception&) {
-		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
+		    logger::error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
 		auto argument = instance.get_attribute_value(i);
@@ -167,14 +167,14 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {
 			argument_name = argument_name_it->second;
 		}
-        const IfcUtil::ArgumentType argument_type = instance.get_attribute_value(i).type();
+        const ifcopenshell::argument_type argument_type = instance.get_attribute_value(i).type();
 
 		const std::string qualified_name = instance.declaration().name() + "." + argument_name;
 		std::optional<std::string> value;
 		try {
 			value = format_attribute(mapping, argument, argument_type, qualified_name);
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 
 		if (value) {
@@ -238,8 +238,8 @@ auto get_related(T t, F f, G g) {
                     }
                 }
             }            
-		} catch (IfcParse::IfcException& e) {
-			Logger::Error(e);
+		} catch (ifcopenshell::exception& e) {
+			logger::error(e);
 		}
 	}
 	return acc;
@@ -545,7 +545,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 
 	auto projects = file->instances_by_type<IfcSchema::IfcProject>();
 	if (projects.size() != 1) {
-		Logger::Message(Logger::LOG_ERROR, "Expected a single IfcProject");
+		logger::message(logger::LOG_ERROR, "Expected a single IfcProject");
 		return;
 	}
     IfcSchema::IfcProject& project = projects.front();
@@ -556,7 +556,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 		try {
 			return fn();
 		} catch(const std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 			static std::invoke_result_t<decltype(fn)> v;
 			return v;
 		}
@@ -578,51 +578,51 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	try {
 		header.put("file_description.implementation_level", file->header().file_description().implementation_level());
 	}
-	catch (const IfcParse::IfcException& ex) {
+	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
-		Logger::Message(Logger::LOG_ERROR, ss.str());
+		logger::message(logger::LOG_ERROR, ss.str());
 	}
 	try {
 		header.put("file_name.name", file->header().file_name().name());
 	}
-	catch (const IfcParse::IfcException& ex) {
+	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
-		Logger::Message(Logger::LOG_ERROR, ss.str());
+		logger::message(logger::LOG_ERROR, ss.str());
 	}
     try {
         header.put("file_name.time_stamp", file->header().file_name().time_stamp());
     }
-    catch (const IfcParse::IfcException& ex) {
+    catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        logger::message(logger::LOG_ERROR, ss.str());
     }
     try {
         header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
     }
-    catch (const IfcParse::IfcException& ex) {
+    catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        logger::message(logger::LOG_ERROR, ss.str());
     }
     try {
         header.put("file_name.originating_system", file->header().file_name().originating_system());
     }
-    catch (const IfcParse::IfcException& ex) {
+    catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        logger::message(logger::LOG_ERROR, ss.str());
     }
     try {
 		// @nb inconsistent spelling
         header.put("file_name.authorization", file->header().file_name().authorization());
     }
-    catch (const IfcParse::IfcException& ex) {
+    catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        logger::message(logger::LOG_ERROR, ss.str());
     }
 
 	// Descend into the decomposition structure of the IFC file.
@@ -756,7 +756,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
         if (auto named_unit = unit.as<IfcSchema::IfcNamedUnit>()) {
 			ptree* node = format_entity_instance(mapping_, named_unit, units);
 			if (node) {
-				node->put("<xmlattr>.SI_equivalent", IfcParse::get_SI_equivalent<IfcSchema>(named_unit));
+				node->put("<xmlattr>.SI_equivalent", ifcopenshell::get_SI_equivalent<IfcSchema>(named_unit));
 			}
         } else if (auto mon_unit = unit.as<IfcSchema::IfcMonetaryUnit>()) {
             format_entity_instance(mapping_, mon_unit, units);
@@ -835,6 +835,6 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	boost::property_tree::xml_writer_settings<char> settings('\t', 1);
 #endif
 	
-	std::ofstream f(IfcUtil::path::from_utf8(xml_filename).c_str());
+	std::ofstream f(ifcopenshell::path::from_utf8(xml_filename).c_str());
 	boost::property_tree::write_xml(f, root, settings);
 }

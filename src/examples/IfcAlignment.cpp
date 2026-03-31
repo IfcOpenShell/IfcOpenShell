@@ -31,7 +31,7 @@
 #pragma warning(disable : 4018 4267 4250 4984 4985)
 
 #include "../ifcparse/Ifc4x3_add2.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 #include <boost/math/constants/constants.hpp>
 #include <fstream>
@@ -43,7 +43,7 @@ double to_radian(double deg) { return PI * deg / 180; }
 
 // performs basic project setup including created the IfcProject object
 // and initializing the project units to FEET
-Schema::IfcProject setup_project(IfcHierarchyHelper<Schema>& file) {
+Schema::IfcProject setup_project(hierarchy_helper<Schema>& file) {
     std::vector<std::string> file_description;
     file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
     file.header().file_description().setdescription(file_description);
@@ -95,7 +95,7 @@ Schema::IfcProject setup_project(IfcHierarchyHelper<Schema>& file) {
 }
 
 // creates geometry and business logic segments for horizontal alignment tangent runs
-std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_tangent(IfcHierarchyHelper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double dir, double length) {
+std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_tangent(hierarchy_helper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double dir, double length) {
     // geometry
     auto parent_curve = file.create<Schema::IfcLine>();
     parent_curve.setPnt(file.addDoublet<Schema::IfcCartesianPoint>(0.0, 0.0));
@@ -125,14 +125,14 @@ std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment
     design_parameters.setPredefinedType(Schema::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_LINE);
 
     auto alignment_segment = file.create<Schema::IfcAlignmentSegment>();
-    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setGlobalId(ifcopenshell::global_id());
     alignment_segment.setDesignParameters(design_parameters);
 
     return {curve_segment, alignment_segment};
 }
 
 // creates geometry and business logic segments for horizontal alignment horizonal curves
-std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_hcurve(IfcHierarchyHelper<Schema>& file, const typename Schema::IfcCartesianPoint& pc, double dir, double radius, double lc) {
+std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_hcurve(hierarchy_helper<Schema>& file, const typename Schema::IfcCartesianPoint& pc, double dir, double radius, double lc) {
     // geometry
     double sign = radius / fabs(radius);
     auto place = file.create<Schema::IfcAxis2Placement2D>();
@@ -163,14 +163,14 @@ std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment
     design_parameters.setPredefinedType(Schema::IfcAlignmentHorizontalSegmentTypeEnum::IfcAlignmentHorizontalSegmentType_CIRCULARARC);
 
     auto alignment_segment = file.create<Schema::IfcAlignmentSegment>();
-    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setGlobalId(ifcopenshell::global_id());
     alignment_segment.setDesignParameters(design_parameters);
 
     return {curve_segment, alignment_segment};
 }
 
 // creates geometry and business logic segments for vertical profile gradient runs
-std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_gradient(IfcHierarchyHelper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double slope, double length) {
+std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_gradient(hierarchy_helper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double slope, double length) {
     // geometry
     auto parent_curve = file.create<Schema::IfcLine>();
     parent_curve.setPnt(file.addDoublet<Schema::IfcCartesianPoint>(0.0, 0.0));
@@ -200,14 +200,14 @@ std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment
     design_parameters.setPredefinedType(Schema::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
 
     auto alignment_segment = file.create<Schema::IfcAlignmentSegment>();
-    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setGlobalId(ifcopenshell::global_id());
     alignment_segment.setDesignParameters(design_parameters);
 
     return {curve_segment, alignment_segment};
 }
 
 // creates geometry and business logic segments for vertical profile parabolic vertical curves
-std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_vcurve(IfcHierarchyHelper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double start_slope, double end_slope, double length) {
+std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment> create_vcurve(hierarchy_helper<Schema>& file, const typename Schema::IfcCartesianPoint& p, double start_slope, double end_slope, double length) {
     // geometry
     double A = p.Coordinates()[1];
     double B = start_slope;
@@ -246,7 +246,7 @@ std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment
     design_parameters.setPredefinedType(Schema::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
 
     auto alignment_segment = file.create<Schema::IfcAlignmentSegment>();
-    alignment_segment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment_segment.setGlobalId(ifcopenshell::global_id());
     alignment_segment.setDesignParameters(design_parameters);
 
     return {curve_segment, alignment_segment};
@@ -254,7 +254,7 @@ std::pair<typename Schema::IfcCurveSegment, typename Schema::IfcAlignmentSegment
 
 // creates representations for each IfcAlignmentSegment per CT 4.1.7.1.1.4
 // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Product_Shape/Product_Geometric_Representation/Alignment_Geometry/Alignment_Geometry_-_Segments/content.html
-void create_segment_representations(IfcHierarchyHelper<Schema>& file, const Schema::IfcLocalPlacement& global_placement, const Schema::IfcGeometricRepresentationSubContext& segment_axis_subcontext, std::vector<Schema::IfcSegment>& curve_segments, std::vector<Schema::IfcObjectDefinition>& segments) {
+void create_segment_representations(hierarchy_helper<Schema>& file, const Schema::IfcLocalPlacement& global_placement, const Schema::IfcGeometricRepresentationSubContext& segment_axis_subcontext, std::vector<Schema::IfcSegment>& curve_segments, std::vector<Schema::IfcObjectDefinition>& segments) {
     auto cs_iter = curve_segments.begin();
     auto s_iter = segments.begin();
     for (; cs_iter != curve_segments.end(); cs_iter++, s_iter++) {
@@ -276,7 +276,7 @@ void create_segment_representations(IfcHierarchyHelper<Schema>& file, const Sche
 }
 
 int main() {
-    IfcHierarchyHelper<Schema> file;
+    hierarchy_helper<Schema> file;
 
     auto project = setup_project(file);
 
@@ -378,11 +378,11 @@ int main() {
     // Create the horizontal alignment (IfcAlignmentHorizontal) and nest alignment segments
     //
     auto horizontal_alignment = file.create<Schema::IfcAlignmentHorizontal>();
-    horizontal_alignment.setGlobalId(IfcParse::IfcGlobalId());
+    horizontal_alignment.setGlobalId(ifcopenshell::global_id());
     horizontal_alignment.setName("Example Alignment");
 
     auto nests_horizontal_segments = file.create<Schema::IfcRelNests>();
-    nests_horizontal_segments.setGlobalId(IfcParse::IfcGlobalId());
+    nests_horizontal_segments.setGlobalId(ifcopenshell::global_id());
     nests_horizontal_segments.setName("Nests horizontal alignment segments with horizontal alignment");
     nests_horizontal_segments.setRelatingObject(horizontal_alignment);
     nests_horizontal_segments.setRelatedObjects(horizontal_segments);
@@ -483,11 +483,11 @@ int main() {
     // Create the vertical alignment (IfcAlignmentVertical) and nest alignment segments
     //
     auto vertical_profile = file.create<Schema::IfcAlignmentVertical>();
-    vertical_profile.setGlobalId(IfcParse::IfcGlobalId());
+    vertical_profile.setGlobalId(ifcopenshell::global_id());
     vertical_profile.setName("Example Vertical Profile");
 
     auto nests_vertical_segments = file.create<Schema::IfcRelNests>();
-    nests_vertical_segments.setGlobalId(IfcParse::IfcGlobalId());
+    nests_vertical_segments.setGlobalId(ifcopenshell::global_id());
     nests_vertical_segments.setName("Nests vertical alignment segments with vertical profile");
     nests_vertical_segments.setRelatingObject(vertical_profile);
     nests_vertical_segments.setRelatedObjects(vertical_segments);
@@ -526,7 +526,7 @@ int main() {
 
     // create the alignment
     auto alignment = file.create<Schema::IfcAlignment>();
-    alignment.setGlobalId(IfcParse::IfcGlobalId());
+    alignment.setGlobalId(ifcopenshell::global_id());
     alignment.setName("Example Alignment");
     alignment.setObjectPlacement(global_placement);
     alignment.setRepresentation(alignment_product);
@@ -535,7 +535,7 @@ int main() {
     // 4.1.4.4.1 Alignments nest horizontal and vertical layouts
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Nesting/Alignment_Layouts/content.html
     auto nests_alignment_layouts = file.create<Schema::IfcRelNests>();
-    nests_alignment_layouts.setGlobalId(IfcParse::IfcGlobalId());
+    nests_alignment_layouts.setGlobalId(ifcopenshell::global_id());
     nests_alignment_layouts.setName("Nest horizontal and vertical alignment layouts with the alignment");
     nests_alignment_layouts.setRelatingObject(alignment);
     nests_alignment_layouts.setRelatedObjects({horizontal_alignment, vertical_profile});
@@ -546,7 +546,7 @@ int main() {
     // https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Object_Composition/Aggregation/Alignment_Aggregation_To_Project/content.html
     // IfcProject <-> IfcRelAggregates <-> IfcAlignment
     auto aggregate_alignments_with_project = file.create<Schema::IfcRelAggregates>();
-    aggregate_alignments_with_project.setGlobalId(IfcParse::IfcGlobalId());
+    aggregate_alignments_with_project.setGlobalId(ifcopenshell::global_id());
     aggregate_alignments_with_project.setName("Alignments in project");
     aggregate_alignments_with_project.setRelatingObject(project);
     aggregate_alignments_with_project.setRelatedObjects({alignment});
@@ -571,7 +571,7 @@ int main() {
         description << "Alignments referenced into the spatial structure of Bridge Site " << i;
 
         auto rel_referenced_in_spatial_structure = file.create<Schema::IfcRelReferencedInSpatialStructure>();
-        rel_referenced_in_spatial_structure.setGlobalId(IfcParse::IfcGlobalId());
+        rel_referenced_in_spatial_structure.setGlobalId(ifcopenshell::global_id());
         rel_referenced_in_spatial_structure.setDescription(description.str());
         rel_referenced_in_spatial_structure.setRelatedElements(list_alignments_referenced_in_site);
         rel_referenced_in_spatial_structure.setRelatingStructure(site);

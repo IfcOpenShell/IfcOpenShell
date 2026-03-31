@@ -21,7 +21,7 @@
 #define ABSTRACT_KERNEL_H
 
 #include "../ifcparse/macros.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 #include "../ifcgeom/ifc_geom_api.h"
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/taxonomy.h"
@@ -150,7 +150,7 @@ namespace {
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
 		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			logger::error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};
@@ -170,7 +170,7 @@ namespace {
 	template <>
 	struct dispatch_with_upgrade<ifcopenshell::geometry::taxonomy::upgrades::max> {
 		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion with upgrade for " + std::to_string(item->kind()));
+			logger::error("No conversion with upgrade for " + std::to_string(item->kind()));
 			return false;
 		}
 	};
@@ -206,7 +206,7 @@ namespace {
 	template <typename T>
 	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr& item, T&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			logger::error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};
@@ -228,7 +228,7 @@ namespace {
 	template <typename T>
 	struct dispatch_surface_creation<T, ifcopenshell::geometry::taxonomy::surfaces::max> {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr& item, T&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			logger::error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};

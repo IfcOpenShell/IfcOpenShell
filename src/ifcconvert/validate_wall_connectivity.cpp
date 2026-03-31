@@ -9,7 +9,7 @@
 
 using namespace ifcopenshell::geometry;
 
-void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress);
 
 	ifcopenshell::geometry::Settings settings;
@@ -27,14 +27,14 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 	ifcopenshell::geometry::Converter c("cgal", &f, settings);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
-	std::map<std::set<const IfcUtil::IfcBaseClass*>, const IfcUtil::IfcBaseClass*> rel_by_elem;
-	std::for_each(rels->begin(), rels->end(), [&rel_by_elem](const IfcUtil::IfcBaseClass* rel) {
-		auto x = ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
-		auto y = ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
+	std::map<std::set<const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_elem;
+	std::for_each(rels->begin(), rels->end(), [&rel_by_elem](const ifcopenshell::IfcBaseClass* rel) {
+		auto x = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatingElement");
+		auto y = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatedElement");
 		rel_by_elem.insert({{ x,y }, rel});
 	});
 
-	std::set<const IfcUtil::IfcBaseClass*> rels_encounted;
+	std::set<const ifcopenshell::IfcBaseClass*> rels_encounted;
 
 	double total_nef_intersection_time = 0.;
 	double conversion_to_poly = 0.;
@@ -43,15 +43,15 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 		auto A = a.handle()->first;
 		auto B = b.handle()->first;
 
-		const IfcUtil::IfcBaseClass* rel = nullptr;
+		const ifcopenshell::IfcBaseClass* rel = nullptr;
 		std::string a_type, b_type;
 
 		auto rit = rel_by_elem.find({ A, B });
 		if (rit != rel_by_elem.end()) {
 			rel = rit->second;
-			const bool a_is_relating = A == ((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
-			a_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatingConnectionType");
-			b_type = ((IfcUtil::IfcBaseEntity*)rel)->get_value<std::string>("RelatedConnectionType");
+			const bool a_is_relating = A == ((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatingElement");
+			a_type = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<std::string>("RelatingConnectionType");
+			b_type = ((ifcopenshell::IfcBaseEntity*)rel)->get_value<std::string>("RelatedConnectionType");
 			if (!a_is_relating) {
 				std::swap(a_type, b_type);
 			}
@@ -79,7 +79,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 #endif
 
 		std::ostringstream ss;
-		ss << A->data().toString() << "x" << B->data().toString() << std::endl;
+		ss << A->data().to_string() << "x" << B->data().to_string() << std::endl;
 		std::clock_t intersection_begin = std::clock();
 		auto x = a.handle()->second * b.handle()->second;
 		std::clock_t intersection_end = std::clock();
@@ -108,7 +108,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 			return;
 		}
 
-		auto get_axis_parameter_min_max = [&c, &x_poly](const IfcUtil::IfcBaseEntity* inst) {
+		auto get_axis_parameter_min_max = [&c, &x_poly](const ifcopenshell::IfcBaseEntity* inst) {
 			auto item = c.mapping()->map(inst);
 			auto shaperep = taxonomy::cast<taxonomy::collection>(item)->children[0];
 			auto loop = taxonomy::dcast<taxonomy::loop>(taxonomy::cast<taxonomy::collection>(shaperep)->children[0]);
@@ -169,21 +169,21 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		if (a_type != atype_computed || b_type != btype_computed) {
 			if (rel) {
-				Logger::Error(std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
+				logger::error(std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
 			} else {
 				auto A_str = A->get_value<std::string>("GlobalId");
 				auto B_str = B->get_value<std::string>("GlobalId");
-				Logger::Error("No connection for adjacent " + A_str + " " + B_str);
+				logger::error("No connection for adjacent " + A_str + " " + B_str);
 			}
 		}
 	});
 
-	std::for_each(rels->begin(), rels->end(), [&rels_encounted, &v](const IfcUtil::IfcBaseClass* rel) {
+	std::for_each(rels->begin(), rels->end(), [&rels_encounted, &v](const ifcopenshell::IfcBaseClass* rel) {
 		if (rels_encounted.find(rel) == rels_encounted.end()) {
-			auto x = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
-			auto y = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
+			auto x = (ifcopenshell::IfcBaseEntity*)((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatingElement");
+			auto y = (ifcopenshell::IfcBaseEntity*)((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatedElement");
 			if (v.successfully_processed.find(x) != v.successfully_processed.end() && v.successfully_processed.find(y) != v.successfully_processed.end()) {
-				Logger::Error("Connection for non-adjacent walls", rel);
+				logger::error("Connection for non-adjacent walls", rel);
 			}
 		}
 	});

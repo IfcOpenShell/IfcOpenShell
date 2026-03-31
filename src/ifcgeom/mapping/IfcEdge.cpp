@@ -25,14 +25,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge& inst) {
     auto v1 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
     auto v2 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
     if (!v1 || !v2) {
-		Logger::Message(Logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
+		logger::message(logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
 		return nullptr;
 	}
 
 	auto pnt1 = v1.VertexGeometry();
 	auto pnt2 = v2.VertexGeometry();
 	if (!pnt1.declaration().is(IfcSchema::IfcCartesianPoint::Class()) || !pnt2.declaration().is(IfcSchema::IfcCartesianPoint::Class())) {
-		Logger::Message(Logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
+		logger::message(logger::LOG_ERROR, "Only IfcCartesianPoints are supported for VertexGeometry", inst);
 		return nullptr;
 	}
 

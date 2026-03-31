@@ -23,32 +23,32 @@
 #include <BRepTools.hxx>
 
 #include "../../../ifcparse/macros.h"
-#include "../../../ifcparse/IfcParse.h"
-#include "../../../ifcparse/IfcFile.h"
+#include "../../../ifcparse/parse.h"
+#include "../../../ifcparse/file.h"
 
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/schemas/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 #undef INCLUDE_PARENT_PARENT_DIR
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/x-definitions.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
 #include <numeric>
 
 template <typename T, typename U>
-int convert_to_ifc(IfcParse::IfcFile& f, const T& t, U& u, bool /*advanced*/) {
+int convert_to_ifc(ifcopenshell::file& f, const T& t, U& u, bool /*advanced*/) {
 	u = f.create<U>();
     u.set_attribute_value(0, std::vector<double>{t.X(), t.Y(), t.Z()});
 	return 1;
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Vertex& v, IfcSchema::IfcCartesianPoint& p, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Vertex& v, IfcSchema::IfcCartesianPoint& p, bool advanced) {
 	gp_Pnt pnt = BRep_Tool::Pnt(v);
 	return convert_to_ifc(f, pnt, p, advanced);
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Vertex& v, IfcSchema::IfcVertexPoint& vertex, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Vertex& v, IfcSchema::IfcVertexPoint& vertex, bool advanced) {
 	IfcSchema::IfcCartesianPoint p;
 	if (convert_to_ifc(f, v, p, advanced)) {
         vertex = f.create<IfcSchema::IfcVertexPoint>();
@@ -60,7 +60,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Vertex& v, IfcSchema::IfcV
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const gp_Ax2& a, IfcSchema::IfcAxis2Placement3D& ax, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const gp_Ax2& a, IfcSchema::IfcAxis2Placement3D& ax, bool advanced) {
 	IfcSchema::IfcCartesianPoint p;
 	IfcSchema::IfcDirection x, z;
 	if (!(convert_to_ifc(f, a.Location(), p, advanced) && convert_to_ifc(f, a.Direction(), z, advanced) && convert_to_ifc(f, a.XDirection(), x, advanced))) {
@@ -112,7 +112,7 @@ namespace {
 #endif
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Curve& c, IfcSchema::IfcCurve& curve, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const Handle_Geom_Curve& c, IfcSchema::IfcCurve& curve, bool advanced) {
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
 		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
 		const Handle_Geom_Curve basis = trim->BasisCurve();
@@ -284,7 +284,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Curve& c, IfcSchema::
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Surface& s, IfcSchema::IfcSurface& surface, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const Handle_Geom_Surface& s, IfcSchema::IfcSurface& surface, bool advanced) {
 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D place;
@@ -403,7 +403,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const Handle_Geom_Surface& s, IfcSchema
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Edge& e, IfcSchema::IfcCurve& c, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Edge& e, IfcSchema::IfcCurve& c, bool advanced) {
 	double a, b;
 	IfcSchema::IfcCurve base;
 
@@ -433,7 +433,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Edge& e, IfcSchema::IfcCur
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Edge& e, IfcSchema::IfcEdge& edge, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Edge& e, IfcSchema::IfcEdge& edge, bool advanced) {
 	double a, b;
 
 	TopExp_Explorer exp(e, TopAbs_VERTEX);
@@ -505,7 +505,7 @@ namespace {
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Wire& wire, IfcSchema::IfcLoop& loop, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Wire& wire, IfcSchema::IfcLoop& loop, bool advanced) {
 	bool polygonal = true;
 	for (TopExp_Explorer exp(wire, TopAbs_EDGE); exp.More(); exp.Next()) {
 		double a, b;
@@ -540,7 +540,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Wire& wire, IfcSchema::Ifc
 		BRepTools_WireExplorer exp(wire);
 		for (; exp.More(); exp.Next()) {
             IfcSchema::IfcEdge edge;
-			// With advanced set to true convert_to_ifc(IfcParse::IfcFile& f, TopoDS_Edge&) will always create an IfcOrientedEdge
+			// With advanced set to true convert_to_ifc(ifcopenshell::file& f, TopoDS_Edge&) will always create an IfcOrientedEdge
 			if (!convert_to_ifc(f, exp.Current(), edge, true)) {
 				double a, b;
 				if (BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b).IsNull()) {
@@ -559,7 +559,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Wire& wire, IfcSchema::Ifc
 }
 
 template <>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Face& fa, IfcSchema::IfcFace& face, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Face& fa, IfcSchema::IfcFace& face, bool advanced) {
 	Handle_Geom_Surface surf = BRep_Tool::Surface(fa);
 	TopExp_Explorer exp(fa, TopAbs_WIRE);
 	std::vector<IfcSchema::IfcFaceBound> bounds;
@@ -611,7 +611,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Face& fa, IfcSchema::IfcFa
 }
 
 template <typename U>
-int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Shape& s, U& item, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const TopoDS_Shape& s, U& item, bool advanced) {
 	std::vector<IfcSchema::IfcFace> faces;
 	IfcSchema::IfcFace fa;
 
@@ -625,7 +625,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Shape& s, U& item, bool ad
                 created.insert(resources.begin(), resources.end());
 			}
             for (auto& c : created) {
-                f.removeEntity(c);
+                f.remove_entity(c);
             }
 			return 0;
 		}
@@ -637,7 +637,7 @@ int convert_to_ifc(IfcParse::IfcFile& f, const TopoDS_Shape& s, U& item, bool ad
 	return faces.size();
 }
 
-express::Base POSTFIX_SCHEMA(serialise)(IfcParse::IfcFile& f, const TopoDS_Shape& shape, bool advanced) {
+express::Base POSTFIX_SCHEMA(serialise)(ifcopenshell::file& f, const TopoDS_Shape& shape, bool advanced) {
 
 #ifndef SCHEMA_HAS_IfcAdvancedBrep
 	advanced = false;
@@ -788,7 +788,7 @@ express::Base POSTFIX_SCHEMA(serialise)(IfcParse::IfcFile& f, const TopoDS_Shape
 	return pds;
 }
 
-express::Base POSTFIX_SCHEMA(tesselate)(IfcParse::IfcFile& f, const TopoDS_Shape& shape, double deflection) {
+express::Base POSTFIX_SCHEMA(tesselate)(ifcopenshell::file& f, const TopoDS_Shape& shape, double deflection) {
 	// @todo use triangulated face set in ifc4+ schema
 
 	BRepMesh_IncrementalMesh(shape, deflection);

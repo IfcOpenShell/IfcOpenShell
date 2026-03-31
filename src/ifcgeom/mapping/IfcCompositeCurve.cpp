@@ -34,11 +34,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCompositeCurveSegment>() && segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>()) {
-			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
+			logger::notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
 			double u1 = segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>().Dir().Magnitude() * length_unit_;
 			if (u1 < settings_.get<settings::Precision>().get()) {
-				Logger::Warning("Segment length below tolerance", segment);
+				logger::warning("Segment length below tolerance", segment);
 			}
 
 			auto e = taxonomy::make<taxonomy::edge>();
@@ -70,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 					e->end = 2.0 * boost::math::constants::pi<double>();
 					loop->children.push_back(e);
 				} else {
-					Logger::Warning("Unexpected segment type", segment);
+					logger::warning("Unexpected segment type", segment);
 					return nullptr;
 				}
 			}
@@ -95,7 +95,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	}
 
 	if (spans.empty()) {
-		std::vector<express::Entity> profile = inst.file()->getInverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
+		std::vector<express::Entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
         const bool force_close = !profile.empty();
 		loop->closed = force_close;
 		loop->instance = inst;
@@ -128,7 +128,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
 		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			Logger::Error("Not implemented", *it);
+			logger::error("Not implemented", *it);
 			return false;
 		}
 
@@ -141,13 +141,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		TopoDS_Wire segment;
 
 		if (curve->as<IfcSchema::IfcLine>()) {
-			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			logger::notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
 			Handle_Geom_Curve handle;
 			convert_curve(curve, handle);
 			double u0 = 0.0;
 			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < getValue(GV_PRECISION)) {
-				Logger::Warning("Segment length below tolerance", *it);
+				logger::warning("Segment length below tolerance", *it);
 			}
 			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
 			if (me.IsDone()) {
@@ -157,7 +157,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 			}
 		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
-			Logger::Message(failed_on_purpose ? Logger::LOG_WARNING : Logger::LOG_ERROR, "Failed to convert curve:", curve);
+			logger::message(failed_on_purpose ? logger::LOG_WARNING : logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
 		}
 
@@ -173,7 +173,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", l);
+		logger::message(logger::LOG_ERROR, "No segment successfully converted:", l);
 		return false;
 	}
 
@@ -182,7 +182,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	std::vector<express::Base> profile = inst.data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	std::vector<express::Base> profile = inst.data().get_inverse(&IfcSchema::IfcProfileDef::Class(), -1);
 	const bool force_close = profile && profile->size() > 0;
 
 	util::wire_builder bld(getValue(GV_PRECISION), l);

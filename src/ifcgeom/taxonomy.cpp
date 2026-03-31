@@ -1,4 +1,4 @@
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 #include "taxonomy.h"
 #include "profile_helper.h"
 #include "function_item_evaluator.h"
@@ -669,7 +669,7 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 
 	if (instance) {
 		std::ostringstream oss;
-		instance.toString(oss);
+		instance.to_string(oss);
 		o << std::string(indent + 4, ' ') << oss.str() << std::endl;
 	}
 }
@@ -861,7 +861,7 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						Logger::Message(Logger::Severity::LOG_WARNING, "Basis curve not supported - edge is treated as a straight line edge");
+						logger::message(logger::Severity::LOG_WARNING, "Basis curve not supported - edge is treated as a straight line edge");
 					}
 					const auto& s = std::get<point3::ptr>(edge_->start)->ccomponents();
 					const auto& e = std::get<point3::ptr>(edge_->end)->ccomponents();
@@ -876,7 +876,7 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					Logger::Message(Logger::Severity::LOG_ERROR, "Basis curve not supported");
+					logger::message(logger::Severity::LOG_ERROR, "Basis curve not supported");
 					return std::nullopt;
 				}
 			}

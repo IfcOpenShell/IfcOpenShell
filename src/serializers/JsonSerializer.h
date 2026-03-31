@@ -4,7 +4,7 @@
 #ifdef WITH_GLTF
 
 #include "../ifcgeom/Serializer.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 #include "../serializers/serializers_api.h"
 
 #include <boost/function.hpp>
@@ -23,7 +23,7 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
     Dialect dialect_;
 
   public:
-    JsonSerializer(IfcParse::IfcFile* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX);
+    JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX);
 
     virtual ~JsonSerializer() {}
 
@@ -31,17 +31,17 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
     void writeHeader() {}
 
     void finalize() { implementation_->finalize(); }
-    void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
+    void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
 };
 
 struct SERIALIZERS_API JsonSerializerFactory {
-    typedef boost::function3<JsonSerializer*, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect> fn;
+    typedef boost::function3<JsonSerializer*, ifcopenshell::file*, std::string, JsonSerializer::Dialect> fn;
 
     class Factory : public std::map<std::string, fn> {
       public:
         Factory();
         void bind(const std::string& schema_name, fn);
-        JsonSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect);
+        JsonSerializer* construct(const std::string& schema_name, ifcopenshell::file*, std::string, JsonSerializer::Dialect);
     };
 
     static Factory& implementations();

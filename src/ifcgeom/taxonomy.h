@@ -2,7 +2,7 @@
 #define TAXONOMY_H
 
 #include "../ifcparse/express.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 
 #include "ConversionSettings.h"
 

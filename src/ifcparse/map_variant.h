@@ -25,11 +25,11 @@
 #include <string>
 #include <iostream>
 
-// VariantMap: A map interface that delegates to one of several map types.
+// variant_map: A map interface that delegates to one of several map types.
 // The underlying maps are referenced by pointers (not moved into the variant).
 // All map types must share the same key_type, mapped_type, and value_type.
 template <typename... Maps>
-class VariantMap {
+class variant_map {
 public:
     // The variant holds a pointer to the map
     using variant_type = std::variant<std::monostate, Maps*...>;
@@ -45,7 +45,7 @@ public:
 
     class iterator {
     public:
-        using value_type = VariantMap::value_type;
+        using value_type = variant_map::value_type;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type;
@@ -104,10 +104,10 @@ public:
         }
     };
 
-    VariantMap() {}
+    variant_map() {}
 
     template <typename MapT>
-    VariantMap(MapT* m) : map_(m) {}
+    variant_map(MapT* m) : map_(m) {}
 
     iterator begin() const{
         return std::visit([](auto m) -> iterator {

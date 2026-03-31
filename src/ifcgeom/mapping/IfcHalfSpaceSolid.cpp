@@ -25,7 +25,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcHalfSpaceSolid& inst) {
     auto surface = inst.BaseSurface();
     auto plane = surface.as<IfcSchema::IfcPlane>();
     if (!plane) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
+		logger::message(logger::LOG_ERROR, "Unsupported BaseSurface:", surface);
 		return nullptr;
 	}
 	auto p = taxonomy::make<taxonomy::plane>();

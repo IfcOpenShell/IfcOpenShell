@@ -29,15 +29,15 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 
 int main(int argc, char** argv) {
 	const char filename[] = "IfcCompositeProfileDef.ifc";
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	file.header().file_name().name(filename);
 
 	double coords1[] = {100.0, 0.0};
@@ -65,11 +65,11 @@ int main(int argc, char** argv) {
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, file.addPlacement2d(80.),    50.0,    25.0,     5.0,    10.0,     2.0,    null);
 
-	file.addEntity(p2);
-	file.addEntity(p3);
+	file.add_entity(p2);
+	file.add_entity(p3);
 	
-	file.addEntity(transform1);
-	file.addEntity(transform2);
+	file.add_entity(transform1);
+	file.add_entity(transform2);
 	
 	IfcSchema::IfcDerivedProfileDef* p5 = new IfcSchema::IfcDerivedProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, p2, transform1, null);
 	IfcSchema::IfcDerivedProfileDef* p6 = new IfcSchema::IfcDerivedProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, p3, transform2, null);
@@ -95,8 +95,8 @@ int main(int argc, char** argv) {
 	IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(composite,
 		file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-	file.addEntity(composite);
-	file.addEntity(solid);
+	file.add_entity(composite);
+	file.add_entity(solid);
 		
 	IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list());
 	IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list());
@@ -107,8 +107,8 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
-	file.addEntity(rep);
-	file.addEntity(shape);
+	file.add_entity(rep);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 

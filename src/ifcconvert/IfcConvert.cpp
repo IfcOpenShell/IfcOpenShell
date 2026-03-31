@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -137,7 +137,7 @@ void print_usage(bool suggest_help = true)
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
-        << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
+        << "If no output filename given, <input>" << ifcopenshell::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
     }
@@ -169,13 +169,13 @@ T change_extension(const T& fn, const T& ext) {
 }
 
 bool file_exists(const std::string& filename) {
-    std::ifstream file(IfcUtil::path::from_utf8(filename).c_str());
+    std::ifstream file(ifcopenshell::path::from_utf8(filename).c_str());
     return file.good();
 }
 
 static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
-void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
+void fix_quantities(ifcopenshell::file&, bool, bool, bool);
 std::string format_duration(time_t start, time_t end);
 
 /// @todo make the filters non-global
@@ -205,7 +205,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<ifcopenshell::geometry::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false);
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false);
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -429,18 +429,18 @@ int main(int argc, char** argv) {
         po::store(command_line_parser(argc, argv).
             options(cmdline_options).positional(positional_options).run(), vmap);
     } catch (const po::unknown_option& e) {
-        cerr_ << "[Error] Unknown option '" << e.get_option_name().c_str() << "'\n\n";
+        cerr_ << "[error] Unknown option '" << e.get_option_name().c_str() << "'\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (const po::error_with_option_name& e) {
-        cerr_ << "[Error] Invalid usage of '" << e.get_option_name().c_str() << "': " << e.what() << "\n\n";
+        cerr_ << "[error] Invalid usage of '" << e.get_option_name().c_str() << "': " << e.what() << "\n\n";
         return EXIT_FAILURE;
     } catch (const std::exception& e) {
-        cerr_ << "[Error] " << e.what() << "\n\n";
+        cerr_ << "[error] " << e.what() << "\n\n";
         print_usage();
         return EXIT_FAILURE;
     } catch (...) {
-		cerr_ << "[Error] Unknown error parsing command line options\n\n";
+		cerr_ << "[error] Unknown error parsing command line options\n\n";
         print_usage();
         return EXIT_FAILURE;
     }
@@ -468,7 +468,7 @@ int main(int argc, char** argv) {
         print_options(generic_options.add(geom_options).add(serializer_options));
         return EXIT_SUCCESS;
     } else if (!vmap.count("input-file")) {
-        cerr_ << "[Error] Input file not specified" << std::endl;
+        cerr_ << "[error] Input file not specified" << std::endl;
         print_usage();
         return EXIT_FAILURE;
     }
@@ -484,7 +484,7 @@ int main(int argc, char** argv) {
 		} else if (storey_height_display == "left") {
 			svg_storey_height_display = SvgSerializer::SH_LEFT;
 		} else {
-			cerr_ << "[Error] --draw-storey-heights should be none|full|left" << std::endl;
+			cerr_ << "[error] --draw-storey-heights should be none|full|left" << std::endl;
 			print_usage();
 			return EXIT_FAILURE;
 		}
@@ -493,28 +493,28 @@ int main(int argc, char** argv) {
 
 	if (num_threads <= 0) {
 		num_threads = std::thread::hardware_concurrency();
-		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
+		logger::notice("Using " + std::to_string(num_threads) + " threads");
 	}
     
 	if (vmap.count("log-format") == 1) {
 		boost::to_lower(log_format);
 		if (log_format == "plain") {
-			Logger::OutputFormat(Logger::FMT_PLAIN);
+			logger::output_format(logger::FMT_PLAIN);
 		} else if (log_format == "json") {
-			Logger::OutputFormat(Logger::FMT_JSON);
+			logger::output_format(logger::FMT_JSON);
 		} else {
-			cerr_ << "[Error] --log-format should be either plain or json" << std::endl;
+			cerr_ << "[error] --log-format should be either plain or json" << std::endl;
 			print_usage();
 			return EXIT_FAILURE;
 		}
 	}
     
     if (!filter_filename.empty()) {
-        size_t num_filters = read_filters_from_file(IfcUtil::path::to_utf8(filter_filename), include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
+        size_t num_filters = read_filters_from_file(ifcopenshell::path::to_utf8(filter_filename), include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
         if (num_filters) {
-            Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
+            logger::notice(boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
         } else {
-            cerr_ << "[Error] No filters read from specifified file.\n";
+            cerr_ << "[error] No filters read from specifified file.\n";
             return EXIT_FAILURE;
         }
     }
@@ -522,11 +522,11 @@ int main(int argc, char** argv) {
 #ifdef HAVE_ICU
     if (!unicode_mode.empty()) {
         if (unicode_mode == "utf8") {
-            IfcParse::RuntimeIfcCharacterDecoder::mode = IfcParse::RuntimeIfcCharacterDecoder::UTF8;
+            ifcopenshell::runtime_character_decoder::mode = ifcopenshell::runtime_character_decoder::UTF8;
         } else if (unicode_mode == "escape") {
-            IfcParse::RuntimeIfcCharacterDecoder::mode = IfcParse::RuntimeIfcCharacterDecoder::ESCAPE;
+            ifcopenshell::runtime_character_decoder::mode = ifcopenshell::runtime_character_decoder::ESCAPE;
         } else {
-            cerr_ << "[Error] Invalid value for --unicode" << std::endl;
+            cerr_ << "[error] Invalid value for --unicode" << std::endl;
             print_options(serializer_options);
             return 1;
         }
@@ -535,9 +535,9 @@ int main(int argc, char** argv) {
 
     if (!default_material_filename.empty()) {
         try {
-            IfcGeom::set_default_style_file(IfcUtil::path::to_utf8(default_material_filename));
+            IfcGeom::set_default_style_file(ifcopenshell::path::to_utf8(default_material_filename));
         } catch (const std::exception& e) {
-            cerr_ << "[Error] Could not read default material file:" << std::endl;
+            cerr_ << "[error] Could not read default material file:" << std::endl;
             cerr_ << e.what() << std::endl;
             return EXIT_FAILURE;
         }
@@ -551,7 +551,7 @@ int main(int argc, char** argv) {
 			bounding_width = w;
 			bounding_height = h;
 		} else {
-			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
+			cerr_ << "[error] Invalid use of --bounds" << std::endl;
             print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
@@ -563,7 +563,7 @@ int main(int argc, char** argv) {
 			relative_center_x = cx;
 			relative_center_y = cy;
 		} else {
-			cerr_ << "[Error] Invalid use of --bounds" << std::endl;
+			cerr_ << "[error] Invalid use of --bounds" << std::endl;
 			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
@@ -572,8 +572,8 @@ int main(int argc, char** argv) {
 	const path_t input_filename = vmap["input-file"].as<path_t>();
     /*
 	// todo also allow rocksdb dir
-	if (!file_exists(IfcUtil::path::to_utf8(input_filename))) {
-        cerr_ << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
+	if (!file_exists(ifcopenshell::path::to_utf8(input_filename))) {
+        cerr_ << "[error] Input file '" << input_filename << "' does not exist" << std::endl;
         return EXIT_FAILURE;
     }*/
 
@@ -581,15 +581,15 @@ int main(int argc, char** argv) {
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
 	const path_t output_filename = vmap.count("output-file") == 1 
 		? vmap["output-file"].as<path_t>()
-		: change_extension(input_filename, IfcUtil::path::from_utf8(DEFAULT_EXTENSION));
+		: change_extension(input_filename, ifcopenshell::path::from_utf8(DEFAULT_EXTENSION));
 	
 	if (output_filename.size() < 5) {
-        cerr_ << "[Error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
+        cerr_ << "[error] Invalid or unsupported output file '" << output_filename << "' given" << std::endl;
         print_usage();
 		return EXIT_FAILURE;
 	}
 
-    if (file_exists(IfcUtil::path::to_utf8(output_filename)) && !vmap.count("yes")) {
+    if (file_exists(ifcopenshell::path::to_utf8(output_filename)) && !vmap.count("yes")) {
         std::string answer;
         cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file? y/n" << std::endl;
         std::cin >> answer;
@@ -602,31 +602,31 @@ int main(int argc, char** argv) {
 
 	if (vmap.count("log-file")) {
 		log_fs.open(log_file.c_str(), std::ios::app);
-		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+		logger::set_output(quiet ? nullptr : &cout_, &log_fs);
 	} else {
-		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+		logger::set_output(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
 
 	switch (vcounter.count) {
 	case 0:
-		Logger::Verbosity(Logger::LOG_ERROR);
+		logger::verbosity(logger::LOG_ERROR);
 		break;
 	case 1:
-		Logger::Verbosity(Logger::LOG_NOTICE);
+		logger::verbosity(logger::LOG_NOTICE);
 		break;
 	case 2:
-		Logger::Verbosity(Logger::LOG_DEBUG);
+		logger::verbosity(logger::LOG_DEBUG);
 		break;
 	case 3:
-		Logger::Verbosity(Logger::LOG_PERF);
+		logger::verbosity(logger::LOG_PERF);
 		break;
 	case 4:
-		Logger::Verbosity(Logger::LOG_PERF);
-		Logger::PrintPerformanceStatsOnElement(true);
+		logger::verbosity(logger::LOG_PERF);
+		logger::print_performance_stats_on_element(true);
 		break;
 	}
 
-    path_t output_temp_filename = output_filename + IfcUtil::path::from_utf8(TEMP_FILE_EXTENSION);
+    path_t output_temp_filename = output_filename + ifcopenshell::path::from_utf8(TEMP_FILE_EXTENSION);
 	
 	std::vector<path_t> tokens;
 	split(tokens, output_filename, boost::is_any_of("."));
@@ -638,63 +638,63 @@ int main(int argc, char** argv) {
 
 	boost::to_lower(output_extension);
 
-	IfcParse::IfcFile* ifc_file = 0;
+	ifcopenshell::file* ifc_file = 0;
 
 	boost::optional<std::list<IfcGeom::Element*>> elems_from_adaptor;
     
-    const path_t OBJ = IfcUtil::path::from_utf8(".obj"),
-		MTL = IfcUtil::path::from_utf8(".mtl"),
-		DAE = IfcUtil::path::from_utf8(".dae"),
-		GLB = IfcUtil::path::from_utf8(".glb"),
-		STP = IfcUtil::path::from_utf8(".stp"),
-		IGS = IfcUtil::path::from_utf8(".igs"),
-		SVG = IfcUtil::path::from_utf8(".svg"),
-		CACHE = IfcUtil::path::from_utf8(".cache"),
-		HDF = IfcUtil::path::from_utf8(".h5"),
-		XML = IfcUtil::path::from_utf8(".xml"),
-        JSON = IfcUtil::path::from_utf8(".json"),
+    const path_t OBJ = ifcopenshell::path::from_utf8(".obj"),
+		MTL = ifcopenshell::path::from_utf8(".mtl"),
+		DAE = ifcopenshell::path::from_utf8(".dae"),
+		GLB = ifcopenshell::path::from_utf8(".glb"),
+		STP = ifcopenshell::path::from_utf8(".stp"),
+		IGS = ifcopenshell::path::from_utf8(".igs"),
+		SVG = ifcopenshell::path::from_utf8(".svg"),
+		CACHE = ifcopenshell::path::from_utf8(".cache"),
+		HDF = ifcopenshell::path::from_utf8(".h5"),
+		XML = ifcopenshell::path::from_utf8(".xml"),
+        JSON = ifcopenshell::path::from_utf8(".json"),
         // @todo this is just temporary as it doesn't make sense to require an extension for a DB
-		RDB = IfcUtil::path::from_utf8(".rdb"),
-		IFC = IfcUtil::path::from_utf8(".ifc"),
-		USD = IfcUtil::path::from_utf8(".usd"),
-		USDA = IfcUtil::path::from_utf8(".usda"),
-		USDC = IfcUtil::path::from_utf8(".usdc"),
-		TTL = IfcUtil::path::from_utf8(".ttl");
+		RDB = ifcopenshell::path::from_utf8(".rdb"),
+		IFC = ifcopenshell::path::from_utf8(".ifc"),
+		USD = ifcopenshell::path::from_utf8(".usd"),
+		USDA = ifcopenshell::path::from_utf8(".usda"),
+		USDC = ifcopenshell::path::from_utf8(".usdc"),
+		TTL = ifcopenshell::path::from_utf8(".ttl");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
 	if (output_extension == XML || output_extension == JSON) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
                 if (output_extension == XML) {
-                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
-                    Logger::Status("Writing XML output...");
+                    XmlSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_temp_filename));
+                    logger::status("Writing XML output...");
                     s.finalize();
                 } else {
 #ifdef WITH_GLTF
-                    JsonSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
-                    Logger::Status("Writing JSON output...");
+                    JsonSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
+                    logger::status("Writing JSON output...");
                     s.finalize();
 #endif
                 }
 				time(&end);
-				Logger::Status("Done! Conversion took " +  format_duration(start, end));
+				logger::status("Done! Conversion took " +  format_duration(start, end));
 
-				IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+				ifcopenshell::path::rename_file(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(output_filename));
 				exit_code = EXIT_SUCCESS;
 			}
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 		write_log(!quiet);
 		return exit_code;
 	} else if (output_extension == IFC) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
                 time_t start, end;
 				time(&start);
 				std::ofstream fs(output_filename.c_str());
@@ -705,13 +705,13 @@ int main(int argc, char** argv) {
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
 				} else {
-					Logger::Error("Unable to open output file for writing");
+					logger::error("Unable to open output file for writing");
 				}
                 time(&end);
-                Logger::Status("Done! Writing IFC took " +  format_duration(start, end));
+                logger::status("Done! Writing IFC took " +  format_duration(start, end));
 			}
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 		write_log(!quiet);
 		return exit_code;
@@ -723,26 +723,26 @@ int main(int argc, char** argv) {
 			if (vmap.count("stream")) {
 				time_t start, end;
 				time(&start);
-				RocksDbSerializer s(IfcUtil::path::to_utf8(input_filename), IfcUtil::path::to_utf8(output_filename), true);
-				Logger::Status("Populating RocksDB Key-Value store...");
+				RocksDbSerializer s(ifcopenshell::path::to_utf8(input_filename), ifcopenshell::path::to_utf8(output_filename), true);
+				logger::status("Populating RocksDB Key-Value store...");
 				s.finalize();
 				time(&end);
-				Logger::Status("Done! Conversion took " + format_duration(start, end));
+				logger::status("Done! Conversion took " + format_duration(start, end));
 				exit_code = EXIT_SUCCESS;
 			} else {
-				if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+				if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 					time_t start, end;
 					time(&start);
-					RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
-					Logger::Status("Populating RocksDB Key-Value store...");
+					RocksDbSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_filename));
+					logger::status("Populating RocksDB Key-Value store...");
 					s.finalize();
 					time(&end);
-					Logger::Status("Done! Conversion took " + format_duration(start, end));
+					logger::status("Done! Conversion took " + format_duration(start, end));
 					exit_code = EXIT_SUCCESS;
 				}
 			}			
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 		write_log(!quiet);
 		return exit_code;
@@ -756,15 +756,15 @@ int main(int argc, char** argv) {
     if (exclude_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_filter); }
     if (exclude_traverse_filter.type != geom_filter::UNUSED) { used_filters.push_back(exclude_traverse_filter); }
 
-    std::vector<ifcopenshell::geometry::filter_t> filter_funcs = setup_filters(used_filters, IfcUtil::path::to_utf8(output_extension));
+    std::vector<ifcopenshell::geometry::filter_t> filter_funcs = setup_filters(used_filters, ifcopenshell::path::to_utf8(output_extension));
     if (filter_funcs.empty()) {
-        cerr_ << "[Error] Failed to set up geometry filters\n";
+        cerr_ << "[error] Failed to set up geometry filters\n";
         return EXIT_FAILURE;
     }
 
-    if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
-    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice(layer_filter.description); }
-	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice(attribute_filter.description); }
+    if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); logger::notice(entity_filter.description); }
+    if (!layer_filter.values.empty()) { layer_filter.update_description(); logger::notice(layer_filter.description); }
+	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); logger::notice(attribute_filter.description); }
 
 #ifdef _MSC_VER
 	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
@@ -796,11 +796,11 @@ int main(int argc, char** argv) {
 	}
 
 	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC && output_extension != GLB) {
-		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
+		cerr_ << "[error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
 		/// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
-		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 		return EXIT_FAILURE;
 	}
 
@@ -829,41 +829,41 @@ int main(int argc, char** argv) {
 	if (output_extension == OBJ) {
         // Do not use temp file for MTL as it's such a small file.
         const path_t mtl_filename = change_extension(output_filename, MTL);
-		serializer = boost::make_shared<WaveFrontOBJSerializer>(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(mtl_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<WaveFrontOBJSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(mtl_filename), geometry_settings, serializer_settings);
 #ifdef WITH_OPENCOLLADA
 	} else if (output_extension == DAE) {
-		serializer = boost::make_shared<ColladaSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<ColladaSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef WITH_GLTF
 	} else if (output_extension == GLB) {
-		serializer = boost::make_shared<GltfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<GltfSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef WITH_USD
 	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
-		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<USDSerializer>(ifcopenshell::path::to_utf8(output_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef IFOPSH_WITH_OPENCASCADE
 	} else if (output_extension == STP) {
-		serializer = boost::make_shared<StepSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<StepSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else if (output_extension == IGS) {
 #if OCC_VERSION_HEX < 0x60900
 		// According to https://tracker.dev.opencascade.org/view.php?id=25689 something has been fixed in 6.9.0
 		IGESControl_Controller::Init(); // work around Open Cascade bug
 #endif
-		serializer = boost::make_shared<IgesSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<IgesSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else if (output_extension == SVG) {
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<SvgSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<SvgSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #ifdef WITH_HDF5
 	} else if (output_extension == HDF) {
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<HdfSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #endif	
 	} else if (output_extension == TTL) {
-		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
+		serializer = boost::make_shared<TtlWktSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else {
-        cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
+        cerr_ << "[error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
 		return EXIT_FAILURE;
@@ -872,20 +872,20 @@ int main(int argc, char** argv) {
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
 		if (geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
-            Logger::Notice("Weld vertices setting ignored when writing non-tesselated output");
+            logger::notice("Weld vertices setting ignored when writing non-tesselated output");
 		}
         if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
-            Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
+            logger::notice("Generate UVs setting ignored when writing non-tesselated output");
         }
         if (center_model || center_model_geometry) {
-            Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
+            logger::notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 	}
 
 	if (!serializer->ready()) {
-		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 		write_log(!quiet);
 		return EXIT_FAILURE;
 	}
@@ -896,53 +896,53 @@ int main(int argc, char** argv) {
 	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
     // XML, RocksDB, IFC are already special-cased above
     // SVG requires properties for IfcAnnotation/DRAWING properties
-    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, output_extension != SVG)) {
+    if (!init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, output_extension != SVG)) {
         write_log(!quiet);
 		serializer.reset();
-        IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
+        ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
         return EXIT_FAILURE;
     }
 
 	if (vmap.count("log-file")) {
-		Logger::SetOutput(quiet ? nullptr : &cout_, &log_fs);
+		logger::set_output(quiet ? nullptr : &cout_, &log_fs);
 	} else {
-		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
+		logger::set_output(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
 
 	if (model_rotation) {
 		std::vector<double> rotation(4);
 		int n = 0;
 		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || n != rotation_str.size()) {
-			cerr_ << "[Error] Invalid use of --model-rotation\n";
-			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+			cerr_ << "[error] Invalid use of --model-rotation\n";
+			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 
 		std::stringstream msg;
 		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
-		Logger::Notice(msg.str());
+		logger::notice(msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelRotation>().value = rotation;
 	}
 
 	if (model_offset && (center_model || center_model_geometry)) {
-		Logger::Notice("--model-offset ignored with --center-model or --center-model-geometry");
+		logger::notice("--model-offset ignored with --center-model or --center-model-geometry");
 	}
 
 	if (model_offset && !(center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 		int n = 0;
 		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || n != offset_str.size()) {
-			cerr_ << "[Error] Invalid use of --model-offset\n";
-			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+			cerr_ << "[error] Invalid use of --model-offset\n";
+			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 			print_options(serializer_options);
 			return EXIT_FAILURE;
 		}
 
 		std::stringstream msg;
 		msg << std::setprecision(std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-		Logger::Notice(msg.str());
+		logger::notice(msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
 	}
@@ -954,15 +954,15 @@ int main(int argc, char** argv) {
 			
 		time_t start, end;
 		time(&start);
-		if (!quiet) Logger::Status("Computing bounds...");
+		if (!quiet) logger::status("Computing bounds...");
 
 		if (center_model_geometry) {
 			if (!tmp_context_iterator.initialize()) {
 				/// @todo It would be nice to know and print separate error prints for a case where we found no entities
 				/// and for a case we found no entities that satisfy our filtering criteria.
-				Logger::Notice("No geometrical elements found or none successfully converted");
+				logger::notice("No geometrical elements found or none successfully converted");
 				serializer.reset();
-				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+				ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 				write_log(!quiet);
 				return EXIT_FAILURE;
 			}
@@ -971,7 +971,7 @@ int main(int argc, char** argv) {
         tmp_context_iterator.compute_bounds(center_model_geometry);
 
 		time(&end);
-        if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
+        if (!quiet) logger::status("Done ! Bounds computed in " + format_duration(start, end));
 
         auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
         offset[0] = -center(0);
@@ -980,7 +980,7 @@ int main(int argc, char** argv) {
 
         std::stringstream msg;
         msg << std::setprecision (std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-        Logger::Notice(msg.str());
+        logger::notice(msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
     }
@@ -1005,19 +1005,19 @@ int main(int argc, char** argv) {
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
-		cache.reset(new HdfSerializer(IfcUtil::path::to_utf8(cache_file), geometry_settings, serializer_settings));
+		cache.reset(new HdfSerializer(ifcopenshell::path::to_utf8(cache_file), geometry_settings, serializer_settings));
 		context_iterator->set_cache(cache.get());
 	}
 #endif
 
-	Logger::Message(Logger::LOG_PERF, "file geometry conversion");
+	logger::message(logger::LOG_PERF, "file geometry conversion");
 
     if (context_iterator && !context_iterator->initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
-        Logger::Notice("No geometrical elements found or none successfully converted");
+        logger::notice("No geometrical elements found or none successfully converted");
 		serializer.reset();
-		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
         write_log(!quiet);
         return EXIT_FAILURE;
     }
@@ -1034,7 +1034,7 @@ int main(int argc, char** argv) {
 				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys();
 			}
 		} else if (vmap.count("section-height") != 0) {
-			Logger::Notice("Overriding section height");
+			logger::notice("Overriding section height");
 			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
 		}
 		if (vmap.count("print-space-names") != 0) {
@@ -1057,7 +1057,7 @@ int main(int argc, char** argv) {
 			if (sscanf(svg_scale.c_str(), "%u:%u", &s0, &s1) == 2 && s0 > 0 && s1 > 0) {
 				static_cast<SvgSerializer*>(serializer.get())->setScale((double)s0 / s1);
 			} else {
-				cerr_ << "[Error] Invalid use of --scale" << std::endl;
+				cerr_ << "[error] Invalid use of --scale" << std::endl;
 				print_options(serializer_options);
 				return EXIT_FAILURE;
 			}
@@ -1112,7 +1112,7 @@ int main(int argc, char** argv) {
 	int old_progress = quiet ? 0 : -1;
 
 	if (!quiet) {
-		Logger::Status("Creating geometry...");
+		logger::status("Creating geometry...");
 	}
 
 	// The functions IfcGeom::Iterator::get() and IfcGeom::Iterator::next() 
@@ -1157,10 +1157,10 @@ int main(int argc, char** argv) {
 				if (stderr_progress)
 					cerr_ << std::flush;
 			} else if (vcounter.count == 2) {
-				Logger::Message(Logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
+				logger::message(logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				progress = progress / 2;
-				if (old_progress != progress) Logger::ProgressBar(progress);
+				if (old_progress != progress) logger::progress_bar(progress);
 				old_progress = progress;
 			}
         }
@@ -1189,7 +1189,7 @@ int main(int argc, char** argv) {
 		}
 	} else {
 		const std::string task = ((num_threads == 1) ? "creating" : "writing");
-		Logger::Status("\rDone " + task + " geometry (" + boost::lexical_cast<std::string>(num_created) +
+		logger::status("\rDone " + task + " geometry (" + boost::lexical_cast<std::string>(num_created) +
 			" objects)                                ");
 	}
 
@@ -1197,7 +1197,7 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
-	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
+	logger::message(logger::LOG_PERF, "done file geometry conversion");
 
 	bool successful;
 	if(output_extension == USD || output_extension == USDC || output_extension == USDA) {
@@ -1207,7 +1207,7 @@ int main(int argc, char** argv) {
 	else {
 		// Renaming might fail (e.g. maybe the existing file was open in a viewer application)
     	// Do not remove the temp file as user can salvage the conversion result from it.
-		successful = IfcUtil::path::rename_file(IfcUtil::path::to_utf8(output_temp_filename), IfcUtil::path::to_utf8(output_filename));
+		successful = ifcopenshell::path::rename_file(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(output_filename));
 	}
 
     if (!successful) {
@@ -1215,13 +1215,13 @@ int main(int argc, char** argv) {
             output_temp_filename << "' for the conversion result.";
     }
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
-		Logger::Error("Errors encountered during processing.");
+	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && logger::max_severity() >= logger::LOG_ERROR) {
+		logger::error("Errors encountered during processing.");
 		successful = false;
 	}
 
-	if (Logger::Verbosity() == Logger::LOG_PERF) {
-		Logger::PrintPerformanceStats();
+	if (logger::verbosity() == logger::LOG_PERF) {
+		logger::print_performance_stats();
 	}
 
 	write_log(!quiet);
@@ -1229,7 +1229,7 @@ int main(int argc, char** argv) {
 	time(&end);
 
     if (!quiet) {
-        Logger::Status("\nConversion took " +  format_duration(start, end));
+        logger::status("\nConversion took " +  format_duration(start, end));
     }
 
     return successful ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -1267,11 +1267,11 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties) {
+bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file, bool no_progress, bool mmap, bool bypass_properties) {
     time_t start, end;
 
-    // Prevent IfcFile::Init() prints by setting output to null temporarily
-    if (no_progress) { Logger::SetOutput(NULL, &log_stream); }
+    // Prevent file::Init() prints by setting output to null temporarily
+    if (no_progress) { logger::set_output(NULL, &log_stream); }
 
     time(&start);
 
@@ -1279,11 +1279,11 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
 #ifdef WITH_IFCXML
 	// if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
-	// 	ifc_file = IfcParse::parse_ifcxml(filename);
+	// 	ifc_file = ifcopenshell::parse_ifcxml(filename);
     // } else
 #endif
     {
-        ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{});
+        ifc_file = new ifcopenshell::file(ifcopenshell::uninitialized_tag{});
         requires_init = true;
     }
 
@@ -1309,13 +1309,13 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
     }
 
 	if (!ifc_file || !ifc_file->good()) {
-        Logger::Error("Unable to parse input file '" + filename + "'");
+        logger::error("Unable to parse input file '" + filename + "'");
         return false;
     }
     time(&end);
 
-    if (no_progress) { Logger::SetOutput(&cout_, &log_stream); }
-    else {  Logger::Status("Parsing input file took " + format_duration(start, end)); }
+    if (no_progress) { logger::set_output(&cout_, &log_stream); }
+    else {  logger::status("Parsing input file took " + format_duration(start, end)); }
 
     return true;
 
@@ -1327,7 +1327,7 @@ bool append_filter(const std::string& type, const std::vector<std::string>& valu
     parse_filter(temp, values);
     // Merge values only if type and arg match.
     if ((filter.type != geom_filter::UNUSED && filter.type != temp.type) || (!filter.arg.empty() && filter.arg != temp.arg)) {
-        cerr_ << "[Error] Multiple '" << type.c_str() << "' filters specified with different criteria\n";
+        cerr_ << "[error] Multiple '" << type.c_str() << "' filters specified with different criteria\n";
         return false;
     }
     filter.type = temp.type;
@@ -1343,10 +1343,10 @@ size_t read_filters_from_file(
     exclusion_filter& exclude_filter,
     exclusion_traverse_filter& exclude_traverse_filter)
 {
-    std::ifstream filter_file(IfcUtil::path::from_utf8(filename).c_str());
+    std::ifstream filter_file(ifcopenshell::path::from_utf8(filename).c_str());
 
     if (!filter_file.is_open()) {
-        cerr_ << "[Error] Unable to open filter file '" << IfcUtil::path::from_utf8(filename) << "' or the file does not exist.\n";
+        cerr_ << "[error] Unable to open filter file '" << ifcopenshell::path::from_utf8(filename) << "' or the file does not exist.\n";
         return 0;
     }
 
@@ -1381,11 +1381,11 @@ size_t read_filters_from_file(
             else if (type == "exclude") { if (append_filter("exclude", values, exclude_filter)) { ++num_filters; } }
             else if (type == "exclude+") { if (append_filter("exclude+", values, exclude_traverse_filter)) { ++num_filters; } }
             else {
-                cerr_ << "[Error] Invalid filtering type at line " << boost::lexical_cast<path_t>(line_number) << "\n";
+                cerr_ << "[error] Invalid filtering type at line " << boost::lexical_cast<path_t>(line_number) << "\n";
                 return 0;
             }
         } catch(...) {
-            cerr_ << "[Error] Unable to parse filter at line " << boost::lexical_cast<path_t>(line_number) << ".\n";
+            cerr_ << "[error] Unable to parse filter at line " << boost::lexical_cast<path_t>(line_number) << ".\n";
             return 0;
         }
     }
@@ -1497,16 +1497,16 @@ namespace latebound_access {
 	void set(express::Base inst, const std::string& attr, T t);
 
 	template <typename T>
-    void set_enumeration(express::Base, const std::string&, const IfcParse::enumeration_type*, T) {}
+    void set_enumeration(express::Base, const std::string&, const ifcopenshell::enumeration_type*, T) {}
 
 	template <>
-    void set_enumeration(express::Base inst, const std::string& attr, const IfcParse::enumeration_type* enum_type, std::string t) {
+    void set_enumeration(express::Base inst, const std::string& attr, const ifcopenshell::enumeration_type* enum_type, std::string t) {
 		std::vector<std::string>::const_iterator it = std::find(
 			enum_type->enumeration_items().begin(),
 			enum_type->enumeration_items().end(),
 			t);
 
-		return set(inst, attr, EnumerationReference(enum_type, it - enum_type->enumeration_items().begin()));
+		return set(inst, attr, enumeration_reference(enum_type, it - enum_type->enumeration_items().begin()));
 	}
 
 	template <typename T>
@@ -1515,26 +1515,26 @@ namespace latebound_access {
 		auto i = decl->attribute_index(attr);
 
 		auto attr_type = decl->attribute_by_index(i)->type_of_attribute();
-		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, EnumerationReference>::value) {
+		if (attr_type->as_named_type() && attr_type->as_named_type()->declared_type()->as_enumeration_type() && !std::is_same<T, enumeration_reference>::value) {
 			set_enumeration(inst, attr, attr_type->as_named_type()->declared_type()->as_enumeration_type(), t);
 		} else {
 			inst.set_attribute_value(i, t);
 		}
 	}
 
-	express::Base create(IfcParse::IfcFile& f, const std::string& entity) {
+	express::Base create(ifcopenshell::file& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
         return f.create(decl);
 	}
 }
 
-void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+void fix_quantities(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress) {
 	{
 		auto delete_reversed = [&f](const std::vector<express::Base>& insts) {
 			// Lists are traversed back to front as the list may be mutated when
 			// instances are removed from the grouping by type.
 			for (auto it = insts.end() - 1; it >= insts.begin(); --it) {
-                f.removeEntity(*it);
+                f.remove_entity(*it);
 			}
 		};
 
@@ -1542,7 +1542,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		auto quantities = f.instances_by_type("IfcPhysicalQuantity");
         for (auto it = quantities.end() - 1; it >= quantities.begin(); --it) {
             if (!it->declaration().is("IfcPhysicalComplexQuantity")) {
-                f.removeEntity(*it);
+                f.remove_entity(*it);
             }
         }
 
@@ -1556,7 +1556,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
 
 		for (auto& eq : element_quantities) {
-            auto rels = eq.file()->getInverse(eq.id(), IfcRelDefinesByProperties, -1);
+            auto rels = eq.file()->get_inverse(eq.id(), IfcRelDefinesByProperties, -1);
 			for (auto& rel : rels) {
 				relationships.push_back(rel);
 			}
@@ -1568,7 +1568,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 
 		// Delete relationship nodes
 		for (auto& rel : relationships) {
-			f.removeEntity(rel);
+			f.remove_entity(rel);
 		}
 	}
 
@@ -1706,7 +1706,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 					cerr_ << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) Logger::ProgressBar(progress);
+				if (old_progress != progress) logger::progress_bar(progress);
 				old_progress = progress;
 			}
 		}
@@ -1722,7 +1722,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 		if (stderr_progress)
 			cerr_ << std::flush;
 	} else {
-		Logger::Status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
+		logger::status("\rDone writing quantities for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
 	}
 

@@ -29,10 +29,10 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 
 class Node {
@@ -101,7 +101,7 @@ public:
 		return operate(OP_INTERSECT, p);
 	}
 
-	IfcSchema::IfcRepresentationItem* serialize(IfcHierarchyHelper& file) const {
+	IfcSchema::IfcRepresentationItem* serialize(hierarchy_helper& file) const {
 		IfcSchema::IfcRepresentationItem* my;
 		if (op == OP_TERMINAL) {
 			IfcSchema::IfcAxis2Placement3D* place = file.addPlacement3d(x,y,z,zx,zy,zz,xx,xy,xz);
@@ -127,14 +127,14 @@ public:
 			}
 			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file), right->serialize(file));
 		}
-		file.addEntity(my);
+		file.add_entity(my);
 		return my;
 	}
 };
 
 int main(int argc, char** argv) {
 	const char filename[] = "IfcCsgPrimitive.ifc";
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	file.header().file_name().name(filename);
 
 	IfcSchema::IfcRepresentationItem* csg1 = Node::Box(8000.,6000.,3000.).subtract(
@@ -181,8 +181,8 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
-	file.addEntity(rep);
-	file.addEntity(shape);
+	file.add_entity(rep);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 

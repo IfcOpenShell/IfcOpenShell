@@ -77,13 +77,13 @@ namespace geometry {
     };
 
 	namespace impl {
-		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, Settings&> mapping_fn;
+		typedef boost::function2<abstract_mapping*, ifcopenshell::file*, Settings&> mapping_fn;
 
 		class IFC_GEOM_API MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(IfcParse::IfcFile*, Settings&);
+			abstract_mapping* construct(ifcopenshell::file*, Settings&);
 		};
 
 		IFC_GEOM_API MappingFactoryImplementation& mapping_implementations();

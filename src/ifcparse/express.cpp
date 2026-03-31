@@ -1,14 +1,14 @@
 #include "express.h"
-#include "InstanceData.h"
+#include "instance_data.h"
 
-const IfcParse::declaration& express::Base::declaration() const {
+const ifcopenshell::declaration& express::Base::declaration() const {
     return *data()->declaration();
 }
 uint32_t express::Base::identity() const { return data()->identity(); }
 
 uint32_t express::Base::id() const { return data()->id(); }
 
-const InstanceData* express::Base::data() const {
+const instance_data* express::Base::data() const {
     auto sp = data_.lock();
     if (sp) {
         return sp.get();
@@ -17,7 +17,7 @@ const InstanceData* express::Base::data() const {
     }
 }
 
-InstanceData* express::Base::data() { 
+instance_data* express::Base::data() { 
     auto sp = data_.lock();
     if (sp) {
         return sp.get();

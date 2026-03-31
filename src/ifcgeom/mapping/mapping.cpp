@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -22,17 +22,17 @@
 
 #include "mapping.h"
 
-#include "../../ifcparse/IfcLogger.h"
-#include "../../ifcparse/IfcFile.h"
-#include "../../ifcparse/IfcSIPrefix.h"
+#include "../../ifcparse/logger.h"
+#include "../../ifcparse/file.h"
+#include "../../ifcparse/si_prefix.h"
 
-using namespace IfcUtil;
+using namespace ifcopenshell;
 using namespace ifcopenshell::geometry;
 using namespace IfcGeom;
 
 namespace {
     struct POSTFIX_SCHEMA(factory_t) {
-        abstract_mapping* operator()(IfcParse::IfcFile* file, Settings& settings) const {
+        abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings) const {
             ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings);
             return m;
         }
@@ -58,7 +58,7 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
 
         // IfcProductRepresentation also lacks the INVERSE relation to IfcProduct
         // Let's find the IfcProducts that reference the IfcProductRepresentation anyway
-        auto invs = prodrep.file()->getInverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
+        auto invs = prodrep.file()->get_inverse(prodrep.id(), &IfcSchema::IfcProduct::Class(), -1);
         for (auto& inv : invs) {
             products.push_back(inv.as<IfcSchema::IfcProduct>());
         }        
@@ -84,19 +84,19 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
                 try {
                     target = taxonomy::cast<taxonomy::matrix4>(map(item.MappingTarget()));
                 } catch (const std::exception& e) {
-                    Logger::Error(e);
+                    logger::error(e);
                     continue;
                 }
                 if (!target->is_identity()) {
                     continue;
                 }
 
-                auto reps = item.file()->getInverse(item.id(), (&IfcSchema::IfcRepresentation::Class()), -1);
+                auto reps = item.file()->get_inverse(item.id(), (&IfcSchema::IfcRepresentation::Class()), -1);
                 for (auto& rep : reps) {
                     if (rep.as<IfcSchema::IfcRepresentation>().Items().size() != 1) continue;
                     std::vector<IfcSchema::IfcProductRepresentation> prodreps_mapped = rep.as<IfcSchema::IfcRepresentation>().OfProductRepresentation();
                     for (auto& prm : prodreps_mapped) {
-                        auto ps = prm.file()->getInverse(prm.id(), (&IfcSchema::IfcProduct::Class()), -1);
+                        auto ps = prm.file()->get_inverse(prm.id(), (&IfcSchema::IfcProduct::Class()), -1);
                         for (auto& p : ps) {
                             products.push_back(p.as<IfcSchema::IfcProduct>());
                         }
@@ -329,8 +329,8 @@ const express::Base mapping::get_single_material_association(const express::Base
 
         try {
             associated_material = associated_materials.front().RelatingMaterial().concrete();
-        } catch(IfcParse::IfcException& e) {
-            Logger::Error(e.what());
+        } catch(ifcopenshell::exception& e) {
+            logger::error(e.what());
         }
 
         if (associated_material) {
@@ -343,7 +343,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     IfcSchema::IfcMaterialLayerSet layerset;
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialLayerSetUsage>()) {
                         if (m.get("ForLayerSet").isNull()) {
-                            Logger::Warning("Missing ForLayerSet for:", m);
+                            logger::warning("Missing ForLayerSet for:", m);
                             return express::Base{};
                         }
                         layerset = m.ForLayerSet();
@@ -363,7 +363,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     IfcSchema::IfcMaterialProfileSet profileset;
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialProfileSetUsage>()) {
                         if (m.get("ForProfileSet").isNull()) {
-                            Logger::Warning("Missing ForProfileSet for:", m);
+                            logger::warning("Missing ForProfileSet for:", m);
                             return express::Base{};
                         }
                         profileset = m.ForProfileSet();
@@ -408,7 +408,7 @@ IfcSchema::IfcRepresentation mapping::representation_mapped_to(const IfcSchema::
                 try {
                     target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item.MappingTarget()));
                 } catch (const std::exception& e) {
-                    Logger::Error(e);
+                    logger::error(e);
                 }
                 if (target && target->is_identity()) {
                     IfcSchema::IfcRepresentationMap rmap = mapped_item.MappingSource();
@@ -575,7 +575,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
             if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
                 return nullptr;
             }
-            Logger::Warning("Skipping unsupported material style for material: ", material);
+            logger::warning("Skipping unsupported material style for material: ", material);
         }
     }
 
@@ -607,7 +607,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem& inst) {
 
     if (!style) {
         // E.g. IfcCurveStyle is skipped as unsupported.
-        Logger::Warning("Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
+        logger::warning("Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
         failed_on_purpose_.insert(inst);
         return nullptr;
     }
@@ -725,7 +725,7 @@ taxonomy::ptr mapping::map(const express::Base& inst) {
             cache_.insert({iden, item});
         }
     } else if (!matched) {
-        Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);
+        logger::message(logger::LOG_ERROR, "No operation defined for:", inst);
     }
     return item;
 }
@@ -783,8 +783,8 @@ express::Base mapping::get_decomposing_entity(const express::Base& inst, bool in
 
     /* Parent decompositions to the RelatingObject */
     if (!parent) {
-        std::vector<express::Entity> parents = product.file()->getInverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
-        auto nests = product.file()->getInverse(product.id(), (&IfcSchema::IfcRelNests::Class()), -1);
+        std::vector<express::Entity> parents = product.file()->get_inverse(product.id(), (&IfcSchema::IfcRelAggregates::Class()), -1);
+        auto nests = product.file()->get_inverse(product.id(), (&IfcSchema::IfcRelNests::Class()), -1);
         parents.insert(parents.end(), nests.begin(), nests.end());
         for (auto it = parents.begin(); it != parents.end(); ++it) {
             IfcSchema::IfcRelDecomposes decompose = (*it).as<IfcSchema::IfcRelDecomposes>();
@@ -803,7 +803,7 @@ std::map<std::string, express::Base> mapping::get_layers(const express::Base& in
     auto prod = inst.as<IfcSchema::IfcProduct>();
     std::map<std::string, express::Base> layers;
     if (prod.Representation()) {
-        std::vector<express::Base> representations = IfcParse::traverse(prod.Representation());
+        std::vector<express::Base> representations = ifcopenshell::traverse(prod.Representation());
         for (auto& inst : representations) {
             if (auto repr = inst.as<IfcSchema::IfcRepresentation>()) {
                 std::vector<IfcSchema::IfcPresentationLayerAssignment> a = repr.LayerAssignments();
@@ -833,10 +833,10 @@ void mapping::initialize_units_() {
         auto& project = projects.front();
         unit_assignment = project.UnitsInContext();
     } else {
-        Logger::Warning("Not a single project or context in file");
+        logger::warning("Not a single project or context in file");
     }
     if (!unit_assignment) {
-        Logger::Warning("Unable to detect unit information");
+        logger::warning("Unable to detect unit information");
         return;
     }
 
@@ -845,14 +845,14 @@ void mapping::initialize_units_() {
     try {
         auto units = unit_assignment.Units();
         if (units.empty()) {
-            Logger::Warning("No unit information found");
+            logger::warning("No unit information found");
         } else {
             for (auto& base : units) {
                 if (auto named_unit = base.as<IfcSchema::IfcNamedUnit>()) {
                     if (named_unit.UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_LENGTHUNIT ||
                         named_unit.UnitType() == IfcSchema::IfcUnitEnum::IfcUnit_PLANEANGLEUNIT) {
                         std::string current_unit_name;
-                        const double current_unit_magnitude = IfcParse::get_SI_equivalent<IfcSchema>(named_unit);
+                        const double current_unit_magnitude = ifcopenshell::get_SI_equivalent<IfcSchema>(named_unit);
                         if (current_unit_magnitude != 0.) {
                             if (auto u = named_unit.as<IfcSchema::IfcConversionBasedUnit>()) {
                                 current_unit_name = u.Name();
@@ -875,18 +875,18 @@ void mapping::initialize_units_() {
                 }
             }
         }
-    } catch (const IfcParse::IfcException& ex) {
+    } catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to determine unit information '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        logger::message(logger::LOG_ERROR, ss.str());
     }
 
     if (!length_unit_encountered) {
-        Logger::Warning("No length unit encountered");
+        logger::warning("No length unit encountered");
     }
 
     if (!angle_unit_encountered) {
-        Logger::Warning("No plane angle unit encountered");
+        logger::warning("No plane angle unit encountered");
     }
 
     // @todo move to a more descriptive function
@@ -903,7 +903,7 @@ void mapping::initialize_units_() {
         if (vs.size() == 3) {
             offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
         } else {
-            Logger::Error("Expected 3 values for model-offset setting");
+            logger::error("Expected 3 values for model-offset setting");
         }
     }
 
@@ -916,7 +916,7 @@ void mapping::initialize_units_() {
             m4 << m3;
             offset_and_rotation_ *= m4;
         } else {
-            Logger::Error("Expected 4 values for model-rotation setting");
+            logger::error("Expected 4 values for model-rotation setting");
         }
     }
 }
@@ -963,7 +963,7 @@ void mapping::initialize_settings() {
 
     if (any_precision_encountered) {
         if (lowest_precision_encountered < 1.e-7) {
-            Logger::Message(Logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+            logger::message(logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
             precision_to_set = 1.e-7;
         } else {
             precision_to_set = lowest_precision_encountered;
@@ -1000,7 +1000,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
     IfcSchema::IfcRepresentation body_representation = find_representation(product, "Body");
 
     if (!body_representation) {
-        Logger::Warning("No body representation for product", product);
+        logger::warning("No body representation for product", product);
         return false;
     }
 
@@ -1014,7 +1014,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         IfcSchema::IfcRepresentation axis_representation = find_representation(product, "Axis");
 
         if (!axis_representation) {
-            Logger::Message(Logger::LOG_WARNING, "No axis representation for:", product);
+            logger::message(logger::LOG_WARNING, "No axis representation for:", product);
             return false;
         }
 
@@ -1080,7 +1080,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
             std::reverse(info.layers.begin(), info.layers.end());
         }
     } else {
-        auto resources = IfcParse::traverse(body_representation);
+        auto resources = ifcopenshell::traverse(body_representation);
         std::vector<IfcSchema::IfcExtrudedAreaSolid> extrusions;
         for (auto& r : resources) {
             if (auto ex = r.as<IfcSchema::IfcExtrudedAreaSolid>()) {
@@ -1089,7 +1089,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         }
 
         if (extrusions.size() != 1) {
-            Logger::Message(Logger::LOG_WARNING, "No single extrusion found in body representation for:", product);
+            logger::message(logger::LOG_WARNING, "No single extrusion found in body representation for:", product);
             return false;
         }
 
@@ -1104,7 +1104,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         if (has_position) {
             auto m4 = taxonomy::cast<taxonomy::matrix4>(map(extrusion.Position()));
             if (!m4) {
-                Logger::Message(Logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product);
+                logger::message(logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product);
                 return false;
             } else {
                 extrusion_position = m4;
@@ -1114,7 +1114,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         taxonomy::direction3::ptr extrusion_direction = taxonomy::cast<taxonomy::direction3>(map(extrusion.ExtrudedDirection()));
 
         if (!extrusion_direction) {
-            Logger::Message(Logger::LOG_ERROR, "Failed to convert direction for extrusion of:", product);
+            logger::message(logger::LOG_ERROR, "Failed to convert direction for extrusion of:", product);
             return false;
         }
 
@@ -1186,13 +1186,13 @@ void mapping::addRepresentationsFromContextIds(std::vector<IfcSchema::IfcReprese
         IfcSchema::IfcGeometricRepresentationContext context;
         try {
             context = file_->instance_by_id(context_id).as<IfcSchema::IfcGeometricRepresentationContext>();
-        } catch (IfcParse::IfcException& e) {
-            Logger::Error(e);
+        } catch (ifcopenshell::exception& e) {
+            logger::error(e);
             continue;
         }
 
         if (!context) {
-            Logger::Error("Failed to process context ID " + std::to_string(context_id));
+            logger::error("Failed to process context ID " + std::to_string(context_id));
             continue;
         }
 
@@ -1241,14 +1241,14 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
                 boost::to_lower(context_type);
 
                 if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-                    Logger::Warning(std::string("ContextType '") + *context.ContextType() + "' not allowed:", context);
+                    logger::warning(std::string("ContextType '") + *context.ContextType() + "' not allowed:", context);
                 }
                 if (context_types.find(context_type) != context_types.end()) {
                     filtered_contexts.push_back(context);
                 }
             }
         } catch (const std::exception& e) {
-            Logger::Error(e);
+            logger::error(e);
         }
     }
 
@@ -1277,7 +1277,7 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
     }
 
     if (representations.empty()) {
-        Logger::Warning("No representations encountered in relevant contexts, using all");
+        logger::warning("No representations encountered in relevant contexts, using all");
         auto all_reps = file_->instances_by_type<IfcSchema::IfcRepresentation>();
         representations = all_reps;
     }
@@ -1318,7 +1318,7 @@ express::Base mapping::representation_of(const express::Base& product) {
         return express::Base{};
     } else {
         for (auto& r : intersection) {
-            auto resources = IfcParse::traverse(r);
+            auto resources = ifcopenshell::traverse(r);
             auto is_bounding_box = std::any_of(resources.begin(), resources.end(), [](const auto& res) { return res.declaration().is(IfcSchema::IfcBoundingBox::Class()); });
             if (is_bounding_box) {
                 continue;
@@ -1326,7 +1326,7 @@ express::Base mapping::representation_of(const express::Base& product) {
             intersection_no_box.push_back(r);
         }
         if (intersection_no_box.size() > 1) {
-            Logger::Warning("Multiple applicable representations found for element, selecting arbitrary");
+            logger::warning("Multiple applicable representations found for element, selecting arbitrary");
         }
         if (intersection_no_box.size()) {
             return intersection_no_box.front();

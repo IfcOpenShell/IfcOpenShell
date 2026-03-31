@@ -26,7 +26,7 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear& inst) {
 
     if (!inst.Location().as<IfcSchema::IfcPointByDistanceExpression>()) {
-        Logger::Error(std::runtime_error("Location must be IfcPointByDistanceExpression for IfcAxis2PlacementLinear"));
+        logger::error(std::runtime_error("Location must be IfcPointByDistanceExpression for IfcAxis2PlacementLinear"));
     }
 
     Eigen::Vector3d o, axis(0, 0, 1), refDirection;
@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear& inst) 
 
     /*
     if (hasAxis != hasRef) {
-		Logger::Warning("Axis and RefDirection should be specified together", inst);
+		logger::warning("Axis and RefDirection should be specified together", inst);
 	}
 	*/
 

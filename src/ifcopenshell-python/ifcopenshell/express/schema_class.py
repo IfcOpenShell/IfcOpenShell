@@ -144,12 +144,12 @@ class EarlyBoundCodeWriter:
 
         self.statements = [
             "",
-            '#include "../../ifcparse/IfcSchema.h"',
+            '#include "../../ifcparse/schema.h"',
             '#include "../../ifcparse/schemas/%(schema_name_title)s.h"' % self.__dict__,
             '#include <string>',
             "",
             'using namespace std::string_literals;',
-            "using namespace IfcParse;",
+            "using namespace ifcopenshell;",
             "",
         ]
 
@@ -192,7 +192,7 @@ class EarlyBoundCodeWriter:
 # #endif
 #         """
 #         )
-        self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name.upper())
+        self.statements.append("ifcopenshell::schema_definition* %s_populate_schema() {" % self.schema_name.upper())
         self.statements.append("{string_pool_placeholder}")
 
     def typedef(self, name, declared_type):
@@ -331,7 +331,7 @@ class EarlyBoundCodeWriter:
 
         instance_mapping = """switch(decl->index_in_schema()) {
             %s
-            default: throw IfcParse::IfcException(decl->name() + " cannot be instantiated");
+            default: throw ifcopenshell::exception(decl->name() + " cannot be instantiated");
         }
 """ % "\n            ".join(
             map(
@@ -343,8 +343,8 @@ class EarlyBoundCodeWriter:
         # Factor no longer exists because we don't have virtual methods anymore.
         # self.statements[self.statements.index("{factory_placeholder}")] = (
         #     """
-        #     class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
-        #         virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, const std::weak_ptr<InstanceData>& data) const {
+        #     class %(schema_name)s_instance_factory : public ifcopenshell::instance_factory {
+        #         virtual ifcopenshell::IfcBaseClass* operator()(const ifcopenshell::declaration* decl, const std::weak_ptr<instance_data>& data) const {
         #             %(instance_mapping)s
         #         }
         #     };

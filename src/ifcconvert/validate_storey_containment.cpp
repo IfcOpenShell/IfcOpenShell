@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress) {
 	ifcopenshell::geometry::Settings settings;
 
 	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
@@ -25,16 +25,16 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 	IfcGeom::Iterator context_iterator("cgal", settings, &f, no_openings_and_spaces, 1);
 
-	auto get_elevation = [](const IfcUtil::IfcBaseClass* a) {
-		return ((const IfcUtil::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
+	auto get_elevation = [](const ifcopenshell::IfcBaseClass* a) {
+		return ((const ifcopenshell::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
 	};
 
 	// latebound inverse attribute lookup not working
 	auto rels = f.instances_by_type("IfcRelContainedInSpatialStructure");
-	std::map<const IfcUtil::IfcBaseClass*, const IfcUtil::IfcBaseClass*> elem_to_storey;
-	std::for_each(rels->begin(), rels->end(), [&elem_to_storey](IfcUtil::IfcBaseClass* r) {
-		auto elems = ((IfcUtil::IfcBaseEntity*)r)->get_value<aggregate_of_instance::ptr>("RelatedElements");
-		auto storey = ((IfcUtil::IfcBaseEntity*)r)->get_value<IfcUtil::IfcBaseClass*>("RelatingStructure");
+	std::map<const ifcopenshell::IfcBaseClass*, const ifcopenshell::IfcBaseClass*> elem_to_storey;
+	std::for_each(rels->begin(), rels->end(), [&elem_to_storey](ifcopenshell::IfcBaseClass* r) {
+		auto elems = ((ifcopenshell::IfcBaseEntity*)r)->get_value<aggregate_of_instance::ptr>("RelatedElements");
+		auto storey = ((ifcopenshell::IfcBaseEntity*)r)->get_value<ifcopenshell::IfcBaseClass*>("RelatingStructure");
 
 		if (storey->declaration().name() == "IfcBuildingStorey") {
 			for (auto it = elems->begin(); it != elems->end(); ++it) {
@@ -44,15 +44,15 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 	});	
 
 	auto storeys = f.instances_by_type("IfcBuildingStorey");
-	std::vector<const IfcUtil::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
-	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](const IfcUtil::IfcBaseClass* a, const IfcUtil::IfcBaseClass* b) {
+	std::vector<const ifcopenshell::IfcBaseClass*> storeys_sorted(storeys->begin(), storeys->end());
+	std::sort(storeys_sorted.begin(), storeys_sorted.end(), [&get_elevation](const ifcopenshell::IfcBaseClass* a, const ifcopenshell::IfcBaseClass* b) {
 		return get_elevation(a) < get_elevation(b);
 	});
 
 	/*
 	std::wcout << "Storeys ";
 	for (auto& s : storeys_sorted) {
-		auto n = ((IfcUtil::IfcBaseEntity*)s)->get_value<std::string>("Name");
+		auto n = ((ifcopenshell::IfcBaseEntity*)s)->get_value<std::string>("Name");
 		std::wcout << n.c_str() << " ";
 	}
 	std::wcout << std::endl;
@@ -121,7 +121,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 
 		/*
 		std::stringstream ss;
-		ss << geom_object->product()->data().toString();
+		ss << geom_object->product()->data().to_string();
 		auto sss = ss.str();
 		std::wcout << sss.c_str() << std::endl;
 		*/
@@ -196,9 +196,9 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		auto assigned_overlap = intersection_volumes[assigned_idx];
 		if (calc_overlap > 0 && assigned_overlap < calc_overlap * 0.9) {
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
-			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
-			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
-			Logger::Error("Element " + s + " contained in " + s2 + " located on " + s1);
+			auto s1 = ((ifcopenshell::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
+			auto s2 = ((ifcopenshell::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
+			logger::error("Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {
@@ -214,7 +214,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 					std::cerr << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) Logger::ProgressBar(progress);
+				if (old_progress != progress) logger::progress_bar(progress);
 				old_progress = progress;
 			}
 		}
@@ -230,7 +230,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		if (stderr_progress)
 			std::cerr << std::flush;
 	} else {
-		Logger::Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+		logger::status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
 	}
 }

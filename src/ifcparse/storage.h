@@ -13,7 +13,7 @@ namespace rocksdb {
     class WriteOptions {};
     class ReadOptions {};
     class Iterator {};
-    class Status {};
+    class status {};
 }
 
 #endif
@@ -115,11 +115,11 @@ private:
 
 #endif
 
-class MutableAttributeValue;
+class mutable_attribute_value;
 
-namespace IfcParse {
+namespace ifcopenshell {
 
-    struct InstanceReference {
+    struct instance_reference {
         int v;
         size_t file_offset;
         operator int() const {
@@ -127,15 +127,15 @@ namespace IfcParse {
         }
     };
 
-    typedef std::variant<InstanceReference, express::Base> reference_or_simple_type;
-    typedef std::list<std::pair<MutableAttributeValue, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
+    typedef std::variant<instance_reference, express::Base> reference_or_simple_type;
+    typedef std::list<std::pair<mutable_attribute_value, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
-    class IfcFile;
+    class file;
     template <typename Reader>
-    class IfcSpfLexer;
+    class spf_lexer;
 
-    struct Token {
-        enum TokenType {
+    struct token {
+        enum token_type {
             Token_NONE,
             Token_STRING,
             Token_IDENTIFIER,
@@ -149,31 +149,31 @@ namespace IfcParse {
         };
 
         size_t start_pos;
-        TokenType type;
+        token_type type;
 
         union {
             char value_char;     //types: OPERATOR
             int value_int;       //types: INT, IDENTIFIER
             double value_double; //types: FLOAT
-            const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by IfcSpfLexer::string_pool_
+            const std::string* value_string;  //types: STR, ENUM, KEYWORD; lifetime managed by spf_lexer::string_pool_
         };
 
-        Token() : start_pos(0),
+        token() : start_pos(0),
                   type(Token_NONE) {}
         
-        Token(size_t start, TokenType ty, const std::string& str)
+        token(size_t start, token_type ty, const std::string& str)
             : start_pos(start), type(ty), value_string(&str) {}
 
-        Token(size_t start, TokenType ty, int i)
+        token(size_t start, token_type ty, int i)
             : start_pos(start), type(ty), value_int(i) {}
 
-        Token(size_t start, double d)
+        token(size_t start, double d)
             : start_pos(start), type(Token_FLOAT), value_double(d) {}
 
-        Token(size_t start, char op)
+        token(size_t start, char op)
             : start_pos(start), type(Token_OPERATOR), value_char(op) {}
         
-        Token(size_t start, TokenType ty, char c)
+        token(size_t start, token_type ty, char c)
             : start_pos(start), type(ty), value_char(c) {}
 
         bool is_string();
@@ -219,7 +219,7 @@ namespace IfcParse {
         std::vector<
             std::variant<
             express::Base,
-            Token,
+            token,
             parse_context_handle
             >> tokens_;
 
@@ -242,11 +242,11 @@ namespace IfcParse {
 
         parse_context& push();
 
-        void push(Token t);
+        void push(token t);
 
         void push(const express::Base& inst);
 
-        std::shared_ptr<InstanceData> construct(IfcParse::IfcFile* owner, std::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
+        std::shared_ptr<instance_data> construct(ifcopenshell::file* owner, std::optional<size_t> name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* decl, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
     };
 
     struct parse_context_pool {
@@ -283,23 +283,23 @@ namespace IfcParse {
 
     namespace impl {
         struct IFC_PARSE_API in_memory_file_storage {
-            IfcParse::parse_context_pool context_pool_;
+            ifcopenshell::parse_context_pool context_pool_;
 
-            std::vector<std::shared_ptr<InstanceData>> read_simple_type_instances;
-            std::vector<std::shared_ptr<InstanceData>> steal_instances() {
+            std::vector<std::shared_ptr<instance_data>> read_simple_type_instances;
+            std::vector<std::shared_ptr<instance_data>> steal_instances() {
                 return read_simple_type_instances;
             }
 
             // Either one of these needs to be set
-            IfcParse::IfcFile* file;
-            const IfcParse::schema_definition* schema;
+            ifcopenshell::file* file;
+            const ifcopenshell::schema_definition* schema;
 
             unresolved_references* references_to_resolve = nullptr;
 
-            typedef std::map<const IfcParse::declaration*, std::vector<express::Base>> entities_by_type_t;
-            typedef boost::unordered_map<uint32_t, std::shared_ptr<InstanceData>> entity_instance_by_name_storage_t;
-            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(std::shared_ptr<InstanceData>)>> entity_instance_by_name_t;
-            typedef boost::unordered_map<uint32_t, std::shared_ptr<InstanceData>> type_instance_by_name_t;
+            typedef std::map<const ifcopenshell::declaration*, std::vector<express::Base>> entities_by_type_t;
+            typedef boost::unordered_map<uint32_t, std::shared_ptr<instance_data>> entity_instance_by_name_storage_t;
+            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(std::shared_ptr<instance_data>)>> entity_instance_by_name_t;
+            typedef boost::unordered_map<uint32_t, std::shared_ptr<instance_data>> type_instance_by_name_t;
             typedef std::map<std::string, express::Base> entity_instance_by_guid_t;
             typedef std::tuple<int, short, short> inverse_attr_record;
             enum INVERSE_ATTR {
@@ -310,7 +310,7 @@ namespace IfcParse {
             typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : file(f), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<InstanceData>& d) { return express::Base(d); }) {};
+            in_memory_file_storage(ifcopenshell::file* f = nullptr) : file(f), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<instance_data>& d) { return express::Base(d); }) {};
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
@@ -356,15 +356,15 @@ namespace IfcParse {
             entity_instance_by_name_t byid_read_;
 
             template <typename Reader>
-            void load(IfcParse::IfcSpfLexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
+            void load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::entity* entity, parse_context&, int attribute_index = -1);
             template <typename Reader>
-            void try_read_semicolon(IfcParse::IfcSpfLexer<Reader>* tokens) const;
+            void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
-            void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const IfcParse::entity* from_entity, const express::Base&, int attribute_index);
+            void register_inverse(unsigned, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index);
+            void unregister_inverse(unsigned, const ifcopenshell::entity* from_entity, const express::Base&, int attribute_index);
 
             template <typename Reader>
-            void read_from_stream(Reader* stream, const IfcParse::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
+            void read_from_stream(Reader* stream, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass);
 
             file_open_status good_ = file_open_status::SUCCESS;
 
@@ -392,7 +392,7 @@ namespace IfcParse {
             template <typename T>
             T create(int id=-1);
 
-            express::Base create(const IfcParse::declaration* decl, int id=-1);
+            express::Base create(const ifcopenshell::declaration* decl, int id=-1);
         };
 
         class IFC_PARSE_API rocks_db_file_storage {
@@ -400,7 +400,7 @@ namespace IfcParse {
             rocksdb::DB* db;
             rocksdb::WriteOptions wopts;
             rocksdb::ReadOptions ropts;
-            IfcParse::IfcFile* file;
+            ifcopenshell::file* file;
 
             enum instance_ref {
                 typedecl_ref,
@@ -409,8 +409,8 @@ namespace IfcParse {
 
             // to make sure that instance pointer are constant during file lifetime
             // cache instances because we want stable pointers
-            // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the IfcFile side?
-            typedef std::map<uint32_t, std::shared_ptr<InstanceData>> entity_by_iden_cache_t;
+            // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the file side?
+            typedef std::map<uint32_t, std::shared_ptr<instance_data>> entity_by_iden_cache_t;
             entity_by_iden_cache_t instance_cache_, type_instance_cache_;
 
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
@@ -423,7 +423,7 @@ namespace IfcParse {
             typedef set_to_map_transformer<instance_name_view_t, std::function<express::Base(size_t)>> entity_instance_by_name_t;
             entity_instance_by_name_t instance_by_name_;
 
-            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
+            // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<ifcopenshell::IfcBaseClass*(size_t)>, std::function<size_t(ifcopenshell::IfcBaseClass*)>> entity_by_id_t;
             // storage is now Instance name -> Identity -> Pointer (cached)
             // entity_by_id_t byidentity_;
 
@@ -449,10 +449,10 @@ namespace IfcParse {
             entities_by_ref_t byref_excl_;
 
             // @todo naming
-            rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file, bool readonly=false);
+            rocks_db_file_storage(const std::string& filepath, ifcopenshell::file* file, bool readonly=false);
             ~rocks_db_file_storage();
 
-            bool read_schema(const IfcParse::schema_definition*& schema);
+            bool read_schema(const ifcopenshell::schema_definition*& schema);
 
             express::Base assert_existance(size_t instanceId, instance_ref r);
 
@@ -480,7 +480,7 @@ namespace IfcParse {
                 }
             public:
                 using iterator_category = std::forward_iterator_tag;
-                using value_type = const IfcParse::declaration*;
+                using value_type = const ifcopenshell::declaration*;
                 // @todo ?
                 using difference_type = ptrdiff_t;
                 using pointer = value_type const*;
@@ -555,8 +555,8 @@ namespace IfcParse {
             // @todo rocksdb_instance_iterator?
             using const_iterator = entity_instance_by_name_t::iterator;
 
-            void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
-            void unregister_inverse(unsigned, const IfcParse::entity* from_entity, const express::Base&, int attribute_index);
+            void register_inverse(unsigned, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index);
+            void unregister_inverse(unsigned, const ifcopenshell::entity* from_entity, const express::Base&, int attribute_index);
 
             // @todo a bit hard as a map because of value_type being an aggregate
             void add_type_ref(const express::Base& new_entity);
@@ -569,7 +569,7 @@ namespace IfcParse {
             template <typename T>
             T create(int id=-1);
 
-            express::Base create(const IfcParse::declaration* decl, int id=-1);
+            express::Base create(const ifcopenshell::declaration* decl, int id=-1);
         };
     }
 }

@@ -141,7 +141,7 @@ class Header(codegen.Base):
                             ["/// %s" % d for d in documentation.description(".".join((name, attr.name)))]
                         )
                         type_str = mapping.get_parameter_type(attr)
-                        if mapping.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN":
+                        if mapping.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;" % (type_str, attr.name))
                             attr_lines.append("void set%s(const %s& v);" % (attr.name, type_str))
                             if type_str == 'std::optional< std::string >':
@@ -202,7 +202,7 @@ class Header(codegen.Base):
                     argument_name_function_body_tail = (
                         (" return %s::getArgumentName(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_name_function_body = (
@@ -214,7 +214,7 @@ class Header(codegen.Base):
                     derived_in_supertype = set(derived) & set(attribute_names)
                     derived_in_supertype_indices = sorted(attribute_names.index(nm) for nm in derived_in_supertype)
                     attribute_type_cases = [
-                        "case %d: return IfcUtil::Argument_DERIVED; " % idx for idx in derived_in_supertype_indices
+                        "case %d: return ifcopenshell::Argument_DERIVED; " % idx for idx in derived_in_supertype_indices
                     ]
                     attribute_type_cases += [
                         "case %d: return %s; " % (i + argument_start, mapping.make_argument_type(attr))
@@ -226,7 +226,7 @@ class Header(codegen.Base):
                     argument_type_function_body_tail = (
                         (" return %s::getArgumentType(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_type_function_body = (
@@ -249,7 +249,7 @@ class Header(codegen.Base):
                     argument_entity_function_body_tail = (
                         (" return %s::getArgumentEntity(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_entity_function_body = (

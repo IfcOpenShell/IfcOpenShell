@@ -10032,7 +10032,7 @@ class IfcPropertyEnumeratedValue_WR21:
     @staticmethod
     def __call__(self):
         enumerationvalues = express_getattr(self, 'EnumerationValues', INDETERMINATE)
-        enumerationreference = express_getattr(self, 'EnumerationReference', INDETERMINATE)
+        enumerationreference = express_getattr(self, 'enumeration_reference', INDETERMINATE)
         assert (not exists(enumerationreference) or not exists(enumerationvalues) or sizeof([temp for temp in enumerationvalues if temp in express_getattr(enumerationreference, 'EnumerationValues', INDETERMINATE)]) == sizeof(enumerationvalues)) is not False
 
 class IfcPropertyEnumeration_WR01:

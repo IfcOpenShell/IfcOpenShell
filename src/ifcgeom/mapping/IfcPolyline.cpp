@@ -44,12 +44,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyline& inst) {
 	auto previous_size = polygon.size();
 	remove_duplicate_points_from_loop(polygon, closed_by_proximity, eps);
 	if (polygon.size() != previous_size) {
-		Logger::Warning("Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+		logger::warning("Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
 	}
 
 	if (polygon.size() < 2) {
 		// We somehow need to signal we fail this curve on purpose not to trigger an error.
-		Logger::Warning("Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);
+		logger::warning("Invalid polyline with " + std::to_string(polygon.size()) + " points:", inst);
 		return nullptr;
 	}
 

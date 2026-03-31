@@ -20,9 +20,9 @@
 #ifndef IFCBASECLASS_H
 #define IFCBASECLASS_H
 
-#include "Argument.h"
+#include "argument.h"
 #include "ifc_parse_api.h"
-#include "IfcSchema.h"
+#include "schema.h"
 #include "utils.h"
 
 #include <atomic>
@@ -30,15 +30,15 @@
 
 class aggregate_of_instance;
 
-namespace IfcParse {
-class IfcFile;
+namespace ifcopenshell {
+class file;
 namespace impl {
 struct in_memory_file_storage;
 }
-} // namespace IfcParse
+} // namespace ifcopenshell
 
-class InstanceData;
-class AttributeValue;
+class instance_data;
+class attribute_value;
 
 namespace express {
 
@@ -49,9 +49,9 @@ class DeclaredType;
 
 class IFC_PARSE_API Base {
   protected:
-    std::weak_ptr<InstanceData> data_;
-    const InstanceData* data() const;
-    InstanceData* data();
+    std::weak_ptr<instance_data> data_;
+    const instance_data* data() const;
+    instance_data* data();
   public:
     operator bool() const {
         return !data_.expired();
@@ -70,12 +70,12 @@ class IFC_PARSE_API Base {
     }
 
     Base() {};
-    Base(const std::weak_ptr<InstanceData>& data) : data_(data) {}
+    Base(const std::weak_ptr<instance_data>& data) : data_(data) {}
 
     // @todo try and make this private over time too
-    const std::weak_ptr<InstanceData>& data_weak() const { return data_; }
+    const std::weak_ptr<instance_data>& data_weak() const { return data_; }
 
-    const IfcParse::declaration& declaration() const;
+    const ifcopenshell::declaration& declaration() const;
 
     template <typename T>
     typename std::enable_if<
@@ -94,13 +94,13 @@ class IFC_PARSE_API Base {
     
     void unset_attribute_value(size_t i);
 
-    AttributeValue get_attribute_value(size_t index) const;
+    attribute_value get_attribute_value(size_t index) const;
 
     uint32_t identity() const;
 
     uint32_t id() const;
 
-    void toString(std::ostream&, bool upper = false) const;
+    void to_string(std::ostream&, bool upper = false) const;
 
     template <class T>
     T as() const {
@@ -127,15 +127,15 @@ class IFC_PARSE_API Base {
         }     
     }
 
-    IfcParse::IfcFile* file() const;
+    ifcopenshell::file* file() const;
 };
 
 class IFC_PARSE_API Entity : public Base {
   public:
     Entity() {}
-    Entity(const std::weak_ptr<InstanceData>& data) : Base(data) {}
+    Entity(const std::weak_ptr<instance_data>& data) : Base(data) {}
 
-    AttributeValue get(const std::string& name) const;
+    attribute_value get(const std::string& name) const;
 
     template <typename T>
     T get_value(const std::string& name) const;
@@ -164,7 +164,7 @@ class IFC_PARSE_API Select : public Base {
 class IFC_PARSE_API DeclaredType : public Base {
   public:
     DeclaredType() {}
-    DeclaredType(const std::weak_ptr<InstanceData>& data) : Base(data) {}
+    DeclaredType(const std::weak_ptr<instance_data>& data) : Base(data) {}
 };
 
 } // namespace express

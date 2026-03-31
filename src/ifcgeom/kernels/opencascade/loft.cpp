@@ -122,7 +122,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 			return true;
 		} else {
-			Logger::Error("Lofting more than two sections is not supported");
+			logger::error("Lofting more than two sections is not supported");
 			return false;
 		}
 	}

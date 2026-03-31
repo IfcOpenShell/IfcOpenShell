@@ -25,12 +25,12 @@
 
 #include "../ifcparse/Ifc4.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 #include "suzanne_geometry.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = (static_cast<boost::none_t>(0));
 
 template <typename T>
@@ -50,7 +50,7 @@ std::vector< std::vector<T> > create_vector_from_array(const T* arr, unsigned si
 }
 
 int main(int argc, char** argv) {
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("Blender's Suzanne"), null, null, 0, 0, null, null);
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-	file.addEntity(shape);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 

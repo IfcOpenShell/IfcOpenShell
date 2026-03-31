@@ -142,15 +142,15 @@
 
 // Conversion functions to convert STL vectors into Python objects
 %{
-	swig_type_info* declaration_type_to_swig(const IfcParse::declaration* t) {
+	swig_type_info* declaration_type_to_swig(const ifcopenshell::declaration* t) {
 		if (t->as_entity()) {
-			return SWIGTYPE_p_IfcParse__entity;
+			return SWIGTYPE_p_ifcopenshell__entity;
 		} else if (t->as_type_declaration()) {
-			return SWIGTYPE_p_IfcParse__type_declaration;
+			return SWIGTYPE_p_ifcopenshell__type_declaration;
 		} else if (t->as_select_type()) {
-			return SWIGTYPE_p_IfcParse__select_type;
+			return SWIGTYPE_p_ifcopenshell__select_type;
 		} else if (t->as_enumeration_type()) {
-			return SWIGTYPE_p_IfcParse__enumeration_type;
+			return SWIGTYPE_p_ifcopenshell__enumeration_type;
 		} else {
 			throw std::runtime_error("Unexpected declaration type");
 		}
@@ -163,10 +163,10 @@
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
 	PyObject* pythonize(const express::Base& t) { return SWIG_NewPointerObj(SWIG_as_voidptr(new express::Base(t)), SWIGTYPE_p_express__Base, SWIG_POINTER_OWN);        }
-	PyObject* pythonize(const IfcParse::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__attribute, 0);          }
-	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
-	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
-	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
+	PyObject* pythonize(const ifcopenshell::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__attribute, 0);          }
+	PyObject* pythonize(const ifcopenshell::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__inverse_attribute, 0); }
+	PyObject* pythonize(const ifcopenshell::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__entity, 0);             }
+	PyObject* pythonize(const ifcopenshell::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
 	// @nb ownership
 	PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, SWIG_POINTER_OWN); }
 	// PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, 0); }

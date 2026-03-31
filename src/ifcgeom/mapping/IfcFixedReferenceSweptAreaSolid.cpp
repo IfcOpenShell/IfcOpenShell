@@ -98,7 +98,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
                 auto condition_number = svd.singularValues()(0)
                     / svd.singularValues()(svd.singularValues().size() - 1);
                 if (condition_number > 1.e10) {
-                    Logger::Error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
+                    logger::error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
                 }
                 */
             }

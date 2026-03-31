@@ -29,14 +29,14 @@
 
 #include "ifcparse\Ifc2x3.h"
 #include "ifcparse\IfcUtil.h"
-#include "ifcparse\IfcHierarchyHelper.h"
+#include "ifcparse\hierarchy_helper.h"
 #include "ifcgeom\IfcGeom.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 
-void create_curve_rebar(IfcHierarchyHelper& file)
+void create_curve_rebar(hierarchy_helper& file)
 {
 	int dia = 24;
 	int R = 3 * dia;
@@ -71,17 +71,17 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 	points1->push(p2);
 	file.addEntities(points1->generalize());
 	IfcSchema::IfcPolyline* poly1 = new IfcSchema::IfcPolyline(points1);
-	file.addEntity(poly1);
+	file.add_entity(poly1);
 
 	IfcSchema::IfcCompositeCurveSegment* segment1 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly1);
-	file.addEntity(segment1);
+	file.add_entity(segment1);
 	segments->push(segment1);
 
 	/*second segment - arc */
 	IfcSchema::IfcAxis2Placement3D* axis1 = new IfcSchema::IfcAxis2Placement3D(p3, file.addTriplet<IfcSchema::IfcDirection>(1, 0, 0), file.addTriplet<IfcSchema::IfcDirection>(0, 1, 0));
-	file.addEntity(axis1);
+	file.add_entity(axis1);
 	IfcSchema::IfcCircle* circle = new IfcSchema::IfcCircle(axis1, R);
-	file.addEntity(circle);
+	file.add_entity(circle);
 
 	IfcEntityList::ptr trim1(new IfcEntityList);
 	IfcEntityList::ptr trim2(new IfcEntityList);
@@ -92,10 +92,10 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 	trim2->push(new IfcSchema::IfcParameterValue(270));
 	trim2->push(p4);
 	IfcSchema::IfcTrimmedCurve* trimmed_curve = new IfcSchema::IfcTrimmedCurve(circle, trim1, trim2, false, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	file.addEntity(trimmed_curve);
+	file.add_entity(trimmed_curve);
 
 	IfcSchema::IfcCompositeCurveSegment* segment2 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT, false, trimmed_curve);
-	file.addEntity(segment2);
+	file.add_entity(segment2);
 	segments->push(segment2);
 
 	/*third segment - line */
@@ -104,14 +104,14 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 	points2->push(p5);
 	file.addEntities(points2->generalize());
 	IfcSchema::IfcPolyline* poly2 = new IfcSchema::IfcPolyline(points2);
-	file.addEntity(poly2);
+	file.add_entity(poly2);
 
 	IfcSchema::IfcCompositeCurveSegment* segment3 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly2);
-	file.addEntity(segment3);
+	file.add_entity(segment3);
 	segments->push(segment3);
 
 	IfcSchema::IfcCompositeCurve* curve = new IfcSchema::IfcCompositeCurve(segments, false);
-	file.addEntity(curve);
+	file.add_entity(curve);
 
 	IfcSchema::IfcSweptDiskSolid* solid = new IfcSchema::IfcSweptDiskSolid(curve, dia / 2, null, 0, 1);
 
@@ -123,7 +123,7 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
-	file.addEntity(shape);
+	file.add_entity(shape);
 
 	rebar->setRepresentation(shape);
 
@@ -133,7 +133,7 @@ void create_curve_rebar(IfcHierarchyHelper& file)
 
 int main()
 {
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	file.header().file_name().name("ifc_curve_rebar.ifc");
 	create_curve_rebar(file);
 	std::ofstream f("ifc_curve_rebar.ifc");

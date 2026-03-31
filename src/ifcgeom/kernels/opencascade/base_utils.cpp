@@ -1,6 +1,6 @@
 #include "base_utils.h"
 
-#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/logger.h"
 #include "OpenCascadeConversionResult.h"
 #include "boolean_utils.h"
 
@@ -711,12 +711,12 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		valid_shell &= util::count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
+			logger::error(e.GetMessageString());
 		} else {
-			Logger::Error("Unknown error sewing shell");
+			logger::error("Unknown error sewing shell");
 		}
 	} catch (...) {
-		Logger::Error("Unknown error sewing shell");
+		logger::error("Unknown error sewing shell");
 	}
 
 	if (valid_shell) {
@@ -744,22 +744,22 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 						}
 					} catch (const Standard_Failure& e) {
 						if (e.GetMessageString() && strlen(e.GetMessageString())) {
-							Logger::Error(e.GetMessageString());
+							logger::error(e.GetMessageString());
 						} else {
-							Logger::Error("Unknown error classifying solid");
+							logger::error("Unknown error classifying solid");
 						}
 					} catch (...) {
-						Logger::Error("Unknown error classifying solid");
+						logger::error("Unknown error classifying solid");
 					}
 				}
 			} catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
-					Logger::Error(e.GetMessageString());
+					logger::error(e.GetMessageString());
 				} else {
-					Logger::Error("Unknown error creating solid");
+					logger::error("Unknown error creating solid");
 				}
 			} catch (...) {
-				Logger::Error("Unknown error creating solid");
+				logger::error("Unknown error creating solid");
 			}
 
 			if (complete_shape.IsNull()) {
@@ -771,7 +771,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					Logger::Warning("Multiple components in IfcConnectedFaceSet");
+					logger::warning("Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
@@ -786,7 +786,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 				B.MakeCompound(C);
 				B.Add(C, complete_shape);
 				complete_shape = C;
-				Logger::Warning("Loose faces in IfcConnectedFaceSet");
+				logger::warning("Loose faces in IfcConnectedFaceSet");
 			}
 			B.Add(complete_shape, loose_faces.Current());
 		}
@@ -794,7 +794,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		shape = complete_shape;
 
 	} else {
-		Logger::Error("Failed to sew faceset");
+		logger::error("Failed to sew faceset");
 	}
 
 	return valid_shell;
@@ -898,7 +898,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 
 	dump(s);
 
-	Logger::Warning(str.str());
+	logger::warning(str.str());
 
 	return false;
 }

@@ -25,15 +25,15 @@
 
 #include "../ifcparse/Ifc2x3.h"
 #include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = (static_cast<boost::none_t>(0));
 
 static int x = 0;
 
-void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const std::string& name) {
+void create_testcase(hierarchy_helper& file, IfcSchema::IfcFace* face, const std::string& name) {
 	IfcSchema::IfcFace::list::ptr faces(new IfcSchema::IfcFace::list);
 	faces->push(face);
 	IfcSchema::IfcOpenShell* shell = new IfcSchema::IfcOpenShell(faces);
@@ -58,13 +58,13 @@ void create_testcase(IfcHierarchyHelper& file, IfcSchema::IfcFace* face, const s
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
-	file.addEntity(shape);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 }
 
 int main(int argc, char** argv) {
-	IfcHierarchyHelper file;
+	hierarchy_helper file;
 	{ 
 		IfcSchema::IfcCartesianPoint::list::ptr points (new IfcSchema::IfcCartesianPoint::list);
 		points->push(file.addTriplet<IfcSchema::IfcCartesianPoint>(-400, -400, 0));

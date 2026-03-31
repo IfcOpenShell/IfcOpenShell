@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -61,8 +61,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 	try {
 		sp = inst.StartParam();
 		ep = inst.EndParam();
-	} catch (const IfcParse::IfcException& e) {
-		Logger::Warning(e);
+	} catch (const ifcopenshell::exception& e) {
+		logger::warning(e);
 	}
 #endif
 
@@ -241,19 +241,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 								i += 1;
 								j += 1;
 							} else {
-								Logger::Error("Unexpected amount of fillet edges generated");
+								logger::error("Unexpected amount of fillet edges generated");
 							}					
 						} else {
-							Logger::Error("Unable to build fillet, probably edge too short");
+							logger::error("Unable to build fillet, probably edge too short");
 						}
 					} else {
-						Logger::Error("Colinear edges, not applying fillet");
+						logger::error("Colinear edges, not applying fillet");
 					}
 					i++;
 					j++;
 				}
 			} else {
-				Logger::Error("Not enough edges for applying fillet");
+				logger::error("Not enough edges for applying fillet");
 			}
 
 			TopoDS_Wire new_wire;
@@ -266,7 +266,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 
 			wire = new_wire;
 		} else {
-			Logger::Error("Directrix is not polyhedral, ignoring FilletRadius");
+			logger::error("Directrix is not polyhedral, ignoring FilletRadius");
 		}
 	}
 
@@ -317,7 +317,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid& inst) {
 		}
 
 		if (!is_valid) {
-			Logger::Message(Logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
+			logger::message(logger::LOG_WARNING, "Failed to subtract inner radius void for:", l);
 		}
 	}
 

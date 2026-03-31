@@ -113,7 +113,7 @@ public:
 	std::ostream& stream;
 
 	stream_or_filename(const std::string& fn)
-		: ofs_(new std::ofstream(IfcUtil::path::from_utf8(fn).c_str()))
+		: ofs_(new std::ofstream(ifcopenshell::path::from_utf8(fn).c_str()))
 		, stream(*ofs_)
 	{}
 
@@ -153,7 +153,7 @@ public:
 	virtual void write(const IfcGeom::TriangulationElement* o) = 0;
 	virtual void write(const IfcGeom::BRepElement* o) = 0;
 	virtual void setUnitNameAndMagnitude(const std::string& name, float magnitude) = 0;
-	virtual IfcGeom::Element* read(IfcParse::IfcFile& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
+	virtual IfcGeom::Element* read(ifcopenshell::file& f, const std::string& guid, const std::string& representation_id, read_type rt = READ_BREP) = 0;
 
     const ifcopenshell::geometry::SerializerSettings& settings() const { return settings_; }
 	ifcopenshell::geometry::SerializerSettings& settings() { return settings_; }
@@ -179,7 +179,7 @@ class WriteOnlyGeometrySerializer : public GeometrySerializer {
 public:
 	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings) : GeometrySerializer(geometry_settings, settings) {}
 
-	virtual IfcGeom::Element* read(IfcParse::IfcFile&, const std::string&, const std::string&, read_type = READ_BREP) {
+	virtual IfcGeom::Element* read(ifcopenshell::file&, const std::string&, const std::string&, read_type = READ_BREP) {
 		throw std::runtime_error("Not supported");
 	};
 };

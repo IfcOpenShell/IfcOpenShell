@@ -73,15 +73,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 
 // @todo use macros.
 
-%typemap(in) const std::vector<const IfcParse::declaration*>& {
+%typemap(in) const std::vector<const ifcopenshell::declaration*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::declaration*>;
+		$1 = new std::vector<const ifcopenshell::declaration*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__declaration, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__declaration, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::declaration*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::declaration*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -93,15 +93,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::entity*>& {
+%typemap(in) const std::vector<const ifcopenshell::entity*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::entity*>;
+		$1 = new std::vector<const ifcopenshell::entity*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__entity, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__entity, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::entity*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::entity*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -113,15 +113,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::attribute*>& {
+%typemap(in) const std::vector<const ifcopenshell::attribute*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::attribute*>;
+		$1 = new std::vector<const ifcopenshell::attribute*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__attribute, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__attribute, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::attribute*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -133,15 +133,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::inverse_attribute*>& {
+%typemap(in) const std::vector<const ifcopenshell::inverse_attribute*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::inverse_attribute*>;
+		$1 = new std::vector<const ifcopenshell::inverse_attribute*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__inverse_attribute, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__inverse_attribute, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {

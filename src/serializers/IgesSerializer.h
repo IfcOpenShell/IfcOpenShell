@@ -23,7 +23,7 @@
 #define IGESSERIALIZER_H
 
 #include "OpenCascadeBasedSerializer.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 
 #include <IGESControl_Writer.hxx>
 
@@ -54,7 +54,7 @@ public:
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
 #ifdef HAVE_CONFIG_H
-			Logger::Warning("Setting IGES units not supported on OCE");
+			logger::warning("Setting IGES units not supported on OCE");
 #else
 			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);

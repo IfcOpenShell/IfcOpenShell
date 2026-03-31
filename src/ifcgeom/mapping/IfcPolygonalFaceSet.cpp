@@ -53,7 +53,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet& inst) {
 			taxonomy::point3::ptr previous;
 			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
-					throw IfcParse::IfcException("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+					throw ifcopenshell::exception("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 				}
 				auto current = points[(*jt) - 1];
 				if (jt != indices.begin()) {
@@ -78,7 +78,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolygonalFaceSet& inst) {
 
 					for (std::vector<int>::const_iterator jt = li.begin(); jt != li.end(); ++jt) {
 						if (*jt < 1 || *jt > max_index) {
-							throw IfcParse::IfcException("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+							throw ifcopenshell::exception("IfcPolygonalFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 						}
 						auto current = points[(*jt) - 1];
 						if (jt != li.begin()) {

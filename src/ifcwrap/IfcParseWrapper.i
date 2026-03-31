@@ -17,22 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-%ignore IfcParse::IfcFile::register_inverse;
-%ignore IfcParse::IfcFile::unregister_inverse;
-%ignore IfcParse::IfcFile::schema;
-%ignore IfcParse::IfcFile::begin;
-%ignore IfcParse::IfcFile::end;
-%ignore IfcParse::IfcFile::types_begin;
-%ignore IfcParse::IfcFile::types_end;
-%ignore IfcParse::IfcFile::internal_guid_map;
-%ignore IfcParse::IfcFile::storage_;
-%ignore IfcParse::IfcFile::byguid_;
-%ignore IfcParse::IfcFile::byid_;
-%ignore IfcParse::IfcFile::byref_excl_;
-%ignore IfcParse::IfcFile::types_to_bypass_loading_;
+%ignore ifcopenshell::file::register_inverse;
+%ignore ifcopenshell::file::unregister_inverse;
+%ignore ifcopenshell::file::schema;
+%ignore ifcopenshell::file::begin;
+%ignore ifcopenshell::file::end;
+%ignore ifcopenshell::file::types_begin;
+%ignore ifcopenshell::file::types_end;
+%ignore ifcopenshell::file::internal_guid_map;
+%ignore ifcopenshell::file::storage_;
+%ignore ifcopenshell::file::byguid_;
+%ignore ifcopenshell::file::byid_;
+%ignore ifcopenshell::file::byref_excl_;
+%ignore ifcopenshell::file::types_to_bypass_loading_;
 
-%ignore IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>::readInstance;
-%ignore IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>::stealInstances;
+%ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::read_instance;
+%ignore ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>::steal_instances;
 
 %ignore express::Entity;
 %ignore express::Select;
@@ -41,24 +41,24 @@
 %ignore in_memory_file_storage;
 %ignore rocks_db_file_storage;
 // Available as get_inverse().
-%ignore IfcParse::IfcFile::instances_by_reference;
+%ignore ifcopenshell::file::instances_by_reference;
 
-%ignore IfcParse::parse_context;
+%ignore ifcopenshell::parse_context;
 
 %ignore operator<<;
 
-%ignore IfcParse::FileDescription::FileDescription;
-%ignore IfcParse::FileName::FileName;
-%ignore IfcParse::FileSchema::FileSchema;
-%ignore IfcParse::IfcFile::tokens;
+%ignore ifcopenshell::FileDescription::FileDescription;
+%ignore ifcopenshell::FileName::FileName;
+%ignore ifcopenshell::FileSchema::FileSchema;
+%ignore ifcopenshell::file::tokens;
 
-%ignore IfcParse::IfcSpfHeader::file_description;
-%ignore IfcParse::IfcSpfHeader::file_name;
-%ignore IfcParse::IfcSpfHeader::file_schema;
+%ignore ifcopenshell::spf_header::file_description;
+%ignore ifcopenshell::spf_header::file_name;
+%ignore ifcopenshell::spf_header::file_schema;
 
-%ignore IfcParse::HeaderEntity::is;
+%ignore ifcopenshell::HeaderEntity::is;
 
-%ignore IfcParse::IfcFile::type_iterator;
+%ignore ifcopenshell::file::type_iterator;
 
 %ignore express::Base::is;
 %ignore express::Base::operator==;
@@ -67,13 +67,13 @@
 %rename("by_guid") instance_by_guid;
 %rename("_by_type") instances_by_type;
 %rename("_by_type_excl_subtypes") instances_by_type_excl_subtypes;
-%rename("get_inverses_by_declaration") getInverse;
-%rename("get_total_inverses_by_id") getTotalInverses;
+%rename("get_inverses_by_declaration") get_inverse;
+%rename("get_total_inverses_by_id") get_total_inverses;
 %rename("entity_instance") express::Base;
-%rename("file") IfcFile;
+%rename("file") file;
 // _add() because mixin defined add which adds transaction logic
-%rename("_add") addEntity;
-%rename("_remove") removeEntity;
+%rename("_add") add_entity;
+%rename("_remove") remove_entity;
 %rename("_traverse") traverse;
 %rename("_traverse_breadth_first") traverse_breadth_first;
 
@@ -112,29 +112,29 @@ PyObject* get_feature(const std::string& x) {
 
 %{
 
-static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
+static const std::string& helper_fn_declaration_get_name(const ifcopenshell::declaration* decl) {
 	return decl->name();
 }
 
-static IfcUtil::ArgumentType helper_fn_attribute_type(const express::Base* instp, unsigned i) {
+static ifcopenshell::argument_type helper_fn_attribute_type(const express::Base* instp, unsigned i) {
 	const auto& inst = *instp;
-	const IfcParse::parameter_type* pt = 0;
+	const ifcopenshell::parameter_type* pt = 0;
 	if (inst.declaration().as_entity()) {
 		pt = inst.declaration().as_entity()->attribute_by_index(i)->type_of_attribute();
 		if (inst.declaration().as_entity()->derived()[i]) {
-			return IfcUtil::Argument_DERIVED;
+			return ifcopenshell::Argument_DERIVED;
 		}
 	} else if (inst.declaration().as_type_declaration() && i == 0) {
 		pt = inst.declaration().as_type_declaration()->declared_type();
 	} else if (inst.declaration().as_enumeration_type() && i == 0) {
 		// Enumeration is always from string in Python
-		return IfcUtil::Argument_STRING;
+		return ifcopenshell::Argument_STRING;
 	}
 
 	if (pt == 0) {
-		return IfcUtil::Argument_UNKNOWN;
+		return ifcopenshell::Argument_UNKNOWN;
 	} else {
-		return IfcUtil::from_parameter_type(pt);
+		return ifcopenshell::from_parameter_type(pt);
 	}
 }
 %}
@@ -148,7 +148,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const express::Base* instp
 
 class RocksDBPrefixIterator {
 public:
-    RocksDBPrefixIterator(const IfcParse::impl::rocks_db_file_storage* storage,
+    RocksDBPrefixIterator(const ifcopenshell::impl::rocks_db_file_storage* storage,
                           const std::string& prefix)
         : it_(storage->db->NewIterator(storage->ropts)), prefix_(prefix)
     {
@@ -184,9 +184,9 @@ private:
 #endif
 %}
 
-%newobject IfcParse::IfcFile::key_value_store_iter;
+%newobject ifcopenshell::file::key_value_store_iter;
 
-%extend IfcParse::IfcFile {
+%extend ifcopenshell::file {
 	/*
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
@@ -195,33 +195,33 @@ private:
 	}
 	*/
 
-	IfcFile(const std::string& schema) {
-		return new IfcParse::IfcFile(IfcParse::schema_by_name(schema));
+	file(const std::string& schema) {
+		return new ifcopenshell::file(ifcopenshell::schema_by_name(schema));
 	}
 
 	std::vector<express::Base> _get_inverse(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
-			return cast_vector<express::Base>($self->getInverse(e_.id(), 0, -1));
+			return cast_vector<express::Base>($self->get_inverse(e_.id(), 0, -1));
 		}
-		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse. Provided entity: '" + e.declaration().name() + "'.");
+		throw ifcopenshell::exception("Only entities with ids are supported for get_inverse. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
 	std::vector<int> _get_inverse_indices(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
 			return $self->get_inverse_indices(e_.id());
 		}
-		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e.declaration().name() + "'.");
+		throw ifcopenshell::exception("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
 	int get_total_inverses(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
-			return $self->getTotalInverses(e_.id());
+			return $self->get_total_inverses(e_.id());
 		}
-		throw IfcParse::IfcException("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
+		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
 	}
 
 	void _write(const std::string& fn) {
-		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
+		std::ofstream f(ifcopenshell::path::from_utf8(fn).c_str());
 		if (!f.good()) {
 			throw std::runtime_error("Failed to write to path: '" + fn + "', check folder and file permissions.");
 		}
@@ -235,9 +235,9 @@ private:
 	}
 
 	express::Base create(const std::string& entity_name, int id=-1) {
-		const IfcParse::declaration* decl = $self->schema()->declaration_by_name(entity_name);
+		const ifcopenshell::declaration* decl = $self->schema()->declaration_by_name(entity_name);
 		if (!decl || !(decl->as_entity() || decl->as_type_declaration())) {
-			throw IfcParse::IfcException("No such entity or type declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
+			throw ifcopenshell::exception("No such entity or type declaration: '" + entity_name + "' in schema '" + $self->schema()->name());
 		}
 		return $self->create(decl, id);
 	}
@@ -276,9 +276,9 @@ private:
 
 	int storage_mode() const {
 		return std::visit([](auto& m) -> int {
-			if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+			if constexpr (std::is_same_v<std::decay_t<decltype(m)>, ifcopenshell::impl::in_memory_file_storage>) {
 				return 0;
-			} else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+			} else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, ifcopenshell::impl::rocks_db_file_storage>) {
 				return 1;
 			}
 			return -1;
@@ -287,8 +287,8 @@ private:
 
 #ifdef IFOPSH_WITH_ROCKSDB
 	RocksDBPrefixIterator* key_value_store_iter(const std::string& prefix) const {
-        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+        auto* storage = std::visit([](auto& m) -> ifcopenshell::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, ifcopenshell::impl::rocks_db_file_storage>) {
                 return &m;
             }
             return nullptr;
@@ -301,8 +301,8 @@ private:
 #endif
 
 	PyObject* key_value_store_query(const std::string& key) const {
-        auto* storage = std::visit([](auto& m) -> IfcParse::impl::rocks_db_file_storage const * {
-            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::rocks_db_file_storage>) {
+        auto* storage = std::visit([](auto& m) -> ifcopenshell::impl::rocks_db_file_storage const * {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, ifcopenshell::impl::rocks_db_file_storage>) {
                 return &m;
             }
             return nullptr;
@@ -354,8 +354,8 @@ private:
 		}
 		
 		{
-		const std::vector<const IfcParse::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
-		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
+		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == name) {
 				if ($self->declaration().as_entity()->derived()[std::distance(attrs.begin(), it)]) {
@@ -368,8 +368,8 @@ private:
 		}
 
 		{
-		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
-		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
+		const std::vector<const ifcopenshell::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		std::vector<const ifcopenshell::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == name) {
 				return 2;
@@ -406,12 +406,12 @@ private:
 			return std::vector<std::string>(1, "wrappedValue");
 		}
 		
-		const std::vector<const IfcParse::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
+		const std::vector<const ifcopenshell::attribute*> attrs = $self->declaration().as_entity()->all_attributes();
 		
 		std::vector<std::string> attr_names;
 		attr_names.reserve(attrs.size());		
 		
-		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
+		std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
 		}
@@ -424,12 +424,12 @@ private:
 			return std::vector<std::string>(0);
 		}
 
-		const std::vector<const IfcParse::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
+		const std::vector<const ifcopenshell::inverse_attribute*> attrs = $self->declaration().as_entity()->all_inverse_attributes();
 		
 		std::vector<std::string> attr_names;
 		attr_names.reserve(attrs.size());		
 		
-		std::vector<const IfcParse::inverse_attribute*>::const_iterator it = attrs.begin();
+		std::vector<const ifcopenshell::inverse_attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			attr_names.push_back((*it)->name());
 		}
@@ -449,11 +449,11 @@ private:
 		return t;
 	}
 
-	AttributeValue get_argument(unsigned i) {
+	attribute_value get_argument(unsigned i) {
 		return $self->get_attribute_value(i);
 	}
 
-	AttributeValue get_argument(const std::string& a) {
+	attribute_value get_argument(const std::string& a) {
 		auto i = $self->declaration().as_entity()->attribute_index(a);
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
@@ -521,13 +521,13 @@ private:
 
 	std::string __repr__() const {
 	    std::ostringstream oss;
-		$self->toString(oss);
+		$self->to_string(oss);
         return oss.str();
 	}
 
 	std::string to_string(bool valid_spf = true) const {
 		std::ostringstream oss;
-		$self->toString(oss, valid_spf);
+		$self->to_string(oss, valid_spf);
         return oss.str();
 	}
 
@@ -544,7 +544,7 @@ private:
 		} else if (a == "wrappedValue") {
 			return 0;
 		} else {
-			throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
+			throw ifcopenshell::exception(a + " not found on " + $self->declaration().name());
 		}
 	}
 
@@ -552,16 +552,16 @@ private:
 		if ($self->declaration().as_entity()) {
 			return cast_vector<express::Base>($self->as<express::Entity>().get_inverse(a));
 		} else {
-			throw IfcParse::IfcException(a + " not found on " + $self->declaration().name());
+			throw ifcopenshell::exception(a + " not found on " + $self->declaration().name());
 		}
 	}
 
 	const char* const attribute_type(unsigned int i) const {
-		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, i));
+		return ifcopenshell::argument_type_to_string(helper_fn_attribute_type($self, i));
 	}
 
 	const char* const attribute_type(const std::string& name) const {
-		return IfcUtil::ArgumentTypeToString(helper_fn_attribute_type($self, express_Base_get_argument_index($self, name)));
+		return ifcopenshell::argument_type_to_string(helper_fn_attribute_type($self, express_Base_get_argument_index($self, name)));
 	}
 
 	const std::string& attribute_name(unsigned int i) const {
@@ -571,7 +571,7 @@ private:
 			static std::string WRAPPED = "wrappedValue";
 			return WRAPPED;
 		} else {
-			throw IfcParse::IfcException(boost::lexical_cast<std::string>(i) + " out of bounds on " + $self->declaration().name());
+			throw ifcopenshell::exception(boost::lexical_cast<std::string>(i) + " out of bounds on " + $self->declaration().name());
 		}
 	}
 
@@ -580,7 +580,7 @@ private:
 			// @nb we don't check anymore if the attribute is optional here, because it should be
 			// possible to go back to the state at construction time.
 			// bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
-			self->set_attribute_value(i, Blank{});
+			self->set_attribute_value(i, blank{});
 			return;
 		}
 
@@ -588,13 +588,13 @@ private:
 			PyObject* idx = PyNumber_Index(o);  // accepts numpy ints, bools, etc.
 			if (!idx) {
 				PyErr_Clear();
-				throw IfcParse::IfcException("Attribute not set");
+				throw ifcopenshell::exception("Attribute not set");
 			}
 			long v = PyLong_AsLong(idx);
 			Py_DECREF(idx);
 			if (PyErr_Occurred()) {
 				PyErr_Clear();
-				throw IfcParse::IfcException("Attribute not set");
+				throw ifcopenshell::exception("Attribute not set");
 			}
 			return v;
 		};
@@ -603,7 +603,7 @@ private:
 			double v = PyFloat_AsDouble(o); // accepts ints and float-like objects
 			if (PyErr_Occurred()) {
 				PyErr_Clear();
-				throw IfcParse::IfcException("Attribute not set");
+				throw ifcopenshell::exception("Attribute not set");
 			}
 			return v;
 		};
@@ -614,7 +614,7 @@ private:
 				const char* s = PyUnicode_AsUTF8AndSize(o, &n);
 				if (!s) {
 					PyErr_Clear();
-					throw IfcParse::IfcException("Attribute not set");
+					throw ifcopenshell::exception("Attribute not set");
 				}
 				return std::string(s, static_cast<size_t>(n));
 			}
@@ -623,18 +623,18 @@ private:
 				Py_ssize_t n = 0;
 				if (PyBytes_AsStringAndSize(o, &s, &n) == -1) {
 					PyErr_Clear();
-					throw IfcParse::IfcException("Attribute not set");
+					throw ifcopenshell::exception("Attribute not set");
 				}
 				return std::string(s, static_cast<size_t>(n));
 			}
-			throw IfcParse::IfcException("Attribute not set");
+			throw ifcopenshell::exception("Attribute not set");
 		};
 
 		auto seq_fast = [&](PyObject* o) -> PyObject* {
 			PyObject* fast = PySequence_Fast(o, "expected a sequence");
 			if (!fast) {
 				PyErr_Clear();
-				throw IfcParse::IfcException("Attribute not set");
+				throw ifcopenshell::exception("Attribute not set");
 			}
 			return fast; // new ref
 		};
@@ -704,7 +704,7 @@ private:
 				}
 			}
 
-			throw IfcParse::IfcException("Attribute not set");
+			throw ifcopenshell::exception("Attribute not set");
 		};
 
 		auto to_vec_base = [&](PyObject* o) -> std::vector<express::Base> {
@@ -768,20 +768,20 @@ private:
 		};
 
 		// Dispatch based on the IFC argument type (same decision Python was making before)
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
+		ifcopenshell::argument_type arg_type = helper_fn_attribute_type($self, i);
 
 		switch (arg_type) {
-			case IfcUtil::Argument_INT: {
+			case ifcopenshell::Argument_INT: {
 				self->set_attribute_value(i, static_cast<int>(to_index_long(value)));
 				return;
 			}
-			case IfcUtil::Argument_BOOL: {
+			case ifcopenshell::Argument_BOOL: {
 				if (PyBool_Check(value)) {
 					self->set_attribute_value(i, value == Py_True);
 				}
 				return;
 			}
-			case IfcUtil::Argument_LOGICAL: {
+			case ifcopenshell::Argument_LOGICAL: {
 				boost::logic::tribool t(boost::logic::indeterminate);
 				if (PyBool_Check(value)) {
 					t = (value == Py_True);
@@ -789,7 +789,7 @@ private:
 					if (PyObject* ascii = PyUnicode_AsEncodedString(value, "UTF-8", "strict")) {
 						// value is kept as indeterminate
 						if (strcmp(PyBytes_AS_STRING(ascii), "UNKNOWN") != 0) {
-							throw IfcParse::IfcException("Attribute not set");
+							throw ifcopenshell::exception("Attribute not set");
 						}
 						Py_DECREF(ascii);
 					}
@@ -798,82 +798,82 @@ private:
 					if (v == 0) t = false;
 					else if (v == 1) t = true;
 					else if (v == -1 || v == 2) t = boost::logic::tribool(boost::logic::indeterminate);
-					else throw IfcParse::IfcException("Attribute not set");
+					else throw ifcopenshell::exception("Attribute not set");
 				}
 				self->set_attribute_value(i, t);
 				return;
 			}
-			case IfcUtil::Argument_DOUBLE: {
+			case ifcopenshell::Argument_DOUBLE: {
 				self->set_attribute_value(i, to_double(value));
 				return;
 			}
-			case IfcUtil::Argument_STRING:
+			case ifcopenshell::Argument_STRING:
 				self->set_attribute_value(i, to_string(value));
 				return;
-			case IfcUtil::Argument_ENUMERATION: {
-				const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
+			case ifcopenshell::Argument_ENUMERATION: {
+				const ifcopenshell::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
 				attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
-				self->set_attribute_value(i, EnumerationReference(enum_type, enum_type->lookup_enum_offset(to_string(value))));
+				self->set_attribute_value(i, enumeration_reference(enum_type, enum_type->lookup_enum_offset(to_string(value))));
 				return;
-			} case IfcUtil::Argument_BINARY: {
+			} case ifcopenshell::Argument_BINARY: {
 				std::string s = to_string(value);
-				if (IfcUtil::valid_binary_string(s)) {
+				if (ifcopenshell::valid_binary_string(s)) {
 					boost::dynamic_bitset<> bits(s);
 					self->set_attribute_value(i, bits);
 				}
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_INT: {
+			case ifcopenshell::Argument_AGGREGATE_OF_INT: {
 				self->set_attribute_value(i, to_vec_int(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_DOUBLE: {
+			case ifcopenshell::Argument_AGGREGATE_OF_DOUBLE: {
 				self->set_attribute_value(i, to_vec_double(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_STRING:
+			case ifcopenshell::Argument_AGGREGATE_OF_STRING:
 				self->set_attribute_value(i, to_vec_string(value));
 				return;
-			case IfcUtil::Argument_AGGREGATE_OF_BINARY: {
+			case ifcopenshell::Argument_AGGREGATE_OF_BINARY: {
 				auto vs = to_vec_string(value);
 				std::vector< boost::dynamic_bitset<> > bits;
 				bits.reserve(vs.size());
 				for (auto& v : vs) {
-					if (IfcUtil::valid_binary_string(v)) {
+					if (ifcopenshell::valid_binary_string(v)) {
 						bits.push_back(boost::dynamic_bitset<>(v));
 					} else {
-						throw IfcParse::IfcException("String not a valid binary representation");
+						throw ifcopenshell::exception("String not a valid binary representation");
 					}			
 				}
 				self->set_attribute_value(i, bits);
 				return;
 			}
-			case IfcUtil::Argument_ENTITY_INSTANCE: {
+			case ifcopenshell::Argument_ENTITY_INSTANCE: {
 				self->set_attribute_value(i, to_base(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
+			case ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 				self->set_attribute_value(i, to_vec_base(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
+			case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT: {
 				self->set_attribute_value(i, to_vec_vec_int(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
+			case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE: {
 				self->set_attribute_value(i, to_vec_vec_double(value));
 				return;
 			}
-			case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
+			case ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
 				self->set_attribute_value(i, to_vec_vec_base(value));
 				return;
 			}
 			default:
-				throw IfcParse::IfcException("Attribute not set");
+				throw ifcopenshell::exception("Attribute not set");
 		}
 	}
 
-	IfcParse::IfcFile* file_py() const {
+	ifcopenshell::file* file_py() const {
 		return $self->file();
 	}
 
@@ -883,7 +883,7 @@ private:
 	%}
 }
 
-%extend IfcParse::IfcSpfHeader {
+%extend ifcopenshell::spf_header {
 	// Upcast to header instances for SWIG, because
 	// it has no idea about the schema definitions.
 	express::Base file_description_py() {
@@ -904,7 +904,7 @@ private:
 };
 
 %include "../ifcparse/ifc_parse_api.h"
-%include "../ifcparse/IfcSpfHeader.h"
+%include "../ifcparse/spf_header.h"
 
 %pythoncode %{
 ### hack hack hack
@@ -916,8 +916,8 @@ from .file import file_mixin as custom_base
 object = custom_base
 %}
 
-%include "../ifcparse/IfcFile.h"
-%template(InstanceStreamer) IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>;
+%include "../ifcparse/file.h"
+%template(instance_streamer) ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>;
 
 %pythoncode %{
 ### hack hack hack
@@ -945,64 +945,64 @@ object = custom_base
 object = _old_object
 %}
 
-%include "../ifcparse/IfcSchema.h"
+%include "../ifcparse/schema.h"
 %include "../serializers/RocksDbSerializer.h"
 
-// The IfcFile* returned by open() is to be freed by SWIG/Python
+// The file* returned by open() is to be freed by SWIG/Python
 %newobject open;
 %newobject read;
 %newobject parse_ifcxml;
 %newobject stream_from_string;
 
 %inline %{
-	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false) {
-		IfcParse::IfcFile* f;
+	ifcopenshell::file* open(const std::string& fn, bool readonly=false) {
+		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new IfcParse::IfcFile(fn, IfcParse::FT_AUTODETECT, readonly);
+		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly);
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
 
-    IfcParse::IfcFile* read(const std::string& data) {
+    ifcopenshell::file* read(const std::string& data) {
 		char* copiedData = new char[data.length()];
 		memcpy(copiedData, data.c_str(), data.length());
-		IfcParse::IfcFile* f;
+		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new IfcParse::IfcFile((void *)copiedData, data.length());
+		f = new ifcopenshell::file((void *)copiedData, data.length());
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
 
-	IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>* stream_from_string(const std::string& data) {
+	ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>* stream_from_string(const std::string& data) {
 		char* copiedData = new char[data.length()];
 		memcpy(copiedData, data.c_str(), data.length());
-		return new IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>>((void *)copiedData, data.length());
+		return new ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>>((void *)copiedData, data.length());
 	}
 
 	const char* version() {
 		return IFCOPENSHELL_VERSION;
 	}
 
-	express::Base new_IfcBaseClass(IfcParse::IfcFile* file, const std::string& name) {
+	express::Base new_IfcBaseClass(ifcopenshell::file* file, const std::string& name) {
         return file->create(file->schema()->declaration_by_name(name));
 	}
 %}
 
-%extend IfcParse::named_type {
+%extend ifcopenshell::named_type {
 	%pythoncode %{
 		def __repr__(self):
 			return repr(self.declared_type())
 	%}
 }
 
-%extend IfcParse::simple_type {
+%extend ifcopenshell::simple_type {
 	%pythoncode %{
 		def __repr__(self):
 			return "<%s>" % self.declared_type()
 	%}
 }
 
-%extend IfcParse::aggregation_type {
+%extend ifcopenshell::aggregation_type {
 	std::string type_of_aggregation_string() const {
 		static const char* const aggr_strings[] = {"array", "bag", "list", "set"};
 		return aggr_strings[(int) $self->type_of_aggregation()];
@@ -1019,50 +1019,50 @@ object = _old_object
 	%}
 }
 
-%extend IfcParse::type_declaration {
+%extend ifcopenshell::type_declaration {
 	%pythoncode %{
 		def __repr__(self):
 			return "<type %s: %r>" % (self.name(), self.declared_type())
 	%}
 	std::vector<std::string> argument_types() {
 		std::vector<std::string> r;
-		auto at = IfcUtil::Argument_UNKNOWN;
+		auto at = ifcopenshell::Argument_UNKNOWN;
 		auto pt = $self->declared_type();
 		if (pt) {
-			at = IfcUtil::from_parameter_type(pt);
+			at = ifcopenshell::from_parameter_type(pt);
 		}
-		r.push_back(IfcUtil::ArgumentTypeToString(at));
+		r.push_back(ifcopenshell::argument_type_to_string(at));
 		return r;
 	}
 }
 
-%extend IfcParse::select_type {
+%extend ifcopenshell::select_type {
 	%pythoncode %{
 		def __repr__(self):
 			return "<select %s: (%s)>" % (self.name(), " | ".join(map(repr, self.select_list())))
 	%}
 }
 
-%extend IfcParse::enumeration_type {
+%extend ifcopenshell::enumeration_type {
 	%pythoncode %{
 		def __repr__(self):
 			return "<enumeration %s: (%s)>" % (self.name(), ", ".join(self.enumeration_items()))
 	%}
 	std::vector<std::string> argument_types() {
 		std::vector<std::string> r;
-		r.push_back(IfcUtil::ArgumentTypeToString(IfcUtil::Argument_STRING));
+		r.push_back(ifcopenshell::argument_type_to_string(ifcopenshell::Argument_STRING));
 		return r;
 	}
 }
 
-%extend IfcParse::attribute {
+%extend ifcopenshell::attribute {
 	%pythoncode %{
 		def __repr__(self):
 			return "<attribute %s%s: %s>" % (self.name(), "?" if self.optional() else "", self.type_of_attribute())
 	%}
 }
 
-%extend IfcParse::inverse_attribute {
+%extend ifcopenshell::inverse_attribute {
 	std::string type_of_aggregation_string() const {
 		static const char* const aggr_strings[] = {"bag", "set", ""};
 		return aggr_strings[(int) $self->type_of_aggregation()];
@@ -1081,7 +1081,7 @@ object = _old_object
 	%}
 }
 
-%extend IfcParse::entity {
+%extend ifcopenshell::entity {
 	%pythoncode %{
 		def __repr__(self):
 			return "<entity %s>" % (self.name())
@@ -1090,22 +1090,22 @@ object = _old_object
 		size_t i = 0;
 		std::vector<std::string> r;
 		for (auto& attr : $self->all_attributes()) {
-			auto at = IfcUtil::Argument_UNKNOWN;
+			auto at = ifcopenshell::Argument_UNKNOWN;
 			auto pt = attr->type_of_attribute();
 			if ($self->derived()[i++]) {
-				at = IfcUtil::Argument_DERIVED;
+				at = ifcopenshell::Argument_DERIVED;
 			} else if (!pt) {
-				at = IfcUtil::Argument_UNKNOWN;
+				at = ifcopenshell::Argument_UNKNOWN;
 			} else {
-				at = IfcUtil::from_parameter_type(pt);
+				at = ifcopenshell::from_parameter_type(pt);
 			}
-			r.push_back(IfcUtil::ArgumentTypeToString(at));
+			r.push_back(ifcopenshell::argument_type_to_string(at));
 		}
 		return r;
 	}
 }
 
-%extend IfcParse::schema_definition {
+%extend ifcopenshell::schema_definition {
 	%pythoncode %{
 		def __repr__(self):
 			return "<schema %s>" % (self.name())
@@ -1116,7 +1116,7 @@ object = _old_object
 	static std::stringstream ifcopenshell_log_stream;
 %}
 %init %{
-	Logger::SetOutput(0, &ifcopenshell_log_stream);
+	logger::set_output(0, &ifcopenshell_log_stream);
 %}
 %inline %{
 	std::string get_log() {
@@ -1125,20 +1125,20 @@ object = _old_object
 		return log;
 	}
 	void turn_on_detailed_logging() {
-		Logger::SetOutput(&std::cout, &std::cout);
-		Logger::Verbosity(Logger::LOG_DEBUG);
+		logger::set_output(&std::cout, &std::cout);
+		logger::verbosity(logger::LOG_DEBUG);
 	}
 	void turn_off_detailed_logging() {
-		Logger::SetOutput(0, &ifcopenshell_log_stream);
-		Logger::Verbosity(Logger::LOG_WARNING);
+		logger::set_output(0, &ifcopenshell_log_stream);
+		logger::verbosity(logger::LOG_WARNING);
 	}
 	void set_log_format_json() {
 		ifcopenshell_log_stream.str("");
-		Logger::OutputFormat(Logger::FMT_JSON);
+		logger::output_format(logger::FMT_JSON);
 	}
 	void set_log_format_text() {
 		ifcopenshell_log_stream.str("");
-		Logger::OutputFormat(Logger::FMT_PLAIN);
+		logger::output_format(logger::FMT_PLAIN);
 	}
 %}
 
@@ -1150,9 +1150,9 @@ object = _old_object
 	PyObject* convert_cpp_attribute_to_python(const express::Base& instance, size_t attribute_index, bool recursive, bool include_identifier) {
 		return instance.get_attribute_value(attribute_index).apply_visitor([recursive, include_identifier](const auto& v){
 			using U = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<U, EnumerationReference>) {
+            if constexpr (std::is_same_v<U, enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<U, Derived>) {
+			} else if constexpr (std::is_same_v<U, derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
@@ -1192,7 +1192,7 @@ object = _old_object
 				} else {
 					return pythonize_vector(v);
 				}
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else if constexpr (is_std_vector_v<U>) {
@@ -1209,15 +1209,15 @@ object = _old_object
 		PyObject *d = PyDict_New();
 
 		if (v.declaration().as_entity()) {
-			const std::vector<const IfcParse::attribute*> attrs = v.declaration().as_entity()->all_attributes();
-			std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
+			const std::vector<const ifcopenshell::attribute*> attrs = v.declaration().as_entity()->all_attributes();
+			std::vector<const ifcopenshell::attribute*>::const_iterator it = attrs.begin();
 			auto dit = v.declaration().as_entity()->derived().begin();
 			for (; it != attrs.end(); ++it, ++dit) {
 				const std::string& name_cpp = (*it)->name();
 				auto name_py = pythonize(name_cpp);
 				auto attr_type = *dit
-					? IfcUtil::Argument_DERIVED
-					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
+					? ifcopenshell::Argument_DERIVED
+					: ifcopenshell::from_parameter_type((*it)->type_of_attribute());
 				auto value_py = convert_cpp_attribute_to_python(v, std::distance(attrs.begin(), it), recursive, include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
@@ -1243,7 +1243,7 @@ object = _old_object
 	}
 %}
 
-%extend IfcParse::InstanceStreamer<IfcParse::FileReader<IfcParse::FullBufferImpl>> {
+%extend ifcopenshell::instance_streamer<ifcopenshell::file_reader<ifcopenshell::full_buffer_impl>> {
 	PyObject* readInstancePy(bool type_as_declaration_instance=false) {
 		auto simply_type_to_dictionary = [&](const express::Base& t) -> PyObject* {
 			const auto& nm = t.declaration().name();
@@ -1253,16 +1253,16 @@ object = _old_object
 
                 if constexpr (is_std_vector_v<U>) {
                     return pythonize_vector(t);
-                } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                } else if constexpr (std::is_same_v<U, enumeration_reference>) {
                     return pythonize(std::string(t.value()));
-                } else if constexpr (std::is_same_v<U, Derived>) {
+                } else if constexpr (std::is_same_v<U, derived>) {
                     if (feature_use_attribute_value_derived) {
                         return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                     } else {
                         Py_INCREF(Py_None);
                         return static_cast<PyObject*>(Py_None);
                     }
-                } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
                     Py_INCREF(Py_None);
                     return static_cast<PyObject*>(Py_None);
                 } else {
@@ -1304,7 +1304,7 @@ object = _old_object
 			Py_INCREF(Py_None);
 			return Py_None;
 		}
-		auto inst = self->readInstance();
+		auto inst = self->read_instance();
 		if (!inst) {
 			Py_INCREF(Py_None);
 			return Py_None;
@@ -1351,16 +1351,16 @@ object = _old_object
 
                         if constexpr (is_std_vector_v<U>) {
                             attribute_val_py = pythonize_vector(t);
-                        } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+                        } else if constexpr (std::is_same_v<U, enumeration_reference>) {
                             attribute_val_py = pythonize(std::string(t.value()));
-                        } else if constexpr (std::is_same_v<U, Derived>) {
+                        } else if constexpr (std::is_same_v<U, derived>) {
                             if (feature_use_attribute_value_derived) {
                                 attribute_val_py = SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
                             } else {
                                 Py_INCREF(Py_None);
                                 attribute_val_py = static_cast<PyObject*>(Py_None);
                             }
-                        } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+                        } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
                             Py_INCREF(Py_None);
                             attribute_val_py = static_cast<PyObject*>(Py_None);
                         } else {
@@ -1385,23 +1385,23 @@ object = _old_object
                     PyObject* attribute_val_py = nullptr;
 					using T = std::decay_t<decltype(v)>;
 					
-					if constexpr (std::is_same_v<T, IfcParse::reference_or_simple_type>) {
+					if constexpr (std::is_same_v<T, ifcopenshell::reference_or_simple_type>) {
 						if (auto* inst = std::get_if<express::Base>(&v)) {
 							// So this never happens?
-						} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&v)) {
+						} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&v)) {
 							attribute_val_py = instance_reference_to_dict(*name);
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<IfcParse::reference_or_simple_type>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<ifcopenshell::reference_or_simple_type>>) {
 						attribute_val_py = PyTuple_New(v.size());
 						size_t idx = 0;
 						for (auto const& inner : v) {
 							if (auto* inst = std::get_if<express::Base>(&inner)) {
 								PyTuple_SetItem(attribute_val_py, idx++, simply_type_to_dictionary(*inst));
-							} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&inner)) {
+							} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&inner)) {
 								PyTuple_SetItem(attribute_val_py, idx++, instance_reference_to_dict(*name));
 							}
 						}
-					} else if constexpr (std::is_same_v<T, std::vector<std::vector<IfcParse::reference_or_simple_type>>>) {
+					} else if constexpr (std::is_same_v<T, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
 						attribute_val_py = PyTuple_New(v.size());
 						size_t outer_idx = 0;
 						for (auto const& inner : v) {
@@ -1410,7 +1410,7 @@ object = _old_object
 							for (auto const& innermost : inner) {
 								if (auto* inst = std::get_if<express::Base>(&innermost)) {
 									PyTuple_SetItem(inner_py, idx++, simply_type_to_dictionary(*inst));
-								} else if (auto* name = std::get_if<IfcParse::InstanceReference>(&innermost)) {
+								} else if (auto* name = std::get_if<ifcopenshell::instance_reference>(&innermost)) {
 									PyTuple_SetItem(inner_py, idx++, instance_reference_to_dict(*name));
 								}
 							}

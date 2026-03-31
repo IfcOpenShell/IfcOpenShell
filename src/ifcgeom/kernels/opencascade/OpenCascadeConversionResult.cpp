@@ -1,4 +1,4 @@
-﻿#include <map>
+#include <map>
 
 #include <TopoDS.hxx>
 #include <TopExp.hxx>
@@ -12,7 +12,7 @@
 
 #include "OpenCascadeConversionResult.h"
 
-#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/logger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 #include "base_utils.h"
 #include "boolean_utils.h"
@@ -87,7 +87,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		try {
 			BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+			logger::message(logger::LOG_ERROR, "Failed to triangulate shape");
 			return;
 		}
 	}
@@ -113,7 +113,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
 		if (tri.IsNull()) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation missing for face");
+			logger::message(logger::LOG_ERROR, "Triangulation missing for face");
 		} else {
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
@@ -174,7 +174,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				else triangles(i).Get(n1, n2, n3);
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
-					Logger::Warning("Mesher generated a degenerate triangle, ignoring");
+					logger::warning("Mesher generated a degenerate triangle, ignoring");
 					continue;
 				}
 
@@ -619,7 +619,7 @@ namespace {
 					try {
 						BRepMesh_IncrementalMesh(s, tol);
 					} catch (...) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to triangulate shape");
+						logger::message(logger::LOG_ERROR, "Failed to triangulate shape");
 						return;
 					}
 					meshed = true;

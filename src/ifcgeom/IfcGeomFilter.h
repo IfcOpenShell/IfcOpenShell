@@ -29,7 +29,7 @@
 #endif
 
 #include "../ifcgeom/AbstractKernel.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 #include "../ifcgeom/abstract_mapping.h"
 
 #include <boost/foreach.hpp>

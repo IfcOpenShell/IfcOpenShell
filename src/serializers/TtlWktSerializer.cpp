@@ -266,16 +266,16 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 {
     filename_.stream << ttl_object_id(o) << " a geo:Feature ;\n";
     filename_.stream << "    dcterms:identifier " << escape_for_turtle(
-        IfcUtil::convert_utf8(o->guid())) << " ;\n";
+        ifcopenshell::convert_utf8(o->guid())) << " ;\n";
     filename_.stream << "    rdfs:label " << escape_for_turtle(
-        IfcUtil::convert_utf8(o->name())
+        ifcopenshell::convert_utf8(o->name())
     ) << " ;\n";
     filename_.stream << "    geo:hasGeometry " << ttl_object_id(o, "_geometry") << " .\n\n";
 
     if (!o->geometry().polyhedral_faces_with_holes().empty()) {
         filename_.stream << ttl_object_id(o, "_geometry") << " a geo:Geometry ;\n";
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
-            IfcUtil::convert_utf8(
+            ifcopenshell::convert_utf8(
                 capture_output(
                     emit_polyhedral_surface,
                     o->geometry().verts(),
@@ -318,7 +318,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             filename_.stream << ttl_object_id(o) << " geo:hasGeometry " << ttl_object_id(o, "_footprint_geometry") << " .\n\n";
             filename_.stream << ttl_object_id(o, "_footprint_geometry") << " a geo:Geometry ;\n";
             filename_.stream << "    geo:asWKT " << escape_for_turtle(
-                IfcUtil::convert_utf8(
+                ifcopenshell::convert_utf8(
                     capture_output(
                         // @nb this is line_component, because this is the linestring
                         // from a faceboundary, not the edges as pairs of indices.
@@ -345,7 +345,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             }
         }
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
-            IfcUtil::convert_utf8(
+            ifcopenshell::convert_utf8(
                 capture_output(
                     emit_line_strings,
                     o->geometry().verts(),
@@ -359,9 +359,9 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 	filename_.stream << ttl_object_id(brep_obj) << " a geo:Feature ;\n";
 	filename_.stream << "    dcterms:identifier " << escape_for_turtle(
-		IfcUtil::convert_utf8(brep_obj->guid())) << " ;\n";
+		ifcopenshell::convert_utf8(brep_obj->guid())) << " ;\n";
 	filename_.stream << "    rdfs:label " << escape_for_turtle(
-		IfcUtil::convert_utf8(brep_obj->name())
+		ifcopenshell::convert_utf8(brep_obj->name())
 	) << " .\n";
 
     // @todo unify logic with SVG serializer
@@ -463,7 +463,7 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
                 oss << ttl_object_id(brep_obj) << " geo:hasGeometry " << ttl_object_id(brep_obj, postfix.c_str()) << " .\n\n";
                 oss << ttl_object_id(brep_obj, postfix.c_str()) << " a geo:Geometry ;\n";
-                oss << "    geo:asWKT " << escape_for_turtle(IfcUtil::convert_utf8(capture_output(emit_line_component, loop_coords, loop_idxs, true, POLYGON))) << "^^geo:wktLiteral .\n\n";
+                oss << "    geo:asWKT " << escape_for_turtle(ifcopenshell::convert_utf8(capture_output(emit_line_component, loop_coords, loop_idxs, true, POLYGON))) << "^^geo:wktLiteral .\n\n";
 
                 polygons_by_area[area] = oss.str();
             }
@@ -473,11 +473,11 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
             if ((polygons_by_area.rbegin()->first > (0.6 * rectangle_area)) || (height < (1. + 1.e-5))) {
                 // Found sufficiently large polygon
                 if (emitted_warning) {
-                    Logger::Warning("Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
+                    logger::warning("Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
                 }
                 break;
             } else if (!emitted_warning) {
-                Logger::Warning("Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
+                logger::warning("Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
                 emitted_warning = true;
             }
         }

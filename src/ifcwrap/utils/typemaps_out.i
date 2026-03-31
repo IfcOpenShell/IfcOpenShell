@@ -1,33 +1,33 @@
-%typemap(out) IfcUtil::ArgumentType {
-	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
+%typemap(out) ifcopenshell::argument_type {
+	$result = SWIG_Python_str_FromChar(ifcopenshell::argument_type_to_string($1));
 }
 
-%typemap(out) IfcParse::declaration* {
+%typemap(out) ifcopenshell::declaration* {
 	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
 }
 
-%typemap(out) const IfcParse::declaration& {
+%typemap(out) const ifcopenshell::declaration& {
 	$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), declaration_type_to_swig($1), 0);
 }
 
-%typemap(out) IfcParse::parameter_type* {
+%typemap(out) ifcopenshell::parameter_type* {
 	if ($1->as_named_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_IfcParse__named_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_named_type()), SWIGTYPE_p_ifcopenshell__named_type, 0);
 	} else if ($1->as_simple_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_IfcParse__simple_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_simple_type()), SWIGTYPE_p_ifcopenshell__simple_type, 0);
 	} else if ($1->as_aggregation_type()) {
-		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_IfcParse__aggregation_type, 0);
+		$result = SWIG_NewPointerObj(SWIG_as_voidptr($1->as_aggregation_type()), SWIGTYPE_p_ifcopenshell__aggregation_type, 0);
 	} else {
 		$result = SWIG_Py_Void();
 	}
 }
 
-%typemap(out) IfcParse::simple_type::data_type {
+%typemap(out) ifcopenshell::simple_type::data_type {
 	static const char* const data_type_strings[] = {"binary", "boolean", "integer", "logical", "number", "real", "string"};
 	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
 }
 
-%typemap(out) AttributeValue {
+%typemap(out) attribute_value {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
 	// is wrapped in a try-catch block manually.
@@ -36,26 +36,26 @@
 			using U = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
-            } else if constexpr (std::is_same_v<U, EnumerationReference>) {
+            } else if constexpr (std::is_same_v<U, enumeration_reference>) {
                 return pythonize(std::string(v.value()));
-			} else if constexpr (std::is_same_v<U, Derived>) {
+			} else if constexpr (std::is_same_v<U, derived>) {
 				if (feature_use_attribute_value_derived) {
 					return SWIG_NewPointerObj(new attribute_value_derived, SWIGTYPE_p_attribute_value_derived, SWIG_POINTER_OWN);
 				} else {
 					Py_INCREF(Py_None);
 					return static_cast<PyObject*>(Py_None); 
 				}
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Blank>) {
+            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
-            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, Derived> || std::is_same_v<U, Blank>) {
+            } else if constexpr (std::is_same_v<U, empty_aggregate_t> || std::is_same_v<U, empty_aggregate_of_aggregate_t> || std::is_same_v<U, derived> || std::is_same_v<U, blank>) {
                 Py_INCREF(Py_None);
 				return static_cast<PyObject*>(Py_None); 
             } else {
 				return pythonize(v);
 			}
 		});
-	} catch(IfcParse::IfcException& e) {
+	} catch(ifcopenshell::exception& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(...) {
 		SWIG_exception(SWIG_RuntimeError, "An unknown error occurred");
@@ -90,10 +90,10 @@ CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
 // CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
-CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::inverse_attribute const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::entity const *)
+CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 
 %typemap(out) ifcopenshell::geometry::Settings::value_variant_t {

@@ -23,10 +23,10 @@
 #include <string>
 #include <algorithm>
 
-#include "../ifcparse/Argument.h"
-#include "../ifcparse/IfcGlobalId.h"
-#include "../ifcparse/IfcLogger.h"
-#include "../ifcparse/InstanceData.h"
+#include "../ifcparse/argument.h"
+#include "../ifcparse/global_id.h"
+#include "../ifcparse/logger.h"
+#include "../ifcparse/instance_data.h"
 
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/ifc_geom_api.h"
@@ -111,10 +111,10 @@ namespace IfcGeom {
 				oss << "project";
 			} else {
 				try {
-					oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
+					oss << "product-" << ifcopenshell::global_id(guid).formatted();
 				} catch (const std::exception& e) {
 					oss << "product";
-					Logger::Error(e);
+					logger::error(e);
 				}
 			}
 

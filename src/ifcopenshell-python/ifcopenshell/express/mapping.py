@@ -150,7 +150,7 @@ class Mapping:
             pdb.set_trace()
             print("Attribute %r mapped as 'unknown'" % (attr), file=sys.stderr)
             ty = "UNKNOWN"
-        return "IfcUtil::Argument_%s" % ty
+        return "ifcopenshell::Argument_%s" % ty
 
     def get_type_dep(self, type):
         if isinstance(type, str):
@@ -243,7 +243,7 @@ class Mapping:
         arr = self.is_array(attr_type)
         simple = self.schema.is_simpletype(ty)
         express = self.flatten_type_string(ty) in self.express_to_cpp_typemapping
-        # select = ty == "IfcUtil::IfcBaseClass"
+        # select = ty == "ifcopenshell::IfcBaseClass"
         return arr and not simple and not express
 
     def get_assignable_arguments(self, t, include_derived=False):
@@ -254,7 +254,7 @@ class Mapping:
 
         def include(attr):
             not_derived = include_derived or (attr.name not in derived)
-            supported = self.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN"
+            supported = self.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN"
             return not_derived and supported
 
         return [

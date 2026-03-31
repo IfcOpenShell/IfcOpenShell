@@ -38,7 +38,7 @@
 #define IfcSchema Ifc2x3
 #include "../ifcparse/macros.h"
 #include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
 
@@ -49,7 +49,7 @@
 using namespace std::string_literals;
 
 // Some convenience typedefs and definitions. 
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 typedef std::pair<double, double> XY;
 boost::none_t const null = boost::none;
 
@@ -58,9 +58,9 @@ void createGroundShape(TopoDS_Shape& shape);
 
 int main() {
 
-    // The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
+    // The hierarchy_helper is a subclass of the regular file that provides several
     // convenience functions for working with geometry in IFC files.
-    IfcHierarchyHelper<IfcSchema> file;
+    hierarchy_helper<IfcSchema> file;
     file.header().file_name().setname("IfcOpenHouse.ifc");
 
     // Start by adding a wall to the file, initially leaving most attributes blank.
@@ -327,7 +327,7 @@ int main() {
     for (auto& rep : ground_reps) {
         rep.setContextOfItems(file.getRepresentationContext("Model"));
 	}
-	file.addEntity(ground_representation);
+	file.add_entity(ground_representation);
 	setSurfaceColour(file,ground_representation, 0.15, 0.25, 0.05);
 
 	// According to the Ifc2x3 schema an IfcWallStandardCase needs to have an IfcMaterialLayerSet

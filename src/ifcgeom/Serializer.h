@@ -20,7 +20,7 @@
 #ifndef SERIALIZER_H
 #define SERIALIZER_H
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 class Serializer {
 public:
@@ -29,7 +29,7 @@ public:
 	virtual bool ready() = 0;
 	virtual void writeHeader() = 0;
 	virtual void finalize() = 0;
-	virtual void setFile(IfcParse::IfcFile*) = 0;
+	virtual void setFile(ifcopenshell::file*) = 0;
 };
 
 #endif

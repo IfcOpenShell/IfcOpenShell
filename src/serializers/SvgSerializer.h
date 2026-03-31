@@ -468,7 +468,7 @@ namespace {
 					}
 				}
 
-				Logger::Notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+				logger::notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
 				auto it = items_.insert(items_.end(), { product, C });
 
@@ -517,7 +517,7 @@ namespace {
 				}
 			}
 			if (use_prefiltering_) {
-				Logger::Notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
+				logger::notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
 			
 			hlr_calc vis(projector_);
@@ -567,7 +567,7 @@ protected:
 
 	int profile_threshold_;
 
-	IfcParse::IfcFile* file;
+	ifcopenshell::file* file;
 	express::Base storey_;
 	std::multimap<drawing_key, path_object, storey_sorter> paths;
 	std::map<drawing_key, drawing_meta> drawing_metadata;
@@ -644,7 +644,7 @@ public:
 	bool isTesselated() const { return false; }
     void finalize();
     void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile* f);
+	void setFile(ifcopenshell::file* f);
     void setBoundingRectangle(double width, double height);
     void setSectionHeight(double h, express::Base storey = express::Base());
 	void setSectionHeightsFromStoreys(double offset=1.2);

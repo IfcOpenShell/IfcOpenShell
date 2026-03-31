@@ -26,7 +26,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
    if (!inst.BaseCurve().as<IfcSchema::IfcCompositeCurve>())
-       Logger::Warning("Expected IfcGradientCurve.BaseCurve to be IfcCompositeCurve", inst); // CT 4.1.7.1.1.2
+       logger::warning("Expected IfcGradientCurve.BaseCurve to be IfcCompositeCurve", inst); // CT 4.1.7.1.1.2
 
 	auto segments = inst.Segments();
 
@@ -41,11 +41,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
             // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
             spans.push_back(fi);
         } else {
-				Logger::Error("Unsupported");
+				logger::error("Unsupported");
 				return nullptr;
 			}
 		} else {
-			Logger::Error("Unsupported");
+			logger::error("Unsupported");
 			return nullptr;
 		}
 	}
@@ -73,7 +73,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcGradientCurve& inst) {
 
 	// check to see if there is valid overlap of the horizontal and vertical domains
    if (!(0 < gradient_function->length())) {
-       Logger::Error("IfcGradientCurve does not have a common domain with BaseCurve");
+       logger::error("IfcGradientCurve does not have a common domain with BaseCurve");
        gradient_function = nullptr; // not valid
    }
 

@@ -1,6 +1,6 @@
 #include "abstract_mapping.h"
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -37,12 +37,12 @@ void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std:
 	this->insert(std::make_pair(schema_name_lower, fn));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(IfcParse::IfcFile* file, Settings& s) {
+ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(ifcopenshell::file* file, Settings& s) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	std::map<std::string, ifcopenshell::geometry::impl::mapping_fn>::const_iterator it;
 	it = this->find(schema_name_lower);
 	if (it == end()) {
-		throw IfcParse::IfcException("No geometry mapping registered for " + schema_name_lower);
+		throw ifcopenshell::exception("No geometry mapping registered for " + schema_name_lower);
 	}
 	auto new_mapping = it->second(file, s);
 	new_mapping->initialize_settings();

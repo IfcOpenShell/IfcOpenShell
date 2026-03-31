@@ -129,7 +129,7 @@ namespace {
 				} else {
 					// @todo
 					const double precision_ = 1.e-5;
-					Logger::Warning("Approximating BasisCurve due to possible discontinuities", e->instance);
+					logger::warning("Approximating BasisCurve due to possible discontinuities", e->instance);
 					const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 					BRepAdaptor_CompCurve cc(w, true);
@@ -230,7 +230,7 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 	}
 }
 
-#include "../../../ifcparse/IfcFile.h"
+#include "../../../ifcparse/file.h"
 
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
@@ -283,7 +283,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", loop->instance);
+		logger::message(logger::LOG_ERROR, "No segment successfully converted:", loop->instance);
 		return false;
 	}
 
@@ -296,7 +296,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	if (loop->instance && loop->instance.as<express::Entity>()) {
 		auto inst = loop->instance.as<express::Entity>();
 		auto file = loop->instance.as<express::Entity>().file();
-		auto profile = file->getInverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
+		auto profile = file->get_inverse(inst.id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
 		force_close = profile.size() > 0;
 	}
 
@@ -348,7 +348,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 
 				if (ang < 0.0314) {
 					edges_to_tesselate.Add(crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) ? edges.First() : edges.Last());
-					Logger::Notice("Sharp circular corner detecting, substituting with linear approximation");
+					logger::notice("Sharp circular corner detecting, substituting with linear approximation");
 				}
 			}
 		}

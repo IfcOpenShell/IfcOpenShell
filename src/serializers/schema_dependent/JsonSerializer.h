@@ -34,14 +34,14 @@
 
 class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
   private:
-    IfcParse::IfcFile* file;
+    ifcopenshell::file* file;
 
     // @todo
     ifcopenshell::geometry::Settings settings_;
     ifcopenshell::geometry::abstract_mapping* mapping_;
 
   public:
-    POSTFIX_SCHEMA(JsonSerializer)(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect)
+    POSTFIX_SCHEMA(JsonSerializer)(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect)
         : JsonSerializer(0, "", dialect), mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_))
     {
         this->file = file;
@@ -50,7 +50,7 @@ class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
     }
 
     void finalize();
-    void setFile(IfcParse::IfcFile*) {}
+    void setFile(ifcopenshell::file*) {}
 };
 
 #endif
