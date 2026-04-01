@@ -1515,7 +1515,7 @@ if "IfcOpenShell-Python" in targets:
         )
         # Copy setup.py where pyodide build system expects it.
         shutil.copy(REPO_PATH / "pyodide" / "setup.py", REPO_PATH)
-        # Empty pyproject so it's contents won't affect the resulting wheelthe the
+        # Empty pyproject so it's contents won't affect the resulting wheel
         # otherwise the wheel will use version and dependencies from toml, not setup.py.
         (REPO_PATH / "pyproject.toml").write_text("")
 
