@@ -1,4 +1,4 @@
-name: Deploy Pyodide Demo App to static page repo
+name: Deploy AI chat App to static page repo
 
 permissions:
   id-token: write
@@ -7,8 +7,8 @@ permissions:
 on:
   push:
     paths:
-      - 'src/pyodide/**'
-      - '.github/workflows/publish-pyodide-demo-app.yml'
+      - 'src/ifcchat/**'
+      - '.github/workflows/publish-aichat-app.yaml'
     branches:
       - v0.8.0
 
@@ -33,13 +33,21 @@ jobs:
       - name: Checkout intermediate Pages repo
         uses: actions/checkout@v4
         with:
-          repository: IfcOpenShell/wasm_ifcopenshell_org_static_html
+          repository: IfcOpenShell/aichat_ifcopenshell_org_static_html
           ref: gh-pages
           path: output
           token: ${{ secrets.WEBSITE_PUBLISH }}
       - name: Sync demo app into target subfolder
         run: |
-          rsync -av --delete src/pyodide/demo-app/ output/app
+          rsync -av --delete src/ifcchat/ output/app
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Download wheels
+        working-directory: output
+        run: |
+          pip download ifcquery==0.8.5 ifcopenshell-mcp==0.8.5 ifcedit==0.8.5 lark==1.3.1 isodate==0.7.2 --no-deps -d ./dist
       - name: Commit and push if changed
         working-directory: output
         run: |

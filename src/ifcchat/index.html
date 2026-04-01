@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IfcOpenShell AI Assistant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        header input,
+        header select {
+            padding: 8px;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+        }
+
+        .side {
+            border-right: 1px solid #ddd;
+            padding: 100px 12px 12px 12px;
+            overflow: auto;
+            background: #f9f9f9;
+        }
+
+        .chat {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .msgs {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+
+        .msg {
+            margin: 10px 0;
+        }
+
+        .msg .role {
+            font-size: 12px;
+            opacity: 0.7;
+            margin: 12px 0 4px 0;
+        }
+
+        .role.user {
+            text-align: right;
+        }
+
+        .msg .bubble {
+            padding: 0;
+            border-radius: 10px;
+            white-space: pre-wrap;
+        }
+
+        .msg.user .bubble {
+            padding: 10px 20px;
+            background: #eee;
+            width: 50%;
+            margin-left: auto;
+            border: solid 1px #ddd;
+        }
+
+        .msg.tool .bubble {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 60%;
+        }
+
+        .composer {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            justify-content: center;
+        }
+
+        .composer textarea {
+            flex: 1;
+            resize: none;
+            height: 88px;
+            border: none;
+        }
+
+        .composer button {
+            align-self: center;
+        }
+
+        .composer .inner {
+            border: solid 1px #ddd;
+            border-radius: 20px;
+            padding: 10px;
+            display: flex;
+            width: 50%;
+        }
+
+        .status {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        section>.row>label {
+            display: block;
+            font-size: 12px;
+            opacity: 0.75;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        section>.row>label .small {
+            font-weight: normal;
+            display: block;
+            font-size: 80%;
+        }
+
+        .side .row {
+            margin-bottom: 32px;
+        }
+
+        .row button {
+            padding: 8px 10px;
+        }
+
+        #model {
+            background: white;
+            color: gray;
+            border: solid 1px #eee;
+            border-radius: 6px;
+        }
+
+        hr {
+            border: dashed 1px #ddd;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-row>.btn,
+        .btn-row>button.btn {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #d0d0d0;
+            background: #eee;
+
+            cursor: pointer;
+            user-select: none;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #ddd;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-wide {
+            width: 100%;
+        }
+
+        .material-icons {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        /* Disabled state for label-button + normal buttons */
+        .btn.disabled,
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .msg.tool .bubble {
+            max-height: 100px;
+            overflow: hidden;
+        }
+
+        #input {
+            border: none;
+            outline: none;
+        }
+
+        #input:focus,
+        #input:focus-visible {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 90%;
+            background-color: #eee;
+            border: solid 1px #ddd;
+            padding: 2px;
+            display: inline-block;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <main>
+        <section class="side">
+            <div class="row">
+                <label>OpenAI API key<span class="small">stored in browser memory; only sent to OpenAI servers</span></label>
+                <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" style="width: 100%;" />
+            </div>
+
+            <hr />
+
+            <div class="row" style="margin-bottom: 10px;">
+                <label>IFC model context<span class="small">stored in browser memory; only information extracted through MCP commands sent to OpenAI servers</span></label>
+
+                <div class="btn-row">
+                    <label class="btn" id="browseBtn" for="ifcFile" role="button" tabindex="0">
+                        <span class="material-icons">folder_open</span>
+                        Browse
+                    </label>
+
+                    <button class="btn" id="newModel" type="button">
+                        <span class="material-icons">add_box</span>
+                        New IFC
+                    </button>
+                </div>
+
+                <input id="ifcFile" type="file" accept=".ifc,.ifczip,.ifcxml,.zip" hidden />
+            </div>
+
+            <div class="row">
+                <button class="btn btn-wide" id="downloadIfc" type="button">
+                    <span class="material-icons">download</span>
+                    Download IFC
+                </button>
+            </div>
+
+            <hr />
+
+            <div class="row">
+                <label>Tips</label>
+                <div class="status">
+                    • Upload an IFC, then ask “Summarize the model” or “List all IfcWalls”.<br />
+                    • Try “Add a new site and building named X” (will use ifc_edit).
+                </div>
+            </div>
+
+            <div class="row">
+                <label>About</label>
+                <div class="status">
+                    Chat with your IFC model. This app uses <span class="code">ifcopenshell-mcp</span> to interact with an IFC model. IFC is in its raw-serialized form provides little textual context on the meaning of attributes, the intent behind element instances and the resulting geometrical form. By using the IfcOpenShell high-level API through an MCP-like interface (Model Context Protocol; allows for structured interaction with APIs and tools) these limitations are addressed and the model can be interrogated on a higher semantic abstraction level. You can also use <span class="code">ifcopenshell-mcp</span> on your local machine with any LLM provider that supports the MCP protocol.
+                </div>
+            </div>
+        </section>
+
+        <section class="chat">
+            <header>
+                <div class="row">
+
+                    <img src="https://ifcopenshell.org/assets/images/logo.png" style="float: left; padding: 10px 20px 10px 0; ">
+
+                    <strong>IfcOpenShell AI Assistant</strong>
+                    <select id="model">
+                        <option value="gpt-5">gpt-5</option>
+                        <option value="gpt-4.1">gpt-4.1</option>
+                    </select>
+                </div>
+                <div class="row">
+
+                    Status: <span class="status" id="status">Booting…</span>
+                </div>
+            </header>
+                
+            <div class="msgs" id="msgs"></div>
+            <div class="composer">
+                <div class="inner">
+                    <textarea id="input" placeholder="Ask or instruct about the IFC model…"></textarea>
+                    <button id="send" class="btn">Send <span class="material-icons">send</span></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+</body>
+
+</html>
