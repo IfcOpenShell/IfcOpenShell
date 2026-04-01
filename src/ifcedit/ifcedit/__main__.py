@@ -26,9 +26,9 @@ import sys
 import ifcopenshell
 
 from ifcedit.discover import function_docs, list_functions, list_modules
+from ifcedit.foreach import run_foreach
 from ifcedit.quantify import list_rules, run_quantify
 from ifcedit.run import run_api
-from ifcedit.foreach import run_foreach
 
 
 def format_output(data, fmt: str) -> str:
