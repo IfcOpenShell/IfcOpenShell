@@ -33,3 +33,4 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
           packages_dir: src/ifcmcp/dist
+          verbose: true
