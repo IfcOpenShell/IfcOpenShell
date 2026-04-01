@@ -62,9 +62,7 @@ class TestEditCostValue(test.bootstrap.IFC4):
             attributes={"UnitBasis": {"ValueComponent": 1.0, "UnitComponent": unit}},
         )
         assert value.UnitBasis is not None
-        ifcopenshell.api.cost.edit_cost_value(
-            self.file, cost_value=value, attributes={"UnitBasis": None}
-        )
+        ifcopenshell.api.cost.edit_cost_value(self.file, cost_value=value, attributes={"UnitBasis": None})
         assert value.UnitBasis is None
 
 

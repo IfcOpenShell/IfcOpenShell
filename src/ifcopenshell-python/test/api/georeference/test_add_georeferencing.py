@@ -64,10 +64,18 @@ class TestAddGeoreferencing(test.bootstrap.IFC4):
     def test_recovering_from_orphan_coordinate_operation(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         context = ifcopenshell.api.context.add_context(self.file, "Model")
-        self.file.create_entity("IfcMapConversion", SourceCRS=context, TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"))
+        self.file.create_entity(
+            "IfcMapConversion",
+            SourceCRS=context,
+            TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"),
+        )
         ifcopenshell.api.georeference.remove_georeferencing(self.file)
         # Simulate orphan by re-adding just a conversion without CRS
-        self.file.create_entity("IfcMapConversion", SourceCRS=context, TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"))
+        self.file.create_entity(
+            "IfcMapConversion",
+            SourceCRS=context,
+            TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"),
+        )
         self.file.remove(self.file.by_type("IfcProjectedCRS")[0])
         assert len(self.file.by_type("IfcProjectedCRS")) == 0
         assert len(self.file.by_type("IfcCoordinateOperation")) == 1

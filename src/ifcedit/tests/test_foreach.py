@@ -36,7 +36,9 @@ class TestRunForeach:
 
     def test_rename_single(self, model):
         items = self._items(model, "IfcWall")
-        result = run_foreach(model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "R"}'}, items)
+        result = run_foreach(
+            model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "R"}'}, items
+        )
         assert result["ok"] is True
         assert result["count"] == 1
         assert result["errors"] == []
@@ -44,7 +46,9 @@ class TestRunForeach:
 
     def test_rename_multiple(self, model):
         items = self._items(model, "IfcElement")
-        result = run_foreach(model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "X"}'}, items)
+        result = run_foreach(
+            model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "X"}'}, items
+        )
         assert result["ok"] is True
         assert result["count"] == len(items)
 
@@ -73,7 +77,9 @@ class TestRunForeach:
             {"id": wall_id, "type": "IfcWall", "name": "W"},
             {"id": 999999, "type": "IfcWall", "name": "Bad"},
         ]
-        result = run_foreach(model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "Ok"}'}, items)
+        result = run_foreach(
+            model, "attribute", "edit_attributes", {"product": "{id}", "attributes": '{"Name": "Ok"}'}, items
+        )
         assert result["ok"] is False
         assert result["count"] == 1
         assert len(result["errors"]) == 1

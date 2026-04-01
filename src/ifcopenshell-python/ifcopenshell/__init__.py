@@ -137,7 +137,11 @@ def open(
 def open(path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[True]) -> _stream: ...
 @overload
 def open(
-    path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: bool = False, readonly: bool = False
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: bool = False,
+    readonly: bool = False,
 ) -> Union[_file, sqlite, _stream]: ...
 def open(
     path: Union[os.PathLike, str],

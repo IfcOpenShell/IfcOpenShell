@@ -360,7 +360,6 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
-
         # Polyline
         polyline_props = tool.Model.get_polyline_props()
         try:
@@ -392,7 +391,9 @@ class Snap(bonsai.core.tool.Snap):
         closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
         detected_snaps.extend(closest_snaps)
 
-        xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe)
+        xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (
+            space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
+        )
 
         for snap_obj in objs_to_raycast:
             for snap in closest_snaps:
@@ -405,15 +406,19 @@ class Snap(bonsai.core.tool.Snap):
                                 detected_snaps.append(point)
                     else:
                         # If it is a solid object that is closest to camera it ignores all the rest
-                        if "is_closest_to_camera" in snap and snap["is_closest_to_camera"] and snap["group"] == "Object":
-                            closest_snap = [snap] # discards objects that aren't the closest
+                        if (
+                            "is_closest_to_camera" in snap
+                            and snap["is_closest_to_camera"]
+                            and snap["group"] == "Object"
+                        ):
+                            closest_snap = [snap]  # discards objects that aren't the closest
                             if "face_index" in snap and snap["face_index"] is not None:
                                 snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
                                 for point in snap_points:
                                     point["group"] = "Object"
                                     closest_snap.append(point)
                             detected_snaps = closest_snap
-                        
+
         # snap to cut geometry (e.g. in plan view)
         if CutDecorator.installed:
             cut_snaps = []

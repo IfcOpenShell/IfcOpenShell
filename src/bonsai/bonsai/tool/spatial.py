@@ -997,16 +997,13 @@ class Spatial(bonsai.core.tool.Spatial):
         return obj
 
     @classmethod
-    def set_obj_origin_to_polygon_center(
-        cls, obj: bpy.types.Object, poly: Polygon, polygon_is_si: bool = True
-    ) -> None:
+    def set_obj_origin_to_polygon_center(cls, obj: bpy.types.Object, poly: Polygon, polygon_is_si: bool = True) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         centroid = poly.centroid
         if polygon_is_si:
             obj.location = Vector((centroid.x, centroid.y, 0))
         else:
             obj.location = Vector((centroid.x * unit_scale, centroid.y * unit_scale, 0))
-
 
     @classmethod
     def get_2d_vertices_from_polygon(
@@ -1194,7 +1191,6 @@ class Spatial(bonsai.core.tool.Spatial):
         relating_type: ifcopenshell.entity_instance,
     ) -> None:
         bonsai.core.type.assign_type(ifc, tool.Model, type, element=element, type=relating_type)
-
 
     @classmethod
     def set_space_visibility(cls, is_visible: bool) -> None:
