@@ -207,7 +207,7 @@ class Raycast(bonsai.core.tool.Raycast):
         if init_2d is not None and is_inside_region(init_2d, region):
             final_world = inter_world
             final_2d = init_2d
-            final_t = initial_t
+            final_t = t_on_ab
         else:
             found_world, found_2d, found_t = find_nearby_onscreen_point(
                 region, rv3d, onscreen_vert, offscreen_vert, t_on_ab, max_iters=600, step=0.01
