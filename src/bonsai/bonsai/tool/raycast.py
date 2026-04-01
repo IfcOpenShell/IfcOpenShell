@@ -29,7 +29,7 @@ from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
-
+from bpy_extras import view3d_utils
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
