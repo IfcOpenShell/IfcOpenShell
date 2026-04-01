@@ -40,7 +40,7 @@ jobs:
           token: ${{ secrets.WEBSITE_PUBLISH }}
       - name: Sync demo app into target subfolder
         run: |
-          rsync -av --delete src/pyodide/demo-app/ output/app
+          rsync -av --delete src/pyodide/demo-app/ output/
       - name: Commit and push if changed
         working-directory: output
         run: |
