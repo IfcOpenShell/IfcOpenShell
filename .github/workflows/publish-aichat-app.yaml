@@ -60,6 +60,6 @@ jobs:
             exit 0
           fi
 
-          git -m "$(git log --oneline -1)"
+          git commit  -m "$(git log --oneline -1)"
           git push origin gh-pages
           git push
