@@ -27,6 +27,8 @@ import mathutils
 import numpy as np
 from mathutils import Vector
 
+from bpy_extras import view3d_utils
+
 import bonsai.core.tool
 import bonsai.tool as tool
 
@@ -731,7 +733,8 @@ class Raycast(bonsai.core.tool.Raycast):
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
                     if tool.Raycast.object_is_visible_in_clipping_plane(obj):
                         snap_obj = cls.create_snap_obj(obj)
-                        objs_to_raycast.append(snap_obj)
+                        if snap_obj is not None:
+                            objs_to_raycast.append(snap_obj)
 
         return objs_to_raycast
 
@@ -894,6 +897,8 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def create_snap_obj(cls, obj):
+        if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+            return None
         for snap_obj in cls.snap_objs:
             if obj.name == snap_obj.obj.name:
                 return snap_obj
