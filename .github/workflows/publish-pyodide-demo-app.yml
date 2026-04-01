@@ -40,7 +40,7 @@ jobs:
           token: ${{ secrets.WEBSITE_PUBLISH }}
       - name: Sync demo app into target subfolder
         run: |
-          rsync -av --delete src/pyodide/demo-app/ output/
+          rsync -av --delete --exclude='.git/' src/pyodide/demo-app/ output/
       - name: Commit and push if changed
         working-directory: output
         run: |
@@ -55,4 +55,3 @@ jobs:
 
           git commit -m "$(git log --oneline -1)"
           git push origin gh-pages
-          git push

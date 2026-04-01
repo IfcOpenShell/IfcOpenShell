@@ -40,7 +40,7 @@ jobs:
           token: ${{ secrets.WEBSITE_PUBLISH }}
       - name: Sync demo app into target subfolder
         run: |
-          rsync -av --delete src/ifcchat/ output/
+          rsync -av --delete --exclude='.git/' src/ifcchat/ output/
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -63,4 +63,3 @@ jobs:
 
           git commit  -m "$(git log --oneline -1)"
           git push origin gh-pages
-          git push
