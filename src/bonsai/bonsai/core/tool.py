@@ -536,6 +536,56 @@ class Ifc:
 
 
 @interface
+class IfcGit:
+    def add_file_to_repo(cls, repo, path_file): pass
+    def add_remote(cls, repo, remote_name, remote_url): pass
+    def add_tag(cls, repo, hexsha, tag_name, tag_message): pass
+    def branches_by_hexsha(cls, repo): pass
+    def checkout_new_branch(cls, path_file, branch_name): pass
+    def clear_commits_list(cls): pass
+    def clone_repo(cls, remote_url, local_folder): pass
+    def colourise(cls, step_ids): pass
+    def config_ifcmerge(cls): pass
+    def create_new_branch(cls, branch_name): pass
+    def decolourise(cls): pass
+    def delete_remote(cls, repo, remote_name): pass
+    def delete_tag(cls, repo, tag_name): pass
+    def dos2unix(cls, path_file): pass
+    def commit_merge(cls, path_ifc): pass
+    def entity_log(cls, path_ifc, step_id): pass
+    def fetch(cls, remote_name): pass
+    def get_commits_list(cls, path_ifc, lookup): pass
+    def get_merge_tool(cls, branch_name): pass
+    def get_selected_branch(cls): pass
+    def git_merge(cls, branch_name): pass
+    def git_merge_abort(cls): pass
+    def git_mergetool(cls, mergetool): pass
+    def set_display_branch(cls): pass
+    def get_active_branch_name(cls): pass
+    def get_ifcgit_props(cls): pass
+    def get_modified_step_ids(cls, step_ids): pass
+    def get_path_dir(cls, path_ifc): pass
+    def get_revisions_step_ids(cls): pass
+    def is_head_detached(cls): pass
+    def repo_has_commits(cls): pass
+    def git_checkout(cls, path_file): pass
+    def git_commit(cls, path_file, commit_message): pass
+    def ifc_diff_ids(cls, repo, hash_a, hash_b, path_ifc): pass
+    def init_repo(cls, path_dir): pass
+    def install_git_windows(cls, operator): pass
+    def is_valid_ref_format(cls, string): pass
+    def load_anyifc(cls, repo): pass
+    def load_project(cls, path_ifc): pass
+    def push(cls, repo, remote_name, branch_name): pass
+    def refresh_revision_list(cls, path_ifc): pass
+    def repo_from_path(cls, path): pass
+    def run_git_diff(cls, operator, save_to_temp): pass
+    def switch_to_revision_item(cls): pass
+    def tags_by_hexsha(cls, repo): pass
+    def update_step_ids(cls, step_ids, modified_step_ids): pass
+
+
+@interface
 class Layer:
     pass
 
