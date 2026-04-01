@@ -202,7 +202,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
         if inter_world is None:
             print("No intersection with viewport near plane found for the segment.")
-            return
+            return None, None
 
         init_2d = view3d_utils.location_3d_to_region_2d(region, rv3d, inter_world)
 
@@ -217,7 +217,7 @@ class Raycast(bonsai.core.tool.Raycast):
             if found_world is None:
                 if init_2d is None:
                     print("Initial projection invalid and iterative search failed.")
-                    return
+                    return None, None
                 # fallback: clamp projected point to border via manual mapping
                 final_2d = clamp_to_region_border(init_2d, region)
                 final_world = None
