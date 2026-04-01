@@ -27,9 +27,11 @@ import mathutils
 import numpy as np
 from mathutils import Vector
 
+from bpy_extras import view3d_utils
+
 import bonsai.core.tool
 import bonsai.tool as tool
-
+from bpy_extras import view3d_utils
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
@@ -76,11 +78,7 @@ class Raycast(bonsai.core.tool.Raycast):
         view_normal = rv3d.view_rotation @ mathutils.Vector((0.0, 0.0, -1.0))
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
-        bbox_edges = [
-            (0,1),(1,2),(2,3),(3,0),
-            (4,5),(5,6),(6,7),(7,4),
-            (0,4),(1,5),(2,6),(3,7)
-        ]
+        bbox_edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
 
         transposed_bbox: list[Vector] = []
         bbox_2d: list[float] = []
@@ -116,7 +114,9 @@ class Raycast(bonsai.core.tool.Raycast):
             new_bbox = [x for x in new_bbox if x is not None]
             for edge in bbox_edges:
                 if (transposed_bbox[edge[0]] is None) ^ (transposed_bbox[edge[1]] is None):
-                    point, _ = cls.intersect_edge_region_border(context.region, context.space_data, rv3d, bbox[edge[0]], bbox[edge[1]])
+                    point, _ = cls.intersect_edge_region_border(
+                        context.region, context.space_data, rv3d, bbox[edge[0]], bbox[edge[1]]
+                    )
                     if point:
                         new_bbox.append(point)
             if new_bbox:
@@ -149,7 +149,7 @@ class Raycast(bonsai.core.tool.Raycast):
             z_near = -clip_start
             za = a_view.z
             zb = b_view.z
-            denom = (zb - za)
+            denom = zb - za
             if denom == 0.0:
                 return None, None
             t = (z_near - za) / denom
@@ -202,25 +202,22 @@ class Raycast(bonsai.core.tool.Raycast):
 
         if inter_world is None:
             print("No intersection with viewport near plane found for the segment.")
-            return
+            return None, None
 
         init_2d = view3d_utils.location_3d_to_region_2d(region, rv3d, inter_world)
 
         if init_2d is not None and is_inside_region(init_2d, region):
             final_world = inter_world
             final_2d = init_2d
-            final_t = initial_t
+            final_t = t_on_ab
         else:
             found_world, found_2d, found_t = find_nearby_onscreen_point(
-                region, rv3d,
-                onscreen_vert, offscreen_vert,
-                t_on_ab,
-                max_iters=600, step=0.01
+                region, rv3d, onscreen_vert, offscreen_vert, t_on_ab, max_iters=600, step=0.01
             )
             if found_world is None:
                 if init_2d is None:
                     print("Initial projection invalid and iterative search failed.")
-                    return
+                    return None, None
                 # fallback: clamp projected point to border via manual mapping
                 final_2d = clamp_to_region_border(init_2d, region)
                 final_world = None
@@ -405,7 +402,7 @@ class Raycast(bonsai.core.tool.Raycast):
                     edge_verts[e] = (v1_2d, point)
             else:
                 edge_verts[e] = (v1_2d, v2_2d)
-            
+
         snap_threshold = 10.0
 
         for i, point in enumerate(verts_2d):
@@ -731,7 +728,8 @@ class Raycast(bonsai.core.tool.Raycast):
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
                     if tool.Raycast.object_is_visible_in_clipping_plane(obj):
                         snap_obj = cls.create_snap_obj(obj)
-                        objs_to_raycast.append(snap_obj)
+                        if snap_obj is not None:
+                            objs_to_raycast.append(snap_obj)
 
         return objs_to_raycast
 
@@ -823,8 +821,8 @@ class Raycast(bonsai.core.tool.Raycast):
         hit = None
 
         for snap_obj in objs_to_raycast:
-            if (snap_obj.obj.type in {"EMPTY", "CURVE"}
-                or (hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0)
+            if snap_obj.obj.type in {"EMPTY", "CURVE"} or (
+                hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0
             ):
                 # For wireframe objects we have to test all the snaps to see which is closer
                 snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
@@ -846,7 +844,6 @@ class Raycast(bonsai.core.tool.Raycast):
                         hit = closest_wf_point["point"]
                         face_index = None
 
-
             else:
                 # Solid objects
                 hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, snap_obj.obj)
@@ -861,7 +858,6 @@ class Raycast(bonsai.core.tool.Raycast):
                         "distance": 9,  # High value so it has low priority
                     }
                     closest_snaps.append(snap_point)
-            
 
             # Here we test which is closer, including wireframe and solid objects
             if hit is not None:
@@ -894,6 +890,8 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def create_snap_obj(cls, obj):
+        if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+            return None
         for snap_obj in cls.snap_objs:
             if obj.name == snap_obj.obj.name:
                 return snap_obj

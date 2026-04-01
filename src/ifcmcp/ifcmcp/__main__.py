@@ -31,9 +31,9 @@ def main():
         from mcp.server.fastmcp import FastMCP  # noqa: F401
     except ImportError:
         import sys
+
         print(
-            "error: the 'mcp' package is required to run the server.\n"
-            "Install it with:  pip install mcp",
+            "error: the 'mcp' package is required to run the server.\n" "Install it with:  pip install mcp",
             file=sys.stderr,
         )
         sys.exit(1)

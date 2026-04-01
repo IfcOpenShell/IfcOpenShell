@@ -24,9 +24,7 @@ class TestRemoveResourceQuantity(test.bootstrap.IFC4):
     def test_removing_a_resource_quantity(self):
         self.file.create_entity("IfcProject")
         resource = ifcopenshell.api.resource.add_resource(self.file, ifc_class="IfcLaborResource")
-        ifcopenshell.api.resource.add_resource_quantity(
-            self.file, resource=resource, ifc_class="IfcQuantityTime"
-        )
+        ifcopenshell.api.resource.add_resource_quantity(self.file, resource=resource, ifc_class="IfcQuantityTime")
         assert resource.BaseQuantity is not None
         ifcopenshell.api.resource.remove_resource_quantity(self.file, resource=resource)
         assert resource.BaseQuantity is None

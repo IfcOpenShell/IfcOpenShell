@@ -111,8 +111,13 @@ class TestForeachCommand:
     def test_foreach_rename(self, model, model_file):
         walls_json = self._select_json(model, "IfcWall")
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "attribute.edit_attributes",
-            "--product", "{id}", "--attributes", '{"Name": "Renamed"}',
+            "foreach",
+            model_file,
+            "attribute.edit_attributes",
+            "--product",
+            "{id}",
+            "--attributes",
+            '{"Name": "Renamed"}',
             stdin=walls_json,
         )
         assert rc == 0, f"stderr: {stderr}"
@@ -129,8 +134,13 @@ class TestForeachCommand:
         items = json.loads(elements_json)
         assert len(items) >= 2
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "attribute.edit_attributes",
-            "--product", "{id}", "--attributes", '{"Name": "Bulk"}',
+            "foreach",
+            model_file,
+            "attribute.edit_attributes",
+            "--product",
+            "{id}",
+            "--attributes",
+            '{"Name": "Bulk"}',
             stdin=elements_json,
         )
         assert rc == 0, f"stderr: {stderr}"
@@ -140,8 +150,13 @@ class TestForeachCommand:
 
     def test_foreach_empty_list(self, model_file):
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "attribute.edit_attributes",
-            "--product", "{id}", "--attributes", '{"Name": "X"}',
+            "foreach",
+            model_file,
+            "attribute.edit_attributes",
+            "--product",
+            "{id}",
+            "--attributes",
+            '{"Name": "X"}',
             stdin="[]",
         )
         assert rc == 0
@@ -151,7 +166,11 @@ class TestForeachCommand:
 
     def test_foreach_invalid_json_stdin(self, model_file):
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "root.remove_product", "--product", "{id}",
+            "foreach",
+            model_file,
+            "root.remove_product",
+            "--product",
+            "{id}",
             stdin="not json",
         )
         assert rc != 0
@@ -159,7 +178,11 @@ class TestForeachCommand:
 
     def test_foreach_not_array_stdin(self, model_file):
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "root.remove_product", "--product", "{id}",
+            "foreach",
+            model_file,
+            "root.remove_product",
+            "--product",
+            "{id}",
             stdin='{"id": 1}',
         )
         assert rc != 0
@@ -167,12 +190,19 @@ class TestForeachCommand:
 
     def test_foreach_output_to_different_file(self, model, model_file, tmp_path):
         import os
+
         output = str(tmp_path / "out.ifc")
         walls_json = self._select_json(model, "IfcWall")
         stdout, stderr, rc = run_ifcedit(
-            "foreach", model_file, "attribute.edit_attributes",
-            "-o", output,
-            "--product", "{id}", "--attributes", '{"Name": "OutFile"}',
+            "foreach",
+            model_file,
+            "attribute.edit_attributes",
+            "-o",
+            output,
+            "--product",
+            "{id}",
+            "--attributes",
+            '{"Name": "OutFile"}',
             stdin=walls_json,
         )
         assert rc == 0, f"stderr: {stderr}"

@@ -131,17 +131,21 @@ class SchemaError(Error):
 
 @overload
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[False] = False
+    path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[False] = False
 ) -> Union[_file, sqlite]: ...
 @overload
-def open(path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[True]) -> _stream: ...
+def open(path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[True]) -> _stream: ...
 @overload
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool = False, readonly: bool = False
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: bool = False,
+    readonly: bool = False,
 ) -> Union[_file, sqlite, _stream]: ...
 def open(
     path: Union[os.PathLike, str],
-    format: Optional[str] = None,
+    format: SupportedFormat = None,
     should_stream: bool = False,
     readonly: bool = False,
     mmap: bool = False,
@@ -153,8 +157,7 @@ def open(
         for reading large files.
 
     You can specify a file format. If no format is given, it is guessed from
-    its extension. Currently supported specified format: .ifc | .ifcZIP |
-    .ifcXML.
+    its extension.
 
     You can then filter by element ID, class, etc, and subscript by id or guid.
 
@@ -200,12 +203,12 @@ def open(
             f.bypass_type(ty)
         if mmap:
             # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
-            f.initialize(str(path.absolute()), mmap=mmap)  # type: ignore[unknown-argument]
+            f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
         else:
             f.initialize(str(path.absolute()))
     elif mmap:
         # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
-        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # type: ignore[unknown-argument]
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
     return file(f)
@@ -288,7 +291,10 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", None]:
+SupportedFormat = Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", "rocksdb", None]
+
+
+def guess_format(path: Path) -> SupportedFormat:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``

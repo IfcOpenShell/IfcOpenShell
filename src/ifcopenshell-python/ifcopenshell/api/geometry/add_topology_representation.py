@@ -21,7 +21,6 @@ from typing import Optional
 
 import ifcopenshell
 
-
 _ITEM_TYPE_TO_REP_TYPE = {
     "IfcVertex": "Vertex",
     "IfcVertexPoint": "Vertex",

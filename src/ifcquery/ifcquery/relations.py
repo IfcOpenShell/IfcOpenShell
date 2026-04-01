@@ -167,7 +167,11 @@ def _collect_elements(data: Any, seen: set[int], result: list[dict[str, Any]]) -
             eid = data["id"]
             if eid not in seen:
                 seen.add(eid)
-                result.append({"id": data["id"], "type": data.get("type"), "name": data.get("name")} if "name" in data else {"id": data["id"], "type": data.get("type")})
+                result.append(
+                    {"id": data["id"], "type": data.get("type"), "name": data.get("name")}
+                    if "name" in data
+                    else {"id": data["id"], "type": data.get("type")}
+                )
         for v in data.values():
             _collect_elements(v, seen, result)
     elif isinstance(data, list):

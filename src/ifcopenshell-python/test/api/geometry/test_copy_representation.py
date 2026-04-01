@@ -19,7 +19,6 @@
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.util.representation
-import ifcopenshell.util.shape_builder
 import test.bootstrap
 
 

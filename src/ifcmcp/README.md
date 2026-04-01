@@ -16,7 +16,7 @@ Requires `ifcopenshell`, `ifcquery`, and `ifcedit`. The `mcp` package is an opti
 ## Running the server
 
 ```bash
-python3 -m ifcmcp
+ifcmcp
 ```
 
 This starts the server on stdio transport, suitable for use with Claude Code
@@ -27,7 +27,7 @@ or any MCP client.
 Use the `claude mcp add` command:
 
 ```bash
-claude mcp add --transport stdio ifc -- python3 -m ifcmcp
+claude mcp add --transport stdio ifc -- ifcmcp
 ```
 
 Or create a `.mcp.json` file in your project root:
@@ -37,8 +37,7 @@ Or create a `.mcp.json` file in your project root:
   "mcpServers": {
     "ifc": {
       "type": "stdio",
-      "command": "python3",
-      "args": ["-m", "ifcmcp"]
+      "command": "ifcmcp"
     }
   }
 }
