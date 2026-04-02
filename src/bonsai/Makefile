@@ -64,6 +64,7 @@ PYNUMBER:=3$(PYMINOR)
 PYPI_VERSION:=3.$(PYMINOR)
 endif # def PYVERSION
 
+IFCMERGE_VERSION:=2026-04-02
 
 ifdef PLATFORM
 SUPPORTED_PLATFORMS := linux macos macosm1 win
@@ -240,10 +241,9 @@ endif
 
 	# required for three-way git merging
 ifeq ($(PLATFORM), win)
-	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip
-	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
+	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/$(IFCMERGE_VERSION)/ifcmerge.exe
 else
-	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/$(IFCMERGE_VERSION)/ifcmerge && chmod +x ifcmerge
 endif
 
 	# Generate translations module for Bonsai build

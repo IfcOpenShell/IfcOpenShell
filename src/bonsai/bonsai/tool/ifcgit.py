@@ -546,7 +546,7 @@ class IfcGit:
             repo.git.mergetool(tool=mergetool)
             return None
         except git.exc.GitCommandError as exc:
-            return re.sub("(  stderr: '|')", "", exc.stderr)
+            return re.sub("(  stdout: '|')", "", exc.stdout)
 
     @classmethod
     def git_merge_abort(cls) -> None:
