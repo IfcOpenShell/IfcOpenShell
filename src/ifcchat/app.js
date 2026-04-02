@@ -250,7 +250,7 @@ sendBtn.onclick = async () => {
         await runAgentTurn(text);
         setBusy(false, "Ready");
     } catch (e) {
-        setBusy(true, "Error");
+        setBusy(false, "Error");
         addMessage("assistant", `Error: ${e.message}`);
     }
 };
