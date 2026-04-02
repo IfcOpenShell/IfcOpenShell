@@ -6,17 +6,35 @@ const PROVIDERS = {
     openai: {
         api: openaiApi,
         models: [
-            { value: "gpt-5",      label: "gpt-5" },
-            { value: "gpt-4.1",      label: "gpt-4.1" },
+            { 
+                value: "gpt-5",      
+                label: "gpt-5" 
+            },
+            { 
+                value: "gpt-4.1",      
+                label: "gpt-4.1" 
+            },
         ],
     },
     openrouter: {
         api: openrouterApi,
         models: [
-            { value: "openai/gpt-oss-20b",                label: "gpt-oss-20b" },
-            { value: "anthropic/claude-sonnet-4-5",       label: "claude-sonnet-4-5" },
-            { value: "openai/gpt-4.1",                    label: "gpt-4.1" },
-            { value: "google/gemini-2.5-pro-preview",     label: "gemini-2.5-pro" },
+            { 
+                value: "openai/gpt-oss-20b",                
+                label: "gpt-oss-20b" 
+            },
+            { 
+                value: "anthropic/claude-sonnet-4-5",       
+                label: "claude-sonnet-4-5" 
+            },
+            { 
+                value: "openai/gpt-4.1",                    
+                label: "gpt-4.1" 
+            },
+            { 
+                value: "google/gemini-2.5-pro-preview",     
+                label: "gemini-2.5-pro" 
+            },
         ],
     },
 };
