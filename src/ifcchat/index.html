@@ -239,7 +239,15 @@
     <main>
         <section class="side">
             <div class="row">
-                <label>OpenAI API key<span class="small">stored in browser memory; only sent to OpenAI servers</span></label>
+                <label>Provider</label>
+                <select id="provider" style="width: 100%;">
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="openai">OpenAI</option>
+                </select>    
+            </div>
+
+            <div class="row">
+                <label>OpenAI API key<span class="small">stored in browser memory</span></label>
                 <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" style="width: 100%;" />
             </div>
 
@@ -295,10 +303,7 @@
                     <img src="https://ifcopenshell.org/assets/images/logo.png" style="float: left; padding: 10px 20px 10px 0; ">
 
                     <strong>IfcOpenShell AI Assistant</strong>
-                    <select id="model">
-                        <option value="gpt-5">gpt-5</option>
-                        <option value="gpt-4.1">gpt-4.1</option>
-                    </select>
+                    <select id="model"></select>
                 </div>
                 <div class="row">
 
