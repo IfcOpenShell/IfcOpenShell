@@ -157,12 +157,6 @@ section > .row > label .small {
     padding: 8px 10px;
 }
 
-#model {
-    background: white;
-    color: gray;
-    border: solid 1px #eee;
-    border-radius: 6px;
-}
 
 hr {
     border: dashed 1px #ddd;
