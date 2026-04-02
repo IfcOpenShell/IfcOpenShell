@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import webbrowser
 from datetime import datetime
 from math import radians
 from typing import TYPE_CHECKING
 
 import bpy
-import ifcopenshell
 import ifcopenshell.util.geolocation
 import requests
-import webbrowser
 
 import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData

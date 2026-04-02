@@ -23,7 +23,7 @@ from pathlib import Path
 import bpy
 import pyradiance
 
-from . import export, ies, list, material, operator, prepare, prop, render, solar, ui
+from . import export, ies, list, material, prepare, prop, render, solar, ui
 
 
 def get_pyradiance_path():

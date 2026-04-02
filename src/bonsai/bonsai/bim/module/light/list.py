@@ -18,12 +18,17 @@
 
 from __future__ import annotations
 
-import bpy
-from typing import TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+import bpy
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.light.prop import RadianceExporterProperties, RadianceMaterial, IESLight
+    from bonsai.bim.module.light.prop import (
+        IESLight,
+        RadianceExporterProperties,
+        RadianceMaterial,
+    )
 
 
 class MATERIAL_UL_radiance_materials(bpy.types.UIList):

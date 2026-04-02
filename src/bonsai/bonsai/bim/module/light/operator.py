@@ -34,7 +34,6 @@ EnumPropertySearch and SetEnumProperty are provided by the global
 bonsai.bim.operator module (bl_idname "bim.enum_property_search").
 """
 
-# Re-export from submodules
 from bonsai.bim.module.light.export import CleanupRadianceFiles, ExportOBJ  # noqa: F401
 from bonsai.bim.module.light.ies import AddIESLight, RemoveIESLight  # noqa: F401
 from bonsai.bim.module.light.material import (  # noqa: F401
@@ -45,7 +44,10 @@ from bonsai.bim.module.light.material import (  # noqa: F401
     UnmapMaterial,
 )
 from bonsai.bim.module.light.prepare import PrepareRadianceScene  # noqa: F401
-from bonsai.bim.module.light.render import FalseColorRadiance, RadianceRender  # noqa: F401
+from bonsai.bim.module.light.render import (  # noqa: F401
+    FalseColorRadiance,
+    RadianceRender,
+)
 from bonsai.bim.module.light.solar import (  # noqa: F401
     ImportLatLong,
     ImportTrueNorth,

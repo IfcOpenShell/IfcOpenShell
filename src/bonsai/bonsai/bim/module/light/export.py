@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 import multiprocessing
 import os
 from pathlib import Path
-from typing import Union
 
 import bpy
 import ifcopenshell
