@@ -27,8 +27,8 @@ from typing import Union
 import bpy
 import pyradiance as pr
 
-import bonsai.tool as tool
 import bonsai.bim.module.light.shared as shared
+import bonsai.tool as tool
 
 # pyradiance's bundled Radiance binaries
 _PYRAD_BIN = Path(pr.__file__).parent / "bin"

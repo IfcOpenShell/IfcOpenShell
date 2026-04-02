@@ -26,7 +26,6 @@ from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.light.data import SolarData
 
 
-
 # ---------------------------------------------------------------------------
 # Root panel (replaces the old "Radiance Exporter" nested panel)
 # ---------------------------------------------------------------------------

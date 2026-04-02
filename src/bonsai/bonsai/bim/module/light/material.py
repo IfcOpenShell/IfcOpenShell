@@ -20,7 +20,6 @@ import json
 import webbrowser
 
 import bpy
-import ifcopenshell
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 import bonsai.tool as tool
