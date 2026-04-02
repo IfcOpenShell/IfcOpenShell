@@ -473,10 +473,15 @@ class IfcGit:
                 config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
                 config_writer.set_value(section, "trustExitCode", True)
         section = 'mergetool "ifcmerge-forward"'
+        new_cmd = "ifcmerge --prioritise-local $BASE $LOCAL $REMOTE $MERGED"
+        old_cmd = "ifcmerge $BASE $REMOTE $LOCAL $MERGED"
         if not config_reader.has_section(section):
             with IfcGitRepo.repo.config_writer() as config_writer:
-                config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
+                config_writer.set_value(section, "cmd", new_cmd)
                 config_writer.set_value(section, "trustExitCode", True)
+        elif config_reader.get_value(section, "cmd") == old_cmd:
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", new_cmd)
 
     @classmethod
     def config_push(cls, repo: git.Repo) -> None:
