@@ -22,29 +22,8 @@ from typing import TYPE_CHECKING
 import bpy
 
 import bonsai.tool as tool
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.light.data import SolarData
-
-
-def get_enum_items(data, prop_name, context=None):
-    prop = data.__annotations__[prop_name]
-    items = prop.keywords.get("items")
-    if items is None:
-        return
-    if not isinstance(items, (list, tuple)):
-        items = items(data, context or bpy.context)
-    return items
-
-
-def prop_with_search(layout, data, prop_name, **kwargs):
-    row = layout.row(align=True)
-    row.prop(data, prop_name, **kwargs)
-    try:
-        if len(get_enum_items(data, prop_name)) > 10:
-            row.context_pointer_set(name="data", data=data)
-            op = row.operator("bim.enum_property_search", text="", icon="VIEWZOOM")
-            op.prop_name = prop_name
-    except TypeError:
-        pass
 
 
 # ---------------------------------------------------------------------------
