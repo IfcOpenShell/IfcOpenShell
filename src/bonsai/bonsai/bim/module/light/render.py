@@ -91,7 +91,7 @@ class RadianceRender(bpy.types.Operator):
         wm.modal_handler_add(self)
 
         self.report({"INFO"}, "Radiance render started in background...")
-        context.window.cursor_set('WAIT')
+        context.window.cursor_set("WAIT")
         return {"RUNNING_MODAL"}
 
     def _render_worker(self, render_scene, output_dir, res_x, res_y, quality, detail, variability, ambient_bounces):
@@ -114,14 +114,14 @@ class RadianceRender(bpy.types.Operator):
             os.chdir(cwd_saved)
 
     def modal(self, context, event):
-        if event.type == 'TIMER':
+        if event.type == "TIMER":
             if self._thread is not None and self._thread.is_alive():
                 return {"RUNNING_MODAL"}
 
             self._cleanup_timer(context)
             props = tool.Blender.get_radiance_exporter_props()
             props.is_rendering = False
-            context.window.cursor_set('DEFAULT')
+            context.window.cursor_set("DEFAULT")
 
             if self._error:
                 self.report({"ERROR"}, f"Radiance render failed: {self._error}")
@@ -156,11 +156,11 @@ class RadianceRender(bpy.types.Operator):
 
             return {"FINISHED"}
 
-        elif event.type == 'ESC':
+        elif event.type == "ESC":
             self._cleanup_timer(context)
             props = tool.Blender.get_radiance_exporter_props()
             props.is_rendering = False
-            context.window.cursor_set('DEFAULT')
+            context.window.cursor_set("DEFAULT")
             self.report({"WARNING"}, "Render cancelled by user. Background process may still be running.")
             return {"CANCELLED"}
 
@@ -210,9 +210,11 @@ class FalseColorRadiance(bpy.types.Operator):
         # fc (foot-candles) = 16.629..., lux & cd/m2 = 179.0
         multiplier = 179.0 if props.false_color_label in ("lux", "cd/m2") else 16.629505759940542
 
-        print(f"False color parameters: label={props.false_color_label}, scale={fc_scale}, "
-              f"steps={props.false_color_steps}, multiplier={multiplier}, "
-              f"contour={props.false_color_contour_lines}")
+        print(
+            f"False color parameters: label={props.false_color_label}, scale={fc_scale}, "
+            f"steps={props.false_color_steps}, multiplier={multiplier}, "
+            f"contour={props.false_color_contour_lines}"
+        )
 
         try:
             fc_output_name = props.false_color_output_name
@@ -229,9 +231,12 @@ class FalseColorRadiance(bpy.types.Operator):
                     return {"CANCELLED"}
             else:
                 import shutil
+
                 falsecolor_bin = shutil.which("falsecolor") or shutil.which("falsecolor.exe")
                 if not falsecolor_bin:
-                    self.report({"ERROR"}, "Set the Radiance Bin path in False Color settings, or add Radiance to system PATH.")
+                    self.report(
+                        {"ERROR"}, "Set the Radiance Bin path in False Color settings, or add Radiance to system PATH."
+                    )
                     return {"CANCELLED"}
                 radiance_bin_dir = os.path.dirname(falsecolor_bin)
 
@@ -299,5 +304,6 @@ class FalseColorRadiance(bpy.types.Operator):
         except Exception as e:
             self.report({"ERROR"}, f"Failed to generate false color image: {str(e)}")
             import traceback
+
             traceback.print_exc()
             return {"CANCELLED"}
