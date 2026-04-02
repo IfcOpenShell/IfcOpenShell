@@ -472,7 +472,7 @@ class RadianceExporterProperties(PropertyGroup):
 
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
-        default=False,
+        default=True,
     )
 
     radiance_resolution_x: IntProperty(
@@ -481,6 +481,13 @@ class RadianceExporterProperties(PropertyGroup):
     radiance_resolution_y: IntProperty(
         name="Y", description="Vertical resolution of the output image", default=1080, min=1, update=update_resolution
     )
+    radiance_bin_dir: StringProperty(
+        name="Radiance Bin",
+        description="Path to the Radiance bin folder (containing falsecolor, pcomb, etc.)",
+        default="",
+        subtype="DIR_PATH",
+    )
+
     output_dir: StringProperty(
         name="Output Directory",
         description="Directory to output Radiance files",
@@ -542,8 +549,8 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     use_hdr: BoolProperty(
-        name="Use HDR",
-        description="Use HDR image format",
+        name="HDR Environment Map",
+        description="Use an HDR image as the sky dome for realistic environment lighting and reflections",
         default=True,
     )
 
@@ -634,7 +641,7 @@ class RadianceExporterProperties(PropertyGroup):
         name="Scale Factor",
         description="Maximum scale value for the false color legend",
         min=0.1,
-        max=100.0,
+        max=100000.0,
         default=3.0,
     )
 
@@ -692,6 +699,7 @@ class RadianceExporterProperties(PropertyGroup):
         should_load_from_memory: bool
         radiance_resolution_x: int
         radiance_resolution_y: int
+        radiance_bin_dir: str
         output_dir: str
         ifc_file: str
         ambient_bounces: int
