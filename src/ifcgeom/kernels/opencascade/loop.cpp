@@ -378,6 +378,8 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Wire shape;
 	if (!convert(loop, shape)) {
 		return false;
@@ -389,9 +391,13 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::Co
 		loop->surface_style
 	));
 	return true;
+
+	});
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::edge::ptr edge, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Wire shape = boost::get<TopoDS_Wire>(convert_curve(edge));
 
 	results.emplace_back(ConversionResult(
@@ -400,4 +406,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::edge::ptr edge, IfcGeom::Co
 		edge->surface_style
 	));
 	return true;
+
+	});
 }

@@ -255,7 +255,7 @@ class BIM_PT_project(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
 
-    def draw_editing_buttons(self, context, row):
+    def draw_editing_buttons(self, context: object, row: bpy.types.UILayout) -> None:
         pprops = self.props
         if tool.Ifc.get():
             if pprops.is_editing:
@@ -496,7 +496,7 @@ class BIM_PT_links(Panel):
                     row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
                 else:
                     row.operator("bim.load_link", text="", icon="LINKED").link_index = index
-                    row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
+                row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
             self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
@@ -619,12 +619,14 @@ class BIM_UL_links(UIList):
     ):
         row = layout.row(align=True)
         if item.is_loaded:
-            if item.georeferenced == "NONE":
-                row.label(text="", icon="QUESTION")
-            elif item.georeferenced == "NOT_COMPATIBLE":
-                row.label(text="", icon="ERROR")
-            elif item.georeferenced == "FULL_COMPATIBLE":
-                row.label(text="", icon="WORLD")
+            from bonsai.bim.module.project.prop import Link
+
+            s = Link.bl_rna
+            geo_prop = s.properties["georeferenced"]
+            assert isinstance(geo_prop, bpy.types.EnumProperty)
+            enum_item = geo_prop.enum_items[item.georeferenced]
+            op = row.operator("bim.show_description", text="", icon=enum_item.icon, emboss=False)
+            op.description = f"{geo_prop.description}\n{enum_item.name}: {enum_item.description}"
             if item.has_transformation:
                 row.label(text="", icon="OBJECT_ORIGIN")
 

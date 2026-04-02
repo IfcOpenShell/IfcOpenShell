@@ -210,14 +210,15 @@ class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_material_to_selected"
     bl_label = "Assign Material To Selected"
     bl_description = (
-        "Assign currently selected material in Materials UI to the selected objects.\n\n"
-        "ALT+CLICK to assign material as a usage."
+        "Assign currently selected material in Materials UI to the selected objects.\n"
+        "Occurrences automatically get usages for layer/profile sets.\n\n"
+        "ALT+CLICK to assign without a usage."
     )
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material IFC ID")
-    assign_as_usage: bpy.props.BoolProperty(
-        name="Assign Material As A Usage",
-        default=False,
+    should_auto_assign_usage: bpy.props.BoolProperty(
+        name="Auto Assign Usage",
+        default=True,
         options={"SKIP_SAVE"},
     )
 
@@ -230,25 +231,19 @@ class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
-            material_class = tool.Ifc.get().by_id(self.material).is_a()
-            if material_class not in ("IfcMaterialProfileSet", "IfcMaterialLayerSet"):
-                self.report({"ERROR"}, f"{material_class} cannot be assigned as a usage.")
-                return {"CANCELLED"}
-            self.assign_as_usage = True
+            self.should_auto_assign_usage = False
         return self.execute(context)
 
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         objects = tool.Blender.get_selected_objects()
-        material_type = material.is_a()
-        if self.assign_as_usage:
-            material_type += "Usage"
         core.assign_material(
             tool.Ifc,
             tool.Material,
-            material_type=material_type,
+            material_type=material.is_a(),
             objects=objects,
             material=material,
+            should_auto_assign_usage=self.should_auto_assign_usage,
         )
 
 
@@ -722,13 +717,40 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        bonsai.bim.helper.import_attributes(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes(
+            material_set_item,
+            self.props.material_set_item_attributes,
+            callback=self.import_attributes_callback,
+        )
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:
                 self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
+
+    def import_attributes_callback(
+        self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
+    ) -> None | Literal[True]:
+        if data["type"] != "IfcMaterialLayer" or name != "IsVentilated" or not prop:
+            return None
+
+        # Keep null semantics unchanged on export, but avoid an empty UI selection.
+        prop.data_type = "enum"
+        prop.special_type = "LOGICAL"
+        prop.enum_items = json.dumps(("TRUE", "FALSE", "UNKNOWN"))
+
+        value = data[name]
+        if value == "UNKNOWN":
+            prop.enum_value = "UNKNOWN"
+        elif value is None:
+            # Keep visible default as FALSE, but preserve null semantics on save.
+            prop.enum_value = "FALSE"
+            prop.is_null = True
+        else:
+            prop.enum_value = "TRUE" if value else "FALSE"
+
+        return True
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):

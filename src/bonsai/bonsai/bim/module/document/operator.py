@@ -19,6 +19,7 @@
 import json
 
 import bpy
+import ifcopenshell.util.element
 
 import bonsai.core.document as core
 import bonsai.tool as tool

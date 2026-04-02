@@ -576,7 +576,8 @@ html, body {
         display: flex;
         flex-direction: column;
 
-        label {
+        label,
+        .form-label {
             margin-bottom: 4px;
             font-size: 14px;
             font-weight: 500;

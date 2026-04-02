@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import bpy
 from bpy.props import (
@@ -66,7 +66,7 @@ class Document(PropertyGroup):
         tree_depth: int
         has_children: bool
         is_expanded: bool
-        document_type: str
+        document_type: Literal["PROJECT", "INFORMATION", "REFERENCE"]
 
 
 class DocumentObject(PropertyGroup):

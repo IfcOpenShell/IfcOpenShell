@@ -48,6 +48,7 @@ VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
+LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 ifdef PYVERSION
@@ -63,6 +64,7 @@ PYNUMBER:=3$(PYMINOR)
 PYPI_VERSION:=3.$(PYMINOR)
 endif # def PYVERSION
 
+IFCMERGE_VERSION:=2026-04-02
 
 ifdef PLATFORM
 SUPPORTED_PLATFORMS := linux macos macosm1 win
@@ -223,19 +225,8 @@ endif
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
-	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
-	cd build && unzip ifc2json.zip && rm ifc2json.zip
-	# IFCJSON doesn't have pyproject.toml, so we use python command.
-	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
-		$(PYTHON) -c "from setuptools import setup; \
-		setup( \
-			name='ifcjson', \
-			version='0.0.1', \
-			author='Jan Brouwer', \
-			author_email='jan@brewsky.nl', \
-			packages=['ifcjson'], \
-		)" bdist_wheel
-	cp -r build/IFC2JSON_python-*/file_converters/dist/*.whl build/wheels/
+	# TODO: Use official repo, once https://github.com/IFCJSON-Team/IFC2JSON_python/pull/8 is merged.
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/Andrej730/IFC2JSON_python.git@pyproject_toml" --no-deps -w wheels/
 
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
@@ -243,26 +234,16 @@ endif
 	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
-	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
-	cd build && unzip master.zip && rm master.zip
-	cd build && . env/$(VENV_ACTIVATE) && cd bpypolyskel-master && \
-		$(PYTHON) -c "from setuptools import setup; \
-		setup( \
-			name='bpypolyskel', \
-			version='0.0.0', \
-			packages=['bpypolyskel'], \
-		)" bdist_wheel
-	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m pip wheel "git+https://github.com/prochitecture/bpypolyskel" --no-deps -w wheels/
 
 	# folder for executable files
 	mkdir -p build/bonsai/libs/bin
 
 	# required for three-way git merging
 ifeq ($(PLATFORM), win)
-	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip
-	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
+	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/$(IFCMERGE_VERSION)/ifcmerge.exe
 else
-	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/$(IFCMERGE_VERSION)/ifcmerge && chmod +x ifcmerge
 endif
 
 	# Generate translations module for Bonsai build
@@ -281,6 +262,7 @@ else
 	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
 	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
 	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
+	$(SED) "s/7777777/$(LAST_GIT_BRANCH)/" build/bonsai/__init__.py
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 

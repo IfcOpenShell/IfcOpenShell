@@ -47,7 +47,9 @@ def add_wall_representation(
     :param thickness: The thickness of the wall in meters.
     :param x_angle: The slope angle along the wall's X-axis, in radians.
     :param clippings: List of clipping definitions. Clippings can be `Clipping` objects
-        or dictionaries of arguments for `Clipping.parse`.
+        or dictionaries of arguments for `Clipping.parse`. Each clipping has a
+        ``normal`` that points toward the removed material (the discarded side),
+        not toward the kept material; see :func:`clip_solid` for details.
     :param booleans: List of any existing IfcBooleanResults.
     :return: IfcShapeRepresentation.
     """

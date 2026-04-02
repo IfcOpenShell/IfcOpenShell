@@ -257,7 +257,8 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``join({{separator}}, {{values}})``", "``join(""-"", {{mats.Name}})``", "``Name1-Name2``", "Joins a list of items with a custom separator. By default, all lists a rendered as comma separated."
     "``{{value1}}[+-*/]{{value2}}``", "``{{z}}+3``", "``5``", "Does arithmetic. Typical operators such as +, -, \*, and / are allowed and can be mixed with other variables and formatting functions."
 
-When using queries in an IfcAnnotation tag surround with backticks. 
-Examples: 
-````number({{Qto_WallBaseQuantities.Width}}, ",",".")```` or 
-````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````
+When using queries in an IfcAnnotation tag surround with backticks. Examples: 
+
+- ````number({{Qto_WallBaseQuantities.Width}}, ",",".")````
+- ````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````
+- ````join(", OVER ", reverse({{material.item.Material.Name}}))````

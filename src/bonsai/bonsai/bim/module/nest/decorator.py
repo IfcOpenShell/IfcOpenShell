@@ -101,7 +101,7 @@ class NestDecorator:
         cls.is_installed = False
 
     def dotted_line_shader(self):
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty:ignore[too-many-positional-arguments]
         vert_out.smooth("FLOAT", "v_ArcLength")
 
         shader_info = gpu.types.GPUShaderCreateInfo()
@@ -215,8 +215,6 @@ class NestDecorator:
                 self.draw_batch("LINES", line_z, color, [(0, 1)])
             else:
                 self.draw_batch("POINTS", [location], color)
-            # if context.scene.BIMNestProperties.in_aggregate_mode:
-            # return
             components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(nest))
             components_objs = [tool.Ifc.get_object(p) for p in components]
             components_objs.append(nest)

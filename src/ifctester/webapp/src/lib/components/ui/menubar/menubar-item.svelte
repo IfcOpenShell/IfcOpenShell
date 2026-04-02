@@ -1,6 +1,13 @@
-<script>
+<script lang="ts">
 	import { Menubar as MenubarPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "$lib/utils";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+		inset?: boolean;
+		variant?: string;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
@@ -8,7 +15,7 @@
 		inset = undefined,
 		variant = "default",
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <MenubarPrimitive.Item

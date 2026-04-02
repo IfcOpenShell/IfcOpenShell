@@ -67,9 +67,9 @@ class Patcher:
 
     def patch(self) -> None:
         import bonsai.tool as tool
-        import bpy
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import ifcopenshell.util.element
-        from mathutils import Matrix, Vector
+        from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         if len(bpy.data.objects) > 0:
             bpy.data.batch_remove(bpy.data.objects)

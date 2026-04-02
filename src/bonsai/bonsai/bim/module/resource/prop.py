@@ -188,7 +188,7 @@ class BIMResourceProperties(PropertyGroup):
     @property
     def productivity(self) -> "BIMResourceProductivity":
         assert bpy.context.scene
-        productivity = bpy.context.scene.BIMResourceProductivity
+        productivity = bpy.context.scene.BIMResourceProductivity  # pyright: ignore[reportAttributeAccessIssue]
         assert isinstance(productivity, BIMResourceProductivity)
         return productivity
 

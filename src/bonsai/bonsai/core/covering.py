@@ -51,21 +51,11 @@ def add_instance_flooring_covering_from_cursor(
     if isinstance(space_polygon, str):
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=0, polygon_is_si=True)
-    name = "Covering"
-    mesh = spatial.get_named_mesh_from_bmesh(name=name, bmesh=bm)
-
-    obj = spatial.get_named_obj_from_mesh(name, mesh)
-
+    obj = spatial.create_object("Covering")
     spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
     spatial.translate_obj_to_z_location(obj, z)
-    points = spatial.get_2d_vertices_from_obj(obj)
-    points = spatial.get_scaled_2d_vertices(points)
     spatial.assign_type_to_obj(obj)
-
-    spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices=points)
-    body = spatial.get_body_representation(obj)
-    spatial.regen_obj_representation(obj, body)
+    spatial.set_covering_representation_from_polygon(obj, space_polygon, polygon_is_si=True)
 
 
 def add_instance_ceiling_covering_from_cursor(
@@ -95,21 +85,11 @@ def add_instance_ceiling_covering_from_cursor(
     if isinstance(space_polygon, str):
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=0, polygon_is_si=True)
-    name = "Covering"
-    mesh = spatial.get_named_mesh_from_bmesh(name=name, bmesh=bm)
-
-    obj = spatial.get_named_obj_from_mesh(name, mesh)
-
+    obj = spatial.create_object("Covering")
     spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
     spatial.translate_obj_to_z_location(obj, z + ceiling_height)
-    points = spatial.get_2d_vertices_from_obj(obj)
-    points = spatial.get_scaled_2d_vertices(points)
     spatial.assign_type_to_obj(obj)
-
-    spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices=points)
-    body = spatial.get_body_representation(obj)
-    spatial.regen_obj_representation(obj, body)
+    spatial.set_covering_representation_from_polygon(obj, space_polygon, polygon_is_si=True)
 
 
 def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spatial]) -> None:
@@ -127,19 +107,7 @@ def regen_selected_covering_object(root: type[tool.Root], spatial: type[tool.Spa
     if isinstance(space_polygon, str):
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=0, polygon_is_si=True)
-
-    name = "Aux"
-    mesh = spatial.get_named_mesh_from_bmesh(name=name, bmesh=bm)
-    mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
-    obj = spatial.get_named_obj_from_mesh(name, mesh)
-
-    points = spatial.get_2d_vertices_from_obj(obj)
-    points = spatial.get_scaled_2d_vertices(points)
-
-    spatial.assign_swept_area_outer_curve_from_2d_vertices(active_obj, vertices=points)
-    body = spatial.get_body_representation(active_obj)
-    spatial.regen_obj_representation(active_obj, body)
+    spatial.set_covering_representation_from_polygon(active_obj, space_polygon, polygon_is_si=True)
 
 
 # TODO CHECK IF IT IS POSSIBLE TO CREATE ONLY ONE CORE FUNCTION FOR _FROM_WALLS
@@ -151,22 +119,13 @@ def add_instance_flooring_coverings_from_walls(root: type[tool.Root], spatial: t
     union = spatial.get_union_shape_from_selected_objects()
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
-        bm = spatial.get_bmesh_from_polygon(poly, h=0, polygon_is_si=False)
 
         name = "Covering" + str(i)
-        obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
-
-        spatial.set_obj_origin_to_bboxcenter(obj)
+        obj = spatial.create_object(name)
+        spatial.set_obj_origin_to_polygon_center(obj, poly, polygon_is_si=False)
         spatial.translate_obj_to_z_location(obj, z)
-
-        points = spatial.get_2d_vertices_from_obj(obj)
-        points = spatial.get_scaled_2d_vertices(points)
-
         spatial.assign_type_to_obj(obj)
-
-        spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices=points)
-        body = spatial.get_body_representation(obj)
-        spatial.regen_obj_representation(obj, body)
+        spatial.set_covering_representation_from_polygon(obj, poly, polygon_is_si=False)
 
 
 def add_instance_ceiling_coverings_from_walls(
@@ -179,22 +138,13 @@ def add_instance_ceiling_coverings_from_walls(
     union = spatial.get_union_shape_from_selected_objects()
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
-        bm = spatial.get_bmesh_from_polygon(poly, h=0, polygon_is_si=False)
 
         name = "Covering" + str(i)
-        obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
-
-        spatial.set_obj_origin_to_bboxcenter(obj)
+        obj = spatial.create_object(name)
+        spatial.set_obj_origin_to_polygon_center(obj, poly, polygon_is_si=False)
         spatial.translate_obj_to_z_location(obj, z)
-
-        points = spatial.get_2d_vertices_from_obj(obj)
-        points = spatial.get_scaled_2d_vertices(points)
-
         spatial.assign_type_to_obj(obj)
-
-        spatial.assign_swept_area_outer_curve_from_2d_vertices(obj, vertices=points)
-        body = spatial.get_body_representation(obj)
-        spatial.regen_obj_representation(obj, body)
+        spatial.set_covering_representation_from_polygon(obj, poly, polygon_is_si=False)
 
 
 class NoDefaultContainer(Exception):

@@ -37,6 +37,7 @@ messages = {
 class CadTrimExtend(bpy.types.Operator):
     bl_idname = "bim.cad_trim_extend"
     bl_label = "CAD Trim / Extend"
+    bl_description = "Extends/reduces element to 3D cursor"
 
     @classmethod
     def poll(cls, context):
@@ -82,6 +83,7 @@ class CadTrimExtend(bpy.types.Operator):
 class CadMitre(bpy.types.Operator):
     bl_idname = "bim.cad_mitre"
     bl_label = "CAD Mitre"
+    bl_description = "Joins two non-parallel paths at their intersection"
 
     @classmethod
     def poll(cls, context):

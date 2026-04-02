@@ -17,8 +17,18 @@ REPO_PATH_SRC = REPO_PATH / "src"
 assert REPO_PATH_SRC.exists(), f"'{REPO_PATH_SRC}' doesn't exist."
 
 packages = {
+    "bcf": REPO_PATH_SRC / "bcf" / "bcf",
+    "bsdd.py": REPO_PATH_SRC / "bsdd" / "bsdd.py",
+    "ifc4d": REPO_PATH_SRC / "ifc4d" / "ifc4d",
+    "ifc5d": REPO_PATH_SRC / "ifc5d" / "ifc5d",
+    "ifccityjson": REPO_PATH_SRC / "ifccityjson" / "ifccityjson",
+    "ifcclash": REPO_PATH_SRC / "ifcclash" / "ifcclash",
+    "ifccsv.py": REPO_PATH_SRC / "ifccsv" / "ifccsv.py",
+    "ifcdiff.py": REPO_PATH_SRC / "ifcdiff" / "ifcdiff.py",
+    "ifcfm": REPO_PATH_SRC / "ifcfm" / "ifcfm",
     "ifcopenshell": REPO_PATH_SRC / "ifcopenshell-python" / "ifcopenshell",
     "ifcpatch": REPO_PATH_SRC / "ifcpatch" / "ifcpatch",
+    "ifctester": REPO_PATH_SRC / "ifctester" / "ifctester",
 }
 
 
@@ -35,10 +45,12 @@ for package, repo_package_path in packages.items():
             continue
         package_path.unlink()
     if package_path.exists():
-        # I guess it's a directory.
-        shutil.rmtree(package_path)
+        if package_path.is_dir():
+            shutil.rmtree(package_path)
+        else:
+            package_path.unlink()
     print(f"Symlinking {package_path} -> {repo_package_path}")
-    package_path.symlink_to(repo_package_path, True)
+    package_path.symlink_to(repo_package_path, target_is_directory=repo_package_path.is_dir())
 
 
 PACKAGE_PATH = SITE / "ifcopenshell"

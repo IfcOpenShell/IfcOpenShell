@@ -64,8 +64,8 @@ class MaterialCreator:
         mesh: Union[OBJECT_DATA_TYPE, None],
         shape_has_openings: bool,
     ) -> None:
-        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
-            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
+        if ((rep := getattr(element, "Representation", ...)) is not ... and not rep) or (
+            (rep := getattr(element, "RepresentationMaps", ...)) is not ... and not rep
         ):
             return
 
@@ -747,6 +747,7 @@ class IfcImporter:
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
                 product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
@@ -1020,7 +1021,8 @@ class IfcImporter:
         obj.hide_select = True
         obj.hide_viewport = True
         self.project["blender"].objects.link(obj)
-        self.project["blender"].BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(self.project["blender"])
+        collection_props.obj = obj
         props = tool.Blender.get_object_bim_props(obj)
         props.collection = self.collections[project.GlobalId] = self.project["blender"]
 

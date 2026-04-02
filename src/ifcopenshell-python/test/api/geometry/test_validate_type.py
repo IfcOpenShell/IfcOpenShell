@@ -76,7 +76,7 @@ class TestValidateType(test.bootstrap.IFC4):
 
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second1])
         assert len(booleans) == 1
-        assert len(rep.Items) == 3
+        assert len(rep.Items) == 4
         assert ifcopenshell.api.geometry.validate_type(self.file, rep) is True
         assert len(rep.Items) == 1
         assert rep.RepresentationType == "CSG"
@@ -96,9 +96,9 @@ class TestValidateType(test.bootstrap.IFC4):
 
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second1])
         assert len(booleans) == 1
-        assert len(rep.Items) == 2
+        assert len(rep.Items) == 3  # boolean replaced first, but second1 stays in Items
         assert ifcopenshell.api.geometry.validate_type(self.file, rep) is False
-        assert len(rep.Items) == 2
+        assert len(rep.Items) == 2  # validate_type unioned second1 into the boolean
         assert rep.RepresentationType is None
 
 

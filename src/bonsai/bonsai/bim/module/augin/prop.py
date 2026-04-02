@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy.props
-import bpy.types
+from typing import TYPE_CHECKING
+
+import bpy
 
 
 class AuginProperties(bpy.types.PropertyGroup):
@@ -27,3 +28,11 @@ class AuginProperties(bpy.types.PropertyGroup):
     project_name: bpy.props.StringProperty(name="Project Name")
     project_filename: bpy.props.StringProperty(name="IFC Filename")
     is_success: bpy.props.BoolProperty(name="Is Successful Upload", default=False)
+
+    if TYPE_CHECKING:
+        username: str
+        password: str
+        token: str
+        project_name: str
+        project_filename: str
+        is_success: bool

@@ -24,7 +24,15 @@ import shutil
 from collections import defaultdict
 from math import radians
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    NotRequired,
+    Optional,
+    TypedDict,
+)
 
 import bpy
 import ifcopenshell
@@ -35,7 +43,7 @@ import ifcopenshell.util.shape_builder
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 import bonsai.bim.schema
 import bonsai.core.aggregate
@@ -600,6 +608,49 @@ class Project(bonsai.core.tool.Project):
     class Link:
         """Tools for working with linked models."""
 
+        class LinkedObjectChunk(TypedDict):
+            """There's actually no dictionary with those keys,
+            just using this class to document what keys we do assign to the objects
+            that represent chunks of the linked models.
+            """
+
+            guids: list[str]
+            """List of guids present in the object."""
+
+            guid_ids: list[int]
+            """Number of faces that belong to each guid.
+
+            E.g. if chunk consists of two 12 tris cubes:
+            ```
+                guids = ["aaa", "bbb"]
+                # Meaning object has 24 polygons
+                # [0;11] is part of "aaa", [12:23] is part of "bbb".
+                guid_ids = [12, 24]
+            ```
+            """
+
+            db: str
+            """Absolute filepath to .ifc.cache.sqlite."""
+
+            ifc_filepath: str
+            """Absolute filepath to .ifc."""
+
+            # Only added when object is queried.
+            selected_vertices: NotRequired[list[tuple[int, int, int]]]
+            selected_edges: NotRequired[list[tuple[int, int]]]
+            selected_tris: NotRequired[list[tuple[int, int, int]]]
+
+            hidden_indices: NotRequired[list[int]]
+            """List of hidden indices in "guids".
+            Note that entire object also can be hidden by ``hide_viewport`` and then "hidden_indices" won't be set.
+
+            ```
+                guids = ["aaa", "bbb", "ccc"]
+                # guid "bbb" is hidden.
+                hidden_indices = [1]
+            ```
+            """
+
         @classmethod
         def is_linked_element(cls, obj: bpy.types.Object) -> bool:
             return "guids" in obj
@@ -670,11 +721,17 @@ class Project(bonsai.core.tool.Project):
             return slice(guid_start_index, guid_end_index)
 
         @classmethod
-        def hide_linked_element(cls, obj: bpy.types.Object, guid: str) -> None:
-            verts = tool.Project.Link.get_linked_element_verts(obj, guid)
-
+        def setup_hide_modifier(
+            cls,
+            obj: bpy.types.Object,
+            hide_type: Literal["hide_selected", "hide_unselected"],
+        ) -> bpy.types.VertexGroup:
             # `MeshPolygon.hide` works only in EDIT mode,
             # so we use vertex groups + Mask modifier.
+            # But since for hiding we're modifying object in a linked model,
+            # then those changes are ephemeral and not fully supported by Blender
+            # e.g. they're not tracked by UNDO system.
+
             MODIFIER_VG_NAME = "BBIM_HIDE_LINKED_GEOMETRY"
 
             vertex_groups = obj.vertex_groups
@@ -688,8 +745,15 @@ class Project(bonsai.core.tool.Project):
                 modifier = modifiers.new(MODIFIER_VG_NAME, "MASK")
             assert isinstance(modifier, bpy.types.MaskModifier)
             modifier.vertex_group = MODIFIER_VG_NAME
-            modifier.invert_vertex_group = True
+            # Mask modifier by default shows only geometry from the provided vertex group.
+            modifier.invert_vertex_group = hide_type == "hide_selected"
+            return vertex_group
 
+        @classmethod
+        def hide_linked_element(cls, obj: bpy.types.Object, guid: str) -> None:
+            verts = tool.Project.Link.get_linked_element_verts(obj, guid)
+
+            vertex_group = cls.setup_hide_modifier(obj, "hide_selected")
             vertex_group.add(verts, 1.0, "REPLACE")
 
             hidden_indices: list[int] = list(obj.get("hidden_indices") or [])
@@ -706,11 +770,44 @@ class Project(bonsai.core.tool.Project):
             assert col
 
             for obj_ in col.objects:
+                obj_.hide_viewport = False
+
                 if "hidden_indices" not in obj_:
                     continue
                 obj_.vertex_groups.clear()
                 obj_.modifiers.clear()
                 del obj_["hidden_indices"]
+
+        @classmethod
+        def hide_all_elements_except(cls, link: Link, queried_obj: bpy.types.Object, queried_guid: str) -> None:
+            handle = tool.Project.get_link_empty_handle(link)
+            assert handle
+            col = handle.instance_collection
+            assert col
+
+            for obj_ in col.objects:
+                if "guids" not in obj_:
+                    continue
+                if obj_ != queried_obj:
+                    # Just hide the entire chunk, if queried guid is not part of it.
+                    obj_.hide_viewport = True
+                    continue
+
+                guids: list[str] = obj_["guids"]
+                queried_guid_index = guids.index(queried_guid)
+
+                # Get vertices for the queried element before modifying hidden_indices.
+                queried_verts = cls.get_linked_element_verts(obj_, queried_guid)
+                vertex_group = cls.setup_hide_modifier(obj_, "hide_unselected")
+
+                assert isinstance(mesh := obj_.data, bpy.types.Mesh)
+                # Clean up possible previously hidden elements.
+                vertex_group.remove(range(len(mesh.vertices)))
+
+                vertex_group.add(queried_verts, 1.0, "REPLACE")
+
+                # Mark all guids as hidden except the queried one.
+                obj_["hidden_indices"] = [i for i in range(len(guids)) if i != queried_guid_index]
 
         @classmethod
         def select_linked_element_geom(cls, obj: bpy.types.Object, guid: str) -> None:

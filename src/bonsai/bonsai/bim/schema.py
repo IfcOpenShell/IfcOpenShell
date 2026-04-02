@@ -16,18 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING
-
-import bpy
 import ifcopenshell
 import ifcopenshell.util.pset
 
+import bonsai
 import bonsai.tool as tool
-
-if TYPE_CHECKING or bpy.app.version >= (5, 0, 0):
-    import _bpy_restrict_state as bpy_restrict_state
-else:
-    import bpy_restrict_state
 
 
 class IfcSchema:
@@ -62,7 +55,7 @@ class IfcSchema:
         self.psetqto.get_by_name.cache_clear()
 
         # During register we cannot access the context either way.
-        if isinstance(bpy.context, bpy_restrict_state._RestrictContext):
+        if bonsai.is_registering():
             return
         for path in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
             self.psetqto.templates.append(ifcopenshell.open(path))

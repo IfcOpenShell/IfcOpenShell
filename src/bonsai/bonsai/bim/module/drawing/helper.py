@@ -456,7 +456,8 @@ def format_distance(
                 tx_dist = fmt % d_cm
 
     else:
-        tx_dist = fmt % value
+        assert f"Unexpected unit_system - '{unit_system}'."
+        # tx_dist = fmt % value
 
     return tx_dist
 

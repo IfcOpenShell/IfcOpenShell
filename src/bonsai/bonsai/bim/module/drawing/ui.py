@@ -781,33 +781,10 @@ class BIM_PT_text(Panel):
             if other_attributes:
                 bonsai.bim.helper.draw_attributes(other_attributes, box)
 
-            row = box.row(align=True)
-            cols = [row.column(align=True) for j in range(3)]
-            for j in range(9):
-                cols[j % 3].prop(
-                    literal_props,
-                    "box_alignment",
-                    text="",
-                    index=j,
-                    icon="RADIOBUT_ON" if literal_props.box_alignment[j] else "RADIOBUT_OFF",
-                )
-
-            col = row.column(align=True)
-            alignment_label_row = col.row(align=True)
-            alignment_label_row.label(text="    Text box alignment:")
-
-            box_alignment_value = (
-                literal_props.attributes[
-                    next(
-                        (idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"),
-                        -1,
-                    )
-                ].string_value
-                if any(attr.name == "BoxAlignment" for attr in literal_props.attributes)
-                else "N/A"
-            )
-
-            col.label(text=f"    {box_alignment_value}")
+            row = box.row()
+            row.label(text="Alignment")
+            row.prop(literal_props, "align_horizontal", text="", expand=True)
+            row.prop(literal_props, "align_vertical", text="", expand=True)
 
     def draw(self, context):
         obj = context.active_object
@@ -839,7 +816,6 @@ class BIM_PT_text(Panel):
 
         for i, literal_data in enumerate(text_data["Literals"]):
             box = self.layout.box()
-            box.label(text=f"Literal[{i}]:")
 
             # Combine both approaches: clickable attributes from PR #7292 and display from PR #7106
             for attribute in literal_data:

@@ -1,7 +1,9 @@
-<script>
+<script lang="ts">
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 
-    let { addFacet } = $props();
+    type FacetType = "entity" | "attribute" | "classification" | "partOf" | "property" | "material";
+
+    const { addFacet } : { addFacet: (facetType: FacetType) => void } = $props();
 </script>
 
 <DropdownMenu.Root>

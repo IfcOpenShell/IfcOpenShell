@@ -365,7 +365,7 @@ class TestLoadingIfcSqlite(NewFile):
             sql_type="SQLite",
         )
         patcher.patch()
-        tmp_file = Path(tempfile.mktemp(suffix=".ifcsqlite"))
+        tmp_file = Path(tempfile.mkstemp(suffix=".ifcsqlite")[1])
         ifcpatch.write(patcher.get_output(), tmp_file)
 
         elements_with_meshes = [
@@ -403,13 +403,6 @@ class TestLoadingIfcSqlite(NewFile):
 
 
 class TestGettingLinkedElementGeomSlice:
-    def __init__(self):
-        self.test_get_first_element()
-        self.test_get_middle_element()
-        self.test_skip_hidden_first_element()
-        self.test_skip_hidden_middle_element()
-        self.test_handle_hidden_non_first_element()
-
     TEST_OBJ = {
         "guids": ["aaa", "bbb", "ccc"],
         "guid_ids": [5, 10, 15],

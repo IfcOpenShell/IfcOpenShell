@@ -1068,8 +1068,10 @@ typedef item const* ptr;
 				virtual kinds kind() const { return LOFT; }
 
 				virtual void print_impl(std::ostream& o, int indent) const {
-					o << std::string(indent, ' ') << "axis" << std::endl;
-					axis->print(o, indent + 4);
+               if (axis) {
+                  o << std::string(indent, ' ') << "axis" << std::endl;
+                  axis->print(o, indent + 4);
+               }
 				}
 
 				virtual size_t calc_hash() const {

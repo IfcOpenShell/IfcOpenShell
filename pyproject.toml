@@ -2,10 +2,10 @@
 name = "IfcOpenShell"
 version = "0.0.0"
 dependencies = [
-    "black==26.1.0",
-    "ruff==0.15.4",
+    "black==26.3.1",
+    "ruff==0.15.8",
     "poethepoet",
-    "gersemi==0.26.0",
+    "gersemi==0.26.1",
 ]
 
 [tool.black]
@@ -28,6 +28,12 @@ extend-exclude = '''
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
+# Pylance doesn't respect gitignore, so we have to exclude files manually here
+# to avoid VS Code slowing down.
+# https://github.com/microsoft/pylance-release/issues/5169
+exclude = [
+    "_deps",
+]
 
 # Define here general ruff settings,
 # then they will be inherited by projects' .toml files.
@@ -72,6 +78,139 @@ ignore = [
     "UP032", # Replace .format with f-string
 ]
 
+[tool.ty.rules]
+all = "ignore"
+
+# Structural rules (no deep type inference needed, easier to adapt).
+abstract-method-in-final-class = "error"
+ambiguous-protocol-member = "error"
+byte-string-type-annotation = "error"
+conflicting-declarations = "error"
+conflicting-metaclass = "error"
+cyclic-class-definition = "error"
+cyclic-type-alias-definition = "error"
+dataclass-field-order = "error"
+duplicate-base = "error"
+duplicate-kw-only = "error"
+empty-body = "error"
+escape-character-in-forward-annotation = "error"
+final-on-non-method = "error"
+final-without-value = "error"
+fstring-type-annotation = "error"
+ignore-comment-unknown-rule = "error"
+implicit-concatenated-string-type-annotation = "error"
+inconsistent-mro = "error"
+ineffective-final = "error"
+instance-layout-conflict = "error"
+invalid-dataclass = "error"
+invalid-dataclass-override = "error"
+invalid-enum-member-annotation = "error"
+invalid-explicit-override = "error"
+invalid-frozen-dataclass-subclass = "error"
+invalid-generic-class = "error"
+invalid-generic-enum = "error"
+invalid-ignore-comment = "error"
+invalid-legacy-positional-parameter = "error"
+invalid-legacy-type-variable = "error"
+invalid-named-tuple = "error"
+invalid-newtype = "error"
+invalid-overload = "error"
+invalid-paramspec = "error"
+invalid-protocol = "error"
+invalid-syntax-in-forward-annotation = "error"
+invalid-total-ordering = "error"
+invalid-type-alias-type = "error"
+invalid-type-checking-constant = "error"
+invalid-type-guard-definition = "error"
+invalid-type-variable-bound = "error"
+invalid-type-variable-constraints = "error"
+invalid-typed-dict-header = "error"
+invalid-typed-dict-statement = "error"
+override-of-final-method = "error"
+override-of-final-variable = "error"
+possibly-missing-import = "error"
+possibly-missing-submodule = "error"
+# Has false positives due to ty walrus operator bug.
+# possibly-unresolved-reference = "error"
+raw-string-type-annotation = "error"
+redundant-final-classvar = "error"
+shadowed-type-variable = "error"
+subclass-of-final-class = "error"
+super-call-in-named-tuple-method = "error"
+unavailable-implicit-super-arguments = "error"
+unbound-type-variable = "error"
+undefined-reveal = "error"
+unresolved-global = "error"
+unresolved-import = "error"
+unresolved-reference = "error"
+unused-ignore-comment = "error"
+unused-type-ignore-comment = "error"
+useless-overload-body = "error"
+
+# Non-structural rules:
+deprecated = "error"
+zero-stepsize-in-slice = "error"
+possibly-missing-implicit-call = "error"
+unused-awaitable = "error"
+
+# Function argument rules:
+# Conflicts with `ifcopenshell.api.geometry.add_representation` type of callables we have, confusing them with a module.
+# call-non-callable = "error"
+conflicting-argument-forms = "error"
+# Too many false positives.
+# invalid-argument-type = "error"
+missing-argument = "error"
+parameter-already-assigned = "error"
+positional-only-parameter-as-kwarg = "error"
+too-many-positional-arguments = "error"
+unknown-argument = "error"
+# Has a lot of warnings due to current ty walrus operator issues.
+# index-out-of-bounds = "error"
+# unresolved-attribute = "error"
+
+[tool.ty.environment]
+extra-paths = [
+    "src/bonsai/external_dependencies",
+    "src/bcf",
+    "src/bsdd",
+    "src/bonsai",
+    "src/ifc4d",
+    "src/ifc5d",
+    "src/ifccityjson",
+    "src/ifcclash",
+    "src/ifccsv",
+    "src/ifcdiff",
+    "src/ifcfm",
+    "src/ifcopenshell-python",
+    "src/ifcpatch",
+    "src/ifctester",
+]
+
+[tool.ty.src]
+exclude = [
+    # External dependencies cloned for type checking only.
+    "src/bonsai/external_dependencies",
+    # Submodules.
+    "src/ifcopenshell-python/ifcopenshell/express",
+    "src/ifcopenshell-python/ifcopenshell/mvd",
+    "src/ifcopenshell-python/ifcopenshell/simple_spf",
+    "src/svgfill/3rdparty",
+    # Has special dependencies.
+    "src/ifcopenshell-python/ifcopenshell/geom/app.py",
+    "src/ifcopenshell-python/ifcopenshell/geom/code_editor_pane.py",
+    "src/ifcopenshell-python/ifcopenshell/util/doc.py",
+    "src/ifcopenshell-python/ifcopenshell/util/generate_pset_templates.py",
+    "src/ifcopenshell-python/ifcopenshell/util/ifc4x3dev_scrape_data_for_docs.py",
+    # Too esoteric.
+    "src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py",
+    "src/ifc2ca/templates",
+    # Too dev.
+    "src/bcf/setup.py",
+    "src/bsdd/yml_to_classes.py",
+    # Deprecated.
+    "src/ifc2ca/_deprecated",
+]
+
 [tool.poe.tasks]
 
 ruff-main = "ruff check --extend-exclude nix/build-all.py"
@@ -81,6 +220,47 @@ ruff.sequence = ["ruff-main", "ruff-old"]
 
 black = "black ."
 
+ty.sequence = ["ty-bonsai", "ty-ios"]
+ty.help = "Run ty type checker. Requires ty-venv to be set up first."
+ty-bonsai = "ty check src/bonsai --python=src/bonsai/.venv"
+
+ty-venv.sequence = ["ty-venv-bonsai", "ty-venv-ios"]
+
+ty-venv-bonsai.sequence = [
+    {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
+    {cmd = "uv pip install -r src/bonsai/type-check-requirements.txt --python=src/bonsai/.venv"},
+]
+
+ty-venv-ios.sequence = [
+    {cmd = "uv venv src/ifcopenshell-python/.venv --python=3.10 --allow-existing"},
+    {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
+]
+
 format.sequence = ["black", "ruff-main", "ruff-old"]
 
 cmake-format = "gersemi . --in-place"
+
+[tool.poe.tasks.ty-ios]
+# --ignore unresolved-reference: walrus operator false positives in ty.
+cmd = """
+    ty check
+    src/bcf
+    src/bsdd
+    src/ifc2ca
+    src/ifc4d
+    src/ifc5d
+    src/ifccityjson
+    src/ifcclash
+    src/ifccsv
+    src/ifcdiff
+    src/ifcfm
+    src/ifcopenshell-python
+    src/ifcpatch
+    src/ifctester
+    --python=src/ifcopenshell-python/.venv
+    --ignore unresolved-reference
+"""
+
+[tool.poe.tasks.bonsai-deps]
+help = "Clone or update Bonsai external dependencies."
+cmd = "python src/bonsai/scripts/bonsai_deps.py"

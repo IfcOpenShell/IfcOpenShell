@@ -1,6 +1,19 @@
-<script>
+<script lang="ts">
 	import { Menubar as MenubarPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "$lib/utils";
+
+	type Align = "start" | "center" | "end";
+	type Side = "top" | "bottom" | "left" | "right";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		class?: string;
+		sideOffset?: number;
+		alignOffset?: number;
+		align?: Align;
+		side?: Side;
+		portalProps?: Record<string, unknown>;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
@@ -11,7 +24,7 @@
 		side = "bottom",
 		portalProps,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <MenubarPrimitive.Portal {...portalProps}>

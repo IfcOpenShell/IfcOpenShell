@@ -787,7 +787,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         doc: DocPreferences
         default_parameters: DefaultParameters
         container_hide_show_isolate: bool
-        mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
         metadata_blend_file_suffix: str
@@ -986,7 +985,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
-        layout.prop(self, "mass_time_units_in_wizard")
         row = layout.row(align=True)
         row.prop(self, "chain_filter_with_set_operations")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"
@@ -1031,8 +1029,7 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         if not UIData.is_loaded:
             UIData.load()
-        aprops = tool.Blender.get_area_props(context)
-        addon_prefs = tool.Blender.get_addon_preferences()
+        aprops = tool.Blender.get_active_area_props(context)
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -1119,7 +1116,9 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
+    def draw_tab_entry(
+        self, row: bpy.types.UILayout, icon: int | str, tab_name: str, enabled: bool = True, highlight: bool = True
+    ) -> None:
         tab_entry = row.row(align=True)
         if isinstance(icon, int):
             tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon_value=icon).tab = tab_name
