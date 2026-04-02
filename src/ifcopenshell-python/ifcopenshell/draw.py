@@ -426,7 +426,7 @@ def main(
                             # found to be inside element using tree.select() no face or style info
                             return x
                         else:
-                            return (x.instance.is_a(), tuple(x.position), tuple(x.normal))
+                            return (x.instance.is_a(), tuple(x.position), tuple(x.normal), x.style_index)
 
                     pp = pairs[he_idx : he_idx + 2]
                     if pp == (-1, -1):
@@ -436,16 +436,17 @@ def main(
                         if len(data[0]) == 2 and len(data[1]) == 2:
                             # Both from tree.select() -> (instance, -1)
                             to_remove.append(he_idx // 2)
-                        elif len(data[0]) == 3 and len(data[1]) == 3:
-                            # Both from tree.select_ray() -> (type, position, normal)
-                            p1, n1 = numpy.array(data[0][1]), numpy.array(data[0][2])
-                            p2, n2 = numpy.array(data[1][1]), numpy.array(data[1][2])
+                        elif len(data[0]) == 4 and len(data[1]) == 4:
+                            # Both from tree.select_ray() -> (type, position, normal, style_index)
+                            p1, n1, s1 = numpy.array(data[0][1]), numpy.array(data[0][2]), data[0][3]
+                            p2, n2, s2 = numpy.array(data[1][1]), numpy.array(data[1][2]), data[1][3]
                             
-                            # Check if normals are parallel and points are coplanar
-                            # Issue #3742: Replaced simplistic distance check with vector mathematics
-                            if abs(1.0 - numpy.dot(n1, n2)) < 1.0e-5:
-                                if abs(numpy.dot(p1 - p2, n1)) < 1.0e-5:
-                                    to_remove.append(he_idx // 2)
+                            # Check if styles match, normals are parallel and points are coplanar
+                            # Issue #3742: Replaced simplistic distance check with vector mathematics and material check
+                            if s1 == s2:
+                                if abs(1.0 - numpy.dot(n1, n2)) < 1.0e-5:
+                                    if abs(numpy.dot(p1 - p2, n1)) < 1.0e-5:
+                                        to_remove.append(he_idx // 2)
                         # Print edge index and semantic data
                         # print(he_idx // 2, *data)
 
