@@ -202,7 +202,7 @@ class DeleteTag(bpy.types.Operator):
 class RefreshGit(bpy.types.Operator):
     """Refresh revision list"""
 
-    bl_label = ""
+    bl_label = "Refresh"
     bl_idname = "ifcgit.refresh"
     bl_options = {"REGISTER"}
 
@@ -225,7 +225,7 @@ class RefreshGit(bpy.types.Operator):
 class DisplayRevision(bpy.types.Operator):
     """Colourise objects by selected revision"""
 
-    bl_label = ""
+    bl_label = "Colourise Revision"
     bl_idname = "ifcgit.display_revision"
     bl_options = {"REGISTER"}
 
@@ -260,7 +260,7 @@ class DisplayUncommitted(bpy.types.Operator):
 class SwitchRevision(bpy.types.Operator):
     """Switches the repository to the selected revision and reloads the IFC file"""
 
-    bl_label = ""
+    bl_label = "Switch Revision"
     bl_idname = "ifcgit.switch_revision"
     bl_options = {"REGISTER"}
 

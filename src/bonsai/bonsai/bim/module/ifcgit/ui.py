@@ -113,14 +113,11 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         else:
             row.label(text="Working branch: " + IfcGitData.data["active_branch_name"])
 
-        grouped = layout.row()
-        column = grouped.column()
-        row = column.row()
+        row = layout.row()
         row.prop(props, "display_branch", text="Browse branch")
         row.prop(props, "ifcgit_filter", text="Filter revisions")
 
-        row = column.row()
-        row.template_list(
+        layout.template_list(
             "COMMIT_UL_List",
             "The_List",
             props,
@@ -128,20 +125,13 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             props,
             "commit_index",
         )
-        column = grouped.column()
-        row = column.row()
+
+        row = layout.row(align=True)
         row.operator("ifcgit.refresh", icon="FILE_REFRESH")
-
         if not is_dirty:
-
-            row = column.row()
             row.operator("ifcgit.display_revision", icon="SELECT_DIFFERENCE")
-
-            row = column.row()
             row.operator("ifcgit.switch_revision", icon="CURRENT_FILE")
-
-            row = column.row()
-            row.operator("ifcgit.merge", icon="EXPERIMENTAL", text="")
+            row.operator("ifcgit.merge", icon="SYSTEM")
 
         if not props.ifcgit_commits:
             return
