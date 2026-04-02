@@ -278,6 +278,7 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
 
         from bonsai.bim.module.root.data import IfcClassData
+        import bonsai.bim.handler
 
         IfcClassData.is_loaded = False
 
@@ -285,10 +286,11 @@ class IfcGit:
         settings.should_setup_viewport_camera = False
         ifc_importer = import_ifc.IfcImporter(settings)
         ifc_importer.execute()
-        tool.Project.load_project_pset_templates()
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
+        tool.Root.reload_grid_decorator()
+        bonsai.bim.handler.refresh_ui_data()
         bpy.ops.object.select_all(action="DESELECT")
 
     @classmethod
