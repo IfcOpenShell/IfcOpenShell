@@ -113,7 +113,18 @@
             border-radius: 20px;
             padding: 10px;
             display: flex;
-            width: 50%;
+            width: 100%;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #aaa;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
         }
 
         .status {
