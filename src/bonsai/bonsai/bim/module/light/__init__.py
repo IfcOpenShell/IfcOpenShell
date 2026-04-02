@@ -23,7 +23,7 @@ from pathlib import Path
 import bpy
 import pyradiance
 
-from . import export, ies, list, material, operator, prepare, prop, render, solar, ui
+from . import export, ies, list, material, prepare, prop, render, solar, ui
 
 
 def get_pyradiance_path():
@@ -37,6 +37,7 @@ classes = (
     solar.MoveSunPathTo3DCursor,
     render.RadianceRender,
     render.FalseColorRadiance,
+    render.RADIANCE_OT_select_camera,
     solar.ViewFromSun,
     solar.LightPickCoordinates,
     solar.LightSetTimeToNow,
@@ -45,9 +46,7 @@ classes = (
     material.RADIANCE_OT_export_material_mappings,
     material.RADIANCE_OT_import_material_mappings,
     material.RADIANCE_OT_open_spectraldb,
-    operator.EnumPropertySearch,
     prepare.PrepareRadianceScene,
-    operator.SetEnumProperty,
     ies.AddIESLight,
     ies.RemoveIESLight,
     export.CleanupRadianceFiles,
