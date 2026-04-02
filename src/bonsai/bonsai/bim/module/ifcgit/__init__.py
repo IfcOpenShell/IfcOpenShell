@@ -36,6 +36,7 @@ classes = (
     operator.ObjectLog,
     operator.Push,
     operator.RefreshGit,
+    operator.RenameBranch,
     operator.SwitchRevision,
     operator.InstallGit,
     operator.RunGitDiff,

@@ -156,6 +156,10 @@ class IfcGit:
             repo.delete_tag(tag_name)
 
     @classmethod
+    def rename_branch(cls, repo: git.Repo, new_name: str) -> None:
+        repo.active_branch.rename(new_name)
+
+    @classmethod
     def add_remote(cls, repo: git.Repo, remote_name: str, remote_url: str) -> None:
         repo.create_remote(name=remote_name, url=remote_url)
 

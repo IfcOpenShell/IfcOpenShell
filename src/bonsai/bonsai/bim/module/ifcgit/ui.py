@@ -112,6 +112,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.label(text="Working branch: Detached HEAD")
         else:
             row.label(text="Working branch: " + IfcGitData.data["active_branch_name"])
+            row.operator("ifcgit.rename_branch", icon="GREASEPENCIL", text="")
 
         row = layout.row()
         row.prop(props, "display_branch", text="Browse branch")

@@ -469,3 +469,37 @@ class RunGitDiff(bpy.types.Operator):
     def execute(self, context):
         core.run_git_diff(tool.IfcGit, self, self.save_to_temp)
         return {"FINISHED"}
+
+
+class RenameBranch(bpy.types.Operator):
+    """Rename the current branch"""
+
+    bl_label = "Rename Branch"
+    bl_idname = "ifcgit.rename_branch"
+    bl_options = {"REGISTER"}
+
+    new_name: bpy.props.StringProperty(name="New name")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        new_name: str
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if not IfcGitData.data["repo"]:
+            return False
+        if IfcGitData.data["is_detached"]:
+            return False
+        if IfcGitData.data["is_dirty"]:
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.new_name = IfcGitData.data["active_branch_name"]
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        repo = IfcGitData.data["repo"]
+        core.rename_branch(tool.IfcGit, repo, self.new_name)
+        refresh()
+        return {"FINISHED"}

@@ -87,6 +87,10 @@ def delete_remote(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str) -
     ifcgit.delete_remote(repo, remote_name)
 
 
+def rename_branch(ifcgit: type[tool.IfcGit], repo: git.Repo, new_name: str) -> None:
+    ifcgit.rename_branch(repo, new_name)
+
+
 def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: bpy.types.Operator) -> None:
     error_message = ifcgit.push(repo, remote_name, ifcgit.get_active_branch_name())
     if error_message:
