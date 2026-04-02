@@ -476,10 +476,27 @@ class IfcGit:
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
                 if branch.name == props.display_branch:
+                    if isinstance(branch, git.RemoteReference):
+                        # Checking out a remote branch tip goes to detached HEAD.
+                        # Pre-fill the new branch name field with the local equivalent
+                        # so the user isn't blocked from committing without a hint.
+                        local_name = branch.remote_head
+                        props.new_branch_name = cls._unique_branch_name(repo, local_name)
                     branch.checkout()
                     return
         # NOTE this is calling the git binary in a subprocess
         repo.git.checkout(item.hexsha)
+
+    @classmethod
+    def _unique_branch_name(cls, repo: git.Repo, name: str) -> str:
+        """Return name if unused, otherwise name-2, name-3, etc."""
+        existing = {h.name for h in repo.heads}
+        if name not in existing:
+            return name
+        i = 2
+        while f"{name}-{i}" in existing:
+            i += 1
+        return f"{name}-{i}"
 
     @classmethod
     def delete_collection(cls, blender_collection: bpy.types.Collection) -> None:
