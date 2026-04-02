@@ -388,20 +388,43 @@ class IfcGit:
         model = tool.Ifc.get()
         modified_step_ids = {"modified": set()}
 
-        for step_id in step_ids["modified"] | step_ids["added"]:
-            try:
-                entity = model.by_id(step_id)
-            except:
-                continue
-            if entity.is_a("IfcProductDefinitionShape"):
+        def collect(entity, depth=0):
+            if depth > 2:
+                return
+            if entity.is_a("IfcProduct"):
+                modified_step_ids["modified"].add(entity.id())
+            elif entity.is_a("IfcProductDefinitionShape"):
                 for product in entity.ShapeOfProduct:
                     modified_step_ids["modified"].add(product.id())
             elif entity.is_a("IfcObjectPlacement"):
                 for product in entity.PlacesObject:
                     modified_step_ids["modified"].add(product.id())
-            elif entity.is_a("IfcTypeProduct") and entity.Types:
-                for related_object in entity.Types[0].RelatedObjects:
-                    modified_step_ids["modified"].add(related_object.id())
+            elif entity.is_a("IfcTypeProduct"):
+                for rel in entity.Types:
+                    for obj in rel.RelatedObjects:
+                        modified_step_ids["modified"].add(obj.id())
+            elif entity.is_a("IfcShapeRepresentation"):
+                for prod_rep in entity.OfProductRepresentation:
+                    for product in prod_rep.ShapeOfProduct:
+                        modified_step_ids["modified"].add(product.id())
+            elif entity.is_a("IfcRepresentationItem"):
+                for referencing in model.get_inverse(entity):
+                    if referencing.is_a("IfcShapeRepresentation"):
+                        collect(referencing, depth + 1)
+            elif entity.is_a("IfcPropertySet"):
+                for rel in entity.DefinesOccurrence:
+                    for obj in rel.RelatedObjects:
+                        modified_step_ids["modified"].add(obj.id())
+            elif entity.is_a("IfcProperty"):
+                for pset in entity.PartOfPset:
+                    collect(pset, depth + 1)
+
+        for step_id in step_ids["modified"] | step_ids["added"]:
+            try:
+                entity = model.by_id(step_id)
+            except:
+                continue
+            collect(entity)
 
         return modified_step_ids
 
