@@ -92,8 +92,6 @@ class MATERIAL_UL_ies_lights(bpy.types.UIList):
                 row.prop(item, "target_collection", text="", icon="OUTLINER_COLLECTION", emboss=False)
             else:
                 row.prop(item, "target_object", text="", emboss=False)
-                op = row.operator("radiance.set_ies_light_object", text="", icon="EYEDROPPER")
-                op.index = index
 
             # Remove button (X icon - negative action)
             op = row.operator("radiance.remove_ies_light", text="", icon="X")

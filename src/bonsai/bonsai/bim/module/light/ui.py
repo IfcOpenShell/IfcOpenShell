@@ -47,49 +47,90 @@ def prop_with_search(layout, data, prop_name, **kwargs):
         pass
 
 
-class BIM_PT_radiance_exporter(bpy.types.Panel):
-    """Creates a Panel in the render properties window"""
+# ---------------------------------------------------------------------------
+# Root panel (replaces the old "Radiance Exporter" nested panel)
+# ---------------------------------------------------------------------------
 
+class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_label = "Radiance Exporter"
     bl_idname = "BIM_PT_radiance_exporter"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_lighting"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        assert self.layout
+        pass
+
+
+# ---------------------------------------------------------------------------
+# 1. Scene Setup
+# ---------------------------------------------------------------------------
+
+class BIM_PT_radiance_scene_setup(bpy.types.Panel):
+    bl_label = "Scene Setup"
+    bl_idname = "BIM_PT_radiance_scene_setup"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_radiance_exporter"
+
+    def draw(self, context):
         layout = self.layout
         props = tool.Blender.get_radiance_exporter_props()
-
-        if tool.Ifc.get():
-            row = self.layout.row()
-            row.prop(props, "should_load_from_memory")
-
-        if not tool.Ifc.get() or not props.should_load_from_memory:
-            row = self.layout.row(align=True)
-            row.prop(props, "ifc_file")
 
         row = layout.row()
         row.prop(props, "output_dir")
 
+        layout.separator()
+
         row = layout.row()
-        layout.label(text="Info: Unmapped materials default to white")
+        row.prop(props, "use_active_camera")
+        if not props.use_active_camera:
+            row = layout.row()
+            row.prop(props, "selected_camera")
+
+        row = layout.row(align=True)
+        row.label(text="Resolution")
+        row.prop(props, "radiance_resolution_x", text="X")
+        row.prop(props, "radiance_resolution_y", text="Y")
+
+
+# ---------------------------------------------------------------------------
+# 2. Materials
+# ---------------------------------------------------------------------------
+
+class BIM_PT_radiance_materials(bpy.types.Panel):
+    bl_label = "Materials"
+    bl_idname = "BIM_PT_radiance_materials"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_radiance_exporter"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        props = tool.Blender.get_radiance_exporter_props()
+
+        layout.label(text="Unmapped materials default to white", icon="INFO")
+
         row = layout.row()
         row.template_list("MATERIAL_UL_radiance_materials", "", props, "materials", props, "active_material_index")
-        row.operator("radiance.open_spectraldb", text="", icon="WORLD")  # Globe icon
+        row.operator("radiance.open_spectraldb", text="", icon="WORLD")
+
         if len(props.materials) > 0:
             col = layout.column(align=True)
             prop_with_search(col, props, "category")
             if props.category:
                 prop_with_search(col, props, "subcategory")
 
-            if props.active_material_index >= 0 and props.active_material_index < len(props.materials):
+            if 0 <= props.active_material_index < len(props.materials):
                 active_material = props.materials[props.active_material_index]
                 if active_material.category and active_material.subcategory:
                     layout.label(
-                        text=f"Mapped: {active_material.name} to {active_material.category} - {active_material.subcategory}"
+                        text=f"Mapped: {active_material.name} -> {active_material.category} - {active_material.subcategory}"
                     )
                 else:
                     layout.label(text=f"Select category and subcategory for: {active_material.name}")
@@ -100,57 +141,31 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = layout.row()
         row.operator("bim.refresh_ifc_materials", text="Refresh IFC Materials")
 
-        layout.separator()
 
+# ---------------------------------------------------------------------------
+# 3. Lighting (Environment + IES)
+# ---------------------------------------------------------------------------
+
+class BIM_PT_radiance_lighting(bpy.types.Panel):
+    bl_label = "Lighting"
+    bl_idname = "BIM_PT_radiance_lighting"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_radiance_exporter"
+
+    def draw(self, context):
+        layout = self.layout
+        props = tool.Blender.get_radiance_exporter_props()
+
+        # Environment
         box = layout.box()
-        box.label(text="Camera Settings")
-        row = box.row()
-        row.prop(props, "use_active_camera")
-        if not props.use_active_camera:
-            row = box.row()
-            row.prop(props, "selected_camera")
-            row.operator("radiance.select_camera", text="", icon="EYEDROPPER")
-
-        row = box.row(align=True)
-        row.label(text="Resolution")
-        row.prop(props, "radiance_resolution_x", text="X")
-        row.prop(props, "radiance_resolution_y", text="Y")
-
-        layout.separator()
-
-        box = layout.box()
-        box.label(text="Render Settings")
-
-        row = box.row()
-        row.prop(props, "radiance_quality")
-
-        row = box.row()
-        row.prop(props, "radiance_detail")
-
-        row = box.row()
-        row.prop(props, "radiance_variability")
-
-        row = box.row()
-        row.prop(props, "ambient_bounces")
-
-        row = box.row()
-        row.prop(props, "output_file_name")
-
-        row = box.row()
-        row.prop(props, "output_file_format")
-        layout.separator()
-
+        box.label(text="Environment", icon="WORLD")
         row = box.row()
         row.prop(props, "use_hdr")
-
-        layout.separator()
-
-        # Sky Generation Settings
-        box = layout.box()
         row = box.row()
         row.prop(props, "use_sun")
         if props.use_sun:
-            box.label(text="Sky Generation Settings")
             box.prop(props, "sky_condition")
             row = box.row()
             row.prop(props, "ground_reflectance")
@@ -161,135 +176,168 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         # IES Light Fixtures
         box = layout.box()
-        box.label(text="IES Light Fixtures")
+        box.label(text="IES Light Fixtures", icon="LIGHT_POINT")
         row = box.row()
         row.template_list("MATERIAL_UL_ies_lights", "", props, "ies_lights", props, "active_ies_light_index")
         col = row.column(align=True)
         col.operator("radiance.add_ies_light", text="", icon="ADD")
 
-        # Properties panel for selected IES light
         if (
             len(props.ies_lights) > 0
-            and props.active_ies_light_index >= 0
-            and props.active_ies_light_index < len(props.ies_lights)
+            and 0 <= props.active_ies_light_index < len(props.ies_lights)
         ):
             active_light = props.ies_lights[props.active_ies_light_index]
 
-            box = layout.box()
-            box.label(text="Selected Light Properties")
+            col = box.column(align=True)
 
-            # Target mode toggle
-            row = box.row()
+            row = col.row()
             row.prop(active_light, "use_collection", text="Target Collection", icon="OUTLINER_COLLECTION")
 
-            # Show the appropriate target picker
-            row = box.row()
+            row = col.row()
             if active_light.use_collection:
                 row.prop(active_light, "target_collection", text="Collection")
                 if active_light.target_collection:
                     empties = [o for o in active_light.target_collection.all_objects if o.type == "EMPTY"]
-                    row = box.row()
+                    row = col.row()
                     row.label(text=f"{len(empties)} empty object(s) in collection", icon="INFO")
             else:
                 row.prop(active_light, "target_object", text="Object")
 
-            # Rotation Z
-            row = box.row()
-            row.prop(active_light, "rotation_z")
+            row = col.row()
+            row.label(text="Rotation Z")
+            row.prop(active_light, "rotation_z", text="")
 
-            # Lamp Type
-            row = box.row()
-            row.prop(active_light, "lamp_type")
-
-            # Lamp Color
-            row = box.row()
+            row = col.row()
             row.prop(active_light, "lamp_color")
 
-            # Brightness Factor
-            row = box.row()
-            row.prop(active_light, "multiply_factor")
+            split = col.split(factor=0.5)
+            split.prop(active_light, "multiply_factor")
+            split.prop(active_light, "radius")
 
-            # Illum Sphere Radius
-            row = box.row()
-            row.prop(active_light, "radius")
+
+# ---------------------------------------------------------------------------
+# 4. Render Settings
+# ---------------------------------------------------------------------------
+
+class BIM_PT_radiance_render_settings(bpy.types.Panel):
+    bl_label = "Render Settings"
+    bl_idname = "BIM_PT_radiance_render_settings"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_radiance_exporter"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        props = tool.Blender.get_radiance_exporter_props()
+
+        row = layout.row()
+        row.prop(props, "radiance_quality")
+
+        row = layout.row()
+        row.prop(props, "radiance_detail")
+
+        row = layout.row()
+        row.prop(props, "radiance_variability")
+
+        row = layout.row()
+        row.prop(props, "ambient_bounces")
 
         layout.separator()
 
-        # Step 1: Export geometry for simulation
+        row = layout.row()
+        row.prop(props, "output_file_name")
+
+        row = layout.row()
+        row.prop(props, "output_file_format")
+
+
+# ---------------------------------------------------------------------------
+# 5. Pipeline (Steps 1-4 + Cleanup)
+# ---------------------------------------------------------------------------
+
+class BIM_PT_radiance_pipeline(bpy.types.Panel):
+    bl_label = "Pipeline"
+    bl_idname = "BIM_PT_radiance_pipeline"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_radiance_exporter"
+
+    def draw(self, context):
+        layout = self.layout
+        props = tool.Blender.get_radiance_exporter_props()
+
+        # Step 1
         box = layout.box()
-        box.label(text="Step 1: Export geometry for simulation")
         row = box.row()
-        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
+        row.label(text="Step 1: Export Geometry")
+        row = box.row()
+        if props.is_exporting:
+            row.label(text="Exporting...", icon="SORTTIME")
+        else:
+            row.operator("export_scene.radiance", text="Export Geometry")
 
-        layout.separator()
-
-        # Step 2: Prepare Radiance scene
+        # Step 2
         box = layout.box()
-        box.label(text="Step 2: Prepare Radiance scene")
+        row = box.row()
+        row.label(text="Step 2: Prepare Scene")
         row = box.row()
         if props.is_preparing:
             row.label(text="Preparing scene...", icon="SORTTIME")
         else:
             row.operator("scene.prepare_radiance", text="Prepare Scene")
 
-        layout.separator()
-
-        # Step 3: Run the simulation
+        # Step 3
         box = layout.box()
-        box.label(text="Step 3: Run the simulation")
+        row = box.row()
+        row.label(text="Step 3: Render")
         row = box.row()
         if props.is_rendering:
-            row.label(text="Rendering in progress...", icon="RENDER_STILL")
+            row.label(text="Rendering...", icon="RENDER_STILL")
         else:
             row.operator("render_scene.radiance", text="Radiance Render")
-            row.enabled = not props.is_exporting
 
-        layout.separator()
-
-        # Step 4: Generate false color image
+        # Step 4: False Color
         box = layout.box()
-        box.label(text="Step 4: Generate False Color Image")
         row = box.row()
-        row.prop(props, "use_false_color")
+        row.label(text="Step 4: False Color Analysis")
 
-        if props.use_false_color:
+        row = box.row()
+        row.prop(props, "radiance_bin_dir")
+
+        row = box.row()
+        row.prop(props, "false_color_label")
+
+        split = box.split(factor=0.5)
+        split.prop(props, "false_color_scale")
+        split.prop(props, "false_color_steps")
+
+        row = box.row()
+        row.label(text="Output Name")
+        row.prop(props, "false_color_output_name", text="")
+
+        row = box.row()
+        row.prop(props, "false_color_contour_lines")
+
+        if props.false_color_contour_lines:
             row = box.row()
-            row.prop(props, "false_color_label")
+            row.prop(props, "false_color_contour_mode")
 
-            row = box.row()
-            row.label(text="Scale Factor")
-            row.prop(props, "false_color_scale", text="")
-
-            row = box.row()
-            row.prop(props, "false_color_steps")
-
-            row = box.row()
-            row.prop(props, "false_color_contour_lines")
-
-            # Contour mode dropdown (only visible if contour lines enabled)
-            if props.false_color_contour_lines:
-                row = box.row()
-                row.prop(props, "false_color_contour_mode")
-
-            row = box.row()
-            row.label(text="Multiplier")
-            row.prop(props, "false_color_multiplier", text="")
-
-            row = box.row()
-            row.label(text="Output Name")
-            row.prop(props, "false_color_output_name", text="")
-
-            row = box.row()
-            row.operator("render_scene.false_color_radiance", text="Generate False Color Image")
+        row = box.row()
+        row.operator("render_scene.false_color_radiance", text="Generate False Color Image")
 
         layout.separator()
 
         # Cleanup
-        box = layout.box()
-        box.label(text="Cleanup")
-        row = box.row()
+        row = layout.row()
         row.operator("radiance.cleanup_files", text="Cleanup Generated Files", icon="TRASH")
 
+
+# ---------------------------------------------------------------------------
+# Solar Panel (unchanged)
+# ---------------------------------------------------------------------------
 
 class BIM_PT_solar(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
