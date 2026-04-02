@@ -51,6 +51,7 @@ def prop_with_search(layout, data, prop_name, **kwargs):
 # Root panel (replaces the old "Radiance Exporter" nested panel)
 # ---------------------------------------------------------------------------
 
+
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_label = "Radiance Exporter"
     bl_idname = "BIM_PT_radiance_exporter"
@@ -67,6 +68,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 # ---------------------------------------------------------------------------
 # 1. Scene Setup
 # ---------------------------------------------------------------------------
+
 
 class BIM_PT_radiance_scene_setup(bpy.types.Panel):
     bl_label = "Scene Setup"
@@ -100,6 +102,7 @@ class BIM_PT_radiance_scene_setup(bpy.types.Panel):
 # ---------------------------------------------------------------------------
 # 2. Materials
 # ---------------------------------------------------------------------------
+
 
 class BIM_PT_radiance_materials(bpy.types.Panel):
     bl_label = "Materials"
@@ -146,6 +149,7 @@ class BIM_PT_radiance_materials(bpy.types.Panel):
 # 3. Lighting (Environment + IES)
 # ---------------------------------------------------------------------------
 
+
 class BIM_PT_radiance_lighting(bpy.types.Panel):
     bl_label = "Lighting"
     bl_idname = "BIM_PT_radiance_lighting"
@@ -182,10 +186,7 @@ class BIM_PT_radiance_lighting(bpy.types.Panel):
         col = row.column(align=True)
         col.operator("radiance.add_ies_light", text="", icon="ADD")
 
-        if (
-            len(props.ies_lights) > 0
-            and 0 <= props.active_ies_light_index < len(props.ies_lights)
-        ):
+        if len(props.ies_lights) > 0 and 0 <= props.active_ies_light_index < len(props.ies_lights):
             active_light = props.ies_lights[props.active_ies_light_index]
 
             col = box.column(align=True)
@@ -218,6 +219,7 @@ class BIM_PT_radiance_lighting(bpy.types.Panel):
 # ---------------------------------------------------------------------------
 # 4. Render Settings
 # ---------------------------------------------------------------------------
+
 
 class BIM_PT_radiance_render_settings(bpy.types.Panel):
     bl_label = "Render Settings"
@@ -256,6 +258,7 @@ class BIM_PT_radiance_render_settings(bpy.types.Panel):
 # ---------------------------------------------------------------------------
 # 5. Pipeline (Steps 1-4 + Cleanup)
 # ---------------------------------------------------------------------------
+
 
 class BIM_PT_radiance_pipeline(bpy.types.Panel):
     bl_label = "Pipeline"
@@ -338,6 +341,7 @@ class BIM_PT_radiance_pipeline(bpy.types.Panel):
 # ---------------------------------------------------------------------------
 # Solar Panel (unchanged)
 # ---------------------------------------------------------------------------
+
 
 class BIM_PT_solar(bpy.types.Panel):
     """Creates a Panel in the render properties window"""

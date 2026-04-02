@@ -254,10 +254,15 @@ class PrepareRadianceScene(bpy.types.Operator):
                 return {"CANCELLED"}
 
             sky_data = {
-                "year": sun_props.year, "month": sun_props.month, "day": sun_props.day,
-                "hour": sun_props.hour, "minute": sun_props.minute,
-                "latitude": sun_props.latitude, "longitude": sun_props.longitude,
-                "UTC_zone": sun_props.UTC_zone, "sun_year": sun_pos_props.year,
+                "year": sun_props.year,
+                "month": sun_props.month,
+                "day": sun_props.day,
+                "hour": sun_props.hour,
+                "minute": sun_props.minute,
+                "latitude": sun_props.latitude,
+                "longitude": sun_props.longitude,
+                "UTC_zone": sun_props.UTC_zone,
+                "sun_year": sun_pos_props.year,
                 "sky_condition": props.sky_condition,
                 "ground_reflectance": props.ground_reflectance,
                 "turbidity": props.turbidity,
@@ -286,26 +291,30 @@ class PrepareRadianceScene(bpy.types.Operator):
                 ies_light_data.append(None)
                 continue
 
-            ies_light_data.append({
-                "ies_file_path": ies_light.ies_file_path,
-                "lamp_type": ies_light.lamp_type,
-                "lamp_color": ies_light.lamp_color,
-                "multiply_factor": ies_light.multiply_factor,
-                "radius": ies_light.radius,
-                "rotation_z": ies_light.rotation_z,
-                "positions": positions,
-                "is_enabled": ies_light.is_enabled,
-            })
+            ies_light_data.append(
+                {
+                    "ies_file_path": ies_light.ies_file_path,
+                    "lamp_type": ies_light.lamp_type,
+                    "lamp_color": ies_light.lamp_color,
+                    "multiply_factor": ies_light.multiply_factor,
+                    "radius": ies_light.radius,
+                    "rotation_z": ies_light.rotation_z,
+                    "positions": positions,
+                    "is_enabled": ies_light.is_enabled,
+                }
+            )
 
         # Collect material mapping data (must be on main thread)
         material_mappings = []
         for m in props.materials:
-            material_mappings.append({
-                "style_id": m.style_id,
-                "is_mapped": m.is_mapped,
-                "category": m.category,
-                "subcategory": m.subcategory,
-            })
+            material_mappings.append(
+                {
+                    "style_id": m.style_id,
+                    "is_mapped": m.is_mapped,
+                    "category": m.category,
+                    "subcategory": m.subcategory,
+                }
+            )
 
         linked_exports_snapshot = list(linked_model_exports)
 
@@ -315,17 +324,30 @@ class PrepareRadianceScene(bpy.types.Operator):
         self._error = None
 
         import bonsai.bim.module.light.shared as shared
+
         shared.scene = None
 
         self._thread = threading.Thread(
             target=self._prepare_worker,
             args=(
-                output_dir, obj_file_path, sky_file_path,
-                use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
-                sky_data, ies_light_data, material_mappings,
+                output_dir,
+                obj_file_path,
+                sky_file_path,
+                use_hdr,
+                choose_hdr_image,
+                hdr_image_path,
+                hdr_mask_path,
+                sky_map_cal_path,
+                sky_data,
+                ies_light_data,
+                material_mappings,
                 linked_exports_snapshot,
-                camera_position, camera_direction, camera_up,
-                camera_type, camera_fov, camera_ortho_scale,
+                camera_position,
+                camera_direction,
+                camera_up,
+                camera_type,
+                camera_fov,
+                camera_ortho_scale,
                 aspect_ratio,
             ),
             daemon=True,
@@ -337,41 +359,80 @@ class PrepareRadianceScene(bpy.types.Operator):
         wm.modal_handler_add(self)
 
         self.report({"INFO"}, "Scene preparation started in background...")
-        context.window.cursor_set('WAIT')
+        context.window.cursor_set("WAIT")
         return {"RUNNING_MODAL"}
 
     def _prepare_worker(
-        self, output_dir, obj_file_path, sky_file_path,
-        use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
-        sky_data, ies_light_data, material_mappings,
+        self,
+        output_dir,
+        obj_file_path,
+        sky_file_path,
+        use_hdr,
+        choose_hdr_image,
+        hdr_image_path,
+        hdr_mask_path,
+        sky_map_cal_path,
+        sky_data,
+        ies_light_data,
+        material_mappings,
         linked_exports_snapshot,
-        camera_position, camera_direction, camera_up,
-        camera_type, camera_fov, camera_ortho_scale,
+        camera_position,
+        camera_direction,
+        camera_up,
+        camera_type,
+        camera_fov,
+        camera_ortho_scale,
         aspect_ratio,
     ):
         """Runs in a background thread — no Blender API calls allowed here."""
         try:
             self._do_prepare(
-                output_dir, obj_file_path, sky_file_path,
-                use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
-                sky_data, ies_light_data, material_mappings,
+                output_dir,
+                obj_file_path,
+                sky_file_path,
+                use_hdr,
+                choose_hdr_image,
+                hdr_image_path,
+                hdr_mask_path,
+                sky_map_cal_path,
+                sky_data,
+                ies_light_data,
+                material_mappings,
                 linked_exports_snapshot,
-                camera_position, camera_direction, camera_up,
-                camera_type, camera_fov, camera_ortho_scale,
+                camera_position,
+                camera_direction,
+                camera_up,
+                camera_type,
+                camera_fov,
+                camera_ortho_scale,
                 aspect_ratio,
             )
         except Exception as e:
             self._error = str(e)
             import traceback
+
             traceback.print_exc()
 
     def _do_prepare(
-        self, output_dir, obj_file_path, sky_file_path,
-        use_hdr, choose_hdr_image, hdr_image_path, hdr_mask_path, sky_map_cal_path,
-        sky_data, ies_light_data, material_mappings,
+        self,
+        output_dir,
+        obj_file_path,
+        sky_file_path,
+        use_hdr,
+        choose_hdr_image,
+        hdr_image_path,
+        hdr_mask_path,
+        sky_map_cal_path,
+        sky_data,
+        ies_light_data,
+        material_mappings,
         linked_exports_snapshot,
-        camera_position, camera_direction, camera_up,
-        camera_type, camera_fov, camera_ortho_scale,
+        camera_position,
+        camera_direction,
+        camera_up,
+        camera_type,
+        camera_fov,
+        camera_ortho_scale,
         aspect_ratio,
     ):
         """The actual preparation logic (no Blender API)."""
@@ -379,8 +440,7 @@ class PrepareRadianceScene(bpy.types.Operator):
 
         # --- Generate sky file ---
         if sky_data is not None:
-            dt = datetime(sky_data["year"], sky_data["month"], sky_data["day"],
-                          sky_data["hour"], sky_data["minute"])
+            dt = datetime(sky_data["year"], sky_data["month"], sky_data["day"], sky_data["hour"], sky_data["minute"])
 
             print(f"Sun position data for Radiance gensky:")
             print(f"  DateTime: {dt}")
@@ -559,8 +619,7 @@ ground_glow source ground
                 file.write("\n# Linked Models\n")
                 for link_idx, (link_rtm_path, link_matrix) in enumerate(linked_rtm_files):
                     is_identity = all(
-                        abs(link_matrix[i][j] - (1.0 if i == j else 0.0)) < 1e-6
-                        for i in range(4) for j in range(4)
+                        abs(link_matrix[i][j] - (1.0 if i == j else 0.0)) < 1e-6 for i in range(4) for j in range(4)
                     )
 
                     if is_identity:
@@ -647,7 +706,7 @@ ground_glow source ground
         print("Scene preparation complete.")
 
     def modal(self, context, event):
-        if event.type == 'TIMER':
+        if event.type == "TIMER":
             if self._thread is not None and self._thread.is_alive():
                 return {"RUNNING_MODAL"}
 
@@ -655,7 +714,7 @@ ground_glow source ground
             self._cleanup_timer(context)
             props = tool.Blender.get_radiance_exporter_props()
             props.is_preparing = False
-            context.window.cursor_set('DEFAULT')
+            context.window.cursor_set("DEFAULT")
 
             if self._error:
                 self.report({"ERROR"}, f"Scene preparation failed: {self._error}")
@@ -666,11 +725,11 @@ ground_glow source ground
             print(f"Scene preparation completed in {elapsed:.2f} seconds")
             return {"FINISHED"}
 
-        elif event.type == 'ESC':
+        elif event.type == "ESC":
             self._cleanup_timer(context)
             props = tool.Blender.get_radiance_exporter_props()
             props.is_preparing = False
-            context.window.cursor_set('DEFAULT')
+            context.window.cursor_set("DEFAULT")
             self.report({"WARNING"}, "Scene preparation cannot be cancelled mid-operation")
             return {"RUNNING_MODAL"}
 

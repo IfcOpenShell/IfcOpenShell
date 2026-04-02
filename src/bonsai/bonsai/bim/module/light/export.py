@@ -162,12 +162,12 @@ class ExportOBJ(bpy.types.Operator):
         # exported by _export_linked_models() via the IFC serializer.
         instance_parents = set()
         for obj in bpy.data.objects:
-            if obj.instance_type == 'COLLECTION' and obj.instance_collection is not None:
+            if obj.instance_type == "COLLECTION" and obj.instance_collection is not None:
                 if not obj.visible_get():
                     continue
                 # Check if this collection contains linked IFC objects
                 coll = obj.instance_collection
-                is_linked_ifc = any("guids" in child for child in coll.all_objects if child.type == 'MESH')
+                is_linked_ifc = any("guids" in child for child in coll.all_objects if child.type == "MESH")
                 if is_linked_ifc:
                     print(f"Skipping collection instance '{obj.name}' (linked IFC model, exported via IFC serializer)")
                     continue
@@ -200,7 +200,7 @@ class ExportOBJ(bpy.types.Operator):
                         continue
 
                     eval_obj = dep_inst.object
-                    if eval_obj.type != 'MESH':
+                    if eval_obj.type != "MESH":
                         continue
 
                     try:
@@ -252,7 +252,7 @@ class ExportOBJ(bpy.types.Operator):
         """
         non_ifc_meshes = []
         for obj in bpy.data.objects:
-            if obj.type != 'MESH':
+            if obj.type != "MESH":
                 continue
             if not obj.visible_get():
                 continue
@@ -338,7 +338,9 @@ class ExportOBJ(bpy.types.Operator):
         mtl_file_path = os.path.join(output_dir, "model.mtl")
 
         visible_elements = self._get_exportable_elements(ifc_file, filter_visibility=True)
-        mats = self._export_ifc_to_obj(ifc_file, obj_file_path, mtl_file_path, settings, serializer_settings, visible_elements)
+        mats = self._export_ifc_to_obj(
+            ifc_file, obj_file_path, mtl_file_path, settings, serializer_settings, visible_elements
+        )
         ifc_materials.extend(mats)
 
         self.report({"INFO"}, f"Exported main model OBJ to: {obj_file_path}")
@@ -451,9 +453,15 @@ class CleanupRadianceFiles(bpy.types.Operator):
             return {"CANCELLED"}
 
         cleanup_patterns = (
-            "model.obj", "model.mtl", "model.rtm",
-            "sky.rad", "materials.rad", "scene.rad",
-            "ascene.oct", "mascene.oct", "ascene.amb",
+            "model.obj",
+            "model.mtl",
+            "model.rtm",
+            "sky.rad",
+            "materials.rad",
+            "scene.rad",
+            "ascene.oct",
+            "mascene.oct",
+            "ascene.amb",
         )
         cleanup_extensions = (".hdr", ".tiff", ".rad", ".dat")
         cleanup_prefixes = ("instance_", "linked_", "blender_meshes")

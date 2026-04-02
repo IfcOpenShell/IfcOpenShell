@@ -78,4 +78,3 @@ class RemoveIESLight(bpy.types.Operator):
 
         self.report({"WARNING"}, "Invalid IES light index")
         return {"CANCELLED"}
-
