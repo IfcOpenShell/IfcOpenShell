@@ -75,14 +75,16 @@ function addMessage(role, text) {
     const wrap = document.createElement("div");
     wrap.className = `msg ${role}`;
     wrap.innerHTML = `
-    <div class="role ${role}">${role}</div>
+    <div class="role ${role}">${role}${role === "tool" ? '<span class="chevron">▶</span>' : ''}</div>
     <div class="bubble"></div>`;
     const bubble = wrap.querySelector(".bubble");
     bubble.textContent = text;
     bubble.onclick = function () {
         if (bubble.scrollHeight > 100 && role === "tool") {
-            bubble.style.maxHeight = bubble.style.maxHeight == 'none' ? '' : 'none';
-            bubble.style.borderBottom = bubble.style.borderBottom == '' ? 'dotted 2px gray' : '';
+            const expanded = bubble.style.maxHeight === 'none';
+            bubble.style.maxHeight = expanded ? '' : 'none';
+            bubble.style.borderBottom = expanded ? '' : 'dotted 2px gray';
+            wrap.querySelector(".chevron").style.transform = expanded ? '' : 'rotate(90deg)';
         }
     }
     msgsEl.appendChild(wrap);

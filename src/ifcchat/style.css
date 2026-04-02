@@ -82,6 +82,15 @@ main {
     font-size: 60%;
     max-height: 100px;
     overflow: hidden;
+    cursor: pointer;
+}
+
+.chevron {
+    display: inline-block;
+    font-size: 10px;
+    margin-left: 6px;
+    transition: transform 0.2s;
+    vertical-align: middle;
 }
 
 .composer {
