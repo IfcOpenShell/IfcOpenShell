@@ -61,6 +61,10 @@ function setBusy(isBusy, reason = "") {
         browseBtn.tabIndex = isBusy ? -1 : 0;
     }
 
+    sendBtn.innerHTML = isBusy
+        ? `<span class="spinner"></span>`
+        : `Send <span class="material-icons">send</span>`;
+
     setStatus(isBusy ? (reason || "Working…") : "Ready");
 }
 
