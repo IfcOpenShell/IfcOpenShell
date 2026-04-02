@@ -426,14 +426,26 @@ def main(
                             # found to be inside element using tree.select() no face or style info
                             return x
                         else:
-                            return (x.instance.is_a(), x.ray_distance, tuple(x.position))
+                            return (x.instance.is_a(), tuple(x.position), tuple(x.normal))
 
                     pp = pairs[he_idx : he_idx + 2]
                     if pp == (-1, -1):
                         continue
                     data = list(map(format, map(semantics.__getitem__, pp)))
-                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.0e-5:
-                        to_remove.append(he_idx // 2)
+                    if None not in data and data[0][0] == data[1][0]:
+                        if len(data[0]) == 2 and len(data[1]) == 2:
+                            # Both from tree.select() -> (instance, -1)
+                            to_remove.append(he_idx // 2)
+                        elif len(data[0]) == 3 and len(data[1]) == 3:
+                            # Both from tree.select_ray() -> (type, position, normal)
+                            p1, n1 = numpy.array(data[0][1]), numpy.array(data[0][2])
+                            p2, n2 = numpy.array(data[1][1]), numpy.array(data[1][2])
+                            
+                            # Check if normals are parallel and points are coplanar
+                            # Issue #3742: Replaced simplistic distance check with vector mathematics
+                            if abs(1.0 - numpy.dot(n1, n2)) < 1.0e-5:
+                                if abs(numpy.dot(p1 - p2, n1)) < 1.0e-5:
+                                    to_remove.append(he_idx // 2)
                         # Print edge index and semantic data
                         # print(he_idx // 2, *data)
 
