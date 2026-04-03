@@ -16,6 +16,7 @@
                 <label>Provider</label>
                 <select id="provider" style="width: 100%;">
                     <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
                     <option value="openrouter">OpenRouter</option>
                 </select>
             </div>
@@ -26,14 +27,14 @@
             </div>
 
             <div class="row">
-                <label>API key<span class="small">stored in browser memory</span></label>
+                <label id="apiKeyLabel">API key<span class="small">stored in browser memory; only sent to provider servers</span></label>
                 <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" style="width: 100%;" />
             </div>
 
             <hr />
 
             <div class="row" style="margin-bottom: 10px;">
-                <label>IFC model context<span class="small">stored in browser memory; only information extracted through MCP commands sent to OpenAI servers</span></label>
+                <label>IFC model context<span class="small">stored in browser memory; only information extracted through MCP commands sent to provider servers</span></label>
 
                 <div class="btn-row">
                     <label class="btn" id="browseBtn" for="ifcFile" role="button" tabindex="0">

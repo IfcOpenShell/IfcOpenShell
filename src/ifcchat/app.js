@@ -1,10 +1,13 @@
 // app.js
 import * as openaiApi from "./api_openai.js";
+import * as anthropicApi from "./api_anthropic.js";
 import * as openrouterApi from "./api_openrouter.js";
 
 const PROVIDERS = {
     openai: {
         api: openaiApi,
+        apiKeyLabel: "OpenAI API key",
+        apiKeyPlaceholder: "sk-...",
         models: [
             { 
                 value: "gpt-5",      
@@ -16,8 +19,29 @@ const PROVIDERS = {
             },
         ],
     },
+    anthropic: {
+        api: anthropicApi,
+        apiKeyLabel: "Anthropic API key",
+        apiKeyPlaceholder: "sk-ant-...",
+        models: [
+            {
+                value: "claude-sonnet-4-6",
+                label: "claude-sonnet-4-6"
+            },
+            {
+                value: "claude-opus-4-6",
+                label: "claude-opus-4-6"
+            },
+            {
+                value: "claude-haiku-4-5-20251001",
+                label: "claude-haiku-4-5"
+            },
+        ],
+    },
     openrouter: {
         api: openrouterApi,
+        apiKeyLabel: "OpenRouter API key",
+        apiKeyPlaceholder: "sk-or-v1-...",
         models: [
             { 
                 value: "openai/gpt-oss-20b",
@@ -54,6 +78,7 @@ const msgsEl = $("msgs");
 const sendBtn = $("send");
 const inputEl = $("input");
 const apiKeyEl = $("apiKey");
+const apiKeyLabelEl = $("apiKeyLabel");
 const modelEl = $("model");
 const providerEl = $("provider");
 const ifcFileEl = $("ifcFile");
@@ -61,8 +86,10 @@ const newBtn = $("newModel");
 const downloadBtn = $("downloadIfc");
 
 function onProviderChange() {
-    const p = PROVIDERS[providerEl.value];
-    modelEl.innerHTML = p.models.map(m => `<option value="${m.value}">${m.label}</option>`).join("");
+    const provider = PROVIDERS[providerEl.value];
+    apiKeyLabelEl.innerHTML = `${provider.apiKeyLabel}<span class="small">stored in browser memory; only sent to provider servers</span>`;
+    apiKeyEl.placeholder = provider.apiKeyPlaceholder;
+    modelEl.innerHTML = provider.models.map(m => `<option value="${m.value}">${m.label}</option>`).join("");
 }
 
 providerEl.addEventListener("change", onProviderChange);
