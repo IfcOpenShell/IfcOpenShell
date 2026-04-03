@@ -48,6 +48,7 @@ VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
+LAST_GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD)
 PYPI_IMP:=cp
 
 ifdef PYVERSION
@@ -63,6 +64,7 @@ PYNUMBER:=3$(PYMINOR)
 PYPI_VERSION:=3.$(PYMINOR)
 endif # def PYVERSION
 
+IFCMERGE_VERSION:=2026-04-02
 
 ifdef PLATFORM
 SUPPORTED_PLATFORMS := linux macos macosm1 win
@@ -239,10 +241,9 @@ endif
 
 	# required for three-way git merging
 ifeq ($(PLATFORM), win)
-	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip
-	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
+	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/$(IFCMERGE_VERSION)/ifcmerge.exe
 else
-	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/$(IFCMERGE_VERSION)/ifcmerge && chmod +x ifcmerge
 endif
 
 	# Generate translations module for Bonsai build
@@ -261,6 +262,7 @@ else
 	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
 	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
 	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
+	$(SED) "s/7777777/$(LAST_GIT_BRANCH)/" build/bonsai/__init__.py
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 

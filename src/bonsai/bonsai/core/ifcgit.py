@@ -56,42 +56,45 @@ def discard_uncommitted(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     ifcgit.load_project(path_ifc)
 
 
-def commit_changes(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], repo: git.Repo) -> None:
+def commit_changes(
+    ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], commit_message: str, new_branch_name: str = ""
+) -> None:
     """Commit and create new branches as required"""
     path_ifc = ifc.get_path()
 
-    if repo.head.is_detached:
-        ifcgit.git_commit(path_ifc)
-        ifcgit.create_new_branch()
+    if ifcgit.is_head_detached():
+        ifcgit.git_commit(path_ifc, commit_message)
+        ifcgit.create_new_branch(new_branch_name)
     else:
-        ifcgit.checkout_new_branch(path_ifc)
-        ifcgit.git_commit(path_ifc)
+        if new_branch_name:
+            ifcgit.checkout_new_branch(path_ifc, new_branch_name)
+        ifcgit.git_commit(path_ifc, commit_message)
 
 
-def add_tag(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
-    ifcgit.add_tag(repo)
+def add_tag(ifcgit: type[tool.IfcGit], repo: git.Repo, hexsha: str, tag_name: str, tag_message: str = "") -> None:
+    ifcgit.add_tag(repo, hexsha, tag_name, tag_message)
 
 
 def delete_tag(ifcgit: type[tool.IfcGit], repo: git.Repo, tag_name: git.TagReference) -> None:
     ifcgit.delete_tag(repo, tag_name)
 
 
-def add_remote(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
-    ifcgit.add_remote(repo)
+def add_remote(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, remote_url: str) -> None:
+    ifcgit.add_remote(repo, remote_name, remote_url)
 
 
-def delete_remote(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
-    ifcgit.delete_remote(repo)
+def delete_remote(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str) -> None:
+    ifcgit.delete_remote(repo, remote_name)
 
 
 def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: bpy.types.Operator) -> None:
-    error_message = ifcgit.push(repo, remote_name, repo.active_branch.name)
+    error_message = ifcgit.push(repo, remote_name, ifcgit.get_active_branch_name())
     if error_message:
         operator.report({"ERROR"}, error_message)
 
 
-def refresh_revision_list(ifcgit: type[tool.IfcGit], repo: git.Repo, ifc: type[tool.Ifc]) -> None:
-    if repo.heads:
+def refresh_revision_list(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
+    if ifcgit.repo_has_commits():
         ifcgit.refresh_revision_list(ifc.get_path())
 
 
@@ -125,10 +128,32 @@ def switch_revision(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     ifcgit.decolourise()
 
 
-def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.types.Operator) -> None:
+def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.types.Operator) -> bool | None:
     path_ifc = ifc.get_path()
     ifcgit.config_ifcmerge()
-    ifcgit.execute_merge(path_ifc, operator)
+
+    branch_name = ifcgit.get_selected_branch()
+    if branch_name is None:
+        return
+
+    mergetool = ifcgit.get_merge_tool(branch_name)
+    merge_result = ifcgit.git_merge(branch_name)
+
+    if merge_result == "error":
+        operator.report({"ERROR"}, "Unknown IFC Merge failure")
+        return False
+    elif merge_result == "conflict":
+        error = ifcgit.git_mergetool(mergetool)
+        if error:
+            ifcgit.git_merge_abort()
+            operator.report({"ERROR"}, "IFC Merge failed:" + error)
+            return False
+        ifcgit.commit_merge(path_ifc)
+
+    ifcgit.set_display_branch()
+    ifcgit.load_project(path_ifc)
+    ifcgit.refresh_revision_list(path_ifc)
+    ifcgit.decolourise()
 
 
 def entity_log(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], step_id: int, operator: bpy.types.Operator) -> None:
@@ -143,6 +168,10 @@ def install_git(ifcgit: type[tool.IfcGit], operator: bpy.types.Operator) -> None
         ifcgit.install_git_windows(operator=operator)
     else:
         print("install_git() not implemented")
+
+
+def fetch(ifcgit: type[tool.IfcGit], remote_name: str) -> None:
+    ifcgit.fetch(remote_name)
 
 
 def run_git_diff(ifcgit: type[tool.IfcGit], operator: bpy.types.Operator, save_to_temp: bool) -> None:

@@ -24,7 +24,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import bpy
 
@@ -128,39 +128,27 @@ class IfcGit:
             cls.dos2unix(path_file)
         repo.index.add(os.path.normpath(path_file))
         repo.index.commit(message="Added " + os.path.relpath(path_file, repo.working_dir))
-        bpy.ops.ifcgit.refresh()
 
     @classmethod
     def git_checkout(cls, path_file: str) -> None:
         IfcGitRepo.repo.git.checkout(path_file)
 
     @classmethod
-    def checkout_new_branch(cls, path_file: str) -> None:
+    def checkout_new_branch(cls, path_file: str, branch_name: str) -> None:
         """Create a branch and move uncommitted changes to this branch"""
-        props = cls.get_ifcgit_props()
-        if props.new_branch_name:
-            IfcGitRepo.repo.git.checkout(b=props.new_branch_name)
-            props.display_branch = props.new_branch_name
-            props.new_branch_name = ""
-            bpy.ops.ifcgit.refresh()
+        IfcGitRepo.repo.git.checkout(b=branch_name)
 
     @classmethod
-    def git_commit(cls, path_file: str) -> None:
-        props = cls.get_ifcgit_props()
+    def git_commit(cls, path_file: str, commit_message: str) -> None:
         repo = IfcGitRepo.repo
         if os.name == "nt":
             cls.dos2unix(path_file)
         repo.index.add(os.path.normpath(path_file))
-        repo.index.commit(message=props.commit_message)
-        props.commit_message = ""
+        repo.index.commit(message=commit_message)
 
     @classmethod
-    def add_tag(cls, repo: git.Repo) -> None:
-        props = cls.get_ifcgit_props()
-        item = props.ifcgit_commits[props.commit_index]
-        repo.create_tag(props.new_tag_name, ref=item.hexsha, message=props.new_tag_message)
-        props.new_tag_name = ""
-        props.new_tag_message = ""
+    def add_tag(cls, repo: git.Repo, hexsha: str, tag_name: str, tag_message: str = "") -> None:
+        repo.create_tag(tag_name, ref=hexsha, message=tag_message)
 
     @classmethod
     def delete_tag(cls, repo: git.Repo, tag_name: git.TagReference) -> None:
@@ -168,20 +156,13 @@ class IfcGit:
             repo.delete_tag(tag_name)
 
     @classmethod
-    def add_remote(cls, repo: git.Repo) -> None:
-        props = cls.get_ifcgit_props()
-        repo.create_remote(name=props.remote_name, url=props.remote_url)
-        props.remote_name = ""
-        props.remote_url = ""
+    def add_remote(cls, repo: git.Repo, remote_name: str, remote_url: str) -> None:
+        repo.create_remote(name=remote_name, url=remote_url)
 
     @classmethod
-    def delete_remote(cls, repo: git.Repo) -> None:
-        props = cls.get_ifcgit_props()
-        remote_name = props.select_remote
+    def delete_remote(cls, repo: git.Repo, remote_name: str) -> None:
         if remote_name in repo.remotes:
             repo.delete_remote(remote_name)
-        if repo.remotes:
-            props.select_remote = repo.remotes[0].name
 
     @classmethod
     def push(cls, repo: git.Repo, remote_name: str, branch_name: str) -> Union[str, None]:
@@ -193,16 +174,25 @@ class IfcGit:
             return exc.stderr
 
     @classmethod
-    def create_new_branch(cls) -> None:
-        """Convert a detached HEAD into a branch"""
-        props = cls.get_ifcgit_props()
-        repo = IfcGitRepo.repo
-        new_branch = repo.create_head(props.new_branch_name)
-        new_branch.checkout()
-        props.display_branch = props.new_branch_name
-        props.new_branch_name = ""
+    def is_head_detached(cls) -> bool:
+        return bool(IfcGitRepo.repo.head.is_detached)
 
-        bpy.ops.ifcgit.refresh()
+    @classmethod
+    def repo_has_commits(cls) -> bool:
+        if IfcGitRepo.repo:
+            return bool(IfcGitRepo.repo.heads)
+        return False
+
+    @classmethod
+    def get_active_branch_name(cls) -> str:
+        return IfcGitRepo.repo.active_branch.name
+
+    @classmethod
+    def create_new_branch(cls, branch_name: str) -> None:
+        """Convert a detached HEAD into a branch"""
+        repo = IfcGitRepo.repo
+        new_branch = repo.create_head(branch_name)
+        new_branch.checkout()
 
     @classmethod
     def clear_commits_list(cls) -> None:
@@ -243,6 +233,7 @@ class IfcGit:
             list_item.message = commit.message
             list_item.author_name = commit.author.name
             list_item.author_email = commit.author.email
+            list_item.committed_date = int(commit.committed_date)
             if commit in commits_relevant:
                 list_item.relevant = True
             if commit.hexsha in lookup:
@@ -285,6 +276,10 @@ class IfcGit:
                 bpy.data.objects.remove(obj, do_unlink=True)
 
         bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
+
+        from bonsai.bim.module.root.data import IfcClassData
+
+        IfcClassData.is_loaded = False
 
         settings = import_ifc.IfcImportSettings.factory(bpy.context, path_ifc, logging.getLogger("ImportIFC"))
         settings.should_setup_viewport_camera = False
@@ -470,15 +465,6 @@ class IfcGit:
         bpy.data.collections.remove(blender_collection)
 
     @classmethod
-    def is_valid_branch_name(cls, new_branch_name: str):
-        """Check if a branch name is valid and doesn't conflict with existing branches"""
-        if not cls.is_valid_ref_format(new_branch_name):
-            return False
-        if new_branch_name in [branch.name for branch in IfcGitRepo.repo.branches]:
-            return False
-        return True
-
-    @classmethod
     def config_ifcmerge(cls) -> None:
         config_reader = IfcGitRepo.repo.config_reader()
         section = 'mergetool "ifcmerge"'
@@ -519,49 +505,65 @@ class IfcGit:
                 output.write(line + b"\n")
 
     @classmethod
-    def execute_merge(cls, path_ifc: str, operator: bpy.types.Operator) -> Union[None, Literal[False]]:
+    def get_selected_branch(cls) -> Union[str, None]:
+        """Return the name of the branch at the selected commit matching display_branch, or None."""
         props = cls.get_ifcgit_props()
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]
         lookup = cls.branches_by_hexsha(repo)
-        if item.hexsha in lookup:
-            for branch in lookup[item.hexsha]:
-                if branch.name == props.display_branch:
-                    # this is a branch!
-                    if re.match("^(origin/)?(HEAD|main|master)$", branch.name):
-                        # preserve remote IDs in origin/main or main
-                        mergetool = "ifcmerge"
-                    else:
-                        # rewrite remote IDs
-                        mergetool = "ifcmerge-forward"
-                    try:
-                        # NOTE this is calling the git binary in a subprocess
-                        repo.git.merge(branch)
-                    except git.exc.GitCommandError:
-                        # merge is expected to fail, run ifcmerge
-                        try:
-                            repo.git.mergetool(tool=mergetool)
-                        except git.exc.GitCommandError as exc:
-                            message = re.sub("(  stderr: '|')", "", exc.stderr)
-                            # ifcmerge failed, rollback
-                            repo.git.merge(abort=True)
+        if item.hexsha not in lookup:
+            return None
+        for branch in lookup[item.hexsha]:
+            if branch.name == props.display_branch:
+                return branch.name
+        return None
 
-                            operator.report({"ERROR"}, "IFC Merge failed:" + message)
-                            return False
-                        else:
-                            if os.name == "nt":
-                                cls.dos2unix(path_ifc)
-                            repo.index.add(os.path.normpath(path_ifc))
-                            repo.git.commit("--no-edit")
-                    except git.exc.GitError:
-                        operator.report({"ERROR"}, "Unknown IFC Merge failure")
-                        return False
+    @classmethod
+    def get_merge_tool(cls, branch_name: str) -> str:
+        if re.match("^(origin/)?(HEAD|main|master)$", branch_name):
+            return "ifcmerge"
+        return "ifcmerge-forward"
 
-            props.display_branch = repo.active_branch.name
+    @classmethod
+    def git_merge(cls, branch_name: str) -> Union[str, None]:
+        """Attempt a git merge. Returns None on clean merge, 'conflict' on expected
+        GitCommandError, or 'error' on an unknown GitError."""
+        repo = IfcGitRepo.repo
+        branch = repo.branches[branch_name]
+        try:
+            repo.git.merge(branch)
+            return None
+        except git.exc.GitCommandError:
+            return "conflict"
+        except git.exc.GitError:
+            return "error"
 
-            cls.load_project(path_ifc)
-            cls.refresh_revision_list(path_ifc)
-            cls.decolourise()
+    @classmethod
+    def git_mergetool(cls, mergetool: str) -> Union[str, None]:
+        """Run ifcmerge tool. Returns None on success, error message string on failure."""
+        repo = IfcGitRepo.repo
+        try:
+            repo.git.mergetool(tool=mergetool)
+            return None
+        except git.exc.GitCommandError as exc:
+            return re.sub("(  stdout: '|')", "", exc.stdout)
+
+    @classmethod
+    def git_merge_abort(cls) -> None:
+        IfcGitRepo.repo.git.merge(abort=True)
+
+    @classmethod
+    def commit_merge(cls, path_ifc: str) -> None:
+        repo = IfcGitRepo.repo
+        if os.name == "nt":
+            cls.dos2unix(path_ifc)
+        repo.index.add(os.path.normpath(path_ifc))
+        repo.git.commit("--no-edit")
+
+    @classmethod
+    def set_display_branch(cls) -> None:
+        props = cls.get_ifcgit_props()
+        props.display_branch = IfcGitRepo.repo.active_branch.name
 
     @classmethod
     def entity_log(cls, path_ifc: str, step_id: int) -> str:
@@ -588,6 +590,18 @@ class IfcGit:
             operator.report({"ERROR"}, f"Called Process Error occurred: {e}")
         except FileNotFoundError:
             operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
+
+    @classmethod
+    def select_first_remote(cls) -> None:
+        props = cls.get_ifcgit_props()
+        repo = IfcGitRepo.repo
+        if repo and repo.remotes:
+            props.select_remote = repo.remotes[0].name
+
+    @classmethod
+    def fetch(cls, remote_name: str) -> None:
+        repo = IfcGitRepo.repo
+        repo.remotes[remote_name].fetch()
 
     @classmethod
     def run_git_diff(cls, operator: bpy.types.Operator, save_to_temp: bool) -> None:

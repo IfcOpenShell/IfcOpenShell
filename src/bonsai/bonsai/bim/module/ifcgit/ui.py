@@ -52,7 +52,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             if IfcGitData.data["repo"] and os.path.exists(IfcGitData.data["repo"].git_dir):
                 name_ifc = IfcGitData.data["name_ifc"]
                 row.label(text=IfcGitData.data["working_dir"], icon="SYSTEM")
-                if name_ifc in IfcGitData.data["untracked_files"]:
+                if IfcGitData.data["ifc_is_untracked"]:
                     row.operator(
                         "ifcgit.addfile",
                         text="Add '" + name_ifc + "' to repository",
@@ -216,13 +216,7 @@ class COMMIT_UL_List(bpy.types.UIList):
     ):
 
         current_revision = IfcGitData.data["current_revision"]
-
-        # TODO Figure how this "item" can be acesse in "data.py"
-        # so it's possible to move the ".commit"
-        try:
-            commit = IfcGitData.data["repo"].commit(rev=item.hexsha)
-        except ValueError:
-            return
+        current_hexsha = current_revision.hexsha if current_revision else None
 
         lookup = IfcGitData.data["branches_by_hexsha"]
         refs = ""
@@ -236,11 +230,11 @@ class COMMIT_UL_List(bpy.types.UIList):
             for tag in lookup[item.hexsha]:
                 refs += "{" + tag.name + "} "
 
-        if commit == current_revision:
-            layout.label(text="[HEAD] " + refs + commit.message.split("\n")[0], icon="DECORATE_KEYFRAME")
+        if item.hexsha == current_hexsha:
+            layout.label(text="[HEAD] " + refs + item.message.split("\n")[0], icon="DECORATE_KEYFRAME")
         else:
-            layout.label(text=refs + commit.message.split("\n")[0], icon="DECORATE_ANIMATE")
-        layout.label(text=time.strftime("%c", time.localtime(commit.committed_date)))
+            layout.label(text=refs + item.message.split("\n")[0], icon="DECORATE_ANIMATE")
+        layout.label(text=time.strftime("%c", time.localtime(item.committed_date)))
 
     def draw_filter(self, context, layout):
 

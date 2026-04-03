@@ -1,4 +1,132 @@
 // app.js
+import * as openaiApi from "./api_openai.js";
+import * as anthropicApi from "./api_anthropic.js";
+import * as openrouterApi from "./api_openrouter.js";
+
+const PROVIDERS = {
+    openai: {
+        api: openaiApi,
+        apiKeyLabel: "OpenAI API key",
+        apiKeyPlaceholder: "sk-...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://api.openai.com/v1",
+        baseUrlDefault: "https://api.openai.com/v1",
+        models: [
+            {
+                value: "gpt-5.2",
+                label: "gpt-5.2"
+            },
+            {
+                value: "gpt-5.2-chat-latest",
+                label: "gpt-5.2-chat-latest"
+            },
+            {
+                value: "gpt-5",
+                label: "gpt-5"
+            },
+            {
+                value: "gpt-5-chat-latest",
+                label: "gpt-5-chat-latest"
+            },
+            {
+                value: "gpt-5-mini",
+                label: "gpt-5-mini"
+            },
+            {
+                value: "gpt-5-nano",
+                label: "gpt-5-nano"
+            },
+            {
+                value: "gpt-4.1",
+                label: "gpt-4.1"
+            },
+            {
+                value: "gpt-4.1-mini",
+                label: "gpt-4.1-mini"
+            },
+            {
+                value: "gpt-4.1-nano",
+                label: "gpt-4.1-nano"
+            },
+        ],
+    },
+    anthropic: {
+        api: anthropicApi,
+        apiKeyLabel: "Anthropic API key",
+        apiKeyPlaceholder: "sk-ant-...",
+        models: [
+            {
+                value: "claude-sonnet-4-6",
+                label: "claude-sonnet-4-6"
+            },
+            {
+                value: "claude-opus-4-6",
+                label: "claude-opus-4-6"
+            },
+            {
+                value: "claude-haiku-4-5-20251001",
+                label: "claude-haiku-4-5"
+            },
+        ],
+    },
+    gemini: {
+        api: openaiApi,
+        apiKeyLabel: "Gemini API key",
+        apiKeyPlaceholder: "AIza...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        baseUrlDefault: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        models: [
+            {
+                value: "gemini-3-flash-preview",
+                label: "gemini-3-flash-preview"
+            },
+            {
+                value: "gemini-2.5-flash",
+                label: "gemini-2.5-flash"
+            },
+            {
+                value: "gemini-2.5-pro",
+                label: "gemini-2.5-pro"
+            },
+        ],
+    },
+    openrouter: {
+        api: openrouterApi,
+        apiKeyLabel: "OpenRouter API key",
+        apiKeyPlaceholder: "sk-or-v1-...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://openrouter.ai/api/v1",
+        baseUrlDefault: "https://openrouter.ai/api/v1",
+        models: [
+            { 
+                value: "openai/gpt-oss-20b",
+                label: "gpt-oss-20b" 
+            },
+            { 
+                value: "openai/gpt-oss-120b",
+                label: "gpt-oss-120b" 
+            },
+            { 
+                value: "mistralai/mistral-small-3.2-24b-instruct",
+                label: "mistral-small-3.2" 
+            },
+            { 
+                value: "openai/gpt-4.1",                    
+                label: "gpt-4.1" 
+            },
+            { 
+                value: "anthropic/claude-sonnet-4-5",       
+                label: "claude-sonnet-4-5" 
+            },
+            { 
+                value: "google/gemini-2.5-pro-preview",     
+                label: "gemini-2.5-pro" 
+            },
+        ],
+    },
+};
+
 const $ = (id) => document.getElementById(id);
 
 const statusEl = $("status");
@@ -6,10 +134,41 @@ const msgsEl = $("msgs");
 const sendBtn = $("send");
 const inputEl = $("input");
 const apiKeyEl = $("apiKey");
+const apiKeyLabelEl = $("apiKeyLabel");
+const baseUrlRowEl = $("baseUrlRow");
+const baseUrlLabelEl = $("baseUrlLabel");
+const baseUrlEl = $("baseUrl");
+const thinkingIndicatorEl = $("thinkingIndicator");
 const modelEl = $("model");
+const providerEls = document.querySelectorAll('input[name="provider"]');
 const ifcFileEl = $("ifcFile");
 const newBtn = $("newModel");
 const downloadBtn = $("downloadIfc");
+
+function getProviderValue() {
+    return document.querySelector('input[name="provider"]:checked')?.value || "openai";
+}
+
+function onProviderChange() {
+    const provider = PROVIDERS[getProviderValue()];
+    apiKeyLabelEl.innerHTML = `${provider.apiKeyLabel}<span class="small">stored in browser memory; only sent to provider servers</span>`;
+    apiKeyEl.placeholder = provider.apiKeyPlaceholder;
+    baseUrlRowEl.hidden = !provider.baseUrlDefault;
+    if (provider.baseUrlDefault) {
+        baseUrlLabelEl.innerHTML = `${provider.baseUrlLabel}<span class="small">override the API endpoint for OpenAI-compatible providers</span>`;
+        baseUrlEl.placeholder = provider.baseUrlPlaceholder;
+        baseUrlEl.value = provider.baseUrlDefault;
+    } else {
+        baseUrlEl.value = "";
+        baseUrlEl.placeholder = "";
+    }
+    modelEl.innerHTML = provider.models.map(m => `<option value="${m.value}">${m.label}</option>`).join("");
+}
+
+for (const providerEl of providerEls) {
+    providerEl.addEventListener("change", onProviderChange);
+}
+onProviderChange();
 
 function setBusy(isBusy, reason = "") {
     const controls = [
@@ -30,32 +189,213 @@ function setBusy(isBusy, reason = "") {
         browseBtn.tabIndex = isBusy ? -1 : 0;
     }
 
+    sendBtn.innerHTML = isBusy
+        ? `<span class="spinner"></span>`
+        : `Send <span class="material-icons">send</span>`;
+
     setStatus(isBusy ? (reason || "Working…") : "Ready");
+}
+
+function escapeHtml(text) {
+    return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function sanitizeUrl(url) {
+    try {
+        const parsed = new URL(url, window.location.href);
+        if (["http:", "https:", "mailto:"].includes(parsed.protocol)) {
+            return parsed.href;
+        }
+    } catch {
+    }
+    return null;
+}
+
+function renderInlineMarkdown(text) {
+    const placeholders = [];
+    const addPlaceholder = (html) => {
+        const token = `@@MD${placeholders.length}@@`;
+        placeholders.push({ token, html });
+        return token;
+    };
+
+    let rendered = text;
+
+    rendered = rendered.replace(/`([^`]+)`/g, (_, code) => addPlaceholder(`<code>${escapeHtml(code)}</code>`));
+    rendered = rendered.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+        const href = sanitizeUrl(url);
+        if (!href) {
+            return `${label} (${url})`;
+        }
+        return addPlaceholder(
+            `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`
+        );
+    });
+
+    rendered = escapeHtml(rendered);
+    rendered = rendered.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    rendered = rendered.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    rendered = rendered.replace(/_([^_]+)_/g, "<em>$1</em>");
+
+    for (const placeholder of placeholders) {
+        rendered = rendered.replaceAll(placeholder.token, placeholder.html);
+    }
+
+    return rendered;
+}
+
+function renderMarkdown(text) {
+    const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+    const html = [];
+    let paragraphLines = [];
+    let quoteLines = [];
+    let listType = null;
+    let listItems = [];
+
+    const flushParagraph = () => {
+        if (!paragraphLines.length) return;
+        html.push(`<p>${renderInlineMarkdown(paragraphLines.join(" "))}</p>`);
+        paragraphLines = [];
+    };
+
+    const flushQuote = () => {
+        if (!quoteLines.length) return;
+        const quoteBody = quoteLines.map((line) => renderInlineMarkdown(line)).join("<br />");
+        html.push(`<blockquote><p>${quoteBody}</p></blockquote>`);
+        quoteLines = [];
+    };
+
+    const flushList = () => {
+        if (!listItems.length || !listType) return;
+        const items = listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("");
+        html.push(`<${listType}>${items}</${listType}>`);
+        listType = null;
+        listItems = [];
+    };
+
+    const flushAll = () => {
+        flushParagraph();
+        flushQuote();
+        flushList();
+    };
+
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        const trimmed = line.trim();
+
+        if (trimmed.startsWith("```")) {
+            flushAll();
+            const language = trimmed.slice(3).trim();
+            const codeLines = [];
+            index += 1;
+            while (index < lines.length && !lines[index].trim().startsWith("```")) {
+                codeLines.push(lines[index]);
+                index += 1;
+            }
+            const languageClass = language ? ` class="language-${escapeHtml(language)}"` : "";
+            html.push(`<pre><code${languageClass}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+            continue;
+        }
+
+        if (!trimmed) {
+            flushAll();
+            continue;
+        }
+
+        const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+            flushAll();
+            const level = headingMatch[1].length;
+            html.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+            continue;
+        }
+
+        const quoteMatch = trimmed.match(/^>\s?(.*)$/);
+        if (quoteMatch) {
+            flushParagraph();
+            flushList();
+            quoteLines.push(quoteMatch[1]);
+            continue;
+        }
+
+        if (quoteLines.length) {
+            flushQuote();
+        }
+
+        const unorderedListMatch = trimmed.match(/^[-*]\s+(.+)$/);
+        if (unorderedListMatch) {
+            flushParagraph();
+            if (listType && listType !== "ul") {
+                flushList();
+            }
+            listType = "ul";
+            listItems.push(unorderedListMatch[1]);
+            continue;
+        }
+
+        const orderedListMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (orderedListMatch) {
+            flushParagraph();
+            if (listType && listType !== "ol") {
+                flushList();
+            }
+            listType = "ol";
+            listItems.push(orderedListMatch[1]);
+            continue;
+        }
+
+        if (listItems.length) {
+            flushList();
+        }
+
+        paragraphLines.push(trimmed);
+    }
+
+    flushAll();
+
+    return html.join("");
 }
 
 function addMessage(role, text) {
     if (text.ok) {
         text = text.data;
     }
+    if (typeof text !== "string") {
+        text = JSON.stringify(text, null, 2);
+    }
     const wrap = document.createElement("div");
     wrap.className = `msg ${role}`;
     wrap.innerHTML = `
-    <div class="role ${role}">${role}</div>
+    <div class="role ${role}">${role}${role === "tool" ? '<span class="chevron">▶</span>' : ''}</div>
     <div class="bubble"></div>`;
     const bubble = wrap.querySelector(".bubble");
-    bubble.textContent = text;
+    if (role === "assistant") {
+        bubble.classList.add("markdown-content");
+        bubble.innerHTML = renderMarkdown(text);
+    } else {
+        bubble.textContent = text;
+    }
     bubble.onclick = function () {
         if (bubble.scrollHeight > 100 && role === "tool") {
-            bubble.style.maxHeight = bubble.style.maxHeight == 'none' ? '' : 'none';
-            bubble.style.borderBottom = bubble.style.borderBottom == '' ? 'dotted 2px gray' : '';
+            const expanded = bubble.style.maxHeight === 'none';
+            bubble.style.maxHeight = expanded ? '' : 'none';
+            bubble.style.borderBottom = expanded ? '' : 'dotted 2px gray';
+            wrap.querySelector(".chevron").style.transform = expanded ? '' : 'rotate(90deg)';
         }
     }
-    msgsEl.appendChild(wrap);
+    msgsEl.insertBefore(wrap, thinkingIndicatorEl);
     msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 function setStatus(text) {
     statusEl.textContent = text;
+    thinkingIndicatorEl.hidden = text !== "Thinking…";
+    msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 const worker = new Worker("./ifc_worker.js", { type: "module" });
@@ -75,74 +415,73 @@ function callWorker(type, payload = {}) {
     });
 }
 
-// ---- OpenAI Responses API tool schemas (should match ifcmcp.core openai_tools()) ----
-// Docs show Responses API function_call items + function_call_output loop. :contentReference[oaicite:4]{index=4}
+// ---- Tool schemas (should match ifcmcp.core openai_tools()) ----
 const tools = [
     {
-        type: "function", name: "ifc_new", description: "Create a new empty IFC model in memory.",
-        parameters: { type: "object", properties: { schema: { type: "string" } }, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_new", description: "Create a new empty IFC model in memory.",
+        parameters: { type: "object", properties: { schema: { type: "string" } }, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_summary", description: "Get a concise overview of the loaded IFC model.",
-        parameters: { type: "object", properties: {}, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_summary", description: "Get a concise overview of the loaded IFC model.",
+        parameters: { type: "object", properties: {}, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_tree", description: "Get the full spatial hierarchy tree.",
-        parameters: { type: "object", properties: {}, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_tree", description: "Get the full spatial hierarchy tree.",
+        parameters: { type: "object", properties: {}, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_select", description: "Select elements using ifcopenshell selector syntax (e.g. 'IfcWall').",
-        parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"], additionalProperties: false }
+        type: "function", function: { name: "ifc_select", description: "Select elements using ifcopenshell selector syntax (e.g. 'IfcWall').",
+        parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_info", description: "Inspect an entity by STEP id.",
-        parameters: { type: "object", properties: { element_id: { type: "integer" } }, required: ["element_id"], additionalProperties: false }
+        type: "function", function: { name: "ifc_info", description: "Inspect an entity by STEP id.",
+        parameters: { type: "object", properties: { element_id: { type: "integer" } }, required: ["element_id"], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_relations", description: "Get relationships for an element. traverse='up' walks to IfcProject.",
+        type: "function", function: { name: "ifc_relations", description: "Get relationships for an element. traverse='up' walks to IfcProject.",
         parameters: {
             type: "object", properties: { element_id: { type: "integer" }, traverse: { type: "string" } },
             required: ["element_id"], additionalProperties: false
-        }
+        } }
     },
     {
-        type: "function", name: "ifc_clash", description: "Run clash/clearance checks for an element.",
+        type: "function", function: { name: "ifc_clash", description: "Run clash/clearance checks for an element.",
         parameters: {
             type: "object", properties: { element_id: { type: "integer" }, clearance: { type: "number" }, tolerance: { type: "number" }, scope: { type: "string" } },
             required: ["element_id"], additionalProperties: false
-        }
+        } }
     },
     {
-        type: "function", name: "ifc_list", description: "List ifcopenshell.api modules or functions within a module.",
-        parameters: { type: "object", properties: { module: { type: "string" } }, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_list", description: "List ifcopenshell.api modules or functions within a module.",
+        parameters: { type: "object", properties: { module: { type: "string" } }, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_docs", description: "Get documentation for an ifcopenshell.api function, 'module.function'.",
-        parameters: { type: "object", properties: { function_path: { type: "string" } }, required: ["function_path"], additionalProperties: false }
+        type: "function", function: { name: "ifc_docs", description: "Get documentation for an ifcopenshell.api function, 'module.function'.",
+        parameters: { type: "object", properties: { function_path: { type: "string" } }, required: ["function_path"], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_edit", description: "Execute an ifcopenshell.api mutation; params is a JSON string of stringly-typed kwargs.",
-        parameters: { type: "object", properties: { function_path: { type: "string" }, params: { type: "string" } }, required: ["function_path"], additionalProperties: false }
+        type: "function", function: { name: "ifc_edit", description: "Execute an ifcopenshell.api mutation; params is a JSON string of stringly-typed kwargs.",
+        parameters: { type: "object", properties: { function_path: { type: "string" }, params: { type: "string" } }, required: ["function_path"], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_validate", description: "Validate the loaded model. Returns valid bool and list of issues.",
-        parameters: { type: "object", properties: { express_rules: { type: "boolean" } }, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_validate", description: "Validate the loaded model. Returns valid bool and list of issues.",
+        parameters: { type: "object", properties: { express_rules: { type: "boolean" } }, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_schedule", description: "List work schedules and nested tasks. Use max_depth=1 for top-level phases only on large projects.",
-        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_schedule", description: "List work schedules and nested tasks. Use max_depth=1 for top-level phases only on large projects.",
+        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_cost", description: "List cost schedules and nested cost items. Use max_depth=1 for top-level sections only on large BoQs.",
-        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false }
+        type: "function", function: { name: "ifc_cost", description: "List cost schedules and nested cost items. Use max_depth=1 for top-level sections only on large BoQs.",
+        parameters: { type: "object", properties: { max_depth: { type: "integer" } }, required: [], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_schema", description: "Return IFC class documentation for an entity type.",
-        parameters: { type: "object", properties: { entity_type: { type: "string" } }, required: ["entity_type"], additionalProperties: false }
+        type: "function", function: { name: "ifc_schema", description: "Return IFC class documentation for an entity type.",
+        parameters: { type: "object", properties: { entity_type: { type: "string" } }, required: ["entity_type"], additionalProperties: false } }
     },
     {
-        type: "function", name: "ifc_quantify", description: "Run quantity take-off (QTO) on the model. Modifies model in-place; call ifc_save() after.",
-        parameters: { type: "object", properties: { rule: { type: "string" }, selector: { type: "string" } }, required: ["rule"], additionalProperties: false }
+        type: "function", function: { name: "ifc_quantify", description: "Run quantity take-off (QTO) on the model. Modifies model in-place; call ifc_save() after.",
+        parameters: { type: "object", properties: { rule: { type: "string" }, selector: { type: "string" } }, required: ["rule"], additionalProperties: false } }
     },
 ];
 
@@ -156,85 +495,53 @@ Rules:
 Be concise. Avoid dumping huge trees unless asked.
 `;
 
-let inputItems = []; // running conversation state (Responses API style)
-
-async function openAIResponsesCreate({ apiKey, model, input, tools }) {
-    const res = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model,
-            instructions: SYSTEM_INSTRUCTIONS,
-            tools,
-            input,
-        }),
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`OpenAI error ${res.status}: ${text}`);
-    }
-    return await res.json();
-}
-
-function extractAssistantText(response) {
-    const out = [];
-    for (const item of response.output ?? []) {
-        if (item.type === "message" && item.role === "assistant") {
-            for (const c of item.content ?? []) {
-                if (c.type === "output_text") out.push(c.text);
-            }
-        }
-    }
-    return out.join("\n").trim();
-}
+let messages = []; // running conversation state (Chat Completions style)
 
 async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
 
-    // Add user message
-    inputItems.push({ role: "user", content: userText });
+    const provider = PROVIDERS[getProviderValue()];
+    const { chat } = provider.api;
+    const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
 
-    // Tool-calling loop (Responses API): append response.output, execute function_call items, append function_call_output.
+    messages.push({ role: "user", content: userText });
+
     for (let i = 0; i < 64; i++) {
-        const response = await openAIResponsesCreate({
+        const response = await chat({
             apiKey,
+            baseURL,
             model: modelEl.value,
-            input: inputItems,
+            messages: [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages],
             tools,
         });
 
-        // Keep ALL output items (incl reasoning/tool calls) in the running state.
-        inputItems.push(...(response.output ?? []));
+        const message = response.choices?.[0]?.message;
+        if (!message) throw new Error("No message in response");
 
-        // Show any assistant text immediately
-        const text = extractAssistantText(response);
-        if (text) addMessage("assistant", text);
+        messages.push(message);
 
-        const calls = (response.output ?? []).filter((x) => x.type === "function_call");
+        if (message.content) addMessage("assistant", message.content);
+
+        const calls = message.tool_calls ?? [];
         if (calls.length === 0) return;
 
         for (const call of calls) {
             let args = {};
-            try { args = call.arguments ? JSON.parse(call.arguments) : {}; }
+            try { args = call.function.arguments ? JSON.parse(call.function.arguments) : {}; }
             catch { args = {}; }
 
-            addMessage("tool", `→ ${call.name}(${JSON.stringify(args)})`);
+            addMessage("tool", `→ ${call.function.name}(${JSON.stringify(args)})`);
 
-            const toolRes = await callWorker("toolCall", { name: call.name, args });
+            const toolRes = await callWorker("toolCall", { name: call.function.name, args });
 
-            // Feed tool result back to the model
-            inputItems.push({
-                type: "function_call_output",
-                call_id: call.call_id,
-                output: JSON.stringify(toolRes.result),
+            messages.push({
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify(toolRes.result),
             });
 
-            addMessage("tool", `← ${call.name}: ${JSON.stringify(toolRes.result, null, 2)}`);
+            addMessage("tool", `← ${call.function.name}: ${JSON.stringify(toolRes.result, null, 2)}`);
         }
     }
 
@@ -251,7 +558,7 @@ sendBtn.onclick = async () => {
         await runAgentTurn(text);
         setBusy(false, "Ready");
     } catch (e) {
-        setBusy(true, "Error");
+        setBusy(false, "Error");
         addMessage("assistant", `Error: ${e.message}`);
     }
 };

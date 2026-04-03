@@ -103,6 +103,13 @@ def geometry():
 
 
 @pytest.fixture
+def ifcgit():
+    prophet = Prophecy(bonsai.core.tool.IfcGit)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def georeference():
     prophet = Prophecy(bonsai.core.tool.Georeference)
     yield prophet

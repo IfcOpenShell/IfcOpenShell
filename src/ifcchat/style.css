@@ -1,0 +1,370 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #ddd;
+}
+
+header input,
+header select {
+    padding: 8px;
+}
+
+main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100vh;
+}
+
+.side {
+    border-right: 1px solid #ddd;
+    padding: 12px;
+    overflow: auto;
+    background: #f9f9f9;
+}
+
+.chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.msgs {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+}
+
+.msg {
+    margin: 10px 0;
+}
+
+.thinking-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #555;
+    font-size: 80%;
+}
+
+.thinking-indicator[hidden] {
+    display: none;
+}
+
+.thinking-indicator .spinner {
+    width: 14px;
+    height: 14px;
+}
+
+.msg .role {
+    font-size: 12px;
+    opacity: 0.7;
+    margin: 12px 0 4px 0;
+}
+
+.role.user {
+    text-align: right;
+}
+
+.msg .bubble {
+    padding: 0;
+    border-radius: 10px;
+    white-space: pre-wrap;
+}
+
+.msg.assistant .bubble {
+    padding: 10px 14px;
+    line-height: 1.5;
+}
+
+.markdown-content > :first-child {
+    margin-top: 0;
+}
+
+.markdown-content > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content blockquote,
+.markdown-content pre {
+    margin: 0 0 12px 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    margin: 0 0 12px 0;
+    line-height: 1.25;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 24px;
+}
+
+.markdown-content blockquote {
+    margin-left: 0;
+    padding-left: 12px;
+    border-left: 3px solid #ddd;
+    color: #555;
+}
+
+.markdown-content code {
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: #f2f2f2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 90%;
+}
+
+.markdown-content pre {
+    overflow-x: auto;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f4f4f4;
+}
+
+.markdown-content pre code {
+    padding: 0;
+    background: transparent;
+}
+
+.markdown-content a {
+    color: inherit;
+}
+
+.msg.user .bubble {
+    padding: 10px 20px;
+    background: #eee;
+    width: 50%;
+    margin-left: auto;
+    border: solid 1px #ddd;
+}
+
+.msg.tool .bubble {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 60%;
+    max-height: 100px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.chevron {
+    display: inline-block;
+    font-size: 10px;
+    margin-left: 6px;
+    transition: transform 0.2s;
+    vertical-align: middle;
+}
+
+.composer {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    justify-content: center;
+}
+
+.composer textarea {
+    flex: 1;
+    resize: none;
+    height: 88px;
+    border: none;
+}
+
+.composer button {
+    align-self: center;
+}
+
+.composer .inner {
+    border: solid 1px #ddd;
+    border-radius: 20px;
+    padding: 10px;
+    display: flex;
+    width: 100%;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #aaa;
+    border-top-color: #333;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+.status {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+section > .row > label {
+    display: block;
+    font-size: 12px;
+    opacity: 0.75;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+section > .row > label .small {
+    font-weight: normal;
+    display: block;
+    font-size: 80%;
+}
+
+.side .row {
+    margin-bottom: 20px;
+}
+
+.provider-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #00000010;
+    padding: 6px 0 0 6px;
+}
+
+.provider-tab {
+    position: relative;
+    display: inline-flex;
+}
+
+.provider-tab input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.provider-tab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 2px 2px 0 0;
+  background: #e8e8e8;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-size: 75%;
+}
+
+.provider-tab input:checked + span {
+    background: #f9f9f9;
+    border-color: #999;
+    color: #111;
+    border-bottom: none;
+}
+
+.provider-tab input:focus-visible + span {
+    outline: 2px solid #666;
+    outline-offset: 2px;
+}
+
+.row button {
+    padding: 8px 10px;
+}
+
+
+hr {
+    border: dashed 1px #ddd;
+}
+
+.btn-row {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-row > .btn,
+.btn-row > button.btn {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #d0d0d0;
+    background: #eee;
+
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background: #ddd;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-wide {
+    width: 100%;
+}
+
+.material-icons {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.btn.disabled,
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#input {
+    border: none;
+    outline: none;
+}
+
+#input:focus,
+#input:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+.code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 90%;
+    background-color: #eee;
+    border: solid 1px #ddd;
+    padding: 2px;
+    display: inline-block;
+}
+
+header .row:nth-child(2) {
+    padding: 15px 0 0 0;
+}

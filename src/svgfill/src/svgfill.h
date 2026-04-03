@@ -67,6 +67,7 @@ namespace svgfill {
 		virtual std::vector<int> get_face_pairs() = 0;
 		virtual size_t num_edges() = 0;
 		virtual size_t num_faces() = 0;
+        virtual size_t delete_same_facet_edge_pairs() = 0;
 	};
 
 	class SVGFILL_API context {
@@ -101,6 +102,7 @@ namespace svgfill {
 		void write(std::vector<std::vector<polygon_2>>&);
 		size_t num_edges() { return arr_->num_edges(); }
 		size_t num_faces() { return arr_->num_faces(); }
+        size_t delete_same_facet_edge_pairs() { return arr_->delete_same_facet_edge_pairs(); }
 
 		~context() {
 			delete arr_;
@@ -113,7 +115,22 @@ namespace svgfill {
 	SVGFILL_API std::string polygons_to_svg(const std::vector<std::vector<polygon_2>>& polygons, bool random_color=false);
 	SVGFILL_API std::string polygons_to_svg(const std::vector<polygon_2>& polygons, bool random_color = false);
 	SVGFILL_API bool svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name, std::vector<polygon_2>& polygons);
-	SVGFILL_API bool arrange_polygons(const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged);
-}
+
+	struct SVGFILL_API arrange_polygon_settings {
+        bool debug_output = false;
+		// -1: compute from average edge length
+        double polygon_offset_distance = -1.;
+        // 0: use offset - union - negative offset to find the outer perimeter
+        // 1: radial walk along vertices; exact, but can only reuse vertices, not create new positions by means of intersections
+        int outer_perimiter_algo = 0;
+        // 0: outer perimiter and corridor center lines
+        // 1: input polygons, corridor center lines and segments connecting corridor center lines to input polygons
+        int topology_reconstruction_algo = 0;
+        bool perform_cleanup = true;
+        double subdivision_factor = 16.;
+    };
+
+	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged);
+    }
 
 #endif

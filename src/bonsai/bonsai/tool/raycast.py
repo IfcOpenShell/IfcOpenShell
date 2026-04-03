@@ -434,11 +434,8 @@ class Raycast(bonsai.core.tool.Raycast):
             seg_len_sq = sx * sx + sy * sy
 
             if seg_len_sq == 0.0:
-                # degenerate segment: return distance to p0
-                dx = px - p0x
-                dy = py - p0y
-                dist = math.hypot(dx, dy)
-                return dist, (p0x, p0y), 0.0
+                # degenerate segment: skip it
+                continue
 
             # project (p - p0) onto seg: t = dot(p-p0, seg) / |seg|^2
             apx = px - p0x
