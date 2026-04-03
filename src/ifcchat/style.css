@@ -86,6 +86,73 @@ main {
     white-space: pre-wrap;
 }
 
+.msg.assistant .bubble {
+    padding: 10px 14px;
+    line-height: 1.5;
+}
+
+.markdown-content > :first-child {
+    margin-top: 0;
+}
+
+.markdown-content > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content blockquote,
+.markdown-content pre {
+    margin: 0 0 12px 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    margin: 0 0 12px 0;
+    line-height: 1.25;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 24px;
+}
+
+.markdown-content blockquote {
+    margin-left: 0;
+    padding-left: 12px;
+    border-left: 3px solid #ddd;
+    color: #555;
+}
+
+.markdown-content code {
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: #f2f2f2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 90%;
+}
+
+.markdown-content pre {
+    overflow-x: auto;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f4f4f4;
+}
+
+.markdown-content pre code {
+    padding: 0;
+    background: transparent;
+}
+
+.markdown-content a {
+    color: inherit;
+}
+
 .msg.user .bubble {
     padding: 10px 20px;
     background: #eee;
