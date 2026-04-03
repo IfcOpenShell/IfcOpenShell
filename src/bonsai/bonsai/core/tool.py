@@ -559,7 +559,11 @@ class IfcGit:
     def get_selected_branch(cls): pass
     def git_merge(cls, branch_name): pass
     def git_merge_abort(cls): pass
-    def git_mergetool(cls, mergetool): pass
+    def git_merge_no_commit(cls, branch_name): pass
+    def git_mergetool(cls, mergetool, path_ifc): pass
+    def store_merge_conflicts(cls, conflicts): pass
+    def clear_merge_conflicts(cls): pass
+    def get_merge_conflicts(cls): pass
     def set_display_branch(cls): pass
     def get_active_branch_name(cls): pass
     def get_ifcgit_props(cls): pass

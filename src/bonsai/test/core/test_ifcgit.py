@@ -132,12 +132,14 @@ class TestPush:
 
 class TestRefreshRevisionList:
     def test_refreshes_when_repo_has_heads(self, ifcgit, ifc):
+        ifcgit.clear_merge_conflicts().should_be_called()
         ifcgit.repo_has_commits().should_be_called().will_return(True)
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
         ifcgit.refresh_revision_list("path/to/model.ifc").should_be_called()
         subject.refresh_revision_list(ifcgit, ifc)
 
     def test_skips_when_repo_has_no_heads(self, ifcgit, ifc):
+        ifcgit.clear_merge_conflicts().should_be_called()
         ifcgit.repo_has_commits().should_be_called().will_return(False)
         subject.refresh_revision_list(ifcgit, ifc)
         # nothing else should be called — Prophecy will verify
@@ -194,7 +196,9 @@ class TestMergeBranch:
         ifcgit.get_selected_branch().should_be_called().will_return("feature")
         ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
         ifcgit.git_merge("feature").should_be_called().will_return(None)
+        ifcgit.clear_merge_conflicts().should_be_called()
         ifcgit.set_display_branch().should_be_called()
+        ifcgit.git_checkout("path/to/model.ifc").should_be_called()
         ifcgit.load_project("path/to/model.ifc").should_be_called()
         ifcgit.refresh_revision_list("path/to/model.ifc").should_be_called()
         ifcgit.decolourise().should_be_called()
@@ -206,25 +210,29 @@ class TestMergeBranch:
         ifcgit.get_selected_branch().should_be_called().will_return("feature")
         ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
         ifcgit.git_merge("feature").should_be_called().will_return("conflict")
-        ifcgit.git_mergetool("ifcmerge-forward").should_be_called().will_return(None)
+        ifcgit.git_mergetool("ifcmerge-forward", "path/to/model.ifc").should_be_called().will_return(None)
         ifcgit.commit_merge("path/to/model.ifc").should_be_called()
+        ifcgit.clear_merge_conflicts().should_be_called()
         ifcgit.set_display_branch().should_be_called()
+        ifcgit.git_checkout("path/to/model.ifc").should_be_called()
         ifcgit.load_project("path/to/model.ifc").should_be_called()
         ifcgit.refresh_revision_list("path/to/model.ifc").should_be_called()
         ifcgit.decolourise().should_be_called()
         subject.merge_branch(ifcgit, ifc, operator=None)
 
     def test_conflict_mergetool_failure(self, ifcgit, ifc):
+        conflicts = [{"type": "attribute_conflict", "entity_id": 42}]
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
         ifcgit.config_ifcmerge().should_be_called()
         ifcgit.get_selected_branch().should_be_called().will_return("feature")
         ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
         ifcgit.git_merge("feature").should_be_called().will_return("conflict")
-        ifcgit.git_mergetool("ifcmerge-forward").should_be_called().will_return("merge error")
+        ifcgit.git_mergetool("ifcmerge-forward", "path/to/model.ifc").should_be_called().will_return(conflicts)
         ifcgit.git_merge_abort().should_be_called()
+        ifcgit.store_merge_conflicts(conflicts).should_be_called()
         op = MockOperator()
         subject.merge_branch(ifcgit, ifc, op)
-        assert op.reports == [({"ERROR"}, "IFC Merge failed:merge error")]
+        assert op.reports == [({"WARNING"}, "Merge failed — see the conflict report in the panel below")]
 
     def test_unknown_merge_error(self, ifcgit, ifc):
         ifc.get_path().should_be_called().will_return("path/to/model.ifc")
@@ -235,6 +243,53 @@ class TestMergeBranch:
         op = MockOperator()
         subject.merge_branch(ifcgit, ifc, op)
         assert op.reports == [({"ERROR"}, "Unknown IFC Merge failure")]
+
+
+class TestDryRunMerge:
+    def test_no_branch_at_selected_commit(self, ifcgit, ifc):
+        ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.config_ifcmerge().should_be_called()
+        ifcgit.get_selected_branch().should_be_called().will_return(None)
+        subject.dry_run_merge(ifcgit, ifc, operator=None)
+
+    def test_clean_merge_preview(self, ifcgit, ifc):
+        ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.config_ifcmerge().should_be_called()
+        ifcgit.get_selected_branch().should_be_called().will_return("feature")
+        ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
+        ifcgit.git_merge_no_commit("feature").should_be_called().will_return(None)
+        ifcgit.git_merge_abort().should_be_called()
+        ifcgit.clear_merge_conflicts().should_be_called()
+        op = MockOperator()
+        subject.dry_run_merge(ifcgit, ifc, op)
+        assert op.reports == [({"INFO"}, "Merge preview: no conflicts")]
+
+    def test_conflict_preview_shows_report(self, ifcgit, ifc):
+        conflicts = [{"type": "attribute_conflict", "entity_id": 42}]
+        ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.config_ifcmerge().should_be_called()
+        ifcgit.get_selected_branch().should_be_called().will_return("feature")
+        ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
+        ifcgit.git_merge_no_commit("feature").should_be_called().will_return("conflict")
+        ifcgit.git_mergetool("ifcmerge-forward", "path/to/model.ifc").should_be_called().will_return(conflicts)
+        ifcgit.git_merge_abort().should_be_called()
+        ifcgit.store_merge_conflicts(conflicts).should_be_called()
+        op = MockOperator()
+        subject.dry_run_merge(ifcgit, ifc, op)
+        assert op.reports == [({"WARNING"}, "Merge preview: conflicts found — see the panel below")]
+
+    def test_conflict_preview_mergetool_succeeds(self, ifcgit, ifc):
+        ifc.get_path().should_be_called().will_return("path/to/model.ifc")
+        ifcgit.config_ifcmerge().should_be_called()
+        ifcgit.get_selected_branch().should_be_called().will_return("feature")
+        ifcgit.get_merge_tool("feature").should_be_called().will_return("ifcmerge-forward")
+        ifcgit.git_merge_no_commit("feature").should_be_called().will_return("conflict")
+        ifcgit.git_mergetool("ifcmerge-forward", "path/to/model.ifc").should_be_called().will_return(None)
+        ifcgit.git_merge_abort().should_be_called()
+        ifcgit.clear_merge_conflicts().should_be_called()
+        op = MockOperator()
+        subject.dry_run_merge(ifcgit, ifc, op)
+        assert op.reports == [({"INFO"}, "Merge preview: no conflicts")]
 
 
 class TestEntityLog:
