@@ -445,8 +445,8 @@ def main(
                             # Check if styles match, normals are parallel and points are coplanar
                             # Issue #3742: Replaced simplistic distance check with vector mathematics and material check
                             if s1 == s2:
-                                if abs(1.0 - numpy.dot(n1, n2)) < 1.0e-5:
-                                    if abs(numpy.dot(p1 - p2, n1)) < 1.0e-5:
+                                if abs(1.0 - abs(numpy.dot(n1, n2))) < 1.0e-4:
+                                    if abs(numpy.dot(p1 - p2, n1)) < 1.0e-4:
                                         
                                         def get_cached_material(inst):
                                             id_ = inst.id()
