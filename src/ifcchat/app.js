@@ -21,10 +21,6 @@ const PROVIDERS = {
                 label: "gpt-5.2-chat-latest"
             },
             {
-                value: "gpt-5.2-pro",
-                label: "gpt-5.2-pro"
-            },
-            {
                 value: "gpt-5",
                 label: "gpt-5"
             },
