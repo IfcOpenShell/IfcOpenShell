@@ -7,9 +7,56 @@ const sendBtn = $("send");
 const inputEl = $("input");
 const apiKeyEl = $("apiKey");
 const modelEl = $("model");
+const providerEl = $("provider");
 const ifcFileEl = $("ifcFile");
 const newBtn = $("newModel");
 const downloadBtn = $("downloadIfc");
+
+// ---- Provider switching ----
+
+const PROVIDER_MODELS = {
+    openai: ["gpt-5", "gpt-4.1"],
+    anthropic: ["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5-20251001"],
+};
+
+const PROVIDER_LABELS = {
+    openai: "OpenAI API key",
+    anthropic: "Anthropic API key",
+};
+
+const PROVIDER_PLACEHOLDERS = {
+    openai: "sk-...",
+    anthropic: "sk-ant-...",
+};
+
+function getProvider() {
+    return providerEl.value;
+}
+
+function updateProviderUI() {
+    const provider = getProvider();
+    $("apiKeyLabel").innerHTML = `${PROVIDER_LABELS[provider]}<span class="small">stored in browser memory; only sent to provider servers</span>`;
+    apiKeyEl.placeholder = PROVIDER_PLACEHOLDERS[provider];
+
+    // Enable/disable model optgroups and select first available model
+    for (const [key, models] of Object.entries(PROVIDER_MODELS)) {
+        const group = $(`modelGroup${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        if (!group) continue;
+        const isActive = key === provider;
+        group.disabled = !isActive;
+        for (const opt of group.querySelectorAll("option")) {
+            opt.disabled = !isActive;
+        }
+    }
+
+    modelEl.value = PROVIDER_MODELS[provider][0];
+
+    // Reset conversation on provider switch
+    openaiInputItems = [];
+    anthropicMessages = [];
+}
+
+providerEl.addEventListener("change", updateProviderUI);
 
 function setBusy(isBusy, reason = "") {
     const controls = [
@@ -75,8 +122,7 @@ function callWorker(type, payload = {}) {
     });
 }
 
-// ---- OpenAI Responses API tool schemas (should match ifcmcp.core openai_tools()) ----
-// Docs show Responses API function_call items + function_call_output loop. :contentReference[oaicite:4]{index=4}
+// ---- Tool schemas (OpenAI Responses API format) ----
 const tools = [
     {
         type: "function", name: "ifc_new", description: "Create a new empty IFC model in memory.",
@@ -146,6 +192,15 @@ const tools = [
     },
 ];
 
+// Convert OpenAI tool format to Anthropic tool format
+function toolsForAnthropic() {
+    return tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        input_schema: t.parameters,
+    }));
+}
+
 const SYSTEM_INSTRUCTIONS = `
 You are an IFC copilot running in a browser. You can call tools to inspect or modify the currently loaded IFC model.
 Rules:
@@ -156,7 +211,15 @@ Rules:
 Be concise. Avoid dumping huge trees unless asked.
 `;
 
-let inputItems = []; // running conversation state (Responses API style)
+// ---- OpenAI state ----
+let openaiInputItems = [];
+
+// ---- Anthropic state ----
+let anthropicMessages = [];
+
+// ============================================================
+// OpenAI Responses API
+// ============================================================
 
 async function openAIResponsesCreate({ apiKey, model, input, tools }) {
     const res = await fetch("https://api.openai.com/v1/responses", {
@@ -180,7 +243,7 @@ async function openAIResponsesCreate({ apiKey, model, input, tools }) {
     return await res.json();
 }
 
-function extractAssistantText(response) {
+function extractAssistantTextOpenAI(response) {
     const out = [];
     for (const item of response.output ?? []) {
         if (item.type === "message" && item.role === "assistant") {
@@ -192,27 +255,23 @@ function extractAssistantText(response) {
     return out.join("\n").trim();
 }
 
-async function runAgentTurn(userText) {
+async function runOpenAITurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
 
-    // Add user message
-    inputItems.push({ role: "user", content: userText });
+    openaiInputItems.push({ role: "user", content: userText });
 
-    // Tool-calling loop (Responses API): append response.output, execute function_call items, append function_call_output.
     for (let i = 0; i < 64; i++) {
         const response = await openAIResponsesCreate({
             apiKey,
             model: modelEl.value,
-            input: inputItems,
+            input: openaiInputItems,
             tools,
         });
 
-        // Keep ALL output items (incl reasoning/tool calls) in the running state.
-        inputItems.push(...(response.output ?? []));
+        openaiInputItems.push(...(response.output ?? []));
 
-        // Show any assistant text immediately
-        const text = extractAssistantText(response);
+        const text = extractAssistantTextOpenAI(response);
         if (text) addMessage("assistant", text);
 
         const calls = (response.output ?? []).filter((x) => x.type === "function_call");
@@ -227,8 +286,7 @@ async function runAgentTurn(userText) {
 
             const toolRes = await callWorker("toolCall", { name: call.name, args });
 
-            // Feed tool result back to the model
-            inputItems.push({
+            openaiInputItems.push({
                 type: "function_call_output",
                 call_id: call.call_id,
                 output: JSON.stringify(toolRes.result),
@@ -239,6 +297,113 @@ async function runAgentTurn(userText) {
     }
 
     addMessage("assistant", "I hit the tool-call loop limit. Try narrowing your request.");
+}
+
+// ============================================================
+// Anthropic Messages API
+// ============================================================
+
+async function anthropicMessagesCreate({ apiKey, model, system, messages, tools }) {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+            model,
+            max_tokens: 4096,
+            system,
+            tools,
+            messages,
+        }),
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Anthropic error ${res.status}: ${text}`);
+    }
+    return await res.json();
+}
+
+function extractAssistantTextAnthropic(response) {
+    const out = [];
+    for (const block of response.content ?? []) {
+        if (block.type === "text") out.push(block.text);
+    }
+    return out.join("\n").trim();
+}
+
+async function runAnthropicTurn(userText) {
+    const apiKey = apiKeyEl.value.trim();
+    if (!apiKey) throw new Error("Missing API key");
+
+    anthropicMessages.push({ role: "user", content: userText });
+
+    const claudeTools = toolsForAnthropic();
+
+    for (let i = 0; i < 64; i++) {
+        const response = await anthropicMessagesCreate({
+            apiKey,
+            model: modelEl.value,
+            system: SYSTEM_INSTRUCTIONS,
+            messages: anthropicMessages,
+            tools: claudeTools,
+        });
+
+        // Show any assistant text
+        const text = extractAssistantTextAnthropic(response);
+        if (text) addMessage("assistant", text);
+
+        // Append the full assistant response to conversation history
+        anthropicMessages.push({ role: "assistant", content: response.content });
+
+        // Check for tool use
+        const toolUseBlocks = (response.content ?? []).filter((b) => b.type === "tool_use");
+        if (response.stop_reason !== "tool_use" || toolUseBlocks.length === 0) return;
+
+        // Execute each tool call and collect results
+        const toolResultBlocks = [];
+        for (const toolUse of toolUseBlocks) {
+            const args = toolUse.input ?? {};
+
+            addMessage("tool", `→ ${toolUse.name}(${JSON.stringify(args)})`);
+
+            let resultContent;
+            try {
+                const toolRes = await callWorker("toolCall", { name: toolUse.name, args });
+                resultContent = JSON.stringify(toolRes.result);
+            } catch (e) {
+                resultContent = JSON.stringify({ error: e.message });
+            }
+
+            toolResultBlocks.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: resultContent,
+            });
+
+            addMessage("tool", `← ${toolUse.name}: ${resultContent}`);
+        }
+
+        // Feed all tool results back as a single user message
+        anthropicMessages.push({ role: "user", content: toolResultBlocks });
+    }
+
+    addMessage("assistant", "I hit the tool-call loop limit. Try narrowing your request.");
+}
+
+// ============================================================
+// Unified agent turn
+// ============================================================
+
+async function runAgentTurn(userText) {
+    if (getProvider() === "anthropic") {
+        return runAnthropicTurn(userText);
+    }
+    return runOpenAITurn(userText);
 }
 
 sendBtn.onclick = async () => {
@@ -312,6 +477,7 @@ downloadBtn.onclick = async () => {
     try {
         setBusy(true, "Initializing Pyodide and IfcOpenShell for in-memory IFC access…");
         await callWorker("init", {});
+        updateProviderUI();
         setBusy(false, "Ready");
     } catch (e) {
         setBusy(true, "Error");
