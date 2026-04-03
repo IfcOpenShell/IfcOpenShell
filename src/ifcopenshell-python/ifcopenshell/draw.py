@@ -451,8 +451,8 @@ def main(
                                         def get_cached_material(inst):
                                             id_ = inst.id()
                                             if id_ not in material_cache:
-                                                mat = ifcopenshell.util.element.get_material(inst)
-                                                material_cache[id_] = mat.id() if mat else -1
+                                                mats = ifcopenshell.util.element.get_materials(inst)
+                                                material_cache[id_] = tuple(m.id() for m in mats) if mats else (-1,)
                                             return material_cache[id_]
                                             
                                         if get_cached_material(data[0][0]) == get_cached_material(data[1][0]):
