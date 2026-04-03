@@ -317,3 +317,7 @@ hr {
     padding: 2px;
     display: inline-block;
 }
+
+header .row:nth-child(2) {
+    padding: 15px 0 0 0;
+}
