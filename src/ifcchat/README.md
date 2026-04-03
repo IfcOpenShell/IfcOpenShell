@@ -1,7 +1,7 @@
 IfcOpenShell AI Assistant 
 =========================
 
-A web-based client-side (pyodide + OpenAI, Anthropic, or OpenRouter API) model interrogation and generation API based on: ifcedit, ifcquery and ifcmcp (ifcopenshell-mcp) packaged in a HTML+JS application.
+A web-based client-side (pyodide + OpenAI, Anthropic, Gemini, or OpenRouter API) model interrogation and generation API based on: ifcedit, ifcquery and ifcmcp (ifcopenshell-mcp) packaged in a HTML+JS application.
 
 ### Setup instructions
 

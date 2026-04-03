@@ -17,6 +17,7 @@
                 <select id="provider" style="width: 100%;">
                     <option value="openai">OpenAI</option>
                     <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="gemini">Gemini</option>
                     <option value="openrouter">OpenRouter</option>
                 </select>
             </div>
@@ -29,6 +30,11 @@
             <div class="row">
                 <label id="apiKeyLabel">API key<span class="small">stored in browser memory; only sent to provider servers</span></label>
                 <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" style="width: 100%;" />
+            </div>
+
+            <div class="row" id="baseUrlRow">
+                <label id="baseUrlLabel">Base URL<span class="small">override the API endpoint for OpenAI-compatible providers</span></label>
+                <input id="baseUrl" type="text" placeholder="https://api.openai.com/v1" autocomplete="off" style="width: 100%;" />
             </div>
 
             <hr />

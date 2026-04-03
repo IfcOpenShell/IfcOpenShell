@@ -8,6 +8,9 @@ const PROVIDERS = {
         api: openaiApi,
         apiKeyLabel: "OpenAI API key",
         apiKeyPlaceholder: "sk-...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://api.openai.com/v1",
+        baseUrlDefault: "https://api.openai.com/v1",
         models: [
             { 
                 value: "gpt-5",      
@@ -38,10 +41,35 @@ const PROVIDERS = {
             },
         ],
     },
+    gemini: {
+        api: openaiApi,
+        apiKeyLabel: "Gemini API key",
+        apiKeyPlaceholder: "AIza...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        baseUrlDefault: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        models: [
+            {
+                value: "gemini-3-flash-preview",
+                label: "gemini-3-flash-preview"
+            },
+            {
+                value: "gemini-2.5-flash",
+                label: "gemini-2.5-flash"
+            },
+            {
+                value: "gemini-2.5-pro",
+                label: "gemini-2.5-pro"
+            },
+        ],
+    },
     openrouter: {
         api: openrouterApi,
         apiKeyLabel: "OpenRouter API key",
         apiKeyPlaceholder: "sk-or-v1-...",
+        baseUrlLabel: "Base URL",
+        baseUrlPlaceholder: "https://openrouter.ai/api/v1",
+        baseUrlDefault: "https://openrouter.ai/api/v1",
         models: [
             { 
                 value: "openai/gpt-oss-20b",
@@ -79,6 +107,9 @@ const sendBtn = $("send");
 const inputEl = $("input");
 const apiKeyEl = $("apiKey");
 const apiKeyLabelEl = $("apiKeyLabel");
+const baseUrlRowEl = $("baseUrlRow");
+const baseUrlLabelEl = $("baseUrlLabel");
+const baseUrlEl = $("baseUrl");
 const modelEl = $("model");
 const providerEl = $("provider");
 const ifcFileEl = $("ifcFile");
@@ -89,6 +120,15 @@ function onProviderChange() {
     const provider = PROVIDERS[providerEl.value];
     apiKeyLabelEl.innerHTML = `${provider.apiKeyLabel}<span class="small">stored in browser memory; only sent to provider servers</span>`;
     apiKeyEl.placeholder = provider.apiKeyPlaceholder;
+    baseUrlRowEl.hidden = !provider.baseUrlDefault;
+    if (provider.baseUrlDefault) {
+        baseUrlLabelEl.innerHTML = `${provider.baseUrlLabel}<span class="small">override the API endpoint for OpenAI-compatible providers</span>`;
+        baseUrlEl.placeholder = provider.baseUrlPlaceholder;
+        baseUrlEl.value = provider.baseUrlDefault;
+    } else {
+        baseUrlEl.value = "";
+        baseUrlEl.placeholder = "";
+    }
     modelEl.innerHTML = provider.models.map(m => `<option value="${m.value}">${m.label}</option>`).join("");
 }
 
@@ -251,13 +291,16 @@ async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
 
-    const { chat } = PROVIDERS[providerEl.value].api;
+    const provider = PROVIDERS[providerEl.value];
+    const { chat } = provider.api;
+    const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
 
     messages.push({ role: "user", content: userText });
 
     for (let i = 0; i < 64; i++) {
         const response = await chat({
             apiKey,
+            baseURL,
             model: modelEl.value,
             messages: [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages],
             tools,

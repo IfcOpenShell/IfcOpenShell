@@ -1,6 +1,10 @@
+function getChatCompletionsUrl(baseURL) {
+    const root = (baseURL || "https://api.openai.com/v1").replace(/\/+$/, "");
+    return `${root}/chat/completions`;
+}
 
-export async function chat({ apiKey, model, messages, tools }) {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+export async function chat({ apiKey, baseURL, model, messages, tools }) {
+    const res = await fetch(getChatCompletionsUrl(baseURL), {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
