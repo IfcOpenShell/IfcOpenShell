@@ -27,6 +27,7 @@ import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
@@ -530,7 +531,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             return self.report({"WARNING"}, "A featured element must be nominated.")
 
         ifc_context = None
-        if get_enum_items(props, "contexts", context):
+        if props.ifc_class == "IfcOpeningElement":
+            ifc_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+            if ifc_context is None:
+                ifc_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
+            if ifc_context is None:
+                self.report({"WARNING"}, "No Model/Body context found. Opening representation may be on the wrong context.")
+        elif get_enum_items(props, "contexts", context):
             ifc_context = int(props.contexts or "0") or None
             if ifc_context:
                 ifc_context = tool.Ifc.get().by_id(ifc_context)
