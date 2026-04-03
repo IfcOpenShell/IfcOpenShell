@@ -110,6 +110,7 @@ const apiKeyLabelEl = $("apiKeyLabel");
 const baseUrlRowEl = $("baseUrlRow");
 const baseUrlLabelEl = $("baseUrlLabel");
 const baseUrlEl = $("baseUrl");
+const thinkingIndicatorEl = $("thinkingIndicator");
 const modelEl = $("model");
 const providerEl = $("provider");
 const ifcFileEl = $("ifcFile");
@@ -180,12 +181,14 @@ function addMessage(role, text) {
             wrap.querySelector(".chevron").style.transform = expanded ? '' : 'rotate(90deg)';
         }
     }
-    msgsEl.appendChild(wrap);
+    msgsEl.insertBefore(wrap, thinkingIndicatorEl);
     msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 function setStatus(text) {
     statusEl.textContent = text;
+    thinkingIndicatorEl.hidden = text !== "Thinking…";
+    msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
 const worker = new Worker("./ifc_worker.js", { type: "module" });
