@@ -14,12 +14,24 @@
         <section class="side">
             <div class="row">
                 <label>Provider</label>
-                <select id="provider" style="width: 100%;">
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic (Claude)</option>
-                    <option value="gemini">Gemini</option>
-                    <option value="openrouter">OpenRouter</option>
-                </select>
+                <div class="provider-tabs" role="radiogroup" aria-label="Provider">
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="openai" checked />
+                        <span>OpenAI</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="anthropic" />
+                        <span>Claude</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="gemini" />
+                        <span>Gemini</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="openrouter" />
+                        <span>OpenRouter</span>
+                    </label>
+                </div>
             </div>
 
             <div class="row">

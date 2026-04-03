@@ -112,13 +112,17 @@ const baseUrlLabelEl = $("baseUrlLabel");
 const baseUrlEl = $("baseUrl");
 const thinkingIndicatorEl = $("thinkingIndicator");
 const modelEl = $("model");
-const providerEl = $("provider");
+const providerEls = document.querySelectorAll('input[name="provider"]');
 const ifcFileEl = $("ifcFile");
 const newBtn = $("newModel");
 const downloadBtn = $("downloadIfc");
 
+function getProviderValue() {
+    return document.querySelector('input[name="provider"]:checked')?.value || "openai";
+}
+
 function onProviderChange() {
-    const provider = PROVIDERS[providerEl.value];
+    const provider = PROVIDERS[getProviderValue()];
     apiKeyLabelEl.innerHTML = `${provider.apiKeyLabel}<span class="small">stored in browser memory; only sent to provider servers</span>`;
     apiKeyEl.placeholder = provider.apiKeyPlaceholder;
     baseUrlRowEl.hidden = !provider.baseUrlDefault;
@@ -133,7 +137,9 @@ function onProviderChange() {
     modelEl.innerHTML = provider.models.map(m => `<option value="${m.value}">${m.label}</option>`).join("");
 }
 
-providerEl.addEventListener("change", onProviderChange);
+for (const providerEl of providerEls) {
+    providerEl.addEventListener("change", onProviderChange);
+}
 onProviderChange();
 
 function setBusy(isBusy, reason = "") {
@@ -467,7 +473,7 @@ async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
 
-    const provider = PROVIDERS[providerEl.value];
+    const provider = PROVIDERS[getProviderValue()];
     const { chat } = provider.api;
     const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
 

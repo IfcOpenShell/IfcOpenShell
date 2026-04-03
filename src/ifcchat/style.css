@@ -32,7 +32,7 @@ main {
 
 .side {
     border-right: 1px solid #ddd;
-    padding: 100px 12px 12px 12px;
+    padding: 12px;
     overflow: auto;
     background: #f9f9f9;
 }
@@ -234,7 +234,54 @@ section > .row > label .small {
 }
 
 .side .row {
-    margin-bottom: 32px;
+    margin-bottom: 20px;
+}
+
+.provider-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #00000010;
+    padding: 6px 0 0 6px;
+}
+
+.provider-tab {
+    position: relative;
+    display: inline-flex;
+}
+
+.provider-tab input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.provider-tab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 2px 2px 0 0;
+  background: #e8e8e8;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-size: 75%;
+}
+
+.provider-tab input:checked + span {
+    background: #f9f9f9;
+    border-color: #999;
+    color: #111;
+    border-bottom: none;
+}
+
+.provider-tab input:focus-visible + span {
+    outline: 2px solid #666;
+    outline-offset: 2px;
 }
 
 .row button {
