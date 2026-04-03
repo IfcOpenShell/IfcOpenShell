@@ -418,8 +418,8 @@ function callWorker(type, payload = {}) {
 // ---- Tool schemas (should match ifcmcp.core openai_tools()) ----
 const tools = [
     {
-        type: "function", function: { name: "ifc_new", description: "Create a new empty IFC model in memory.",
-        parameters: { type: "object", properties: { schema: { type: "string" } }, required: [], additionalProperties: false } }
+        type: "function", function: { name: "ifc_new", description: "Create a new empty IFC model in memory. Valid schemas: IFC4, IFC2X3, IFC4X3 (for IFC 4.3).",
+        parameters: { type: "object", properties: { schema: { type: "string", enum: ["IFC4", "IFC2X3", "IFC4X3"] } }, required: [], additionalProperties: false } }
     },
     {
         type: "function", function: { name: "ifc_summary", description: "Get a concise overview of the loaded IFC model.",
@@ -497,6 +497,27 @@ Be concise. Avoid dumping huge trees unless asked.
 
 let messages = []; // running conversation state (Chat Completions style)
 
+const MAX_TOOL_RESULT_CHARS = 2000;
+const MAX_HISTORY_MESSAGES = 40;
+
+function truncateToolResult(text) {
+    if (text.length <= MAX_TOOL_RESULT_CHARS) return text;
+    return text.slice(0, MAX_TOOL_RESULT_CHARS) + "\n... (truncated)";
+}
+
+function trimHistory() {
+    if (messages.length <= MAX_HISTORY_MESSAGES) return;
+    // Find a safe cut point — don't break mid-tool-call sequence.
+    // Walk forward from the trim target to find a user message boundary.
+    let cut = messages.length - MAX_HISTORY_MESSAGES;
+    while (cut < messages.length && messages[cut].role !== "user") {
+        cut++;
+    }
+    if (cut > 0 && cut < messages.length) {
+        messages.splice(0, cut);
+    }
+}
+
 async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
@@ -506,6 +527,7 @@ async function runAgentTurn(userText) {
     const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
 
     messages.push({ role: "user", content: userText });
+    trimHistory();
 
     for (let i = 0; i < 64; i++) {
         const response = await chat({
@@ -535,12 +557,15 @@ async function runAgentTurn(userText) {
 
             const toolRes = await callWorker("toolCall", { name: call.function.name, args });
 
+            const fullResult = JSON.stringify(toolRes.result);
+
             messages.push({
                 role: "tool",
                 tool_call_id: call.id,
-                content: JSON.stringify(toolRes.result),
+                content: truncateToolResult(fullResult),
             });
 
+            // Show full result in UI, but only truncated version goes to the LLM
             addMessage("tool", `← ${call.function.name}: ${JSON.stringify(toolRes.result, null, 2)}`);
         }
     }
@@ -588,7 +613,7 @@ ifcFileEl.onchange = async () => {
 newBtn.onclick = async () => {
     try {
         setBusy(true, "Creating new model…");
-        const r = await callWorker("toolCall", { name: "ifc_new", args: { schema: "IFC4" } });
+        const r = await callWorker("toolCall", { name: "ifc_new", args: { schema: "IFC4X3" } });
         addMessage("assistant", `New model: ${JSON.stringify(r.result)}`);
         setBusy(false, "Ready");
     } catch (e) {

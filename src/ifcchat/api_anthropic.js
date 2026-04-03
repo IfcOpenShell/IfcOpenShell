@@ -146,15 +146,22 @@ function toChatCompletionResponse(response) {
 
 export async function chat({ apiKey, model, messages, tools }) {
     const request = splitSystemAndMessages(messages);
+    const anthropicTools = toAnthropicTools(tools);
+
+    // Mark the last tool with cache_control so the entire tool list is cached
+    if (anthropicTools.length > 0) {
+        anthropicTools[anthropicTools.length - 1].cache_control = { type: "ephemeral" };
+    }
+
     const body = {
         model,
         max_tokens: 4096,
         messages: request.messages,
-        tools: toAnthropicTools(tools),
+        tools: anthropicTools,
     };
 
     if (request.system) {
-        body.system = request.system;
+        body.system = [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }];
     }
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
