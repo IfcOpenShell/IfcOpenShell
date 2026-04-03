@@ -12,13 +12,45 @@ const PROVIDERS = {
         baseUrlPlaceholder: "https://api.openai.com/v1",
         baseUrlDefault: "https://api.openai.com/v1",
         models: [
-            { 
-                value: "gpt-5",      
-                label: "gpt-5" 
+            {
+                value: "gpt-5.2",
+                label: "gpt-5.2"
             },
-            { 
-                value: "gpt-4.1",      
-                label: "gpt-4.1" 
+            {
+                value: "gpt-5.2-chat-latest",
+                label: "gpt-5.2-chat-latest"
+            },
+            {
+                value: "gpt-5.2-pro",
+                label: "gpt-5.2-pro"
+            },
+            {
+                value: "gpt-5",
+                label: "gpt-5"
+            },
+            {
+                value: "gpt-5-chat-latest",
+                label: "gpt-5-chat-latest"
+            },
+            {
+                value: "gpt-5-mini",
+                label: "gpt-5-mini"
+            },
+            {
+                value: "gpt-5-nano",
+                label: "gpt-5-nano"
+            },
+            {
+                value: "gpt-4.1",
+                label: "gpt-4.1"
+            },
+            {
+                value: "gpt-4.1-mini",
+                label: "gpt-4.1-mini"
+            },
+            {
+                value: "gpt-4.1-nano",
+                label: "gpt-4.1-nano"
             },
         ],
     },
