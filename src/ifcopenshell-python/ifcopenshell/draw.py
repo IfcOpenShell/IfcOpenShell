@@ -414,6 +414,7 @@ def main(
             if iteration != num_passes:
                 to_remove = []
 
+                material_cache = {}
                 for he_idx in range(0, len(pairs), 2):
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
@@ -426,13 +427,13 @@ def main(
                             # found to be inside element using tree.select() no face or style info
                             return x
                         else:
-                            return (x.instance.is_a(), tuple(x.position), tuple(x.normal), x.style_index)
+                            return (x.instance, tuple(x.position), tuple(x.normal), x.style_index)
 
                     pp = pairs[he_idx : he_idx + 2]
                     if pp == (-1, -1):
                         continue
                     data = list(map(format, map(semantics.__getitem__, pp)))
-                    if None not in data and data[0][0] == data[1][0]:
+                    if None not in data and data[0][0].is_a() == data[1][0].is_a():
                         if len(data[0]) == 2 and len(data[1]) == 2:
                             # Both from tree.select() -> (instance, -1)
                             to_remove.append(he_idx // 2)
@@ -446,7 +447,16 @@ def main(
                             if s1 == s2:
                                 if abs(1.0 - numpy.dot(n1, n2)) < 1.0e-5:
                                     if abs(numpy.dot(p1 - p2, n1)) < 1.0e-5:
-                                        to_remove.append(he_idx // 2)
+                                        
+                                        def get_cached_material(inst):
+                                            id_ = inst.id()
+                                            if id_ not in material_cache:
+                                                mat = ifcopenshell.util.element.get_material(inst)
+                                                material_cache[id_] = mat.id() if mat else -1
+                                            return material_cache[id_]
+                                            
+                                        if get_cached_material(data[0][0]) == get_cached_material(data[1][0]):
+                                            to_remove.append(he_idx // 2)
                         # Print edge index and semantic data
                         # print(he_idx // 2, *data)
 
