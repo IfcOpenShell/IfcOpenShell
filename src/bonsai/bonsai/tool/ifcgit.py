@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -282,7 +283,10 @@ class IfcGit:
         bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
 
         from bonsai.bim.module.root.data import IfcClassData
+        from bonsai.bim.module.model.data import AuthoringData
         import bonsai.bim.handler
+
+        AuthoringData.type_thumbnails = {}
 
         IfcClassData.is_loaded = False
 
@@ -514,20 +518,25 @@ class IfcGit:
     def config_ifcmerge(cls) -> None:
         config_reader = IfcGitRepo.repo.config_reader()
         section = 'mergetool "ifcmerge"'
+        new_cmd = "ifcmerge $BASE $LOCAL $REMOTE $MERGED > $MERGED.ifcmerge"
         if not config_reader.has_section(section):
             with IfcGitRepo.repo.config_writer() as config_writer:
-                config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
+                config_writer.set_value(section, "cmd", new_cmd)
+                config_writer.set_value(section, "trustExitCode", True)
+        elif config_reader.get_value(section, "cmd") != new_cmd:
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", new_cmd)
                 config_writer.set_value(section, "trustExitCode", True)
         section = 'mergetool "ifcmerge-forward"'
-        new_cmd = "ifcmerge --prioritise-local $BASE $LOCAL $REMOTE $MERGED"
-        old_cmd = "ifcmerge $BASE $REMOTE $LOCAL $MERGED"
+        new_cmd = "ifcmerge --prioritise-local $BASE $LOCAL $REMOTE $MERGED > $MERGED.ifcmerge"
         if not config_reader.has_section(section):
             with IfcGitRepo.repo.config_writer() as config_writer:
                 config_writer.set_value(section, "cmd", new_cmd)
                 config_writer.set_value(section, "trustExitCode", True)
-        elif config_reader.get_value(section, "cmd") == old_cmd:
+        elif config_reader.get_value(section, "cmd") != new_cmd:
             with IfcGitRepo.repo.config_writer() as config_writer:
                 config_writer.set_value(section, "cmd", new_cmd)
+                config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
     def config_push(cls, repo: git.Repo) -> None:
@@ -590,14 +599,62 @@ class IfcGit:
             return "error"
 
     @classmethod
-    def git_mergetool(cls, mergetool: str) -> Union[str, None]:
-        """Run ifcmerge tool. Returns None on success, error message string on failure."""
+    def git_merge_no_commit(cls, branch_name: str) -> Union[str, None]:
+        """Attempt a git merge without committing (always leaves a merge state to abort).
+        Returns None on clean merge, 'conflict' on conflict, or 'error' on unknown failure."""
         repo = IfcGitRepo.repo
+        branch = repo.branches[branch_name]
+        try:
+            repo.git.merge(branch, no_commit=True, no_ff=True)
+            return None
+        except git.exc.GitCommandError:
+            return "conflict"
+        except git.exc.GitError:
+            return "error"
+
+    @classmethod
+    def git_mergetool(cls, mergetool: str, path_ifc: str) -> Union[list, None]:
+        """Run ifcmerge tool. Returns None on success, list of conflict dicts on failure."""
+        repo = IfcGitRepo.repo
+        report_path = path_ifc + ".ifcmerge"
         try:
             repo.git.mergetool(tool=mergetool)
+        except git.exc.GitCommandError:
+            pass
+
+        conflicts = None
+        if os.path.exists(report_path):
+            try:
+                with open(report_path) as f:
+                    content = f.read().strip()
+                if content:
+                    data = json.loads(content)
+                    conflicts = data.get("conflicts", [])
+            except (json.JSONDecodeError, OSError):
+                pass
+            try:
+                os.remove(report_path)
+            except OSError:
+                pass
+        return conflicts
+
+    @classmethod
+    def store_merge_conflicts(cls, conflicts: list) -> None:
+        cls.get_ifcgit_props().merge_conflicts = json.dumps(conflicts)
+
+    @classmethod
+    def clear_merge_conflicts(cls) -> None:
+        cls.get_ifcgit_props().merge_conflicts = ""
+
+    @classmethod
+    def get_merge_conflicts(cls) -> Union[list, None]:
+        raw = cls.get_ifcgit_props().merge_conflicts
+        if not raw:
             return None
-        except git.exc.GitCommandError as exc:
-            return re.sub("(  stdout: '|')", "", exc.stdout)
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return None
 
     @classmethod
     def git_merge_abort(cls) -> None:

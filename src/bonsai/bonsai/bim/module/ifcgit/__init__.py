@@ -34,6 +34,7 @@ classes = (
     operator.Fetch,
     operator.Merge,
     operator.ObjectLog,
+    operator.SelectConflictEntity,
     operator.Push,
     operator.RefreshGit,
     operator.RenameBranch,

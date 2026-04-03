@@ -139,6 +139,11 @@ class IfcGitProperties(PropertyGroup):
         ],
         update=update_revlist,
     )
+    merge_conflicts: StringProperty(
+        name="Merge Conflicts",
+        description="JSON report from last failed merge attempt",
+        default="",
+    )
 
     if TYPE_CHECKING:
         ifcgit_commits: bpy.types.bpy_prop_collection_idprop[IfcGitListItem]
@@ -153,3 +158,4 @@ class IfcGitProperties(PropertyGroup):
         display_branch: str
         select_remote: str
         ifcgit_filter: Literal["all", "tagged", "relevant"]
+        merge_conflicts: str
