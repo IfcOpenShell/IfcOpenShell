@@ -32,7 +32,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Checkout intermediate Pages repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/wasm_ifcopenshell_org_static_html
           ref: gh-pages
