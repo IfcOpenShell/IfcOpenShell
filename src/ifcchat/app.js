@@ -497,11 +497,11 @@ Be concise. Avoid dumping huge trees unless asked.
 
 let messages = []; // running conversation state (Chat Completions style)
 
-const MAX_TOOL_RESULT_CHARS = 2000;
+const MAX_TOOL_RESULT_CHARS = 0;
 const MAX_HISTORY_MESSAGES = 40;
 
 function truncateToolResult(text) {
-    if (text.length <= MAX_TOOL_RESULT_CHARS) return text;
+    if (MAX_TOOL_RESULT_CHARS == 0 || text.length <= MAX_TOOL_RESULT_CHARS) return text;
     return text.slice(0, MAX_TOOL_RESULT_CHARS) + "\n... (truncated)";
 }
 
