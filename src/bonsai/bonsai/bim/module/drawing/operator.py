@@ -1005,14 +1005,12 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
-            self.remove_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
-            self.remove_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
 
         if self.cprops.fill_mode == "SHAPELY":
@@ -1090,7 +1088,6 @@ class CreateDrawing(bpy.types.Operator):
         if self.cprops.fill_mode == "SVGFILL":
             results = etree.tostring(root).decode("utf8")
             svg_data_1 = results
-            from collections import defaultdict
             from xml.dom.minidom import parseString
 
             def yield_groups(n):
@@ -1105,19 +1102,8 @@ class CreateDrawing(bpy.types.Operator):
 
             ls_groups = ifcopenshell.ifcopenshell_wrapper.svg_to_line_segments(results, "projection")
 
-            # Group projection elements by their parent section-view group so that all
-            # projection linework from the same view is merged in one cell decomposition.
-            # This enables coplanar surfaces from *different* elements to be joined.
-            groups_by_parent = defaultdict(list)
-            ls_by_parent = defaultdict(list)
-            for ls, g in zip(ls_groups, groups1):
-                pid = id(g.parentNode)
-                groups_by_parent[pid].append(g)
-                ls_by_parent[pid].extend(ls)
-
-            for pid, projection_groups in groups_by_parent.items():
-                section_parent = projection_groups[0].parentNode
-                combined_ls = ls_by_parent[pid]
+            for i, (ls, g1) in enumerate(zip(ls_groups, groups1)):
+                projection, g1 = g1, g1.parentNode
 
                 svgfill_context = ifcopenshell.ifcopenshell_wrapper.context(
                     ifcopenshell.ifcopenshell_wrapper.EXACT_CONSTRUCTIONS, 1.0e-3
@@ -1125,11 +1111,10 @@ class CreateDrawing(bpy.types.Operator):
 
                 # EXACT_CONSTRUCTIONS is significantly faster than FILTERED_CARTESIAN_QUOTIENT
                 # remove duplicates (without tolerance)
-                combined_ls = [l for l in map(tuple, set(map(frozenset, combined_ls))) if len(l) == 2 and l[0] != l[1]]
-                svgfill_context.add(combined_ls)
+                ls = [l for l in map(tuple, set(map(frozenset, ls))) if len(l) == 2 and l[0] != l[1]]
+                svgfill_context.add(ls)
 
-                num_passes = 1
-                g2 = None
+                num_passes = 0
 
                 for iteration in range(num_passes + 1):
                     # initialize empty group, note that in the current approach only one
@@ -1204,8 +1189,11 @@ class CreateDrawing(bpy.types.Operator):
                     if iteration != num_passes:
                         to_remove = []
 
-                        material_cache = {}
                         for he_idx in range(0, len(pairs), 2):
+                            # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
+                            # to see if they're coplanar, because ray-distance will be different in case
+                            # of element surfaces non-orthogonal to the view direction
+
                             def format(x):
                                 if x is None:
                                     return None
@@ -1213,48 +1201,34 @@ class CreateDrawing(bpy.types.Operator):
                                     # found to be inside element using tree.select() no face or style info
                                     return x
                                 else:
-                                    return (x.instance, tuple(x.position), tuple(x.normal), x.style_index)
+                                    return (x.instance.is_a(), x.ray_distance, tuple(x.position))
 
                             pp = pairs[he_idx : he_idx + 2]
                             if pp == (-1, -1):
                                 continue
                             data = list(map(format, map(semantics.__getitem__, pp)))
-                            if None not in data and data[0][0].is_a() == data[1][0].is_a():
-                                if len(data[0]) == 2 and len(data[1]) == 2:
-                                    # Both from tree.select() -> same element = same surface
-                                    if data[0][0] == data[1][0]:
-                                        to_remove.append(he_idx // 2)
-                                elif len(data[0]) == 4 and len(data[1]) == 4:
-                                    # Both from tree.select_ray() -> coplanar + same style + same material
-                                    p1, n1, s1 = np.array(data[0][1]), np.array(data[0][2]), data[0][3]
-                                    p2, n2, s2 = np.array(data[1][1]), np.array(data[1][2]), data[1][3]
-
-                                    if s1 == s2:
-                                        if abs(1.0 - abs(np.dot(n1, n2))) < 1.0e-4:
-                                            if abs(np.dot(p1 - p2, n1)) < 1.0e-4:
-                                                def get_cached_material(inst):
-                                                    id_ = inst.id()
-                                                    if id_ not in material_cache:
-                                                        mats = ifcopenshell.util.element.get_materials(inst)
-                                                        material_cache[id_] = tuple(m.id() for m in mats) if mats else (-1,)
-                                                    return material_cache[id_]
-
-                                                if get_cached_material(data[0][0]) == get_cached_material(data[1][0]):
-                                                    to_remove.append(he_idx // 2)
-                            # print(he_idx // 2, *data)
+                            if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.0e-5:
+                                to_remove.append(he_idx // 2)
+                                # Print edge index and semantic data
+                                # print(he_idx // 2, *data)
 
                         svgfill_context.merge(to_remove)
 
-                # Replace all per-element projection groups with one merged cell group.
-                # SVG draw order: projections must be below sections, so insert first.
-                for pg in projection_groups:
-                    section_parent.removeChild(pg)
+                # Swap the XML nodes from the files
+                # Remove the original hidden line node we still have in the serializer output
+                g1.removeChild(projection)
                 g2.setAttribute("class", "projection")
-                children = [x for x in section_parent.childNodes if x.nodeType == x.ELEMENT_NODE]
+                # Find the children of the projection node parent
+                children = [x for x in g1.childNodes if x.nodeType == x.ELEMENT_NODE]
                 if children:
-                    section_parent.insertBefore(g2, children[0])
+                    # Insert the new semantically enriched cell-based projection node
+                    # *before* the node with sections from the serializer. SVG derives
+                    # draw order from node order in the DOM so sections are draw over
+                    # the projections.
+                    g1.insertBefore(g2, children[0])
                 else:
-                    section_parent.appendChild(g2)
+                    # This generally shouldn't happen
+                    g1.appendChild(g2)
 
             results = dom1.toxml()
             results = results.encode("ascii", "xmlcharrefreplace")
@@ -1625,171 +1599,6 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
                 g.set("class", " ".join(list(polygon_classes)))
                 group.append(g)
-
-    def remove_coplanar_boundary_lines(self, root):
-        """Remove projection line segments shared between same-material elements.
-
-        After merge_linework_and_add_metadata() adds material-* CSS classes,
-        this scans all per-element projection <g> groups under each common
-        parent, finds path segments (M x0,y0 L x1,y1) that appear in two or
-        more groups that carry the same material-* class, and deletes them from
-        both groups so coplanar surfaces of the same material appear seamless.
-        """
-        SVG = "http://www.w3.org/2000/svg"
-        TOL = 0.01  # SVG coordinate tolerance for matching line endpoints
-
-        obj_cache = {}
-
-        def get_obj(guid):
-            if guid in obj_cache:
-                return obj_cache[guid]
-            element = self.get_element_by_guid(guid)
-            obj = tool.Ifc.get_object(element) if element is not None else None
-            obj_cache[guid] = obj
-            return obj
-
-        adjacency_cache = {}
-
-        def are_coplanar_and_adjacent(guid_a, guid_b, tol=0.01):
-            """True if the two meshes share a vertex AND have parallel face normals.
-
-            Sharing a vertex confirms physical adjacency (rules out depth-stacked elements
-            whose 2D projections accidentally overlap). Parallel normals confirms the
-            shared face is coplanar — elements meeting at a fold angle are rejected.
-            """
-            key = (min(guid_a, guid_b), max(guid_a, guid_b))
-            if key in adjacency_cache:
-                return adjacency_cache[key]
-            obj_a = get_obj(guid_a)
-            obj_b = get_obj(guid_b)
-            if obj_a is None or obj_b is None or obj_a.type != "MESH" or obj_b.type != "MESH":
-                adjacency_cache[key] = True
-                return True
-            # Quick AABB guard
-            corners_a = [obj_a.matrix_world @ Vector(c) for c in obj_a.bound_box]
-            corners_b = [obj_b.matrix_world @ Vector(c) for c in obj_b.bound_box]
-            for axis in range(3):
-                if min(c[axis] for c in corners_a) > max(c[axis] for c in corners_b) + tol:
-                    adjacency_cache[key] = False
-                    return False
-                if min(c[axis] for c in corners_b) > max(c[axis] for c in corners_a) + tol:
-                    adjacency_cache[key] = False
-                    return False
-            # Shared vertex check
-            tol_sq = tol * tol
-            verts_a = [obj_a.matrix_world @ v.co for v in obj_a.data.vertices]
-            verts_b = [obj_b.matrix_world @ v.co for v in obj_b.data.vertices]
-            has_shared = any((va - vb).length_squared < tol_sq for va in verts_a for vb in verts_b)
-            if not has_shared:
-                adjacency_cache[key] = False
-                return False
-            # Coplanarity check: use the largest-face normal for each object.
-            # Area-weighted averages fail for slabs because top/bottom faces cancel.
-            def dominant_world_normal(obj):
-                mat3 = obj.matrix_world.to_3x3().normalized()
-                best = max(obj.data.polygons, key=lambda p: p.area, default=None)
-                if best is None or best.area < 1e-10:
-                    return None
-                return (mat3 @ best.normal).normalized()
-
-            n_a = dominant_world_normal(obj_a)
-            n_b = dominant_world_normal(obj_b)
-            if n_a is None or n_b is None:
-                adjacency_cache[key] = True
-                return True
-            result = abs(n_a.dot(n_b)) > 1.0 - 1e-3
-            adjacency_cache[key] = result
-            return result
-
-        def parse_line(d):
-            # Format is "Mx0,y0 Lx1,y1" (no space after M/L)
-            parts = d.strip().split()
-            if len(parts) == 2 and parts[0].startswith("M") and parts[1].startswith("L"):
-                try:
-                    x0, y0 = map(float, parts[0][1:].split(","))
-                    x1, y1 = map(float, parts[1][1:].split(","))
-                    return (x0, y0), (x1, y1)
-                except ValueError:
-                    pass
-            return None
-
-        def lines_match(a, b):
-            (x0a, y0a), (x1a, y1a) = a
-            (x0b, y0b), (x1b, y1b) = b
-            return (
-                abs(x0a - x0b) < TOL and abs(y0a - y0b) < TOL and abs(x1a - x1b) < TOL and abs(y1a - y1b) < TOL
-            ) or (
-                abs(x0a - x1b) < TOL and abs(y0a - y1b) < TOL and abs(x1a - x0b) < TOL and abs(y1a - y0b) < TOL
-            )
-
-        # Group projection <g> elements by their immediate parent
-        parent_to_groups = {}
-        for g in root.iter(f"{{{SVG}}}g"):
-            cls_list = g.get("class", "").split()
-            if "projection" not in cls_list:
-                continue
-            parent = g.getparent()
-            if parent is None:
-                continue
-            parent_to_groups.setdefault(id(parent), []).append(g)
-
-        for pid, proj_groups in parent_to_groups.items():
-            if len(proj_groups) < 2:
-                continue
-
-            def get_material_key(guid):
-                element = self.get_element_by_guid(guid)
-                if element is None:
-                    return None
-                mats = ifcopenshell.util.element.get_materials(element)
-                return tuple(sorted(m.id() for m in mats)) if mats else ()
-
-            def get_style_key(guid):
-                """IDs of IfcPresentationStyles directly on the element's geometry items."""
-                element = self.get_element_by_guid(guid)
-                if element is None or not getattr(element, "Representation", None):
-                    return ()
-                style_ids = set()
-                for rep in element.Representation.Representations:
-                    for item in rep.Items:
-                        for si in getattr(item, "StyledByItem", ()):
-                            for style in si.Styles:
-                                style_ids.add(style.id())
-                return tuple(sorted(style_ids))
-
-            group_data = []
-            for grp in proj_groups:
-                guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
-                mat_key = get_material_key(guid)
-                style_key = get_style_key(guid)
-                segs = []
-                for path_el in grp.findall(f"{{{SVG}}}path"):
-                    line = parse_line(path_el.get("d", ""))
-                    if line is not None:
-                        segs.append((path_el, line))
-                group_data.append((grp, mat_key, style_key, segs, guid))
-
-            to_remove = set()
-            for i, (grp_i, mat_i, style_i, segs_i, guid_i) in enumerate(group_data):
-                if mat_i is None:
-                    continue
-                for j, (grp_j, mat_j, style_j, segs_j, guid_j) in enumerate(group_data):
-                    if j <= i:
-                        continue
-                    if mat_j != mat_i or style_j != style_i:
-                        continue
-                    if not are_coplanar_and_adjacent(guid_i, guid_j):
-                        continue
-                    for path_i, line_i in segs_i:
-                        for path_j, line_j in segs_j:
-                            if lines_match(line_i, line_j):
-                                to_remove.add(id(path_i))
-                                to_remove.add(id(path_j))
-            if to_remove:
-                for grp, mat, style, segs, guid in group_data:
-                    for path_el, _ in segs:
-                        if id(path_el) in to_remove:
-                            grp.remove(path_el)
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
