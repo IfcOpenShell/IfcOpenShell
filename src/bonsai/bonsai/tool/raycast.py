@@ -889,8 +889,19 @@ class Raycast(bonsai.core.tool.Raycast):
     def create_snap_obj(cls, obj):
         if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
             return None
-        for snap_obj in cls.snap_objs:
+        for i, snap_obj in enumerate(cls.snap_objs):
             if obj.name == snap_obj.obj.name:
+                # Handle objects modified while a modal operator is active.
+                # Example: adding a door or window alters the wall geometry.
+                if len(obj.data.vertices) != len(snap_obj.verts_3d):
+                    cls.snap_objs.pop(i)
+                    snap_obj = SnapObj(obj)
+                    cls.snap_objs.append(snap_obj)
+                for v1, v2 in zip(obj.data.vertices, snap_obj.verts_3d):
+                    if (obj.matrix_world @ v1.co) != v2:
+                        cls.snap_objs.pop(i)
+                        snap_obj = SnapObj(obj)
+                        cls.snap_objs.append(snap_obj)
                 return snap_obj
         snap_obj = SnapObj(obj)
         cls.snap_objs.append(snap_obj)
