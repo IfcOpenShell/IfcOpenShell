@@ -499,6 +499,9 @@ let messages = []; // running conversation state (Chat Completions style)
 
 const MAX_TOOL_RESULT_CHARS = 0;
 const MAX_HISTORY_MESSAGES = 40;
+const ESTIMATED_CHARS_PER_TOKEN = 4;
+const MAX_ESTIMATED_TOKENS_PER_MINUTE = 20000;
+const minuteTokenMap = new Map();
 
 function truncateToolResult(text) {
     if (MAX_TOOL_RESULT_CHARS == 0 || text.length <= MAX_TOOL_RESULT_CHARS) return text;
@@ -518,6 +521,16 @@ function trimHistory() {
     }
 }
 
+function getEstimatedTokenMinuteLog(firstIterationMinuteBucket) {
+    return Array.from(minuteTokenMap.entries())
+        .filter(([minuteBucket]) => minuteBucket >= firstIterationMinuteBucket)
+        .sort(([leftMinuteBucket], [rightMinuteBucket]) => leftMinuteBucket - rightMinuteBucket)
+        .map(([minuteBucket, estimatedTokens]) => ({
+            timestamp: new Date(minuteBucket * 60000).toISOString(),
+            estimated_tokens: estimatedTokens,
+        }));
+}
+
 async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
@@ -525,16 +538,33 @@ async function runAgentTurn(userText) {
     const provider = PROVIDERS[getProviderValue()];
     const { chat } = provider.api;
     const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
+    let firstIterationMinuteBucket = null;
 
     messages.push({ role: "user", content: userText });
     trimHistory();
 
     for (let i = 0; i < 64; i++) {
+        const messages_with_system = [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages];
+        const estimatedTokens = Math.max(1, Math.ceil(JSON.stringify(messages_with_system).length / ESTIMATED_CHARS_PER_TOKEN));
+        const now = Date.now();
+        let currentMinuteBucket = Math.floor(now / 60000);
+        if (firstIterationMinuteBucket === null) {
+            firstIterationMinuteBucket = currentMinuteBucket;
+        }
+        const estimateTokenUsage = (minuteTokenMap.get(currentMinuteBucket) ?? 0) + estimatedTokens;
+
+        if (estimateTokenUsage > MAX_ESTIMATED_TOKENS_PER_MINUTE) {
+            currentMinuteBucket += 1;
+            await new Promise((resolve) => setTimeout(() => resolve(), 60000));
+        }
+
+        minuteTokenMap.set(currentMinuteBucket, (minuteTokenMap.get(currentMinuteBucket) ?? 0) + estimatedTokens);
+
         const response = await chat({
             apiKey,
             baseURL,
             model: modelEl.value,
-            messages: [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages],
+            messages: messages_with_system,
             tools,
         });
 
@@ -546,7 +576,10 @@ async function runAgentTurn(userText) {
         if (message.content) addMessage("assistant", message.content);
 
         const calls = message.tool_calls ?? [];
-        if (calls.length === 0) return;
+        if (calls.length === 0) {
+            console.log("Estimated token usage by minute", getEstimatedTokenMinuteLog(firstIterationMinuteBucket));
+            return;
+        }
 
         for (const call of calls) {
             let args = {};
