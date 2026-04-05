@@ -1668,7 +1668,7 @@ class CreateDrawing(bpy.types.Operator):
             # Quick AABB guard
             corners_a = [obj_a.matrix_world @ Vector(c) for c in obj_a.bound_box]
             corners_b = [obj_b.matrix_world @ Vector(c) for c in obj_b.bound_box]
-            _verbose = {"1eW6OACmXD1hWJLDeB6erW", "2x0$XNlFH6FxlvS7eYJttx"} == {guid_a, guid_b}
+            _verbose = {"3S7QeSPVn3EB3T9TkDUy1e", "0YyL6RtCL8axn6AG9ItFhs"} == {guid_a, guid_b}
             for axis in range(3):
                 min_a = min(c[axis] for c in corners_a)
                 max_a = max(c[axis] for c in corners_a)
@@ -1789,6 +1789,39 @@ class CreateDrawing(bpy.types.Operator):
                     pass
             return None
 
+        def segs_bbox(segs):
+            """Compute AABB (min_x, max_x, min_y, max_y) from a parsed segment list."""
+            if not segs:
+                return None
+            xs = [c for _, (p0, p1) in segs for c in (p0[0], p1[0])]
+            ys = [c for _, (p0, p1) in segs for c in (p0[1], p1[1])]
+            return (min(xs), max(xs), min(ys), max(ys))
+
+        def seg_on_boundary_of(seg, bbox):
+            """True if seg is axis-aligned, lies on a bbox face, and meaningfully overlaps it.
+
+            Used for unilateral matching: when one element's shared edge is not
+            explicitly drawn (it's implicit or on the interior), the other element's
+            segments that lie on that missing edge can still be detected and removed.
+            """
+            (x0, y0), (x1, y1) = seg
+            min_x, max_x, min_y, max_y = bbox
+            is_v = abs(x0 - x1) < TOL
+            is_h = abs(y0 - y1) < TOL
+            if is_v:
+                x_mid = (x0 + x1) / 2
+                if abs(x_mid - min_x) < TOL or abs(x_mid - max_x) < TOL:
+                    y_lo, y_hi = min(y0, y1), max(y0, y1)
+                    overlap = min(y_hi, max_y) - max(y_lo, min_y)
+                    return overlap > TOL
+            if is_h:
+                y_mid = (y0 + y1) / 2
+                if abs(y_mid - min_y) < TOL or abs(y_mid - max_y) < TOL:
+                    x_lo, x_hi = min(x0, x1), max(x0, x1)
+                    overlap = min(x_hi, max_x) - max(x_lo, min_x)
+                    return overlap > TOL
+            return False
+
         def lines_match(a, b):
             """Return True if segments a and b represent the same physical edge.
 
@@ -1883,7 +1916,7 @@ class CreateDrawing(bpy.types.Operator):
                 for j, (grp_j, mat_j, style_j, segs_j, guid_j) in enumerate(group_data):
                     if j <= i:
                         continue
-                    _target = {"1eW6OACmXD1hWJLDeB6erW", "2x0$XNlFH6FxlvS7eYJttx"} == {guid_i, guid_j}
+                    _target = {"0QpDRRuif0R80d4CYPEQ$L", "0YyL6RtCL8axn6AG9ItFhs"} == {guid_i, guid_j}
                     if mat_j != mat_i:
                         if _target:
                             print(f"[TARGET PAIR] SKIPPED: different mat {mat_i!r} vs {mat_j!r}")
@@ -1904,6 +1937,26 @@ class CreateDrawing(bpy.types.Operator):
                                 to_remove.add(id(path_i))
                                 to_remove.add(id(path_j))
                                 matched += 1
+                    # Unilateral fallback: when one element's shared edge is implicit
+                    # (not explicitly drawn as a path segment), segments from the other
+                    # element that lie on the boundary of that element's SVG bbox are
+                    # still on the shared face and should be removed.
+                    if matched == 0 and segs_i and segs_j:
+                        bbox_i = segs_bbox(segs_i)
+                        bbox_j = segs_bbox(segs_j)
+                        if bbox_i and bbox_j:
+                            for path_j, line_j in segs_j:
+                                if seg_on_boundary_of(line_j, bbox_i):
+                                    if _target:
+                                        print(f"[TARGET PAIR] UNILATERAL j-on-i: {line_j}")
+                                    to_remove.add(id(path_j))
+                                    matched += 1
+                            for path_i, line_i in segs_i:
+                                if seg_on_boundary_of(line_i, bbox_j):
+                                    if _target:
+                                        print(f"[TARGET PAIR] UNILATERAL i-on-j: {line_i}")
+                                    to_remove.add(id(path_i))
+                                    matched += 1
                     if _target:
                         print(f"[TARGET PAIR] adj=True, matched={matched} segment pair(s)")
                         if matched == 0:
