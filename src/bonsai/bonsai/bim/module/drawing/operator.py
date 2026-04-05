@@ -1668,21 +1668,82 @@ class CreateDrawing(bpy.types.Operator):
             # Quick AABB guard
             corners_a = [obj_a.matrix_world @ Vector(c) for c in obj_a.bound_box]
             corners_b = [obj_b.matrix_world @ Vector(c) for c in obj_b.bound_box]
+            _verbose = {"1eW6OACmXD1hWJLDeB6erW", "2x0$XNlFH6FxlvS7eYJttx"} == {guid_a, guid_b}
             for axis in range(3):
-                if min(c[axis] for c in corners_a) > max(c[axis] for c in corners_b) + tol:
+                min_a = min(c[axis] for c in corners_a)
+                max_a = max(c[axis] for c in corners_a)
+                min_b = min(c[axis] for c in corners_b)
+                max_b = max(c[axis] for c in corners_b)
+                if _verbose:
+                    print(f"[TARGET PAIR] axis={axis} {guid_a}=[{min_a:.4f},{max_a:.4f}] {guid_b}=[{min_b:.4f},{max_b:.4f}]")
+                if min_a > max_b + tol:
+                    if _verbose:
+                        print(f"[TARGET PAIR] AABB separated on axis {axis} (min_a={min_a:.4f} > max_b={max_b:.4f})")
                     adjacency_cache[key] = False
                     return False
-                if min(c[axis] for c in corners_b) > max(c[axis] for c in corners_a) + tol:
+                if min_b > max_a + tol:
+                    if _verbose:
+                        print(f"[TARGET PAIR] AABB separated on axis {axis} (min_b={min_b:.4f} > max_a={max_a:.4f})")
                     adjacency_cache[key] = False
                     return False
-            # Shared vertex check
+            # Proximity check: vertex-to-vertex OR vertex-to-edge.
+            # Vertex-to-vertex handles adjacent elements sharing a corner.
+            # Vertex-to-edge handles containment (inner element's corners lie
+            # on edges of outer element, never at its corner vertices).
             tol_sq = tol * tol
+
+            def point_to_seg_dist_sq(p, a, b):
+                ab = b - a
+                len_sq = ab.length_squared
+                if len_sq < 1e-12:
+                    return (p - a).length_squared
+                t = max(0.0, min(1.0, (p - a).dot(ab) / len_sq))
+                return (p - (a + t * ab)).length_squared
+
+            def vertex_near_edges(verts, obj, tol_sq):
+                mat = obj.matrix_world
+                for v in verts:
+                    for edge in obj.data.edges:
+                        v0 = mat @ obj.data.vertices[edge.vertices[0]].co
+                        v1 = mat @ obj.data.vertices[edge.vertices[1]].co
+                        if point_to_seg_dist_sq(v, v0, v1) < tol_sq:
+                            return True
+                return False
+
             verts_a = [obj_a.matrix_world @ v.co for v in obj_a.data.vertices]
             verts_b = [obj_b.matrix_world @ v.co for v in obj_b.data.vertices]
+            # Fast vertex-vertex check first
             has_shared = any((va - vb).length_squared < tol_sq for va in verts_a for vb in verts_b)
+            if _verbose and not has_shared:
+                # Find closest vertex pair for diagnostic output
+                closest = min(((va - vb).length, ia, ib) for ia, va in enumerate(verts_a) for ib, vb in enumerate(verts_b))
+                print(f"[TARGET PAIR] no v-v match, closest vertex gap={closest[0]:.6f}m")
+            if not has_shared:
+                # Slower vertex-on-edge check for containment cases
+                has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
+                if _verbose:
+                    print(f"[TARGET PAIR] vertex-on-edge result={has_shared}")
+            if _verbose:
+                print(f"[TARGET PAIR] proximity_check={has_shared}")
             if not has_shared:
                 adjacency_cache[key] = False
                 return False
+            # Containment check: if one AABB fully contains the other, the
+            # dominant-normal test is unreliable (a flat inner element's largest
+            # face is its top/bottom, not its side face). Skip normal check.
+            def aabb_contains(outer, inner):
+                for axis in range(3):
+                    if min(c[axis] for c in inner) < min(c[axis] for c in outer) - tol:
+                        return False
+                    if max(c[axis] for c in inner) > max(c[axis] for c in outer) + tol:
+                        return False
+                return True
+
+            if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
+                if _verbose:
+                    print(f"[TARGET PAIR] AABB containment detected, skipping normal check")
+                adjacency_cache[key] = True
+                return True
             # Coplanarity check: use the largest-face normal for each object.
             # Area-weighted averages fail for slabs because top/bottom faces cancel.
             def dominant_world_normal(obj):
@@ -1697,9 +1758,24 @@ class CreateDrawing(bpy.types.Operator):
             if n_a is None or n_b is None:
                 adjacency_cache[key] = True
                 return True
-            result = abs(n_a.dot(n_b)) > 1.0 - 1e-3
-            adjacency_cache[key] = result
-            return result
+            dot = abs(n_a.dot(n_b))
+            if dot <= 1.0 - 1e-3:
+                if _verbose:
+                    print(f"[TARGET PAIR] normal_dot={dot:.6f} coplanar=False (not parallel)")
+                adjacency_cache[key] = False
+                return False
+            # Normals are parallel — also verify the elements share a face plane.
+            # Two walls can have parallel normals but be on different parallel planes
+            # (e.g., offset walls meeting at a corner). Project all vertices of each
+            # object onto the same reference normal (n_a) so that anti-parallel
+            # normals (one face is flipped) don't produce mirrored projections.
+            plane_pos_a = {round(v.dot(n_a), 5) for v in verts_a}
+            plane_pos_b = {round(v.dot(n_a), 5) for v in verts_b}
+            same_plane = any(abs(pa - pb) < tol for pa in plane_pos_a for pb in plane_pos_b)
+            if _verbose:
+                print(f"[TARGET PAIR] normal_dot={dot:.6f} plane_pos_a={sorted(plane_pos_a)} plane_pos_b={sorted(plane_pos_b)} same_plane={same_plane}")
+            adjacency_cache[key] = same_plane
+            return same_plane
 
         def parse_line(d):
             # Format is "Mx0,y0 Lx1,y1" (no space after M/L)
@@ -1714,13 +1790,42 @@ class CreateDrawing(bpy.types.Operator):
             return None
 
         def lines_match(a, b):
+            """Return True if segments a and b represent the same physical edge.
+
+            Two cases are handled:
+            1. Exact match (same endpoints within TOL, either order).
+            2. Collinear overlap: both axis-aligned, on the same line, with
+               overlapping extents. This handles L-shaped walls whose boundary
+               is split into sub-segments that collectively cover the same edge
+               as a single segment in the adjacent element.
+            """
             (x0a, y0a), (x1a, y1a) = a
             (x0b, y0b), (x1b, y1b) = b
-            return (
+            # Case 1: exact endpoint match (either orientation)
+            if (
                 abs(x0a - x0b) < TOL and abs(y0a - y0b) < TOL and abs(x1a - x1b) < TOL and abs(y1a - y1b) < TOL
             ) or (
                 abs(x0a - x1b) < TOL and abs(y0a - y1b) < TOL and abs(x1a - x0b) < TOL and abs(y1a - y0b) < TOL
-            )
+            ):
+                return True
+            # Case 2: collinear overlap for axis-aligned segments
+            is_horiz_a = abs(y0a - y1a) < TOL
+            is_horiz_b = abs(y0b - y1b) < TOL
+            if is_horiz_a and is_horiz_b:
+                # Both horizontal: same y, overlapping x ranges
+                if abs((y0a + y1a) / 2 - (y0b + y1b) / 2) < TOL:
+                    min_xa, max_xa = min(x0a, x1a), max(x0a, x1a)
+                    min_xb, max_xb = min(x0b, x1b), max(x0b, x1b)
+                    return max(min_xa, min_xb) < min(max_xa, max_xb) - TOL
+            is_vert_a = abs(x0a - x1a) < TOL
+            is_vert_b = abs(x0b - x1b) < TOL
+            if is_vert_a and is_vert_b:
+                # Both vertical: same x, overlapping y ranges
+                if abs((x0a + x1a) / 2 - (x0b + x1b) / 2) < TOL:
+                    min_ya, max_ya = min(y0a, y1a), max(y0a, y1a)
+                    min_yb, max_yb = min(y0b, y1b), max(y0b, y1b)
+                    return max(min_ya, min_yb) < min(max_ya, max_yb) - TOL
+            return False
 
         # Group projection <g> elements by their immediate parent
         parent_to_groups = {}
@@ -1760,10 +1865,12 @@ class CreateDrawing(bpy.types.Operator):
             group_data = []
             for grp in proj_groups:
                 guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
+                cls = grp.get("class", "")
                 mat_key = get_material_key(guid)
                 style_key = get_style_key(guid)
                 segs = []
-                for path_el in grp.findall(f"{{{SVG}}}path"):
+                all_paths = grp.findall(f"{{{SVG}}}path")
+                for path_el in all_paths:
                     line = parse_line(path_el.get("d", ""))
                     if line is not None:
                         segs.append((path_el, line))
@@ -1776,15 +1883,40 @@ class CreateDrawing(bpy.types.Operator):
                 for j, (grp_j, mat_j, style_j, segs_j, guid_j) in enumerate(group_data):
                     if j <= i:
                         continue
-                    if mat_j != mat_i or style_j != style_i:
+                    _target = {"1eW6OACmXD1hWJLDeB6erW", "2x0$XNlFH6FxlvS7eYJttx"} == {guid_i, guid_j}
+                    if mat_j != mat_i:
+                        if _target:
+                            print(f"[TARGET PAIR] SKIPPED: different mat {mat_i!r} vs {mat_j!r}")
                         continue
-                    if not are_coplanar_and_adjacent(guid_i, guid_j):
+                    if style_j != style_i:
+                        if _target:
+                            print(f"[TARGET PAIR] SKIPPED: different style {style_i!r} vs {style_j!r}")
                         continue
+                    adj = are_coplanar_and_adjacent(guid_i, guid_j)
+                    if not adj:
+                        continue
+                    matched = 0
                     for path_i, line_i in segs_i:
                         for path_j, line_j in segs_j:
                             if lines_match(line_i, line_j):
+                                if _target:
+                                    print(f"[TARGET PAIR] MATCH: {line_i} == {line_j}")
                                 to_remove.add(id(path_i))
                                 to_remove.add(id(path_j))
+                                matched += 1
+                    if _target:
+                        print(f"[TARGET PAIR] adj=True, matched={matched} segment pair(s)")
+                        if matched == 0:
+                            print(f"[TARGET PAIR] segs_i ({guid_i}, {len(segs_i)} segs):")
+                            for _, li in segs_i:
+                                print(f"  {li}")
+                            print(f"[TARGET PAIR] segs_j ({guid_j}, {len(segs_j)} segs):")
+                            for _, lj in segs_j:
+                                print(f"  {lj}")
+                    elif matched:
+                        print(f"[MERGED] {guid_i} vs {guid_j}: {matched} segment(s) removed")
+
+            print(f"[COPLANAR DEBUG] Total paths to remove: {len(to_remove)}")
             if to_remove:
                 for grp, mat, style, segs, guid in group_data:
                     for path_el, _ in segs:
