@@ -1747,7 +1747,7 @@ class CreateDrawing(bpy.types.Operator):
                 adjacency_cache[key] = True
                 return True
             dot = abs(n_a.dot(n_b))
-            if dot <= 1.0 - 1e-3:
+            if dot <= 1.0 - 3.8e-5:
                 adjacency_cache[key] = False
                 return False
             # Normals are parallel — also verify the elements share a face plane.
