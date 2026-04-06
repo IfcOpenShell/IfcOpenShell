@@ -109,7 +109,7 @@ jobs:
           # Ensure Bonsai and ifcsverchok enable/disable works before uploading to extensions repo.
 
           # Download Blender.
-          wget -q -O blender.tar.xz https://download.blender.org/release/Blender5.0/blender-5.1.0-linux-x64.tar.xz
+          wget -q -O blender.tar.xz https://download.blender.org/release/Blender5.1/blender-5.1.0-linux-x64.tar.xz
           tar -xf blender.tar.xz
 
           # Setup Blender.
@@ -122,7 +122,7 @@ jobs:
           pip install -r requirements.txt
           python setup_extensions_repo.py --last-tag
           cd ..
-          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
+          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py313*-linux-x64.zip)"
 
           # Install Bonsai.
           blender --command extension install-file -r user_default -e $bonsai_zip

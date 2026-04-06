@@ -112,15 +112,13 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             row.label(text="Working branch: Detached HEAD")
         else:
             row.label(text="Working branch: " + IfcGitData.data["active_branch_name"])
+            row.operator("ifcgit.rename_branch", icon="GREASEPENCIL", text="")
 
-        grouped = layout.row()
-        column = grouped.column()
-        row = column.row()
+        row = layout.row()
         row.prop(props, "display_branch", text="Browse branch")
         row.prop(props, "ifcgit_filter", text="Filter revisions")
 
-        row = column.row()
-        row.template_list(
+        layout.template_list(
             "COMMIT_UL_List",
             "The_List",
             props,
@@ -128,20 +126,64 @@ class IFCGIT_PT_panel(bpy.types.Panel):
             props,
             "commit_index",
         )
-        column = grouped.column()
-        row = column.row()
+
+        row = layout.row(align=True)
         row.operator("ifcgit.refresh", icon="FILE_REFRESH")
-
         if not is_dirty:
-
-            row = column.row()
             row.operator("ifcgit.display_revision", icon="SELECT_DIFFERENCE")
-
-            row = column.row()
             row.operator("ifcgit.switch_revision", icon="CURRENT_FILE")
+            row.operator("ifcgit.merge", icon="SYSTEM")
 
-            row = column.row()
-            row.operator("ifcgit.merge", icon="EXPERIMENTAL", text="")
+        conflicts = tool.IfcGit.get_merge_conflicts()
+        if conflicts is not None:
+            box = layout.box()
+            box.alert = True
+            row = box.row()
+            row.label(
+                text=f"Merge failed \u2014 {len(conflicts)} conflict(s)",
+                icon="ERROR",
+            )
+            for conflict in conflicts:
+                col = box.column(align=True)
+                conflict_type = conflict.get("type", "")
+                entity_id = conflict.get("entity_id", "?")
+                local_id = conflict.get("original_local_id")
+
+                if conflict_type == "attribute_conflict":
+                    entity_class = conflict.get("entity_class", "Entity")
+                    attr_idx = conflict.get("attribute_index", "?")
+                    desc = f"#{entity_id} {entity_class}: attribute {attr_idx} conflict"
+                elif conflict_type == "entity_deleted_and_modified":
+                    entity_class = conflict.get("entity_class", "Entity")
+                    desc = f"#{entity_id} {entity_class}: " + conflict.get("message", "deleted/modified conflict")
+                elif conflict_type == "class_changed":
+                    desc = (
+                        f"#{entity_id}: class changed "
+                        + conflict.get("base_class", "?")
+                        + " \u2192 "
+                        + conflict.get("modified_class", "?")
+                    )
+                elif conflict_type == "required_entity_deleted":
+                    desc = f"#{entity_id}: " + conflict.get("message", "required entity deleted")
+                else:
+                    desc = f"#{entity_id}: {conflict_type}"
+
+                row = col.row(align=True)
+                row.label(text=desc)
+                if local_id:
+                    op = row.operator(
+                        "ifcgit.select_conflict_entity",
+                        text="",
+                        icon="RESTRICT_SELECT_OFF",
+                    )
+                    op.step_id = local_id
+
+                if conflict_type == "attribute_conflict":
+                    sub = col.column(align=True)
+                    sub.scale_y = 0.75
+                    sub.label(text=f"  Base:   {conflict.get('base_value', '')}")
+                    sub.label(text=f"  Local:  {conflict.get('local_value', '')}")
+                    sub.label(text=f"  Remote: {conflict.get('remote_value', '')}")
 
         if not props.ifcgit_commits:
             return
