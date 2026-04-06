@@ -1776,29 +1776,45 @@ class CreateDrawing(bpy.types.Operator):
             ys = [c for _, (p0, p1) in segs for c in (p0[1], p1[1])]
             return (min(xs), max(xs), min(ys), max(ys))
 
-        def seg_on_boundary_of(seg, bbox):
-            """True if seg is axis-aligned, lies on a bbox face, and meaningfully overlaps it.
+        def seg_on_boundary_of(seg, bbox_self, bbox_other):
+            """True if seg (from 'other' element) lies on the shared interface with 'self'.
 
-            Used for unilateral matching: when one element's shared edge is not
-            explicitly drawn (it's implicit or on the interior), the other element's
-            segments that lie on that missing edge can still be detected and removed.
+            A segment from 'other' is on the shared interface when it lies on 'other's
+            OWN bbox edge AND 'self' extends past that edge on the adjacent side.
+
+            This handles both simple abutment (elements side-by-side, bbox edges touching)
+            and notch/wrap cases (one L-shaped element wraps around a smaller one, so the
+            shared face is interior to the larger element's bbox).
+
+            External edges shared by both elements (e.g. both having the same min_y) are
+            correctly rejected: 'self' would have to extend PAST the edge, not merely
+            reach the same boundary.
             """
             (x0, y0), (x1, y1) = seg
-            min_x, max_x, min_y, max_y = bbox
+            min_xs, max_xs, min_ys, max_ys = bbox_self
+            min_xo, max_xo, min_yo, max_yo = bbox_other
             is_v = abs(x0 - x1) < TOL
             is_h = abs(y0 - y1) < TOL
             if is_v:
                 x_mid = (x0 + x1) / 2
-                if abs(x_mid - min_x) < TOL or abs(x_mid - max_x) < TOL:
+                # Seg on other's RIGHT edge; self must extend further right
+                if abs(x_mid - max_xo) < TOL and max_xs > max_xo + TOL and min_xs < max_xo + TOL:
                     y_lo, y_hi = min(y0, y1), max(y0, y1)
-                    overlap = min(y_hi, max_y) - max(y_lo, min_y)
-                    return overlap > TOL
+                    return min(y_hi, max_ys) - max(y_lo, min_ys) > TOL
+                # Seg on other's LEFT edge; self must extend further left
+                if abs(x_mid - min_xo) < TOL and min_xs < min_xo - TOL and max_xs > min_xo - TOL:
+                    y_lo, y_hi = min(y0, y1), max(y0, y1)
+                    return min(y_hi, max_ys) - max(y_lo, min_ys) > TOL
             if is_h:
                 y_mid = (y0 + y1) / 2
-                if abs(y_mid - min_y) < TOL or abs(y_mid - max_y) < TOL:
+                # Seg on other's BOTTOM edge; self must extend further down
+                if abs(y_mid - max_yo) < TOL and max_ys > max_yo + TOL and min_ys < max_yo + TOL:
                     x_lo, x_hi = min(x0, x1), max(x0, x1)
-                    overlap = min(x_hi, max_x) - max(x_lo, min_x)
-                    return overlap > TOL
+                    return min(x_hi, max_xs) - max(x_lo, min_xs) > TOL
+                # Seg on other's TOP edge; self must extend further up
+                if abs(y_mid - min_yo) < TOL and min_ys < min_yo - TOL and max_ys > min_yo - TOL:
+                    x_lo, x_hi = min(x0, x1), max(x0, x1)
+                    return min(x_hi, max_xs) - max(x_lo, min_xs) > TOL
             return False
 
         def lines_match(a, b):
@@ -1960,11 +1976,11 @@ class CreateDrawing(bpy.types.Operator):
                         bbox_j = segs_bbox(segs_j)
                         if bbox_i and bbox_j:
                             for path_j, line_j in segs_j:
-                                if seg_on_boundary_of(line_j, bbox_i):
+                                if seg_on_boundary_of(line_j, bbox_i, bbox_j):
                                     to_remove.add(id(path_j))
                                     matched += 1
                             for path_i, line_i in segs_i:
-                                if seg_on_boundary_of(line_i, bbox_j):
+                                if seg_on_boundary_of(line_i, bbox_j, bbox_i):
                                     to_remove.add(id(path_i))
                                     matched += 1
 
