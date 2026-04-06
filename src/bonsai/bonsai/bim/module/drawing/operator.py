@@ -1817,43 +1817,73 @@ class CreateDrawing(bpy.types.Operator):
                     return min(x_hi, max_xs) - max(x_lo, min_xs) > TOL
             return False
 
-        def lines_match(a, b):
-            """Return True if segments a and b represent the same physical edge.
+        def seg_line_key(seg):
+            """Return a bucketed key for the axis-aligned line containing seg.
 
-            Two cases are handled:
-            1. Exact match (same endpoints within TOL, either order).
-            2. Collinear overlap: both axis-aligned, on the same line, with
-               overlapping extents. This handles L-shaped walls whose boundary
-               is split into sub-segments that collectively cover the same edge
-               as a single segment in the adjacent element.
+            Returns ('h', int_key) for horizontal or ('v', int_key) for vertical.
+            int_key is round(coord / TOL) so segments within TOL of the same
+            line map to the same bucket. Returns None for diagonal segments.
             """
-            (x0a, y0a), (x1a, y1a) = a
-            (x0b, y0b), (x1b, y1b) = b
-            # Case 1: exact endpoint match (either orientation)
-            if (
-                abs(x0a - x0b) < TOL and abs(y0a - y0b) < TOL and abs(x1a - x1b) < TOL and abs(y1a - y1b) < TOL
-            ) or (
-                abs(x0a - x1b) < TOL and abs(y0a - y1b) < TOL and abs(x1a - x0b) < TOL and abs(y1a - y0b) < TOL
-            ):
-                return True
-            # Case 2: collinear overlap for axis-aligned segments
-            is_horiz_a = abs(y0a - y1a) < TOL
-            is_horiz_b = abs(y0b - y1b) < TOL
-            if is_horiz_a and is_horiz_b:
-                # Both horizontal: same y, overlapping x ranges
-                if abs((y0a + y1a) / 2 - (y0b + y1b) / 2) < TOL:
-                    min_xa, max_xa = min(x0a, x1a), max(x0a, x1a)
-                    min_xb, max_xb = min(x0b, x1b), max(x0b, x1b)
-                    return max(min_xa, min_xb) < min(max_xa, max_xb) - TOL
-            is_vert_a = abs(x0a - x1a) < TOL
-            is_vert_b = abs(x0b - x1b) < TOL
-            if is_vert_a and is_vert_b:
-                # Both vertical: same x, overlapping y ranges
-                if abs((x0a + x1a) / 2 - (x0b + x1b) / 2) < TOL:
-                    min_ya, max_ya = min(y0a, y1a), max(y0a, y1a)
-                    min_yb, max_yb = min(y0b, y1b), max(y0b, y1b)
-                    return max(min_ya, min_yb) < min(max_ya, max_yb) - TOL
-            return False
+            (x0, y0), (x1, y1) = seg
+            if abs(y0 - y1) < TOL:
+                return ("h", round((y0 + y1) / 2 / TOL))
+            if abs(x0 - x1) < TOL:
+                return ("v", round((x0 + x1) / 2 / TOL))
+            return None
+
+        def seg_interval(seg):
+            """Return the (lo, hi) 1-D interval of an axis-aligned segment."""
+            (x0, y0), (x1, y1) = seg
+            if abs(y0 - y1) < TOL:
+                return (min(x0, x1), max(x0, x1))
+            return (min(y0, y1), max(y0, y1))
+
+        def seg_axis_coord(seg, kind):
+            """Return the fixed coordinate (y for 'h', x for 'v') of a segment."""
+            (x0, y0), (x1, y1) = seg
+            return (y0 + y1) / 2 if kind == "h" else (x0 + x1) / 2
+
+        def ivs_union(ivs):
+            """Merge a list of (lo, hi) intervals into a non-overlapping sorted list."""
+            merged = []
+            for lo, hi in sorted(ivs):
+                if merged and lo <= merged[-1][1] + TOL:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+                else:
+                    merged.append([lo, hi])
+            return [(lo, hi) for lo, hi in merged]
+
+        def ivs_intersect(a_ivs, b_ivs):
+            """Return the intersection of two sets of intervals."""
+            result = []
+            for a_lo, a_hi in a_ivs:
+                for b_lo, b_hi in b_ivs:
+                    lo, hi = max(a_lo, b_lo), min(a_hi, b_hi)
+                    if hi > lo + TOL:
+                        result.append((lo, hi))
+            return result
+
+        def ivs_subtract(ivs, sub):
+            """Subtract interval list sub from interval list ivs."""
+            result = list(ivs)
+            for s_lo, s_hi in sub:
+                new_result = []
+                for r_lo, r_hi in result:
+                    if s_hi <= r_lo + TOL or s_lo >= r_hi - TOL:
+                        new_result.append((r_lo, r_hi))
+                    else:
+                        if r_lo < s_lo - TOL:
+                            new_result.append((r_lo, s_lo))
+                        if r_hi > s_hi + TOL:
+                            new_result.append((s_hi, r_hi))
+                result = new_result
+            return result
+
+        def make_seg(kind, coord, lo, hi):
+            """Reconstruct a segment tuple from a line kind, fixed coord, and interval."""
+            if kind == "h":
+                return ((lo, coord), (hi, coord))
+            return ((coord, lo), (coord, hi))
 
         # Group projection <g> elements by their immediate parent
         parent_to_groups = {}
@@ -1948,6 +1978,9 @@ class CreateDrawing(bpy.types.Operator):
                 group_data.append((grp, mat_key, style_key, segs, guid))
 
             to_remove = set()
+            # New path segments to add back: list of (grp_element, seg) pairs
+            to_add = []
+
             for i, (grp_i, mat_i, style_i, segs_i, guid_i) in enumerate(group_data):
                 if mat_i is None:
                     continue
@@ -1961,12 +1994,50 @@ class CreateDrawing(bpy.types.Operator):
                     if not are_coplanar_and_adjacent(guid_i, guid_j):
                         continue
                     matched = 0
-                    for path_i, line_i in segs_i:
-                        for path_j, line_j in segs_j:
-                            if lines_match(line_i, line_j):
-                                to_remove.add(id(path_i))
-                                to_remove.add(id(path_j))
-                                matched += 1
+
+                    # Group each element's segments by axis-aligned line.
+                    # All segments on the same line (within TOL) are merged into a
+                    # single interval union before computing the shared portion.
+                    # This correctly handles cases where one element has a single
+                    # long edge while the other has multiple shorter segments on
+                    # the same line (e.g. an L-shaped element).
+                    def group_by_line(segs):
+                        d = {}
+                        for path_el, seg in segs:
+                            key = seg_line_key(seg)
+                            if key is None:
+                                continue
+                            if key not in d:
+                                d[key] = {"paths": [], "ivs": [], "coord": seg_axis_coord(seg, key[0])}
+                            d[key]["paths"].append(path_el)
+                            d[key]["ivs"].append(seg_interval(seg))
+                        return d
+
+                    lines_i = group_by_line(segs_i)
+                    lines_j = group_by_line(segs_j)
+
+                    for key in set(lines_i) & set(lines_j):
+                        entry_i = lines_i[key]
+                        entry_j = lines_j[key]
+                        union_i = ivs_union(entry_i["ivs"])
+                        union_j = ivs_union(entry_j["ivs"])
+                        shared = ivs_intersect(union_i, union_j)
+                        if not shared:
+                            continue
+                        matched += len(shared)
+                        kind = key[0]
+                        coord = entry_i["coord"]
+                        for path_el in entry_i["paths"]:
+                            to_remove.add(id(path_el))
+                        for path_el in entry_j["paths"]:
+                            to_remove.add(id(path_el))
+                        rem_i = ivs_subtract(union_i, shared)
+                        rem_j = ivs_subtract(union_j, shared)
+                        for lo, hi in rem_i:
+                            to_add.append((grp_i, make_seg(kind, coord, lo, hi)))
+                        for lo, hi in rem_j:
+                            to_add.append((grp_j, make_seg(kind, coord, lo, hi)))
+
                     # Unilateral fallback: when one element's shared edge is implicit
                     # (not explicitly drawn as a path segment), segments from the other
                     # element that lie on the boundary of that element's SVG bbox are
@@ -1989,6 +2060,11 @@ class CreateDrawing(bpy.types.Operator):
                     for path_el, _ in segs:
                         if id(path_el) in to_remove:
                             grp.remove(path_el)
+
+            for grp_el, seg in to_add:
+                path_el = etree.SubElement(grp_el, f"{{{SVG}}}path")
+                (x0, y0), (x1, y1) = seg
+                path_el.set("d", f"M{x0},{y0} L{x1},{y1}")
 
     def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
