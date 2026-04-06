@@ -1638,6 +1638,11 @@ class CreateDrawing(bpy.types.Operator):
         SVG = "http://www.w3.org/2000/svg"
         TOL = 0.01  # SVG coordinate tolerance for matching line endpoints
 
+        # Determine whether the camera is looking up (RCP) or down (plan view).
+        # In Blender the camera looks along its local -Z axis. If the camera's
+        # local Z axis in world space points downward, the camera looks upward.
+        camera_looks_up = self.camera.matrix_world.col[2].z < 0
+
         obj_cache = {}
 
         def get_obj(guid):
@@ -1932,23 +1937,70 @@ class CreateDrawing(bpy.types.Operator):
                 mats = ifcopenshell.util.element.get_materials(element)
                 return tuple(sorted(m.id() for m in mats)) if mats else ()
 
-            def mat_keys_match(a, b):
+            def get_camera_face_layer_id(guid):
+                """Return the material ID of the layer the camera sees for this element.
+
+                For IfcMaterialLayerSetUsage elements with AXIS3 (vertical stacking —
+                slabs, roofs), the visible face depends on camera direction:
+                  - Plan view (camera looks down): the top layer is visible.
+                  - RCP (camera looks up): the bottom layer is visible.
+                DirectionSense POSITIVE means layers stack upward (Layer[0] = bottom,
+                Layer[-1] = top). NEGATIVE means layers stack downward (Layer[0] = top).
+                Returns None for walls (non-AXIS3) or elements without layer usage —
+                these fall back to the generic boundary-ends check.
+                """
+                element = self.get_element_by_guid(guid)
+                if element is None:
+                    return None
+                material = ifcopenshell.util.element.get_material(element)
+                if material is None or not material.is_a("IfcMaterialLayerSetUsage"):
+                    return None
+                if material.LayerSetDirection != "AXIS3":
+                    return None
+                layer_set = material.ForLayerSet
+                if layer_set is None:
+                    return None
+                layers = [l for l in layer_set.MaterialLayers if l.Material is not None]
+                if not layers:
+                    return None
+                positive = material.DirectionSense == "POSITIVE"
+                # POSITIVE: Layer[0]=bottom, Layer[-1]=top
+                # NEGATIVE: Layer[0]=top,    Layer[-1]=bottom
+                if camera_looks_up:
+                    face_layer = layers[0] if positive else layers[-1]
+                else:
+                    face_layer = layers[-1] if positive else layers[0]
+                return face_layer.Material.id()
+
+            def mat_keys_match(a, b, face_a=None, face_b=None):
                 """True if two ordered layer-material tuples represent compatible assemblies.
 
                 Compatible means the visible cross-section at the shared face is
-                the same material.  Four cases are accepted:
+                the same material.  Checks in order:
                   - Exact match (identical layer sequences).
                   - Reversed match (same assembly in opposite orientation).
-                  - Suffix match: one sequence ends with all layers of the other
-                    (the larger assembly has extra layers on the far side).
-                  - Prefix match: one sequence starts with all layers of the other
-                    (extra layers on the near side).
+                  - Suffix match: one sequence ends with all layers of the other.
+                  - Prefix match: one sequence starts with all layers of the other.
+                  - Camera-face match: when the camera-facing layer ID is known for
+                    both elements (AXIS3 slabs/roofs), only those layers are compared
+                    so that a plan view and an RCP of the same elements can produce
+                    different join decisions.
+                  - Boundary match fallback: any end layer of a matches any end layer
+                    of b (used when camera-face direction cannot be determined).
                 """
                 if a == b or a == b[::-1]:
                     return True
                 short, long_ = (a, b) if len(a) <= len(b) else (b, a)
                 n = len(short)
-                return long_[-n:] == short or long_[:n] == short
+                if long_[-n:] == short or long_[:n] == short:
+                    return True
+                # Camera-directional boundary check for AXIS3 elements
+                if face_a is not None and face_b is not None:
+                    return face_a == face_b
+                # Generic boundary check: any end layer matches any end layer
+                a_ends = {a[0], a[-1]} if a else set()
+                b_ends = {b[0], b[-1]} if b else set()
+                return bool(a_ends & b_ends)
 
             def get_style_key(guid):
                 """IDs of IfcPresentationStyles directly on the element's geometry items."""
@@ -1968,6 +2020,7 @@ class CreateDrawing(bpy.types.Operator):
                 guid = grp.get("{http://www.ifcopenshell.org/ns}guid", "")
                 cls = grp.get("class", "")
                 mat_key = get_material_key(guid)
+                face_mat_id = get_camera_face_layer_id(guid)
                 style_key = get_style_key(guid)
                 segs = []
                 all_paths = grp.findall(f"{{{SVG}}}path")
@@ -1975,19 +2028,19 @@ class CreateDrawing(bpy.types.Operator):
                     line = parse_line(path_el.get("d", ""))
                     if line is not None:
                         segs.append((path_el, line))
-                group_data.append((grp, mat_key, style_key, segs, guid))
+                group_data.append((grp, mat_key, face_mat_id, style_key, segs, guid))
 
             to_remove = set()
             # New path segments to add back: list of (grp_element, seg) pairs
             to_add = []
 
-            for i, (grp_i, mat_i, style_i, segs_i, guid_i) in enumerate(group_data):
+            for i, (grp_i, mat_i, face_i, style_i, segs_i, guid_i) in enumerate(group_data):
                 if mat_i is None:
                     continue
-                for j, (grp_j, mat_j, style_j, segs_j, guid_j) in enumerate(group_data):
+                for j, (grp_j, mat_j, face_j, style_j, segs_j, guid_j) in enumerate(group_data):
                     if j <= i:
                         continue
-                    if not mat_keys_match(mat_i, mat_j):
+                    if not mat_keys_match(mat_i, mat_j, face_i, face_j):
                         continue
                     if style_j != style_i:
                         continue
@@ -2056,7 +2109,7 @@ class CreateDrawing(bpy.types.Operator):
                                     matched += 1
 
             if to_remove:
-                for grp, mat, style, segs, guid in group_data:
+                for grp, mat, face, style, segs, guid in group_data:
                     for path_el, _ in segs:
                         if id(path_el) in to_remove:
                             grp.remove(path_el)
