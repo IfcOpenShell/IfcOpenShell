@@ -1668,22 +1668,15 @@ class CreateDrawing(bpy.types.Operator):
             # Quick AABB guard
             corners_a = [obj_a.matrix_world @ Vector(c) for c in obj_a.bound_box]
             corners_b = [obj_b.matrix_world @ Vector(c) for c in obj_b.bound_box]
-            _verbose = {"3S7QeSPVn3EB3T9TkDUy1e", "0YyL6RtCL8axn6AG9ItFhs"} == {guid_a, guid_b}
             for axis in range(3):
                 min_a = min(c[axis] for c in corners_a)
                 max_a = max(c[axis] for c in corners_a)
                 min_b = min(c[axis] for c in corners_b)
                 max_b = max(c[axis] for c in corners_b)
-                if _verbose:
-                    print(f"[TARGET PAIR] axis={axis} {guid_a}=[{min_a:.4f},{max_a:.4f}] {guid_b}=[{min_b:.4f},{max_b:.4f}]")
                 if min_a > max_b + tol:
-                    if _verbose:
-                        print(f"[TARGET PAIR] AABB separated on axis {axis} (min_a={min_a:.4f} > max_b={max_b:.4f})")
                     adjacency_cache[key] = False
                     return False
                 if min_b > max_a + tol:
-                    if _verbose:
-                        print(f"[TARGET PAIR] AABB separated on axis {axis} (min_b={min_b:.4f} > max_a={max_a:.4f})")
                     adjacency_cache[key] = False
                     return False
             # Proximity check: vertex-to-vertex OR vertex-to-edge.
@@ -1714,17 +1707,9 @@ class CreateDrawing(bpy.types.Operator):
             verts_b = [obj_b.matrix_world @ v.co for v in obj_b.data.vertices]
             # Fast vertex-vertex check first
             has_shared = any((va - vb).length_squared < tol_sq for va in verts_a for vb in verts_b)
-            if _verbose and not has_shared:
-                # Find closest vertex pair for diagnostic output
-                closest = min(((va - vb).length, ia, ib) for ia, va in enumerate(verts_a) for ib, vb in enumerate(verts_b))
-                print(f"[TARGET PAIR] no v-v match, closest vertex gap={closest[0]:.6f}m")
             if not has_shared:
                 # Slower vertex-on-edge check for containment cases
                 has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
-                if _verbose:
-                    print(f"[TARGET PAIR] vertex-on-edge result={has_shared}")
-            if _verbose:
-                print(f"[TARGET PAIR] proximity_check={has_shared}")
             if not has_shared:
                 adjacency_cache[key] = False
                 return False
@@ -1740,8 +1725,6 @@ class CreateDrawing(bpy.types.Operator):
                 return True
 
             if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
-                if _verbose:
-                    print(f"[TARGET PAIR] AABB containment detected, skipping normal check")
                 adjacency_cache[key] = True
                 return True
             # Coplanarity check: use the largest-face normal for each object.
@@ -1760,8 +1743,6 @@ class CreateDrawing(bpy.types.Operator):
                 return True
             dot = abs(n_a.dot(n_b))
             if dot <= 1.0 - 1e-3:
-                if _verbose:
-                    print(f"[TARGET PAIR] normal_dot={dot:.6f} coplanar=False (not parallel)")
                 adjacency_cache[key] = False
                 return False
             # Normals are parallel — also verify the elements share a face plane.
@@ -1772,8 +1753,6 @@ class CreateDrawing(bpy.types.Operator):
             plane_pos_a = {round(v.dot(n_a), 5) for v in verts_a}
             plane_pos_b = {round(v.dot(n_a), 5) for v in verts_b}
             same_plane = any(abs(pa - pb) < tol for pa in plane_pos_a for pb in plane_pos_b)
-            if _verbose:
-                print(f"[TARGET PAIR] normal_dot={dot:.6f} plane_pos_a={sorted(plane_pos_a)} plane_pos_b={sorted(plane_pos_b)} same_plane={same_plane}")
             adjacency_cache[key] = same_plane
             return same_plane
 
@@ -1876,11 +1855,54 @@ class CreateDrawing(bpy.types.Operator):
                 continue
 
             def get_material_key(guid):
+                """Return an ordered tuple of material IDs for comparison.
+
+                For elements with IfcMaterialLayerSetUsage (walls, slabs), use
+                the ordered layer material IDs — this ignores extra materials
+                assigned via surface styles or other mechanisms that don't affect
+                the visible cross-section. The tuple is normalised so that
+                reversed layer sequences (same assembly, opposite orientation)
+                compare equal.
+
+                Falls back to a sorted tuple of all material IDs for elements
+                that don't use a layer set.
+                """
                 element = self.get_element_by_guid(guid)
                 if element is None:
                     return None
+                material = ifcopenshell.util.element.get_material(element)
+                if material is not None:
+                    layer_set = None
+                    if material.is_a("IfcMaterialLayerSetUsage"):
+                        layer_set = material.ForLayerSet
+                    elif material.is_a("IfcMaterialLayerSet"):
+                        layer_set = material
+                    if layer_set is not None:
+                        return tuple(
+                            layer.Material.id()
+                            for layer in layer_set.MaterialLayers
+                            if layer.Material is not None
+                        )
                 mats = ifcopenshell.util.element.get_materials(element)
                 return tuple(sorted(m.id() for m in mats)) if mats else ()
+
+            def mat_keys_match(a, b):
+                """True if two ordered layer-material tuples represent compatible assemblies.
+
+                Compatible means the visible cross-section at the shared face is
+                the same material.  Four cases are accepted:
+                  - Exact match (identical layer sequences).
+                  - Reversed match (same assembly in opposite orientation).
+                  - Suffix match: one sequence ends with all layers of the other
+                    (the larger assembly has extra layers on the far side).
+                  - Prefix match: one sequence starts with all layers of the other
+                    (extra layers on the near side).
+                """
+                if a == b or a == b[::-1]:
+                    return True
+                short, long_ = (a, b) if len(a) <= len(b) else (b, a)
+                n = len(short)
+                return long_[-n:] == short or long_[:n] == short
 
             def get_style_key(guid):
                 """IDs of IfcPresentationStyles directly on the element's geometry items."""
@@ -1916,24 +1938,16 @@ class CreateDrawing(bpy.types.Operator):
                 for j, (grp_j, mat_j, style_j, segs_j, guid_j) in enumerate(group_data):
                     if j <= i:
                         continue
-                    _target = {"0QpDRRuif0R80d4CYPEQ$L", "0YyL6RtCL8axn6AG9ItFhs"} == {guid_i, guid_j}
-                    if mat_j != mat_i:
-                        if _target:
-                            print(f"[TARGET PAIR] SKIPPED: different mat {mat_i!r} vs {mat_j!r}")
+                    if not mat_keys_match(mat_i, mat_j):
                         continue
                     if style_j != style_i:
-                        if _target:
-                            print(f"[TARGET PAIR] SKIPPED: different style {style_i!r} vs {style_j!r}")
                         continue
-                    adj = are_coplanar_and_adjacent(guid_i, guid_j)
-                    if not adj:
+                    if not are_coplanar_and_adjacent(guid_i, guid_j):
                         continue
                     matched = 0
                     for path_i, line_i in segs_i:
                         for path_j, line_j in segs_j:
                             if lines_match(line_i, line_j):
-                                if _target:
-                                    print(f"[TARGET PAIR] MATCH: {line_i} == {line_j}")
                                 to_remove.add(id(path_i))
                                 to_remove.add(id(path_j))
                                 matched += 1
@@ -1947,29 +1961,13 @@ class CreateDrawing(bpy.types.Operator):
                         if bbox_i and bbox_j:
                             for path_j, line_j in segs_j:
                                 if seg_on_boundary_of(line_j, bbox_i):
-                                    if _target:
-                                        print(f"[TARGET PAIR] UNILATERAL j-on-i: {line_j}")
                                     to_remove.add(id(path_j))
                                     matched += 1
                             for path_i, line_i in segs_i:
                                 if seg_on_boundary_of(line_i, bbox_j):
-                                    if _target:
-                                        print(f"[TARGET PAIR] UNILATERAL i-on-j: {line_i}")
                                     to_remove.add(id(path_i))
                                     matched += 1
-                    if _target:
-                        print(f"[TARGET PAIR] adj=True, matched={matched} segment pair(s)")
-                        if matched == 0:
-                            print(f"[TARGET PAIR] segs_i ({guid_i}, {len(segs_i)} segs):")
-                            for _, li in segs_i:
-                                print(f"  {li}")
-                            print(f"[TARGET PAIR] segs_j ({guid_j}, {len(segs_j)} segs):")
-                            for _, lj in segs_j:
-                                print(f"  {lj}")
-                    elif matched:
-                        print(f"[MERGED] {guid_i} vs {guid_j}: {matched} segment(s) removed")
 
-            print(f"[COPLANAR DEBUG] Total paths to remove: {len(to_remove)}")
             if to_remove:
                 for grp, mat, style, segs, guid in group_data:
                     for path_el, _ in segs:
