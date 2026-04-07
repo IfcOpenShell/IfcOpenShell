@@ -7,6 +7,7 @@
 #include "../../ifcparse/logger.h"
 
 #include <mutex>
+#include <unordered_set>
 
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/schemas/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
@@ -36,11 +37,18 @@ namespace geometry {
 		void initialize_units_();
 		void addRepresentationsFromContextIds(std::vector<IfcSchema::IfcRepresentation>&);
 		void addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRepresentation>&);
+		void ensureRepresentationContextCache_();
 
 		// Set of instances to mark failures that are intended, such as representations not
 		// resulting in any items due to dimensionality filters.
 		std::set<express::Base> failed_on_purpose_;
 		std::set<IfcSchema::IfcRepresentationMap> not_reusable_maps_;
+		std::unordered_set<uint32_t> representation_context_cache_;
+		std::set<int> representation_context_cache_ids_;
+		settings::OutputDimensionalityTypes representation_context_cache_dimensionality_ = settings::SURFACES_AND_SOLIDS;
+		bool representation_context_cache_has_context_ids_ = false;
+		bool representation_context_cache_valid_ = false;
+		std::mutex representation_context_cache_guard_;
 
 		template <typename T>
 		void process_mapping(bool& matched, taxonomy::ptr& item, const express::Base& inst) {

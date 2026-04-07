@@ -1283,26 +1283,59 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
     }
 }
 
-express::Base mapping::representation_of(const express::Base& product) {
-    // @todo correct, but very inefficient
-    std::vector<IfcSchema::IfcRepresentation> representations;
-    std::vector<IfcSchema::IfcRepresentation> of_product;
-    std::vector<IfcSchema::IfcRepresentation> intersection;
-    std::vector<IfcSchema::IfcRepresentation> intersection_no_box;
+void mapping::ensureRepresentationContextCache_() {
+    const auto has_context_ids = settings_.get<settings::ContextIds>().has();
+    const auto dimensionality = settings_.get<settings::OutputDimensionality>().get();
+    const auto context_ids = has_context_ids ? settings_.get<settings::ContextIds>().get() : std::set<int>{};
 
-    if (!settings_.get<settings::ContextIds>().has()) {
+    std::lock_guard<std::mutex> guard(representation_context_cache_guard_);
+
+    if (representation_context_cache_valid_ &&
+        representation_context_cache_has_context_ids_ == has_context_ids &&
+        representation_context_cache_dimensionality_ == dimensionality &&
+        representation_context_cache_ids_ == context_ids) {
+        return;
+    }
+
+    std::vector<IfcSchema::IfcRepresentation> representations;
+    if (!has_context_ids) {
         addRepresentationsFromDefaultContexts(representations);
     } else {
         addRepresentationsFromContextIds(representations);
     }
 
+    std::unordered_set<uint32_t> representation_ids;
+    representation_ids.reserve(representations.size());
+    for (auto& representation : representations) {
+        if (representation) {
+            representation_ids.insert((uint32_t)representation.id());
+        }
+    }
+
+    representation_context_cache_ = std::move(representation_ids);
+    representation_context_cache_ids_ = std::move(context_ids);
+    representation_context_cache_dimensionality_ = dimensionality;
+    representation_context_cache_has_context_ids_ = has_context_ids;
+    representation_context_cache_valid_ = true;
+}
+
+express::Base mapping::representation_of(const express::Base& product) {
+    std::vector<IfcSchema::IfcRepresentation> of_product;
+    std::vector<IfcSchema::IfcRepresentation> intersection;
+    std::vector<IfcSchema::IfcRepresentation> intersection_no_box;
+
+    ensureRepresentationContextCache_();
+
     if (product.as<IfcSchema::IfcProduct>().Representation()) {
         of_product = product.as<IfcSchema::IfcProduct>().Representation().Representations();
     }
 
-    for (auto& r : of_product) {
-        if (std::find(representations.begin(), representations.end(), r) != representations.end()) {
-            intersection.push_back(r);
+    {
+        std::lock_guard<std::mutex> guard(representation_context_cache_guard_);
+        for (auto& r : of_product) {
+            if (representation_context_cache_.find((uint32_t)r.id()) != representation_context_cache_.end()) {
+                intersection.push_back(r);
+            }
         }
     }
 
