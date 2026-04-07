@@ -30,7 +30,7 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.8.3",
     "tw-animate-css": "^1.3.2",
-    "vite": "^6.4.1"
+    "vite": "^6.4.2"
   },
   "dependencies": {
     "eventemitter3": "^5.0.1",
