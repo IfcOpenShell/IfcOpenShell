@@ -70,6 +70,7 @@ modules = {
     "pset": None,
     "qto": None,
     "classification": None,
+    "license": None,
     "library": None,
     "constraint": None,
     "document": None,
