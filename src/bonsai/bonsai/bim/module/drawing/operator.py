@@ -1729,7 +1729,8 @@ class CreateDrawing(bpy.types.Operator):
                         return False
                 return True
 
-            if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
+            contained = aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a)
+            if contained:
                 adjacency_cache[key] = True
                 return True
             # Coplanarity check: use the largest-face normal for each object.
@@ -1750,13 +1751,15 @@ class CreateDrawing(bpy.types.Operator):
             if dot <= 1.0 - 3.8e-5:  # ~0.5° tolerance
                 adjacency_cache[key] = False
                 return False
-            # Normals are parallel — also verify the elements share a face plane.
-            # Project all vertices onto n_a to get the 1-D depth range of each
-            # element along the normal axis. Side-by-side elements span the same
-            # depth range (overlap > tol). Elements stacked end-to-end only touch
-            # at a single interface point (overlap ≈ 0) and must not be joined.
-            projs_a = [v.dot(n_a) for v in verts_a]
-            projs_b = [v.dot(n_a) for v in verts_b]
+            # Check whether both elements are at the same depth relative to the
+            # camera. Project vertices onto the camera look direction: elements
+            # at the same camera depth have overlapping ranges; depth-stacked
+            # elements (one in front of the other) have separated ranges.
+            # Using the camera direction rather than n_a is critical — n_a may
+            # be perpendicular to the camera (e.g. X-normal boxes in plan view)
+            # which would produce zero overlap for legitimate side-by-side pairs.
+            projs_a = [v.dot(_cam_look) for v in verts_a]
+            projs_b = [v.dot(_cam_look) for v in verts_b]
             range_a = (min(projs_a), max(projs_a))
             range_b = (min(projs_b), max(projs_b))
             overlap = min(range_a[1], range_b[1]) - max(range_a[0], range_b[0])
