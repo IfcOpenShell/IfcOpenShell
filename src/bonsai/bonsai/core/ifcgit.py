@@ -151,8 +151,11 @@ def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.t
         conflicts = ifcgit.git_mergetool(mergetool, path_ifc)
         if conflicts is not None:
             ifcgit.git_merge_abort()
-            ifcgit.store_merge_conflicts(conflicts)
-            operator.report({"WARNING"}, "Merge failed — see the conflict report in the panel below")
+            if conflicts:
+                ifcgit.store_merge_conflicts(conflicts)
+                operator.report({"WARNING"}, "Merge failed — see the conflict report in the panel below")
+            else:
+                operator.report({"ERROR"}, "Merge tool failed — check that ifcmerge is installed correctly")
             return False
         ifcgit.commit_merge(path_ifc)
 

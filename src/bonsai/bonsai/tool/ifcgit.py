@@ -217,7 +217,7 @@ class IfcGit:
                 rev=[props.display_branch],
             )
         )
-        commits_relevant = list(
+        commits_relevant = set(
             git.objects.commit.Commit.iter_items(
                 repo=repo,
                 rev=[props.display_branch],
@@ -225,11 +225,17 @@ class IfcGit:
             )
         )
 
+        def is_relevant(commit):
+            if commit in commits_relevant:
+                return True
+            # Merge commits are relevant too
+            return len(commit.parents) > 1 and any(p in commits_relevant for p in commit.parents)
+
         for commit in commits:
 
             if props.ifcgit_filter == "tagged" and commit.hexsha not in lookup:
                 continue
-            elif props.ifcgit_filter == "relevant" and commit not in commits_relevant:
+            elif props.ifcgit_filter == "relevant" and not is_relevant(commit):
                 continue
 
             props.ifcgit_commits.add()
@@ -239,7 +245,7 @@ class IfcGit:
             list_item.author_name = commit.author.name
             list_item.author_email = commit.author.email
             list_item.committed_date = int(commit.committed_date)
-            if commit in commits_relevant:
+            if is_relevant(commit):
                 list_item.relevant = True
             if commit.hexsha in lookup:
                 for tag in lookup[commit.hexsha]:
@@ -589,7 +595,7 @@ class IfcGit:
         """Attempt a git merge. Returns None on clean merge, 'conflict' on expected
         GitCommandError, or 'error' on an unknown GitError."""
         repo = IfcGitRepo.repo
-        branch = repo.branches[branch_name]
+        branch = repo.refs[branch_name]
         try:
             repo.git.merge(branch)
             return None
@@ -603,7 +609,7 @@ class IfcGit:
         """Attempt a git merge without committing (always leaves a merge state to abort).
         Returns None on clean merge, 'conflict' on conflict, or 'error' on unknown failure."""
         repo = IfcGitRepo.repo
-        branch = repo.branches[branch_name]
+        branch = repo.refs[branch_name]
         try:
             repo.git.merge(branch, no_commit=True, no_ff=True)
             return None
@@ -619,8 +625,8 @@ class IfcGit:
         report_path = path_ifc + ".ifcmerge"
         try:
             repo.git.mergetool(tool=mergetool)
-        except git.exc.GitCommandError:
-            pass
+        except git.exc.GitCommandError as e:
+            print(f"ifcgit: mergetool failed: {e}")
 
         conflicts = None
         if os.path.exists(report_path):
@@ -636,6 +642,10 @@ class IfcGit:
                 os.remove(report_path)
             except OSError:
                 pass
+
+        if conflicts is None and repo.index.unmerged_blobs():
+            conflicts = []
+
         return conflicts
 
     @classmethod
