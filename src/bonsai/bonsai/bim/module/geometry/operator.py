@@ -418,6 +418,55 @@ class SelectConnection(bpy.types.Operator, tool.Ifc.Operator):
         core.select_connection(tool.Geometry, connection=tool.Ifc.get().by_id(self.connection))
 
 
+class SelectByRepresentationType(bpy.types.Operator):
+    bl_idname = "bim.select_by_representation_type"
+    bl_label = "Select By Representation Type"
+    bl_description = (
+        "Select objects whose active representation matches this type. "
+        "Ctrl+Click to also include objects that have this type in any representation (active or not)"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    representation_type: bpy.props.StringProperty()
+    select_inactive: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.select_inactive = event.ctrl
+        return self.execute(context)
+
+    def execute(self, context):
+        ifc = tool.Ifc.get()
+        if not ifc:
+            return {"CANCELLED"}
+        # Strip the "*" suffix used for mapped/resolved representations.
+        target_type = self.representation_type.rstrip("*")
+        matched = 0
+        for obj in context.visible_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                obj.select_set(False)
+                continue
+            if self.select_inactive:
+                # Ctrl: match any representation on the element, active or not.
+                has_type = any(
+                    (ifcopenshell.util.representation.resolve_representation(rep).RepresentationType or "") == target_type
+                    for rep in ifcopenshell.util.representation.get_representations_iter(element)
+                )
+            else:
+                # Default: match only the currently active (displayed) representation.
+                active_rep = tool.Geometry.get_active_representation(obj)
+                if active_rep is None:
+                    obj.select_set(False)
+                    continue
+                resolved = ifcopenshell.util.representation.resolve_representation(active_rep)
+                has_type = (resolved.RepresentationType or "") == target_type
+            obj.select_set(has_type)
+            if has_type:
+                matched += 1
+        mode = "any representation" if self.select_inactive else "active representation"
+        self.report({"INFO"}, f"Selected {matched} object(s) with RepresentationType '{target_type}' ({mode})")
+        return {"FINISHED"}
+
+
 class RemoveConnection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_connection"
     bl_label = "Remove Connection"
