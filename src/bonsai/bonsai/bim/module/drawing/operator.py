@@ -1655,6 +1655,8 @@ class CreateDrawing(bpy.types.Operator):
 
         adjacency_cache = {}
 
+        _watch_adj = frozenset({"39Iwvbn41B7OZ72qQGJq6v", "08yv0FO$j2AwVYFWEkXEuh"})
+
         def are_coplanar_and_adjacent(guid_a, guid_b, tol=0.01):
             """True if the two meshes share a vertex AND have parallel face normals.
 
@@ -1663,11 +1665,14 @@ class CreateDrawing(bpy.types.Operator):
             shared face is coplanar — elements meeting at a fold angle are rejected.
             """
             key = (min(guid_a, guid_b), max(guid_a, guid_b))
+            _dbg = frozenset({guid_a, guid_b}) == _watch_adj
             if key in adjacency_cache:
                 return adjacency_cache[key]
             obj_a = get_obj(guid_a)
             obj_b = get_obj(guid_b)
             if obj_a is None or obj_b is None or obj_a.type != "MESH" or obj_b.type != "MESH":
+                if _dbg:
+                    print(f"[WATCH] {guid_a} vs {guid_b}: no mesh obj -> True")
                 adjacency_cache[key] = True
                 return True
             # Quick AABB guard
@@ -1679,9 +1684,13 @@ class CreateDrawing(bpy.types.Operator):
                 min_b = min(c[axis] for c in corners_b)
                 max_b = max(c[axis] for c in corners_b)
                 if min_a > max_b + tol:
+                    if _dbg:
+                        print(f"[WATCH] {guid_a} vs {guid_b}: AABB separated on axis {axis} -> False")
                     adjacency_cache[key] = False
                     return False
                 if min_b > max_a + tol:
+                    if _dbg:
+                        print(f"[WATCH] {guid_a} vs {guid_b}: AABB separated on axis {axis} -> False")
                     adjacency_cache[key] = False
                     return False
             # Proximity check: vertex-to-vertex OR vertex-to-edge.
@@ -1715,6 +1724,8 @@ class CreateDrawing(bpy.types.Operator):
             if not has_shared:
                 # Slower vertex-on-edge check for containment cases
                 has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
+            if _dbg:
+                print(f"[WATCH] {guid_a} vs {guid_b}: has_shared={has_shared}")
             if not has_shared:
                 adjacency_cache[key] = False
                 return False
@@ -1729,7 +1740,10 @@ class CreateDrawing(bpy.types.Operator):
                         return False
                 return True
 
-            if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
+            contained = aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a)
+            if _dbg:
+                print(f"[WATCH] {guid_a} vs {guid_b}: aabb_contained={contained}")
+            if contained:
                 adjacency_cache[key] = True
                 return True
             # Coplanarity check: use the largest-face normal for each object.
@@ -1744,20 +1758,32 @@ class CreateDrawing(bpy.types.Operator):
             n_a = dominant_world_normal(obj_a)
             n_b = dominant_world_normal(obj_b)
             if n_a is None or n_b is None:
+                if _dbg:
+                    print(f"[WATCH] {guid_a} vs {guid_b}: no dominant normal -> True")
                 adjacency_cache[key] = True
                 return True
             dot = abs(n_a.dot(n_b))
+            if _dbg:
+                import math
+                print(f"[WATCH] {guid_a} vs {guid_b}: n_a={tuple(round(x,4) for x in n_a)} n_b={tuple(round(x,4) for x in n_b)} dot={dot:.6f} angle={math.degrees(math.acos(min(dot,1.0))):.3f}°")
             if dot <= 1.0 - 3.8e-5:
+                if _dbg:
+                    print(f"[WATCH] {guid_a} vs {guid_b}: not coplanar (dot too low) -> False")
                 adjacency_cache[key] = False
                 return False
             # Normals are parallel — also verify the elements share a face plane.
-            # Two walls can have parallel normals but be on different parallel planes
-            # (e.g., offset walls meeting at a corner). Project all vertices of each
-            # object onto the same reference normal (n_a) so that anti-parallel
-            # normals (one face is flipped) don't produce mirrored projections.
-            plane_pos_a = {round(v.dot(n_a), 5) for v in verts_a}
-            plane_pos_b = {round(v.dot(n_a), 5) for v in verts_b}
-            same_plane = any(abs(pa - pb) < tol for pa in plane_pos_a for pb in plane_pos_b)
+            # Project all vertices onto n_a to get the 1-D depth range of each
+            # element along the normal axis. Side-by-side elements span the same
+            # depth range (overlap > tol). Elements stacked end-to-end only touch
+            # at a single interface point (overlap ≈ 0) and must not be joined.
+            projs_a = [v.dot(n_a) for v in verts_a]
+            projs_b = [v.dot(n_a) for v in verts_b]
+            range_a = (min(projs_a), max(projs_a))
+            range_b = (min(projs_b), max(projs_b))
+            overlap = min(range_a[1], range_b[1]) - max(range_a[0], range_b[0])
+            same_plane = overlap > tol
+            if _dbg:
+                print(f"[WATCH] {guid_a} vs {guid_b}: range_a={range_a} range_b={range_b} overlap={overlap:.5f} same_plane={same_plane}")
             adjacency_cache[key] = same_plane
             return same_plane
 
