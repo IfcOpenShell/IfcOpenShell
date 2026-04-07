@@ -152,7 +152,12 @@ class BIM_PT_representations(Panel):
             row.label(text=representation["ContextType"])
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
-            row.label(text=representation["RepresentationType"])
+            op = row.operator(
+                "bim.select_by_representation_type",
+                text=representation["RepresentationType"],
+                emboss=False,
+            )
+            op.representation_type = representation["RepresentationType"]
             op = row.operator(
                 "bim.switch_representation",
                 icon="FILE_REFRESH" if representation["is_active"] else "OUTLINER_DATA_MESH",
