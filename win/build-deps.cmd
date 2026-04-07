@@ -200,7 +200,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
-goto :SWIG
+goto :manifold
 
 :nuget
 set DEPENDENCY_NAME=nuget
@@ -728,6 +728,39 @@ call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
                -DPORTABLE=1
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:manifold
+set DEPENDENCY_NAME=manifold
+set MANIFOLD_VERSION=3.2.1
+set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
+echo MANIFOLD_ROOT=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
+    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
+    goto :Eigen
+)
+
+call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
+               -DBUILD_SHARED_LIBS=OFF ^
+               -DMANIFOLD_PAR=OFF ^
+               -DMANIFOLD_CROSS_SECTION=OFF ^
+               -DMANIFOLD_PYBIND=OFF ^
+               -DMANIFOLD_JSBIND=OFF ^
+               -DMANIFOLD_CBIND=OFF ^
+               -DMANIFOLD_TEST=OFF ^
+               -DMANIFOLD_EXPORT=OFF ^
+               -DMANIFOLD_DOWNLOADS=OFF
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\manifold.sln" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error

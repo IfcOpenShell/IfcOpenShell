@@ -36,6 +36,10 @@
 #undef CgalKernel
 #endif
 
+#ifdef IFOPSH_WITH_MANIFOLD
+#include "../ifcgeom/kernels/manifold/ManifoldKernel.h"
+#endif
+
 namespace {
 	inline bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* k, const IfcGeom::ConversionResult& shp) {
 #ifdef IFOPSH_WITH_OPENCASCADE
@@ -49,6 +53,11 @@ namespace {
 		}
 		if (k->geometry_library() == "cgal") {
 			return dynamic_cast<ifcopenshell::geometry::CgalShape*>(shp.Shape().get()) != nullptr;
+		}
+#endif
+#ifdef IFOPSH_WITH_MANIFOLD
+		if (k->geometry_library() == "manifold") {
+			return dynamic_cast<ifcopenshell::geometry::ManifoldShape*>(shp.Shape().get()) != nullptr;
 		}
 #endif
 		return false;
@@ -186,6 +195,12 @@ namespace ifcopenshell {
 				}
 #endif
 
+#ifdef IFOPSH_WITH_MANIFOLD
+				if (geometry_library_lower == "manifold") {
+					return std::make_unique<ManifoldKernel>(conv_settings);
+				}
+#endif
+
 				if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
 					geometry_library_lower = geometry_library_lower.substr(strlen("hybrid"));
 					std::vector<std::unique_ptr<AbstractKernel>> kernels;
@@ -212,6 +227,12 @@ namespace ifcopenshell {
 						if (geometry_library_lower.find("cgal", 0) == 0) {
 							kernels.emplace_back(new CgalKernel(conv_settings));
 							geometry_library_lower = geometry_library_lower.substr(strlen("cgal"));
+						}
+#endif
+#ifdef IFOPSH_WITH_MANIFOLD
+						if (geometry_library_lower.find("manifold", 0) == 0) {
+							kernels.emplace_back(new ManifoldKernel(conv_settings));
+							geometry_library_lower = geometry_library_lower.substr(strlen("manifold"));
 						}
 #endif
 						if (kernels.size() != n + 1) {
