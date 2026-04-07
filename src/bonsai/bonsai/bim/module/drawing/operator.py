@@ -1655,8 +1655,6 @@ class CreateDrawing(bpy.types.Operator):
 
         adjacency_cache = {}
 
-        _watch_adj = frozenset({"39Iwvbn41B7OZ72qQGJq6v", "08yv0FO$j2AwVYFWEkXEuh"})
-
         def are_coplanar_and_adjacent(guid_a, guid_b, tol=0.01):
             """True if the two meshes share a vertex AND have parallel face normals.
 
@@ -1665,14 +1663,11 @@ class CreateDrawing(bpy.types.Operator):
             shared face is coplanar — elements meeting at a fold angle are rejected.
             """
             key = (min(guid_a, guid_b), max(guid_a, guid_b))
-            _dbg = frozenset({guid_a, guid_b}) == _watch_adj
             if key in adjacency_cache:
                 return adjacency_cache[key]
             obj_a = get_obj(guid_a)
             obj_b = get_obj(guid_b)
             if obj_a is None or obj_b is None or obj_a.type != "MESH" or obj_b.type != "MESH":
-                if _dbg:
-                    print(f"[WATCH] {guid_a} vs {guid_b}: no mesh obj -> True")
                 adjacency_cache[key] = True
                 return True
             # Quick AABB guard
@@ -1684,13 +1679,9 @@ class CreateDrawing(bpy.types.Operator):
                 min_b = min(c[axis] for c in corners_b)
                 max_b = max(c[axis] for c in corners_b)
                 if min_a > max_b + tol:
-                    if _dbg:
-                        print(f"[WATCH] {guid_a} vs {guid_b}: AABB separated on axis {axis} -> False")
                     adjacency_cache[key] = False
                     return False
                 if min_b > max_a + tol:
-                    if _dbg:
-                        print(f"[WATCH] {guid_a} vs {guid_b}: AABB separated on axis {axis} -> False")
                     adjacency_cache[key] = False
                     return False
             # Proximity check: vertex-to-vertex OR vertex-to-edge.
@@ -1724,8 +1715,6 @@ class CreateDrawing(bpy.types.Operator):
             if not has_shared:
                 # Slower vertex-on-edge check for containment cases
                 has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
-            if _dbg:
-                print(f"[WATCH] {guid_a} vs {guid_b}: has_shared={has_shared}")
             if not has_shared:
                 adjacency_cache[key] = False
                 return False
@@ -1740,10 +1729,7 @@ class CreateDrawing(bpy.types.Operator):
                         return False
                 return True
 
-            contained = aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a)
-            if _dbg:
-                print(f"[WATCH] {guid_a} vs {guid_b}: aabb_contained={contained}")
-            if contained:
+            if aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a):
                 adjacency_cache[key] = True
                 return True
             # Coplanarity check: use the largest-face normal for each object.
@@ -1758,17 +1744,10 @@ class CreateDrawing(bpy.types.Operator):
             n_a = dominant_world_normal(obj_a)
             n_b = dominant_world_normal(obj_b)
             if n_a is None or n_b is None:
-                if _dbg:
-                    print(f"[WATCH] {guid_a} vs {guid_b}: no dominant normal -> True")
                 adjacency_cache[key] = True
                 return True
             dot = abs(n_a.dot(n_b))
-            if _dbg:
-                import math
-                print(f"[WATCH] {guid_a} vs {guid_b}: n_a={tuple(round(x,4) for x in n_a)} n_b={tuple(round(x,4) for x in n_b)} dot={dot:.6f} angle={math.degrees(math.acos(min(dot,1.0))):.3f}°")
-            if dot <= 1.0 - 3.8e-5:
-                if _dbg:
-                    print(f"[WATCH] {guid_a} vs {guid_b}: not coplanar (dot too low) -> False")
+            if dot <= 1.0 - 3.8e-5:  # ~0.5° tolerance
                 adjacency_cache[key] = False
                 return False
             # Normals are parallel — also verify the elements share a face plane.
@@ -1782,8 +1761,6 @@ class CreateDrawing(bpy.types.Operator):
             range_b = (min(projs_b), max(projs_b))
             overlap = min(range_a[1], range_b[1]) - max(range_a[0], range_b[0])
             same_plane = overlap > tol
-            if _dbg:
-                print(f"[WATCH] {guid_a} vs {guid_b}: range_a={range_a} range_b={range_b} overlap={overlap:.5f} same_plane={same_plane}")
             adjacency_cache[key] = same_plane
             return same_plane
 
@@ -2003,6 +1980,7 @@ class CreateDrawing(bpy.types.Operator):
 
                 Compatible means the visible cross-section at the shared face is
                 the same material.  Checks in order:
+
                   - Exact match (identical layer sequences).
                   - Reversed match (same assembly in opposite orientation).
                   - Suffix match: one sequence ends with all layers of the other.
@@ -2010,9 +1988,11 @@ class CreateDrawing(bpy.types.Operator):
                   - Camera-face match: when the camera-facing layer ID is known for
                     both elements (AXIS3 slabs/roofs), only those layers are compared
                     so that a plan view and an RCP of the same elements can produce
-                    different join decisions.
-                  - Boundary match fallback: any end layer of a matches any end layer
-                    of b (used when camera-face direction cannot be determined).
+                    different join decisions. This is the final check for AXIS3 elements.
+
+                For AXIS1/AXIS2 walls the full cross-section is always visible in plan,
+                so only exact/reversed/prefix/suffix matches are accepted — sharing only
+                an interior or exterior layer is not sufficient.
                 """
                 if a == b or a == b[::-1]:
                     return True
@@ -2020,13 +2000,11 @@ class CreateDrawing(bpy.types.Operator):
                 n = len(short)
                 if long_[-n:] == short or long_[:n] == short:
                     return True
-                # Camera-directional boundary check for AXIS3 elements
+                # Camera-directional boundary check for AXIS3 elements (slabs/roofs).
+                # Only reached when exact/prefix/suffix checks failed.
                 if face_a is not None and face_b is not None:
                     return face_a == face_b
-                # Generic boundary check: any end layer matches any end layer
-                a_ends = {a[0], a[-1]} if a else set()
-                b_ends = {b[0], b[-1]} if b else set()
-                return bool(a_ends & b_ends)
+                return False
 
             def get_style_key(guid):
                 """IDs of IfcPresentationStyles directly on the element's geometry items."""
