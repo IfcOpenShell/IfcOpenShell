@@ -749,12 +749,11 @@ class CreateDrawing(bpy.types.Operator):
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm_fill.verts]
                 edges = [[v.index for v in e.verts] for e in bm_fill.edges]
 
-                g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+                g = etree.Element("{http://www.w3.org/2000/svg}g")
                 g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
                 g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
                 g.attrib["{http://www.ifcopenshell.org/ns}layer-id"] = str(layer.id())
 
-                lines = []
                 for edge in edges:
                     start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
                     end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
@@ -765,7 +764,7 @@ class CreateDrawing(bpy.types.Operator):
                     d = "M{}".format(d[1:])
                     path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
                     path.attrib["d"] = d
-                group.append(g)
+                el.addprevious(g)
 
             bm.free()
 
@@ -1646,9 +1645,9 @@ class CreateDrawing(bpy.types.Operator):
         projections = root.xpath(
             ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
         )
-        for projection in projections:
+        for i, projection in enumerate(projections):
             projection.getparent().remove(projection)
-            group.insert(0, projection)
+            group.insert(i, projection)
 
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
