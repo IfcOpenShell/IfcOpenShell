@@ -618,7 +618,7 @@ void eliminate_overlaps(DebugWriter& debug_writer, double OVERLAP_RESOLUTION_DIS
             std::cerr << "processing: " << edge.first << " " << edge.second << std::endl;
             std::cerr << "area before: " << poly1->area() << " " << poly2->area() << std::endl;
 
-            bool is_ = edge == std::make_pair(25, 27);
+            bool is_ = edge == std::make_pair<size_t, size_t>(25, 27);
 
             bool success = false;
             if ((mp1 = maybe_take_first_if_single_item(create_and_convert_offset_polygon(OVERLAP_RESOLUTION_DISTANCE, *poly2)))) {
@@ -1550,7 +1550,7 @@ std::vector<K::FT> arrangement_cell_iou(Arrangement_2& left, Arrangement_2& righ
                 }
 
                 auto res = walk_pl.locate(best_point);
-                if (auto* v = boost::get<Arrangement_2::Face_const_handle>(&res)) {
+                if (auto* v = variant_get<Arrangement_2::Face_const_handle>(&res)) {
                     if (visited_faces_on_right.count(*v) > 0) {
                         return_values.push_back(0);
                     } else {

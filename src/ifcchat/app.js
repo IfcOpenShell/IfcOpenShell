@@ -139,6 +139,7 @@ const baseUrlRowEl = $("baseUrlRow");
 const baseUrlLabelEl = $("baseUrlLabel");
 const baseUrlEl = $("baseUrl");
 const thinkingIndicatorEl = $("thinkingIndicator");
+const compactingIndicatorEl = $("compactingIndicator");
 const modelEl = $("model");
 const providerEls = document.querySelectorAll('input[name="provider"]');
 const ifcFileEl = $("ifcFile");
@@ -395,6 +396,7 @@ function addMessage(role, text) {
 function setStatus(text) {
     statusEl.textContent = text;
     thinkingIndicatorEl.hidden = text !== "Thinking…";
+    compactingIndicatorEl.hidden = text !== "Compacting…";
     msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
@@ -491,6 +493,7 @@ Rules:
 - If the user asks about model contents (counts, lists, properties, hierarchy), use tools like ifc_summary/ifc_select/ifc_info/ifc_tree.
 - If the user asks to change the model, prefer: (1) ifc_list to find candidate API modules, (2) ifc_docs for the exact function signature, then (3) ifc_edit.
 - If there is no model and the user wants to create one, call ifc_new.
+- In case of type errors on api functions, retry providing values as strings (for example in the case of the matrix in geometry.edit_object_placement).
 - After edits, explain what changed and suggest downloading the IFC.
 Be concise. Avoid dumping huge trees unless asked.
 `;
@@ -499,6 +502,11 @@ let messages = []; // running conversation state (Chat Completions style)
 
 const MAX_TOOL_RESULT_CHARS = 0;
 const MAX_HISTORY_MESSAGES = 40;
+const ESTIMATED_CHARS_PER_TOKEN = 4;
+const MAX_ESTIMATED_TOKENS_PER_MINUTE = 24000;
+const COMPACT_WHEN_ESTIMATED_TOKENS = 18000;
+const KEEP_RAW_TURN_GROUPS = 1;
+const minuteTokenMap = new Map();
 
 function truncateToolResult(text) {
     if (MAX_TOOL_RESULT_CHARS == 0 || text.length <= MAX_TOOL_RESULT_CHARS) return text;
@@ -518,6 +526,103 @@ function trimHistory() {
     }
 }
 
+function getEstimatedTokenMinuteLog(firstIterationMinuteBucket) {
+    return Array.from(minuteTokenMap.entries())
+        .filter(([minuteBucket]) => minuteBucket >= firstIterationMinuteBucket)
+        .sort(([leftMinuteBucket], [rightMinuteBucket]) => leftMinuteBucket - rightMinuteBucket)
+        .map(([minuteBucket, estimatedTokens]) => ({
+            timestamp: new Date(minuteBucket * 60000).toISOString(),
+            estimated_tokens: estimatedTokens,
+        }));
+}
+
+async function chatWithMinuteDelay({ chat, apiKey, baseURL, model, messages, tools }) {
+    const estimatedTokens = Math.max(
+        1,
+        Math.ceil(JSON.stringify({ model, messages, ...(tools ? { tools } : {}) }).length / ESTIMATED_CHARS_PER_TOKEN)
+    );
+    let currentMinuteBucket = Math.floor(Date.now() / 60000);
+    const estimateTokenUsage = (minuteTokenMap.get(currentMinuteBucket) ?? 0) + estimatedTokens;
+
+    if (estimateTokenUsage > MAX_ESTIMATED_TOKENS_PER_MINUTE) {
+        currentMinuteBucket += 1;
+        await new Promise((resolve) => setTimeout(() => resolve(), 60000));
+    }
+
+    minuteTokenMap.set(currentMinuteBucket, (minuteTokenMap.get(currentMinuteBucket) ?? 0) + estimatedTokens);
+
+    return {
+        minuteBucket: currentMinuteBucket,
+        response: await chat({ apiKey, baseURL, model, messages, tools }),
+    };
+}
+
+async function compactHistoryWithLLM(chat, apiKey, baseURL, model) {
+    const estimatedTokens = Math.max(
+        1,
+        Math.ceil(JSON.stringify([{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages]).length / ESTIMATED_CHARS_PER_TOKEN)
+    );
+    if (messages.length <= MAX_HISTORY_MESSAGES && estimatedTokens <= COMPACT_WHEN_ESTIMATED_TOKENS) return null;
+
+    const { prefix, groups } = messages.reduce((acc, message) => {
+        if (message.role === "user") {
+            acc.groups.push([message]);
+        } else if (acc.groups.length) {
+            acc.groups[acc.groups.length - 1].push(message);
+        } else {
+            acc.prefix.push(message);
+        }
+        return acc;
+    }, { prefix: [], groups: [] });
+
+    if (groups.length <= KEEP_RAW_TURN_GROUPS) return null;
+
+    const compacted = [...prefix, ...groups.slice(0, -KEEP_RAW_TURN_GROUPS).flat()];
+    if (!compacted.length) return null;
+
+    setStatus("Compacting…");
+    try {
+        const before = {
+            message_count: messages.length,
+            turn_group_count: groups.length,
+            estimated_tokens: estimatedTokens,
+        };
+        const { minuteBucket, response } = await chatWithMinuteDelay({
+            chat,
+            apiKey,
+            baseURL,
+            model,
+            messages: [
+                {
+                    role: "system",
+                    content: "Summarize older IFC chat context for continuation. Preserve user goals, model state and schema, edits already applied, important ids, names, selectors, and unresolved questions. Be concise, factual, and use short markdown bullets. Do not mention that this is a summary."
+                },
+                { role: "user", content: JSON.stringify(compacted) },
+            ],
+        });
+        const summary = response.choices?.[0]?.message?.content?.trim();
+
+        if (!summary) return minuteBucket;
+
+        messages = [
+            { role: "assistant", content: `[Context summary]\n${summary}` },
+            ...groups.slice(-KEEP_RAW_TURN_GROUPS).flat(),
+        ];
+        console.log("History compaction before", before);
+        console.log("History compaction after", {
+            message_count: messages.length,
+            turn_group_count: messages.filter((message) => message.role === "user").length,
+            estimated_tokens: Math.max(
+                1,
+                Math.ceil(JSON.stringify([{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages]).length / ESTIMATED_CHARS_PER_TOKEN)
+            ),
+        });
+        return minuteBucket;
+    } finally {
+        setStatus("Thinking…");
+    }
+}
+
 async function runAgentTurn(userText) {
     const apiKey = apiKeyEl.value.trim();
     if (!apiKey) throw new Error("Missing API key");
@@ -525,18 +630,29 @@ async function runAgentTurn(userText) {
     const provider = PROVIDERS[getProviderValue()];
     const { chat } = provider.api;
     const baseURL = provider.baseUrlDefault ? baseUrlEl.value.trim() : undefined;
+    let firstIterationMinuteBucket = null;
 
     messages.push({ role: "user", content: userText });
-    trimHistory();
 
     for (let i = 0; i < 64; i++) {
-        const response = await chat({
+        const compactedMinuteBucket = await compactHistoryWithLLM(chat, apiKey, baseURL, modelEl.value);
+        if (firstIterationMinuteBucket === null && compactedMinuteBucket !== null) {
+            firstIterationMinuteBucket = compactedMinuteBucket;
+        }
+        if (messages.length > MAX_HISTORY_MESSAGES * 2) trimHistory();
+
+        const messages_with_system = [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages];
+        const { minuteBucket, response } = await chatWithMinuteDelay({
+            chat,
             apiKey,
             baseURL,
             model: modelEl.value,
-            messages: [{ role: "system", content: SYSTEM_INSTRUCTIONS }, ...messages],
+            messages: messages_with_system,
             tools,
         });
+        if (firstIterationMinuteBucket === null) {
+            firstIterationMinuteBucket = minuteBucket;
+        }
 
         const message = response.choices?.[0]?.message;
         if (!message) throw new Error("No message in response");
@@ -546,7 +662,10 @@ async function runAgentTurn(userText) {
         if (message.content) addMessage("assistant", message.content);
 
         const calls = message.tool_calls ?? [];
-        if (calls.length === 0) return;
+        if (calls.length === 0) {
+            console.log("Estimated token usage by minute", getEstimatedTokenMinuteLog(firstIterationMinuteBucket));
+            return;
+        }
 
         for (const call of calls) {
             let args = {};
