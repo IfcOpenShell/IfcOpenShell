@@ -518,6 +518,14 @@ def assign_manual_drawing_reference(
         ifc.run("drawing.assign_product", relating_product=drawing, related_object=element)
 
 
+def assign_manual_reference_document(
+    drawing_tool: type[tool.Drawing],
+    element: ifcopenshell.entity_instance,
+    document: Optional[ifcopenshell.entity_instance],
+) -> None:
+    drawing_tool.set_annotation_reference_doc(element, document)
+
+
 def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_instance) -> None:
     drawing.create_svg_schedule(schedule)
     drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))

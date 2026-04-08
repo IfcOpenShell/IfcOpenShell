@@ -249,6 +249,10 @@ class AnnotationToolUI:
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
+        if object_type in ("ELEVATION", "SECTION"):
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "is_manual_reference")
+
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
             row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")

@@ -539,8 +539,9 @@ class BIM_PT_product_assignments(Panel):
         element = tool.Ifc.get_entity(obj)
         if element and tool.Drawing.is_manual_drawing_reference(element):
             row = self.layout.row(align=True)
+            fallback = "No Reference Assigned" if element.ObjectType == "REFERENCE" else "No Drawing Assigned"
             row.label(
-                text=ProductAssignmentsData.data["relating_product"] or "No Drawing Assigned", icon="IMAGE_DATA"
+                text=ProductAssignmentsData.data["relating_product"] or fallback, icon="IMAGE_DATA"
             )
             row.operator("bim.assign_manual_drawing_reference", icon="GREASEPENCIL", text="")
             return
