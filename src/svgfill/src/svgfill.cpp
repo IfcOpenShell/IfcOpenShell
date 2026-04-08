@@ -483,18 +483,6 @@ public:
 		return ps;
 	}
 
-	size_t delete_same_facet_edge_pairs() {
-        size_t n_deleted = 0;
-        for (auto it = arr.edges_begin(); it != arr.edges_end();) {
-            decltype(it) current = it++;
-            if (current->face() == current->twin()->face()) {
-                arr.remove_edge(current);
-                n_deleted++;
-			}
-        }
-        return n_deleted;
-	}
-
 	void merge(const std::vector<int>& edge_indices) {
 		if (edge_indices.empty()) {
 			return;

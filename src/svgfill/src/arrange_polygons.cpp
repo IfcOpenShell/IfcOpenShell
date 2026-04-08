@@ -350,8 +350,6 @@ find_overlaps(const std::vector<Polygon_2>& polygons) {
 
 class DebugWriter {
   public:
-    DebugWriter() : enabled_(false) {}
-
     DebugWriter(bool enabled, const std::string& filename_prefix)
         : enabled_(enabled) {
         if (enabled_) {
@@ -368,43 +366,6 @@ class DebugWriter {
             obj.close();
             svg.close();
         }
-    }
-
-    DebugWriter(const DebugWriter&) = delete;
-
-    DebugWriter(DebugWriter&& other) noexcept
-        : obj(std::move(other.obj)), vi(other.vi), svg(std::move(other.svg)), enabled_(other.enabled_), last_segment_name_(std::move(other.last_segment_name_))
-    {
-        other.enabled_ = false;
-        other.vi = 1;
-        other.last_segment_name_.clear();
-    }
-
-    DebugWriter& operator=(const DebugWriter&) = delete;
-    
-    DebugWriter& operator=(DebugWriter&& other) noexcept {
-        if (this == &other) {
-            return *this;
-        }
-
-        if (enabled_) {
-            svg << "</svg>\n";
-            obj << std::flush;
-            obj.close();
-            svg.close();
-        }
-
-        obj = std::move(other.obj);
-        svg = std::move(other.svg);
-        vi = other.vi;
-        enabled_ = other.enabled_;
-        last_segment_name_ = std::move(other.last_segment_name_);
-
-        other.enabled_ = false;
-        other.vi = 1;
-        other.last_segment_name_.clear();
-
-        return *this;
     }
 
     void write_polygon(const Polygon_2& polygon, const std::string& name) {
@@ -426,7 +387,7 @@ class DebugWriter {
             obj << "l " << vi++;
             obj << " " << vi++ << "\n";
 
-            svg << "<line class=\"" << name << "\" x1=\"" << CGAL::to_double(p.x()) << "\" y1=\"" << -CGAL::to_double(p.y()) << "\" x2=\"" << CGAL::to_double(q.x()) << "\" y2=\"" << -CGAL::to_double(q.y()) << "\" />\n";
+            svg << "<line class=\"" << name << "\" x1=\"" << CGAL::to_double(p.x()) << "\" y1=\"" << -CGAL::to_double(p.y()) << "\" x2=\"" << CGAL::to_double(q.x()) << "\" y2=\"" << -CGAL::to_double(q.y()) << "\" />";
 
             obj << std::flush;
         }
@@ -507,7 +468,7 @@ class DebugWriter {
     }
 };
 
-void eliminate_overlaps(DebugWriter& debug_writer, double OVERLAP_RESOLUTION_DISTANCE, std::vector<Polygon_2>& polygons) {
+void eliminate_overlaps(double OVERLAP_RESOLUTION_DISTANCE, std::vector<Polygon_2>& polygons) {
     // solve overlaps by means of subtraction
     // loop over overlaps and subtract the smaller polygon from the larger one
 
@@ -615,40 +576,11 @@ void eliminate_overlaps(DebugWriter& debug_writer, double OVERLAP_RESOLUTION_DIS
                 std::swap(poly1, poly2);
             }
 
-            std::cerr << "processing: " << edge.first << " " << edge.second << std::endl;
-            std::cerr << "area before: " << poly1->area() << " " << poly2->area() << std::endl;
-
-            bool is_ = edge == std::make_pair<size_t, size_t>(25, 27);
-
             bool success = false;
             if ((mp1 = maybe_take_first_if_single_item(create_and_convert_offset_polygon(OVERLAP_RESOLUTION_DISTANCE, *poly2)))) {
-                if (is_) {
-                    debug_writer.write_polygon(*mp1, "mp1");
-                }
-                smooth_polygon(OVERLAP_RESOLUTION_DISTANCE / 100., *mp1);
-                if (is_) {
-                    debug_writer.write_polygon(*mp1, "mp1b");
-                }
                 if ((mp2 = subtract_retain_largest(*poly1, *mp1))) {
-                    if (is_) {
-                        debug_writer.write_polygon(*mp2, "mp2");
-                    }
-                    smooth_polygon(OVERLAP_RESOLUTION_DISTANCE / 100., *mp2);
-                    if (is_) {
-                        debug_writer.write_polygon(*mp2, "mp2b");
-                    }
                     if ((mp3 = maybe_take_first_if_single_item(create_and_convert_offset_polygon(OVERLAP_RESOLUTION_DISTANCE * 2, *mp2)))) {
-                        if (is_) {
-                            debug_writer.write_polygon(*mp3, "mp3");
-                        }
-                        smooth_polygon(OVERLAP_RESOLUTION_DISTANCE / 100., *mp3);
-                        if (is_) {
-                            debug_writer.write_polygon(*mp3, "mp3b");
-                        }
                         if ((mp4 = subtract_retain_largest(*poly2, *mp3))) {
-                            if (is_) {
-                                debug_writer.write_polygon(*mp4, "mp4");
-                            }
                             *poly1 = *mp2;
                             *poly2 = *mp4;
                             success = true;
@@ -656,8 +588,6 @@ void eliminate_overlaps(DebugWriter& debug_writer, double OVERLAP_RESOLUTION_DIS
                     }
                 }
             }
-
-            std::cerr << "area after: " << poly1->area() << " " << poly2->area() << std::endl;
 
             if (!success) {
                 eliminated_polies.insert(swap ? edge.first : edge.second);
@@ -847,19 +777,14 @@ Polygon_with_holes_2 subdivide_polygon(double max_distance, const Polygon_with_h
 std::tuple<
     std::map<Point_2, std::vector<Point_2>>, 
     std::map<Point_2, std::pair<Point_2, Point_2>>,
-    std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>>,
-    std::map<Point_2, double>
->
-build_line_graph(const std::vector<Polygon_2>& input_polygons, SegmentLookup& segment_lookup, const std::vector<Polygon_2>& triangular_polygons)
-{
-
+    std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>>>
+build_line_graph(const std::vector<Polygon_2>& input_polygons, SegmentLookup& segment_lookup, const std::vector<Polygon_2>& triangular_polygons) {
     // Build maps of triangle -> edge and edge -> triangle in order to do traversal on the 'corridor mesh'
     std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>> segment_to_facet;
     std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>> segment_to_input_facet;
     std::map<std::pair<Point_2, Point_2>, Point_2> segment_to_midpoint;
     std::map<Point_2, std::pair<Point_2, Point_2>> midpoint_to_segment;
     std::map<const CGAL::Polygon_2<K>*, std::vector<std::pair<Point_2, Point_2>>> facet_to_segment;
-    std::map<Point_2, double> midpoint_to_edge_length;
 
     for (auto& tri : triangular_polygons) {
         for (size_t i = 0; i < 3; ++i) {
@@ -888,7 +813,6 @@ build_line_graph(const std::vector<Polygon_2>& input_polygons, SegmentLookup& se
         if (p1index != input_polygons.end() && p2index != input_polygons.end() && p1index != p2index) {
             segment_to_midpoint[p.first] = center;
             midpoint_to_segment[center] = p.first;
-            midpoint_to_edge_length[center] = std::sqrt(CGAL::to_double(CGAL::squared_distance(p.first.first, p.first.second)));
         }
     }
 
@@ -908,7 +832,7 @@ build_line_graph(const std::vector<Polygon_2>& input_polygons, SegmentLookup& se
         }
     }
 
-    return {line_graph, midpoint_to_segment, segment_to_input_facet, midpoint_to_edge_length};
+    return {line_graph, midpoint_to_segment, segment_to_input_facet};
 }
 
 std::set<Triangle<K>> find_triangles(const std::map<Point_2, std::vector<Point_2>>& line_graph) {
@@ -1194,91 +1118,66 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
     const Graph2D<K>& G, 
     const std::map<Point_2, std::pair<Point_2, Point_2>>& midpoint_to_segment,
     const std::map<std::pair<Point_2, Point_2>, std::vector<const CGAL::Polygon_2<K>*>>& segment_to_input_facet,
-    const Polygon_list& outer_perimiter,
-    const SegmentLookup& segment_lookup,
-    const K::FT& max_projection_distance
+    const Polygon_list& inner_offset,
+    const SegmentLookup& segment_lookup
 ){
     std::list<std::pair<Point_2, Point_2>> constructed_segments;
 
-    std::set<Point_2> processed_vertices;
+    for (auto it = G.vertices_begin(); it != G.vertices_end(); ++it) {
+        if (it->second.size() == 1) {
+            auto& M = it->first;
 
-    while (true) {
-        // The idea was to peal off 1-degree vertices when projecting them did not result into
-        // nearby intersections with the outer perimiter. This in case there would be turns near
-        // the perimeter, which would be eliminated by pealing off the vertices, which would then
-        // require out of the loop because of invalidated iterators. For now we decided to stick
-        // to a projection of the vertex onto the perimeter segment when the projection distance
-        // exceeds a threshold.
-        bool broke_out = false;
+            const std::pair<Point_2, Point_2>* q = nullptr;
 
-        for (auto it = G.vertices_begin(); it != G.vertices_end(); ++it) {
-            if (it->second.size() == 1) {
-                auto& M = it->first;
-
-                if (processed_vertices.find(M) != processed_vertices.end()) {
-                    continue;
-                }
-
-                const std::pair<Point_2, Point_2>* q = nullptr;
-
-                if (midpoint_to_segment.find(M) == midpoint_to_segment.end()) {
-                    typename K::FT min_sq_distance = std::numeric_limits<double>::infinity();
-                    for (auto& pa : midpoint_to_segment) {
-                        if (CGAL::squared_distance(pa.first, M) < min_sq_distance) {
-                            q = &pa.second;
-                            min_sq_distance = CGAL::squared_distance(pa.first, M);
-                        }
+            if (midpoint_to_segment.find(M) == midpoint_to_segment.end()) {
+                typename K::FT min_sq_distance = std::numeric_limits<double>::infinity();
+                for (auto& pa : midpoint_to_segment) {
+                    if (CGAL::squared_distance(pa.first, M) < min_sq_distance) {
+                        q = &pa.second;
+                        min_sq_distance = CGAL::squared_distance(pa.first, M);
                     }
-                } else {
-                    q = &midpoint_to_segment.find(M)->second;
                 }
+            } else {
+                q = &midpoint_to_segment.find(M)->second;
+            }
 
-                if (q == nullptr) {
-                    continue;
-                }
+            if (q == nullptr) {
+                continue;
+            }
 
-                bool handled_as_graph_path = false;
+            bool handled_as_graph_path = false;
 
-                // distance from unioned - shoot ray?
-                if (segment_to_input_facet.find(*q)->second.size() == 2) {
-                    for (auto& bnd : outer_perimiter) {
-                        // if point M is contained in bnd interior:
-                        // if (!bnd.has_on_unbounded_side(M)) {
-                        if (bnd.has_on_bounded_side(M)) {
-                            auto& incoming = *it->second.begin();
-                            // create ray incoming -> M
-                            CGAL::Ray_2<K> ray(incoming, M - incoming);
-
-                            std::cerr << "Extending end vertex " << M << " along ray " << ray << " to boundary of input polygon" << std::endl;
-
-                            // intersect ray with boundary
-                            boost::optional<CGAL::Segment_2<K>> closest_segment;
-                            boost::optional<CGAL::Point_2<K>> closest_intersection_point;
-                            K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
-                            for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
-                                const auto& seg = *jt;
-                                auto x = CGAL::intersection(ray, seg);
-                                if (x) {
-                                    if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
-                                        auto dist = ((*xp) - M).squared_length();
-                                        std::cerr << " - found " << *xp << " on segment " << seg << " with distance " << std::sqrt(CGAL::to_double(dist)) << std::endl;
-                                        if (dist < sq_distance_along_ray) {
-                                            if (dist < (max_projection_distance * max_projection_distance)) {
-                                                closest_segment = seg;
-                                                closest_intersection_point = *xp;
-                                                sq_distance_along_ray = dist;
-                                            } else {
-                                            
-                                            }                                            
-                                        }
+            // distance from unioned - shoot ray?
+            if (segment_to_input_facet.find(*q)->second.size() == 2) {
+                for (auto& bnd : inner_offset) {
+                    // if point M is contained in bnd interior:
+                    // if (!bnd.has_on_unbounded_side(M)) {
+                    if (bnd.has_on_bounded_side(M)) {
+                        auto& incoming = *it->second.begin();
+                        // create ray incoming -> M
+                        CGAL::Ray_2<K> ray(incoming, M - incoming);
+                        // intersect ray with boundary
+                        boost::optional<CGAL::Segment_2<K>> closest_segment;
+                        boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                        K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
+                        for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
+                            const auto& seg = *jt;
+                            auto x = CGAL::intersection(ray, seg);
+                            if (x) {
+                                if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
+                                    auto dist = ((*xp) - M).squared_length();
+                                    if (dist < sq_distance_along_ray) {
+                                        closest_segment = seg;
+                                        closest_intersection_point = *xp;
+                                        sq_distance_along_ray = dist;
                                     }
                                 }
                             }
+                        }
 
-                            if (closest_intersection_point) {
-                                constructed_segments.push_front({M, *closest_intersection_point});
-                                processed_vertices.insert(M);
-                                break;
+                        if (closest_intersection_point) {
+                            constructed_segments.push_front({M, *closest_intersection_point});
+                            break;
 #if 0
                             Graph2D<K> GGG(bnd);
                             GGG.refine(*GGG.query(*closest_intersection_point, 0.01), *closest_intersection_point);
@@ -1318,33 +1217,12 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                                 break;
                             }
 #endif
-                            } else {
-                                
-                                // Loop over boundary segments, and project point onto it, take the closest
-                                K::FT closest_distance = std::numeric_limits<double>::infinity();
-                                boost::optional<CGAL::Point_2<K>> closest_point;
-                                for (auto& poly : outer_perimiter) {
-                                    for (auto jt = poly.edges_begin(); jt != poly.edges_end(); ++jt) {
-                                        auto seg = *jt;
-                                        auto Pp = seg.supporting_line().projection(M);
-                                        if (seg.has_on(Pp)) {
-                                            auto d = CGAL::squared_distance(Pp, M);
-                                            if (d < closest_distance) {
-                                                closest_distance = d;
-                                                closest_point = Pp;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (closest_point) {
-                                    constructed_segments.push_front({M, *closest_point});
-                                    processed_vertices.insert(M);
-                                }
-                            }
+                        } else {
+                            std::cerr << "Warning: no intersection found when extending end vertex, this will likely result in invalid topology" << std::endl;
                         }
                     }
                 }
+            }
 
 #if 0
             if (!handled_as_graph_path) {
@@ -1389,11 +1267,6 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                 constructed_segments.push_front({avg, R});
             }
 #endif
-            }
-        }
-
-        if (!broke_out) {
-            break;
         }
     }
 
@@ -1482,6 +1355,8 @@ void fuse_corridor_halves_with_input(Arrangement_2& arr, Graph2D<K>& G, SegmentL
     }
 }
 
+#include <CGAL/Arr_walk_along_line_point_location.h>
+
 class Segment_2_less {
     public:
     bool operator()(const Segment_2& a, const Segment_2& b) const {
@@ -1492,112 +1367,7 @@ class Segment_2_less {
     }
 };
 
-std::vector<K::FT> arrangement_cell_iou(Arrangement_2& left, Arrangement_2& right) {
-
-    using Walk_pl = CGAL::Arr_walk_along_line_point_location<Arrangement_2>;
-    Walk_pl walk_pl(right);
-
-    std::set<Arrangement_2::Face_const_handle> visited_faces_on_right;
-
-    std::vector<K::FT> return_values;
-
-    for (auto it = left.faces_begin(); it != left.faces_end(); ++it) {
-        if (!it->is_unbounded()) {
-            // convert arr facet to polygon with holes
-            auto polygon_exterior = circ_to_poly(it->outer_ccb());
-            Polygon_with_holes_2 pwh(polygon_exterior);
-            for (auto hit = it->inner_ccbs_begin(); hit != it->inner_ccbs_end(); ++hit) {
-                pwh.add_hole(circ_to_poly(*hit));
-            }
-
-            CGAL::Polygon_triangulation_decomposition_2<K> decompositor;
-            std::vector<Polygon_2> temp;
-            decompositor(pwh, std::back_inserter(temp));
-
-            std::set<Point_2> visited_points;
-
-            while (true) {
-                // select triangle edge that has largest squared edge length times distance from polygon exterior
-                K::FT max_score = -std::numeric_limits<double>::infinity();
-                Point_2 best_point;
-                for (auto& tri : temp) {
-                    for (size_t i = 0; i < 3; ++i) {
-                        size_t j = (i + 1) % 3;
-                        auto& pi = tri.vertex(i);
-                        auto& pj = tri.vertex(j);
-
-                        auto center_point = CGAL::ORIGIN + (((pi - CGAL::ORIGIN) + (pj - CGAL::ORIGIN)) / 2);
-
-                        K::FT min_dist = std::numeric_limits<double>::infinity();
-                        for (auto eit = polygon_exterior.edges_begin(); eit != polygon_exterior.edges_end(); ++eit) {
-                            auto ep = eit->source();
-                            auto eq = eit->target();
-                            Segment_2 seg(ep, eq);
-                            auto dist = CGAL::squared_distance(center_point, seg);
-                            if (dist < min_dist) {
-                                min_dist = dist;
-                            }
-                        }
-
-                        auto sq_length = CGAL::squared_distance(pi, pj);
-
-                        auto score = sq_length * min_dist;
-                        if (score > max_score && visited_points.count(center_point) == 0) {
-                            max_score = score;
-                            best_point = center_point;
-                        }
-                    }
-                }
-
-                auto res = walk_pl.locate(best_point);
-                if (auto* v = variant_get<Arrangement_2::Face_const_handle>(&res)) {
-                    if (visited_faces_on_right.count(*v) > 0) {
-                        return_values.push_back(0);
-                    } else {
-                        // convert arr facet to polygon with holes
-                        auto polygon_exterior = circ_to_poly((*v)->outer_ccb());
-                        Polygon_with_holes_2 pwh_right(polygon_exterior);
-                        for (auto hit = (*v)->inner_ccbs_begin(); hit != (*v)->inner_ccbs_end(); ++hit) {
-                            pwh_right.add_hole(circ_to_poly(*hit));
-                        }
-
-                        // compute intersection over union of pwh and the original polygon
-                        if (CGAL::do_intersect(pwh, pwh_right)) {
-                            std::vector<Polygon_with_holes_2> result;
-                            CGAL::intersection(pwh, pwh_right, std::back_inserter(result));
-                            typename K::FT intersection_area = 0;
-                            for (auto& r : result) {
-                                auto poly_area = r.outer_boundary().area();
-                                for (auto& h : r.holes()) {
-                                    poly_area -= h.area();
-                                }
-                                intersection_area += poly_area;
-                            }
-                            CGAL::Polygon_with_holes_2<K> poly12;
-                            CGAL::join(pwh, pwh_right, poly12);
-                            typename K::FT union_area = poly12.outer_boundary().area();
-                            for (auto& h : poly12.holes()) {
-                                union_area -= h.area();
-                            }
-                            return_values.push_back(intersection_area / union_area);
-                        } else {
-                            return_values.push_back(0);
-                        }
-                    }
-                    visited_faces_on_right.insert(*v);
-                    break;
-                } else {
-                    // Not in facet on right, retry another point
-                    continue;
-                }
-            }
-        }
-    }
-
-    return return_values;
-}
-
-void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLookup& segment_lookup, double& threshold) {
+void clean_noisy_paths(Arrangement_2& arr, SegmentLookup& segment_lookup) {
     using SK = CGAL::Simple_cartesian<double>;
     CGAL::Cartesian_converter<K, SK> C{};
 
@@ -1648,17 +1418,15 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
             auto [dv, dl] = get_dir(s);
             best = std::min(best, angle(dv));
         }
-        return (best + 0.01) / own_length;
+        return (best + 0.1) / own_length;
     };
 
-    std::cerr << "badnesses:";
     std::map<Segment_2, double, Segment_2_less> badnesses;
     for (auto& e : edges) {
         badnesses[e] = edge_badness(e);
-        std::cerr << " (" << e.source().x() << "," << e.source().y() << ") - (" << e.target().x() << "," << e.target().y() << "): " << badnesses[e] << ";";
     }
-    std::cerr << std::endl;
 
+    double thr;
     {
         std::vector<double> tmp;
         tmp.reserve(badnesses.size());
@@ -1667,14 +1435,12 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
         }
         std::nth_element(tmp.begin(), tmp.begin() + tmp.size() / 2, tmp.end());
         double med = tmp[tmp.size() / 2];
-        threshold = 4.0 * med;
+        thr = 10.0 * med;
     }
-
-    std::cerr << "badness threshold: " << threshold << std::endl; 
 
     std::set<Segment_2, Segment_2_less> bad_edges;
     for (auto& p : badnesses) {
-        if (p.second > threshold) {
+        if (p.second > thr) {
             bad_edges.insert(p.first);
         }
     }
@@ -1802,57 +1568,10 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
         return best_x;
     };
 
-    auto process_modifications = [&](
-                                     Arrangement_2& arr_,
-                                     const std::set<std::pair<Point_2, Point_2>>& to_remove_,
-                                     const std::vector<std::pair<Point_2, Point_2>>& to_insert_) {
-        for (auto& e : to_remove_) {
-            bool removed = false;
-            for (auto he = arr_.edges_begin(); he != arr_.edges_end(); ++he) {
-                auto a = he->source()->point();
-                auto b = he->target()->point();
-                if ((a == e.first && b == e.second) || (a == e.second && b == e.first)) {
-                    CGAL::remove_edge(arr_, he);
-                    removed = true;
-                    break;
-                }
-            }
-            if (!removed) {
-                std::cerr << "Warning: unable to locate edge for removal, skipping" << std::endl;
-            }
-        }
-
-        for (auto& pq : to_insert_) {
-            if (pq.first == pq.second) {
-                continue;
-            }
-            CGAL::insert(arr_, Segment_2(pq.first, pq.second));
-        }
-    };
-
-    size_t path_index = 0;
     for (auto& path : bad_paths) {
-        decltype(to_remove) to_remove_this_path;
-        decltype(to_insert) to_insert_this_path;
-
-        std::cerr << "Processing bad path:";
-        for (size_t i = 0; i < path.size() - 1; ++i) {
-            auto& a = path[i];
-            auto& b = path[i + 1];
-            std::cerr << " (" << a.x() << "," << a.y() << ") - (" << b.x() << "," << b.y() << ");";
-        }
-        std::cerr << std::endl;
-
-        for (size_t i = 0; i < path.size() - 1; ++i) {
-            auto& a = path[i];
-            auto& b = path[i + 1];
-
-            debug_output.write_segment(a, b, "arr_bad_path path_nr_" + std::to_string(path_index));
-        }
-
         auto x = collapse_path(path);
         if (!x) {
-            std::cerr << "Unable to collapse path, skipping" << std::endl;
+            // std::cerr << "Unable to collapse path, skipping" << std::endl;
             continue;
         }
 
@@ -1866,7 +1585,7 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
         double new_length = std::sqrt(CGAL::to_double((path.front() - *x).squared_length())) + std::sqrt(CGAL::to_double((path.back() - *x).squared_length()));
 
         if (new_length > orig_length * 2 || orig_length > new_length * 2) {
-            std::cerr << "Collapsing path would increase length too much, skipping" << std::endl;
+            // std::cerr << "Collapsing path would increase length too much, skipping" << std::endl;
             continue;
         }
 
@@ -1885,326 +1604,75 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
             auto& b = path[i + 1];
             if (a < b) {
                 to_remove.insert({a, b});
-                to_remove_this_path.insert({a, b});
             } else {
                 to_remove.insert({b, a});
-                to_remove_this_path.insert({b, a});
             }
         }
         auto s = path.front();
         auto t = path.back();
         if (s != *x) {
             to_insert.push_back({s, *x});
-            to_insert_this_path.push_back({s, *x});
-
-            debug_output.write_segment(s, *x, "corrected_path path_nr_" + std::to_string(path_index));
         }
         if (t != *x) {
             to_insert.push_back({t, *x});
-            to_insert_this_path.push_back({t, *x});
-
-            debug_output.write_segment(t, *x, "corrected_path path_nr_" + std::to_string(path_index));
         }
-
-        path_index += 1;
-
-#if 1
-        process_modifications(arr, to_remove_this_path, to_insert_this_path);
-#else
-        auto arr_copy = arr;
-        process_modifications(arr_copy, to_remove_this_path, to_insert_this_path);
-        auto ious = arrangement_cell_iou(arr, arr_copy);
-        for (auto& iou : ious) {
-            std::cerr << " - cell iou: " << CGAL::to_double(iou) << std::endl;
-        }
-        std::swap(arr_copy, arr);
-#endif
     }
 
-    process_modifications(arr, to_remove, to_insert);
-}
+    /*
+    using Walk_pl = CGAL::Arr_walk_along_line_point_location<Arrangement_2>;
+    Walk_pl walk_pl(arr);
 
-template <typename Vec>
-void next_circular(typename Vec::const_iterator& it, const Vec& vec) {
-    std::advance(it, 1);
-    if (it == vec.end()) {
-        it = vec.begin();
-    }
-}
+    for (auto& e : to_remove) {
+        // debug_output.write_segment(e->source()->point(), e->target()->point(), "arr_bad_remove");
+        auto res = walk_pl.locate(e.first);
+        if (auto* v = boost::get<Arrangement_2::Vertex_const_handle>(&res)) {
+            Arrangement_2::Halfedge_around_vertex_circulator first, curr;
+            first = curr = (*v)->incident_halfedges();
+            size_t i = 0;
+            std::array<Point_2, 2> pts;
+            std::array<Arrangement_2::Halfedge_handle, 2> hes;
+            do {
+                Arrangement_2::Vertex_const_handle u = curr->source();
+                hes[i] = curr;
+                pts[i++] = u->point();
+            } while (++curr != first);
 
-template <typename Vec>
-void previous_circular(typename Vec::const_iterator& it, const Vec& vec) {
-    if (it == vec.begin()) {
-        it = vec.end();
-    }
-    std::advance(it, -1);
-}
 
-template <typename Vec>
-std::size_t circular_distance(typename Vec::const_iterator first,
-                              typename Vec::const_iterator last,
-                              const Vec& vec) {
-    if (first <= last) {
-        return static_cast<std::size_t>(last - first);
-    }
-    return static_cast<std::size_t>(vec.end() - first) + static_cast<std::size_t>(last - vec.begin());
-}
-
-template <typename Vec, typename Pred>
-std::pair<typename Vec::const_iterator,
-          typename Vec::const_iterator>
-longest_wrapping_true_run(const Vec& v, Pred pred) {
-    using It = typename Vec::const_iterator;
-
-    const auto n = v.size();
-    if (n == 0) {
-        return {v.end(), v.end()};
-    }
-
-    // Find best non-wrapping run
-    std::size_t best_len = 0;
-    std::size_t best_start = 0;
-
-    std::size_t curr_len = 0;
-    std::size_t curr_start = 0;
-
-    for (std::size_t i = 0; i < n; ++i) {
-        if (pred(v[i])) {
-            if (curr_len == 0) {
-                curr_start = i;
-            }
-            ++curr_len;
-            if (curr_len > best_len) {
-                best_len = curr_len;
-                best_start = curr_start;
+            if ((*v)->point() != e.first) {
+                std::cerr << "Warning: unable to locate vertex for edge removal, skipping" << std::endl;
+                continue;
             }
         } else {
-            curr_len = 0;
+            std::cerr << "Warning: unable to locate vertex for edge removal, skipping" << std::endl;
+            continue;
+        }
+    }
+    */
+
+    for (auto& e : to_remove) {
+        bool removed = false;
+        for (auto he = arr.edges_begin(); he != arr.edges_end(); ++he) {
+            auto a = he->source()->point();
+            auto b = he->target()->point();
+            if ((a == e.first && b == e.second) || (a == e.second && b == e.first)) {
+                CGAL::remove_edge(arr, he);
+                removed = true;
+                break;
+            }
+        }
+        if (!removed) {
+            std::cerr << "Warning: unable to locate edge for removal, skipping" << std::endl;
         }
     }
 
-    // Count leading true
-    std::size_t leading = 0;
-    while (leading < n && pred(v[leading])) {
-        ++leading;
-    }
-
-    // All true
-    if (leading == n) {
-        return {v.begin(), v.end()};
-    }
-
-    // Count trailing true
-    std::size_t trailing = 0;
-    while (trailing < n && pred(v[n - 1 - trailing])) {
-        ++trailing;
-    }
-
-    // Wrapped run = [n - trailing, n) + [0, leading)
-    const std::size_t wrapped_len = leading + trailing;
-
-    if (wrapped_len > best_len) {
-        It first = v.begin() + static_cast<std::ptrdiff_t>(n - trailing);
-        It last = v.begin() + static_cast<std::ptrdiff_t>(leading);
-        return {first, last};
-    }
-
-    It first = v.begin() + static_cast<std::ptrdiff_t>(best_start);
-    It last = first + static_cast<std::ptrdiff_t>(best_len);
-    return {first, last};
-}
-
-void clean_noisy_bounds(DebugWriter& debug_output, Arrangement_2& arr, SegmentLookup& segment_lookup, double threshold) {
-    using SK = CGAL::Simple_cartesian<double>;
-    CGAL::Cartesian_converter<K, SK> C{};
-
-    auto other = [](const Segment_2& e, const Point_2& v) {
-        return (e.source() == v) ? e.target() : e.source();
-    };
-
-    auto edge_badness = [&](const Segment_2& e) -> double {
-        auto closest = segment_lookup.n_closest_input_segments(e, 2);
-        if (closest.size() != 2) {
-            throw std::runtime_error("Unable to locate two nearby edges");
+    for (auto& pq : to_insert) {
+        if (pq.first == pq.second) {
+            continue;
         }
-
-        auto get_dir = [&](const Segment_2& s) {
-            auto a = C(s.source());
-            auto b = C(s.target());
-            SK::Vector_2 v = b - a;
-            double l = std::sqrt(v.squared_length());
-            if (l <= 1e-12) {
-                return std::make_pair(SK::Vector_2(0, 0), 0.);
-            }
-            return std::make_pair(v / l, l);
-        };
-
-        auto [own_dir, own_length] = get_dir(e);
-
-        auto angle = [&](const SK::Vector_2& ov) {
-            double d = std::abs(own_dir * ov);
-            if (d > 1.0) {
-                d = 1.0;
-            }
-            return std::acos(d);
-        };
-
-        double best = std::numeric_limits<double>::infinity();
-        for (auto& s : closest) {
-            auto [dv, dl] = get_dir(s);
-            best = std::min(best, angle(dv));
-        }
-        return (best + 0.01) / own_length;
-    };
-
-    size_t facet_index = 0;
-    for (auto it = arr.faces_begin(); it != arr.faces_end(); ++it, ++facet_index) {
-        std::cout << "facet_index " << facet_index << std::endl;
-        if (!it->is_unbounded()) {
-            std::set<std::pair<Point_2, Point_2>> to_remove;
-            std::vector<std::pair<Point_2, Point_2>> to_insert;
-
-            std::vector<Segment_2> segs;
-            std::vector<Arrangement_2::Vertex_const_handle> vertices;
-            std::vector<Arrangement_2::Halfedge_handle> halfedges;
-
-            auto circ = it->outer_ccb();
-            do {
-                auto a = circ->source()->point();
-                auto b = circ->target()->point();
-                segs.emplace_back(a, b);
-                vertices.push_back(circ->source());
-                halfedges.push_back(circ);
-                ++circ;
-            } while (circ != it->outer_ccb());
-
-            std::cerr << "badnesses:";
-            std::vector<double> badnesses;
-            for (auto& e : segs) {
-                badnesses.push_back(edge_badness(e));
-                std::cerr << " (" << e.source().x() << "," << e.source().y() << ") - (" << e.target().x() << "," << e.target().y() << "): " << badnesses.back() << ";";
-            }
-            std::cerr << std::endl;
-
-            auto bit = std::min_element(badnesses.begin(), badnesses.end());
-            if (*bit > threshold) {
-                std::cerr << "All edges are good, skipping" << std::endl;
-                continue;
-            }
-
-            auto it_pair = longest_wrapping_true_run(badnesses, [&](double d) { return d > threshold; });
-            auto N = circular_distance(it_pair.first, it_pair.second, badnesses);
-
-            if (N == 0) {
-                std::cerr << "Unable to find run of bad edges, skipping" << std::endl;
-                continue;
-            }
-
-            std::vector<std::vector<Point_2>> incoming_paths;
-
-            std::cout << "range " << std::distance(badnesses.cbegin(), it_pair.first) << " to " << std::distance(badnesses.cbegin(), it_pair.second) << " length " << N << std::endl;
-
-            auto jt = it_pair.first;
-            for (std::size_t k = 0; k < N; ++k, next_circular(jt, badnesses)) {
-
-                std::cout << "  at " << std::distance(badnesses.cbegin(), jt) << " badness: " << *jt << std::endl;
-
-                auto he = halfedges[std::distance(badnesses.cbegin(), jt)];
-                to_remove.insert({he->source()->point(), he->target()->point()});
-                debug_output.write_segment(he->source()->point(), he->target()->point(), "arr_bad_bound facet_" + std::to_string(facet_index));
-
-                Arrangement_2::Vertex_handle v = he->source();
-
-                // circle around other edges onto v
-                Arrangement_2::Halfedge_around_vertex_circulator first, curr;
-                first = curr = v->incident_halfedges();
-                do {
-                    Arrangement_2::Vertex_handle u = curr->source();
-                    if (curr->face() != it && curr->twin()->face() != it) {
-
-                        // loop until we find a 3-degree vertex, or we come back to the start
-                        std::vector<Point_2> path{v->point(), u->point()};
-                        auto he = curr;
-
-                        while (u->degree() == 2 && u != v && path.size() < 10) {
-                            std::vector<Arrangement_2::Halfedge_handle> hes;
-
-                            {
-                                Arrangement_2::Halfedge_around_vertex_circulator first, curr;
-                                first = curr = u->incident_halfedges();
-                                do {
-                                    hes.push_back(curr);
-                                    curr++;
-                                } while (curr != first);
-                            }
-
-                            auto next_he = hes.front() != he && hes.front() != he->twin() ? hes.front() : hes.back();
-                            auto next_v = next_he->target() != u ? next_he->target() : next_he->source();
-
-                            path.push_back(next_v->point());
-                            u = next_v;
-                        }
-                        incoming_paths.push_back(std::move(path));
-                    }
-                } while (++curr != first);
-            }
-
-            const std::size_t start =
-                static_cast<std::size_t>(std::distance(badnesses.cbegin(), it_pair.first));
-
-            auto n = badnesses.size();
-
-            auto wrap = [n](std::ptrdiff_t i) -> std::size_t {
-                i %= static_cast<std::ptrdiff_t>(n);
-                if (i < 0) {
-                    i += static_cast<std::ptrdiff_t>(n);
-                }
-                return static_cast<std::size_t>(i);
-            };
-
-            const std::size_t ib = start;
-            const std::size_t ia = wrap(static_cast<std::ptrdiff_t>(start) - 1);
-            const std::size_t ic = wrap(static_cast<std::ptrdiff_t>(start + N));
-            const std::size_t id = wrap(static_cast<std::ptrdiff_t>(start + N + 1));
-
-            auto a = vertices.begin() + static_cast<std::ptrdiff_t>(ia);
-            auto b = vertices.begin() + static_cast<std::ptrdiff_t>(ib);
-            auto c = vertices.begin() + static_cast<std::ptrdiff_t>(ic);
-            auto d = vertices.begin() + static_cast<std::ptrdiff_t>(id);
-
-            CGAL::Ray_2<K> r1((*a)->point(), (*b)->point());
-            CGAL::Ray_2<K> r2((*d)->point(), (*c)->point());
-
-            std::cout << "a: (" << (*a)->point().x() << "," << (*a)->point().y() << ") b: (" << (*b)->point().x() << "," << (*b)->point().y() << ") c: (" << (*c)->point().x() << "," << (*c)->point().y() << ") d: (" << (*d)->point().x() << "," << (*d)->point().y() << ")" << std::endl;
-
-            auto x = CGAL::intersection(r1, r2);
-            if (x) {
-                if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
-                    std::cout << "ray xp: (" << xp->x() << "," << xp->y() << ")" << std::endl;
-                    to_insert.emplace_back((*b)->point(), *xp);
-                    to_insert.emplace_back((*c)->point(), *xp);
-
-                    debug_output.write_segment((*b)->point(), *xp, "corrected_bound facet_" + std::to_string(facet_index));
-                    debug_output.write_segment((*c)->point(), *xp, "corrected_bound facet_" + std::to_string(facet_index));
-                }
-            } else {
-                CGAL::Line_2<K> r1((*a)->point(), (*b)->point());
-                CGAL::Line_2<K> r2((*d)->point(), (*c)->point());
-
-                auto x = CGAL::intersection(r1, r2);
-                if (x) {
-                    if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
-                        std::cout << "line xp: (" << xp->x() << "," << xp->y() << ")" << std::endl;
-                        to_insert.emplace_back((*b)->point(), *xp);
-                        to_insert.emplace_back((*c)->point(), *xp);
-
-                        debug_output.write_segment((*b)->point(), *xp, "corrected_bound facet_" + std::to_string(facet_index));
-                        debug_output.write_segment((*c)->point(), *xp, "corrected_bound facet_" + std::to_string(facet_index));
-                    }
-                }
-            }
-        }
+        CGAL::insert(arr, Segment_2(pq.first, pq.second));
+        // debug_output.write_segment(pq.first, pq.second, "arr_bad_insert");
     }
+
 }
 
 void remove_colinear_vertices(Arrangement_2& arr) {
@@ -2257,31 +1725,20 @@ class timer {
   public:
     class entry {
       public:
-        entry() {}
-
         entry(std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it)
             : start_it(start_it) {}
-
         void stop() {
-            if (start_it) {
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration<double, std::milli>(end - start_it.value()->second).count();
-                std::cerr << "Timing for " << start_it.value()->first << ": " << duration << " ms" << std::endl;
-            }     
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration<double, std::milli>(end - start_it->second).count();
+            std::cerr << "Timing for " << start_it->first << ": " << duration << " ms" << std::endl;
         }
 
       private:
-        std::optional<std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator> start_it;
+        std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it;
     };
 
-    timer(bool enabled = true) : enabled_(enabled) {}
-
     entry start(const std::string& name) {
-        if (enabled_) {
-            return entry(timings_.insert({name, std::chrono::high_resolution_clock::now()}).first);
-        } else {
-            return entry();
-        }
+        return entry(timings_.insert({name, std::chrono::high_resolution_clock::now()}).first);
     }
 
   private:
@@ -2289,30 +1746,27 @@ class timer {
         std::string,
         std::chrono::high_resolution_clock::time_point>
         timings_;
-
-    bool enabled_;
 };
 
-void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std::vector<Polygon_2>& input_polygons_, std::vector<Polygon_2>& output_polygons, double polygon_offset_distance = -1.) {
+void arrange_cgal_polygons(const std::vector<Polygon_2>& input_polygons_, std::vector<Polygon_2>& output_polygons, double polygon_offset_distance = -1.) {
     static const double OVERLAP_RESOLUTION_DISTANCE = 1.e-1;
     // even larger amount of inset so that outer perimeter is safely within all input polygons even when overlap resolution is applied
     // no, `1.e-2 + 1.e-5` creates issues with the outer perimeter, are there other tolerances in play?
     static const double OUTER_PERIMITER_ADDITIONAL_INSET_AMOUNT = 1.e-5; 
 
-    DebugWriter debug_output;
-    if (settings.debug_output) {
-        auto t = std::time(nullptr);
-        auto tm = *std::localtime(&t);
+#ifdef SVGFILL_DEBUG
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
 
-        std::ostringstream oss;
-        oss << std::put_time(&tm, "arrangement_%Y%m%d%H%M%S");
-        auto now = oss.str();
-        debug_output = DebugWriter(true, now);
-    } else {
-        debug_output = DebugWriter(false, "");
-    }
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "arrangement_%Y%m%d%H%M%S");
+    auto now = oss.str();
+    DebugWriter debug_output(true, now);
+#else
+    DebugWriter debug_output(false, "");
+#endif
 
-    timer timer(settings.debug_output);
+    timer timer;
 
     auto t0 = timer.start("input");
 
@@ -2340,7 +1794,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     t0.stop();
     t0 = timer.start("overlap elimination");
 
-    eliminate_overlaps(debug_output, OVERLAP_RESOLUTION_DISTANCE, input_polygons);
+    eliminate_overlaps(OVERLAP_RESOLUTION_DISTANCE, input_polygons);
 
     t0.stop();
 
@@ -2359,79 +1813,79 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
     debug_output.write_polygons(input_polygons, "processed_input");
 
-    std::vector<Polygon_2> outer_perimiter;
-    if (settings.outer_perimiter_algo == 0) {
-        t0 = timer.start("outer perimeter");
+#if 1
+    t0 = timer.start("outer perimeter");
 
-        // Find the outer perimeter using offset - union - negative offset
-        std::vector<Polygon_2> offset_polygons;
-        for (auto& r : input_polygons) {
-            auto R = r;
-            if (!R.is_counterclockwise_oriented()) {
-                R.reverse_orientation();
-            }
-
-            // Overlap removal can also result in close points causing problems when converted into non-exact nt
-            remove_close_points(R);
-
-            auto ps = create_and_convert_offset_polygon(polygon_offset_distance, R);
-            for (auto& p : ps) {
-                if (!p.is_simple()) {
-                    throw std::runtime_error("Complex polygon originated from offset");
-                }
-            }
-            offset_polygons.insert(offset_polygons.end(), ps.begin(), ps.end());
+    // Find the outer perimeter using offset - union - negative offset
+    std::vector<Polygon_2> offset_polygons;
+    for (auto& r : input_polygons) {
+        auto R = r;
+        if (!R.is_counterclockwise_oriented()) {
+            R.reverse_orientation();
         }
 
-        debug_output.write_polygons(offset_polygons, "offset_input");
+        // Overlap removal can also result in close points causing problems when converted into non-exact nt
+        remove_close_points(R);
 
-        // Perform Boolean union on the offset polygons
-        std::vector<Polygon_with_holes_2> unioned_polygons;
-        CGAL::join(offset_polygons.begin(), offset_polygons.end(), std::back_inserter(unioned_polygons));
-
-        if (unioned_polygons.size() > 1) {
-            // @todo this is currently one of the major limitations in the code that still can be eliminated
-            // by grouping the input polygons by their perimiter polygon in unioned_polygons
-            std::sort(unioned_polygons.begin(), unioned_polygons.end(), [](auto& p, auto& q) { return p.outer_boundary().area() > q.outer_boundary().area(); });
-        }
-
-        debug_output.write_polygon(unioned_polygons.front().outer_boundary(), "offset_joined");
-
-        Polygon_2 fused_removed_close_points = unioned_polygons.front().outer_boundary();
-        remove_close_points(fused_removed_close_points, 1.e-4);
-
-        // Apply negative offset to get the outer perimeter polygon
-        outer_perimiter = create_and_convert_offset_polygon(
-            // Because polygon_offset is inexact, make sure our inset distance is slightly larger
-            // std::nexttoward(-polygon_offset_distance, -std::numeric_limits<double>::infinity()),
-
-            // 1.e-8 even was too little and still resulted in slivers of triangle around the perimeter
-            -polygon_offset_distance - OUTER_PERIMITER_ADDITIONAL_INSET_AMOUNT,
-            fused_removed_close_points);
-
-        debug_output.write_polygons(outer_perimiter, "outer_perimiter");
-    } else {
-        std::map<Point_2, std::vector<Point_2>> neighbour_map;
-        build_radial_neighbour_map(input_polygons, polygon_offset_distance, neighbour_map);
-
-        auto start_vertex = neighbour_map.rbegin()->first;
-        auto next_vertex = neighbour_map.rbegin()->second.front();
-
-        std::vector<Point_2> cycle = {start_vertex, next_vertex};
-        while (cycle.back() != cycle.front()) {
-            const auto& incoming_from = *(cycle.rbegin() + 1);
-            const auto& nb = neighbour_map[cycle.back()];
-            auto it = std::find(nb.begin(), nb.end(), incoming_from);
-            // cycle it -1 around nb
-            if (it == nb.begin()) {
-                it = nb.end() - 1;
-            } else {
-                --it;
+        auto ps = create_and_convert_offset_polygon(polygon_offset_distance, R);
+        for (auto& p : ps) {
+            if (!p.is_simple()) {
+                throw std::runtime_error("Complex polygon originated from offset");
             }
-            cycle.push_back(*it);
         }
-        outer_perimiter.emplace_back(cycle.begin(), cycle.end());
+        offset_polygons.insert(offset_polygons.end(), ps.begin(), ps.end());
     }
+
+    debug_output.write_polygons(offset_polygons, "offset_input");
+
+    // Perform Boolean union on the offset polygons
+    std::vector<Polygon_with_holes_2> unioned_polygons;
+    CGAL::join(offset_polygons.begin(), offset_polygons.end(), std::back_inserter(unioned_polygons));
+
+    if (unioned_polygons.size() > 1) {
+        // @todo this is currently one of the major limitations in the code that still can be eliminated
+        // by grouping the input polygons by their perimiter polygon in unioned_polygons
+        std::sort(unioned_polygons.begin(), unioned_polygons.end(), [](auto& p, auto& q) { return p.outer_boundary().area() > q.outer_boundary().area(); });
+    }
+
+    debug_output.write_polygon(unioned_polygons.front().outer_boundary(), "offset_joined");
+
+    Polygon_2 fused_removed_close_points = unioned_polygons.front().outer_boundary();
+    remove_close_points(fused_removed_close_points, 1.e-4);
+
+    // Apply negative offset to get the outer perimeter polygon
+    auto outer_perimiter = create_and_convert_offset_polygon(
+        // Because polygon_offset is inexact, make sure our inset distance is slightly larger
+        // std::nexttoward(-polygon_offset_distance, -std::numeric_limits<double>::infinity()),
+
+        // 1.e-8 even was too little and still resulted in slivers of triangle around the perimeter  
+        -polygon_offset_distance - OUTER_PERIMITER_ADDITIONAL_INSET_AMOUNT,
+        fused_removed_close_points);
+
+    debug_output.write_polygons(outer_perimiter, "outer_perimiter");
+#else
+    std::map<Point_2, std::vector<Point_2>> neighbour_map;
+    build_radial_neighbour_map(input_polygons, polygon_offset_distance, neighbour_map);
+
+    auto start_vertex = neighbour_map.rbegin()->first;
+    auto next_vertex = neighbour_map.rbegin()->second.front();
+
+    std::vector<Point_2> cycle = {start_vertex, next_vertex};
+    while (cycle.back() != cycle.front()) {
+        const auto& incoming_from = *(cycle.rbegin() + 1);
+        const auto& nb = neighbour_map[cycle.back()];
+        auto it = std::find(nb.begin(), nb.end(), incoming_from);
+        // cycle it -1 around nb
+        if (it == nb.begin()) {
+            it == nb.end() - 1;
+        } else {
+            --it;
+        }
+        cycle.push_back(*it);
+    }
+    std::vector<Polygon_2> outer_perimiter;
+    outer_perimiter.emplace_back(cycle.begin(), cycle.end());
+#endif
 
     t0.stop();
     t0 = timer.start("corridor creation");
@@ -2457,10 +1911,8 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
     // subdivide difference_result to have better more detailed triangulation and therefore less-pronounced artefacts in midpoint network
 
-    auto subdivision_length = polygon_offset_distance / settings.subdivision_factor;
-
     for (auto& pwh : difference_result) {
-        difference_result_subdivided.push_back(subdivide_polygon(subdivision_length, pwh));
+        difference_result_subdivided.push_back(subdivide_polygon(polygon_offset_distance / 8., pwh));
         // difference_result_subdivided.push_back(subdivide_polygon(polygon_offset_distance / 64., pwh));
     }
 
@@ -2488,41 +1940,11 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
     SegmentLookup segment_lookup(input_polygons);
 
-    auto [line_graph, midpoint_to_segment, segment_to_input_facet, midpoint_to_edge_length] = build_line_graph(input_polygons, segment_lookup, triangular_polygons);
+    auto [line_graph, midpoint_to_segment, segment_to_input_facet] = build_line_graph(input_polygons, segment_lookup, triangular_polygons);
     for (auto& p : line_graph) {
         for (auto& q : p.second) {
             debug_output.write_segment(p.first, q, "network_1");
         }
-    }
-
-    // Write a JSON structure with center line topology with the midpoint_to_edge_length as per-point data
-    {
-        std::ofstream ofs("center_line_topology.json");
-        ofs << "{\n";
-        ofs << "  \"vertices\": [\n";
-        bool first_vertex = true;
-        for (auto& p : line_graph) {
-            if (!first_vertex) {
-                ofs << ",\n";
-            }
-            first_vertex = false;
-            ofs << "    {\n";
-            ofs << "      \"point\": [" << p.first.x() << ", " << p.first.y() << "],\n";
-            ofs << "      \"width\":" << midpoint_to_edge_length.find(p.first)->second << ",\n";
-            ofs << "      \"connected_to\": [\n";
-            bool first_connected = true;
-            for (auto& q : p.second) {
-                if (!first_connected) {
-                    ofs << ",\n";
-                }
-                first_connected = false;
-                ofs << "        [" << q.x() << ", " << q.y() << "]";
-            }
-            ofs << "\n      ]\n";
-            ofs << "    }";
-        }
-        ofs << "\n  ]\n";
-        ofs << "}\n";
     }
 
     t0.stop();
@@ -2559,7 +1981,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
     t0 = timer.start("topology");
 
-    auto segments = extend_end_vertices_based_on_input(G, midpoint_to_segment, segment_to_input_facet, outer_perimiter, segment_lookup, subdivision_length * 4);
+    auto segments = extend_end_vertices_based_on_input(G, midpoint_to_segment, segment_to_input_facet, outer_perimiter, segment_lookup);
 
     // Now plot the edges on an arrangement in order to find planar cycles
     // and merge the corridor-halves with their neighbouring input polygon
@@ -2575,31 +1997,31 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         debug_output.write_segment(pq.first, pq.second, "extended_segments");
     }
 
-    if (settings.topology_reconstruction_algo != 0) {
-        // Write input polygons to arrangement_2
-        // We no longer do this because we add the outer perimiter now, subdivided by the corridor network which is extended and intersected with the outer perimiter
-        for (auto& poly : input_polygons) {
-            for (size_t i = 0; i != poly.size(); ++i) {
-                auto j = (i + 1) % poly.size();
-                if (poly.vertex(i) == poly.vertex(j)) {
-                    continue;
-                }
-                CGAL::insert(arr, Segment_2(poly.vertex(i), poly.vertex(j)));
+#if 0
+    // Write input polygons to arrangement_2
+    // We no longer do this because we add the outer perimiter now, subdivided by the corridor network which is extended and intersected with the outer perimiter
+    for (auto& poly : input_polygons) {
+        for (size_t i = 0; i != poly.size(); ++i) {
+            auto j = (i + 1) % poly.size();
+            if (poly.vertex(i) == poly.vertex(j)) {
+                continue;
             }
-        }
-    } else {
-        // Write outer perimeter to arrangement_2
-        for (auto& p : outer_perimiter) {
-            for (auto it = p.edges_begin(); it != p.edges_end(); ++it) {
-                auto source = it->source();
-                auto target = it->target();
-                if (source == target) {
-                    continue;
-                }
-                CGAL::insert(arr, Segment_2(source, target));
-            }
+            CGAL::insert(arr, Segment_2(poly.vertex(i), poly.vertex(j)));
         }
     }
+#else
+    // Write outer perimeter to arrangement_2
+    for (auto& p : outer_perimiter) {
+        for (auto it = p.edges_begin(); it != p.edges_end(); ++it) {
+            auto source = it->source();
+            auto target = it->target();
+            if (source == target) {
+                continue;
+            }
+            CGAL::insert(arr, Segment_2(source, target));
+        }
+    }
+#endif
 
     // Just for the automatic numbering, create a full vector
     std::vector<Polygon_2> temp;
@@ -2625,17 +2047,12 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     // corridor network we know it needs to be joined with an input polygon. In that
     // case the edges need to be eliminated that correspond to original geometry.
 
-    if (settings.topology_reconstruction_algo != 0) {
-        fuse_corridor_halves_with_input(arr, G, segment_lookup, input_polygons, debug_output);
-    }
-
-    if (settings.perform_cleanup) {
-        remove_colinear_vertices(arr);
-        double threshold;
-        clean_noisy_paths(debug_output, arr, segment_lookup, threshold);
-        remove_colinear_vertices(arr);
-        clean_noisy_bounds(debug_output, arr, segment_lookup, threshold);
-    }
+#if 0
+    fuse_corridor_halves_with_input(arr, G, segment_lookup, input_polygons, debug_output);
+#else
+    remove_colinear_vertices(arr);
+    clean_noisy_paths(arr, segment_lookup);
+#endif
 
     t0.stop();
 
@@ -2651,7 +2068,8 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
 #ifndef SVGFILL_MAIN
 
-bool svgfill::arrange_polygons(arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, std::vector<svgfill::polygon_2>& arranged) {
+bool svgfill::arrange_polygons(const std::vector<svgfill::polygon_2>& polygons, std::vector<svgfill::polygon_2>& arranged)
+{
     std::vector<Polygon_2> cgal_polygons, cgal_polygons_out;
     std::transform(polygons.begin(), polygons.end(), std::back_inserter(cgal_polygons), [](auto& poly) {
         Polygon_2 result;
@@ -2660,7 +2078,7 @@ bool svgfill::arrange_polygons(arrange_polygon_settings settings, const std::vec
         });
         return result;
     });
-    arrange_cgal_polygons(settings, cgal_polygons, cgal_polygons_out);
+    arrange_cgal_polygons(cgal_polygons, cgal_polygons_out);
     std::transform(cgal_polygons_out.begin(), cgal_polygons_out.end(), std::back_inserter(arranged), [](auto& poly) {
         svgfill::polygon_2 result;
         std::transform(poly.begin(), poly.end(), std::back_inserter(result.boundary), [](auto& pt) {
@@ -2710,7 +2128,7 @@ int main(int argc, char** argv) {
                     input_polygons.back().push_back(CGAL::Point_2<K>(x, y));
                 }
             }
-            arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output);
+            arrange_cgal_polygons(input_polygons, output);
             break;
         }
         return 0;
@@ -2723,7 +2141,7 @@ int main(int argc, char** argv) {
 
         input_polygons = { rect1, rect2, rect3, rect4, rect5 };
     }
-    arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output);
+    arrange_cgal_polygons(input_polygons, output);
 
     return 0;
 }
