@@ -5,7 +5,7 @@ FILE_NAME('Psets_BBIM_Annotation.ifc','2020-01-01T00:00:00',$,$,'Psets_BBIM_Anno
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('3VuPUwdCD2Qx3XDDRs0R1N',$,'EPset_Annotation','',.PSET_TYPEDRIVENOVERRIDE.,'IfcAnnotation,IfcTypeProduct',(#4,#33,#29,#32,#3,#2,#34));
+#1=IFCPROPERTYSETTEMPLATE('3VuPUwdCD2Qx3XDDRs0R1N',$,'EPset_Annotation','',.PSET_TYPEDRIVENOVERRIDE.,'IfcAnnotation,IfcTypeProduct',(#4,#33,#29,#32,#3,#2,#34,#35));
 #2=IFCSIMPLEPROPERTYTEMPLATE('2P7JN79n96Q9pElZ83LKe4',$,'ZIndex','',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1Wpx_r2xj1_9w5JpI0QRJy',$,'Symbol','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3q0oxMUKP47vZ4jnyG$dDb',$,'Classes','Classes separated by spaces that end up in classes for this element in svg. Can be used to specify the text font size: small - 1.8mm; regular - 2.5mm; large - 3.5mm; header - 5mm; title - 7mm. By default regular size is used.',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -39,5 +39,6 @@ DATA;
 #32=IFCSIMPLEPROPERTYTEMPLATE('0gjJzDYBX8P85qn1xcAOOo',$,'Reverse_List','',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #33=IFCSIMPLEPROPERTYTEMPLATE('22TrcxF8jFNB4buSmzjGEF',$,'List_Separator','',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 #34=IFCSIMPLEPROPERTYTEMPLATE('0FauxIsAnnotFaux0001aB',$,'IsManualDrawingReference','Marks this annotation as a manually placed drawing reference, exempt from automatic drawing regeneration.',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
+#35=IFCSIMPLEPROPERTYTEMPLATE('0FauxIsDocRefFaux001aB',$,'IsDocumentReference','Marks this annotation as pointing to an external document reference (not a Bonsai drawing camera).',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
