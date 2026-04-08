@@ -18,10 +18,9 @@
 
 import datetime
 import xml.etree.ElementTree as ET
-from datetime import date, timedelta
+from datetime import timedelta
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.pset
 import ifcopenshell.api.root

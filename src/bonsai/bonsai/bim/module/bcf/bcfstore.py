@@ -17,12 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
-import bcf
-import bcf.bcfxml
-import bcf.v2.bcfxml
-import bonsai.tool as tool
 from typing import Union
+
+import bcf.bcfxml
+import bpy
+
+import bonsai.tool as tool
 
 
 class BcfStore:

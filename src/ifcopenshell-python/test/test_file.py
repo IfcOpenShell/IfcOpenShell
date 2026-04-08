@@ -19,8 +19,6 @@
 import pytest
 
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.element
 import test.bootstrap
 
 

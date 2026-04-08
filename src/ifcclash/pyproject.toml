@@ -19,6 +19,11 @@ dependencies = [
     "ifcopenshell",
 ]
 
+[project.optional-dependencies]
+advanced = [
+  "scikit-learn",
+]
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"

@@ -16,27 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Literal, Union, assert_never, get_args
+
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import bonsai.tool as tool
-import bonsai.bim.helper
-from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty, ObjProperty, Attribute
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
     BoolProperty,
     CollectionProperty,
     EnumProperty,
     FloatProperty,
     IntProperty,
+    PointerProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args, assert_never
-from collections.abc import Generator
+from bpy.types import PropertyGroup
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
+from bonsai.bim.prop import Attribute, ObjProperty
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -217,29 +218,62 @@ class FilterCategory(PropertyGroup):
 
 
 class Link(PropertyGroup):
-    name: StringProperty(
-        name="Name",
+    name: StringProperty(name="Name")
+    filepath: StringProperty(
+        name="Filepath",
         description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
     )
+    transformation: StringProperty(
+        name="Transformation",
+        description="4x4 matrix transformation as a flattened comma separated list for the linked model",
+        default="",
+    )
+    georeferenced: EnumProperty(
+        name="Georeferenced",
+        description="Georeferencing status, compatibility between host and linked model",
+        items=[
+            ("NONE", "No Georef", "Linked model has no georeferencing", "QUESTION", 0),
+            ("NOT_COMPATIBLE", "Not Compatible", "Has geo data but CRS differ from host", "ERROR", 1),
+            ("FULL_COMPATIBLE", "Full Compatible", "Both CRS name and vertical datum match host", "WORLD", 2),
+        ],
+        default="NONE",
+    )
+    has_transformation: BoolProperty(
+        name="Has Transformation",
+        description="Whether there is a transformation from its global coordinates",
+        default=False,
+    )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
+    is_editing: BoolProperty(name="Is Editing", description="Whether the link is being transformed", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
     include_in_drawings: BoolProperty(name="Include in Drawings", default=True, options=set())
     empty_handle: PointerProperty(
         name="Empty Object Handle",
-        description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
+        description="Storage for empty handle. Used in non-IFC scenarios or temporarily during link creation",
         type=bpy.types.Object,
+    )
+    ifc_definition_id: IntProperty(
+        name="IFC Definition ID",
+        description="STEP ID of the IfcDocumentReference when linked to a parent IFC project. Zero when no parent IFC exists",
+        default=0,
     )
 
     if TYPE_CHECKING:
         name: str
+        filepath: str
+        transformation: str
+        georeferenced: Literal["NONE", "NOT_COMPATIBLE", "FULL_COMPATIBLE"]
+        has_transformation: bool
         is_loaded: bool
+        is_editing: bool
         is_selectable: bool
         is_wireframe: bool
         is_hidden: bool
         include_in_drawings: bool
         empty_handle: Union[bpy.types.Object, None]
+        ifc_definition_id: int
 
 
 class EditedObj(PropertyGroup):
@@ -319,7 +353,7 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
+    deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.05)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(
         name="Void Limit",
@@ -368,7 +402,7 @@ class BIMProjectProperties(PropertyGroup):
     load_indexed_maps: BoolProperty(
         name="Load Indexed Maps",
         description="Load indexed maps (UV and color maps)",
-        default=True,
+        default=False,  # Very slow and hackishly implemented
     )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
@@ -411,11 +445,21 @@ class BIMProjectProperties(PropertyGroup):
     )
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
+    should_save_metadata_for_this_file: BoolProperty(
+        name="Save Session Data for This File",
+        description="Enable saving session data (window layout, settings) to a metadata blend file for this specific IFC file",
+        default=False,
+    )
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_guid: bpy.props.StringProperty()
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active_index: bpy.props.IntProperty(min=0, default=0, max=5)
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
+
+    @property
+    def active_link(self) -> Union[Link, None]:
+        return tool.Blender.get_active_uilist_element(self.links, self.active_link_index)
 
     @property
     def active_clipping_plane(self) -> ObjProperty | None:
@@ -504,8 +548,10 @@ class BIMProjectProperties(PropertyGroup):
         parent_library: str
 
         use_relative_project_path: bool
+        should_save_metadata_for_this_file: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
+        queried_guid: str
         clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
         clipping_planes_active_index: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]

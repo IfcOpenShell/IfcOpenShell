@@ -20,7 +20,6 @@ import time
 from typing import Union
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 

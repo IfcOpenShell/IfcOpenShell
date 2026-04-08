@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import importlib
 import os
+from collections.abc import Callable
+from typing import Union
+
 import bpy
 import bpy.utils.previews
-import importlib
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from . import handler, ui, prop, operator
-from typing import Union
-from collections.abc import Callable
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+from . import handler, operator, prop, ui
 
 try:
     from bonsai.translations import translations_dict
@@ -130,12 +132,7 @@ classes = [
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     operator.BIM_OT_attribute_search_values,
-    operator.BIM_UL_tab_panels,
-    operator.BIM_OT_toggle_panel_visibility,
-    operator.BIM_OT_bookmark_panel,
-    operator.BIM_OT_manage_tab_panels,
     operator.BIM_OT_manage_tab_visibility,
-    operator.BIM_OT_toggle_tab_visibility,
     operator.BIM_OT_reset_ui_layout,
     prop.ObjProperty,
     prop.MultipleFileSelect,
@@ -144,7 +141,7 @@ classes = [
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
     prop.BIMTabVisibility,  # Must be registered before BIMProperties
-    prop.BIMPanelProperties,  # Must be registered before BIMProperties
+    prop.BIMPanelVisibility,  # Must be registered before BIMProperties
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
@@ -157,6 +154,8 @@ classes = [
     prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
+    ui.BIM_UL_tab_visibilities,
+    ui.BIM_UL_panel_visibilities,
     ui.DocPreferences,
     ui.GizmoPreferencesDoor,  # Register before GizmoPreferences
     ui.GizmoPreferencesWindow,  # Register before GizmoPreferences
@@ -318,10 +317,6 @@ def register():
     # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
     bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
 
-    bpy.types.Scene.active_tab_name = bpy.props.StringProperty()
-    bpy.types.Scene.tab_panels = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
-    bpy.types.Scene.active_tab_panel_index = bpy.props.IntProperty()
-
 
 def unregister():
     global icons
@@ -363,7 +358,3 @@ def unregister():
         tool.Blender.remove_scene_panel_override(panel)
 
     bpy.app.translations.unregister("bonsai")
-
-    del bpy.types.Scene.active_tab_name
-    del bpy.types.Scene.tab_panels
-    del bpy.types.Scene.active_tab_panel_index

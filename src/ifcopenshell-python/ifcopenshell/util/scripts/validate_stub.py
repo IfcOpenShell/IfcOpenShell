@@ -25,7 +25,6 @@ Things we do check:
 - class hierarchy
 """
 
-
 import ast
 import difflib
 from pathlib import Path
@@ -58,11 +57,28 @@ def get_function_node_name(node: ast.FunctionDef) -> Union[SubnameType, None]:
     :return: Function node name as ``SubnameType``  or ``None``, if function wasn't processed and can be skipped.
     """
     node_name = node.name
-    if node_name.startswith("_") and node_name not in ("_is",):
+    is_init = node_name == "__init__"
+
+    if node_name.startswith("_") and node_name not in ("_is",) and not is_init:
         return None
-    args = [a.arg for a in node.args.args]
-    if node.args.vararg:
-        args.append("*args")
+    arg_nodes = node.args.args
+    defaults = [None] * (len(arg_nodes) - len(node.args.defaults)) + node.args.defaults
+    args: list[str] = []
+    for arg, default in zip(arg_nodes, defaults):
+        if default is None:
+            args.append(arg.arg)
+        else:
+            args.append(f"{arg.arg}={ast.unparse(default)}")
+
+    if arg := node.args.vararg:
+        args.append(f"*{arg.arg}")
+
+    if arg := node.args.kwarg:
+        args.append(f"**{arg.arg}")
+
+    # Skip non-informative constructors.
+    if is_init and args == ["self"]:
+        return None
 
     node_name = f"def {node.name}"
     node_name = f"{node_name}({', '.join(args)}): ..."

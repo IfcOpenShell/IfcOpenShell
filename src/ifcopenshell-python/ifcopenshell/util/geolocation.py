@@ -18,7 +18,7 @@
 
 import math
 from decimal import ROUND_HALF_UP, Decimal
-from typing import NamedTuple, Optional, Union
+from typing import Any, NamedTuple, Optional, Union
 
 import numpy as np
 
@@ -266,6 +266,15 @@ def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Option
         xao = 0.0
 
     return HelmertTransformation(e, n, h, xaa, xao, scale, factor_x, factor_y, factor_z)
+
+
+def get_crs(ifc_file: ifcopenshell.file) -> dict[str, Any]:
+    """Get CRS information from an IFC file."""
+    if ifc_file.schema == "IFC2X3":
+        return ifcopenshell.util.element.get_pset(ifc_file.by_type("IfcProject")[0], "ePSet_ProjectedCRS")
+    for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+        if operation := context.HasCoordinateOperation:
+            return operation[0].TargetCRS.get_info()
 
 
 def auto_z2e(ifc_file: ifcopenshell.file, z: float, should_return_in_map_units: bool = True) -> float:

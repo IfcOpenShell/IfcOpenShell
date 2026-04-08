@@ -30,7 +30,9 @@ from .add_structural_load import add_structural_load
 from .add_structural_load_case import add_structural_load_case
 from .add_structural_load_group import add_structural_load_group
 from .add_structural_member_connection import add_structural_member_connection
+from .assign_product import assign_product
 from .assign_structural_analysis_model import assign_structural_analysis_model
+from .assign_to_building import assign_to_building
 from .edit_structural_analysis_model import edit_structural_analysis_model
 from .edit_structural_boundary_condition import edit_structural_boundary_condition
 from .edit_structural_connection_cs import edit_structural_connection_cs
@@ -57,7 +59,9 @@ __all__ = [
     "add_structural_load_case",
     "add_structural_load_group",
     "add_structural_member_connection",
+    "assign_product",
     "assign_structural_analysis_model",
+    "assign_to_building",
     "edit_structural_analysis_model",
     "edit_structural_boundary_condition",
     "edit_structural_connection_cs",

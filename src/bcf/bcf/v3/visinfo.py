@@ -1,7 +1,7 @@
 import uuid
 import zipfile
 from collections.abc import Iterable
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit

@@ -16,25 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
-import ifcopenshell
-import ifcopenshell.util.schema
-import ifcopenshell.util.attribute
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.profile.data import ProfileData
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
-from typing import TYPE_CHECKING, Union
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.profile.data import ProfileData
+from bonsai.bim.prop import Attribute
 
 
 def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

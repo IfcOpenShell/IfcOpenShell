@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, time, timedelta
+from datetime import time
 from typing import Optional, Union
 
 import ifcopenshell.api

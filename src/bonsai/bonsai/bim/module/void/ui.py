@@ -17,14 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 from bonsai.bim.module.void.data import BooleansData, VoidsData
-from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
+
+    from bonsai.bim.module.void.prop import Boolean
 
 
 OPENING_ICON = "SELECT_SUBTRACT"
@@ -172,7 +177,9 @@ class BIM_PT_booleans(Panel):
 
 
 class BIM_UL_booleans(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: Boolean, icon, active_data, active_propname
+    ) -> None:
         if item:
             if item.operator == "DIFFERENCE":
                 icon = "SELECT_DIFFERENCE"

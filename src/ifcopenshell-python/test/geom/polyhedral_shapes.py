@@ -5,7 +5,6 @@ import pytest
 
 import ifcopenshell
 import ifcopenshell.geom
-from test.bootstrap import file
 
 
 @pytest.mark.parametrize("file", ["geom/polygonal-face-tessellation.ifc"], indirect=True)

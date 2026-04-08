@@ -29,15 +29,16 @@
 #  - You can now derive the center from an arc without generating geometry
 
 from __future__ import annotations
-import sys
-import bpy
+
 import math
-import bmesh
-import numpy as np
-import mathutils.geometry
-from mathutils import Vector, Matrix, geometry
-import itertools
+import sys
 from typing import TYPE_CHECKING, Union
+
+import bmesh
+import bpy
+import mathutils.geometry
+import numpy as np
+from mathutils import Matrix, Vector, geometry
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cad.prop import BIMCadProperties
@@ -840,7 +841,7 @@ class Cad:
         return new_verts
 
     @classmethod
-    def region_2d_to_vector_3d_np(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector) -> Vector:
+    def region_2d_to_vector_3d_np(cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_vector_3d
         Return a direction vector from the viewport at the specific 2d region
@@ -879,7 +880,7 @@ class Cad:
 
     @classmethod
     def region_2d_to_location_3d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, depth_location: Vector
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, depth_location: Vector
     ) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_location_3d
@@ -912,7 +913,7 @@ class Cad:
 
     @classmethod
     def region_2d_to_origin_3d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, clamp: float = None
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, *, clamp: float = None
     ) -> Vector:
         """
         Numpy version of view3d_utils.region_2d_to_origin_3d
@@ -970,7 +971,7 @@ class Cad:
 
     @classmethod
     def location_3d_to_region_2d_np(
-        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3d, coord: Vector, *, default=None
+        cls, region: bpy.types.Region, rv3d: bpy.types.RegionView3D, coord: Vector, *, default=None
     ) -> Vector:
         """
         Numpy version of view3d_utils.location_3d_to_region_2d

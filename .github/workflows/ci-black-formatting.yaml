@@ -7,6 +7,9 @@ on:
 jobs:
   lint-formatting:
     runs-on: ubuntu-latest
+    env:
+      MIN_IOS_PY_VERSION: "3.10"
+      MIN_BLENDER_PY_VERSION: "3.11"
     steps:
       - name: Action - checkout repository
         uses: actions/checkout@v6
@@ -14,12 +17,12 @@ jobs:
       - name: Action - install python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: ${{ env.MIN_IOS_PY_VERSION }}
 
       - name: Action - install python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ env.MIN_BLENDER_PY_VERSION }}
 
       - name: Install dependencies
         run: |
@@ -33,8 +36,10 @@ jobs:
         id: syntax-errors
         run: |
           ERROR=0
-          python3.10 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
-          python3.11 -W error -m compileall -q src/bonsai || ERROR=1
+          # Using 2 Python versions - one minimum required for IfcOpenShell
+          # and other that's used by Blender currently.
+          python${{ env.MIN_IOS_PY_VERSION }} -W error -m compileall -q src/ifcopenshell-python || ERROR=1
+          python${{ env.MIN_BLENDER_PY_VERSION }} -W error -m compileall -q src/bonsai || ERROR=1
           exit $ERROR
         continue-on-error: true
 

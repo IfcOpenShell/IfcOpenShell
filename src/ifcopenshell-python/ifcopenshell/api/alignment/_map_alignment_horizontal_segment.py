@@ -21,7 +21,6 @@ from collections.abc import Sequence
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import ifcopenshell.util
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_cant_segment import _get_cant_segment

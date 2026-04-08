@@ -52,10 +52,11 @@ def edit_object_placement(
     :param is_si: If True, the matrix is given in SI units. If false, in
         project units.
     :param should_transform_children: A child element is a nested element,
-        opening, filling, etc. If true, child elements will move along with the
-        parent. If false, child elements will stay where they are. Because most
-        placements in IFC are relative, this means that if a child moves, we
-        actually don't change their placement.
+        opening, filling, etc. If True, child elements move along with the
+        parent; pass True when moving an assembly (roof, furniture group, etc.)
+        and you want all children to follow. If False (default), child elements
+        keep their current world positions; their local placements are rewritten
+        to compensate for the parent move.
     :return: The new or updated IfcLocalPlacement entity
     """
     usecase = Usecase()

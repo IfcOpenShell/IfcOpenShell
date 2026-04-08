@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
 from typing import Literal
+
+import gpu
 
 
 class DecorationShader:
@@ -57,15 +58,13 @@ class DecorationShader:
             "PLANAR LOAD",
         }
         if pattern not in valid_patterns:
-            raise ValueError(
-                """pattern must be one of:
+            raise ValueError("""pattern must be one of:
                              PERPENDICULAR DISTRIBUTED FORCE
                              PARALLEL DISTRIBUTED FORCE,
                              DISTRIBUTED MOMENT,
                              SINGLE FORCE,
                              SINGLE MOMENT,
-                             PLANAR LOAD"""
-            )
+                             PLANAR LOAD""")
         if "DISTRIBUTED" in pattern.upper():
             shader = self.get_linear_shader(pattern)
             return shader
@@ -84,7 +83,7 @@ class DecorationShader:
         PARALLEL DISTRIBUTED FORCE,
         DISTRIBUTED MOMENT,
         """
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty:ignore[too-many-positional-arguments]
         vert_out.smooth("VEC3", "forces")
         vert_out.smooth("VEC3", "co")
 
@@ -204,7 +203,7 @@ class DecorationShader:
         """param: pattern: type of pattern
         SINGLE FORCE,
         SINGLE MOMENT"""
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty: ignore[too-many-positional-arguments]
         vert_out.smooth("VEC3", "co")
 
         shader_info = gpu.types.GPUShaderCreateInfo()
@@ -254,7 +253,7 @@ class DecorationShader:
 
     def get_planar_shader(self) -> gpu.types.GPUShader:
         """shader for planar loads"""
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty: ignore[too-many-positional-arguments]
         vert_out.smooth("VEC3", "co")
 
         shader_info = gpu.types.GPUShaderCreateInfo()

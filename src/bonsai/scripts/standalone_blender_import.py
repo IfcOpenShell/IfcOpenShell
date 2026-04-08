@@ -1,6 +1,7 @@
+import multiprocessing
+
 import ifcopenshell
 import ifcopenshell.geom
-import multiprocessing
 
 
 class BlenderImporter:

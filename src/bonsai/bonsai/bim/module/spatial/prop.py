@@ -16,28 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-from bonsai.bim.prop import ObjProperty
-from bonsai.bim.module.spatial.data import SpatialDecompositionData
-from bpy.types import PropertyGroup
+import ifcopenshell.api.attribute
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
-import bonsai.tool as tool
+from bpy.types import PropertyGroup
+
 import bonsai.bim.handler
 import bonsai.core.geometry
-import ifcopenshell
-import ifcopenshell.api.attribute
-import ifcopenshell.util.unit
-from bonsai.tool.unit import parse_distance_string
-from typing import TYPE_CHECKING, Union, Literal
+import bonsai.tool as tool
+from bonsai.bim.module.spatial.data import SpatialDecompositionData
+from bonsai.bim.prop import ObjProperty
 
 
 def get_subelement_class(
@@ -50,7 +47,7 @@ def get_subelement_class(
 
 def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
     # Try to parse the input string with unit support first
-    is_valid, parsed_elevation = parse_distance_string(self.elevation, use_project_unit=True)
+    is_valid, parsed_elevation = tool.Unit.parse_distance_string(self.elevation, use_project_unit=True)
 
     if is_valid:
         elevation = parsed_elevation
@@ -98,6 +95,7 @@ def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
         tool.Spatial.edit_container_name(element, self.name)
         if obj := tool.Ifc.get_object(element):
             tool.Root.set_object_name(obj, element)
+            tool.Collector.assign(obj)
         bonsai.bim.handler.refresh_ui_data()
 
 
@@ -172,8 +170,8 @@ def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.ty
     obj = self.id_data
     if (
         (container := tool.Ifc.get_entity(container_obj))
-        and (tool.Ifc.get_entity(obj))
-        and tool.Spatial.can_contain(container, obj)
+        and (element := tool.Ifc.get_entity(obj))
+        and tool.Spatial.can_contain(container, element)
     ):
         return True
     return False

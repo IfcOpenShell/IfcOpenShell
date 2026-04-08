@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
+
 import bonsai.core.context as core
+import bonsai.tool as tool
 
 
 class AddContext(bpy.types.Operator, tool.Ifc.Operator):

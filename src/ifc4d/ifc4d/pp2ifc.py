@@ -12,8 +12,6 @@ from collections import defaultdict
 from datetime import timedelta
 from typing import Any
 
-import ifcopenshell.util.date
-
 from .common import Activity, Calendar, ScheduleIfcGenerator, WBSEntry
 from .wpattern import AstaCalendarWorkPattern
 

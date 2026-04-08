@@ -16,58 +16,72 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
-import re
-import time
-import bmesh
-import shutil
 import hashlib
-import shapely
-import shapely.ops
-import subprocess
-import numpy as np
+import json
+import logging
 import multiprocessing
+import os
+import shutil
+import subprocess
+import time
+from math import radians
+from pathlib import Path
+from timeit import default_timer as timer
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypedDict,
+    Union,
+    get_args,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.document
+import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
-import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import bonsai.bim.helper
-import bonsai.bim.handler
-import bonsai.tool as tool
-import bonsai.core.geometry
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.svgwriter as svgwriter
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.sheeter as sheeter
-import bonsai.bim.export_ifc
+import numpy as np
+import shapely
+from bpy_extras.image_utils import load_image
 from bpy_extras.io_utils import ImportHelper
-from bonsai.bim.module.drawing.decoration import CutDecorator
+from lxml import etree
+from mathutils import Color, Vector
+
+import bonsai.bim.export_ifc
+import bonsai.bim.handler
+import bonsai.bim.import_ifc
+import bonsai.bim.module.drawing.sheeter as sheeter
+import bonsai.bim.module.drawing.svgwriter as svgwriter
+import bonsai.core.drawing as core
+import bonsai.core.geometry
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
+from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.drawing.prop import (
+    RASTER_STYLE_PROPERTIES_EXCLUDE,
+    RasterStyleProperty,
+)
 from bonsai.bim.module.drawing.ui import get_current_product_for_element_values
 from bonsai.bim.prop import StrProperty
-from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict, get_args
-from lxml import etree
-from math import radians
-from mathutils import Vector, Color, Matrix
-from timeit import default_timer as timer
-from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
-from bonsai.bim.ifc import IfcStore
-from pathlib import Path
-from bpy_extras.image_utils import load_image
 
 if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
     from bonsai.bim.module.drawing.prop import RenderType
     from bonsai.bim.module.project.prop import Link
-    from bpy.stub_internal import rna_enums
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -123,7 +137,7 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
         element.ApplicableOccurrence = f"IfcAnnotation/{object_type}"
 
         if props.create_representation_for_type and object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class EnableAddAnnotationType(bpy.types.Operator):
@@ -353,20 +367,20 @@ class CreateDrawing(bpy.types.Operator):
 
                         # Clear any local camera setup and force viewport to use scene camera
                         for area in context.screen.areas:
-                            if area.type == 'VIEW_3D':
+                            if area.type == "VIEW_3D":
                                 for space in area.spaces:
-                                    if space.type == 'VIEW_3D':
+                                    if space.type == "VIEW_3D":
                                         # Clear local camera to ensure we use scene.camera
                                         space.use_local_camera = False
                                         space.camera = context.scene.camera
-                                        space.region_3d.view_perspective = 'CAMERA'
+                                        space.region_3d.view_perspective = "CAMERA"
                                         print(f"Set viewport camera to: {context.scene.camera.name}")
                                         break
-                        
+
                         # Force complete scene update
                         context.view_layer.update()
                         context.evaluated_depsgraph_get()
-                        
+
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
@@ -913,7 +927,7 @@ class CreateDrawing(bpy.types.Operator):
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.name] = self.get_linked_file(link)
+            files[link.filepath] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1359,7 +1373,7 @@ class CreateDrawing(bpy.types.Operator):
         return True
 
     def get_linked_file(self, link: "Link") -> ifcopenshell.file:
-        link_path = link.name
+        link_path = link.filepath
         ifc_file = IfcStore.session_files.get(link_path, None)
         if ifc_file is not None:
             return ifc_file
@@ -1412,6 +1426,7 @@ class CreateDrawing(bpy.types.Operator):
                 "/Pset_.*Common/.Status",
                 "EPset_Status.Status",
                 "EPset_Status.UserDefinedStatus",
+                "Material.Name",
             ]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
@@ -1744,7 +1759,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             enable_editing=True,
         )
         if props.object_type == "IMAGE":
-            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
+            bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
@@ -2881,12 +2896,16 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
+            core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
 
 
 class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -3075,23 +3094,16 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_description = "Import a .svg file to the project as a reference"
     bl_options = {"REGISTER", "UNDO"}
 
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filename_ext = ".svg"
-    
-    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
-    directory: bpy.props.StringProperty(subtype='DIR_PATH')
 
     def _execute(self, context):
-        # Handle both single and multiple file selection
-        if self.files:
-            for file_elem in self.files:
-                filepath = os.path.join(self.directory, file_elem.name)
-                uri = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
-                core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=uri)
-        else:
-            # Fallback for single file (backward compatibility)
-            filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        for filepath in tool.Blender.get_selected_files(
+            self.directory, self.files, use_relative_path=self.use_relative_path
+        ):
             core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
 
@@ -3150,6 +3162,7 @@ class EditTextPopup(bpy.types.Operator):
         bpy.ops.bim.disable_editing_text()
 
     def execute(self, context):
+        # TODO: check for possible subtle undo bug here
         # can't use invoke() because this operator
         # will be run indirectly by hotkey
         # so we use execute() and track whether it's the first run of the operator
@@ -3166,169 +3179,34 @@ class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
     bl_description = "Save changes to the text annotation and\ndisable the text editing options"
-
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        props = tool.Drawing.get_text_props(obj)
-
-        captured_apply_settings = {
-            "apply_font_size_to_all": props.apply_font_size_to_all,
-            "apply_newline_to_all": props.apply_newline_to_all,
-            "font_size": props.font_size,
-            "newline_at": props.newline_at,
-            "literals": [],
-        }
-
-        for i, literal in enumerate(props.literals):
-            literal_data = {
-                "attributes": [
-                    (attr.string_value, attr.enum_value if attr.data_type == "enum" else attr.string_value)
-                    for attr in literal.attributes
-                ],
-                "box_alignment": literal.box_alignment[:] if hasattr(literal, "box_alignment") else None,
-                "element_value_rows": [
-                    {
-                        "category": row.category,
-                        "element_key": row.element_key,
-                        "formatted_value": row.formatted_value,
-                        "separator": row.separator,
-                    }
-                    for row in literal.element_value_rows
-                ],
-                "product_used": literal.product_used.name if literal.product_used else None,
-            }
-
-            if i < len(props.literal_apply_settings):
-                apply_settings = props.literal_apply_settings[i]
-                literal_data["apply_text_to_all"] = apply_settings.apply_text_to_all
-                literal_data["apply_path_to_all"] = apply_settings.apply_path_to_all
-                literal_data["apply_box_alignment_to_all"] = apply_settings.apply_box_alignment_to_all
-            else:
-                literal_data["apply_text_to_all"] = False
-                literal_data["apply_path_to_all"] = False
-                literal_data["apply_box_alignment_to_all"] = False
-
-            captured_apply_settings["literals"].append(literal_data)
-
-        obj["_bonsai_element_value_rows_backup"] = json.dumps(captured_apply_settings["literals"])
-
-        core.edit_text(tool.Drawing, obj=obj)
-
-        self.apply_to_selected_objects_with_captured_data(context, obj, captured_apply_settings)
-
+        core.edit_text(tool.Drawing, obj=tool.Blender.get_active_object())
         tool.Blender.update_viewport()
 
-        return {"FINISHED"}
 
-    def apply_to_selected_objects(self, context, active_obj, active_props):
-        """Apply changes to other selected text objects based on toggle settings"""
-        selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
+class CopyTextToSelection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_text_to_selection"
+    bl_label = "Copy Text To Selection"
+    bl_description = "Copy text formatting or literals to selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+    attribute: bpy.props.StringProperty()
 
-        for obj in selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-
-            obj_props = tool.Drawing.get_text_props(obj)
-            needs_update = False
-
-            if active_props.apply_font_size_to_all:
-                obj_props.font_size = active_props.font_size
-                needs_update = True
-
-            if active_props.apply_newline_to_all:
-                obj_props.newline_at = active_props.newline_at
-                needs_update = True
-
-            for i, active_literal in enumerate(active_props.literals):
-                if i >= len(obj_props.literals):
-                    continue
-
-                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
-                obj_literal = obj_props.literals[i]
-
-                if i < len(active_props.literal_apply_settings):
-                    active_settings = active_props.literal_apply_settings[i]
-
-                    if active_settings.apply_text_to_all:
-                        if len(active_literal.attributes) > 0 and len(obj_literal.attributes) > 0:
-                            obj_literal.attributes[0].string_value = active_literal.attributes[0].string_value
-                            needs_update = True
-
-                    if active_settings.apply_path_to_all:
-                        if len(active_literal.attributes) > 1 and len(obj_literal.attributes) > 1:
-                            if (
-                                active_literal.attributes[1].data_type == "enum"
-                                and obj_literal.attributes[1].data_type == "enum"
-                            ):
-                                obj_literal.attributes[1].enum_value = active_literal.attributes[1].enum_value
-                            else:
-                                obj_literal.attributes[1].string_value = active_literal.attributes[1].string_value
-                            needs_update = True
-
-                    if active_settings.apply_box_alignment_to_all:
-                        obj_literal.box_alignment = active_literal.box_alignment[:]
-                        needs_update = True
-
-            if needs_update:
-                core.edit_text(tool.Drawing, obj=obj)
-
-    def apply_to_selected_objects_with_captured_data(self, context, active_obj, captured_data):
-        """Apply changes to other selected text objects using captured apply settings"""
-        selected_objects = [obj for obj in context.selected_objects if obj != active_obj]
-
-        for obj in selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-
-            obj_props = tool.Drawing.get_text_props(obj)
-
-            if len(obj_props.literals) == 0:
-                core.enable_editing_text(tool.Drawing, obj=obj)
-                obj_props.ensure_literal_apply_settings(len(obj_props.literals))
-
-            needs_update = False
-
-            if captured_data["apply_font_size_to_all"]:
-                obj_props.font_size = captured_data["font_size"]
-                needs_update = True
-
-            if captured_data["apply_newline_to_all"]:
-                obj_props.newline_at = captured_data["newline_at"]
-                needs_update = True
-
-            for i, captured_literal in enumerate(captured_data["literals"]):
-                if i >= len(obj_props.literals):
-                    continue
-
-                obj_literal = obj_props.literals[i]
-
-                if captured_literal["apply_text_to_all"]:
-                    if len(captured_literal["attributes"]) > 0 and len(obj_literal.attributes) > 0:
-                        new_value = captured_literal["attributes"][0][0]  # [0] = string_value
-                        obj_literal.attributes[0].string_value = new_value
-                        needs_update = True
-
-                if captured_literal["apply_path_to_all"]:
-                    if len(captured_literal["attributes"]) > 1 and len(obj_literal.attributes) > 1:
-                        new_value = captured_literal["attributes"][1][1]  # [1] = enum_value or string_value
-                        if obj_literal.attributes[1].data_type == "enum":
-                            obj_literal.attributes[1].enum_value = new_value
-                        else:
-                            obj_literal.attributes[1].string_value = new_value
-                        needs_update = True
-
-                if captured_literal["apply_box_alignment_to_all"] and captured_literal["box_alignment"]:
-                    obj_literal.box_alignment = captured_literal["box_alignment"]
-                    needs_update = True
-
-            if needs_update:
-                core.edit_text(tool.Drawing, obj=obj)
+    def _execute(self, context):
+        apply_objs = [
+            obj
+            for obj in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(obj))
+            and tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"])
+        ]
+        core.copy_text_to_selection(
+            tool.Drawing,
+            attribute=self.attribute,
+            attribute_obj=tool.Blender.get_active_object(),
+            apply_objs=apply_objs,
+        )
+        tool.Blender.update_viewport()
 
 
 class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
@@ -3343,8 +3221,6 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_text_props(obj)
         core.enable_editing_text(tool.Drawing, obj=obj)
 
-        props.ensure_literal_apply_settings(len(props.literals))
-
         text_element = tool.Ifc.get_entity(obj)
         assigned_product_entity = tool.Drawing.get_assigned_product(text_element) if text_element else None
         assigned_product_obj = tool.Ifc.get_object(assigned_product_entity) if assigned_product_entity else None
@@ -3355,14 +3231,14 @@ class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
                 for i, literal_backup in enumerate(literals_backup):
                     if i < len(props.literals):
                         literal_props = props.literals[i]
-                        
+
                         if assigned_product_obj:
                             literal_props.product_used = assigned_product_obj
                         elif "product_used" in literal_backup and literal_backup["product_used"]:
                             product_name = literal_backup["product_used"]
                             if product_name in bpy.data.objects:
                                 literal_props.product_used = bpy.data.objects[product_name]
-                        
+
                         literal_props.element_value_rows.clear()
                         if "element_value_rows" in literal_backup:
                             for row_data in literal_backup["element_value_rows"]:
@@ -3430,12 +3306,8 @@ class AddTextLiteral(bpy.types.Operator):
                 attr.data_type = "string"
                 attr.string_value = literal_attr_values[attr_name]
 
-        box_alignment_mask = [False] * 9
-        box_alignment_mask[6] = True  # bottom_left box_alignment
-        literal_props.box_alignment = box_alignment_mask
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
+        literal_props.align_vertical = "bottom"
+        literal_props.align_horizontal = "left"
         return {"FINISHED"}
 
 
@@ -3454,9 +3326,6 @@ class RemoveTextLiteral(bpy.types.Operator):
         props = tool.Drawing.get_text_props(obj)
         props.literals.remove(self.literal_prop_id)
         tool.Blender.update_viewport()
-
-        props.ensure_literal_apply_settings(len(props.literals))
-
         return {"FINISHED"}
 
 
@@ -3496,57 +3365,55 @@ class OrderTextLiteralDown(bpy.types.Operator):
         return {"FINISHED"}
 
 
-# Ifc Operator is unnecessary, because suboperator is handling IFC changes.
-class AssignSelectedObjectAsProduct(bpy.types.Operator):
+class AssignSelectedObjectAsProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_selected_as_product"
     bl_label = "Assign Selected Object As Product"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        if len(context.selected_objects) != 2:
-            cls.poll_message_set("2 objects need to be selected")
+        if len(context.selected_objects) < 2:
+            cls.poll_message_set("At least 2 objects need to be selected")
             return False
         return True
 
-    def execute(self, context):
-        assert bpy.context.view_layer
+    def _execute(self, context):
         objs = context.selected_objects[:]
-        obj1, obj2 = objs
-        element1 = tool.Ifc.get_entity(obj1)
-        element2 = tool.Ifc.get_entity(obj2)
-        assert element1 and element2
+        ifc_objs = [(o, tool.Ifc.get_entity(o)) for o in objs if tool.Ifc.get_entity(o)]
 
-        # Check if at least one object is an IfcAnnotation
-        is_annotation1 = element1.is_a("IfcAnnotation")
-        is_annotation2 = element2.is_a("IfcAnnotation")
+        annotations = [(o, e) for o, e in ifc_objs if e.is_a("IfcAnnotation")]
+        non_annotations = [(o, e) for o, e in ifc_objs if not e.is_a("IfcAnnotation")]
 
-        if not (is_annotation1 or is_annotation2):
-            self.report({"ERROR"}, "At least one of the selected objects must be IfcAnnotation.")
+        if not annotations:
+            self.report({"ERROR"}, "At least one selected object must be an IfcAnnotation.")
             return {"CANCELLED"}
 
-        # If both are annotations, use the currently active object as relating product
-        if is_annotation1 and is_annotation2:
+        if len(non_annotations) == 1:
+            # One product, one or more annotations — assign all annotations to the product.
+            product = non_annotations[0][1]
+        elif len(non_annotations) == 0 and len(annotations) == 2:
+            # Both objects are annotations — use the non-active one as the relating product.
             active_obj = context.active_object
-            if active_obj == obj1:
-                other_selected_object = obj1
-                bpy.context.view_layer.objects.active = obj2
+            if annotations[0][0] == active_obj:
+                annotation_obj, annotation = annotations[0]
+                product = annotations[1][1]
             else:
-                other_selected_object = obj2
-                bpy.context.view_layer.objects.active = obj1
-        # If only one is an annotation, make it the active object
-        elif is_annotation1:
-            other_selected_object = obj2
-            bpy.context.view_layer.objects.active = obj1
+                annotation_obj, annotation = annotations[1]
+                product = annotations[0][1]
+            core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation_obj, product=product)
+            tool.Blender.update_viewport()
+            return
         else:
-            other_selected_object = obj1
-            bpy.context.view_layer.objects.active = obj2
+            self.report(
+                {"ERROR"},
+                "Select exactly one product object and one or more IfcAnnotation objects.",
+            )
+            return {"CANCELLED"}
 
-        assert (active_obj := context.active_object)
-        props = tool.Drawing.get_object_assigned_product_props(active_obj)
-        props.relating_product = other_selected_object
-        bpy.ops.bim.edit_assigned_product()
-        return {"FINISHED"}
+        for annotation_obj, _ in annotations:
+            core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=annotation_obj, product=product)
+
+        tool.Blender.update_viewport()
 
 
 class EditAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
@@ -3932,83 +3799,51 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
-
-    override_existing_image: bpy.props.BoolProperty(
-        name="Override Existing Image",
-        default=True,
-        description=(
-            "Override image if it was previously loaded to Blender. If disabled, will always create a new image"
-        ),
-    )
-    use_existing_object_by_name: bpy.props.StringProperty(
-        name="Use Existing Object By Name",
-        description="Existing object name to add a style with reference image to. If not provided will create a new object.",
-        options={"SKIP_SAVE"},
-    )
-
     x_length: bpy.props.FloatProperty(
         name="X Length",
-        description="Width of the reference image in project units",
+        description="Width of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
     )
     y_length: bpy.props.FloatProperty(
         name="Y Length",
-        description="Height of the reference image in project units",
+        description="Height of the reference image",
         default=1.0,
         min=0.001,
         soft_min=0.01,
         precision=3,
+        unit="LENGTH",
+    )
+    show_texture_solid_mode: bpy.props.BoolProperty(
+        name="Show Texture in Solid mode (slow)",
+        description="Show Texture in Solid mode (slow)",
+        default=False,
     )
 
-    show_dimensions_dialog: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
-
-    def draw(self, context):
-        layout = self.layout
-
-        if getattr(self, "show_dimensions_dialog", False):
-            if tool.Ifc.get():
-                length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
-                if length_unit:
-                    unit_name = ifcopenshell.util.unit.get_full_unit_name(length_unit).lower()
-                else:
-                    unit_name = "project units"
-                layout.label(text=f"Set Reference Image Dimensions (in {unit_name}):")
-            else:
-                layout.label(text="Set Reference Image Dimensions (in project units):")
-            layout.separator()
-            layout.prop(self, "x_length")
-            layout.prop(self, "y_length")
-        else:
-            if Path(tool.Ifc.get_path()).is_file():
-                layout.prop(self, "use_relative_path")
-            else:
-                self.use_relative_path = False
-                layout.label(text="Save the .ifc file first ")
-                layout.label(text="to use relative paths.")
-            layout.prop(self, "override_existing_image")
-            layout.prop(self, "use_existing_object_by_name")
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project is loaded.")
+            return False
+        return True
 
     def invoke(self, context, event):
-        if not getattr(self, "show_dimensions_dialog", False):
-            context.window_manager.fileselect_add(self)
-            return {"RUNNING_MODAL"}
-        else:
-            return context.window_manager.invoke_props_dialog(self)
+        self._last_filepath = ""
+        return super().invoke(context, event)
 
-    def execute(self, context):
-        if not getattr(self, "show_dimensions_dialog", False):
+    def check(self, context):
+        if not hasattr(self, "_last_filepath"):
+            self._last_filepath = ""
+
+        if self.filepath and self.filepath != self._last_filepath:
+            self._last_filepath = self.filepath
+
             abs_path = Path(self.filepath).absolute().resolve()
-            if self.override_existing_image:
-                params = {"check_existing": True, "force_reload": True}
-            else:
-                params = {"check_existing": False}
-
-            try:
-                image = load_image(abs_path.name, str(abs_path.parent), **params)
-
+            if abs_path.exists() and abs_path.is_file():
+                image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
                 image_width_px = image.size[0]
                 image_height_px = image.size[1]
                 aspect_ratio = image_width_px / image_height_px
@@ -4021,17 +3856,23 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
                     self.y_length = 1.0
 
                 bpy.data.images.remove(image)
+                return True
 
-            except Exception as e:
-                self.report({"ERROR"}, f"Failed to load image: {str(e)}")
-                return {"CANCELLED"}
+        return False
 
-            self.show_dimensions_dialog = True
-            return context.window_manager.invoke_props_dialog(self)
-
-        return self._execute(context)
+    def draw(self, context):
+        layout = self.layout
+        if Path(tool.Ifc.get_path()).is_file():
+            layout.prop(self, "use_relative_path")
+        else:
+            self.use_relative_path = False
+        layout.prop(self, "show_texture_solid_mode")
+        layout.prop(self, "x_length")
+        layout.prop(self, "y_length")
 
     def _execute(self, context):
+        project_props = tool.Project.get_project_props()
+        project_props.load_indexed_maps = self.show_texture_solid_mode
         space = tool.Blender.get_view3d_space()
         if space.shading.color_type != "TEXTURE":
             space.shading.color_type = "TEXTURE"
@@ -4044,121 +3885,65 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
 
-        if self.override_existing_image:
-            params = {"check_existing": True, "force_reload": True}
-        else:
-            params = {"check_existing": False}
-        image = load_image(abs_path.name, str(abs_path.parent), **params)
+        image = load_image(abs_path.name, str(abs_path.parent), check_existing=False)
 
-        def bm_add_image_plane(mesh):
-            bm = tool.Blender.get_bmesh_for_mesh(mesh, clean=True)
+        mesh = bpy.data.meshes.new(image_filepath.stem)
+        obj = bpy.data.objects.new(image_filepath.stem, mesh)
+        element = tool.Drawing.run_root_assign_class(
+            obj=obj, ifc_class="IfcAnnotation", predefined_type="IMAGE", should_add_representation=False
+        )
 
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            plane_scale = Vector((self.x_length * unit_scale / 2.0, self.y_length * unit_scale / 2.0, 1.0))
-            matrix = Matrix.LocRotScale(None, None, plane_scale)
-            bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1, matrix=matrix, calc_uvs=False)
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        hx = self.x_length * 0.5 / unit_scale
+        hy = self.y_length * 0.5 / unit_scale
+        verts = [(-hx, -hy, 0.0), (hx, -hy, 0.0), (hx, hy, 0.0), (-hx, hy, 0.0)]
+        item = builder.mesh(verts, [[0, 1, 2, 3]])
 
-            if not bm.loops.layers.uv:
-                uv_layer = bm.loops.layers.uv.new()
-            else:
-                uv_layer = bm.loops.layers.uv.active
+        ifc_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = builder.get_representation(ifc_context, [item])
+        ifcopenshell.api.geometry.assign_representation(ifc_file, element, representation)
 
-            min_x = min(v.co.x for v in bm.verts)
-            max_x = max(v.co.x for v in bm.verts)
-            min_y = min(v.co.y for v in bm.verts)
-            max_y = max(v.co.y for v in bm.verts)
-
-            width = max_x - min_x
-            height = max_y - min_y
-
-            for face in bm.faces:
-                for loop in face.loops:
-                    vert = loop.vert
-                    u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                    v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                    u = max(0.0, min(1.0, u))
-                    v = max(0.0, min(1.0, v))
-                    loop[uv_layer].uv = (u, v)
-
-            tool.Blender.apply_bmesh(mesh, bm)
-
-        if self.use_existing_object_by_name:
-            obj = bpy.data.objects[self.use_existing_object_by_name]
-            bm_add_image_plane(obj.data)
-            bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
-        else:
-            temp_mesh = bpy.data.meshes.new("temp_mesh")
-            bm_add_image_plane(temp_mesh)
-            obj = bpy.data.objects.new(image_filepath.stem, temp_mesh)
-            tool.Drawing.run_root_assign_class(
-                obj=obj,
-                ifc_class="IfcAnnotation",
-                predefined_type="IMAGE",
-                should_add_representation=True,
-                context=ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW"),
-                ifc_representation_class=None,
-            )
-            tool.Blender.remove_data_block(temp_mesh)
-
-        element = tool.Ifc.get_entity(obj)
-        if element and isinstance(obj.data, bpy.types.Mesh):
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            if representation and representation.Items:
-                item_id = representation.Items[0].id()
-                num_faces = len(obj.data.polygons)
-                obj.data["ios_item_ids"] = [item_id] * num_faces
-                tool.Blender.Attribute.fill_attribute(obj.data, "ios_item_ids", "FACE", "INT", [item_id] * num_faces)
-
-                for item in representation.Items:
-                    if item.is_a("IfcPolygonalFaceSet") and item.Coordinates:
-                        new_coords = []
-                        for vertex in obj.data.vertices:
-                            co = obj.matrix_world @ vertex.co
-                            new_coords.append([co.x, co.y, co.z])
-                        item.Coordinates.CoordList = new_coords
-
-        tool.Blender.set_active_object(obj)
-
-        material = bpy.data.materials.new(name=image_filepath.stem)
-        obj.data.materials.append(None)  # new slot
-        obj.material_slots[0].material = material
-        bpy.ops.bim.add_style()
-
-        style = tool.Ifc.get_entity(material)
-        assert style
-        tool.Style.assign_style_to_object(style, obj)
+        style = ifcopenshell.api.style.add_style(tool.Ifc.get(), name=image_filepath.stem)
+        ifcopenshell.api.style.assign_representation_styles(
+            ifc_file, shape_representation=representation, styles=[style]
+        )
 
         # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
         # we don't support IfcSurfaceStyleWithTextures without Rendering yet
         shading_attributes = {
-            "SurfaceColour": {
-                "Red": 1.0,
-                "Green": 1.0,
-                "Blue": 1.0,
-            },
+            "SurfaceColour": {"Red": 1.0, "Green": 1.0, "Blue": 1.0},
             "Transparency": 0.0,
             "ReflectanceMethod": "NOTDEFINED",
         }
         ifcopenshell.api.style.add_surface_style(
-            tool.Ifc.get(),
-            style=style,
-            ifc_class="IfcSurfaceStyleRendering",
-            attributes=shading_attributes,
+            tool.Ifc.get(), style=style, ifc_class="IfcSurfaceStyleRendering", attributes=shading_attributes
         )
-        texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
-        textures = [texture]
-        ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")  # UV map
-        ifcopenshell.api.style.add_surface_style(
-            ifc_file,
-            style=style,
-            ifc_class="IfcSurfaceStyleWithTextures",
-            attributes={"Textures": textures},
-        )
-        tool.Style.reload_material_from_ifc(material)
-        tool.Geometry.record_object_materials(obj)
 
-        return {"FINISHED"}
+        if tool.Ifc.get_schema() == "IFC2X3":
+            texture = ifc_file.create_entity(
+                "IfcImageTexture",
+                RepeatS=True,
+                RepeatT=True,
+                TextureType="TEXTURE",
+                UrlReference=image_filepath.as_posix(),
+            )
+        else:
+            texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
+            ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=[texture], Mode="COORD")
+
+        textures = [texture]
+        ifcopenshell.api.style.add_surface_style(
+            ifc_file, style=style, ifc_class="IfcSurfaceStyleWithTextures", attributes={"Textures": textures}
+        )
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bonsai.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = tool.Ifc.get()
+        ifc_importer.create_style(style)
+
+        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=representation)
 
 
 class ConvertSVGToDXF(bpy.types.Operator):
@@ -4251,63 +4036,62 @@ class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Activate Drawing"
     bl_description = "Activate the drawing corresponding to the selected annotation"
     bl_options = {"REGISTER", "UNDO"}
-    
+
     @classmethod
     def poll(cls, context):
         # Check if an annotation object is selected
         if not context.selected_objects:
             cls.poll_message_set("No object selected")
             return False
-        
+
         active_obj = context.active_object
         if not active_obj:
             cls.poll_message_set("No active object")
             return False
-            
+
         element = tool.Ifc.get_entity(active_obj)
         if not element:
             cls.poll_message_set("Selected object is not an IFC element")
             return False
-            
+
         # Check if it's an IfcAnnotation with ObjectType = "SECTION" or "ELEVATION"
         if not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             cls.poll_message_set("Selected object is not a drawing annotation")
             return False
-            
+
         return True
 
     def _execute(self, context):
         active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        
+
         if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in ["SECTION", "ELEVATION"]:
             self.report({"ERROR"}, "Selected object is not a drawing annotation")
             return {"CANCELLED"}
-        
+
         # Find the drawing/camera element that this annotation references
         drawing_element = self.find_drawing_from_annotation(element)
-        
+
         if not drawing_element:
             self.report({"ERROR"}, "Could not find drawing element for this annotation")
             return {"CANCELLED"}
-        
+
         # Use the existing ActivateDrawing operator with the drawing element's ID
         bpy.ops.bim.activate_drawing(drawing=drawing_element.id())
-        
+
         return {"FINISHED"}
-    
+
     def find_drawing_from_annotation(self, annotation_element):
         """Find the drawing/camera element that this annotation references."""
         ifc = tool.Ifc.get()
-        
+
         # Check IfcRelAssignsToProduct relationships
         for rel in ifc.get_inverse(annotation_element):
             if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct:
                 if rel.RelatingProduct.is_a("IfcAnnotation"):
                     # Found the drawing element!
                     return rel.RelatingProduct
-    
-        
+
         return None
 
 
@@ -4391,10 +4175,7 @@ class SelectSimilarTextLiteralValue(bpy.types.Operator):
                                     should_select = True
                                     break
                         elif self.attribute_type == "box_alignment":
-                            box_alignment_attr = next(
-                                (attr for attr in literal.attributes if attr.name == "BoxAlignment"), None
-                            )
-                            if box_alignment_attr and box_alignment_attr.string_value == self.literal_value:
+                            if literal.get_box_alignment() == self.literal_value:
                                 should_select = True
                                 break
 
@@ -5042,7 +4823,7 @@ class ShowCategoryHelp(bpy.types.Operator):
 
 class AddElementValueRow(bpy.types.Operator):
     bl_idname = "bim.add_element_value_row"
-    bl_label = "Add Element"
+    bl_label = "Add Element Value Row"
     bl_description = "Add a new element value row"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -5062,7 +4843,7 @@ class AddElementValueRow(bpy.types.Operator):
         new_row.category = literal_props.category_for_adding
         new_row.element_key = ""
         new_row.formatted_value = ""
-        
+
         if len(literal_props.element_value_rows) == 1:
             new_row.separator = ""
         else:
@@ -5106,10 +4887,10 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
     row_index: bpy.props.IntProperty()
     category: bpy.props.StringProperty()
     search_query: bpy.props.StringProperty(name="Search", description="Search for element values")
-    
+
     collection_keys: bpy.props.CollectionProperty(type=StrProperty)
     collection_descriptions: bpy.props.CollectionProperty(type=StrProperty)
-    
+
     selected_key: bpy.props.StringProperty()
 
     def invoke(self, context, event):
@@ -5157,13 +4938,13 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        
+
         layout.prop_search(self, "selected_key", self, "collection_descriptions", text="Value")
 
     def execute(self, context):
         if not self.selected_key:
             return {"CANCELLED"}
-            
+
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
@@ -5177,7 +4958,7 @@ class ElementValueSuggestionsPopup(bpy.types.Operator):
             return {"CANCELLED"}
 
         value_row = literal_props.element_value_rows[self.row_index]
-        
+
         for idx, desc_item in enumerate(self.collection_descriptions):
             if desc_item.name == self.selected_key:
                 actual_key = self.collection_keys[idx].name
@@ -5260,10 +5041,7 @@ class FormatElementValueRow(bpy.types.Operator):
 
     custom_expression: bpy.props.StringProperty(
         name="Custom Expression",
-        description=(
-            "Custom expression using functions\n"
-            "Use {{value}} as placeholder for the current row's value."
-        ),
+        description=("Custom expression using functions\n" "Use {{value}} as placeholder for the current row's value."),
         default='concat({{value}}, " - additional text")',
     )
 
@@ -5288,51 +5066,51 @@ class FormatElementValueRow(bpy.types.Operator):
     def _load_formatting_from_row(self, row):
         """Parse the formatted_value to load existing formatting settings"""
         import re
-        
+
         formatted_value = row.formatted_value
-        
+
         if not formatted_value or formatted_value == f"{{{{{row.element_key}}}}}":
             self.formatting_type = "NONE"
             return
-        
+
         if formatted_value.startswith("``") and formatted_value.endswith("``"):
             expression = formatted_value[2:-2].strip()
         else:
             self.formatting_type = "NONE"
             return
-        
+
         if match := re.match(r"upper\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "UPPER"
-        
+
         elif match := re.match(r"lower\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "LOWER"
-        
+
         elif match := re.match(r"title\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "TITLE"
-        
+
         elif match := re.match(r"int\(\{\{[^}]+\}\}\)", expression):
             self.formatting_type = "INT"
-        
+
         elif match := re.match(r"round\(\{\{[^}]+\}\},\s*([^)]+)\)", expression):
             self.formatting_type = "ROUND"
             self.round_precision = match.group(1).strip()
-        
+
         elif match := re.match(r"number\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
             self.formatting_type = "NUMBER"
             self.decimal_separator = match.group(1).strip()
             self.thousands_separator = match.group(2).strip()
-        
+
         elif match := re.match(r"metric_length\(\{\{[^}]+\}\},\s*([^,]+),\s*([^)]+)\)", expression):
             self.formatting_type = "METRIC_LENGTH"
             self.metric_precision = match.group(1).strip()
             self.metric_decimals = int(match.group(2).strip())
-        
+
         elif match := re.match(r'imperial_length\(\{\{[^}]+\}\},\s*(\d+),\s*"([^"]+)",\s*"([^"]+)"\)', expression):
             self.formatting_type = "IMPERIAL_LENGTH"
             self.imperial_precision = int(match.group(1).strip())
             self.imperial_input_unit = match.group(2).strip()
             self.imperial_output_unit = match.group(3).strip()
-        
+
         else:
             self.formatting_type = "CUSTOM"
             self.custom_expression = expression
@@ -5450,9 +5228,9 @@ class ApplyElementValueRowsToLiteral(bpy.types.Operator):
                         default_format = f"{{{{{row.element_key}}}}}"
                         row.formatted_value = default_format
                         value_part = default_format
-                    
+
                     parts.append(row.separator + value_part)
-        
+
         concatenated_value = "".join(parts)
 
         for attr in literal_props.attributes:
@@ -5469,12 +5247,12 @@ class ApplyElementValueRowsToLiteral(bpy.types.Operator):
         This preserves formatting functions like upper(), round(), etc.
         """
         import re
-        
-        pattern = r'\{\{[^}]+\}\}'
-        
+
+        pattern = r"\{\{[^}]+\}\}"
+
         new_base_value = f"{{{{{new_element_key}}}}}"
         updated_value = re.sub(pattern, new_base_value, old_formatted_value)
-        
+
         return updated_value
 
 

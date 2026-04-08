@@ -17,13 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union, Literal
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
     import ifcopenshell.util.representation
+
     import bonsai.tool as tool
 
 
@@ -37,10 +39,42 @@ def disable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> 
 
 
 def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
-    drawing.synchronise_ifc_and_text_attributes(obj)
-    drawing.update_text_size_pset(obj)
-    drawing.update_text_annotation_properties(obj)
+    literal_attributes = drawing.export_text_literal_attributes(obj)
+    drawing.edit_text_font_size(obj, drawing.export_font_size(obj))
+    drawing.edit_text_wrap_length(obj, drawing.export_wrap_length(obj))
+    drawing.edit_text_symbol(obj, drawing.export_symbol(obj))
+    drawing.edit_text_literals(obj, literal_attributes)
     drawing.disable_editing_text(obj)
+
+
+def copy_text_to_selection(
+    drawing: type[tool.Drawing],
+    attribute: Literal["FONT_SIZE", "ALIGNMENT", "WRAP_LENGTH", "SYMBOL", "LITERALS"],
+    attribute_obj: bpy.types.Object,
+    apply_objs: list[bpy.types.Object],
+) -> None:
+    if attribute == "FONT_SIZE":
+        data = drawing.export_font_size(attribute_obj)
+    elif attribute == "ALIGNMENT":
+        data = drawing.export_alignment(attribute_obj)
+    elif attribute == "WRAP_LENGTH":
+        data = drawing.export_wrap_length(attribute_obj)
+    elif attribute == "SYMBOL":
+        data = drawing.export_symbol(attribute_obj)
+    elif attribute == "LITERALS":
+        data = drawing.export_text_literal_attributes(attribute_obj)
+    for obj in apply_objs:
+        if attribute == "FONT_SIZE":
+            drawing.edit_text_font_size(obj, data)
+        elif attribute == "ALIGNMENT":
+            drawing.edit_text_alignment(obj, data)
+        elif attribute == "WRAP_LENGTH":
+            drawing.edit_text_wrap_length(obj, data)
+        elif attribute == "SYMBOL":
+            drawing.edit_text_symbol(obj, data)
+        elif attribute == "LITERALS":
+            drawing.edit_text_literals(obj, data)
+        drawing.disable_editing_text(obj)
 
 
 def enable_editing_assigned_product(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
@@ -398,11 +432,8 @@ def update_drawing_name(
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
 
-    # Update the camera object name
-    camera = ifc.get_object(drawing)
-    if camera and camera.name != name:
-        camera.name = name
-    
+    drawing_tool.set_camera_name(drawing, name)
+
     group = drawing_tool.get_drawing_group(drawing)
     if drawing_tool.get_name(group) != name:
         ifc.run("attribute.edit_attributes", product=group, attributes={"Name": name})

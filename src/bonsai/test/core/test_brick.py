@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.brick as subject
-from test.core.bootstrap import ifc, brick
+from test.core.bootstrap import brick, ifc
 
 
 class TestLoadBrickProject:

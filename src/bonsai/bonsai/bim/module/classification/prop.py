@@ -16,22 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute
-from bonsai.bim.module.classification.data import ClassificationsData, ObjectClassificationsData
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
 from typing import TYPE_CHECKING
+
+import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.classification.data import (
+    ClassificationsData,
+    ObjectClassificationsData,
+)
+from bonsai.bim.prop import Attribute
 
 
 def get_available_classifications(

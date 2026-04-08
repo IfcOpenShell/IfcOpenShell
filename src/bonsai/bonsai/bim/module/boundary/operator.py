@@ -16,34 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
 import logging
-import shapely
-import shapely.ops
-import mathutils
-import numpy as np
 import multiprocessing
+from math import acos, degrees, inf, pi, radians
+from typing import Optional, Union
+
+import bmesh
+import bpy
 import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.root
 import ifcopenshell.geom
-import ifcopenshell.util.unit
-import ifcopenshell.util.shape
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.bim.import_ifc as import_ifc
-from math import pi, inf, degrees, acos, radians
-from mathutils import Vector, Matrix
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.model.decorator import ProfileDecorator
-from bonsai.bim.module.boundary.decorator import BoundaryDecorator
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
+import mathutils
+import shapely
+import shapely.ops
 from ifcopenshell.util.shape_builder import ShapeBuilder
-import bonsai.core
+from mathutils import Matrix, Vector
+
+import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.geometry
-from typing import Union, Optional
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.boundary.decorator import BoundaryDecorator
+from bonsai.bim.module.model.decorator import ProfileDecorator
 
 
 def disable_editing_boundary_geometry(context):
@@ -377,6 +377,8 @@ class EnableEditingBoundary(bpy.types.Operator):
             obj = tool.Ifc.get_object(entity)
             if entity and obj:
                 setattr(bprops, blender_property, obj)
+        bprops.physical_or_virtual = boundary.PhysicalOrVirtualBoundary or "NOTDEFINED"
+        bprops.internal_or_external = boundary.InternalOrExternalBoundary or "NOTDEFINED"
         return {"FINISHED"}
 
 
@@ -392,6 +394,8 @@ class DisableEditingBoundary(bpy.types.Operator):
         bprops.is_editing = False
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
             setattr(bprops, blender_property, None)
+        bprops.physical_or_virtual = "NOTDEFINED"
+        bprops.internal_or_external = "NOTDEFINED"
         return {"FINISHED"}
 
 
@@ -411,6 +415,8 @@ class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
             obj = getattr(bprops, blender_property, None)
             entity = tool.Ifc.get_entity(obj)
             attributes[blender_property] = entity
+        attributes["physical_or_virtual"] = bprops.physical_or_virtual
+        attributes["internal_or_external"] = bprops.internal_or_external
         ifcopenshell.api.boundary.edit_attributes(tool.Ifc.get(), entity=boundary, **attributes)
         bpy.ops.bim.disable_editing_boundary()
         return {"FINISHED"}
@@ -702,6 +708,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             while True:
                 tree.add_element(iterator.get_native())
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 shapes[shape.id] = {
                     "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
                     "faces": ifcopenshell.util.shape.get_faces(shape.geometry),

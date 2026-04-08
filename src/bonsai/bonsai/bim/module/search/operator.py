@@ -16,35 +16,39 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import json
 import bisect
+import json
 import traceback
+from typing import TYPE_CHECKING, Any, Literal, assert_never, get_args
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-import bonsai.tool as tool
-import bonsai.core.search as core
-from bonsai.bim.ifc import IfcStore
-from natsort import natsorted
-from bpy.types import PropertyGroup, Operator
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
     CollectionProperty,
+    EnumProperty,
+    IntProperty,
+    StringProperty,
 )
+from bpy.types import Operator
+from natsort import natsorted
+
+import bonsai.core.search as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
-from typing import TYPE_CHECKING, Literal, get_args, assert_never
+
+if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
+
+    from bonsai.bim.prop import BIMFacet
 
 
-def draw_text_editor_header(self, context):
+def draw_text_editor_header(self: bpy.types.TEXT_HT_header, context: bpy.types.Context) -> None:
+    assert isinstance(context.space_data, bpy.types.SpaceTextEditor)
     if context.space_data.text and context.space_data.text.name.startswith("FilterQuery_"):
         layout = self.layout
         layout.separator()
@@ -158,6 +162,7 @@ class FilterValueSuggestions(Operator):
 
     def draw(self, context):
         layout = self.layout
+        assert layout
 
         filter_groups = tool.Search.get_filter_groups(self.module)
         ifc_filter = filter_groups[self.group_index].filters[self.filter_index]
@@ -200,8 +205,8 @@ class FilterValueSuggestions(Operator):
             results_are_suggestions=True,
         )
 
-    def get_suggestions(self, ifc_file, ifc_filter):
-        suggestions = set()
+    def get_suggestions(self, ifc_file: ifcopenshell.file, ifc_filter: "BIMFacet") -> set[str]:
+        suggestions: set[str] = set()
 
         if ifc_filter.type == "entity":
             suggestions = self.get_entity_suggestions(ifc_file)
@@ -234,8 +239,8 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def build_hierarchy_path(self, element):
-        path = []
+    def build_hierarchy_path(self, element: ifcopenshell.entity_instance) -> list[str]:
+        path: list[str] = []
         current = element
 
         while current:
@@ -260,8 +265,8 @@ class FilterValueSuggestions(Operator):
 
         return path
 
-    def get_entity_suggestions(self, ifc_file):
-        all_classes = set()
+    def get_entity_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        all_classes: set[str] = set()
         schema = tool.Ifc.schema()
 
         for element_id in IfcStore.id_map.keys():
@@ -271,11 +276,13 @@ class FilterValueSuggestions(Operator):
 
                 try:
                     entity = schema.declaration_by_name(class_name).as_entity()
+                    assert entity
                     current = entity
 
                     chain_names = [class_name]
                     while current.supertype():
                         supertype = current.supertype()
+                        assert supertype
                         chain_names.insert(0, supertype.name())
                         current = supertype
 
@@ -293,8 +300,8 @@ class FilterValueSuggestions(Operator):
 
         return all_classes
 
-    def get_type_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_type_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for element_type in ifc_file.by_type("IfcTypeObject"):
             if element_type.Name:
                 hierarchy_path = self.build_hierarchy_path(element_type)
@@ -304,15 +311,15 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(element_type.Name)
         return suggestions
 
-    def get_material_suggestions(self, ifc_file):
+    def get_material_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
         suggestions = set()
         for material in ifc_file.by_type("IfcMaterial"):
             if material.Name:
                 suggestions.add(material.Name)
         return suggestions
 
-    def get_location_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_location_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for spatial in ifc_file.by_type("IfcSpatialStructureElement"):
             if spatial.Name:
                 hierarchy_path = self.build_hierarchy_path(spatial)
@@ -322,8 +329,8 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(spatial.Name)
         return suggestions
 
-    def get_group_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_group_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for group in ifc_file.by_type("IfcGroup"):
             if group.Name:
                 hierarchy_path = self.build_hierarchy_path(group)
@@ -333,15 +340,15 @@ class FilterValueSuggestions(Operator):
                     suggestions.add(group.Name)
         return suggestions
 
-    def get_classification_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_classification_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for ref in ifc_file.by_type("IfcClassificationReference"):
             if ref.Identification:
                 suggestions.add(ref.Identification)
         return suggestions
 
-    def get_parent_suggestions(self, ifc_file):
-        suggestions = set()
+    def get_parent_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -369,9 +376,9 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def get_instance_suggestions(self, ifc_file):
-        suggestions = set()
-        element_data = []
+    def get_instance_suggestions(self, ifc_file: ifcopenshell.file) -> set[str]:
+        suggestions: set[str] = set()
+        element_data: list[tuple[str, str]] = []
 
         for element_id in IfcStore.id_map.keys():
             try:
@@ -390,7 +397,7 @@ class FilterValueSuggestions(Operator):
             except:
                 continue
 
-        display_counts = {}
+        display_counts: dict[str, int] = {}
         for display_str, global_id in element_data:
             display_counts[display_str] = display_counts.get(display_str, 0) + 1
 
@@ -402,8 +409,8 @@ class FilterValueSuggestions(Operator):
 
         return suggestions
 
-    def get_property_sets(self, ifc_file):
-        psets = set()
+    def get_property_sets(self, ifc_file: ifcopenshell.file) -> set[str]:
+        psets: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -416,8 +423,8 @@ class FilterValueSuggestions(Operator):
                 continue
         return psets
 
-    def get_property_names(self, ifc_file, pset_name):
-        property_names = set()
+    def get_property_names(self, ifc_file: ifcopenshell.file, pset_name: str) -> set[str]:
+        property_names: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -433,8 +440,8 @@ class FilterValueSuggestions(Operator):
                 continue
         return property_names
 
-    def get_property_values(self, ifc_file, pset_name, property_name):
-        property_values = set()
+    def get_property_values(self, ifc_file: ifcopenshell.file, pset_name: str, property_name: str) -> set[str]:
+        property_values: set[str] = set()
         for element_id in IfcStore.id_map.keys():
             try:
                 element = ifc_file.by_id(element_id)
@@ -445,26 +452,23 @@ class FilterValueSuggestions(Operator):
                             if pset.HasProperties:
                                 for prop in pset.HasProperties:
                                     if hasattr(prop, "Name") and prop.Name == property_name:
-                                        if hasattr(prop, "NominalValue") and prop.NominalValue:
-                                            try:
-                                                value = prop.NominalValue.wrappedValue
-                                                if value is not None and value != "":
-                                                    if not hasattr(value, "is_a") and not isinstance(
-                                                        value, (tuple, list)
-                                                    ):
-                                                        str_value = str(value)
-                                                        if not str_value.startswith("#") and not str_value.startswith(
-                                                            "("
-                                                        ):
-                                                            property_values.add(str_value)
-                                            except:
-                                                continue
+                                        if prop.is_a("IfcPropertyEnumeratedValue"):
+                                            if hasattr(prop, "EnumerationReference") and prop.EnumerationReference:
+                                                enum_reference = prop.EnumerationReference
+                                                if hasattr(enum_reference, "EnumerationValues"):
+                                                    for enum_value in enum_reference.EnumerationValues:
+                                                        property_values.add(str(enum_value.wrappedValue))
+                                            if hasattr(prop, "EnumerationValues") and prop.EnumerationValues:
+                                                for enum_value in prop.EnumerationValues:
+                                                    property_values.add(str(enum_value.wrappedValue))
+                                        elif hasattr(prop, "NominalValue") and prop.NominalValue:
+                                            property_values.add(str(prop.NominalValue.wrappedValue))
             except:
                 continue
         return property_values
 
-    def get_attribute_names(self, ifc_file):
-        attribute_names = set()
+    def get_attribute_names(self, ifc_file: ifcopenshell.file) -> set[str]:
+        attribute_names: set[str] = set()
         schema = tool.Ifc.schema()
 
         ifc_classes = set()
@@ -478,6 +482,7 @@ class FilterValueSuggestions(Operator):
         for ifc_class in ifc_classes:
             try:
                 entity = schema.declaration_by_name(ifc_class).as_entity()
+                assert entity
                 attributes = entity.all_attributes()
                 for attr in attributes:
                     attribute_names.add(attr.name())
@@ -486,8 +491,8 @@ class FilterValueSuggestions(Operator):
 
         return attribute_names
 
-    def get_attribute_values(self, ifc_file, attribute_name):
-        attribute_values = set()
+    def get_attribute_values(self, ifc_file: ifcopenshell.file, attribute_name: str) -> set[str]:
+        attribute_values: set[str] = set()
 
         for element_id in IfcStore.id_map.keys():
             try:
@@ -614,7 +619,7 @@ class SelectFilterElements(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ApplyFilterFromText(Operator, tool.Ifc.Operator):
+class ApplyFilterFromText(Operator):
     bl_idname = "bim.apply_filter_from_text"
     bl_label = "Apply Filter Configuration"
     bl_description = "Apply the JSON filter configuration from the current text block"
@@ -688,9 +693,9 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
         filter_groups = tool.Search.get_filter_groups(module)
 
         if tool.Blender.get_addon_preferences().chain_filter_with_set_operations:
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,
@@ -765,10 +770,7 @@ class Search(Operator):
         preferences = tool.Blender.get_addon_preferences()
 
         # Migrate old ! prefix filters to new filter_mode system when preferences are enabled
-        if (
-            preferences.chain_filter_with_set_operations
-            or preferences.default_filter_with_set_operations_for_globalid_and_class
-        ):
+        if preferences.chain_filter_with_set_operations:
             for filter_group in props.filter_groups:
                 for ifc_filter in filter_group.filters:
                     if ifc_filter.type not in ["entity", "instance"]:
@@ -784,11 +786,31 @@ class Search(Operator):
             )
 
         objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
-        for obj in objs:
-            tool.Blender.set_object_selection(obj)
-        if objs:
-            tool.Blender.set_active_object(objs[0])
-        self.report({"INFO"}, f"{len(results)} Results.")
+        active_object = next(iter(objs), None)
+        selection = tool.Blender.validate_object_selection(context, active_object, objs)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
+        return {"FINISHED"}
+
+
+class SelectQueryElements(Operator):
+    bl_idname = "bim.select_query_elements"
+    bl_label = "Select Query Elements"
+    bl_description = "Select elements matching an provided selector query"
+    bl_options = {"REGISTER", "UNDO"}
+
+    query: StringProperty(name="Query")  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        query: str
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        results = ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), self.query)
+        objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
+        active_object = context.active_object or next(iter(objs), None)
+        selection = tool.Blender.validate_object_selection(context, active_object, objs)
+        tool.Blender.set_objects_selection(*selection, clear_previous_selection=False)
+        self.report({"INFO"}, f"{len(results)} Results, {len(selection.selected_objects)} Objects Selected")
         return {"FINISHED"}
 
 
@@ -849,9 +871,9 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             query = tool.Search.export_filter_query(filter_groups)
             results = tool.Search.execute_filter_groups(filter_groups)
 
-            filter_structure = []
+            filter_structure: list[list[dict[str, Any]]] = []
             for filter_group in filter_groups:
-                group_data = []
+                group_data: list[dict[str, Any]] = []
                 for ifc_filter in filter_group.filters:
                     filter_data = {
                         "type": ifc_filter.type,
@@ -1054,8 +1076,8 @@ class ColourByProperty(Operator):
                 colourscheme[str(values[index])]["total"] += 1
                 obj.color = (*tool.Search.get_quantitative_palette(palette, value, min_value, max_value), 1)
 
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            areas[0].spaces[0].shading.color_type = "OBJECT"
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
 
@@ -1079,16 +1101,18 @@ class ColourByProperty(Operator):
             return (1, value)
 
     def store_state(self, context):
-        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
-            self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
+        if space := tool.Blender.get_view3d_space():
+            self.transaction_data = {"color_type": space.shading.color_type}
 
     def rollback(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = data["color_type"]
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = data["color_type"]
 
     def commit(self, data):
         if data:
-            data["area"].spaces[0].shading.color_type = "OBJECT"
+            assert (space := tool.Blender.get_view3d_space())
+            space.shading.color_type = "OBJECT"
 
 
 class SelectByProperty(Operator):
@@ -1416,7 +1440,7 @@ class ShowAllElements(Operator):
         return {"FINISHED"}
 
 
-class SelectSimilar(Operator, tool.Ifc.Operator):
+class SelectSimilar(Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}

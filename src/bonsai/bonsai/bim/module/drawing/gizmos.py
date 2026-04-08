@@ -132,28 +132,31 @@ __all__ = [  # noqa: RUF022 (unsorted `__all__`)
     "ExtrusionWidget",
 ]
 
-from typing import Any, Literal, Protocol, runtime_checkable, get_args
+import math
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Literal, Protocol, get_args, runtime_checkable
 
 import blf
 import bpy
 import gpu
-import math
 import numpy as np
 from bpy import types
-from dataclasses import dataclass
-from mathutils import Vector, Matrix
-from mathutils.kdtree import KDTree
-from mathutils.geometry import intersect_line_line
-from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d, location_3d_to_region_2d
 from bpy_extras import view3d_utils
+from bpy_extras.view3d_utils import (
+    location_3d_to_region_2d,
+    region_2d_to_origin_3d,
+    region_2d_to_vector_3d,
+)
 from gpu_extras.batch import batch_for_shader
-import bonsai.tool as tool
-from bonsai.tool.unit import parse_distance_string
-from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
 from ifcopenshell.util.unit import si_conversions
+from mathutils import Matrix, Vector, geometry
+from mathutils.geometry import intersect_line_line
+from mathutils.kdtree import KDTree
 
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
@@ -1024,7 +1027,7 @@ class NumericInputState:
             return
 
         input_str = self.get_input_string()
-        is_valid, value = parse_distance_string(input_str)
+        is_valid, value = tool.Unit.parse_distance_string(input_str)
 
         if is_valid:
             self.parsed_value = value
@@ -1240,9 +1243,7 @@ class SnapManager:
     @staticmethod
     def _redraw_viewport() -> None:
         """Force 3D viewport redraw."""
-        for area in bpy.context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports()
 
     def build_snap_cache(
         self, context: bpy.types.Context, active_obj: bpy.types.Object, include_active: bool = False
@@ -1284,7 +1285,7 @@ class SnapManager:
                     continue
 
                 coords = np.empty(vertex_count * 3, dtype=np.float32)
-                mesh.vertices.foreach_get("co", coords)  # type: ignore[arg-type]
+                mesh.vertices.foreach_get("co", coords)
                 coords = coords.reshape(-1, 3)
 
                 matrix = np.array(obj_eval.matrix_world, dtype=np.float32)

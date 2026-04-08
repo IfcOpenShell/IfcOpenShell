@@ -31,17 +31,6 @@ def add_boolean(
 ) -> list[ifcopenshell.entity_instance]:
     """Adds a boolean operation to two or more representation items
 
-    If an IfcBooleanOperand is part of the top level items in an
-    IfcShapeRepresentation, it will be removed from that level whilst being
-    added to the IfcBooleanResult. This is because it is generally intuitive
-    that an item is either participating in a boolean operation, or being an
-    item in its own right, but not both.
-
-    However, if an IfcBooleanOperand is part of another boolean operation
-    already, it will not be removed from the existing operation. A new
-    operation will be created, and therefore it will participate in two
-    operations.
-
     This function protects against recursive booleans.
 
     After a boolean operation is made, since the items of
@@ -101,9 +90,6 @@ def add_boolean(
 
     booleans = []
     for second_item in second_items:
-        for inverse in file.get_inverse(second_item):
-            if inverse.is_a("IfcShapeRepresentation"):
-                inverse.Items = list(set(inverse.Items) - {second_item})
         if first.is_a("IfcTesselatedFaceSet"):
             first.Closed = True  # For now, trust the user to do the right thing.
         if second_item.is_a("IfcTesselatedFaceSet"):

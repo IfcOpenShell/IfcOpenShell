@@ -308,6 +308,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Shape shape;
 	// For tiny radii occt will fail building the sweep, in which case we enlarge the inputs to occt, and add a scale matrix to the output
 	bool enlarged = false;
@@ -352,4 +354,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs,
 		scs->surface_style
 	));
 	return true;
+
+	});
 }

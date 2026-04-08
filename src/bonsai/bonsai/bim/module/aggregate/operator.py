@@ -16,17 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.element
-import bonsai.tool as tool
+
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
-from typing import TYPE_CHECKING
+import bonsai.tool as tool
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -222,7 +222,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Collector,
                     tool.Spatial,
                     container=current_container,
-                    element_obj=aggregate,
+                    objs=[aggregate],
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
 

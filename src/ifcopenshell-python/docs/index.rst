@@ -30,9 +30,12 @@ Let's learn IfcOpenShell!
    ifcclash
    ifccsv
    ifcdiff
+   ifcedit
    ifcfm
    ifcmax
+   ifcmcp
    ifcpatch
+   ifcquery
    ifcsverchok
    ifctester
    other

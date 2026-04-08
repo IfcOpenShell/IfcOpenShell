@@ -21,9 +21,7 @@ import itertools
 import json
 import logging
 import multiprocessing
-import os
 import re
-import tempfile
 import time
 import typing
 from pathlib import Path
@@ -127,7 +125,6 @@ class Patcher(ifcpatch.BasePatcher):
             )
         """
         super().__init__(file, logger)
-        self.logger = logger
         self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host
         self.username = username
@@ -351,13 +348,11 @@ class Patcher(ifcpatch.BasePatcher):
             assert cursor is not None
             row = cursor.fetchone()
         elif self.sql_type == "mysql":
-            cursor = self.c.execute(
-                f"""
+            cursor = self.c.execute(f"""
                 SELECT 1 FROM information_schema.tables
                 WHERE table_schema = '{self.database}' AND table_name = 'id_map'
                 LIMIT 1;
-                """
-            )
+                """)
             row = self.c.fetchone()
         else:
             assert_never(self.sql_type)

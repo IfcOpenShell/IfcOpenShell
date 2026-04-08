@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.unit
-import ifcopenshell.util.selector
-import bonsai.tool as tool
+import os
 from pathlib import Path
 from typing import Any, Union
+
+import bpy
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from natsort import natsorted
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -353,8 +355,6 @@ class DecoratorData:
         font_size = FONT_SIZES[font_size_type]
         symbol = tool.Drawing.get_annotation_symbol(element)
         newline_at = pset_data.get("Newline_At", 0)
-        reverse_list = pset_data.get("Reverse_List", False)
-        list_separator = pset_data.get("List_Separator") or ", "
 
         # other attributes
         literals = tool.Drawing.get_text_literal(obj, return_list=True)
@@ -365,17 +365,10 @@ class DecoratorData:
 
         for literal in literals:
             literal_value = literal.Literal
-
-            try:
-                current_value = cls.evaluate_formatting_expressions(literal_value)
-                current_value = tool.Drawing.replace_text_literal_variables(current_value, product)
-            except Exception:
-                current_value = literal_value
-
             literal_data = {
                 "Literal": literal_value,
                 "BoxAlignment": literal.BoxAlignment,
-                "CurrentValue": current_value,
+                "CurrentValue": tool.Drawing.replace_text_literal_variables(literal_value, product),
             }
             literals_data.append(literal_data)
 
@@ -384,8 +377,6 @@ class DecoratorData:
             "FontSize": font_size,
             "Symbol": symbol,
             "Newline_At": newline_at,
-            "Reverse_List": reverse_list,
-            "List_Separator": list_separator,
         }
 
     @classmethod
@@ -402,21 +393,6 @@ class DecoratorData:
             return assigned_product
 
         return element
-
-    @classmethod
-    def evaluate_formatting_expressions(cls, text: str) -> str:
-        """Evaluate formatting expressions wrapped in backticks using ifcopenshell.util.selector.format"""
-        import re
-
-        def evaluate_expression(match):
-            try:
-                expression = match.group(1)
-                result = ifcopenshell.util.selector.format(expression)
-                return str(result)
-            except Exception as e:
-                return match.group(0)
-
-        return re.sub(r"``([^`]+)``", evaluate_expression, text)
 
     @classmethod
     def get_element_value_by_key(cls, element: ifcopenshell.entity_instance, key: str):

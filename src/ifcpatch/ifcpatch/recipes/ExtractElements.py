@@ -20,7 +20,6 @@ from logging import Logger
 from typing import Union
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.project
 import ifcopenshell.guid
 import ifcopenshell.util.selector

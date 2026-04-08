@@ -24,19 +24,35 @@ import operator
 import random
 import warnings
 from collections.abc import Iterable
-from typing import Any, NamedTuple, Union
+from typing import NamedTuple, Union
 
-import OCC
+import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 from typing_extensions import assert_never
 
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 try:
-    from OCC.Core import AIS, BRepTools, Graphic3d, Quantity, TopoDS, V3d, gp
+    from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import AIS, BRepTools, Graphic3d, Quantity, TopoDS, V3d, gp
+    from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = True
 
@@ -68,7 +84,7 @@ DEFAULT_STYLES = {
 
 
 def initialize_display():
-    import OCC.Display.SimpleGui
+    import OCC.Display.SimpleGui  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     global handle, main_loop, add_menu, add_function_to_menu
     handle, main_loop, add_menu, add_function_to_menu = OCC.Display.SimpleGui.init_display()

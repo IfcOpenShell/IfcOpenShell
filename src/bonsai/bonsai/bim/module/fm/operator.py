@@ -17,14 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
-import json
 import ifcfm
-import logging
-import tempfile
 import ifcopenshell
-import bonsai.tool as tool
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.tool as tool
 
 
 class ExecuteIfcFM(bpy.types.Operator, ExportHelper):

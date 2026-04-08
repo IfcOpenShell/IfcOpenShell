@@ -24,7 +24,6 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.spatial
 import ifcopenshell.api.type
-import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema

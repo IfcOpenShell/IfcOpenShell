@@ -69,6 +69,12 @@ def regenerate_wall_representation(
     additional extrusions are generated for each connection that boolean
     difference the base extrusion.
 
+    Clippings applied via :func:`geometry.clip_solid` or
+    :func:`geometry.clip_solid_bounded` are preserved only if the ``element``
+    parameter was passed when creating them, which registers the result in the
+    ``BBIM_Boolean`` property set.  Clippings created without that parameter
+    are silently discarded during regeneration.
+
     This will also update the axis line representation (e.g. trim the axis line
     to any connections).
 

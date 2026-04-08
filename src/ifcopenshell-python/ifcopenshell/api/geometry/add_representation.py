@@ -20,15 +20,15 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
-import bmesh
-import bpy.types
+import bmesh  # pyright: ignore[reportMissingImports] # ty:ignore[unresolved-import]
+import bpy  # pyright: ignore[reportMissingImports] # ty:ignore[unresolved-import]
 import numpy as np
 import numpy.typing as npt
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports] # ty:ignore[unresolved-import]
 
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import VectorType, ifc_safe_vector_type
+from ifcopenshell.util.shape_builder import ifc_safe_vector_type
 
 if TYPE_CHECKING:
     import bonsai.tool as tool

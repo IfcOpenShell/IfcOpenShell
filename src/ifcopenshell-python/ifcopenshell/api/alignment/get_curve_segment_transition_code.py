@@ -16,12 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
 
 import numpy as np
 
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.geom
 from ifcopenshell import entity_instance, ifcopenshell_wrapper
 

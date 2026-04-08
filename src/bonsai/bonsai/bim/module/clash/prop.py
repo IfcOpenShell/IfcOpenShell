@@ -16,23 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute, BIMFilterGroup
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    StringProperty,
 )
-from ifcopenshell.geom.main import ClashType, CLASH_TYPE_ITEMS
+from bpy.types import PropertyGroup
+from ifcopenshell.geom.main import CLASH_TYPE_ITEMS, ClashType
 from mathutils import Vector
-from typing import TYPE_CHECKING, Literal, Union
+
+import bonsai.tool as tool
+from bonsai.bim.prop import BIMFilterGroup, StrProperty
 
 
 class ClashSource(PropertyGroup):

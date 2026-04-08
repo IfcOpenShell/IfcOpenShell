@@ -17,15 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.bim.helper
-import bonsai.tool as tool
-from bpy.types import Panel, UIList
-from bonsai.bim.module.library.data import LibrariesData, LibraryReferencesData
+
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.module.library.data import LibrariesData, LibraryReferencesData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.library.prop import BIMLibraryProperties, LibraryReference
+    from bonsai.bim.module.library.prop import LibraryReference
 
 
 class BIM_PT_libraries(Panel):

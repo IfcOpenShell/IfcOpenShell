@@ -43,6 +43,17 @@ if(NOT OCC_INCLUDE_DIR AND NOT OCC_LIBRARY_DIR)
         set_target_properties(TKernel PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${OpenCASCADE_INCLUDE_DIR}")
     endif()
 
+    if(
+        OpenCASCADE_VERSION VERSION_LESS "7.9.0"
+        AND CMAKE_VERSION GREATER_EQUAL "3.24"
+        AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+    )
+        # Before 7.9.0 targets in OCCT cmake configs are not linked to each other
+        # leading to missing symbols on Unix. Link them as a single group as a workaround.
+        # Only needed for gcc, because other compilers (e.g. Apple Clang, MSVC) do rescan automatically.
+        set(OpenCASCADE_LIBRARIES "$<LINK_GROUP:RESCAN,${OpenCASCADE_LIBRARIES}>")
+    endif()
+
     if(OpenCASCADE_VERSION VERSION_LESS "7.9.0" AND WIN32)
         # Bug in OCCT cmake configs < 7.9.0 - missing linked library.
         list(APPEND OpenCASCADE_LIBRARIES WSOCK32.lib)

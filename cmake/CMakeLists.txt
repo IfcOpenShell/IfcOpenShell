@@ -80,7 +80,7 @@ option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
 option(BUILD_CONVERT "Build IfcConvert executable." ON)
 option(BUILD_DOCUMENTATION "Build IfcOpenShell Documentation." OFF)
-option(BUILD_EXAMPLES "Build example applications." ON)
+option(BUILD_EXAMPLES "Build example applications." OFF)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
@@ -258,10 +258,10 @@ if(WITH_ROCKSDB)
     set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
     target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    target_link_libraries(
-        IFCOPENSHELL_RocksDB
-        INTERFACE $<IF:$<TARGET_EXISTS:RocksDB::rocksdb-shared>,RocksDB::rocksdb-shared,RocksDB::rocksdb>
-    )
+    # Shared binaries for `rocksdb` only support limited API (only `c.h`), but we use `db.h` API.
+    # So rocksdb supported only as a static library.
+    # See https://github.com/facebook/rocksdb/issues/981.
+    target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE RocksDB::rocksdb)
 
     if(WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
@@ -368,12 +368,20 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
 
         # Linker
         # /OPT:REF enables also /OPT:ICF and disables INCREMENTAL
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF")
-
+        set(LINKER_FLAGS_RELEASE "/LTCG /OPT:REF")
         # /OPT:NOICF is recommended when /DEBUG is used (http://msdn.microsoft.com/en-us/library/xe4t6fc1.aspx)
-        set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:NOICF")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF")
-        set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:NOICF")
+        set(LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /OPT:NOICF")
+
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELEASE}")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO
+            "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELWITHDEBINFO}"
+        )
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELEASE}")
+        set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELWITHDEBINFO}")
+        set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELEASE}")
+        set(CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO
+            "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} ${LINKER_FLAGS_RELWITHDEBINFO}"
+        )
     else()
         # GCC-like: Release should use O3 but RelWithDebInfo 02 so enforce 03. Anything other useful that could be added here?
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")

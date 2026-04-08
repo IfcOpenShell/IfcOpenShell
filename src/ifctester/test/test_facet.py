@@ -20,7 +20,6 @@
 import uuid
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
 import ifcopenshell.api.group
@@ -34,6 +33,7 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+
 import ifctester.facet
 import ifctester.ids
 from ifctester.facet import (

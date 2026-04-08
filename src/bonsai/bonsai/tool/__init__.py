@@ -15,6 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Ignore unused imports.
+# ruff: noqa: F401
 
 from bonsai.tool.aggregate import Aggregate
 from bonsai.tool.attribute import Attribute
@@ -39,8 +42,7 @@ from bonsai.tool.geometry import Geometry
 from bonsai.tool.georeference import Georeference
 from bonsai.tool.group import Group
 from bonsai.tool.ifc import Ifc
-from bonsai.tool.ifcgit import IfcGit
-from bonsai.tool.ifcgit import IfcGitRepo
+from bonsai.tool.ifcgit import IfcGit, IfcGitRepo
 from bonsai.tool.layer import Layer
 from bonsai.tool.library import Library
 from bonsai.tool.loader import Loader

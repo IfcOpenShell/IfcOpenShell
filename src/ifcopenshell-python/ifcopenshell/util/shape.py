@@ -16,27 +16,35 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 from math import cos, radians
-from typing import Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 import shapely
 import shapely.ops
 
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-from ifcopenshell.geom import ShapeElementType
-from ifcopenshell.util.shape_builder import VectorType
 
-tol = 1e-6
-AXIS_LITERAL = Literal["X", "Y", "Z"]
-VECTOR_3D = tuple[float, float, float]
+if TYPE_CHECKING:
 
+    import ifcopenshell.ifcopenshell_wrapper as W
+    from ifcopenshell.geom import ShapeElementType
+    from ifcopenshell.util.shape_builder import VectorType
+
+    AXIS_LITERAL = Literal["X", "Y", "Z"]
+
+    VECTOR_3D = tuple[float, float, float]
+
+# Used only for typing, but reused by `shape.py` users.
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""
+
+tol = 1e-6
 
 # NOTE: See IfcGeomRepresentation.h for W.Triangulation buffer types.
 

@@ -1,6 +1,6 @@
 add_subdirectory(schema)
 
-add_library(geometry_serializer STATIC Serialization.cpp)
+add_library(geometry_serializer Serialization.cpp)
 file(GLOB IFCGEOM_SERIALIZATION_H_FILE *.h)
 
 set_target_properties(

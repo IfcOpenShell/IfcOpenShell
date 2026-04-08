@@ -27,9 +27,9 @@
 #include <iostream>
 #include <fstream>
 
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#define IfcSchema Ifc2x3
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
@@ -44,7 +44,7 @@ typedef struct {
 
 static int i = 0;
 
-void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference pref) {
+void create_testcase_for(IfcHierarchyHelper<IfcSchema>& file, const EllipsePie& pie, IfcSchema::IfcTrimmingPreference pref) {
 	const double deg = 1. / 180. * 3.141592653;
 	double flt1[] = {0.                      , 0.                      };
 	double flt2[] = {pie.r1 * cos(pie.t1*deg), pie.r2 * sin(pie.t1*deg)};
@@ -67,16 +67,16 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 	
 	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
 	file.addEntity(ellipse);
-	IfcEntityList::ptr trim1(new IfcEntityList);
-	IfcEntityList::ptr trim2(new IfcEntityList);
-	if (pref == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
+	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
+    aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	if (pref == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
 		trim1->push(new Ifc2x3::IfcParameterValue(pie.t1));
 		trim2->push(new Ifc2x3::IfcParameterValue(pie.t2));
 	} else {
 		trim1->push(p2);
 		trim2->push(p3);
 	}
-	Ifc2x3::IfcTrimmedCurve* trim = new Ifc2x3::IfcTrimmedCurve(ellipse, trim1, trim2, true, pref);
+	Ifc2x3::IfcTrimmedCurve* trim = new Ifc2x3::IfcTrimmedCurve(ellipse, trim1->as<IfcSchema::IfcTrimmingSelect>(), trim2->as<IfcSchema::IfcTrimmingSelect>(), true, pref);
 	file.addEntity(trim);
 	
 	Ifc2x3::IfcCompositeCurveSegment::list::ptr segments(new Ifc2x3::IfcCompositeCurveSegment::list());
@@ -124,25 +124,25 @@ void create_testcase_for(IfcHierarchyHelper& file, const EllipsePie& pie, Ifc2x3
 
 int main(int argc, char** argv) {
 	const std::string filename = "ellipse_pies.ifc";
-	IfcHierarchyHelper file;
+	IfcHierarchyHelper<IfcSchema> file;
 	{ EllipsePie pie = {80., 50.,  0., 150.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	{ EllipsePie pie = {80,  50., 30., 300.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	{ EllipsePie pie = {80,  50., 300., 30.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	{ EllipsePie pie = {50., 80.,  0., 150.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	{ EllipsePie pie = {50,  80., 30., 300.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	{ EllipsePie pie = {50,  80., 300., 30.};
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	create_testcase_for(file, pie, Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	create_testcase_for(file, pie, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_CARTESIAN);}
 	std::ofstream f(filename.c_str());
 	f << file;
 }

@@ -17,7 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.ActivateContainerFilter,
@@ -40,6 +41,7 @@ classes = (
     operator.SelectByProperty,
     operator.SelectFilterElements,
     operator.SelectGlobalId,
+    operator.SelectQueryElements,
     operator.SelectIfcClass,
     operator.SelectSimilar,
     operator.ShowAllElements,

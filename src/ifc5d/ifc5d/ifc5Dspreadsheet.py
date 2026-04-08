@@ -25,7 +25,7 @@ import logging
 import os
 import time
 from collections import Counter
-from typing import Any, Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 import ifcopenshell
 import ifcopenshell.util.cost
@@ -420,7 +420,7 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
 
 class Ifc5DOdsWriter(Ifc5Dwriter):
     def write(self) -> None:
-        from odf.number import CurrencyStyle, CurrencySymbol, Number, NumberStyle, Text
+        from odf.number import CurrencyStyle, CurrencySymbol, Number
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
 
@@ -450,7 +450,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         self.doc.save(os.path.join(self.output, file_name), True)
 
     def write_table(self, cost_schedule):
-        from odf.number import CurrencyStyle, CurrencySymbol, Number, NumberStyle, Text
+        from odf.number import CurrencySymbol, Number
         from odf.table import Table, TableCell, TableRow
         from odf.text import P
 

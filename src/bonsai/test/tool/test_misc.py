@@ -16,16 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import numpy
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import test.bim.bootstrap
+import numpy
+
 import bonsai.core.tool
 import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool.misc import Misc as subject
 
 
@@ -167,6 +169,12 @@ class TestScaleObjectToHeight(test.bim.bootstrap.NewFile):
         subject.scale_object_to_height(obj, 3)
         assert obj.dimensions[2] == 3.0
         assert list(obj.scale) == [1.0, 1.0, 1.0]
+
+
+class TestQuickFavoritesOffsetUserMenus(test.bim.bootstrap.NewFile):
+    def test_current_blender_version_is_supported(self):
+        version = bpy.app.version[:2]
+        assert version in subject.QuickFavorites.OFFSET_USER_MENUS
 
 
 class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):

@@ -17,18 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import TYPE_CHECKING
-import bpy
-from bpy.types import PropertyGroup
+
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
     IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
 
 
 class WebProperties(PropertyGroup):

@@ -17,11 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Union
+
 import bpy
+import ifcopenshell.util.element
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import ifcopenshell.util.element
-from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from bonsai.bim.module.nest.prop import BIMNestProperties, BIMObjectNestProperties
@@ -42,9 +45,23 @@ class Nest(bonsai.core.tool.Nest):
         related_object = tool.Ifc.get_entity(related_obj)
         if not relating_object or not related_object:
             return False
-        if relating_object.is_a("IfcElement") and related_object.is_a("IfcElement"):
-            return True
-        return False
+        if relating_object == related_object:
+            return False
+        is_compatible_class = relating_object.is_a("IfcElement") and related_object.is_a("IfcElement")
+        if not is_compatible_class:
+            return False
+        # Prevent cyclic references: walk up the full hierarchy from the
+        # proposed parent and reject if we encounter the proposed child.
+        ancestor = ifcopenshell.util.element.get_parent(relating_object)
+        seen = {relating_object}
+        while ancestor:
+            if ancestor == related_object:
+                return False
+            if ancestor in seen:
+                break
+            seen.add(ancestor)
+            ancestor = ifcopenshell.util.element.get_parent(ancestor)
+        return True
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:
@@ -120,11 +137,11 @@ class Nest(bonsai.core.tool.Nest):
         return {"FINISHED"}
 
     @classmethod
-    def disable_nest_mode(cls):
-        context = bpy.context
-        props = context.scene.BIMNestProperties
+    def disable_nest_mode(cls) -> None:
+        props = cls.get_nest_props()
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
+            assert obj and obj.original
             obj.original.display_type = obj_prop.previous_display_type
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -132,7 +149,7 @@ class Nest(bonsai.core.tool.Nest):
 
         components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(props.editing_nest))
         objs = [tool.Ifc.get_object(component) for component in components]
-        if context.space_data.local_view:
+        if bpy.context.space_data.local_view:
             bpy.ops.view3d.localview()
 
         props.in_nest_mode = False

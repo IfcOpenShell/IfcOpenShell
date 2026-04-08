@@ -47,4 +47,4 @@ def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.ent
     old_quantity = resource.BaseQuantity
     resource.BaseQuantity = None
     if old_quantity:
-        ifcopenshell.util.element.remove_deep(file, old_quantity)
+        ifcopenshell.util.element.remove_deep2(file, old_quantity)

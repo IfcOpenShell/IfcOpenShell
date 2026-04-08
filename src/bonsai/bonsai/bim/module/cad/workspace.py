@@ -17,13 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import bpy
-import bonsai.tool as tool
-import bonsai.bim.module.type.prop as type_prop
-import ifcopenshell.util.unit
-from bpy.types import WorkSpaceTool
-from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
 from functools import partial
+
+import bpy
+from bpy.types import WorkSpaceTool
+
+import bonsai.tool as tool
+from bonsai.bim.module.model.data import RailingData, RoofData
 
 
 def load_custom_icons():
@@ -106,23 +106,37 @@ class CadTool(WorkSpaceTool):
                     )
 
             row = layout.row(align=True)
-            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
-            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(
-                row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
+                row, "Extend", "S_E", bpy.ops.bim.cad_trim_extend.__doc__.split("\n", 1)[1].strip(), ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Join", "S_T", bpy.ops.bim.cad_mitre.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Rectangle", "S_R", bpy.ops.bim.add_rectangle.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Rectangle", "S_R", bpy.ops.bim.add_rectangle.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.set_arc_index.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "3-Point Arc", "S_V", bpy.ops.bim.set_arc_index.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(
+                row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
 
         elif (
             isinstance(data, tool.Geometry.TYPES_WITH_MESH_PROPERTIES)
@@ -132,15 +146,21 @@ class CadTool(WorkSpaceTool):
                 layout, "Edit Axis", "bim.edit_extrusion_axis", "bim.disable_editing_extrusion_axis", ui_context
             )
             row = layout.row(align=True)
-            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
-            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(
-                row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
+                row, "Extend", "S_E", bpy.ops.bim.cad_trim_extend.__doc__.split("\n", 1)[1].strip(), ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Join", "S_T", bpy.ops.bim.cad_mitre.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(
+                row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
 
         else:
             if (
@@ -168,19 +188,37 @@ class CadTool(WorkSpaceTool):
                 add_layout_hotkey_operator(row, "Set Gable Roof Angle", "S_R", "Set Gable Roof Angle", ui_context)
 
             row = layout.row(align=True)
-            add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
-            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(
-                row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
+                row, "Extend", "S_E", bpy.ops.bim.cad_trim_extend.__doc__.split("\n", 1)[1].strip(), ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Join", "S_T", bpy.ops.bim.cad_mitre.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", bpy.ops.bim.cad_arc_from_2_points.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__.split("\n", 1)[1].strip(), ui_context
+            )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.cad_arc_from_3_points.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row,
+                "2-Point Arc",
+                "S_C",
+                bpy.ops.bim.cad_arc_from_2_points.__doc__.split("\n", 1)[1].strip(),
+                ui_context,
+            )
+            row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
+            add_layout_hotkey_operator(
+                row,
+                "3-Point Arc",
+                "S_V",
+                bpy.ops.bim.cad_arc_from_3_points.__doc__.split("\n", 1)[1].strip(),
+                ui_context,
+            )
 
 
 class CadHotkey(bpy.types.Operator):

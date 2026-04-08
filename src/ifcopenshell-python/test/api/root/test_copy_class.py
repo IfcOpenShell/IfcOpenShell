@@ -28,7 +28,6 @@ import ifcopenshell.api.spatial
 import ifcopenshell.api.system
 import ifcopenshell.api.type
 import ifcopenshell.api.unit
-import ifcopenshell.util
 import ifcopenshell.util.system
 import test.bootstrap
 

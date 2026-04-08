@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
-import bonsai.tool as tool
+
 import bonsai.core.library as core
+import bonsai.tool as tool
 
 
 class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):

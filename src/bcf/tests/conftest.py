@@ -1,4 +1,5 @@
 import pytest
+
 from bcf.xml_parser import XmlParserSerializer
 
 

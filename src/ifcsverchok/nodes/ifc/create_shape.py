@@ -20,9 +20,8 @@ import logging
 
 import bonsai.bim.import_ifc
 import bpy
-import ifcopenshell
 import ifcopenshell.geom
-from bpy.props import BoolProperty, PointerProperty, StringProperty
+from bpy.props import BoolProperty, StringProperty
 from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 
@@ -102,10 +101,8 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
 
 
 def register():
-    # bpy.utils.register_class(SvIfcCreateShapeRefresh)
     bpy.utils.register_class(SvIfcCreateShape)
 
 
 def unregister():
     bpy.utils.unregister_class(SvIfcCreateShape)
-    # bpy.utils.unregister_class(SvIfcCreateShapeRefresh)

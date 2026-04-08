@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import sys
 from collections.abc import Iterable
 from decimal import Decimal
 from types import EllipsisType
@@ -32,7 +31,6 @@ import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
-import ifcopenshell.util.fm
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset
@@ -41,8 +39,7 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 
-filter_elements_grammar = lark.Lark(
-    """start: filter_group
+filter_elements_grammar = lark.Lark("""start: filter_group
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
@@ -113,11 +110,9 @@ filter_elements_grammar = lark.Lark(
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-"""
-)
+""")
 
-get_element_grammar = lark.Lark(
-    """start: keys
+get_element_grammar = lark.Lark("""start: keys
 
     keys: key ("." key)*
     key: quoted_string | regex_string | unquoted_string
@@ -132,11 +127,9 @@ get_element_grammar = lark.Lark(
     WS: /[ \\t\\f\\r\\n]/+
 
     %ignore WS // Disregard spaces in text
- """
-)
+ """)
 
-format_grammar = lark.Lark(
-    """start: expression
+format_grammar = lark.Lark("""start: expression
 
     ?expression: add_sub
     ?add_sub: mul_div
@@ -146,7 +139,7 @@ format_grammar = lark.Lark(
         | mul_div "*" function  -> multiply
         | mul_div "/" function  -> divide
     
-    function: round | number | int | format_length | lower | upper | title | concat | substr | variable | ESCAPED_STRING | NUMBER | "(" expression ")"
+    function: round | number | int | format_length | lower | upper | title | concat | substr | sort | reverse | join | variable | ESCAPED_STRING | SIGNED_NUMBER | "(" expression ")"
 
     variable: "{{" query_path "}}"
     query_path: /[^}]+/
@@ -162,6 +155,9 @@ format_grammar = lark.Lark(
     title: "title(" expression ")"
     concat: "concat(" expression ("," expression)* ")"
     substr: "substr(" expression "," SIGNED_INT ["," SIGNED_INT] ")"
+    sort: "sort(" expression ")"
+    reverse: "reverse(" expression ")"
+    join: "join(" ESCAPED_STRING "," expression ")"
     boolean: TRUE | FALSE
 
     TRUE: "true" | "True" | "TRUE"
@@ -192,8 +188,7 @@ format_grammar = lark.Lark(
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-"""
-)
+""")
 
 
 class FormatTransformer(lark.Transformer):
@@ -203,6 +198,8 @@ class FormatTransformer(lark.Transformer):
         self.element = element
 
     def start(self, args):
+        if isinstance(args[0], (list, tuple)):
+            return ", ".join(args[0])
         return args[0]
 
     def expression(self, args):
@@ -210,18 +207,11 @@ class FormatTransformer(lark.Transformer):
 
     def variable(self, args):
         """Handle variable substitution like {{z}} or {{Pset_Wall.FireRating}}"""
-        if self.element is None:
-            return "0"  # Default value if no element context
-        
-        query_path = args[0]
-        try:
-            value = get_element_value(self.element, query_path)
-            if value is None:
-                return "0"
-            # Convert to string for further processing
-            return str(value)
-        except:
-            return "0"  # Return default on error
+        if self.element:
+            try:
+                return get_element_value(self.element, args[0])
+            except:
+                pass
 
     def query_path(self, args):
         """Extract the query path from variable"""
@@ -302,6 +292,15 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) : int(args[2])]
         elif len(args) == 2:
             return str(args[0])[int(args[1]) :]
+
+    def sort(self, args):
+        return sorted(args[0])
+
+    def reverse(self, args):
+        return list(reversed(args[0]))
+
+    def join(self, args):
+        return args[0].join(args[1])
 
     def boolean(self, args):
         if not args:
@@ -399,11 +398,11 @@ class GetElementTransformer(lark.Transformer):
 
 def format(query: str, element: Optional[ifcopenshell.entity_instance] = None) -> str:
     """Format a query string with optional element context for variable substitution.
-    
+
     :param query: Format query string (can include {{variable}} placeholders)
     :param element: Optional IFC element for variable substitution
     :return: Formatted string
-    
+
     Example:
         format("{{z}} / 2", element)  # Substitutes element's z value
         format("imperial_length({{z}} / 2, 4)", element)  # Uses z in calculation
@@ -441,13 +440,13 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
         elif key == "container":
             value = ifcopenshell.util.element.get_container(value)
         elif key == "space":
-            value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSpace")
+            value = ifcopenshell.util.element.get_parent(value, ifc_class="IfcSpace")
         elif key == "storey":
-            value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuildingStorey")
+            value = ifcopenshell.util.element.get_parent(value, ifc_class="IfcBuildingStorey")
         elif key == "building":
-            value = ifcopenshell.util.element.get_container(value, ifc_class="IfcBuilding")
+            value = ifcopenshell.util.element.get_parent(value, ifc_class="IfcBuilding")
         elif key == "site":
-            value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSite")
+            value = ifcopenshell.util.element.get_parent(value, ifc_class="IfcSite")
         elif key == "parent":
             value = ifcopenshell.util.element.get_parent(value)
         elif key in ("types", "occurrences"):

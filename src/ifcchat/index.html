@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IfcOpenShell AI Assistant</title>
+    <link rel="stylesheet" href="./style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <main>
+        <section class="side">
+            <div class="row">
+                <label>Provider</label>
+                <div class="provider-tabs" role="radiogroup" aria-label="Provider">
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="openai" checked />
+                        <span>OpenAI</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="anthropic" />
+                        <span>Claude</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="gemini" />
+                        <span>Gemini</span>
+                    </label>
+                    <label class="provider-tab">
+                        <input type="radio" name="provider" value="openrouter" />
+                        <span>OpenRouter</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="row">
+                <label>Model</label>
+                <select id="model" style="width: 100%;"></select>
+            </div>
+
+            <div class="row">
+                <label id="apiKeyLabel">API key<span class="small">stored in browser memory; only sent to provider servers</span></label>
+                <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" style="width: 100%;" />
+            </div>
+
+            <div class="row" id="baseUrlRow">
+                <label id="baseUrlLabel">Base URL<span class="small">override the API endpoint for OpenAI-compatible providers</span></label>
+                <input id="baseUrl" type="text" placeholder="https://api.openai.com/v1" autocomplete="off" style="width: 100%;" />
+            </div>
+
+            <hr />
+
+            <div class="row" style="margin-bottom: 10px;">
+                <label>IFC model context<span class="small">stored in browser memory; only information extracted through MCP commands sent to provider servers</span></label>
+
+                <div class="btn-row">
+                    <label class="btn" id="browseBtn" for="ifcFile" role="button" tabindex="0">
+                        <span class="material-icons">folder_open</span>
+                        Browse
+                    </label>
+
+                    <button class="btn" id="newModel" type="button">
+                        <span class="material-icons">add_box</span>
+                        New IFC
+                    </button>
+                </div>
+
+                <input id="ifcFile" type="file" accept=".ifc,.ifczip,.ifcxml,.zip" hidden />
+            </div>
+
+            <div class="row">
+                <button class="btn btn-wide" id="downloadIfc" type="button">
+                    <span class="material-icons">download</span>
+                    Download IFC
+                </button>
+            </div>
+
+            <hr />
+
+            <div class="row">
+                <label>Tips</label>
+                <div class="status">
+                    • Upload an IFC, then ask “Summarize the model” or “List all IfcWalls”.<br />
+                    • Try “Add a new site and building named X” (will use ifc_edit).
+                </div>
+            </div>
+
+            <div class="row">
+                <label>About</label>
+                <div class="status">
+                    Chat with your IFC model. This app uses <span class="code">ifcopenshell-mcp</span> to interact with an IFC model. IFC is in its raw-serialized form provides little textual context on the meaning of attributes, the intent behind element instances and the resulting geometrical form. By using the IfcOpenShell high-level API through an MCP-like interface (Model Context Protocol; allows for structured interaction with APIs and tools) these limitations are addressed and the model can be interrogated on a higher semantic abstraction level. You can also use <span class="code">ifcopenshell-mcp</span> on your local machine with any LLM provider that supports the MCP protocol.
+                </div>
+            </div>
+        </section>
+
+        <section class="chat">
+            <header>
+                <img src="https://ifcopenshell.org/assets/images/logo.png" style="float: left; padding: 10px 20px 10px 0; ">
+                <div class="row">
+                    <strong>IfcOpenShell AI Assistant</strong>
+                </div>
+                <div class="row">
+
+                    Status: <span class="status" id="status">Booting…</span>
+                </div>
+            </header>
+                
+            <div class="msgs" id="msgs">
+                <div class="thinking-indicator" id="thinkingIndicator" hidden>
+                    <span class="spinner"></span>
+                    <span>thinking...</span>
+                </div>
+                <div class="thinking-indicator" id="compactingIndicator" hidden>
+                    <span class="spinner"></span>
+                    <span>compacting...</span>
+                </div>
+            </div>
+            <div class="composer">
+                <div class="inner">
+                    <textarea id="input" placeholder="Ask or instruct about the IFC model…"></textarea>
+                    <button id="send" class="btn">Send <span class="material-icons">send</span></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+</body>
+
+</html>

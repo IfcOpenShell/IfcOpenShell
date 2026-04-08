@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, cast, Any
+from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
+    from bonsai.bim.module.spatial.prop import (
+        BIMContainer,
+        BIMSpatialDecompositionProperties,
+        Element,
+    )
 
 
 class BIM_PT_spatial(Panel):
@@ -244,7 +251,7 @@ class BIM_PT_grids(Panel):
     bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     def draw(self, context):
-        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
+        self.layout.row().operator("bim.add_grid", icon="ADD", text="Add Grids")
 
     def draw_header(self, context):
         props = tool.Spatial.get_grid_props()
@@ -350,7 +357,7 @@ class BIM_UL_elements(UIList):
         super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
-    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):
+    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int) -> None:
         icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
         row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
 

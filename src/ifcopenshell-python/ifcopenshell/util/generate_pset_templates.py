@@ -30,7 +30,6 @@ import ifcopenshell.api.project
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.attribute
 
 if not RUN_FROM_DEV_REPO:
     import shutil

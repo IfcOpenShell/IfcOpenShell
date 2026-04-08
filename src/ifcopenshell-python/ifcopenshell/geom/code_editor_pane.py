@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import os
 import sys
 from code import InteractiveConsole
 
@@ -30,14 +29,11 @@ except BaseException:
 
 try:
     from pyqode.core import api, modes, panels
-    from pyqode.core.api import CodeEdit, ColorScheme
-    from pyqode.core.panels import CheckerPanel
+    from pyqode.core.api import CodeEdit
     from pyqode.python import modes as pymodes
     from pyqode.python import panels as pypanels
-    from pyqode.python import widgets
     from pyqode.python.backend import server
-    from pyqode.python.modes import PyAutoIndentMode, PythonSH
-    from pyqode.python.widgets import PyInteractiveConsole
+    from pyqode.python.modes import PythonSH
 
     has_pyqode = True
 except BaseException:

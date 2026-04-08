@@ -21,8 +21,6 @@ from typing import Any
 import ifcopenshell
 import ifcopenshell.api.cost
 import ifcopenshell.util.cost
-import ifcopenshell.util.element
-import ifcopenshell.util.unit
 
 
 def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.entity_instance, formula: str) -> None:

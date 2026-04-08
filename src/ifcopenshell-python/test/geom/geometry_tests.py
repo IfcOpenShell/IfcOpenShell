@@ -18,7 +18,6 @@
 
 import numpy as np
 
-import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import test.bootstrap

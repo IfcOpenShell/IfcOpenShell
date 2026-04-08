@@ -18,9 +18,6 @@
 
 from collections.abc import Sequence
 
-import ifcopenshell
-import ifcopenshell.util
-import ifcopenshell.util.representation
 from ifcopenshell import entity_instance
 
 

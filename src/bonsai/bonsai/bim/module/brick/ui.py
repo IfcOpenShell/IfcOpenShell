@@ -16,8 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bonsai.tool as tool
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import bpy
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.brick.prop import Brick
+
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
 from bonsai.tool.brick import BrickStore
@@ -273,7 +283,9 @@ class BIM_PT_brickschema_viewport(Panel):
 class BIM_UL_bricks(UIList):
     split_screen = False
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: Brick, icon, active_data, active_propname
+    ) -> None:
         if item:
             split = layout.split(factor=0.85, align=True)
             row = split.row()

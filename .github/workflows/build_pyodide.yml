@@ -26,10 +26,10 @@ jobs:
       - name: Unpack Dependencies
         run: |
           cd ifcopenshell_build
-          python ../IfcOpenShell/pyodide/cache_dependencies.py unpack
+          python ../IfcOpenShell/nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@v1.2.22
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 
@@ -42,7 +42,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-logs-pyodide
           path: |
@@ -65,7 +65,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd ifcopenshell_build
-          python ../IfcOpenShell/pyodide/cache_dependencies.py pack
+          python ../IfcOpenShell/nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |
@@ -77,7 +77,7 @@ jobs:
           git push || echo "Push failed"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}

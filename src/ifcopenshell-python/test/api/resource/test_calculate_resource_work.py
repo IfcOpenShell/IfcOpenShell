@@ -20,7 +20,6 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.resource
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
-import ifcopenshell.util.constraint
 import test.bootstrap
 
 

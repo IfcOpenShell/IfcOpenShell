@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, get_args
+
 import bpy
-import bonsai.tool as tool
-import bonsai.core.owner as core
 import ifcopenshell.api.owner
 from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
-from typing import TYPE_CHECKING, get_args
+
+import bonsai.core.owner as core
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums

@@ -16,33 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import re
-import bpy
 import math
-import bmesh
+import os
 import shutil
-from bpy.types import SplineBezierPoints, SplinePoints
-import mathutils
 import xml.etree.ElementTree as ET
+from collections.abc import Callable, Sequence
+from math import acos, atan, ceil, degrees, pi
+from pathlib import Path
+from typing import Optional, Self, Union
+
+import bmesh
+import bpy
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.unit
 import svgwrite
 import svgwrite.container
 import svgwrite.text
-import ifcopenshell
-import ifcopenshell.util.element
-import ifcopenshell.util.representation
-import ifcopenshell.util.selector
-import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.helper as helper
-from bonsai.bim.module.drawing.data import DrawingsData
-from bonsai.bim.module.drawing.data import DecoratorData
-from math import pi, ceil, atan, degrees, acos
-from mathutils import geometry, Vector
-from typing import Optional, Self, Union
-from collections.abc import Callable, Sequence
-from pathlib import Path
+from bpy.types import SplineBezierPoints, SplinePoints
 from markdown_it import MarkdownIt
+from mathutils import Vector, geometry
+
+import bonsai.bim.module.drawing.helper as helper
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 
 
 class External(svgwrite.container.Group):
@@ -115,9 +113,13 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                         if tokens[j].type == "inline":
                             for child in tokens[j].children or []:
                                 if child.type == "softbreak":
-                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                    segments.append(
+                                        {"text": None, "url": None, "break": True, "bold": False, "italic": False}
+                                    )
                                 elif child.type == "html_inline" and child.content.strip().lower() == "<br>":
-                                    segments.append({"text": None, "url": None, "break": True, "bold": False, "italic": False})
+                                    segments.append(
+                                        {"text": None, "url": None, "break": True, "bold": False, "italic": False}
+                                    )
                                 elif child.type == "strong_open":
                                     bold = True
                                 elif child.type == "strong_close":
@@ -133,11 +135,27 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                                 elif child.type == "link_close" and link_opening:
                                     url = link_opening.attrGet("href")
                                     if url and link_text:
-                                        segments.append({"text": link_text, "url": url, "break": False, "bold": bold, "italic": italic})
+                                        segments.append(
+                                            {
+                                                "text": link_text,
+                                                "url": url,
+                                                "break": False,
+                                                "bold": bold,
+                                                "italic": italic,
+                                            }
+                                        )
                                     link_opening = None
                                     link_text = None
                                 elif child.type == "text" and not link_opening:
-                                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+                                    segments.append(
+                                        {
+                                            "text": child.content,
+                                            "url": None,
+                                            "break": False,
+                                            "bold": bold,
+                                            "italic": italic,
+                                        }
+                                    )
                         j += 1
                     i = j
                 else:
@@ -168,7 +186,9 @@ def parse_markdown_it(text: str) -> list[dict[str, Union[str, None]]]:
                     link_opening = None
                     link_text = None
                 elif child.type == "text" and not link_opening:
-                    segments.append({"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic})
+                    segments.append(
+                        {"text": child.content, "url": None, "break": False, "bold": bold, "italic": italic}
+                    )
         i += 1
     segments = [seg for seg in segments if seg.get("text") is not None or seg.get("break", False)]
     if not segments:
@@ -257,14 +277,16 @@ class SvgWriter:
         self.height = self.raw_height * self.svg_scale
 
     def add_stylesheet(self):
-        path = self.resource_paths["Stylesheet"]
-        if not path:
+        paths = self.resource_paths["Stylesheet"]
+        if not paths:
             return
-        if not os.path.exists(path):
-            print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
-            return
-        with open(path, "r") as stylesheet:
-            self.svg.defs.add(self.svg.style(stylesheet.read()))
+        path_list = [p.strip() for p in paths.split(",")]
+        for path in path_list:
+            if not os.path.exists(path):
+                print(f"WARNING. Couldn't find stylesheet for the drawing by the path: {path}")
+                continue
+            with open(path, "r") as stylesheet:
+                self.svg.defs.add(self.svg.style(stylesheet.read()))
 
     def add_markers(self):
         path = self.resource_paths["Markers"]
@@ -964,11 +986,6 @@ class SvgWriter:
         symbol = tool.Drawing.get_annotation_symbol(element)
         newline_at = tool.Drawing.get_newline_at(element)
 
-        # Get reverse_list and list_separator from EPset_Annotation
-        pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
-        reverse_list = pset_data.get("Reverse_List", False)
-        list_separator = pset_data.get("List_Separator") or ", "
-
         template_text_fields = []
         if symbol:
             symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
@@ -985,7 +1002,7 @@ class SvgWriter:
                     # NOTE: zip makes sure that we iterate over the shortest list
                     for field, text_literal in zip(template_text_fields, text_literals):
                         field.text = tool.Drawing.replace_text_literal_variables(
-                            text_literal.Literal, product or element, reverse_list, list_separator
+                            text_literal.Literal, product or element
                         )
                         field.attrib["class"] = classes_str
 
@@ -1005,10 +1022,9 @@ class SvgWriter:
         line_number = 0
 
         for text_literal in text_literals:
-            text = tool.Drawing.replace_text_literal_variables(
-                text_literal.Literal, product or element, reverse_list, list_separator
-            )
-
+            text = tool.Drawing.replace_text_literal_variables(text_literal.Literal, product or element)
+            if newline_at:
+                text = helper.add_newline_between_words(text, newline_at)
             text_segments = parse_markdown_it(text)
 
             if len(text_segments) == 1 and text_segments[0]["url"] is None and not text_segments[0].get("break", False):

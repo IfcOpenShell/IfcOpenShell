@@ -18,8 +18,6 @@
 
 import math
 
-import pytest
-
 import ifcopenshell.api.alignment
 import ifcopenshell.api.unit
 import ifcopenshell.util

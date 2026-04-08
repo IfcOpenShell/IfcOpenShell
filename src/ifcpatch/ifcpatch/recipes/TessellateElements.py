@@ -21,7 +21,6 @@ from logging import Logger
 from typing import Union
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.util.representation

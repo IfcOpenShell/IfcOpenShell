@@ -17,19 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
+
 import os
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search, draw_attributes
-from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.project.data import ProjectData, LinksData
+import shutil
 from typing import TYPE_CHECKING
 
+import bpy
+from bpy.types import Menu, Panel, UIList
+
+import bonsai.bim
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attributes, prop_with_search
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.project.data import LinksData, ProjectData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
+    from bonsai.bim.module.project.prop import (
+        BIMProjectProperties,
+        FilterCategory,
+        LibraryElement,
+        Link,
+    )
 
 
 def file_import_menu(self, context):
@@ -248,7 +256,7 @@ class BIM_PT_project(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
 
-    def draw_editing_buttons(self, context, row):
+    def draw_editing_buttons(self, context: object, row: bpy.types.UILayout) -> None:
         pprops = self.props
         if tool.Ifc.get():
             if pprops.is_editing:
@@ -338,9 +346,9 @@ class BIM_PT_project(Panel):
             else:
                 metadata_filename = os.path.basename(props.ifc_file) + suffix
             row = self.layout.row(align=True)
-            col = row.column()
-            col.enabled = False
-            col.label(text=f"Saving session data to: {metadata_filename}")
+            row.use_property_split = False
+            pprops = tool.Project.get_project_props()
+            row.prop(pprops, "should_save_metadata_for_this_file", text=f"Save session data to: {metadata_filename}")
 
 
 class BIM_PT_new_project_wizard(Panel):
@@ -368,24 +376,26 @@ class BIM_PT_new_project_wizard(Panel):
         row = self.layout.row()
         row.prop(props, "volume_unit", text="Volume Unit")
         row = self.layout.row()
+        row.prop(props, "mass_unit", text="Mass Unit")
+        row = self.layout.row()
+        row.prop(props, "time_unit", text="Time Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
-
-        if tool.Blender.get_addon_preferences().mass_time_units_in_wizard:
-            header, body = self.layout.panel("Mass and Time Units", default_closed=True)
-            if header:
-                header.label(text="Mass and Time Units")
-            if body:
-                label = "Add Mass and Time Units" if not props.add_mass_time_units else "Remove Mass and Time Units"
-                body.prop(props, "add_mass_time_units", toggle=True, text=label)
-                if props.add_mass_time_units:
-                    row = body.row()
-                    row.prop(props, "mass_unit", text="Mass Unit")
-                    row = body.row()
-                    row.prop(props, "time_unit", text="Time Unit")
 
         self.layout.use_property_split = True
         row = self.layout.row()
         row.operator("bim.create_project")
+
+        if shutil.which("git"):
+            git_props = context.scene.IfcGitProperties
+            box = self.layout.box()
+            row = box.row()
+            row.label(text="Clone a remote Git repository")
+            row = box.row()
+            row.prop(git_props, "remote_url")
+            row = box.row()
+            row.prop(git_props, "local_folder")
+            row = box.row()
+            row.operator("ifcgit.clone_repo", icon="IMPORT")
 
 
 class BIM_PT_project_library(Panel):
@@ -479,17 +489,28 @@ class BIM_PT_links(Panel):
 
     def draw(self, context):
         self.props = tool.Project.get_project_props()
+
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
-            self.layout.template_list(
-                "BIM_UL_links",
-                "",
-                self.props,
-                "links",
-                self.props,
-                "active_link_index",
-            )
+            if self.props.active_link:
+                row = self.layout.row(align=True)
+                row.alignment = "RIGHT"
+                index = self.props.active_link_index
+                if self.props.active_link.is_loaded:
+                    if self.props.active_link.is_editing:
+                        row.operator("bim.edit_link", text="", icon="CHECKMARK")
+                        row.operator("bim.disable_editing_link", text="", icon="CANCEL")
+                    else:
+                        row.operator("bim.enable_editing_link", text="", icon="GREASEPENCIL")
+                    row.operator("bim.select_linked_model_element", icon="VIEWZOOM", text="")
+                    row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA").link_index = index
+                    row.operator("bim.unload_link", text="", icon="UNLINKED").link_index = index
+                    row.operator("bim.reload_link", text="", icon="FILE_REFRESH").link_index = index
+                else:
+                    row.operator("bim.load_link", text="", icon="LINKED").link_index = index
+                row.operator("bim.unlink_ifc", text="", icon="X").link_index = index
+            self.layout.template_list("BIM_UL_links", "", self.props, "links", self.props, "active_link_index")
 
         if LinksData.enable_culling:
             row = self.layout.row(align=True)
@@ -609,47 +630,32 @@ class BIM_UL_links(UIList):
         active_propname,
         index,
     ):
-        if item:
-            row = layout.row(align=True)
-            if item.is_loaded:
-                row.label(text=item.name)
-                op = row.operator(
-                    "bim.toggle_link_selectability",
-                    text="",
-                    icon="RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON",
-                    emboss=False,
-                )
-                op.link = item.name
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="CUBE" if item.is_wireframe else "MESH_CUBE",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "WIREFRAME"
-                op = row.operator(
-                    "bim.toggle_link_visibility",
-                    text="",
-                    icon="HIDE_ON" if item.is_hidden else "HIDE_OFF",
-                    emboss=False,
-                )
-                op.link = item.name
-                op.mode = "VISIBLE"
-                op = row.operator("bim.select_link_handle", text="", icon="OBJECT_DATA")
-                op.index = index
-                op = row.operator("bim.unload_link", text="", icon="UNLINKED")
-                op.filepath = item.name
-                op = row.operator("bim.reload_link", text="", icon="FILE_REFRESH")
-                op.filepath = item.name
-            else:
-                row.prop(item, "name", text="")
-                op = row.operator("bim.select_uri_attribute", text="", icon="FILE_FOLDER")
-                op.attribute_data_path = tool.Blender.get_full_data_path(item, "name")
-                op = row.operator("bim.load_link", text="", icon="LINKED")
-                op.filepath = item.name
-                op = row.operator("bim.unlink_ifc", text="", icon="X")
-                op.filepath = item.name
+        row = layout.row(align=True)
+        if item.is_loaded:
+            from bonsai.bim.module.project.prop import Link
+
+            s = Link.bl_rna
+            geo_prop = s.properties["georeferenced"]
+            assert isinstance(geo_prop, bpy.types.EnumProperty)
+            enum_item = geo_prop.enum_items[item.georeferenced]
+            op = row.operator("bim.show_description", text="", icon=enum_item.icon, emboss=False)
+            op.description = f"{geo_prop.description}\n{enum_item.name}: {enum_item.description}"
+            if item.has_transformation:
+                row.label(text="", icon="OBJECT_ORIGIN")
+
+            row.label(text=item.filepath)
+            icon = "RESTRICT_SELECT_OFF" if item.is_selectable else "RESTRICT_SELECT_ON"
+            row.operator("bim.toggle_link_selectability", text="", icon=icon, emboss=False).link_index = index
+            icon = "CUBE" if item.is_wireframe else "MESH_CUBE"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "WIREFRAME"
+            icon = "HIDE_ON" if item.is_hidden else "HIDE_OFF"
+            op = row.operator("bim.toggle_link_visibility", text="", icon=icon, emboss=False)
+            op.link_index = index
+            op.mode = "VISIBLE"
+        else:
+            row.label(text=item.filepath)
 
 
 class BIM_PT_purge(Panel):

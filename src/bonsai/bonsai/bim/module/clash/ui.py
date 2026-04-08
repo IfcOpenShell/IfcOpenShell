@@ -17,15 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.tool as tool
-import bonsai.bim.helper
-from bpy.types import Panel
-from bonsai.bim.module.clash.data import ClashData
+
 from typing import TYPE_CHECKING, assert_never
 
+import bpy
+from bpy.types import Panel
+
+import bonsai.bim.helper
+import bonsai.tool as tool
+from bonsai.bim.module.clash.data import ClashData
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.clash.prop import BIMClashProperties, ClashSet, SmartClashGroup, Clash
+    from bonsai.bim.module.clash.prop import (
+        BIMClashProperties,
+        Clash,
+        ClashSet,
+        SmartClashGroup,
+    )
 
 
 class BIM_PT_ifcclash(Panel):

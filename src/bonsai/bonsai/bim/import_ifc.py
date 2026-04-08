@@ -17,32 +17,34 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import time
+
 import json
-import ifcpatch
 import logging
-import traceback
-import mathutils
-import numpy as np
-import numpy.typing as npt
 import multiprocessing
+import time
+import traceback
+from collections.abc import Iterable
+from typing import Any, Literal, Optional, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
-import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Union, Optional, Any, Literal
-from collections.abc import Iterable
+import ifcopenshell.util.unit
+import ifcpatch
+import mathutils
+import numpy as np
+import numpy.typing as npt
 from ifcopenshell.util.shape import MatrixType
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE, IfcStore
+from bonsai.tool.loader import OBJECT_DATA_TYPE
 
 
 class MaterialCreator:
@@ -62,8 +64,8 @@ class MaterialCreator:
         mesh: Union[OBJECT_DATA_TYPE, None],
         shape_has_openings: bool,
     ) -> None:
-        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
-            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
+        if ((rep := getattr(element, "Representation", ...)) is not ... and not rep) or (
+            (rep := getattr(element, "RepresentationMaps", ...)) is not ... and not rep
         ):
             return
 
@@ -82,7 +84,7 @@ class MaterialCreator:
         if element.is_a("IfcTypeProduct"):
             self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        if not self.ifc_import_settings.load_indexed_maps:
+        if self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
@@ -114,7 +116,6 @@ class MaterialCreator:
         for texture in texture_style.Textures or []:
             if coords := getattr(texture, "IsMappedBy", None):
                 coords = coords[0]
-                # IfcTextureCoordinateGenerator handled in the style shader graph
                 if coords.is_a("IfcIndexedTextureMap"):
                     return coords
                 # TODO: support IfcTextureMap
@@ -132,6 +133,10 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
+            elif tool.Style.get_texture_style(material):
+                # No explicit coordinate mapping (e.g. IFC2X3 has no IsMappedBy,
+                # and IFC4 COORD uses generated UVs). Bake XY→UV as fallback.
+                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -290,7 +295,6 @@ class IfcImporter:
         self.profile_code("Load linked models")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
-        self.hide_ifc_spaces()
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
             self.clean_mesh()
             self.profile_code("Mesh cleaning")
@@ -743,6 +747,7 @@ class IfcImporter:
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
             shape = iterator.get()
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
                 product = self.file.by_id(shape.id)
                 self.create_product(product, shape)
                 results.add(product)
@@ -890,48 +895,6 @@ class IfcImporter:
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
 
-        if element.is_a("IfcAnnotation") and getattr(element, "ObjectType", None) == "IMAGE":
-            image = None
-            if obj.data and obj.data.materials and obj.data.materials[0]:
-                material = obj.data.materials[0]
-                if material.use_nodes and material.node_tree:
-                    for node in material.node_tree.nodes:
-                        if node.type == "TEX_IMAGE" and node.image:
-                            image = node.image
-                            break
-            if image:
-                import bmesh
-
-                bm = bmesh.new()
-                bm.from_mesh(obj.data)
-                if not bm.loops.layers.uv:
-                    uv_layer = bm.loops.layers.uv.new()
-                else:
-                    uv_layer = bm.loops.layers.uv.active
-
-                if bm.verts:
-                    min_x = min(v.co.x for v in bm.verts)
-                    max_x = max(v.co.x for v in bm.verts)
-                    min_y = min(v.co.y for v in bm.verts)
-                    max_y = max(v.co.y for v in bm.verts)
-
-                    width = max_x - min_x
-                    height = max_y - min_y
-
-                    for face in bm.faces:
-                        for loop in face.loops:
-                            vert = loop.vert
-                            u = (vert.co.x - min_x) / width if width > 0 else 0.5
-                            v = (vert.co.y - min_y) / height if height > 0 else 0.5
-
-                            u = max(0.0, min(1.0, u))
-                            v = max(0.0, min(1.0, v))
-
-                            loop[uv_layer].uv = (u, v)
-
-                bm.to_mesh(obj.data)
-                bm.free()
-                obj.data.update()
         return obj
 
     def load_existing_meshes(self) -> None:
@@ -1058,7 +1021,8 @@ class IfcImporter:
         obj.hide_select = True
         obj.hide_viewport = True
         self.project["blender"].objects.link(obj)
-        self.project["blender"].BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(self.project["blender"])
+        collection_props.obj = obj
         props = tool.Blender.get_object_bim_props(obj)
         props.collection = self.collections[project.GlobalId] = self.project["blender"]
 
@@ -1287,13 +1251,6 @@ class IfcImporter:
                         properties={"Aggregate_Index": aggregate_index, "Name": name},
                     )
 
-    def hide_ifc_spaces(self):
-        """Hide IfcSpace objects after they've been added to the scene."""
-        for ifc_definition_id, obj in self.added_data.items():
-            if isinstance(obj, bpy.types.Object):
-                element = self.file.by_id(ifc_definition_id)
-                if element.is_a("IfcSpace"):
-                    obj.hide_set(True)
 
 class IfcImportSettings:
     """
@@ -1311,7 +1268,7 @@ class IfcImportSettings:
         self.should_load_geometry = True
         self.should_clean_mesh = False
         self.should_cache = True
-        self.deflection_tolerance = 0.001
+        self.deflection_tolerance = 0.05  # Default is 0.001, but I find this to be more practical
         self.angular_tolerance = 0.5
         self.void_limit = 30
         self.style_limit = 300

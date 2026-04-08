@@ -17,16 +17,17 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from bpy.types import Menu, Panel, UIList
+
 import bonsai.bim
 import bonsai.tool as tool
-from bpy.types import Panel, Menu, UIList
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
-    RepresentationsData,
-    RepresentationItemsData,
     ConnectionsData,
-    PlacementData,
     DerivedCoordinatesData,
+    PlacementData,
+    RepresentationItemsData,
+    RepresentationsData,
 )
 from bonsai.bim.module.layer.data import LayersData
 
@@ -514,6 +515,8 @@ class BIM_PT_derived_coordinates(Panel):
         return context.active_object is not None
 
     def draw(self, context):
+        assert context.active_object
+        props = tool.Model.get_model_props()
         if not DerivedCoordinatesData.is_loaded:
             DerivedCoordinatesData.load()
 
@@ -528,10 +531,8 @@ class BIM_PT_derived_coordinates(Panel):
 
         row = self.layout.row(align=True)
         row.enabled = False
-        area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
-        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None)
 
-        if bpy.context.scene.BIMModelProperties.show_bounding_box:
+        if props.show_bounding_box:
             for axis, icon, idx in [("X", "STRIP_COLOR_01", 0), ("Y", "STRIP_COLOR_04", 1), ("Z", "STRIP_COLOR_05", 2)]:
                 row.label(text="", icon=icon)
                 row.prop(context.active_object, "dimensions", text=axis, index=idx)

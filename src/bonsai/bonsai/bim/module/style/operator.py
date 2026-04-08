@@ -17,19 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
+from typing import Any, Union
+
 import bpy
-import bonsai.bim.helper
-import bonsai.tool as tool
-import bonsai.core.style as core
 import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from bonsai.bim.module.style.prop import ColourRgb
 from bpy_extras.io_utils import ImportHelper
-from pathlib import Path
 from mathutils import Vector
-from typing import Any, Union
+
+import bonsai.bim.helper
+import bonsai.core.style as core
+import bonsai.tool as tool
+from bonsai.bim.module.style.prop import ColourRgb
 
 
 # TODO: is this still relevant or can it be deleted?
@@ -85,6 +87,7 @@ class RemoveStyle(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_style(tool.Ifc, tool.Style, style=tool.Ifc.get().by_id(self.style), reload_styles_ui=True)
 
 
+# TODO: remove completely
 class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_style"
     bl_label = "Add Style"

@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell
 from bpy.props import StringProperty
-from sverchok.data_structure import ensure_min_nesting, flatten_data, updateNode
+from sverchok.data_structure import flatten_data, updateNode
 from sverchok.node_tree import SverchCustomTreeNode
 
 import ifcsverchok.helper

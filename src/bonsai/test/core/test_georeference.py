@@ -17,12 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.georeference as subject
-from test.core.bootstrap import ifc, georeference
+from test.core.bootstrap import georeference, ifc
 
 
 class TestAddGeoreferencing:
     def test_run(self, georeference):
         georeference.add_georeferencing().should_be_called()
+        georeference.set_model_origin().should_be_called()
         subject.add_georeferencing(georeference)
 
 
@@ -35,9 +36,10 @@ class TestEnableEditingGeoreferencing:
 
 
 class TestRemoveGeoreferencing:
-    def test_run(self, ifc):
+    def test_run(self, ifc, georeference):
         ifc.run("georeference.remove_georeferencing").should_be_called()
-        subject.remove_georeferencing(ifc)
+        georeference.set_model_origin().should_be_called()
+        subject.remove_georeferencing(ifc, georeference)
 
 
 class TestDisableEditingGeoreferencing:

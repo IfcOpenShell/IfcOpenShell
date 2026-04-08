@@ -38,6 +38,7 @@ import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.style
 import ifcopenshell.api.type
+import ifcopenshell.api.feature
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
 import test.bootstrap
@@ -889,6 +890,35 @@ class TestGetlayers(test.bootstrap.IFC4, TestGetlayersIFC2X3):
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         ifcopenshell.api.layer.assign_layer(self.file, items=[representation], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
+
+
+class TestGetParentIFC4(test.bootstrap.IFC4):
+    def test_getting_the_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=building)
+        assert subject.get_parent(element) == building
+
+    def test_getting_the_specific_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_parent(element, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(element, ifc_class="IfcSite") == None
+
+    def test_getting_the_specific_parent_of_an_element_via_voiding(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=building)
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=window)
+        assert subject.get_parent(window, ifc_class="IfcWall") == wall
+        assert subject.get_parent(window, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(window, ifc_class="IfcSite") == None
 
 
 class TestGetContainerIFC4(test.bootstrap.IFC4):

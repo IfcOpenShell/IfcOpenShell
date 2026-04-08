@@ -16,39 +16,38 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
 import enum
+import json
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.decoration as decoration
-from mathutils import Matrix
-from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData, ElementValuesData
-from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from pathlib import Path
-from bonsai.bim.prop import Attribute, StrProperty
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-    BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, get_args, Union
-from collections.abc import Callable
+from bpy.types import PropertyGroup
+from mathutils import Matrix
 
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.core.drawing as core
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import (
+    AnnotationData,
+    DrawingsData,
+    ElementValuesData,
+    SheetsData,
+)
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
+from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
 
@@ -673,20 +672,6 @@ class BIMCameraProperties(PropertyGroup):
         return ortho_scale, aspect_ratio
 
 
-DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
-BOX_ALIGNMENT_POSITIONS = [
-    "top-left",
-    "top-middle",
-    "top-right",
-    "middle-left",
-    "center",
-    "middle-right",
-    "bottom-left",
-    "bottom-middle",
-    "bottom-right",
-]
-
-
 class ElementValueRow(PropertyGroup):
     """Represents a single element value row with category, key, and formatted value"""
 
@@ -714,7 +699,9 @@ class ElementValueRow(PropertyGroup):
     )
 
     element_key: StringProperty(
-        name="Element Key", description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')", default=""
+        name="Element Key",
+        description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')",
+        default="",
     )
 
     formatted_value: StringProperty(
@@ -756,71 +743,69 @@ def get_category_items_with_counts(self, context):
         ("Coordinates", "Coordinates", "Coordinate information", "EMPTY_ARROWS"),
         ("Custom String", "Custom String", "Add custom text (no element key)", "SMALL_CAPS"),
     ]
-    
+
     obj = context.active_object
-    
+
     if obj and tool.Ifc.get_entity(obj):
         try:
             element = tool.Ifc.get_entity(obj)
             text_element = element
-            
-            if hasattr(self, 'product_used'):
+
+            if hasattr(self, "product_used"):
                 if self.product_used:
                     element = tool.Ifc.get_entity(self.product_used)
                 else:
                     assigned = tool.Drawing.get_assigned_product(text_element)
                     if assigned:
                         element = assigned
-            
+
             available_keys = ElementValuesData.get_available_element_value_keys(element)
             items = []
             for i, (identifier, base_name, description, icon) in enumerate(category_metadata):
                 count = len(available_keys.get(identifier, []))
                 display_name = f"{base_name} ({count})" if count > 0 else base_name
                 items.append((identifier, display_name, description, icon, i))
-            
+
             return items
         except Exception as e:
             pass
-    
+
     return [(id, name, desc, icon, i) for i, (id, name, desc, icon) in enumerate(category_metadata)]
 
 
 class LiteralProps(PropertyGroup):
-    def set_box_alignment(self, new_value):
-        markers = new_value.count(True)
-        if not markers:
-            return
-
-        if markers > 1:
-            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-            # looking for the first value changed to positive
-            first_changed_value = next((i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None)
-
-            # if nothing have changed we just keep the previous value
-            if first_changed_value is None:
-                return
-            new_value = [False] * 9
-            new_value[first_changed_value] = True
-
-        self["box_alignment"] = new_value
-        position_string = BOX_ALIGNMENT_POSITIONS[next(i for i in range(9) if new_value[i])]
-        self.attributes["BoxAlignment"].set_value(position_string)
-
-    def get_box_alignment(self):
-        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    box_alignment: BoolVectorProperty(
-        name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
-    )
     ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
+    )
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
+    )
+
+    def get_box_alignment(self) -> str:
+        alignment = self.align_vertical + "-" + self.align_horizontal
+        if alignment == "middle-middle":
+            alignment = "center"
+        return alignment
 
     def get_literal_edited_data(self) -> dict[str, str]:
         text_data = {
             "CurrentValue": self.attributes["Literal"].string_value,
             "Literal": self.attributes["Literal"].string_value,
-            "BoxAlignment": self.attributes["BoxAlignment"].string_value,
+            "BoxAlignment": self.get_box_alignment(),
         }
         return text_data
 
@@ -843,43 +828,48 @@ class LiteralProps(PropertyGroup):
     )
 
     element_value_rows: CollectionProperty(
-        name="Element Value Rows", 
+        name="Element Value Rows",
         type=ElementValueRow,
-        description="Collection of element value rows for building the literal value"
+        description="Collection of element value rows for building the literal value",
     )
 
     category_for_adding: EnumProperty(
         name="Category for Adding",
         items=get_category_items_with_counts,
         default=0,
-        description="Category to use when adding a new element value row"
+        description="Category to use when adding a new element value row",
     )
 
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
-        box_alignment: tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool]
         ifc_definition_id: int
+        align_horizontal: str
+        align_vertical: str
         element_value_rows: bpy.types.bpy_prop_collection_idprop[ElementValueRow]
         category_for_adding: str
 
 
-class LiteralApplySettings(PropertyGroup):
-    literal_index: IntProperty(name="Literal Index")
-    apply_text_to_all: BoolProperty(name="Apply Text to All", default=False)
-    apply_path_to_all: BoolProperty(name="Apply Path to All", default=False)
-    apply_box_alignment_to_all: BoolProperty(name="Apply Box Alignment to All", default=False)
-
-    if TYPE_CHECKING:
-        literal_index: int
-        apply_text_to_all: bool
-        apply_path_to_all: bool
-        apply_box_alignment_to_all: bool
+def update_text_alignment(self, context):
+    for literal_props in self.literals:
+        literal_props.align_horizontal = self.align_horizontal
+        literal_props.align_vertical = self.align_vertical
 
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
+    newline_at: IntProperty(name="Newline At")
+    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Symbol",
+        description="Symbol from symbols.svg to use for this text.",
+        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
+        default="NO SYMBOL",
+    )
+    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="Custom Symbol",
+        description="Non-default symbol to use for this text.",
+    )
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -891,52 +881,36 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
-    newline_at: IntProperty(name="Newline At")
-    reverse_list: BoolProperty(name="Reverse List", description="Reverses the order of any list.", default=False)
-    list_separator: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="List Separator",
-        description="Text used to separate lists. Uses a comma (, ) if empty.",
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
+        update=update_text_alignment,
     )
-    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
-        name="Symbol",
-        description="Symbol from symbols.svg to use for this text.",
-        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
-        default="NO SYMBOL",
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
+        update=update_text_alignment,
     )
-    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
-        name="Custom Symbol",
-        description="Non-default symbol to use for this text.",
-    )
-
-    apply_font_size_to_all: BoolProperty(
-        name="Apply Font Size to All", description="Apply font size changes to all selected text objects", default=False
-    )
-    apply_newline_to_all: BoolProperty(
-        name="Apply Newline to All", description="Apply newline changes to all selected text objects", default=False
-    )
-
-    literal_apply_settings: CollectionProperty(name="Literal Apply Settings", type=LiteralApplySettings)
-
-    def ensure_literal_apply_settings(self, literal_count: int):
-        """Ensure we have apply settings for all literals"""
-        while len(self.literal_apply_settings) > literal_count:
-            self.literal_apply_settings.remove(len(self.literal_apply_settings) - 1)
-
-        while len(self.literal_apply_settings) < literal_count:
-            setting = self.literal_apply_settings.add()
-            setting.literal_index = len(self.literal_apply_settings) - 1
 
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
-        font_size: str
         newline_at: int
-        reverse_list: bool
-        list_separator: str
         symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
         custom_symbol: str
-        apply_font_size_to_all: bool
-        apply_newline_to_all: bool
+        font_size: str
+        align_horizontal: str
+        align_vertical: str
 
     def get_symbol(self) -> Union[str, None]:
         if self.symbol == "NO SYMBOL":
@@ -971,8 +945,6 @@ class BIMTextProperties(PropertyGroup):
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
             "Symbol": self.get_symbol(),
-            "Reverse_List": self.reverse_list,
-            "List_Separator": self.list_separator or ", ",
         }
         return text_data
 

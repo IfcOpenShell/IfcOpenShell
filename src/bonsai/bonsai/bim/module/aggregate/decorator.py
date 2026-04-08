@@ -19,14 +19,13 @@
 import blf
 import bpy
 import gpu
-import ifcopenshell
 import ifcopenshell.util.element
-import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-from bonsai.bim.module.geometry.decorator import ItemDecorator
+
+import bonsai.tool as tool
 
 
 def transparent_color(color, alpha=0.1):
@@ -102,7 +101,7 @@ class AggregateDecorator:
         cls.is_installed = False
 
     def dotted_line_shader(self):
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty:ignore[too-many-positional-arguments]
         vert_out.smooth("FLOAT", "v_ArcLength")
 
         shader_info = gpu.types.GPUShaderCreateInfo()

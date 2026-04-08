@@ -28,7 +28,8 @@
 # system when the add-on loads. This is where it happens.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 # You'll need to provide a list of every one of your classes here. If you forget
 # to specify your class, it won't load and you won't be able to use that

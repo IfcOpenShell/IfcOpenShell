@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from collections.abc import Sequence
 
 import numpy as np
 

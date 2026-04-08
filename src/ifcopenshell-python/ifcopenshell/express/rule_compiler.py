@@ -48,11 +48,7 @@ def to_graph(tree):
     # bootstrap.py that result in an intermediate list index node in to_tree()
 
     # Start with the intermediate nodes and filter out root (needs to have predecessors)
-    intermediate = [
-        n
-        for n in g.nodes
-        if g.nodes[n].get("label") is None and list(g.predecessors(n))
-    ]
+    intermediate = [n for n in g.nodes if g.nodes[n].get("label") is None and list(g.predecessors(n))]
 
     for n in intermediate:
         pr = list(g.predecessors(n))
@@ -82,8 +78,7 @@ def to_graph(tree):
     for n in g.nodes:
         if (
             len(list(g.successors(n))) == 0
-            and g.nodes[n].get("label")
-            not in ifcopenshell.express.express_parser.all_rules
+            and g.nodes[n].get("label") not in ifcopenshell.express.express_parser.all_rules
         ):
             g.nodes[n]["is_terminal"] = True
 
@@ -105,8 +100,7 @@ def write_dot(fn, g):
         def format(di):
             Q = '"'
             inner = ",".join(
-                f"{k}={'' if v.startswith('<') else Q}{v}{'' if v.startswith('<') else Q}"
-                for k, v in di.items()
+                f"{k}={'' if v.startswith('<') else Q}{v}{'' if v.startswith('<') else Q}" for k, v in di.items()
             )
             if inner:
                 inner = f"[{inner}]"
@@ -179,9 +173,7 @@ class context:
 
     def has_inverse(self, a):
         for r in self.rules:
-            if a in map(
-                lambda n: self.graph.nodes[n].get("label"), self.graph.predecessors(r)
-            ):
+            if a in map(lambda n: self.graph.nodes[n].get("label"), self.graph.predecessors(r)):
                 return True
         return False
 
@@ -190,10 +182,7 @@ class context:
             yield context(self.graph, [r])
 
     def descendants(self):
-        return [
-            b.rules[0][len(self.rules[0]) + 1 :]
-            for b in self.branches(allow_multiple=True)
-        ]
+        return [b.rules[0][len(self.rules[0]) + 1 :] for b in self.branches(allow_multiple=True)]
 
     def __repr__(self):
         try:
@@ -206,14 +195,11 @@ class context:
         assert len(self.rules) == 1
         nodes = itertools.chain(
             self.rules,
-            itertools.chain.from_iterable(
-                dict(nx.bfs_successors(self.graph, self.rules[0])).values()
-            ),
+            itertools.chain.from_iterable(dict(nx.bfs_successors(self.graph, self.rules[0])).values()),
         )
         terminals_or_values = list(
             filter(
-                lambda n: self.graph.nodes[n].get("is_terminal")
-                or self.graph.nodes[n].get("value"),
+                lambda n: self.graph.nodes[n].get("is_terminal") or self.graph.nodes[n].get("value"),
                 nodes,
             )
         )
@@ -375,9 +361,7 @@ def calc_{class_name}_{str(derived_attr.attribute_decl.redeclared_attribute.qual
 """
 
         if context.entity_body.derive_clause:
-            statements.extend(
-                map(format_derived, context.entity_body.derive_clause.branches())
-            )
+            statements.extend(map(format_derived, context.entity_body.derive_clause.branches()))
 
     return "\n\n".join(statements)
 
@@ -420,10 +404,12 @@ def process_expression(context):
                 exclude=[context.rel_op_extended],
             )
         else:
-            if len(context.simple_expression.branches()) == 2 and str(context.rel_op_extended) == 'in':
+            if len(context.simple_expression.branches()) == 2 and str(context.rel_op_extended) == "in":
                 # IfcBlobTexture
                 try:
-                    is_literal_str_list = set(map(type, ast.literal_eval(str(context.simple_expression.branches()[1])))) == {str}
+                    is_literal_str_list = set(
+                        map(type, ast.literal_eval(str(context.simple_expression.branches()[1])))
+                    ) == {str}
                 except:
                     is_literal_str_list = False
                 if is_literal_str_list:
@@ -567,9 +553,7 @@ def process_function_decl(context):
         str.lower,
         map(
             str,
-            context.function_head.formal_parameter.parameter_id.branches(
-                allow_multiple=True
-            ),
+            context.function_head.formal_parameter.parameter_id.branches(allow_multiple=True),
         ),
     )
     return f"def {context.function_head.function_id}({', '.join(arguments)}):\n{indent(4, context.algorithm_head.local_decl)}\n{indent(4, context.stmt.branches())}"
@@ -582,9 +566,7 @@ def process_query(context):
 def process_local_variable(context):
     if context.expression:
         expr = str(context.expression)
-        if (
-            context.parameter_type.generalized_types.general_aggregation_types.general_set_type
-        ):
+        if context.parameter_type.generalized_types.general_aggregation_types.general_set_type:
             expr = re.sub(r"(\[[^\]]*\])", "express_set(\\1)", expr)
 
         return "%s = %s" % (str(context.variable_id).lower(), expr)
@@ -623,9 +605,7 @@ def process_assignment(context):
     if m := re.match(r"^([^\[]+)\[([^\[]+)\]$", lhs):
         # @todo ugly regex hack
         aggr, index = m.groups()
-        return (
-            f"temp = list({aggr})\ntemp[{index}] = {context.expression}\n{aggr} = temp"
-        )
+        return f"temp = list({aggr})\ntemp[{index}] = {context.expression}\n{aggr} = temp"
     else:
         return "%s = %s" % (lhs, context.expression)
 
@@ -643,11 +623,7 @@ def process_case_action(context):
 
 def process_case_statement(context):
     branches = context.branches(
-        exclude=[
-            getattr(context, v)
-            for v in context.descendants()
-            if not v.startswith("case_action")
-        ]
+        exclude=[getattr(context, v) for v in context.descendants() if not v.startswith("case_action")]
     )
     if context.stmt and context.stmt.branches():
         branches += [f"else:\n{indent(4, context.stmt)}"]
@@ -658,9 +634,7 @@ def process_aggregate_initializer(context):
     if context.element.repetition:
         return "([%s] * %s)" % (context.element.expression, context.element.repetition)
     else:
-        return "[%s]" % ",".join(
-            map(str, context.element.branches() if context.element else ())
-        )
+        return "[%s]" % ",".join(map(str, context.element.branches() if context.element else ()))
 
 
 def process_index(context):
@@ -676,9 +650,7 @@ def process_index(context):
 codegen_rule("function_call", process_function_call)
 codegen_rule(
     "actual_parameter_list",
-    lambda context: ",".join(
-        map(str, context.expression.branches() if context.expression else [])
-    ),
+    lambda context: ",".join(map(str, context.expression.branches() if context.expression else [])),
 )
 codegen_rule("entity_decl", functools.partial(process_type_decl, "entity"))
 codegen_rule("rule_decl", process_rule_decl)
@@ -696,9 +668,7 @@ codegen_rule("simple_factor", simple_concat)
 codegen_rule("primary", simple_concat)
 codegen_rule("qualifier", simple_concat)
 codegen_rule("return_stmt", lambda context: "return %s" % context)
-codegen_rule(
-    "compound_stmt", lambda context: "\n".join(map(str, context.stmt.branches()))
-)
+codegen_rule("compound_stmt", lambda context: "\n".join(map(str, context.stmt.branches())))
 codegen_rule("if_stmt", process_if_stmt)
 codegen_rule("repeat_stmt", process_repeat_stmt)
 # codegen_rule("index", lambda context: '**express_index(%s)' % context)
@@ -707,19 +677,14 @@ codegen_rule("index_qualifier", process_index)
 codegen_rule("group_qualifier", lambda context: empty())
 codegen_rule("attribute_qualifier", lambda context: ".%s" % context)
 codegen_rule("rel_op", process_rel_op)
-codegen_rule(
-    "built_in_constant", lambda context: "None" if str(context) == "?" else str(context)
-)
+codegen_rule("built_in_constant", lambda context: "None" if str(context) == "?" else str(context))
 codegen_rule("assignment_stmt", process_assignment)
 codegen_rule("local_variable", process_local_variable)
 codegen_rule("local_decl", lambda context: "\n".join(map(str, context.branches())))
 codegen_rule("general_ref/parameter_ref", make_lowercase)
 codegen_rule(
     "qualifiable_factor/attribute_ref",
-    make_lowercase_if(
-        lambda context: str(context)
-        not in set(map(str, schema.all_declarations.keys()))
-    ),
+    make_lowercase_if(lambda context: str(context) not in set(map(str, schema.all_declarations.keys()))),
 )
 codegen_rule("case_action", process_case_action)
 codegen_rule("case_stmt", process_case_statement)
@@ -748,6 +713,14 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
             return node
 
         if node.attr == "create_entity":
+            return node
+
+        if node.attr.startswith("__"):
+            return node
+
+        # Don't rewrite at module scope (top-level, no indent)
+        enclosing_stmt = next((p for p in parents if isinstance(p, ast.stmt)), None)
+        if enclosing_stmt is not None and isinstance(getattr(enclosing_stmt, "parent", None), ast.Module):
             return node
 
         new_value = self.visit(node.value)
@@ -816,17 +789,17 @@ if __name__ == "__main__":
     import subprocess
 
     schema = ifcopenshell.express.express_parser.parse(sys.argv[1]).schema
-    
+
     try:
         ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema.name)
     except:
         # @nb note the difference here between:
-        # 
+        #
         #  - ifcopenshell.express.express_parser.parse
         #  - ifcopenshell.express.parse.parse
-        # 
+        #
         # First generates a pyparsing AST
-        # 
+        #
         # Second populates a latebound schema
         # that can be registered in C++.
         builder = ifcopenshell.express.parse(sys.argv[1])
@@ -842,18 +815,21 @@ if __name__ == "__main__":
 
     print(
         """
+def is_indeterminate(v):
+    return v is None or type(v).__name__ == 'indeterminate_type'
+
 def exists(v):
     if callable(v):
         try: return v() is not None
         except IndexError as e: return False
-    else: return v is not None
+    else: return not is_indeterminate(v)
 """,
         "\n",
         file=output,
         sep="\n",
     )
     print(
-        "def nvl(v, default): return v if v is not None else default",
+        "def nvl(v, default): return v if not is_indeterminate(v) else default",
         "\n",
         file=output,
         sep="\n",
@@ -871,14 +847,14 @@ def is_entity(inst):
 def express_len(v):
     if isinstance(v, ifcopenshell.entity_instance) and not is_entity(v):
         v = v[0]
-    elif v is None or v is INDETERMINATE:
+    elif is_indeterminate(v):
         return INDETERMINATE
     return len(v)
 
 old_range = range
 
 def range(*args):
-    if INDETERMINATE in args:
+    if any(map(is_indeterminate, args)):
         return
     yield from old_range(*args)
 
@@ -1045,13 +1021,13 @@ INDETERMINATE = indeterminate_type()
                     if isinstance(v, str):
                         nl = "\n"
                         es = "\\n"
-                        n[
-                            "label"
-                        ] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
+                        n["label"] = (
+                            f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">{v.replace("<", "&lt;").replace(">", "&gt;").replace(nl, "<br/>")}</td></tr></table>>'
+                        )
                     elif isinstance(v, empty):
-                        n[
-                            "label"
-                        ] = f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">---</td></tr></table>>'
+                        n["label"] = (
+                            f'<<table cellborder="0" cellpadding="0"><tr><td><b>{n.get("label")}</b></td></tr><tr><td align="left" balign="left">---</td></tr></table>>'
+                        )
 
             fn = f"{nm}.dot"
             write_dot(fn, G)

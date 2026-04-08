@@ -22,7 +22,6 @@ from math import pi
 from typing import Literal, Optional, Union
 
 import ifcopenshell
-import ifcopenshell.api.unit
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 prefixes = {

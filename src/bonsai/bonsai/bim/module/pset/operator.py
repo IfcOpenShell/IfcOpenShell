@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
-import ifcopenshell.api
-import ifcopenshell.api.pset
-import ifcopenshell.util.element
-import bonsai.bim.schema
-import bonsai.tool as tool
-import bonsai.core.pset as core
-import bonsai.bim.module.pset.data
-from bonsai.bim.ifc import IfcStore
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+import bpy
+import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
+
+import bonsai.bim.module.pset.data
+import bonsai.bim.schema
+import bonsai.core.pset as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import RenamePropertyEntry, AddEditPropertyEntry
+    from bonsai.bim.module.pset.prop import AddEditPropertyEntry
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
@@ -569,7 +571,7 @@ class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         template_file = IfcStore.pset_template_file
         assert template_file
 
-        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+        tool.PsetTemplate.add_pset_as_template(pset.Name, template_file)
 
         template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()

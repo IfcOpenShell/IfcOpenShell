@@ -17,12 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Any
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import bpy
-    import ifcopenshell
-    import bsdd
+
     import bonsai.tool as tool
 
 

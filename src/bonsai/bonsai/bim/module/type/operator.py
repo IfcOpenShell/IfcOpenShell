@@ -16,22 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-import bmesh
-import ifcopenshell.util.element
-import ifcopenshell.util.schema
-import ifcopenshell.util.representation
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
-import ifcopenshell.api
 import ifcopenshell.api.attribute
 import ifcopenshell.api.type
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+
 import bonsai.bim.helper
-import bonsai.tool as tool
 import bonsai.core.geometry
-import bonsai.core.type as core
 import bonsai.core.root
-from typing import TYPE_CHECKING
+import bonsai.core.type as core
+import bonsai.tool as tool
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -72,7 +69,7 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+            core.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
             # Switch to the drawing's target view if available
             if active_target_view and element.Representation:
@@ -239,7 +236,7 @@ class SelectSimilarType(bpy.types.Operator):
         for related_object in objects:
             relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
             if not relating_type:
-                related_object.select_set(False)
+                # Keep objects without a type selected (retain current selection)
                 continue
             relating_types.add(relating_type)
 
@@ -382,7 +379,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             for selected_obj in selected_objects:
                 selected_element = tool.Ifc.get_entity(selected_obj)
                 if selected_element and selected_element.is_a("IfcObject"):
-                    core.assign_type(tool.Ifc, tool.Type, element=selected_element, type=new)
+                    core.assign_type(tool.Ifc, tool.Model, tool.Type, element=selected_element, type=new)
                     if prefs.occurrence_name_style == "TYPE":
                         selected_obj.name = tool.Model.generate_occurrence_name(new, selected_element.is_a())
 

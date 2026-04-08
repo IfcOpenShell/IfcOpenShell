@@ -17,20 +17,22 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Union
+
 import bpy
+from bpy.types import Panel
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bpy.types import Panel
 from bonsai.bim.module.drawing.data import (
-    ProductAssignmentsData,
-    SheetsData,
+    DecoratorData,
     DocumentsData,
     DrawingsData,
     ElementFiltersData,
-    DecoratorData,
-    ElementValuesData,
+    ProductAssignmentsData,
+    SheetsData,
 )
-from typing import TYPE_CHECKING, Union, Optional
 
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import DocProperties, Drawing, Sheet
@@ -86,7 +88,7 @@ class BIM_PT_camera(Panel):
                     for link in links:
                         row = panel.row(align=True)
                         split = row.split(factor=0.9)
-                        split.label(text=link.name, icon="FILE")
+                        split.label(text=link.filepath, icon="FILE")
                         split.prop(link, "include_in_drawings", text="")
                 else:
                     panel.label(text="No IFC projects linked and loaded.")
@@ -476,7 +478,6 @@ class BIM_PT_sheets(Panel):
 
             op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
 
-
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
                 drawingname = drawingnamesvg.split(".svg")[0]
@@ -642,58 +643,56 @@ class BIM_PT_text(Panel):
             row.operator("bim.add_text_literal", icon="ADD", text="Add Literal")
         else:
             row.operator("bim.edit_text", icon="CHECKMARK")
-            row.operator("bim.add_text_literal", icon="ADD", text="")
             row.operator("bim.disable_editing_text", icon="CANCEL", text="")
 
         row = self.layout.row(align=True)
         row.prop(props, "font_size")
-        row.prop(props, "apply_font_size_to_all", text="", icon="COPYDOWN")
+        row.operator("bim.copy_text_to_selection", text="", icon="COPYDOWN").attribute = "FONT_SIZE"
+        row = self.layout.row()
+        row.label(text="Alignment")
+        row.prop(props, "align_horizontal", text="", expand=True)
+        row.prop(props, "align_vertical", text="", expand=True)
+        row.operator("bim.copy_text_to_selection", text="", icon="COPYDOWN").attribute = "ALIGNMENT"
 
         row = self.layout.row(align=True)
         row.prop(props, "newline_at")
-        row = self.layout.row(align=True)
-        row.prop(props, "reverse_list")
-        row = self.layout.row(align=True)
-        row.prop(props, "list_separator")
+        row.operator("bim.copy_text_to_selection", text="", icon="COPYDOWN").attribute = "WRAP_LENGTH"
 
         row = self.layout.row(align=True)
         row.prop(props, "symbol")
         if props.symbol == "CUSTOM SYMBOL":
             row = self.layout.row(align=True)
             row.prop(props, "custom_symbol", text="")
-            row.prop(props, "apply_newline_to_all", text="", icon="COPYDOWN")
             select_op = row.operator("bim.select_similar_text_literal_value", text="", icon="RESTRICT_SELECT_OFF")
             select_op.literal_value = str(props.newline_at)
             select_op.attribute_type = "newline"
+        row.operator("bim.copy_text_to_selection", text="", icon="COPYDOWN").attribute = "SYMBOL"
+
+        row = self.layout.row(align=True)
+        row.label(text="Literals:")
+        row.operator("bim.copy_text_to_selection", text="", icon="COPYDOWN").attribute = "LITERALS"
+        row.operator("bim.add_text_literal", icon="ADD", text="")
 
         for i, literal_props in enumerate(props.literals):
             box = self.layout.box()
-
-            row = box.row(align=True)
-            row.label(text=f"Literal[{i}]:")
-            if i > 0:
-                row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
-            if i < len(props.literals) - 1:
-                row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
-            row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
-
-            if len(literal_props.attributes) > 0 and i < len(props.literal_apply_settings):
+            if len(literal_props.attributes):
                 row = box.row(align=True)
-                row.prop(literal_props.attributes[0], "string_value", text="Literal")
-                
+                bonsai.bim.helper.draw_attribute(literal_props.attributes[0], row, enable_search=True)
+                if i > 0:
+                    row.operator("bim.order_text_literal_up", icon="TRIA_UP", text="").literal_prop_id = i
+                if i < len(props.literals) - 1:
+                    row.operator("bim.order_text_literal_down", icon="TRIA_DOWN", text="").literal_prop_id = i
+                row.operator("bim.remove_text_literal", icon="X", text="").literal_prop_id = i
+
                 expand_icon = "DOWNARROW_HLT" if getattr(literal_props, "show_element_values", False) else "RIGHTARROW"
                 op = row.operator("bim.toggle_element_values_panel", icon=expand_icon, text="")
                 op.literal_prop_id = i
-                
-                row.prop(props.literal_apply_settings[i], "apply_text_to_all", text="", icon="COPYDOWN")
-                
+
                 element = tool.Ifc.get_entity(obj)
                 assigned_element = tool.Drawing.get_assigned_product(element) or element
                 resolved_value = tool.Drawing.replace_text_literal_variables(
                     literal_props.attributes[0].string_value,
                     assigned_element,
-                    props.reverse_list,
-                    props.list_separator,
                 )
                 row = box.row(align=True)
                 row.label(text="CurrentValue:")
@@ -711,8 +710,10 @@ class BIM_PT_text(Panel):
                 element_values_row.prop(literal_props, "product_used", text="", icon="EYEDROPPER")
 
                 current_product = get_current_product_for_element_values(obj, literal_props)
-                
-                product_name = current_product.name if (current_product and hasattr(current_product, "name")) else "Unknown"
+
+                product_name = (
+                    current_product.name if (current_product and hasattr(current_product, "name")) else "Unknown"
+                )
                 source_row = values_box.row()
                 source_row.label(text=f"Source: {product_name}", icon="OBJECT_DATA")
 
@@ -720,29 +721,29 @@ class BIM_PT_text(Panel):
                 if element:
                     add_row = values_box.row(align=True)
                     add_row.prop(literal_props, "category_for_adding", text="")
-                    
+
                     op = add_row.operator("bim.add_element_value_row", text="Add Element", icon="ADD")
                     op.literal_prop_id = i
 
                     if len(literal_props.element_value_rows) > 0:
                         for row_idx, value_row in enumerate(literal_props.element_value_rows):
                             row = values_box.row(align=True)
-                            
+
                             is_custom_string = value_row.category == "Custom String"
-                            
+
                             if is_custom_string:
                                 category_icon = get_category_icon(value_row.category)
                                 row.prop(value_row, "element_key", text="", icon=category_icon)
                             else:
                                 split = row.split(factor=0.25, align=True)
-                                
+
                                 sep_col = split.row(align=True)
                                 sep_col.prop(value_row, "separator", text="")
-                                
+
                                 key_col = split.row(align=True)
                                 category_icon = get_category_icon(value_row.category)
                                 key_col.prop(value_row, "element_key", text="", icon=category_icon)
-                                
+
                                 op = row.operator("bim.element_value_suggestions_popup", text="", icon="VIEWZOOM")
                                 op.literal_prop_id = i
                                 op.row_index = row_idx
@@ -758,7 +759,9 @@ class BIM_PT_text(Panel):
 
                         apply_row = values_box.row()
                         apply_row.scale_y = 1.2
-                        op = apply_row.operator("bim.apply_element_value_rows_to_literal", text="Apply to Literal", icon="CHECKMARK")
+                        op = apply_row.operator(
+                            "bim.apply_element_value_rows_to_literal", text="Apply to Literal", icon="CHECKMARK"
+                        )
                         op.literal_prop_id = i
                 else:
                     error_row = values_box.row()
@@ -773,44 +776,15 @@ class BIM_PT_text(Panel):
                 else:
                     row.prop(attr, "string_value", text="Path")
                     select_value = attr.string_value
-                if i < len(props.literal_apply_settings):
-                    row.prop(props.literal_apply_settings[i], "apply_path_to_all", text="", icon="COPYDOWN")
 
             other_attributes = [a for a in literal_props.attributes[2:] if a.name != "BoxAlignment"]
             if other_attributes:
                 bonsai.bim.helper.draw_attributes(other_attributes, box)
 
-            row = box.row(align=True)
-            cols = [row.column(align=True) for j in range(3)]
-            for j in range(9):
-                cols[j % 3].prop(
-                    literal_props,
-                    "box_alignment",
-                    text="",
-                    index=j,
-                    icon="RADIOBUT_ON" if literal_props.box_alignment[j] else "RADIOBUT_OFF",
-                )
-
-            col = row.column(align=True)
-            alignment_label_row = col.row(align=True)
-            alignment_label_row.label(text="    Text box alignment:")
-            if i < len(props.literal_apply_settings):
-                alignment_label_row.prop(
-                    props.literal_apply_settings[i], "apply_box_alignment_to_all", text="", icon="COPYDOWN"
-                )
-
-            box_alignment_value = (
-                literal_props.attributes[
-                    next(
-                        (idx for idx, attr in enumerate(literal_props.attributes) if attr.name == "BoxAlignment"),
-                        -1,
-                    )
-                ].string_value
-                if any(attr.name == "BoxAlignment" for attr in literal_props.attributes)
-                else "N/A"
-            )
-
-            col.label(text=f"    {box_alignment_value}")
+            row = box.row()
+            row.label(text="Alignment")
+            row.prop(literal_props, "align_horizontal", text="", expand=True)
+            row.prop(literal_props, "align_vertical", text="", expand=True)
 
     def draw(self, context):
         obj = context.active_object
@@ -818,61 +792,51 @@ class BIM_PT_text(Panel):
         props = tool.Drawing.get_text_props(obj)
 
         if props.is_editing:
-            self.draw_text_editing_ui(context)
-        else:
-            text_data = DecoratorData.get_text_data(obj)
+            return self.draw_text_editing_ui(context)
+        text_data = DecoratorData.get_text_data(obj)
 
-            row = self.layout.row()
-            row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
+        row = self.layout.row()
+        row.operator("bim.enable_editing_text", icon="GREASEPENCIL")
 
-            row = self.layout.row(align=True)
-            row.label(text="FontSize")
-            click_op = row.operator(
-                "bim.select_similar_text_literal_value", text=str(text_data["FontSize"]), emboss=False
-            )
-            click_op.literal_value = str(text_data["FontSize"])
-            click_op.attribute_type = "font_size"
-            click_op.display_text = str(text_data["FontSize"])
+        row = self.layout.row(align=True)
+        row.label(text="FontSize")
+        click_op = row.operator("bim.select_similar_text_literal_value", text=str(text_data["FontSize"]), emboss=False)
+        click_op.literal_value = str(text_data["FontSize"])
+        click_op.attribute_type = "font_size"
+        click_op.display_text = str(text_data["FontSize"])
 
-            row = self.layout.row(align=True)
-            row.label(text="Newline_At")
-            click_op = row.operator(
-                "bim.select_similar_text_literal_value", text=str(text_data["Newline_At"]), emboss=False
-            )
-            click_op.literal_value = str(text_data["Newline_At"])
-            click_op.attribute_type = "newline"
-            click_op.display_text = str(text_data["Newline_At"])
-            row = self.layout.row(align=True)
-            row.label(text="Reverse_List")
-            row.label(text=str(text_data["Reverse_List"]))
-            row = self.layout.row(align=True)
-            row.label(text="List_Separator")
-            row.label(text=str(text_data["List_Separator"]))
+        row = self.layout.row(align=True)
+        row.label(text="Newline_At")
+        click_op = row.operator(
+            "bim.select_similar_text_literal_value", text=str(text_data["Newline_At"]), emboss=False
+        )
+        click_op.literal_value = str(text_data["Newline_At"])
+        click_op.attribute_type = "newline"
+        click_op.display_text = str(text_data["Newline_At"])
 
-            for i, literal_data in enumerate(text_data["Literals"]):
-                box = self.layout.box()
-                box.label(text=f"Literal[{i}]:")
+        for i, literal_data in enumerate(text_data["Literals"]):
+            box = self.layout.box()
 
-                # Combine both approaches: clickable attributes from PR #7292 and display from PR #7106
-                for attribute in literal_data:
-                    row = box.row(align=True)
-                    row.label(text=attribute)
-                    click_op = row.operator(
-                        "bim.select_similar_text_literal_value",
-                        text=str(literal_data[attribute]),
-                        emboss=False,
-                    )
-                    click_op.literal_value = str(literal_data[attribute])
-                    click_op.literal_index = i
-                    if attribute == "Literal":
-                        click_op.attribute_type = "literal"
-                    elif attribute == "Path":
-                        click_op.attribute_type = "path"
-                    elif attribute == "BoxAlignment":
-                        click_op.attribute_type = "box_alignment"
-                    else:
-                        click_op.attribute_type = "text"
-                    click_op.display_text = str(literal_data[attribute])
+            # Combine both approaches: clickable attributes from PR #7292 and display from PR #7106
+            for attribute in literal_data:
+                row = box.row(align=True)
+                row.label(text=attribute)
+                click_op = row.operator(
+                    "bim.select_similar_text_literal_value",
+                    text=str(literal_data[attribute]),
+                    emboss=False,
+                )
+                click_op.literal_value = str(literal_data[attribute])
+                click_op.literal_index = i
+                if attribute == "Literal":
+                    click_op.attribute_type = "literal"
+                elif attribute == "Path":
+                    click_op.attribute_type = "path"
+                elif attribute == "BoxAlignment":
+                    click_op.attribute_type = "box_alignment"
+                else:
+                    click_op.attribute_type = "text"
+                click_op.display_text = str(literal_data[attribute])
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):

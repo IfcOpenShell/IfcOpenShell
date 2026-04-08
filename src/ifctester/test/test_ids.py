@@ -20,7 +20,6 @@ import os
 from typing import Optional
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.material
 import pytest
 import xmlschema

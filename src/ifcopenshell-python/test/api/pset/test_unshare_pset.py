@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.pset
-import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import test.bootstrap

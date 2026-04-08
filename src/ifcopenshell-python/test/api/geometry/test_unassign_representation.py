@@ -17,7 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.geometry
-import ifcopenshell.util.placement
 import test.bootstrap
 
 

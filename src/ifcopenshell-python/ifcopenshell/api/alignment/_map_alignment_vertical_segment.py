@@ -20,7 +20,7 @@ import math
 from collections.abc import Sequence
 
 import ifcopenshell
-from ifcopenshell import entity_instance, ifcopenshell_wrapper
+from ifcopenshell import entity_instance
 
 
 def _polynomial_length(A: float, B: float, C: float, L: float) -> float:

@@ -20,7 +20,6 @@
 # pylint: skip-file
 
 import bpy
-import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -30,6 +29,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.unit
+
 import bonsai.tool as tool
 
 

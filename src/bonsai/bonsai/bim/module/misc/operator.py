@@ -16,18 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, assert_never, get_args
+
 import bpy
-import numpy as np
-import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.misc as core
+import numpy as np
+from mathutils import Matrix
+
 import bonsai.core.geometry as core_geometry
+import bonsai.core.misc as core
 import bonsai.core.root
-from mathutils import Vector, Matrix, Euler
-from typing import TYPE_CHECKING, Literal, get_args, assert_never
+import bonsai.tool as tool
+
+if TYPE_CHECKING:
+    from bpy.stub_internal import rna_enums
 
 
 class SetOverrideColour(bpy.types.Operator):
@@ -40,10 +44,11 @@ class SetOverrideColour(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
+        props = tool.Misc.get_misc_props()
         for obj in context.selected_objects:
-            obj.color = context.scene.BIMMiscProperties.override_colour
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+            obj.color = props.override_colour
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
         return {"FINISHED"}
 
 
@@ -348,3 +353,169 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
                 )
             )
         return matrix
+
+
+class ConfirmQuickFavoriteOperator(bpy.types.Operator):
+    bl_idname = "bim.confirm_quick_favorite_operator"
+    bl_label = "Confirm Operator"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        fav = props.quick_favorites[self.index]
+        rna = fav.get_searched_operator()
+
+        if rna is None:
+            self.report({"INFO"}, "No operator entered for search.")
+            return {"CANCELLED"}
+
+        fav.operator_id = tool.Blender.operator_idname_to_py(rna.identifier)
+        fav.label = rna.name
+        fav.properties.clear()
+        has_skipped = False
+        for p in rna.properties:
+            # skip silently, e.g. `rna_type` is a PointerProperty
+            if isinstance(p, bpy.types.PointerProperty):
+                continue
+            if isinstance(p, (bpy.types.FloatProperty, bpy.types.BoolProperty, bpy.types.IntProperty)) and p.is_array:
+                print(f"Array property '{p.identifier}' is not supported, skipping.")
+                has_skipped = True
+                continue
+            item = fav.properties.add()
+            item.name = p.identifier
+            item.display_name = p.name
+            if isinstance(p, bpy.types.FloatProperty):
+                item.value_prop = "float_value"
+                item.float_value = p.default
+            elif isinstance(p, bpy.types.BoolProperty):
+                item.value_prop = "bool_value"
+                item.bool_value = p.default
+            elif isinstance(p, bpy.types.IntProperty):
+                item.value_prop = "int_value"
+                item.int_value = p.default
+            elif isinstance(p, bpy.types.EnumProperty):
+                item.value_prop = "enum_value"
+                item.set_enum_items([(e.identifier, e.name, e.description) for e in p.enum_items])
+                item.enum_value = p.default
+            elif isinstance(p, bpy.types.StringProperty):
+                item.value_prop = "string_value"
+                item.string_value = p.default
+            else:
+                print(f"Unhandled property type {type(p).__name__} for '{p.identifier}', skipping.")
+                has_skipped = True
+        if has_skipped:
+            self.report({"WARNING"}, "Some properties were skipped, see the system console for details.")
+        return {"FINISHED"}
+
+
+class ImportQuickFavorites(bpy.types.Operator):
+    bl_idname = "bim.import_quick_favorites"
+    bl_label = "Import Quick Favorites"
+    bl_description = "Import operators from Blender's Quick Favorites menu, including their configured properties"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        props.quick_favorites.clear()
+
+        has_missing_props = False
+        for i, qf in enumerate(tool.Misc.QuickFavorites.get_quick_favorites()):
+            fav = props.quick_favorites.add()
+            fav.label = qf.ui_name
+            fav.search = qf.op_idname_py
+            bpy.ops.bim.confirm_quick_favorite_operator(index=i)
+            fav.label = qf.ui_name or fav.label
+
+            for prop in fav.properties:
+                prop.is_active = prop.name in qf.props
+
+            for key, value in qf.props.items():
+                if key not in fav.properties:
+                    print(f"Property '{key}' not found in operator '{qf.op_idname_py}'.")
+                    has_missing_props = True
+                    continue
+                item = fav.properties[key]
+                item.set_value(value)
+
+        if has_missing_props:
+            self.report(
+                {"WARNING"}, "Some properties were not found during import, see the system console for details."
+            )
+        return {"FINISHED"}
+
+
+class MoveQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.move_quick_favorites_item"
+    bl_label = "Move Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    direction: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        items=[("UP", "Up", ""), ("DOWN", "Down", "")]
+    )
+
+    if TYPE_CHECKING:
+        index: int
+        direction: Literal["UP", "DOWN"]
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        total = len(props.quick_favorites)
+        new_index = self.index - 1 if self.direction == "UP" else self.index + 1
+        if 0 <= new_index < total:
+            props.quick_favorites.move(self.index, new_index)
+        return {"FINISHED"}
+
+
+class RemoveQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.remove_quick_favorites_item"
+    bl_label = "Remove Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+
+    if TYPE_CHECKING:
+        index: int
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        props.quick_favorites.remove(self.index)
+        return {"FINISHED"}
+
+
+class AddQuickFavoritesItem(bpy.types.Operator):
+    bl_idname = "bim.add_quick_favorites_item"
+    bl_label = "Add Quick Favorites Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        props = tool.Misc.get_misc_props()
+        fav = props.quick_favorites.add()
+        fav.search = "bim.select_query_elements"
+        index = len(props.quick_favorites) - 1
+        bpy.ops.bim.confirm_quick_favorite_operator(index=index)
+        fav.properties["query"].string_value = "IfcWall"
+        return {"FINISHED"}
+
+
+class IfcSverchokUseBonsaiFile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.ifcsverchok_use_bonsai_file"
+    bl_label = "Use Bonsai IFC File"
+    bl_description = "Apply current IfcSverchok tree to the active Bonsai file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        import sverchok.node_tree
+
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"ERROR"}, "No active IFC file.")
+            return {"CANCELLED"}
+
+        space_data = context.space_data
+        assert isinstance(space_data, bpy.types.SpaceNodeEditor)
+        node_tree = space_data.node_tree
+        assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
+        tool.Model.run_ifcsverchok_graph_on_bonsai_file(node_tree)

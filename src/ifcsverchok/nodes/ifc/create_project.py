@@ -18,7 +18,6 @@
 
 import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
