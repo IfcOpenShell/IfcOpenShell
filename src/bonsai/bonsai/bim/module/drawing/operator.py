@@ -424,47 +424,43 @@ class CreateDrawing(bpy.types.Operator):
     def combine_svgs(
         self, context: bpy.types.Context, underlay: Optional[str], linework: Optional[str], annotation: Optional[str]
     ) -> str:
-        # Hacky :)
         svg_path = self.get_svg_path()
-        with open(svg_path, "w") as outfile:
-            self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
-            boilerplate = self.svg_writer.svg.tostring()
-            outfile.write(boilerplate.replace("</svg>", ""))
-            if underlay:
-                with open(underlay) as infile:
-                    for i, line in enumerate(infile):
-                        if i < 2:
+        self.svg_writer.create_blank_svg(svg_path).define_boilerplate()
+        root = self.svg_writer.svg.get_xml()
+
+        ns = {"svg": "http://www.w3.org/2000/svg"}
+        parser = etree.XMLParser(remove_blank_text=True)
+
+        if underlay:
+            underlay_tree = etree.parse(underlay, parser)
+            for child in list(underlay_tree.getroot()):
+                if child.tag == "{http://www.w3.org/2000/svg}defs":
+                    continue
+                root.append(child)
+            shutil.copyfile(os.path.splitext(underlay)[0] + ".png", os.path.splitext(svg_path)[0] + "-underlay.png")
+
+        if linework:
+            linework_tree = etree.parse(linework, parser)
+            linework_root = linework_tree.getroot()
+            drawing_group = linework_root.find("svg:g", namespaces=ns)
+
+            if drawing_group is not None:
+                if annotation:
+                    annotation_tree = etree.parse(annotation, parser)
+                    for child in list(annotation_tree.getroot()):
+                        if child.tag == "{http://www.w3.org/2000/svg}defs":
                             continue
-                        elif "</svg>" in line:
-                            continue
-                        outfile.write(line)
-                shutil.copyfile(os.path.splitext(underlay)[0] + ".png", os.path.splitext(svg_path)[0] + "-underlay.png")
-            if linework:
-                with open(linework) as infile:
-                    should_skip = False
-                    for i, line in enumerate(infile):
-                        if i == 0:
-                            continue
-                        if "</svg>" in line:
-                            continue
-                        elif "<defs>" in line:
-                            should_skip = True
-                            continue
-                        elif "</defs>" in line:
-                            should_skip = False
-                            continue
-                        elif should_skip:
-                            continue
-                        outfile.write(line)
-            if annotation:
-                with open(annotation) as infile:
-                    for i, line in enumerate(infile):
-                        if i < 2:
-                            continue
-                        if "</svg>" in line:
-                            continue
-                        outfile.write(line)
-            outfile.write("</svg>")
+                        drawing_group.append(child)
+                root.append(drawing_group)
+            else:
+                for child in list(linework_root):
+                    if child.tag == "{http://www.w3.org/2000/svg}defs":
+                        continue
+                    root.append(child)
+
+        with open(svg_path, "wb") as f:
+            f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="utf-8"))
+
         return svg_path
 
     def generate_underlay(self, context: bpy.types.Context) -> Union[str, None]:
