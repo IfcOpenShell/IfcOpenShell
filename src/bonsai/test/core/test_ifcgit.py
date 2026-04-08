@@ -20,7 +20,7 @@
 import pytest
 
 import bonsai.core.ifcgit as subject
-from test.core.bootstrap import ifcgit, ifc
+from test.core.bootstrap import ifc, ifcgit
 
 
 class MockOperator:

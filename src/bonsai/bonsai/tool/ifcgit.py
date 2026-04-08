@@ -288,9 +288,9 @@ class IfcGit:
 
         bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
 
-        from bonsai.bim.module.root.data import IfcClassData
-        from bonsai.bim.module.model.data import AuthoringData
         import bonsai.bim.handler
+        from bonsai.bim.module.model.data import AuthoringData
+        from bonsai.bim.module.root.data import IfcClassData
 
         AuthoringData.type_thumbnails = {}
 

@@ -25,13 +25,12 @@ import bmesh
 import bpy
 import mathutils
 import numpy as np
-from mathutils import Vector
-
 from bpy_extras import view3d_utils
+from mathutils import Vector
 
 import bonsai.core.tool
 import bonsai.tool as tool
-from bpy_extras import view3d_utils
+
 
 class Raycast(bonsai.core.tool.Raycast):
     offset = 10
