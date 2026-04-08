@@ -2022,6 +2022,49 @@ class Drawing(bonsai.core.tool.Drawing):
         ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsManualDrawingReference": True})
 
     @classmethod
+    def is_document_reference(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if this annotation links to an external document (not a Bonsai drawing camera)."""
+        return bool(ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsDocumentReference"))
+
+    @classmethod
+    def set_document_reference_flag(cls, element: ifcopenshell.entity_instance) -> None:
+        """Mark this annotation as pointing to an external document reference."""
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"IsDocumentReference": True})
+
+    @classmethod
+    def get_annotation_reference_doc(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the IfcDocumentInformation linked to a document-reference annotation."""
+        for rel in element.HasAssociations:
+            if rel.is_a("IfcRelAssociatesDocument"):
+                doc = rel.RelatingDocument
+                if doc.is_a("IfcDocumentInformation"):
+                    return doc
+        return None
+
+    @classmethod
+    def set_annotation_reference_doc(
+        cls,
+        element: ifcopenshell.entity_instance,
+        document: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
+        """Associate (or clear) an IfcDocumentInformation on a document-reference annotation."""
+        ifc_file = tool.Ifc.get()
+        # Remove existing document associations on this annotation.
+        for rel in list(element.HasAssociations):
+            if rel.is_a("IfcRelAssociatesDocument"):
+                ifcopenshell.api.document.unassign_document(
+                    ifc_file, products=[element], document=rel.RelatingDocument
+                )
+        if document:
+            ifcopenshell.api.document.assign_document(ifc_file, products=[element], document=document)
+
+    @classmethod
     def regenerate_elevation_reference_annotation(
         cls,
         drawing: ifcopenshell.entity_instance,
