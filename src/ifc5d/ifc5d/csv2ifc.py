@@ -65,6 +65,8 @@ MAIN_CSV_HEADER_COLUMNS.extend(
         # Not sure what this for but it's present in sample .csv.
         "Subtotal",
         # Columns from exporter.
+        "ItemIsASum",
+        "Quantities",
         "RateSubtotal",
         "TotalPrice",
         # Deprecated columns from exporter, shouldn't be exported any longer.
@@ -320,6 +322,7 @@ class Csv2Ifc:
 
             if cost_rate.get("Schedule") and cost_rate.get("RateID"):
                 # if cost_rate["Schedule"] is not "":
+                rate_cost_schedule = None
                 schedules = self.file.by_type("IfcCostSchedule")
                 for schedule in schedules:
                     if schedule.Name == cost_rate["Schedule"]:
