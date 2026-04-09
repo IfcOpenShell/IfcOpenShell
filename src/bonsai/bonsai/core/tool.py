@@ -863,6 +863,7 @@ class Root:
     def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
+    def has_material_styles(cls, element): pass
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass

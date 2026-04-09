@@ -40,8 +40,7 @@ class TestCopyClass:
         collector.assign("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
-    # def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
-    def test_AAAAAAAAAAAA(self, ifc, collector, geometry, root):
+    def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
         root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return("representation")
@@ -56,6 +55,7 @@ class TestCopyClass:
         ifc.get_entity("data").should_be_called().will_return("new_representation")
         geometry.get_representation_name("new_representation").should_be_called().will_return("name")
         geometry.rename_object("data", "name").should_be_called()
+        root.has_material_styles("element").should_be_called().will_return(False)
         root.assign_body_styles("element", "obj").should_be_called()
         collector.assign("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
