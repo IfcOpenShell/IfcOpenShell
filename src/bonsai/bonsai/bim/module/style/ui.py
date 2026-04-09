@@ -81,6 +81,11 @@ class BIM_PT_styles(Panel):
             op.style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
+        if active_style and self.props.style_type == "IfcSurfaceStyle":
+            if material := style.blender_material:
+                msprops = tool.Style.get_material_style_props(material)
+                self.draw_style_status_row(material, msprops)
+
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
         # adding a new IfcSurfaceStyle
@@ -102,13 +107,6 @@ class BIM_PT_styles(Panel):
 
         # style ui tools
         if active_style:
-            row = self.layout.row(align=True)
-            if material := style.blender_material:
-                msprops = tool.Style.get_material_style_props(material)
-                row.prop(msprops, "active_style_type", icon="SHADING_RENDERED", text="")
-                op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
-                op.style_id = style.ifc_definition_id
-
             if self.props.style_type == "IfcSurfaceStyle":
                 self.layout.label(text="Surface Style Element:")
                 col = self.layout.column(align=True)
@@ -159,6 +157,74 @@ class BIM_PT_styles(Panel):
                 self.draw_lighting_surface_style()
                 edit_label = "Save Lighting Style"
             self.draw_edit_ui(edit_label)
+
+    def draw_style_status_row(self, material: bpy.types.Material, msprops: "BIMStyleProperties") -> None:
+        space = tool.Blender.get_view3d_space()
+        box = self.layout.box()
+
+        parts = []
+        if space:
+            shading_type = space.shading.type
+            shading_labels = {
+                "SOLID": "Solid",
+                "MATERIAL": "Material Preview",
+                "RENDERED": "Rendered",
+                "WIREFRAME": "Wireframe",
+            }
+            parts.append(f"Viewport: {shading_labels.get(shading_type, shading_type)}")
+            if shading_type == "SOLID":
+                parts.append(f"Color: {space.shading.color_type}")
+        else:
+            parts.append("No 3D viewport")
+
+        style_elements = tool.Style.get_style_elements(material)
+        present = set(style_elements.keys())
+        for ifc_class, short in (
+            ("IfcSurfaceStyleShading", "Shading"),
+            ("IfcSurfaceStyleRendering", "Rendering"),
+            ("IfcSurfaceStyleWithTextures", "Texture"),
+            ("IfcSurfaceStyleLighting", "Lighting"),
+            ("IfcSurfaceStyleRefraction", "Refraction"),
+            ("IfcExternallyDefinedSurfaceStyle", "External"),
+        ):
+            mark = "\u2713" if ifc_class in present else "\u2717"
+            parts.append(f"{short} {mark}")
+
+        obj = bpy.context.active_object
+        has_uv = bool(obj and isinstance(obj.data, bpy.types.Mesh) and obj.data.uv_layers)
+        uv_mark = "\u2713" if has_uv else "\u2717"
+        parts.append(f"UV {uv_mark}")
+
+        parts.append(f"Shader: {self._get_shader_label(material, msprops)}")
+
+        row = box.row(align=True)
+        row.label(text="  |  ".join(parts))
+
+        row2 = box.row(align=True)
+        row2.alignment = "RIGHT"
+        row2.prop(msprops, "prefer_ifc_shading", text="Prefer IFC", toggle=True)
+        style_id = tool.Blender.get_ifc_definition_id(material)
+        if style_id:
+            op = row2.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
+            op.style_id = style_id
+
+    @staticmethod
+    def _get_shader_label(material: bpy.types.Material, msprops: "BIMStyleProperties") -> str:
+        if msprops.active_style_type == "External":
+            return "External (.blend)"
+        if not material.node_tree:
+            return "Flat colour"
+        nodes = material.node_tree.nodes
+        has_mix = any(n.type == "MIX_SHADER" for n in nodes)
+        if has_mix:
+            return "Emission (Flat)"
+        has_principled = any(n.type == "BSDF_PRINCIPLED" for n in nodes)
+        has_teximage = any(n.type == "TEX_IMAGE" and any(o.links for o in n.outputs) for n in nodes)
+        if has_principled and has_teximage:
+            return "BSDF + Textures"
+        if has_principled:
+            return "Principled BSDF"
+        return "Flat colour"
 
     def draw_surface_style_shading(self):
         row = self.layout.row()

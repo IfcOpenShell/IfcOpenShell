@@ -203,6 +203,11 @@ class Style(bonsai.core.tool.Style):
 
         available_props = props.bl_rna.properties.keys()
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
+            null_prop_name = f"is_{prop_blender}_null"
+            if null_prop_name in available_props and getattr(props, null_prop_name):
+                surface_style_data[prop_ifc] = None
+                continue
+
             class_prop_name = f"{prop_blender}_class"
 
             # get detailed color properties if available
@@ -734,3 +739,45 @@ class Style(bonsai.core.tool.Style):
         elements = ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)
+
+    @classmethod
+    def restore_material_style_types(cls, shading_type: str) -> bool:
+        """Set each IFC material's active_style_type to the richest available for the given viewport mode.
+
+        In SOLID mode all materials use "Shading".
+        In MATERIAL_PREVIEW / RENDERED, materials with an external .blend style use "External"
+        unless prefer_ifc_shading is set on that material.
+
+        Returns True if any IFC material has IfcSurfaceStyleWithTextures (used to decide color_type).
+        """
+        has_any_textures = False
+        for material in bpy.data.materials:
+            if not tool.Blender.get_ifc_definition_id(material):
+                continue
+            props = cls.get_material_style_props(material)
+            style_elements = cls.get_style_elements(material)
+            if style_elements.get("IfcSurfaceStyleWithTextures"):
+                has_any_textures = True
+            if shading_type == "SOLID":
+                props.active_style_type = "Shading"
+            else:  # MATERIAL_PREVIEW or RENDERED
+                if cls.has_blender_external_style(style_elements) and not props.prefer_ifc_shading:
+                    props.active_style_type = "External"
+                else:
+                    props.active_style_type = "Shading"
+        return has_any_textures
+
+    @classmethod
+    def ensure_uv_maps_for_textured_objects(cls) -> None:
+        """Generate UV maps for all mesh objects whose IFC material has IfcSurfaceStyleWithTextures."""
+        for obj in bpy.context.scene.objects:
+            if not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            for slot in obj.material_slots:
+                material = slot.material
+                if not material or not tool.Blender.get_ifc_definition_id(material):
+                    continue
+                style_elements = cls.get_style_elements(material)
+                if style_elements.get("IfcSurfaceStyleWithTextures") and not obj.data.uv_layers:
+                    tool.Loader.load_generated_uv_map(obj.data)
+                    break
