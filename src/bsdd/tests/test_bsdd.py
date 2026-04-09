@@ -1,26 +1,19 @@
-import time
-
 from bsdd import Client
 
 client = Client()
 
 # Fetch shared data at module level to avoid repeated API calls during tests.
-# Sleeps are required: the bSDD API rate-limits to roughly one request per second.
+# The Client.get() method handles 429 rate-limit responses with automatic retry.
 _dictionaries = client.get_dictionary()["dictionaries"]
 ifc4x3_uri = next(l["uri"] for l in _dictionaries if "4.3" in l["uri"])
 nbs_uri = next(l["uri"] for l in _dictionaries if "Uniclass 2015" == l["name"])
 
-time.sleep(2)
 _ifc4x3_classes = client.get_classes(ifc4x3_uri, use_nested_classes=False, class_type="Class")
-time.sleep(2)
 _nbs_classes = client.get_classes(nbs_uri, use_nested_classes=False, class_type="Class", offset=0, limit=5)
 _uri_light_fixture = next(l for l in _ifc4x3_classes["classes"] if "IfcLightFixture" == l["code"])["uri"]
 
-time.sleep(2)
 _light_fixture = client.get_class(_uri_light_fixture)
-time.sleep(2)
 _light_fixture_relations = client.get_class_relations(_uri_light_fixture)
-time.sleep(2)
 _light_fixture_properties = client.get_class_properties(_uri_light_fixture)
 
 
