@@ -158,7 +158,8 @@ class Patcher(ifcpatch.BasePatcher):
         return ifcopenshell.util.unit.get_full_unit_name(length_unit)
 
     def reuse_existing_contexts(self) -> None:
-        to_delete = set()
+        contexts_to_delete: set[int] = set()
+        coord_ops_to_delete: set[int] = set()
 
         for added_context in self.added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
@@ -166,15 +167,32 @@ class Patcher(ifcpatch.BasePatcher):
                 for inverse in self.file.get_inverse(added_context):
                     if self.file.schema != "IFC2X3":
                         if inverse.is_a("IfcCoordinateOperation"):
-                            to_delete.add(inverse.id())
+                            coord_ops_to_delete.add(inverse.id())
                             continue
                     ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-                to_delete.add(added_context.id())
+                contexts_to_delete.add(added_context.id())
 
-        for element_id in to_delete:
+        # IfcCoordinateOperation entities (e.g. IfcMapConversion) have 0 real inverses,
+        # so remove_deep2 works and also cleans up owned sub-entities (e.g. IfcProjectedCRS).
+        for element_id in coord_ops_to_delete:
             try:
                 ifcopenshell.util.element.remove_deep2(self.file, self.file.by_id(element_id))
-            except:
+            except Exception:
+                pass
+
+        # Delete parent contexts before subcontexts: file.add() inflates inverse counts,
+        # leaving a phantom subcontext entry in the parent's index. Deleting the subcontext
+        # first turns it into a dangling reference; deleting the parent first is safe.
+        def deletion_priority(element_id: int) -> int:
+            try:
+                return 1 if self.file.by_id(element_id).is_a("IfcGeometricRepresentationSubContext") else 0
+            except Exception:
+                return 2
+
+        for element_id in sorted(contexts_to_delete, key=deletion_priority):
+            try:
+                self.file.remove(self.file.by_id(element_id))
+            except Exception:
                 pass
 
     def get_equivalent_existing_context(
