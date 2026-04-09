@@ -1408,19 +1408,19 @@ void parse_header(
     read_terminal(lexer, HEADER, true);
 
     read_terminal(lexer, Header_section_schema::file_description::Class().name_uc(), false);
-    header.set_file_description(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_description::Class()));
+    header.set_file_description(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_description::Class()));
     if (!lexer.next().is_operator(';')) {
         throw exception("Expected ;");
     }
 
     read_terminal(lexer, Header_section_schema::file_name::Class().name_uc(), false);
-    header.set_file_name(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_name::Class()));
+    header.set_file_name(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_name::Class()));
     if (!lexer.next().is_operator(';')) {
         throw exception("Expected ;");
     }
 
     read_terminal(lexer, Header_section_schema::file_schema::Class().name_uc(), false);
-    header.set_file_schema(read_header_entity(header.file(), storage, lexer, references_to_resolve, Header_section_schema::file_schema::Class()));
+    header.set_file_schema(read_header_entity(header.owner_file(), storage, lexer, references_to_resolve, Header_section_schema::file_schema::Class()));
     if (!lexer.next().is_operator(';')) {
         throw exception("Expected ;");
     }
@@ -1452,7 +1452,7 @@ spf_header& ifcopenshell::instance_streamer<Reader>::ensure_header() {
 
     if (owner_ != nullptr) {
         header_ = &owner_->header();
-        header_->file(owner_);
+        header_->owner_file(owner_);
     } else {
         owned_header_ = std::make_unique<spf_header>(owner_);
         header_ = owned_header_.get();
@@ -1859,7 +1859,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                     auto& storage = byid_[p.first.name_];
                     auto attr_index = p.first.index_;
                     
-                    if (storage->has_attribute_value<express::Base>(attr_index)) {
+                    if (storage->template has_attribute_value<express::Base>(attr_index)) {
                         express::Base inst = storage->get_attribute_value(attr_index);
                         if (!inst.declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
@@ -1868,7 +1868,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                         }
                     }
 
-                    if (storage->has_attribute_value<blank>(attr_index)) {
+                    if (storage->template has_attribute_value<blank>(attr_index)) {
                         storage->set_attribute_value(attr_index, express::Base(it->second));
                     } else {
                         logger::error("Duplicate definition for instance reference");
@@ -1899,7 +1899,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             auto& storage = byid_[p.first.name_];
             auto attr_index = p.first.index_;
             
-            if (storage->has_attribute_value<express::Base>(attr_index)) {
+            if (storage->template has_attribute_value<express::Base>(attr_index)) {
                 express::Base inst = storage->get_attribute_value(attr_index);
                 if (!inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
@@ -1908,7 +1908,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            if (storage->has_attribute_value<blank>(attr_index)) {
+            if (storage->template has_attribute_value<blank>(attr_index)) {
                 storage->set_attribute_value(attr_index, instances);
             } else {
                 logger::error("Duplicate definition for instance reference");
@@ -1937,7 +1937,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
             auto& storage = byid_[p.first.name_];
             auto attr_index = p.first.index_;
             
-            if (storage->has_attribute_value<express::Base>(attr_index)) {
+            if (storage->template has_attribute_value<express::Base>(attr_index)) {
                 express::Base inst = storage->get_attribute_value(attr_index);
                 if (!inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
@@ -1946,7 +1946,7 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 }
             }
 
-            if (storage->has_attribute_value<blank>(attr_index)) {
+            if (storage->template has_attribute_value<blank>(attr_index)) {
                 storage->set_attribute_value(attr_index, instances);
             } else {
                 logger::error("Duplicate definition for instance reference");

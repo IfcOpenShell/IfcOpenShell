@@ -40,8 +40,8 @@ class IFC_PARSE_API spf_header {
 
     void write(std::ostream& stream) const;
 
-    ifcopenshell::file* file() { return file_; }
-    void file(ifcopenshell::file* owner_file);
+    ifcopenshell::file* owner_file() { return file_; }
+    void owner_file(ifcopenshell::file* file);
 
     void set_file_description(const std::shared_ptr<instance_data>& description_data);
     void set_file_name(const std::shared_ptr<instance_data>& name_data);

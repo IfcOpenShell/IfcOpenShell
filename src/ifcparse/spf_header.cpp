@@ -56,7 +56,7 @@ void spf_header::write(std::ostream& out) const {
         << "\n";
 }
 
-void ifcopenshell::spf_header::file(ifcopenshell::file* file) {
+void ifcopenshell::spf_header::owner_file(ifcopenshell::file* file) {
     file_ = file;
 }
 

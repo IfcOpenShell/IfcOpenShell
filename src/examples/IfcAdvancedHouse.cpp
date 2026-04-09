@@ -40,7 +40,7 @@
 
 #define IfcSchema Ifc2x3
 #include "../ifcparse/macros.h"
-#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
 #include "../ifcparse/hierarchy_helper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"

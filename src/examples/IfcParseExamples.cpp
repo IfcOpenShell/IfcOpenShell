@@ -22,7 +22,7 @@
 
 #include "../ifcparse/file.h"
 #include "../ifcparse/logger.h"
-#include "../ifcparse/Ifc2x3.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -47,7 +47,7 @@ static_assert(false, "A boost preprocessor sequence of schema identifiers is nee
 // for and then overflow into an existing empty include file.
 
 #define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/schemas/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
 
 #include INCLUDE_SCHEMA(0)
 #include INCLUDE_SCHEMA(1)
