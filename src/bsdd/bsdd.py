@@ -521,7 +521,13 @@ class Client:
         headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         if is_auth_required:
             headers["Authorization"] = "Bearer " + self.get_access_token()
-        return requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
+        for _ in range(5):
+            response = requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None)
+            if response.status_code != 429:
+                return response.json()
+            retry_after = int(response.headers.get("Retry-After", 5))
+            time.sleep(retry_after)
+        return response.json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
         headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
