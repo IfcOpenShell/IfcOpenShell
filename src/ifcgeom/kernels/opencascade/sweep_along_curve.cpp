@@ -300,7 +300,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 	if (applied_temporary_offset) {
         gp_Trsf trsf;
-        trsf.SetTranslation(gp_Vec(-mean.x(), -mean.y(), -mean.z()));
+        trsf.SetTranslation(gp_Vec(mean.x(), mean.y(), mean.z()));
         result.Move(trsf);
     }
 
