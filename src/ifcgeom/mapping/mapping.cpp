@@ -132,7 +132,7 @@ bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
         return true;
     }
 
-    std::set<express::Base> associated_single_materials;
+    std::set<std::optional<express::Base>> associated_single_materials;
 
     for (auto& product : products) {
         if (!settings_.get<settings::DisableOpeningSubtractions>().get() && !find_openings(product).empty()) {
@@ -151,8 +151,8 @@ bool mapping::reuse_ok_(const std::vector<IfcSchema::IfcProduct>& products) {
             }
         }
 
-        // Note that this can be a nullptr (!), but the fact that set size should be one still holds
-        associated_single_materials.insert(get_single_material_association(product));
+        auto mat = get_single_material_association(product);
+        associated_single_materials.insert(mat ? std::optional<express::Base>{mat} : std::nullopt);
         if (associated_single_materials.size() > 1) return false;
     }
 
