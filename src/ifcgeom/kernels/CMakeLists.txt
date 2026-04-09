@@ -1,5 +1,7 @@
 find_package(Eigen3 REQUIRED)
 
+message(STATUS "GEOMETRY_KERNELS ${GEOMETRY_KERNELS}")
+
 foreach(kernel ${GEOMETRY_KERNELS})
     string(TOUPPER ${kernel} KERNEL_UPPER)
     file(GLOB IFCGEOM_H_FILES ${kernel}/*.h)

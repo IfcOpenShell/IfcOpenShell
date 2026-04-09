@@ -39,6 +39,7 @@
 #ifdef IFOPSH_WITH_MANIFOLD
 #include "../ifcgeom/kernels/manifold/ManifoldKernel.h"
 #endif
+#include "../ifcgeom/kernels/passthrough/PassthroughKernel.h"
 
 namespace {
 	inline bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* k, const IfcGeom::ConversionResult& shp) {
@@ -60,6 +61,9 @@ namespace {
 			return dynamic_cast<ifcopenshell::geometry::ManifoldShape*>(shp.Shape().get()) != nullptr;
 		}
 #endif
+		if (k->geometry_library() == "passthrough") {
+			return dynamic_cast<ifcopenshell::geometry::PassthroughShape*>(shp.Shape().get()) != nullptr;
+		}
 		return false;
 	}
 }
@@ -105,6 +109,9 @@ namespace ifcopenshell {
 							continue;
 						}
 #endif
+						if (has_openings && k->geometry_library() == "passthrough") {
+							continue;
+						}
 						bool success = false;
 						try {
 							success = k->convert(item, rs);
@@ -200,6 +207,9 @@ namespace ifcopenshell {
 					return std::make_unique<ManifoldKernel>(conv_settings);
 				}
 #endif
+				if (geometry_library_lower == "passthrough") {
+					return std::make_unique<PassthroughKernel>(conv_settings);
+				}
 
 				if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
 					geometry_library_lower = geometry_library_lower.substr(strlen("hybrid"));
@@ -235,6 +245,10 @@ namespace ifcopenshell {
 							geometry_library_lower = geometry_library_lower.substr(strlen("manifold"));
 						}
 #endif
+						if (geometry_library_lower.find("passthrough", 0) == 0) {
+							kernels.emplace_back(new PassthroughKernel(conv_settings));
+							geometry_library_lower = geometry_library_lower.substr(strlen("passthrough"));
+						}
 						if (kernels.size() != n + 1) {
 							throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
 						}
