@@ -55,6 +55,12 @@ class Root(bonsai.core.tool.Root):
         new.name = opening_type
 
     @classmethod
+    def has_material_styles(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if any constituent material of element has a style representation."""
+        materials = ifcopenshell.util.element.get_materials(element)
+        return any(getattr(m, "HasRepresentation", None) for m in materials)
+
+    @classmethod
     def assign_body_styles(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
         # Should this even be here? Should it be in the geometry tool?
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")

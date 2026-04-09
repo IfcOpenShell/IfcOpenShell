@@ -40,8 +40,7 @@ class TestCopyClass:
         collector.assign("obj").should_be_called()
         subject.copy_class(ifc, collector, geometry, root, obj="obj")
 
-    # def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
-    def test_AAAAAAAAAAAA(self, ifc, collector, geometry, root):
+    def test_copy_with_new_geometry_copied_from_the_old(self, ifc, collector, geometry, root):
         ifc.get_entity("obj").should_be_called().will_return("original_element")
         root.is_element_a("original_element", "IfcRelSpaceBoundary").should_be_called().will_return(False)
         root.get_object_representation("obj").should_be_called().will_return("representation")
