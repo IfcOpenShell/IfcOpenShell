@@ -554,6 +554,11 @@ IfcSchema::IfcStyledItem mapping::find_style(const IfcSchema::IfcRepresentationI
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
     std::vector<IfcSchema::IfcMaterialDefinitionRepresentation> defs = material.HasRepresentation();
+
+    if (defs.size() == 0) {
+        failed_on_purpose_.insert(material);
+    }
+
     for (auto jt = defs.begin(); jt != defs.end(); ++jt) {
         std::vector<IfcSchema::IfcRepresentation> reps = (*jt).Representations();
         std::vector<IfcSchema::IfcStyledItem> styles;

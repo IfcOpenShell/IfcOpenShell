@@ -149,8 +149,10 @@ namespace {
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			logger::error("No conversion for " + std::to_string(item->kind()));
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* k, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            if (k->partial_success_is_success) {
+                logger::error("No conversion for " + std::to_string(item->kind()));
+            }
 			return false;
 		}
 	};
@@ -169,8 +171,10 @@ namespace {
 
 	template <>
 	struct dispatch_with_upgrade<ifcopenshell::geometry::taxonomy::upgrades::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			logger::error("No conversion with upgrade for " + std::to_string(item->kind()));
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* k, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            if (k->partial_success_is_success) {
+                logger::error("No conversion with upgrade for " + std::to_string(item->kind()));
+            }
 			return false;
 		}
 	};
