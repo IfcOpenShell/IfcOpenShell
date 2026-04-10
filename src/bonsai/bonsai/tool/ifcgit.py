@@ -286,7 +286,7 @@ class IfcGit:
             if re.match("^Ifc", obj.name):
                 bpy.data.objects.remove(obj, do_unlink=True)
 
-        bpy.data.orphans_purge(do_recursive=True)  # ty:ignore[unknown-argument]
+        bpy.data.orphans_purge(do_recursive=True)
 
         import bonsai.bim.handler
         from bonsai.bim.module.model.data import AuthoringData
