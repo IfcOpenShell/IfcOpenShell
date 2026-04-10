@@ -469,7 +469,7 @@ def get_properties(
             del data["HasProperties"]
             results[prop_name] = data
             if verbose:
-                results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
+                results[prop_name] = {"id": data["id"], "class": data["type"], "value": results[prop_name]}
     return results
 
 
