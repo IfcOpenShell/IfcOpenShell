@@ -30,6 +30,7 @@ jobs:
           uv tool install ruff
           uv tool install black
           uv tool install poethepoet
+          uv tool install ty
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -55,6 +56,13 @@ jobs:
           uv tool install black-codeclimate
           pip install github_action_utils
           black --diff --check . | black-codeclimate | python .github/workflows/black_to_github_annotations.py
+        continue-on-error: true
+
+      - name: ty check
+        id: ty
+        run: |
+          poe ty-venv
+          poe ty
         continue-on-error: true
 
       - name: Ruff check
@@ -104,5 +112,8 @@ jobs:
           fi
           if [ "${{ steps.ruff.outcome }}" != "success" ]; then
             echo "::error::Ruff check failed, see Summary or 'ruff' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.ty.outcome }}" != "success" ]; then
+            echo "::error::ty check failed, see 'ty check' step for the details." && ERROR=1
           fi
           exit $ERROR
