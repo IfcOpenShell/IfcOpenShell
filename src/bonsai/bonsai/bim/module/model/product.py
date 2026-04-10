@@ -545,7 +545,7 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    page: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    page: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         page: int

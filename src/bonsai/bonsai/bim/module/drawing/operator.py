@@ -246,17 +246,17 @@ class CreateDrawing(bpy.types.Operator):
         + "Add the CTRL modifier to optionally open drawings to view them as\n"
         + "they are created"
     )
-    print_all: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    print_all: bpy.props.BoolProperty(
         name="Print All",
         default=False,
         options={"SKIP_SAVE"},
     )
-    open_viewer: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    open_viewer: bpy.props.BoolProperty(
         name="Open in Viewer",
         default=False,
         options={"SKIP_SAVE"},
     )
-    sync: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    sync: bpy.props.BoolProperty(
         name="Sync Before Creating Drawing",
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
         default=True,
@@ -2322,14 +2322,14 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         + "SHIFT+CLICK to load a quick preview of the drawing view"
     )
 
-    drawing: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    should_view_from_camera: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    drawing: bpy.props.IntProperty()
+    should_view_from_camera: bpy.props.BoolProperty(
         name="Should View From Camera",
         description="Move view to the activated drawing's camera position.",
         default=True,
         options={"SKIP_SAVE"},
     )
-    use_quick_preview: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    use_quick_preview: bpy.props.BoolProperty(
         name="Use Quick Preview",
         description="Just move the camera to the drawing view, without loading anything else.",
         default=False,
@@ -3635,12 +3635,12 @@ class ToggleTargetView(bpy.types.Operator):
     bl_label = "Toggle Target View"
     bl_options = {"REGISTER", "UNDO"}
 
-    target_view: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
-    toggle_all: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    target_view: bpy.props.StringProperty()
+    toggle_all: bpy.props.BoolProperty(
         default=False,
         options={"SKIP_SAVE"},
     )
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(i, i, "") for i in get_args(ToggleOption)]
     )
 

@@ -345,7 +345,7 @@ class BIMProjectProperties(PropertyGroup):
         ),
         default=False,
     )
-    should_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    should_cache: BoolProperty(
         name="Cache",
         description=(
             "Cache loaded geometry to .h5 file in your cache directory (see in preferences) "

@@ -1729,20 +1729,20 @@ def poll_sverchok_nodes(self: "BIMExternalParametricGeometryProperties", node_tr
 
 
 class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
-    is_editing: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    is_editing: bpy.props.BoolProperty(
         name="Is Editing Paramteric Geometry",
         description="Toggle editing parametric geometry.",
         default=False,
         update=update_is_editing,
     )
-    geometry_source: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    geometry_source: bpy.props.EnumProperty(
         name="Geometry Source",
         items=[
             ("GEONODES", "Geometry Nodes", ""),
             ("IFCSVERCHOK", "IFC Sverchok", ""),
         ],
     )
-    geo_nodes: bpy.props.PointerProperty(  # pyright: ignore[reportRedeclaration]
+    geo_nodes: bpy.props.PointerProperty(
         name="Geometry Nodes",
         description="Geometry nodes tree to use as a source for representation.",
         type=bpy.types.GeometryNodeTree,
@@ -1750,7 +1750,7 @@ class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
         poll=lambda self, node_tree: not node_tree.name.startswith("BBIM_EPG"),
     )
 
-    sverchok_nodes: bpy.props.PointerProperty(  # pyright: ignore[reportRedeclaration]
+    sverchok_nodes: bpy.props.PointerProperty(
         name="Sverchok Nodes",
         description="Sverchok node tree to use as a source for representation.",
         type=bpy.types.NodeTree,

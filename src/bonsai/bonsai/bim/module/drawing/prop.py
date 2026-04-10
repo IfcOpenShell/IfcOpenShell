@@ -860,13 +860,13 @@ class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
     newline_at: IntProperty(name="Newline At")
-    symbol: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    symbol: EnumProperty(
         name="Symbol",
         description="Symbol from symbols.svg to use for this text.",
         items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
         default="NO SYMBOL",
     )
-    custom_symbol: StringProperty(  # pyright: ignore[reportRedeclaration]
+    custom_symbol: StringProperty(
         name="Custom Symbol",
         description="Non-default symbol to use for this text.",
     )

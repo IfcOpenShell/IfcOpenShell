@@ -220,7 +220,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy to Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    container: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    container: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         container: int

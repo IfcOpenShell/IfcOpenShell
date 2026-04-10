@@ -314,7 +314,7 @@ class SelectConflictEntity(bpy.types.Operator):
     bl_idname = "ifcgit.select_conflict_entity"
     bl_options = {"REGISTER"}
 
-    step_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    step_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         step_id: int
@@ -515,7 +515,7 @@ class RunGitDiff(bpy.types.Operator):
     )
     bl_options = set()
 
-    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         save_to_temp: bool
@@ -547,7 +547,7 @@ class RenameBranch(bpy.types.Operator):
     bl_idname = "ifcgit.rename_branch"
     bl_options = {"REGISTER"}
 
-    new_name: bpy.props.StringProperty(name="New name")  # pyright: ignore[reportRedeclaration]
+    new_name: bpy.props.StringProperty(name="New name")
 
     if TYPE_CHECKING:
         new_name: str

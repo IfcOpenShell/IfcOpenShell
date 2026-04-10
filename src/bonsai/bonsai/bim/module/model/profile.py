@@ -271,7 +271,7 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
-    join_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    join_type: bpy.props.EnumProperty(
         items=[("-", "Unjoin", ""), ("L", "L", ""), ("V", "V", ""), ("T", "T", "")],
         default="-",
     )
