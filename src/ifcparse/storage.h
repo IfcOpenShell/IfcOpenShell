@@ -301,13 +301,7 @@ namespace ifcopenshell {
             typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(std::shared_ptr<instance_data>)>> entity_instance_by_name_t;
             typedef boost::unordered_map<uint32_t, std::shared_ptr<instance_data>> type_instance_by_name_t;
             typedef std::map<std::string, express::Base> entity_instance_by_guid_t;
-            typedef std::tuple<int, short, short> inverse_attr_record;
-            enum INVERSE_ATTR {
-                INSTANCE_ID,
-                INSTANCE_TYPE,
-                ATTRIBUTE_INDEX
-            };
-            typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
+            typedef std::unordered_map<int, std::map<std::tuple<short, short>, std::vector<uint32_t>>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
             in_memory_file_storage(ifcopenshell::file* owner_file = nullptr) : file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<instance_data>& data) { return express::Base(data); }) {};

@@ -640,11 +640,11 @@ void ifcopenshell::impl::in_memory_file_storage::try_read_semicolon(ifcopenshell
 
 void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
     // Assume a check on token type has already been performed
-    byref_excl_[{inst_id, from_entity->index_in_schema(), attribute_index}].push_back(id_from);
+    byref_excl_[inst_id][{from_entity->index_in_schema(), attribute_index}].push_back(id_from);
 }
 
 void ifcopenshell::impl::in_memory_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::Base& inst, int attribute_index) {
-    auto& ids = byref_excl_[{inst.id(), from_entity->index_in_schema(), attribute_index}];
+    auto& ids = byref_excl_[inst.id()][{from_entity->index_in_schema(), attribute_index}];
     auto iter = std::find(ids.begin(), ids.end(), id_from);
     if (iter == ids.end()) {
         // @todo inverses also need to be populated when multiple instances are added to a new file.
@@ -2363,9 +2363,7 @@ void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const 
     auto id = entity.id();
 
     // Delete inverses into entity
-    byref_excl_.erase(
-        byref_excl_.lower_bound({ id, -1, -1 }),
-        byref_excl_.upper_bound({ id, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() }));
+    byref_excl_.erase(id);
 
     // This is based on traversal which needs instances to still be contained in the map.
     // another option would be to keep byid intact for the remainder of this loop
@@ -2380,12 +2378,11 @@ void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const 
         if (name != 0) {
             // Find instances entity -> other
             // and update inverses from entity into other
-            auto lower = byref_excl_.lower_bound({ name, -1, -1 });
-            auto upper = byref_excl_.upper_bound({ name, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() });
-
-            for (auto byref_it = lower; byref_it != upper; ++byref_it) {
-                auto& ids = byref_it->second;
-                ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+            auto submap = byref_excl_.find(name);
+            if (submap != byref_excl_.end()) {
+                for (auto& [key, ids] : submap->second) {
+                    ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+                }
             }
         }
     }
@@ -2458,10 +2455,12 @@ std::vector<express::Base> file::instances_by_reference(int t) {
     std::vector<express::Base> ret;
     std::visit([this, t, &ret](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto lower = x.byref_excl_.lower_bound({ t, -1, -1 });
-            auto upper = x.byref_excl_.upper_bound({ t, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() });
-            for (auto it = lower; it != upper; ++it) {
-                for (auto& i : it->second) {
+            auto submap = x.byref_excl_.find(t);
+            if (submap == x.byref_excl_.end()) {
+                return;
+            }
+            for (auto& [key, ids] : submap->second) {
+                for (auto& i : ids) {
                     ret.push_back(instance_by_id(i));
                 }
             }
@@ -2618,11 +2617,13 @@ std::vector<int> file::get_inverse_indices(int instance_id) {
     std::visit([&mapping, instance_id](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto lower = x.byref_excl_.lower_bound({ instance_id, -1, -1 });
-            auto upper = x.byref_excl_.upper_bound({ instance_id, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() });
-            for (auto it = lower; it != upper; ++it) {
-                for (auto& i : it->second) {
-                    mapping[i].push_back(std::get<2>(it->first));
+            auto submap = x.byref_excl_.find(instance_id);
+            if (submap == x.byref_excl_.end()) {
+                return;
+            }
+            for (auto& [key, ids] : submap->second) {
+                for (auto& i : ids) {
+                    mapping[i].push_back(std::get<1>(key));
                 }
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
@@ -2678,31 +2679,34 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
         return return_value;
     }
     
-    visit_subtypes(type->as_entity(), [this, attribute_index, instance_id, &return_value](const ifcopenshell::declaration* ent) {
-
-        std::visit([&return_value, this, attribute_index, instance_id, ent](const auto& x) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-                if (attribute_index == -1) {
-                    auto lower = x.byref_excl_.lower_bound({ instance_id, ent->index_in_schema(), -1 });
-                    auto upper = x.byref_excl_.upper_bound({ instance_id, ent->index_in_schema(), std::numeric_limits<short>::max() });
-
-                    for (auto it = lower; it != upper; ++it) {
-                        for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
+    std::visit([&return_value, this, attribute_index, instance_id, type](const auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
+        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
+            auto submap = x.byref_excl_.find(instance_id);
+            if (submap != x.byref_excl_.end()) {
+                visit_subtypes(type->as_entity(), [this, attribute_index, instance_id, &return_value, &submap](const ifcopenshell::declaration* ent) {
+                    if (attribute_index == -1) {
+                        auto lower = submap->second.lower_bound({ent->index_in_schema(), std::numeric_limits<short>::min()});
+                        auto upper = submap->second.upper_bound({ent->index_in_schema(), std::numeric_limits<short>::max()});
+                        for (auto it = lower; it != upper; ++it) {
+                            for (auto& i : it->second) {
+                                return_value.push_back(instance_by_id(i).template as<express::Entity>());
+                            }
+                        }
+                    } else {
+                        auto it = submap->second.find({ent->index_in_schema(), attribute_index});
+                        if (it != submap->second.end()) {
+                            for (auto& i : it->second) {
+                                return_value.push_back(instance_by_id(i).template as<express::Entity>());
+                            }
                         }
                     }
-                } else {
-                    auto it = x.byref_excl_.find({ instance_id, ent->index_in_schema(), attribute_index });
-                    if (it != x.byref_excl_.end()) {
-                        for (auto& i : it->second) {
-                            return_value.push_back(instance_by_id(i).template as<express::Entity>());
-                        }
-                    }
-                }
+                });
             }
-#ifdef IFOPSH_WITH_ROCKSDB            
-            else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+        }
+#ifdef IFOPSH_WITH_ROCKSDB
+        else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            visit_subtypes(type->as_entity(), [this, attribute_index, instance_id, &return_value, &x](const ifcopenshell::declaration* ent) {
                 if (attribute_index == -1) {
                     // @todo no lower/upper_bounds() implemented yet
                     auto prefix = "v|" + std::to_string(instance_id) + "|" + std::to_string(ent->index_in_schema()) + "|";
@@ -2717,17 +2721,17 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
                         it->Next();
                     }
                 } else {
-                    auto it = x.byref_excl_.find({ instance_id, ent->index_in_schema(), attribute_index });
+                    auto it = x.byref_excl_.find({instance_id, ent->index_in_schema(), attribute_index});
                     if (it != x.byref_excl_.end()) {
                         for (auto& i : it->second) {
                             return_value.push_back(instance_by_id(i).template as<express::Entity>());
                         }
                     }
                 }
-            }
+            });
+        }
 #endif
-        }, storage_);
-    });
+    }, storage_);
 
     return return_value;
 }
@@ -2738,10 +2742,12 @@ size_t file::get_total_inverses(int instance_id) {
     std::visit([&counted_ids, instance_id](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto lower = x.byref_excl_.lower_bound({ instance_id, -1, -1 });
-            auto upper = x.byref_excl_.upper_bound({ instance_id, std::numeric_limits<short>::max(), std::numeric_limits<short>::max() });
-            for (auto it = lower; it != upper; ++it) {
-                for (auto& i : it->second) {
+            auto submap = x.byref_excl_.find(instance_id);
+            if (submap == x.byref_excl_.end()) {
+                return;
+            }
+            for (auto& [key, ids] : submap->second) {
+                for (auto& i : ids) {
                     counted_ids.insert(i);
                 }
             }
@@ -2842,7 +2848,7 @@ void ifcopenshell::file::build_inverses_(const express::Base& inst) {
             std::visit([entity_attribute_id, decl, idx, inst](auto& x) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-                    x.byref_excl_[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst.id());
+                    x.byref_excl_[entity_attribute_id][{decl->index_in_schema(), idx}].push_back(inst.id());
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
                     // @todo
                 }
