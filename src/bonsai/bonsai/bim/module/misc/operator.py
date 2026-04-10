@@ -453,9 +453,7 @@ class MoveQuickFavoritesItem(bpy.types.Operator):
     bl_label = "Move Quick Favorites Item"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-    direction: bpy.props.EnumProperty(
-        items=[("UP", "Up", ""), ("DOWN", "Down", "")]
-    )
+    direction: bpy.props.EnumProperty(items=[("UP", "Up", ""), ("DOWN", "Down", "")])
 
     if TYPE_CHECKING:
         index: int

@@ -86,9 +86,7 @@ class NewProject(bpy.types.Operator):
     bl_label = "New Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Start a new IFC project in a fresh session"
-    preset: bpy.props.EnumProperty(
-        items=[(i, i, "") for i in get_args(PresetType)]
-    )
+    preset: bpy.props.EnumProperty(items=[(i, i, "") for i in get_args(PresetType)])
 
     if TYPE_CHECKING:
         preset: PresetType
@@ -178,13 +176,9 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_description = (
         "Select an IFC file that can be used as a library.\n\nALT+click to reload the current loaded library file."
     )
-    filter_glob: bpy.props.StringProperty(
-        default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"}
-    )
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
-    use_relative_path: bpy.props.BoolProperty(
-        name="Use Relative Path", default=False
-    )
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     if TYPE_CHECKING:
         filter_glob: str
@@ -602,9 +596,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     )
     definition: bpy.props.IntProperty()
     prop_index: bpy.props.IntProperty()
-    assume_unique_by_name: bpy.props.BoolProperty(
-        name="Assume Unique By Name", default=True, options={"SKIP_SAVE"}
-    )
+    assume_unique_by_name: bpy.props.BoolProperty(name="Assume Unique By Name", default=True, options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         definition: int
@@ -959,12 +951,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load an existing IFC project"
-    filepath: bpy.props.StringProperty(
-        subtype="FILE_PATH", options={"SKIP_SAVE"}
-    )
-    filter_glob: bpy.props.StringProperty(
-        default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"}
-    )
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcsqlite", options={"HIDDEN"})
     is_advanced: bpy.props.BoolProperty(
         name="Enable Advanced Mode",
         description="Load IFC file with advanced settings. Checking this option will skip loading IFC file and will open advanced load settings",
@@ -988,9 +976,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         ),
         default=False,
     )
-    use_detailed_tooltip: bpy.props.BoolProperty(
-        default=False, options={"HIDDEN"}
-    )
+    use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
     filename_ext = ".ifc"
 
     if TYPE_CHECKING:
@@ -1882,21 +1868,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     supported_filexts = (".ifc", ".ifczip", ".ifcjson")
-    filter_glob: bpy.props.StringProperty(
-        default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"}
-    )
-    json_version: bpy.props.EnumProperty(
-        items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version"
-    )
-    json_compact: bpy.props.BoolProperty(
-        name="Export Compact IFCJSON", default=False
-    )
-    should_save_as: bpy.props.BoolProperty(
-        name="Should Save As", default=False, options={"HIDDEN"}
-    )
-    use_relative_path: bpy.props.BoolProperty(
-        name="Use Relative Path", default=False
-    )
+    filter_glob: bpy.props.StringProperty(default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"})
+    json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
+    json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
+    should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     if TYPE_CHECKING:
         filter_glob: str
@@ -2918,12 +2894,8 @@ class IFCFileHandlerOperator(bpy.types.Operator):
     bl_label = "Import .ifc file"
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    directory: bpy.props.StringProperty(
-        subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"}
-    )
-    files: bpy.props.CollectionProperty(
-        type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"}
-    )
+    directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
 
     if TYPE_CHECKING:
         directory: str

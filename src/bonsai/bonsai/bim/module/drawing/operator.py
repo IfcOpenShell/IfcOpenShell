@@ -3640,9 +3640,7 @@ class ToggleTargetView(bpy.types.Operator):
         default=False,
         options={"SKIP_SAVE"},
     )
-    option: bpy.props.EnumProperty(
-        items=[(i, i, "") for i in get_args(ToggleOption)]
-    )
+    option: bpy.props.EnumProperty(items=[(i, i, "") for i in get_args(ToggleOption)])
 
     if TYPE_CHECKING:
         target_view: str
