@@ -44,6 +44,8 @@ When a new Blender version is released and supported:
 
    * - File
      - What to update
+   * - ``.github/workflows/ci-bonsai.yml``
+     - ``pyver`` matrix
    * - ``.github/workflows/ci-bonsai-daily.yml``
      - Blender download URL
 
