@@ -13,7 +13,7 @@ When adding or removing a supported Python version, update the following:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-black-formatting.yaml``
+   * - ``.github/workflows/ci-lint.yaml``
      - ``MIN_IOS_PY_VERSION``
    * - ``.github/workflows/ci-ifcopenshell-python-pypi.yml``
      - ``pyver`` matrix
@@ -59,7 +59,7 @@ When Blender ships with a new Python version:
 
    * - File
      - What to update
-   * - ``.github/workflows/ci-black-formatting.yaml``
+   * - ``.github/workflows/ci-lint.yaml``
      - ``MIN_BLENDER_PY_VERSION``
    * - ``src/bonsai/Makefile``
      - ``SUPPORTED_PYVERSIONS``

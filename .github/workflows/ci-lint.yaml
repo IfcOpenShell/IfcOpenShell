@@ -1,4 +1,4 @@
-name: ci-black-formatting
+name: ci-lint
 
 on:
   push:

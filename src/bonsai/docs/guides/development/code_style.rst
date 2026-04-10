@@ -7,7 +7,7 @@ Python code formatters
 For Python code formatting, we use `Black code formatter <https://pypi.org/project/black/>`__, 
 black settings are stored in the repository's pyproject.toml.
 
-We have GitHub workflow `ci-black-formatting` to maintain black formatting across the repository.
+We have GitHub workflow `ci-lint` to maintain black formatting across the repository.
 
 ``black`` can be installed using ``pip install black`` and files can be formatted with the following example command:
 
