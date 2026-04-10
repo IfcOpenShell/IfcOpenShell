@@ -5,6 +5,7 @@ dependencies = [
     "black==26.3.1",
     "ruff==0.15.9",
     "poethepoet",
+    "ty==0.0.29",
     "gersemi==0.26.1",
 ]
 
@@ -227,7 +228,7 @@ ty.sequence = ["ty-bonsai", "ty-ios"]
 ty.help = "Run ty type checker. Requires ty-venv to be set up first."
 ty-bonsai = "ty check src/bonsai --python=src/bonsai/.venv"
 
-ty-venv.sequence = ["ty-venv-bonsai", "ty-venv-ios"]
+ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},
