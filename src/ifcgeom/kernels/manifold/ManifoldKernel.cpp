@@ -74,6 +74,7 @@ namespace {
 
 	struct MeshBuilder {
 		double precision;
+        double dilation = 0.;
 		std::vector<Eigen::Vector3d> vertices;
 		std::unordered_map<VertexKey, uint64_t, VertexKeyHash> vertex_map;
 		std::vector<uint64_t> tri_verts;
@@ -113,12 +114,34 @@ namespace {
 		Mesh build() const {
 			Mesh mesh;
 			mesh.numProp = 3;
+			
+			std::vector<size_t> vertex_use_count(vertices.size(), 0);
+            std::vector<Eigen::Vector3d> vertex_normals(vertices.size(), Eigen::Vector3d::Zero());
+            
+			for (size_t i = 0; i < tri_verts.size(); i += 3) {
+                for (size_t j = 0; j < 3; ++j) {
+                    vertex_use_count[tri_verts[i + j]]++;
+                    // Calculate triangle normal
+                    Eigen::Vector3d normal = (vertices[tri_verts[i + 1]] - vertices[tri_verts[i]]).cross(vertices[tri_verts[i + 2]] - vertices[tri_verts[i]]) / 2.;
+                    vertex_normals[tri_verts[i + j]] += normal;
+                }
+            }
+
+			for (auto& v : vertex_normals) {
+				if (v.norm() > 0) {
+					v.normalize();
+				}
+            }
+
 			mesh.vertProperties.reserve(vertices.size() * 3);
-			for (const auto& vertex : vertices) {
-				mesh.vertProperties.push_back(vertex(0));
-				mesh.vertProperties.push_back(vertex(1));
-				mesh.vertProperties.push_back(vertex(2));
+
+			for (size_t i = 0; i < vertices.size(); ++i) {
+                auto slightly_dilated = vertices[i] + vertex_normals[i] * dilation;
+				mesh.vertProperties.push_back(slightly_dilated(0));
+				mesh.vertProperties.push_back(slightly_dilated(1));
+				mesh.vertProperties.push_back(slightly_dilated(2));
 			}
+
 			mesh.triVerts = tri_verts;
 			mesh.faceID = face_ids;
 			mesh.tolerance = precision;
@@ -214,16 +237,160 @@ namespace {
 		return std::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
 	}
 
+	void evaluate_curve(const taxonomy::line::ptr& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ 0, 0, u, 1. };
+		p.components() = (c->matrix->ccomponents() * xy).head<3>();
+	}
+
+	void evaluate_curve(const taxonomy::circle::ptr& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ c->radius * std::cos(u), c->radius * std::sin(u), 0, 1. };
+		p.components() = (c->matrix->ccomponents() * xy).head<3>();
+	}
+
+	void evaluate_curve(const taxonomy::ellipse::ptr& c, double u, taxonomy::point3& p) {
+		Eigen::Vector4d xy{ c->radius * std::cos(u), c->radius2 * std::sin(u), 0, 1. };
+		p.components() = (c->matrix->ccomponents() * xy).head<3>();
+	}
+
+	void project_onto_curve(const taxonomy::line::ptr& c, const taxonomy::point3& p, double& u) {
+		u = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous())(2);
+	}
+
+	void project_onto_curve(const taxonomy::circle::ptr& c, const taxonomy::point3& p, double& u) {
+		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
+		u = std::atan2(xy(1), xy(0));
+	}
+
+	void project_onto_curve(const taxonomy::ellipse::ptr& c, const taxonomy::point3& p, double& u) {
+		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
+		u = std::atan2(xy(1), xy(0));
+	}
+
+	taxonomy::item::ptr effective_curve_basis(const taxonomy::edge::ptr& edge) {
+		auto basis = edge ? edge->basis : nullptr;
+		while (basis && basis->kind() == taxonomy::EDGE) {
+			auto nested = taxonomy::dcast<taxonomy::edge>(basis);
+			if (!nested || nested == edge) {
+				break;
+			}
+			basis = nested->basis;
+		}
+		return basis;
+	}
+
+	bool resolve_curve_parameter(const taxonomy::item::ptr& curve, const std::variant<boost::blank, taxonomy::point3::ptr, double>& trim, double& u) {
+		if (auto value = std::get_if<double>(&trim)) {
+			u = *value;
+			return std::isfinite(u);
+		}
+		if (auto point = std::get_if<taxonomy::point3::ptr>(&trim)) {
+			if (auto line = taxonomy::dcast<taxonomy::line>(curve)) {
+				project_onto_curve(line, **point, u);
+				return std::isfinite(u);
+			}
+			if (auto circle = taxonomy::dcast<taxonomy::circle>(curve)) {
+				project_onto_curve(circle, **point, u);
+				return std::isfinite(u);
+			}
+			if (auto ellipse = taxonomy::dcast<taxonomy::ellipse>(curve)) {
+				project_onto_curve(ellipse, **point, u);
+				return std::isfinite(u);
+			}
+		}
+		return false;
+	}
+
+	bool basis_from_points(const std::vector<Eigen::Vector3d>& points, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y) {
+		if (points.size() < 3) {
+			return false;
+		}
+		Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+		for (size_t i = 0; i < points.size(); ++i) {
+			const auto& a = points[i];
+			const auto& b = points[(i + 1) % points.size()];
+			normal(0) += (a(1) - b(1)) * (a(2) + b(2));
+			normal(1) += (a(2) - b(2)) * (a(0) + b(0));
+			normal(2) += (a(0) - b(0)) * (a(1) + b(1));
+		}
+		if (normal.norm() < 1.e-12) {
+			return false;
+		}
+		origin = points.front();
+		x = points[1] - points.front();
+		x -= normal.normalized() * x.dot(normal.normalized());
+		if (x.norm() < 1.e-12) {
+			return false;
+		}
+		x.normalize();
+		y = normal.normalized().cross(x).normalized();
+		return true;
+	}
+
+	bool edge_supported(const taxonomy::edge::ptr& edge) {
+		return edge && (!edge->basis || edge->basis->kind() == taxonomy::LINE) && edge->start.index() == 1;
+	}
+
+	bool extrusion_edge_supported(const taxonomy::edge::ptr& edge) {
+		if (!edge) {
+			return false;
+		}
+		if (!edge->basis) {
+			return edge->start.index() == 1 && edge->end.index() == 1;
+		}
+		auto basis = effective_curve_basis(edge);
+		if (!basis) {
+			return false;
+		}
+		if (basis->kind() != taxonomy::LINE && basis->kind() != taxonomy::CIRCLE && basis->kind() != taxonomy::ELLIPSE) {
+			return false;
+		}
+		const bool full_curve = edge->start.index() == 0 && edge->end.index() == 0 && (basis->kind() == taxonomy::CIRCLE || basis->kind() == taxonomy::ELLIPSE);
+		if (full_curve) {
+			return true;
+		}
+		return edge->start.index() != 0 && edge->end.index() != 0;
+	}
+
+	bool loop_supported(const taxonomy::loop::ptr& loop) {
+		if (!loop || loop->children.size() < 3 || !loop->is_polyhedron()) {
+			return false;
+		}
+		for (const auto& edge : loop->children) {
+			if (!edge_supported(edge)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	bool face_supported(const taxonomy::face::ptr& face) {
+		if (!face || face->children.empty()) {
+			return false;
+		}
 		if (face->basis && face->basis->kind() != taxonomy::PLANE) {
 			return false;
 		}
 		for (const auto& loop : face->children) {
-			if (!loop->is_polyhedron()) {
+			if (!loop_supported(loop)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool extrusion_face_supported(const taxonomy::face::ptr& face) {
+		if (!face || face->children.empty()) {
+			return false;
+		}
+		if (face->basis && face->basis->kind() != taxonomy::PLANE) {
+			return false;
+		}
+		for (const auto& loop : face->children) {
+			if (!loop || loop->children.empty()) {
 				return false;
 			}
 			for (const auto& edge : loop->children) {
-				if (edge->start.index() != 1) {
+				if (!extrusion_edge_supported(edge)) {
 					return false;
 				}
 			}
@@ -231,8 +398,75 @@ namespace {
 		return true;
 	}
 
-	bool extrusion_face_supported(const taxonomy::face::ptr& face) {
-		return face && face->children.size() == 1 && face_supported(face);
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points);
+	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon);
+	double signed_area(const LoopPolygon& polygon);
+
+	bool extrusion_face_polygons(const taxonomy::face::ptr& face, int circle_segments, double precision, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y, std::vector<LoopPolygon>& polygons, size_t& outer_index) {
+		polygons.clear();
+		outer_index = 0;
+		if (!extrusion_face_supported(face)) {
+			return false;
+		}
+		std::vector<Eigen::Vector3d> basis_points;
+		double basis_area = 0.;
+		std::vector<std::vector<Eigen::Vector3d>> loops;
+		loops.reserve(face->children.size());
+		for (const auto& loop : face->children) {
+			std::vector<Eigen::Vector3d> points;
+			if (!append_extrusion_loop_points(loop, circle_segments, precision, points)) {
+				return false;
+			}
+			Eigen::Vector3d loop_origin;
+			Eigen::Vector3d loop_x;
+			Eigen::Vector3d loop_y;
+			if (!basis_from_points(points, loop_origin, loop_x, loop_y)) {
+				return false;
+			}
+			LoopPolygon polygon;
+			if (!loop_polygon_from_points(points, loop_origin, loop_x, loop_y, precision, polygon)) {
+				return false;
+			}
+			const auto area = std::fabs(signed_area(polygon));
+			if (area > basis_area) {
+				basis_area = area;
+				basis_points = points;
+			}
+			loops.push_back(std::move(points));
+		}
+		if (!basis_from_points(basis_points, origin, x, y)) {
+			return false;
+		}
+		double outer_area = 0.;
+		polygons.reserve(loops.size());
+		for (const auto& points : loops) {
+			LoopPolygon polygon;
+			if (!loop_polygon_from_points(points, origin, x, y, precision, polygon)) {
+				return false;
+			}
+			const auto area = signed_area(polygon);
+			if (std::fabs(area) > std::fabs(outer_area)) {
+				outer_area = area;
+				outer_index = polygons.size();
+			}
+			polygons.push_back(std::move(polygon));
+		}
+		if (polygons.empty() || std::fabs(outer_area) <= precision * precision) {
+			return false;
+		}
+		return true;
+	}
+
+	bool shell_supported(const taxonomy::shell::ptr& shell) {
+		if (!shell || shell->children.empty()) {
+			return false;
+		}
+		for (const auto& face : shell->children) {
+			if (!face_supported(face)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	bool face_basis(const taxonomy::face::ptr& face, Eigen::Vector3d& origin, Eigen::Vector3d& x, Eigen::Vector3d& y) {
@@ -278,29 +512,7 @@ namespace {
 			best_score = score;
 			best_points = std::move(points);
 		}
-		if (best_points.size() < 3) {
-			return false;
-		}
-		Eigen::Vector3d normal = Eigen::Vector3d::Zero();
-		for (size_t i = 0; i < best_points.size(); ++i) {
-			const auto& a = best_points[i];
-			const auto& b = best_points[(i + 1) % best_points.size()];
-			normal(0) += (a(1) - b(1)) * (a(2) + b(2));
-			normal(1) += (a(2) - b(2)) * (a(0) + b(0));
-			normal(2) += (a(0) - b(0)) * (a(1) + b(1));
-		}
-		if (normal.norm() < 1.e-12) {
-			return false;
-		}
-		origin = best_points.front();
-		x = best_points[1] - best_points.front();
-		x -= normal.normalized() * x.dot(normal.normalized());
-		if (x.norm() < 1.e-12) {
-			return false;
-		}
-		x.normalize();
-		y = normal.normalized().cross(x).normalized();
-		return true;
+		return basis_from_points(best_points, origin, x, y);
 	}
 
 	double signed_area(const manifold::SimplePolygonIdx& polygon) {
@@ -589,6 +801,147 @@ namespace {
 		return 0.5 * area;
 	}
 
+	void extend_points(std::vector<Eigen::Vector3d>& points, const std::vector<taxonomy::point3>& edge_points, double precision) {
+		if (edge_points.empty()) {
+			return;
+		}
+		const auto merge_tolerance = std::max(precision, 1.e-5);
+		size_t offset = 0;
+		if (!points.empty() && (points.back() - edge_points.front().ccomponents()).norm() < merge_tolerance) {
+			offset = 1;
+		}
+		for (size_t i = offset; i < edge_points.size(); ++i) {
+			const auto point = edge_points[i].ccomponents();
+			if (!points.empty() && (points.back() - point).norm() < merge_tolerance) {
+				continue;
+			}
+			points.push_back(point);
+		}
+	}
+
+	bool append_extrusion_edge_points(const taxonomy::edge::ptr& edge, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+		if (!edge) {
+			return false;
+		}
+		const auto two_pi = 2. * std::acos(-1.);
+		std::vector<taxonomy::point3> edge_points;
+		if (!edge->basis) {
+			if (edge->start.index() != 1 || edge->end.index() != 1) {
+				return false;
+			}
+			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->start));
+			edge_points.push_back(*std::get<taxonomy::point3::ptr>(edge->end));
+			extend_points(points, edge_points, precision);
+			return true;
+		}
+		auto basis = effective_curve_basis(edge);
+		if (!basis) {
+			return false;
+		}
+		double a;
+		double b;
+		const bool full_conic = edge->start.index() == 0 && edge->end.index() == 0 && (basis->kind() == taxonomy::CIRCLE || basis->kind() == taxonomy::ELLIPSE);
+		if (full_conic) {
+			a = 0.;
+			b = two_pi;
+		} else {
+			if (!resolve_curve_parameter(basis, edge->start, a) || !resolve_curve_parameter(basis, edge->end, b)) {
+				return false;
+			}
+		}
+		const bool reverse = !edge->curve_sense.value_or(true);
+		if (reverse) {
+			std::swap(a, b);
+		}
+		taxonomy::point3 point;
+		if (auto line = taxonomy::dcast<taxonomy::line>(basis)) {
+			evaluate_curve(line, a, point);
+			edge_points.push_back(point);
+			evaluate_curve(line, b, point);
+			edge_points.push_back(point);
+		} else if (auto circle = taxonomy::dcast<taxonomy::circle>(basis)) {
+			a = std::fmod(a, two_pi);
+			b = std::fmod(b, two_pi);
+			if (b <= a) {
+				b += two_pi;
+			}
+			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
+			const auto du = (b - a) / num_segments;
+			evaluate_curve(circle, a, point);
+			edge_points.push_back(point);
+			for (int i = 1; i < num_segments; ++i) {
+				evaluate_curve(circle, a + du * i, point);
+				edge_points.push_back(point);
+			}
+			evaluate_curve(circle, b, point);
+			edge_points.push_back(point);
+		} else if (auto ellipse = taxonomy::dcast<taxonomy::ellipse>(basis)) {
+			a = std::fmod(a, two_pi);
+			b = std::fmod(b, two_pi);
+			if (b <= a) {
+				b += two_pi;
+			}
+			const auto num_segments = std::max(1, (int)std::ceil(std::fabs(a - b) / two_pi * circle_segments));
+			const auto du = (b - a) / num_segments;
+			evaluate_curve(ellipse, a, point);
+			edge_points.push_back(point);
+			for (int i = 1; i < num_segments; ++i) {
+				evaluate_curve(ellipse, a + du * i, point);
+				edge_points.push_back(point);
+			}
+			evaluate_curve(ellipse, b, point);
+			edge_points.push_back(point);
+		} else {
+			return false;
+		}
+		if (reverse) {
+			std::reverse(edge_points.begin(), edge_points.end());
+		}
+		extend_points(points, edge_points, precision);
+		return true;
+	}
+
+	bool append_extrusion_loop_points(const taxonomy::loop::ptr& loop, int circle_segments, double precision, std::vector<Eigen::Vector3d>& points) {
+		points.clear();
+		if (!loop || loop->children.empty()) {
+			return false;
+		}
+		for (const auto& edge : loop->children) {
+			if (!append_extrusion_edge_points(edge, circle_segments, precision, points)) {
+				return false;
+			}
+		}
+		if (points.size() > 1) {
+			const auto merge_tolerance = std::max(precision, 1.e-5);
+			if ((points.front() - points.back()).norm() < merge_tolerance) {
+				points.pop_back();
+			}
+		}
+		return points.size() >= 3;
+	}
+
+	bool loop_polygon_from_points(const std::vector<Eigen::Vector3d>& points, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
+		polygon.clear();
+		polygon.reserve(points.size());
+		for (const auto& point : points) {
+			if (!polygon.empty()) {
+				const auto d = polygon.back().xyz - point;
+				if (d.squaredNorm() <= precision * precision) {
+					continue;
+				}
+			}
+			auto v = point - origin;
+			polygon.push_back({ point, manifold::vec2(v.dot(x), v.dot(y)) });
+		}
+		if (polygon.size() > 1) {
+			const auto d = polygon.front().xyz - polygon.back().xyz;
+			if (d.squaredNorm() <= precision * precision) {
+				polygon.pop_back();
+			}
+		}
+		return polygon.size() >= 3;
+	}
+
 	bool append_simple_loop(const taxonomy::loop::ptr& loop, const Eigen::Vector3d& origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
 		polygon.clear();
 		polygon.reserve(loop->children.size());
@@ -681,8 +1034,9 @@ namespace {
 		return !triangles.empty();
 	}
 
-	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, Mesh& mesh) {
+	bool shell_to_mesh(const taxonomy::shell::ptr& shell, double precision, Mesh& mesh, double dilation) {
 		MeshBuilder builder(precision);
+        builder.dilation = dilation;
 		uint64_t face_id = 0;
 		bool any = false;
 		for (const auto& face : shell->children) {
@@ -717,91 +1071,308 @@ namespace {
 		return Part{ mesh, std::nullopt };
 	}
 
-	std::optional<Part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, manifold::Manifold::Error* status_ptr = nullptr) {
+	std::optional<Part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, manifold::Manifold::Error* status_ptr = nullptr) {
 		Mesh mesh;
-		if (!shell_to_mesh(shell, precision, mesh)) {
+		if (!shell_to_mesh(shell, precision, mesh, dilation)) {
 			return std::nullopt;
 		}
 		return part_from_mesh(mesh, false, status_ptr);
 	}
 
 	Mesh transform_mesh(const Mesh& mesh, const taxonomy::matrix4::ptr& place);
+    std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments);
 
-	std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision) {
+	Eigen::Matrix4d matrix_or_identity(const taxonomy::matrix4::ptr& matrix) {
+		return matrix ? matrix->ccomponents() : Eigen::Matrix4d::Identity();
+	}
+
+	Eigen::Vector3d transform_point(const Eigen::Matrix4d& matrix, const Eigen::Vector3d& point) {
+		return (matrix * point.homogeneous()).head<3>();
+	}
+
+	Eigen::Vector3d transform_vector(const Eigen::Matrix4d& matrix, const Eigen::Vector3d& vector) {
+		return matrix.block<3, 3>(0, 0) * vector;
+	}
+
+	taxonomy::face::ptr halfspace_face(const taxonomy::solid::ptr& solid) {
+		if (!solid || !solid->instance.declaration().is("IfcHalfSpaceSolid") || solid->children.size() != 1) {
+			return nullptr;
+		}
+		const auto& shell = solid->children.front();
+		if (!shell || shell->children.size() != 1) {
+			return nullptr;
+		}
+		auto face = shell->children.front();
+		if (!face || !face->basis || face->basis->kind() != taxonomy::PLANE || face->children.size() > 1) {
+			return nullptr;
+		}
+		return face;
+	}
+
+	bool explicit_loop_polygon(const taxonomy::loop::ptr& loop, const Eigen::Matrix4d& transform, const Eigen::Vector3d& plane_origin, const Eigen::Vector3d& x, const Eigen::Vector3d& y, double precision, LoopPolygon& polygon) {
+		polygon.clear();
+		if (!loop || loop->children.size() < 3) {
+			return false;
+		}
+		polygon.reserve(loop->children.size());
+		for (const auto& edge : loop->children) {
+			if (!edge || (edge->basis && edge->basis->kind() != taxonomy::LINE) || edge->start.index() != 1) {
+				return false;
+			}
+			auto point = transform_point(transform, std::get<taxonomy::point3::ptr>(edge->start)->ccomponents());
+			if (!polygon.empty() && (polygon.back().xyz - point).squaredNorm() <= precision * precision) {
+				continue;
+			}
+			auto delta = point - plane_origin;
+			polygon.push_back({ point, manifold::vec2(delta.dot(x), delta.dot(y)) });
+		}
+		if (polygon.size() > 1 && (polygon.front().xyz - polygon.back().xyz).squaredNorm() <= precision * precision) {
+			polygon.pop_back();
+		}
+		return polygon.size() >= 3;
+	}
+
+	std::array<Eigen::Vector3d, 8> box_corners(const manifold::Box& box) {
+		return {
+			Eigen::Vector3d(box.min[0], box.min[1], box.min[2]),
+			Eigen::Vector3d(box.min[0], box.min[1], box.max[2]),
+			Eigen::Vector3d(box.min[0], box.max[1], box.min[2]),
+			Eigen::Vector3d(box.min[0], box.max[1], box.max[2]),
+			Eigen::Vector3d(box.max[0], box.min[1], box.min[2]),
+			Eigen::Vector3d(box.max[0], box.min[1], box.max[2]),
+			Eigen::Vector3d(box.max[0], box.max[1], box.min[2]),
+			Eigen::Vector3d(box.max[0], box.max[1], box.max[2])
+		};
+	}
+
+	struct HalfspaceBuildState {
+		bool unchanged = false;
+		double depth = 0.;
+	};
+
+	std::optional<Part> part_from_polygon_extrusion(std::vector<LoopPolygon> polygons, size_t outer_index, const Eigen::Vector3d& plane_normal, const Eigen::Vector3d& direction, double depth, double precision, double dilation) {
+		if (depth < precision || polygons.empty() || outer_index >= polygons.size()) {
+			return std::nullopt;
+		}
+		auto dir = direction;
+		if (dir.norm() < 1.e-12) {
+			return std::nullopt;
+		}
+		dir.normalize();
+		auto normal = plane_normal;
+		if (normal.norm() < 1.e-12) {
+			return std::nullopt;
+		}
+		normal.normalize();
+		auto outer_area = signed_area(polygons[outer_index]);
+		if (std::abs(outer_area) <= precision * precision) {
+			return std::nullopt;
+		}
+		if (outer_area < 0.) {
+			reverse_loop(polygons[outer_index]);
+			outer_area = -outer_area;
+		}
+		for (size_t i = 0; i < polygons.size(); ++i) {
+			if (i != outer_index && signed_area(polygons[i]) * outer_area > 0.) {
+				reverse_loop(polygons[i]);
+			}
+		}
+		auto direction_sign = normal.dot(dir);
+		if (std::abs(direction_sign) < 1.e-9) {
+			return std::nullopt;
+		}
+		auto offset = dir * depth;
+		MeshBuilder builder(precision);
+        builder.dilation = dilation;
+		std::vector<std::vector<uint64_t>> bottoms;
+		std::vector<std::vector<uint64_t>> tops;
+		std::unordered_map<uint64_t, uint64_t> top_by_bottom;
+		manifold::PolygonsIdx polygon_idx;
+		polygon_idx.reserve(polygons.size());
+		bottoms.reserve(polygons.size());
+		tops.reserve(polygons.size());
+		for (const auto& polygon : polygons) {
+			manifold::SimplePolygonIdx loop_idx;
+			loop_idx.reserve(polygon.size());
+			bottoms.emplace_back();
+			tops.emplace_back();
+			bottoms.back().reserve(polygon.size());
+			tops.back().reserve(polygon.size());
+			for (const auto& point : polygon) {
+				auto bottom = builder.add_vertex(point.xyz);
+				auto top = builder.add_vertex(point.xyz + offset);
+				bottoms.back().push_back(bottom);
+				tops.back().push_back(top);
+				top_by_bottom.insert({ bottom, top });
+				loop_idx.push_back({ point.uv, (int)bottom });
+			}
+			polygon_idx.push_back(std::move(loop_idx));
+		}
+		auto triangles = manifold::TriangulateIdx(polygon_idx, precision, true);
+		if (triangles.empty()) {
+			return std::nullopt;
+		}
+		for (const auto& tri : triangles) {
+			auto a = (uint64_t)tri[0];
+			auto b = (uint64_t)tri[1];
+			auto c = (uint64_t)tri[2];
+			if (direction_sign > 0.) {
+				builder.add_triangle(c, b, a, 0);
+				builder.add_triangle(top_by_bottom[a], top_by_bottom[b], top_by_bottom[c], 1);
+			} else {
+				builder.add_triangle(a, b, c, 0);
+				builder.add_triangle(top_by_bottom[c], top_by_bottom[b], top_by_bottom[a], 1);
+			}
+		}
+		uint64_t face_id = 2;
+		for (size_t k = 0; k < polygons.size(); ++k) {
+			for (size_t i = 0; i < polygons[k].size(); ++i) {
+				auto j = (i + 1) % polygons[k].size();
+				if (direction_sign > 0.) {
+					builder.add_triangle(bottoms[k][i], bottoms[k][j], tops[k][j], face_id);
+					builder.add_triangle(bottoms[k][i], tops[k][j], tops[k][i], face_id);
+				} else {
+					builder.add_triangle(bottoms[k][i], tops[k][j], bottoms[k][j], face_id);
+					builder.add_triangle(bottoms[k][i], tops[k][i], tops[k][j], face_id);
+				}
+				++face_id;
+			}
+		}
+		return part_from_mesh(builder.build(), true);
+	}
+
+	std::optional<Part> part_from_halfspace_solid(HalfspaceBuildState& state, const taxonomy::solid::ptr& solid, const taxonomy::face::ptr& face,const manifold::Box& reference_box, double precision, double dilation) {
+		
+        auto plane = taxonomy::cast<taxonomy::plane>(face->basis);
+        // @todo verify order
+        const auto transform = matrix_or_identity(solid->matrix) * matrix_or_identity(plane->matrix);
+        
+		Eigen::Vector3d x = transform.col(0).head<3>();
+        Eigen::Vector3d y = transform.col(1).head<3>();
+        Eigen::Vector3d normal = transform.col(2).head<3>();
+        Eigen::Vector3d origin = transform.col(3).head<3>();
+
+		const auto inside_sign = face->orientation.value_or(false) ? +1. : -1.;
+		double u_min = std::numeric_limits<double>::infinity();
+		double u_max = -std::numeric_limits<double>::infinity();
+		double v_min = std::numeric_limits<double>::infinity();
+		double v_max = -std::numeric_limits<double>::infinity();
+		double max_depth = 0.;
+		for (const auto& corner : box_corners(reference_box)) {
+			const auto delta = corner - origin;
+			const auto u = delta.dot(x);
+			const auto v = delta.dot(y);
+			const auto w = delta.dot(normal);
+			u_min = std::min(u_min, u);
+			u_max = std::max(u_max, u);
+			v_min = std::min(v_min, v);
+			v_max = std::max(v_max, v);
+            max_depth = std::max(max_depth, inside_sign * w);
+		}
+		state.depth = max_depth;
+		if (max_depth <= precision * 20. || max_depth <= 0.00002) {
+			state.unchanged = true;
+			return std::nullopt;
+		}
+		const auto diagonal = Eigen::Vector3d(reference_box.max[0] - reference_box.min[0], reference_box.max[1] - reference_box.min[1], reference_box.max[2] - reference_box.min[2]).norm();
+		const auto margin = std::max(precision * 100., diagonal * 1.e-6);
+		LoopPolygon polygon;
+		if (face->children.empty()) {
+			polygon = {
+				{ origin + x * (u_min - margin) + y * (v_min - margin), manifold::vec2(u_min - margin, v_min - margin) },
+				{ origin + x * (u_max + margin) + y * (v_min - margin), manifold::vec2(u_max + margin, v_min - margin) },
+				{ origin + x * (u_max + margin) + y * (v_max + margin), manifold::vec2(u_max + margin, v_max + margin) },
+				{ origin + x * (u_min - margin) + y * (v_max + margin), manifold::vec2(u_min - margin, v_max + margin) }
+			};
+        } else {
+            auto project_along_global_z = [&](const Eigen::Vector3d& p)
+                -> std::optional<LoopPoint> {
+                Eigen::Vector3d hit;
+
+                if (std::abs(normal.z()) > precision) {
+                    const double t = normal.dot(origin - p) / normal.z();
+                    hit = p + Eigen::Vector3d(0., 0., t);
+                } else {
+                    return std::nullopt;
+                }
+
+                const auto delta = hit - origin;
+                return std::make_optional(LoopPoint{
+                    hit,
+                    manifold::vec2(delta.dot(x), delta.dot(y))
+                });
+            };
+
+            auto& loop = face->children.front();
+            for (auto& e : loop->children) {
+                if (auto point = explicit_point(e)) {
+                    auto transformed = transform_point(matrix_or_identity(face->matrix), *point);
+                    if (auto ppoint = project_along_global_z(transformed)) {
+                        polygon.push_back(*ppoint);
+                    } else {
+                        return std::nullopt;
+					}
+				} else {
+                    return std::nullopt;
+				}
+			}
+		}
+		return part_from_polygon_extrusion({ std::move(polygon) }, 0, normal, normal * inside_sign, max_depth + margin, precision, dilation);
+	}
+
+	std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
 		if (extrusion->depth < precision) {
 			return std::nullopt;
 		}
-		auto face = taxonomy::dcast<taxonomy::face>(extrusion->basis);
+		auto face = std::dynamic_pointer_cast<taxonomy::face>(extrusion->basis);
 		if (!extrusion_face_supported(face)) {
 			return std::nullopt;
 		}
 		Eigen::Vector3d origin;
 		Eigen::Vector3d x;
 		Eigen::Vector3d y;
-		if (!face_basis(face, origin, x, y)) {
+		std::vector<LoopPolygon> polygons;
+		size_t outer_index = 0;
+		if (!extrusion_face_polygons(face, circle_segments, precision, origin, x, y, polygons, outer_index)) {
 			return std::nullopt;
 		}
-		auto dir = extrusion->direction->ccomponents();
-		if (dir.norm() < 1.e-12) {
-			return std::nullopt;
-		}
-		dir.normalize();
 		auto normal = x.cross(y);
 		if (normal.norm() < 1.e-12) {
 			return std::nullopt;
 		}
+		return part_from_polygon_extrusion(std::move(polygons), outer_index, normal, extrusion->direction->ccomponents(), extrusion->depth, precision, dilation);
+	}
+
+	bool extrusion_supported(const taxonomy::extrusion::ptr& extrusion, double precision) {
+		if (!extrusion || extrusion->depth < precision || !extrusion->direction) {
+			return false;
+		}
+		auto face = std::dynamic_pointer_cast<taxonomy::face>(extrusion->basis);
+		if (!extrusion_face_supported(face)) {
+			return false;
+		}
+		Eigen::Vector3d origin;
+		Eigen::Vector3d x;
+		Eigen::Vector3d y;
+		std::vector<LoopPolygon> polygons;
+		size_t outer_index = 0;
+		if (!extrusion_face_polygons(face, settings::CircleSegments::defaultvalue, precision, origin, x, y, polygons, outer_index)) {
+			return false;
+		}
+		auto dir = extrusion->direction->ccomponents();
+		if (dir.norm() < 1.e-12) {
+			return false;
+		}
+		dir.normalize();
+		auto normal = x.cross(y);
+		if (normal.norm() < 1.e-12) {
+			return false;
+		}
 		normal.normalize();
-		auto direction_sign = normal.dot(dir);
-		if (std::abs(direction_sign) < 1.e-9) {
-			return std::nullopt;
+		if (std::abs(normal.dot(dir)) < 1.e-9) {
+			return false;
 		}
-		LoopPolygon polygon;
-		if (!append_simple_loop(face->children.front(), origin, x, y, precision, polygon)) {
-			return std::nullopt;
-		}
-		manifold::SimplePolygonIdx polygon_idx;
-		polygon_idx.reserve(polygon.size());
-		for (size_t i = 0; i < polygon.size(); ++i) {
-			polygon_idx.push_back({ polygon[i].uv, (int)i });
-		}
-		manifold::PolygonsIdx polygons = { polygon_idx };
-		auto triangles = manifold::TriangulateIdx(polygons, precision, true);
-		if (triangles.empty()) {
-			return std::nullopt;
-		}
-		auto offset = dir * extrusion->depth;
-		MeshBuilder builder(precision);
-		std::vector<uint64_t> bottom;
-		std::vector<uint64_t> top;
-		bottom.reserve(polygon.size());
-		top.reserve(polygon.size());
-		for (const auto& point : polygon) {
-			bottom.push_back(builder.add_vertex(point.xyz));
-			top.push_back(builder.add_vertex(point.xyz + offset));
-		}
-		for (const auto& tri : triangles) {
-			auto a = (size_t)tri[0];
-			auto b = (size_t)tri[1];
-			auto c = (size_t)tri[2];
-			if (direction_sign > 0.) {
-				builder.add_triangle(bottom[c], bottom[b], bottom[a], 0);
-				builder.add_triangle(top[a], top[b], top[c], 1);
-			} else {
-				builder.add_triangle(bottom[a], bottom[b], bottom[c], 0);
-				builder.add_triangle(top[c], top[b], top[a], 1);
-			}
-		}
-		for (size_t i = 0; i < polygon.size(); ++i) {
-			auto j = (i + 1) % polygon.size();
-			if (direction_sign > 0.) {
-				builder.add_triangle(bottom[i], bottom[j], top[j], 2 + (uint64_t)i);
-				builder.add_triangle(bottom[i], top[j], top[i], 2 + (uint64_t)i);
-			} else {
-				builder.add_triangle(bottom[i], top[j], bottom[j], 2 + (uint64_t)i);
-				builder.add_triangle(bottom[i], top[i], top[j], 2 + (uint64_t)i);
-			}
-		}
-		return part_from_mesh(builder.build(), true);
+		return !polygons.empty();
 	}
 
 	Mesh transform_mesh(const Mesh& mesh, const taxonomy::matrix4::ptr& place) {
@@ -866,6 +1437,32 @@ namespace {
 		return manifold::Manifold::BatchBoolean(operands, manifold::OpType::Add);
 	}
 
+	std::optional<manifold::Box> results_bbox(const IfcGeom::ConversionResults& results) {
+		bool any = false;
+		manifold::Box bbox;
+		for (const auto& result : results) {
+			auto operand = result_to_manifold(result);
+			if (!operand) {
+				return std::nullopt;
+			}
+			auto part_box = operand->BoundingBox();
+			if (!part_box.IsFinite()) {
+				return std::nullopt;
+			}
+			if (!any) {
+				bbox = part_box;
+				any = true;
+			} else {
+				bbox.Union(part_box.min);
+				bbox.Union(part_box.max);
+			}
+		}
+		if (!any) {
+			return std::nullopt;
+		}
+		return bbox;
+	}
+
 	std::optional<manifold::Manifold> boolean_result_from_operands(const std::vector<manifold::Manifold>& operands, taxonomy::boolean_result::operation_t operation) {
 		if (operands.empty()) {
 			return std::nullopt;
@@ -886,9 +1483,9 @@ namespace {
 }
 
 bool ManifoldKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcGeom::ConversionResults& results) {
-	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get());
+	auto part = part_from_extrusion(extrusion, settings_.get<settings::Precision>().get(), dilation_hack, settings_.get<settings::CircleSegments>().get());
 	if (!part) {
-		logger::warning("Manifold kernel: failed to convert extrusion, only simple extrusions with a single polygonal outer bound are supported", extrusion->instance);
+		logger::warning("Manifold kernel: failed to convert extrusion, requires planar bounds with line, circle or ellipse edges", extrusion->instance);
 		return false;
 	}
 	results.emplace_back(IfcGeom::ConversionResult(
@@ -901,7 +1498,7 @@ bool ManifoldKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, IfcG
 
 bool ManifoldKernel::convert_impl(const taxonomy::shell::ptr shell, IfcGeom::ConversionResults& results) {
 	manifold::Manifold::Error status = manifold::Manifold::Error::NoError;
-	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), &status);
+	auto part = part_from_shell(shell, settings_.get<settings::Precision>().get(), dilation_hack, &status);
 	if (!part) {
 		logger::warning("Manifold kernel: failed to convert shell, requires planar polygonal faces with explicit vertices", shell->instance);
 		return false;
@@ -922,7 +1519,7 @@ bool ManifoldKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::Con
 	for (const auto& shell : solid->children) {
 		const auto precision = settings_.get<settings::Precision>().get();
 		manifold::Manifold::Error before_status = manifold::Manifold::Error::NoError;
-		auto part = part_from_shell(shell, precision, &before_status);
+		auto part = part_from_shell(shell, precision, dilation_hack, &before_status);
 		if (!part) {
 			logger::warning("Manifold kernel: failed to convert solid shell, requires planar polygonal faces with explicit vertices", shell->instance);
 			return false;
@@ -955,22 +1552,68 @@ bool ManifoldKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::Con
 bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeom::ConversionResults& results) {
 	std::vector<manifold::Manifold> operands;
 	taxonomy::style::ptr style;
+	std::optional<manifold::Box> first_bbox;
+	const auto precision = settings_.get<settings::Precision>().get();
+	bool first = true;
 	for (const auto& child : br->children) {
-		IfcGeom::ConversionResults converted;
-		if (!AbstractKernel::convert(child, converted)) {
-			logger::warning("Manifold kernel: failed to convert boolean operand", child->instance);
+		std::optional<manifold::Manifold> operand;
+		auto solid = std::dynamic_pointer_cast<taxonomy::solid>(child);
+        taxonomy::face::ptr face = solid ? halfspace_face(solid) : nullptr;
+		// @todo reset upon exceptions
+        dilation_hack = first ? 0. : precision * 10.;
+		if (!first && br->operation == taxonomy::boolean_result::SUBTRACTION && face) {
+			if (!first_bbox) {
+				logger::warning("Manifold kernel: cannot fit halfspace operand without a valid first operand bounds", child->instance);
+				return false;
+			}
+			HalfspaceBuildState state;
+            auto part = part_from_halfspace_solid(state, solid, face, *first_bbox, precision, dilation_hack);
+			if (!part) {
+				if (state.unchanged && br->operation == taxonomy::boolean_result::SUBTRACTION) {
+					logger::warning("Manifold kernel: halfspace subtraction yields unchanged volume", child->instance);
+					continue;
+				}
+				logger::warning("Manifold kernel: failed to fit halfspace boolean operand to first operand bounds", child->instance);
+				return false;
+			}
+			if (!part->solid) {
+				logger::warning("Manifold kernel: fitted halfspace operand is not a valid manifold solid", child->instance);
+				return false;
+			}
+			operand = *part->solid;
+			if (!style && child->surface_style) {
+				style = child->surface_style;
+			}
+		} else {
+			IfcGeom::ConversionResults converted;
+			if (!AbstractKernel::convert(child, converted)) {
+				logger::warning("Manifold kernel: failed to convert boolean operand", child->instance);
+				return false;
+			}
+			operand = results_to_operand(converted);
+			if (!operand) {
+				logger::warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
+				return false;
+			}
+			if (!style) {
+				style = fallback_style(child, converted);
+			}
+		}
+		if (!operand) {
 			return false;
 		}
-		auto operand = results_to_operand(converted);
-		if (!operand) {
-			logger::warning("Manifold kernel: boolean operand is not a valid manifold solid", child->instance);
-			return false;
+		if (first) {
+			auto bbox = operand->BoundingBox();
+			if (!bbox.IsFinite()) {
+				logger::warning("Manifold kernel: first boolean operand has no valid bounds", child->instance);
+				return false;
+			}
+			first_bbox = bbox;
 		}
 		operands.push_back(*operand);
-		if (!style) {
-			style = fallback_style(child, converted);
-		}
+		first = false;
 	}
+    dilation_hack = 0.;
 	auto result = boolean_result_from_operands(operands, br->operation);
 	if (!result || result->IsEmpty()) {
 		logger::warning("Manifold kernel: boolean operation produced no result", br->instance);
@@ -986,13 +1629,19 @@ bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeo
 
 bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>>& openings, const IfcGeom::ConversionResults& entity_shapes, const taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) {
 	std::vector<manifold::Manifold> opening_operands;
+	auto entity_bbox = results_bbox(entity_shapes);
+	if (!entity_bbox) {
+		logger::warning("Manifold kernel: host shape has no valid bounds for halfspace fitting");
+		return false;
+	}
+    dilation_hack = settings_.get<settings::Precision>().get() * 10.;
 	for (const auto& opening : openings) {
+		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
 		IfcGeom::ConversionResults converted;
 		if (!AbstractKernel::convert(opening.first, converted)) {
 			logger::warning("Manifold kernel: failed to convert opening operand", opening.first->instance);
 			return false;
 		}
-		const auto relative = taxonomy::make<taxonomy::matrix4>(entity_trsf.ccomponents().inverse() * opening.second.ccomponents());
 		for (const auto& result : converted) {
 			auto moved = std::unique_ptr<IfcGeom::ConversionResultShape>(result.Shape()->moved(taxonomy::make<taxonomy::matrix4>(relative->ccomponents() * result.Placement()->ccomponents())));
 			auto* shape = dynamic_cast<ifcopenshell::geometry::ManifoldShape*>(moved.get());
@@ -1008,6 +1657,7 @@ bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<st
 			opening_operands.push_back(*operand);
 		}
 	}
+    dilation_hack = 0.;
 	if (opening_operands.empty()) {
 		return false;
 	}
