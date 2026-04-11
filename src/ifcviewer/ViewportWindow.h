@@ -36,6 +36,13 @@ struct MaterialInfo {
     float r = 0.75f, g = 0.75f, b = 0.78f, a = 1.0f;
 };
 
+struct ObjectDrawInfo {
+    uint32_t index_offset;  // byte offset into EBO
+    uint32_t index_count;   // number of indices
+    float aabb_min[3];      // world-space AABB
+    float aabb_max[3];
+};
+
 struct UploadChunk {
     // Interleaved per-vertex layout (8 floats / 32 bytes per vertex):
     //   pos(3 float) + normal(3 float) + object_id(1 float bitcast from uint)
@@ -77,6 +84,7 @@ private:
     void buildAxisGizmo();
     bool growVbo(size_t needed_total);
     bool growEbo(size_t needed_total);
+    void buildVisibleList(const QMatrix4x4& vp);
 
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
@@ -116,11 +124,14 @@ private:
     int pick_width_ = 0;
     int pick_height_ = 0;
 
-    // The entire scene is a single mega-batch: per-vertex color removes the
-    // need to switch materials between draw calls. Indices are written into
-    // the EBO already offset by base_vertex so one glDrawElements covers all.
+    // Per-object draw metadata for frustum culling.
+    std::vector<ObjectDrawInfo> object_draw_info_;
     uint32_t total_index_count_ = 0;
     std::mutex upload_mutex_;
+
+    // Scratch buffers reused each frame to avoid allocation.
+    std::vector<GLsizei> visible_counts_;
+    std::vector<const void*> visible_offsets_;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};

@@ -26,7 +26,9 @@
 #include <QtOpenGL/QOpenGLVersionFunctionsFactory>
 
 #include <cstring>
+#include <cmath>
 #include <algorithm>
+#include <limits>
 
 static const size_t INITIAL_VBO_SIZE = 64 * 1024 * 1024;  // 64 MB
 static const size_t INITIAL_EBO_SIZE = 32 * 1024 * 1024;  // 32 MB
@@ -421,9 +423,31 @@ void ViewportWindow::uploadChunk(const UploadChunk& chunk) {
     }
     gl_->glNamedBufferSubData(ebo_, ebo_used_, ib_size, global_indices.data());
 
+    // Compute AABB from vertex positions in this chunk.
+    ObjectDrawInfo info;
+    info.index_offset = static_cast<uint32_t>(ebo_used_);
+    info.index_count = static_cast<uint32_t>(chunk.indices.size());
+
+    const size_t num_verts = chunk.vertices.size() / VERTEX_STRIDE;
+    if (num_verts > 0) {
+        info.aabb_min[0] = info.aabb_min[1] = info.aabb_min[2] =  std::numeric_limits<float>::max();
+        info.aabb_max[0] = info.aabb_max[1] = info.aabb_max[2] = -std::numeric_limits<float>::max();
+        for (size_t v = 0; v < num_verts; ++v) {
+            const float* pos = &chunk.vertices[v * VERTEX_STRIDE];
+            for (int a = 0; a < 3; ++a) {
+                if (pos[a] < info.aabb_min[a]) info.aabb_min[a] = pos[a];
+                if (pos[a] > info.aabb_max[a]) info.aabb_max[a] = pos[a];
+            }
+        }
+    } else {
+        info.aabb_min[0] = info.aabb_min[1] = info.aabb_min[2] = 0.0f;
+        info.aabb_max[0] = info.aabb_max[1] = info.aabb_max[2] = 0.0f;
+    }
+
     {
         std::lock_guard<std::mutex> lock(upload_mutex_);
         total_index_count_ += static_cast<uint32_t>(chunk.indices.size());
+        object_draw_info_.push_back(info);
     }
 
     vbo_used_ += vb_size;
@@ -442,6 +466,7 @@ void ViewportWindow::resetScene() {
     vertex_count_ = 0;
     total_triangles_ = 0;
     selected_object_id_ = 0;
+    object_draw_info_.clear();
 }
 
 void ViewportWindow::setSelectedObjectId(uint32_t id) {
@@ -504,6 +529,63 @@ void ViewportWindow::updateCamera() {
     proj_matrix_.perspective(45.0f, aspect, 0.1f, camera_distance_ * 10.0f);
 }
 
+void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
+    visible_counts_.clear();
+    visible_offsets_.clear();
+
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    if (object_draw_info_.empty()) return;
+
+    // Extract 6 frustum planes from the view-projection matrix.
+    // Each plane is (a, b, c, d) where ax + by + cz + d >= 0 is inside.
+    // QMatrix4x4 is stored column-major; operator(row, col) gives element.
+    float planes[6][4];
+    for (int i = 0; i < 4; ++i) {
+        planes[0][i] = vp(3, i) + vp(0, i);  // left
+        planes[1][i] = vp(3, i) - vp(0, i);  // right
+        planes[2][i] = vp(3, i) + vp(1, i);  // bottom
+        planes[3][i] = vp(3, i) - vp(1, i);  // top
+        planes[4][i] = vp(3, i) + vp(2, i);  // near
+        planes[5][i] = vp(3, i) - vp(2, i);  // far
+    }
+    // Normalize planes.
+    for (int p = 0; p < 6; ++p) {
+        float len = std::sqrt(planes[p][0] * planes[p][0] +
+                              planes[p][1] * planes[p][1] +
+                              planes[p][2] * planes[p][2]);
+        if (len > 0.0f) {
+            float inv = 1.0f / len;
+            planes[p][0] *= inv;
+            planes[p][1] *= inv;
+            planes[p][2] *= inv;
+            planes[p][3] *= inv;
+        }
+    }
+
+    visible_counts_.reserve(object_draw_info_.size());
+    visible_offsets_.reserve(object_draw_info_.size());
+
+    for (const auto& obj : object_draw_info_) {
+        bool visible = true;
+        for (int p = 0; p < 6; ++p) {
+            // p-vertex: the AABB corner most in the direction of the plane normal.
+            float px = planes[p][0] >= 0.0f ? obj.aabb_max[0] : obj.aabb_min[0];
+            float py = planes[p][1] >= 0.0f ? obj.aabb_max[1] : obj.aabb_min[1];
+            float pz = planes[p][2] >= 0.0f ? obj.aabb_max[2] : obj.aabb_min[2];
+            float dist = planes[p][0] * px + planes[p][1] * py + planes[p][2] * pz + planes[p][3];
+            if (dist < 0.0f) {
+                visible = false;
+                break;
+            }
+        }
+        if (visible) {
+            visible_counts_.push_back(static_cast<GLsizei>(obj.index_count));
+            visible_offsets_.push_back(reinterpret_cast<const void*>(
+                static_cast<uintptr_t>(obj.index_offset)));
+        }
+    }
+}
+
 void ViewportWindow::render() {
     if (!gl_initialized_ || !isExposed()) return;
 
@@ -524,11 +606,12 @@ void ViewportWindow::render() {
 
     gl_->glBindVertexArray(vao_);
 
-    {
-        std::lock_guard<std::mutex> lock(upload_mutex_);
-        if (total_index_count_ > 0) {
-            gl_->glDrawElements(GL_TRIANGLES, total_index_count_, GL_UNSIGNED_INT, nullptr);
-        }
+    buildVisibleList(vp);
+    if (!visible_counts_.empty()) {
+        gl_->glMultiDrawElements(GL_TRIANGLES,
+            visible_counts_.data(), GL_UNSIGNED_INT,
+            visible_offsets_.data(),
+            static_cast<GLsizei>(visible_counts_.size()));
     }
 
     renderAxisGizmo();
@@ -588,11 +671,12 @@ void ViewportWindow::renderPickPass() {
 
     gl_->glBindVertexArray(vao_);
 
-    {
-        std::lock_guard<std::mutex> lock(upload_mutex_);
-        if (total_index_count_ > 0) {
-            gl_->glDrawElements(GL_TRIANGLES, total_index_count_, GL_UNSIGNED_INT, nullptr);
-        }
+    // Reuse the visible list from the most recent render() call.
+    if (!visible_counts_.empty()) {
+        gl_->glMultiDrawElements(GL_TRIANGLES,
+            visible_counts_.data(), GL_UNSIGNED_INT,
+            visible_offsets_.data(),
+            static_cast<GLsizei>(visible_counts_.size()));
     }
 
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
