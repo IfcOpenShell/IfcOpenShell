@@ -71,6 +71,7 @@ option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
+option(BUILD_IFCVIEWER "Build IfcViewer, a high-performance IFC viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_PACKAGE "" OFF)
 
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
@@ -671,6 +672,9 @@ if(BUILD_IFCGEOM)
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
+if(BUILD_IFCVIEWER)
+    add_subdirectory(../src/ifcviewer ifcviewer)
+endif()
 
 # Cmake uninstall target
 if(NOT TARGET uninstall)
