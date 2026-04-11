@@ -93,6 +93,11 @@ except Exception:
 from . import guid
 from .ifcopenshell_wrapper import entity_instance, file
 from .file import rocksdb_lazy_instance
+# Hacks!
+from .entity_instance import _patch_swig_comparisons
+_patch_swig_comparisons()
+del _patch_swig_comparisons
+# End hacks!
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols

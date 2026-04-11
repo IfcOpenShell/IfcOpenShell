@@ -30,7 +30,7 @@ class file;
 
 class IFC_PARSE_API spf_header {
   private:
-    file* file_;
+    ifcopenshell::file* file_;
 
     std::array<std::shared_ptr<instance_data>, 3> header_entities_;
 

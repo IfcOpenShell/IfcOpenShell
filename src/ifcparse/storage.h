@@ -31,6 +31,7 @@ namespace rocksdb {
 #include <iterator>
 #include <type_traits>
 #include <iostream>
+#include <deque>
 #include <vector>
 #include <deque>
 #include <list>
