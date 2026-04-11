@@ -532,6 +532,7 @@ void ViewportWindow::updateCamera() {
 void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
     visible_counts_.clear();
     visible_offsets_.clear();
+    visible_triangles_ = 0;
 
     std::lock_guard<std::mutex> lock(upload_mutex_);
     if (object_draw_info_.empty()) return;
@@ -582,6 +583,7 @@ void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
             visible_counts_.push_back(static_cast<GLsizei>(obj.index_count));
             visible_offsets_.push_back(reinterpret_cast<const void*>(
                 static_cast<uintptr_t>(obj.index_offset)));
+            visible_triangles_ += obj.index_count / 3;
         }
     }
 }
@@ -617,6 +619,25 @@ void ViewportWindow::render() {
     renderAxisGizmo();
 
     context_->swapBuffers(this);
+
+    // Compute FPS (updated once per second to avoid flicker).
+    float dt = frame_clock_.restart() / 1000.0f;
+    accumulated_time_ += dt;
+    frame_count_++;
+    if (accumulated_time_ >= 1.0f) {
+        last_fps_ = static_cast<float>(frame_count_) / accumulated_time_;
+        frame_count_ = 0;
+        accumulated_time_ = 0.0f;
+
+        FrameStats stats;
+        stats.fps = last_fps_;
+        stats.frame_time_ms = 1000.0f / last_fps_;
+        stats.total_objects = static_cast<uint32_t>(object_draw_info_.size());
+        stats.visible_objects = static_cast<uint32_t>(visible_counts_.size());
+        stats.total_triangles = total_triangles_;
+        stats.visible_triangles = visible_triangles_;
+        emit frameStatsUpdated(stats);
+    }
 }
 
 void ViewportWindow::renderAxisGizmo() {

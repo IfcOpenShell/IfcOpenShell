@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "MainWindow.h"
+#include "AppSettings.h"
 #include "SettingsWindow.h"
 
 #include <QApplication>
@@ -42,6 +43,23 @@ MainWindow::MainWindow(QWidget* parent)
     connect(streamer_, &GeometryStreamer::errorOccurred, this, [this](const QString& msg) {
         QMessageBox::warning(this, "Error", msg);
     }, Qt::QueuedConnection);
+
+    connect(viewport_, &ViewportWindow::frameStatsUpdated, this, [this](const ViewportWindow::FrameStats& s) {
+        if (!stats_label_->isVisible()) return;
+        stats_label_->setText(
+            QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri")
+                .arg(s.fps, 0, 'f', 1)
+                .arg(s.frame_time_ms, 0, 'f', 1)
+                .arg(s.visible_objects)
+                .arg(s.total_objects)
+                .arg(s.visible_triangles)
+                .arg(s.total_triangles));
+    });
+
+    connect(&AppSettings::instance(), &AppSettings::showStatsChanged, this, [this](bool show) {
+        stats_label_->setVisible(show);
+        if (!show) stats_label_->clear();
+    });
 
     connect(&element_poll_timer_, &QTimer::timeout, this, &MainWindow::pollNewElements);
     element_poll_timer_.setInterval(100);
@@ -91,7 +109,10 @@ void MainWindow::setupUi() {
     progress_bar_->setMaximumWidth(200);
     progress_bar_->setVisible(false);
     status_label_ = new QLabel("Ready");
+    stats_label_ = new QLabel();
+    stats_label_->setVisible(AppSettings::instance().showStats());
     statusBar()->addWidget(status_label_, 1);
+    statusBar()->addPermanentWidget(stats_label_);
     statusBar()->addPermanentWidget(progress_bar_);
 }
 

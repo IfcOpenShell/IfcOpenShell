@@ -24,6 +24,7 @@
 namespace {
 constexpr const char* kGeometryLibraryKey = "geometry/library";
 constexpr const char* kGeometryLibraryDefault = "hybrid-cgal-simple-opencascade";
+constexpr const char* kShowStatsKey = "viewport/show_stats";
 }
 
 AppSettings& AppSettings::instance() {
@@ -46,12 +47,25 @@ void AppSettings::setGeometryLibrary(const QString& value) {
     emit geometryLibraryChanged(value);
 }
 
+bool AppSettings::showStats() const {
+    return show_stats_;
+}
+
+void AppSettings::setShowStats(bool value) {
+    if (show_stats_ == value) return;
+    show_stats_ = value;
+    persist();
+    emit showStatsChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
+    show_stats_ = settings.value(kShowStatsKey, false).toBool();
 }
 
 void AppSettings::persist() {
     QSettings settings;
     settings.setValue(kGeometryLibraryKey, geometry_library_);
+    settings.setValue(kShowStatsKey, show_stats_);
 }

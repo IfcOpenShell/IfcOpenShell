@@ -20,6 +20,7 @@
 #include "SettingsWindow.h"
 #include "AppSettings.h"
 
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLineEdit>
@@ -39,6 +40,9 @@ void SettingsWindow::setupUi() {
     geometry_library_edit_ = new QLineEdit(this);
     geometry_library_edit_->setMinimumWidth(280);
     form->addRow("Geometry Library", geometry_library_edit_);
+
+    show_stats_check_ = new QCheckBox(this);
+    form->addRow("Show Performance Stats", show_stats_check_);
 
     auto* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -60,9 +64,11 @@ void SettingsWindow::showEvent(QShowEvent* event) {
 
 void SettingsWindow::syncFromSettings() {
     geometry_library_edit_->setText(AppSettings::instance().geometryLibrary());
+    show_stats_check_->setChecked(AppSettings::instance().showStats());
 }
 
 void SettingsWindow::onAccepted() {
     AppSettings::instance().setGeometryLibrary(geometry_library_edit_->text());
+    AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     accept();
 }

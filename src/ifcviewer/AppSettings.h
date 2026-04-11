@@ -34,8 +34,12 @@ public:
     QString geometryLibrary() const;
     void setGeometryLibrary(const QString& value);
 
+    bool showStats() const;
+    void setShowStats(bool value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
+    void showStatsChanged(bool value);
 
 private:
     AppSettings();
@@ -43,6 +47,7 @@ private:
     void persist();
 
     QString geometry_library_;
+    bool show_stats_ = false;
 };
 
 #endif // APPSETTINGS_H

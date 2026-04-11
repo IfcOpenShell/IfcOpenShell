@@ -65,9 +65,19 @@ public:
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
 
+    struct FrameStats {
+        float fps;
+        float frame_time_ms;
+        uint32_t total_objects;
+        uint32_t visible_objects;
+        uint32_t total_triangles;
+        uint32_t visible_triangles;
+    };
+
 signals:
     void objectPicked(uint32_t object_id);
     void initialized();
+    void frameStatsUpdated(const ViewportWindow::FrameStats& stats);
 
 protected:
     void exposeEvent(QExposeEvent* event) override;
@@ -152,6 +162,10 @@ private:
 
     // Stats
     uint32_t total_triangles_ = 0;
+    uint32_t visible_triangles_ = 0;
+    int frame_count_ = 0;
+    float accumulated_time_ = 0.0f;
+    float last_fps_ = 0.0f;
 };
 
 #endif // VIEWPORTWINDOW_H

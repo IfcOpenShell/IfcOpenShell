@@ -66,6 +66,7 @@ private:
     QTableWidget* property_table_ = nullptr;
     QProgressBar* progress_bar_ = nullptr;
     QLabel* status_label_ = nullptr;
+    QLabel* stats_label_ = nullptr;
     QTimer element_poll_timer_;
     QElapsedTimer load_timer_;
 

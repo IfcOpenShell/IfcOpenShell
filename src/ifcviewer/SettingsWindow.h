@@ -22,6 +22,7 @@
 
 #include <QDialog>
 
+class QCheckBox;
 class QLineEdit;
 class QShowEvent;
 
@@ -41,6 +42,7 @@ private:
     void syncFromSettings();
 
     QLineEdit* geometry_library_edit_ = nullptr;
+    QCheckBox* show_stats_check_ = nullptr;
 };
 
 #endif
