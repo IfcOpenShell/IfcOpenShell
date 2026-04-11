@@ -244,23 +244,23 @@ void MainWindow::populateProperties(uint32_t object_id) {
     auto* file = streamer_->ifcFile();
     if (!file) return;
 
-    auto* product = file->instance_by_id(info.ifc_id);
+    auto product = file->instance_by_id(info.ifc_id);
     if (!product) return;
 
     // Show all direct attributes
-    auto& decl = product->declaration();
+    auto& decl = product.declaration();
     if (auto* entity = decl.as_entity()) {
         for (size_t i = 0; i < entity->attribute_count(); ++i) {
             auto* attr = entity->attribute_by_index(i);
             try {
-                auto val = product->get_attribute_value(i);
+                auto val = product.get_attribute_value(i);
                 if (!val.isNull()) {
                     std::string str_val;
                     try {
                         str_val = static_cast<std::string>(val);
                     } catch (...) {
                         // Not a string-convertible attribute (entity ref, aggregate, etc.)
-                        str_val = "<" + std::string(IfcUtil::ArgumentTypeToString(val.type())) + ">";
+                        str_val = "<" + std::string(ifcopenshell::argument_type_to_string(val.type())) + ">";
                     }
                     addRow(QString::fromStdString(attr->name()), QString::fromStdString(str_val));
                 }

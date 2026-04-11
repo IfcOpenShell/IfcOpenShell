@@ -94,7 +94,7 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
 
 void GeometryStreamer::run(const std::string& path, int num_threads) {
     try {
-        ifc_file_ = std::make_unique<IfcParse::IfcFile>(path);
+        ifc_file_ = std::make_unique<ifcopenshell::file>(path);
     } catch (const std::exception& e) {
         emit errorOccurred(QString("Failed to parse IFC file: %1").arg(e.what()));
         return;
@@ -112,7 +112,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         auto kernel = ifcopenshell::geometry::kernels::construct(
             ifc_file_.get(), geometry_library, settings);
         iterator = std::make_unique<IfcGeom::Iterator>(
-            std::move(kernel), settings, ifc_file_.get(), std::vector<IfcGeom::filter_t>(), num_threads);
+            std::move(kernel), settings, ifc_file_.get(), std::vector<ifcopenshell::geometry::filter_t>(), num_threads);
     } catch (const std::exception& e) {
         emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
         return;

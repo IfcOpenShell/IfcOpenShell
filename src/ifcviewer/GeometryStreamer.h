@@ -31,7 +31,7 @@
 #include <mutex>
 #include <deque>
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 #include "../ifcgeom/Iterator.h"
 
 #include "ViewportWindow.h"
@@ -57,7 +57,7 @@ public:
     bool isRunning() const { return running_.load(); }
     int progress() const { return progress_.load(); }
 
-    IfcParse::IfcFile* ifcFile() const { return ifc_file_.get(); }
+    ifcopenshell::file* ifcFile() const { return ifc_file_.get(); }
 
     // Thread-safe access to discovered elements
     std::vector<ElementInfo> drainElements();
@@ -73,7 +73,7 @@ private:
 
     UploadChunk convertElement(const IfcGeom::TriangulationElement* elem, uint32_t object_id);
 
-    std::unique_ptr<IfcParse::IfcFile> ifc_file_;
+    std::unique_ptr<ifcopenshell::file> ifc_file_;
     std::unique_ptr<QThread> worker_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> cancel_requested_{false};
