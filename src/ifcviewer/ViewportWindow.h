@@ -28,21 +28,21 @@
 #include <QMatrix4x4>
 #include <QVector3D>
 
+#include <deque>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <cstdint>
 #include <mutex>
+#include <thread>
+#include <memory>
+#include <atomic>
+
+#include "BvhAccel.h"
+#include "SidecarCache.h"
 
 struct MaterialInfo {
     float r = 0.75f, g = 0.75f, b = 0.78f, a = 1.0f;
-};
-
-struct ObjectDrawInfo {
-    uint32_t index_offset;  // byte offset into EBO
-    uint32_t index_count;   // number of indices
-    uint32_t model_id;      // which model this object belongs to
-    float aabb_min[3];      // world-space AABB
-    float aabb_max[3];
 };
 
 struct UploadChunk {
@@ -56,6 +56,32 @@ struct UploadChunk {
     uint32_t model_id = 0;
 };
 
+// Per-model GPU state: own VAO, VBO, EBO, draw info, BVH.
+struct ModelGpuData {
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLuint ebo = 0;
+    size_t vbo_capacity = 0;
+    size_t ebo_capacity = 0;
+    size_t vbo_used = 0;   // bytes
+    size_t ebo_used = 0;   // bytes
+    uint32_t vertex_count = 0;
+    uint32_t total_triangles = 0;
+    std::vector<ObjectDrawInfo> draw_info;
+    uint32_t active_draw_count = 0; // how many objects are drawable (progressive upload)
+    bool hidden = false;
+};
+
+// Pending progressive upload — VBO first, then EBO.
+struct PendingUpload {
+    uint32_t model_id = 0;
+    std::vector<float> vertices;
+    std::vector<uint32_t> indices;
+    std::shared_ptr<BvhSet> bvh_set;
+    size_t vbo_uploaded = 0;  // bytes
+    size_t ebo_uploaded = 0;  // bytes
+};
+
 class ViewportWindow : public QWindow {
     Q_OBJECT
 public:
@@ -65,9 +91,28 @@ public:
     void uploadChunk(const UploadChunk& chunk);
     void resetScene();
 
+    // Bulk upload pre-built geometry from a sidecar cache.
+    // Creates a perfectly-sized per-model buffer set. No copy.
+    void uploadBulk(uint32_t model_id,
+                    std::vector<float> vertices,
+                    std::vector<uint32_t> indices,
+                    const std::vector<ObjectDrawInfo>& draw_info,
+                    std::shared_ptr<BvhSet> bvh_set);
+
     void hideModel(uint32_t model_id);
     void showModel(uint32_t model_id);
     void removeModel(uint32_t model_id);
+
+    // Build BVH and optionally write a sidecar cache.
+    void buildBvhAsync(uint32_t model_id,
+                       const std::string& ifc_path = "",
+                       uint64_t ifc_file_size = 0,
+                       std::vector<PackedElementInfo> sidecar_elements = {},
+                       std::string sidecar_string_table = {});
+
+    // Read snapshots of a model's GPU buffers into CPU vectors.
+    std::vector<uint32_t> readbackEbo(uint32_t model_id) const;
+    std::vector<float> readbackVbo(uint32_t model_id) const;
 
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
@@ -99,9 +144,16 @@ private:
     void updateCamera();
     void buildShaders();
     void buildAxisGizmo();
-    bool growVbo(size_t needed_total);
-    bool growEbo(size_t needed_total);
+    void setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo);
+    bool growModelVbo(ModelGpuData& m, size_t needed_total);
+    bool growModelEbo(ModelGpuData& m, size_t needed_total);
     void buildVisibleList(const QMatrix4x4& vp);
+    void traverseBvh(const ModelBvh& mbvh, const ModelGpuData& mgpu,
+                     const float planes[6][4]);
+    static bool aabbInFrustum(const float aabb_min[3], const float aabb_max[3],
+                              const float planes[6][4]);
+    void applyBvhResult();
+    void processPendingUploads();
 
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
@@ -124,15 +176,9 @@ private:
     GLuint axis_vao_ = 0;
     GLuint axis_vbo_ = 0;
 
-    // Geometry buffers - one big buffer pair
-    GLuint vao_ = 0;
-    GLuint vbo_ = 0;
-    GLuint ebo_ = 0;
-    size_t vbo_capacity_ = 0;
-    size_t ebo_capacity_ = 0;
-    size_t vbo_used_ = 0;  // in bytes
-    size_t ebo_used_ = 0;  // in bytes
-    uint32_t vertex_count_ = 0;
+    // Per-model GPU data
+    std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
+    std::mutex models_mutex_;
 
     // Pick framebuffer
     GLuint pick_fbo_ = 0;
@@ -141,16 +187,20 @@ private:
     int pick_width_ = 0;
     int pick_height_ = 0;
 
-    // Per-object draw metadata for frustum culling.
-    std::vector<ObjectDrawInfo> object_draw_info_;
-    std::unordered_set<uint32_t> hidden_models_;
-    std::unordered_set<uint32_t> removed_models_;
-    uint32_t total_index_count_ = 0;
-    std::mutex upload_mutex_;
+    // Per-model BVH
+    std::unordered_map<uint32_t, std::shared_ptr<const BvhSet>> model_bvhs_;
+
+    // Progressive upload queue
+    std::deque<PendingUpload> pending_uploads_;
 
     // Scratch buffers reused each frame to avoid allocation.
-    std::vector<GLsizei> visible_counts_;
-    std::vector<const void*> visible_offsets_;
+    struct ModelDrawCmd {
+        GLuint vao;
+        std::vector<GLsizei> counts;
+        std::vector<const void*> offsets;
+    };
+    std::vector<ModelDrawCmd> frame_draw_cmds_;
+    uint32_t visible_triangles_ = 0;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};
@@ -169,9 +219,17 @@ private:
     bool pick_requested_ = false;
     int pick_x_ = 0, pick_y_ = 0;
 
+    // BVH build (phase 2)
+    struct PendingBvh {
+        uint32_t model_id;
+        std::shared_ptr<BvhSet> bvh_set;
+        EboReorderResult ebo_reorder;
+    };
+    std::unique_ptr<PendingBvh> pending_bvh_;
+    std::mutex bvh_result_mutex_;
+    std::thread bvh_build_thread_;
+
     // Stats
-    uint32_t total_triangles_ = 0;
-    uint32_t visible_triangles_ = 0;
     int frame_count_ = 0;
     float accumulated_time_ = 0.0f;
     float last_fps_ = 0.0f;

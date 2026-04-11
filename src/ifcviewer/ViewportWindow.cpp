@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "ViewportWindow.h"
+#include "SidecarCache.h"
 
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -32,7 +33,6 @@
 
 static const size_t INITIAL_VBO_SIZE = 64 * 1024 * 1024;  // 64 MB
 static const size_t INITIAL_EBO_SIZE = 32 * 1024 * 1024;  // 32 MB
-// Cap buffer growth so a runaway upload can't try to allocate the world.
 static const size_t MAX_BUFFER_SIZE = 4ull * 1024 * 1024 * 1024;  // 4 GB
 static const int VERTEX_STRIDE = 8;  // pos(3) + normal(3) + object_id(1) + color(1 packed)
 
@@ -192,12 +192,16 @@ ViewportWindow::ViewportWindow(QWindow* parent)
 }
 
 ViewportWindow::~ViewportWindow() {
+    if (bvh_build_thread_.joinable())
+        bvh_build_thread_.join();
     if (context_) {
         context_->makeCurrent(this);
         if (gl_) {
-            if (vao_) gl_->glDeleteVertexArrays(1, &vao_);
-            if (vbo_) gl_->glDeleteBuffers(1, &vbo_);
-            if (ebo_) gl_->glDeleteBuffers(1, &ebo_);
+            for (auto& [mid, m] : models_gpu_) {
+                if (m.vao) gl_->glDeleteVertexArrays(1, &m.vao);
+                if (m.vbo) gl_->glDeleteBuffers(1, &m.vbo);
+                if (m.ebo) gl_->glDeleteBuffers(1, &m.ebo);
+            }
             if (axis_vao_) gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_) gl_->glDeleteBuffers(1, &axis_vbo_);
             if (main_program_) gl_->glDeleteProgram(main_program_);
@@ -231,46 +235,6 @@ void ViewportWindow::initGL() {
     buildShaders();
     buildAxisGizmo();
 
-    // Create VAO
-    gl_->glCreateVertexArrays(1, &vao_);
-
-    // Create VBO with initial capacity
-    vbo_capacity_ = INITIAL_VBO_SIZE;
-    gl_->glCreateBuffers(1, &vbo_);
-    gl_->glNamedBufferStorage(vbo_, vbo_capacity_, nullptr,
-        GL_DYNAMIC_STORAGE_BIT);
-
-    // Create EBO with initial capacity
-    ebo_capacity_ = INITIAL_EBO_SIZE;
-    gl_->glCreateBuffers(1, &ebo_);
-    gl_->glNamedBufferStorage(ebo_, ebo_capacity_, nullptr,
-        GL_DYNAMIC_STORAGE_BIT);
-
-    // Vertex layout: pos(3f) + normal(3f) + object_id(1f) + color(4 unorm bytes)
-    // = 8 floats = 32 bytes per vertex.
-    gl_->glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, VERTEX_STRIDE * sizeof(float));
-    gl_->glVertexArrayElementBuffer(vao_, ebo_);
-
-    // position
-    gl_->glEnableVertexArrayAttrib(vao_, 0);
-    gl_->glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, 0);
-    gl_->glVertexArrayAttribBinding(vao_, 0, 0);
-
-    // normal
-    gl_->glEnableVertexArrayAttrib(vao_, 1);
-    gl_->glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(vao_, 1, 0);
-
-    // object_id (passed as float, decoded in shader via floatBitsToUint)
-    gl_->glEnableVertexArrayAttrib(vao_, 2);
-    gl_->glVertexArrayAttribFormat(vao_, 2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(vao_, 2, 0);
-
-    // color (RGBA8 packed into the 4 bytes at offset 28; normalized to vec4)
-    gl_->glEnableVertexArrayAttrib(vao_, 3);
-    gl_->glVertexArrayAttribFormat(vao_, 3, 4, GL_UNSIGNED_BYTE, GL_TRUE, 7 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(vao_, 3, 0);
-
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
     gl_->glClearColor(0.18f, 0.20f, 0.22f, 1.0f);
@@ -280,6 +244,31 @@ void ViewportWindow::initGL() {
     render_timer_.start();
 
     emit initialized();
+}
+
+void ViewportWindow::setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo) {
+    gl_->glVertexArrayVertexBuffer(vao, 0, vbo, 0, VERTEX_STRIDE * sizeof(float));
+    gl_->glVertexArrayElementBuffer(vao, ebo);
+
+    // position
+    gl_->glEnableVertexArrayAttrib(vao, 0);
+    gl_->glVertexArrayAttribFormat(vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    gl_->glVertexArrayAttribBinding(vao, 0, 0);
+
+    // normal
+    gl_->glEnableVertexArrayAttrib(vao, 1);
+    gl_->glVertexArrayAttribFormat(vao, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao, 1, 0);
+
+    // object_id (passed as float, decoded in shader via floatBitsToUint)
+    gl_->glEnableVertexArrayAttrib(vao, 2);
+    gl_->glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao, 2, 0);
+
+    // color (RGBA8 packed into the 4 bytes at offset 28; normalized to vec4)
+    gl_->glEnableVertexArrayAttrib(vao, 3);
+    gl_->glVertexArrayAttribFormat(vao, 3, 4, GL_UNSIGNED_BYTE, GL_TRUE, 7 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao, 3, 0);
 }
 
 void ViewportWindow::buildShaders() {
@@ -301,15 +290,11 @@ void ViewportWindow::buildShaders() {
 }
 
 void ViewportWindow::buildAxisGizmo() {
-    // 3 line segments (X red, Y green, Z blue), 6 vertices, pos(3) + color(3).
     static const float axis_data[] = {
-        // X axis - red
         0.0f, 0.0f, 0.0f,   1.0f, 0.25f, 0.25f,
         1.0f, 0.0f, 0.0f,   1.0f, 0.25f, 0.25f,
-        // Y axis - green
         0.0f, 0.0f, 0.0f,   0.30f, 0.95f, 0.30f,
         0.0f, 1.0f, 0.0f,   0.30f, 0.95f, 0.30f,
-        // Z axis - blue
         0.0f, 0.0f, 0.0f,   0.30f, 0.55f, 1.0f,
         0.0f, 0.0f, 1.0f,   0.30f, 0.55f, 1.0f,
     };
@@ -329,15 +314,11 @@ void ViewportWindow::buildAxisGizmo() {
     gl_->glVertexArrayAttribBinding(axis_vao_, 1, 0);
 }
 
-bool ViewportWindow::growVbo(size_t needed_total) {
-    // Double until it fits, but don't blow past the cap.
-    size_t new_capacity = vbo_capacity_;
-    while (new_capacity < needed_total) {
-        new_capacity *= 2;
-    }
+bool ViewportWindow::growModelVbo(ModelGpuData& m, size_t needed_total) {
+    size_t new_capacity = m.vbo_capacity;
+    while (new_capacity < needed_total) new_capacity *= 2;
     if (new_capacity > MAX_BUFFER_SIZE) {
-        qWarning("VBO grow request (%zu MB) exceeds cap (%zu MB)",
-            new_capacity / (1024 * 1024), MAX_BUFFER_SIZE / (1024 * 1024));
+        qWarning("VBO grow request (%zu MB) exceeds cap", new_capacity / (1024 * 1024));
         return false;
     }
 
@@ -345,29 +326,25 @@ bool ViewportWindow::growVbo(size_t needed_total) {
     gl_->glCreateBuffers(1, &new_vbo);
     gl_->glNamedBufferStorage(new_vbo, new_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-    if (vbo_used_ > 0) {
-        gl_->glCopyNamedBufferSubData(vbo_, new_vbo, 0, 0, vbo_used_);
+    if (m.vbo_used > 0) {
+        gl_->glCopyNamedBufferSubData(m.vbo, new_vbo, 0, 0, m.vbo_used);
     }
 
-    gl_->glDeleteBuffers(1, &vbo_);
-    vbo_ = new_vbo;
-    vbo_capacity_ = new_capacity;
+    gl_->glDeleteBuffers(1, &m.vbo);
+    m.vbo = new_vbo;
+    m.vbo_capacity = new_capacity;
 
-    // Rebind on the VAO so subsequent draws see the new buffer.
-    gl_->glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, VERTEX_STRIDE * sizeof(float));
+    gl_->glVertexArrayVertexBuffer(m.vao, 0, m.vbo, 0, VERTEX_STRIDE * sizeof(float));
 
-    qInfo("VBO grew to %zu MB", vbo_capacity_ / (1024 * 1024));
+    qInfo("Model VBO grew to %zu MB", m.vbo_capacity / (1024 * 1024));
     return true;
 }
 
-bool ViewportWindow::growEbo(size_t needed_total) {
-    size_t new_capacity = ebo_capacity_;
-    while (new_capacity < needed_total) {
-        new_capacity *= 2;
-    }
+bool ViewportWindow::growModelEbo(ModelGpuData& m, size_t needed_total) {
+    size_t new_capacity = m.ebo_capacity;
+    while (new_capacity < needed_total) new_capacity *= 2;
     if (new_capacity > MAX_BUFFER_SIZE) {
-        qWarning("EBO grow request (%zu MB) exceeds cap (%zu MB)",
-            new_capacity / (1024 * 1024), MAX_BUFFER_SIZE / (1024 * 1024));
+        qWarning("EBO grow request (%zu MB) exceeds cap", new_capacity / (1024 * 1024));
         return false;
     }
 
@@ -375,17 +352,17 @@ bool ViewportWindow::growEbo(size_t needed_total) {
     gl_->glCreateBuffers(1, &new_ebo);
     gl_->glNamedBufferStorage(new_ebo, new_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-    if (ebo_used_ > 0) {
-        gl_->glCopyNamedBufferSubData(ebo_, new_ebo, 0, 0, ebo_used_);
+    if (m.ebo_used > 0) {
+        gl_->glCopyNamedBufferSubData(m.ebo, new_ebo, 0, 0, m.ebo_used);
     }
 
-    gl_->glDeleteBuffers(1, &ebo_);
-    ebo_ = new_ebo;
-    ebo_capacity_ = new_capacity;
+    gl_->glDeleteBuffers(1, &m.ebo);
+    m.ebo = new_ebo;
+    m.ebo_capacity = new_capacity;
 
-    gl_->glVertexArrayElementBuffer(vao_, ebo_);
+    gl_->glVertexArrayElementBuffer(m.vao, m.ebo);
 
-    qInfo("EBO grew to %zu MB", ebo_capacity_ / (1024 * 1024));
+    qInfo("Model EBO grew to %zu MB", m.ebo_capacity / (1024 * 1024));
     return true;
 }
 
@@ -395,37 +372,55 @@ void ViewportWindow::uploadChunk(const UploadChunk& chunk) {
 
     context_->makeCurrent(this);
 
+    // Get or create per-model GPU data.
+    auto it = models_gpu_.find(chunk.model_id);
+    if (it == models_gpu_.end()) {
+        ModelGpuData m;
+        gl_->glCreateVertexArrays(1, &m.vao);
+        gl_->glCreateBuffers(1, &m.vbo);
+        gl_->glCreateBuffers(1, &m.ebo);
+
+        m.vbo_capacity = INITIAL_VBO_SIZE;
+        m.ebo_capacity = INITIAL_EBO_SIZE;
+        gl_->glNamedBufferStorage(m.vbo, m.vbo_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        gl_->glNamedBufferStorage(m.ebo, m.ebo_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+        setupVaoLayout(m.vao, m.vbo, m.ebo);
+        it = models_gpu_.emplace(chunk.model_id, std::move(m)).first;
+    }
+
+    auto& mgpu = it->second;
+
     size_t vb_size = chunk.vertices.size() * sizeof(float);
     size_t ib_size = chunk.indices.size() * sizeof(uint32_t);
 
-    if (vbo_used_ + vb_size > vbo_capacity_) {
-        if (!growVbo(vbo_used_ + vb_size)) {
+    if (mgpu.vbo_used + vb_size > mgpu.vbo_capacity) {
+        if (!growModelVbo(mgpu, mgpu.vbo_used + vb_size)) {
             qWarning("VBO at cap, skipping chunk");
             return;
         }
     }
-    if (ebo_used_ + ib_size > ebo_capacity_) {
-        if (!growEbo(ebo_used_ + ib_size)) {
+    if (mgpu.ebo_used + ib_size > mgpu.ebo_capacity) {
+        if (!growModelEbo(mgpu, mgpu.ebo_used + ib_size)) {
             qWarning("EBO at cap, skipping chunk");
             return;
         }
     }
 
-    uint32_t base_vertex = vertex_count_;
+    uint32_t base_vertex = mgpu.vertex_count;
 
-    gl_->glNamedBufferSubData(vbo_, vbo_used_, vb_size, chunk.vertices.data());
+    gl_->glNamedBufferSubData(mgpu.vbo, mgpu.vbo_used, vb_size, chunk.vertices.data());
 
-    // Remap chunk-local indices into global indices so the whole EBO can be
-    // drawn with a single glDrawElements call.
+    // Remap chunk-local indices into model-local global indices.
     std::vector<uint32_t> global_indices(chunk.indices.size());
     for (size_t i = 0; i < chunk.indices.size(); ++i) {
         global_indices[i] = chunk.indices[i] + base_vertex;
     }
-    gl_->glNamedBufferSubData(ebo_, ebo_used_, ib_size, global_indices.data());
+    gl_->glNamedBufferSubData(mgpu.ebo, mgpu.ebo_used, ib_size, global_indices.data());
 
     // Compute AABB from vertex positions in this chunk.
     ObjectDrawInfo info;
-    info.index_offset = static_cast<uint32_t>(ebo_used_);
+    info.index_offset = static_cast<uint32_t>(mgpu.ebo_used);
     info.index_count = static_cast<uint32_t>(chunk.indices.size());
     info.model_id = chunk.model_id;
 
@@ -445,46 +440,301 @@ void ViewportWindow::uploadChunk(const UploadChunk& chunk) {
         info.aabb_max[0] = info.aabb_max[1] = info.aabb_max[2] = 0.0f;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(upload_mutex_);
-        total_index_count_ += static_cast<uint32_t>(chunk.indices.size());
-        object_draw_info_.push_back(info);
-    }
+    mgpu.draw_info.push_back(info);
+    mgpu.active_draw_count = static_cast<uint32_t>(mgpu.draw_info.size()); // immediately drawable
+    mgpu.vbo_used += vb_size;
+    mgpu.ebo_used += ib_size;
+    mgpu.vertex_count += static_cast<uint32_t>(num_verts);
+    mgpu.total_triangles += static_cast<uint32_t>(chunk.indices.size() / 3);
+}
 
-    vbo_used_ += vb_size;
-    ebo_used_ += ib_size;
-    vertex_count_ += static_cast<uint32_t>(chunk.vertices.size() / VERTEX_STRIDE);
-    total_triangles_ += static_cast<uint32_t>(chunk.indices.size() / 3);
+void ViewportWindow::uploadBulk(uint32_t model_id,
+                                std::vector<float> vertices,
+                                std::vector<uint32_t> indices,
+                                const std::vector<ObjectDrawInfo>& draw_info,
+                                std::shared_ptr<BvhSet> bvh_set) {
+    if (!gl_initialized_) return;
+    if (vertices.empty() || indices.empty()) return;
+
+    context_->makeCurrent(this);
+
+    size_t vb_size = vertices.size() * sizeof(float);
+    size_t ib_size = indices.size() * sizeof(uint32_t);
+
+    // Allocate empty buffers at exact size — no data uploaded yet.
+    ModelGpuData m;
+    gl_->glCreateVertexArrays(1, &m.vao);
+    gl_->glCreateBuffers(1, &m.vbo);
+    gl_->glCreateBuffers(1, &m.ebo);
+
+    m.vbo_capacity = vb_size;
+    m.ebo_capacity = ib_size;
+    gl_->glNamedBufferStorage(m.vbo, vb_size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+    gl_->glNamedBufferStorage(m.ebo, ib_size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+    setupVaoLayout(m.vao, m.vbo, m.ebo);
+
+    m.vbo_used = vb_size;
+    m.ebo_used = ib_size;
+    m.vertex_count = static_cast<uint32_t>(vertices.size() / VERTEX_STRIDE);
+    m.draw_info = draw_info;
+    m.active_draw_count = 0;  // nothing drawable yet
+
+    uint32_t total_tri = 0;
+    for (const auto& di : draw_info) total_tri += di.index_count / 3;
+    m.total_triangles = total_tri;
+
+    // Delete old model data if re-uploading.
+    auto it = models_gpu_.find(model_id);
+    if (it != models_gpu_.end()) {
+        gl_->glDeleteVertexArrays(1, &it->second.vao);
+        gl_->glDeleteBuffers(1, &it->second.vbo);
+        gl_->glDeleteBuffers(1, &it->second.ebo);
+    }
+    models_gpu_[model_id] = std::move(m);
+
+    // Queue progressive upload — data will stream in over subsequent frames.
+    PendingUpload pu;
+    pu.model_id = model_id;
+    pu.vertices = std::move(vertices);
+    pu.indices = std::move(indices);
+    pu.bvh_set = std::move(bvh_set);
+    pending_uploads_.push_back(std::move(pu));
+
+    qDebug("Bulk upload queued: model %u, %zu vertices, %zu indices, %zu objects",
+           model_id, vertices.size() / VERTEX_STRIDE, indices.size(), draw_info.size());
 }
 
 void ViewportWindow::resetScene() {
     if (!gl_initialized_) return;
 
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    total_index_count_ = 0;
-    vbo_used_ = 0;
-    ebo_used_ = 0;
-    vertex_count_ = 0;
-    total_triangles_ = 0;
+    if (bvh_build_thread_.joinable())
+        bvh_build_thread_.join();
+
+    context_->makeCurrent(this);
+    for (auto& [mid, m] : models_gpu_) {
+        if (m.vao) gl_->glDeleteVertexArrays(1, &m.vao);
+        if (m.vbo) gl_->glDeleteBuffers(1, &m.vbo);
+        if (m.ebo) gl_->glDeleteBuffers(1, &m.ebo);
+    }
+    models_gpu_.clear();
+    model_bvhs_.clear();
+    pending_uploads_.clear();
     selected_object_id_ = 0;
-    object_draw_info_.clear();
-    hidden_models_.clear();
-    removed_models_.clear();
+    {
+        std::lock_guard<std::mutex> bvh_lock(bvh_result_mutex_);
+        pending_bvh_.reset();
+    }
+}
+
+static const size_t UPLOAD_CHUNK_BYTES = 48 * 1024 * 1024;  // 48 MB per frame
+
+void ViewportWindow::processPendingUploads() {
+    if (pending_uploads_.empty()) return;
+
+    auto& pu = pending_uploads_.front();
+    auto it = models_gpu_.find(pu.model_id);
+    if (it == models_gpu_.end()) {
+        pending_uploads_.pop_front();
+        return;
+    }
+    auto& mgpu = it->second;
+
+    size_t vbo_total = pu.vertices.size() * sizeof(float);
+    size_t ebo_total = pu.indices.size() * sizeof(uint32_t);
+
+    // Phase 1: Upload VBO in chunks.
+    if (pu.vbo_uploaded < vbo_total) {
+        size_t remaining = vbo_total - pu.vbo_uploaded;
+        size_t chunk = std::min(remaining, UPLOAD_CHUNK_BYTES);
+        gl_->glNamedBufferSubData(mgpu.vbo, pu.vbo_uploaded, chunk,
+                                  reinterpret_cast<const char*>(pu.vertices.data()) + pu.vbo_uploaded);
+        pu.vbo_uploaded += chunk;
+
+        if (pu.vbo_uploaded >= vbo_total) {
+            // VBO done — free CPU memory.
+            pu.vertices.clear();
+            pu.vertices.shrink_to_fit();
+        }
+        return;  // yield to render loop
+    }
+
+    // Phase 2: Upload EBO in chunks. Objects become drawable as their range lands.
+    if (pu.ebo_uploaded < ebo_total) {
+        size_t remaining = ebo_total - pu.ebo_uploaded;
+        size_t chunk = std::min(remaining, UPLOAD_CHUNK_BYTES);
+        gl_->glNamedBufferSubData(mgpu.ebo, pu.ebo_uploaded, chunk,
+                                  reinterpret_cast<const char*>(pu.indices.data()) + pu.ebo_uploaded);
+        pu.ebo_uploaded += chunk;
+
+        // Advance active_draw_count: activate objects whose EBO range is fully uploaded.
+        while (mgpu.active_draw_count < mgpu.draw_info.size()) {
+            const auto& obj = mgpu.draw_info[mgpu.active_draw_count];
+            size_t obj_end = obj.index_offset + obj.index_count * sizeof(uint32_t);
+            if (obj_end <= pu.ebo_uploaded)
+                mgpu.active_draw_count++;
+            else
+                break;
+        }
+
+        if (pu.ebo_uploaded >= ebo_total) {
+            // EBO done — free CPU memory.
+            pu.indices.clear();
+            pu.indices.shrink_to_fit();
+        } else {
+            return;  // yield to render loop
+        }
+    }
+
+    // Fully uploaded — activate BVH if present.
+    mgpu.active_draw_count = static_cast<uint32_t>(mgpu.draw_info.size());
+    if (pu.bvh_set) {
+        model_bvhs_[pu.model_id] = std::move(pu.bvh_set);
+    }
+
+    qDebug("Progressive upload complete: model %u", pu.model_id);
+    pending_uploads_.pop_front();
 }
 
 void ViewportWindow::hideModel(uint32_t model_id) {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    hidden_models_.insert(model_id);
+    auto it = models_gpu_.find(model_id);
+    if (it != models_gpu_.end()) it->second.hidden = true;
 }
 
 void ViewportWindow::showModel(uint32_t model_id) {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    hidden_models_.erase(model_id);
+    auto it = models_gpu_.find(model_id);
+    if (it != models_gpu_.end()) it->second.hidden = false;
 }
 
 void ViewportWindow::removeModel(uint32_t model_id) {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    removed_models_.insert(model_id);
+    if (!gl_initialized_) return;
+    context_->makeCurrent(this);
+
+    // Cancel any pending upload for this model.
+    pending_uploads_.erase(
+        std::remove_if(pending_uploads_.begin(), pending_uploads_.end(),
+                        [model_id](const PendingUpload& pu) { return pu.model_id == model_id; }),
+        pending_uploads_.end());
+
+    auto it = models_gpu_.find(model_id);
+    if (it != models_gpu_.end()) {
+        gl_->glDeleteVertexArrays(1, &it->second.vao);
+        gl_->glDeleteBuffers(1, &it->second.vbo);
+        gl_->glDeleteBuffers(1, &it->second.ebo);
+        models_gpu_.erase(it);
+    }
+    model_bvhs_.erase(model_id);
+}
+
+std::vector<uint32_t> ViewportWindow::readbackEbo(uint32_t model_id) const {
+    std::vector<uint32_t> ebo_data;
+    auto it = models_gpu_.find(model_id);
+    if (!gl_ || it == models_gpu_.end() || it->second.ebo_used == 0) return ebo_data;
+
+    const auto& m = it->second;
+    size_t num_indices = m.ebo_used / sizeof(uint32_t);
+    ebo_data.resize(num_indices);
+    gl_->glGetNamedBufferSubData(m.ebo, 0, m.ebo_used, ebo_data.data());
+    return ebo_data;
+}
+
+std::vector<float> ViewportWindow::readbackVbo(uint32_t model_id) const {
+    std::vector<float> vbo_data;
+    auto it = models_gpu_.find(model_id);
+    if (!gl_ || it == models_gpu_.end() || it->second.vbo_used == 0) return vbo_data;
+
+    const auto& m = it->second;
+    size_t num_floats = m.vbo_used / sizeof(float);
+    vbo_data.resize(num_floats);
+    gl_->glGetNamedBufferSubData(m.vbo, 0, m.vbo_used, vbo_data.data());
+    return vbo_data;
+}
+
+void ViewportWindow::buildBvhAsync(uint32_t model_id,
+                                   const std::string& ifc_path,
+                                   uint64_t ifc_file_size,
+                                   std::vector<PackedElementInfo> sidecar_elements,
+                                   std::string sidecar_string_table) {
+    if (bvh_build_thread_.joinable())
+        bvh_build_thread_.join();
+
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+
+    // Snapshot draw info; read back EBO + VBO on GL thread.
+    std::vector<ObjectDrawInfo> draw_snapshot = it->second.draw_info;
+    std::vector<uint32_t> ebo_snapshot = readbackEbo(model_id);
+    std::vector<float> vbo_snapshot;
+    if (!ifc_path.empty() && !sidecar_elements.empty()) {
+        vbo_snapshot = readbackVbo(model_id);
+    }
+
+    if (draw_snapshot.empty() || ebo_snapshot.empty()) return;
+
+    bvh_build_thread_ = std::thread([this,
+                                     model_id,
+                                     draw_info = std::move(draw_snapshot),
+                                     ebo_data = std::move(ebo_snapshot),
+                                     vbo_data = std::move(vbo_snapshot),
+                                     elements = std::move(sidecar_elements),
+                                     string_table = std::move(sidecar_string_table),
+                                     ifc_path, ifc_file_size]() {
+        auto bvh_set = buildBvhSet(draw_info);
+
+        EboReorderResult ebo_result = reorderEbo(*bvh_set, draw_info, ebo_data);
+
+        // Write full sidecar if requested.
+        if (!ifc_path.empty() && !elements.empty() && !vbo_data.empty()) {
+            SidecarData sd;
+            sd.vertices = vbo_data;
+            sd.indices = ebo_result.reordered_ebo;
+            sd.draw_info = ebo_result.reordered_draw_info;
+            sd.elements = std::move(elements);
+            sd.string_table = std::move(string_table);
+            sd.bvh_set = bvh_set;
+            writeSidecar(ifc_path, sd, ifc_file_size);
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(bvh_result_mutex_);
+            pending_bvh_ = std::make_unique<PendingBvh>();
+            pending_bvh_->model_id = model_id;
+            pending_bvh_->bvh_set = std::move(bvh_set);
+            pending_bvh_->ebo_reorder = std::move(ebo_result);
+        }
+    });
+}
+
+void ViewportWindow::applyBvhResult() {
+    std::unique_ptr<PendingBvh> result;
+    {
+        std::lock_guard<std::mutex> lock(bvh_result_mutex_);
+        result = std::move(pending_bvh_);
+    }
+    if (!result) return;
+
+    auto it = models_gpu_.find(result->model_id);
+    if (it == models_gpu_.end()) return;
+
+    auto& mgpu = it->second;
+
+    // Re-upload the reordered EBO into this model's buffer.
+    if (!result->ebo_reorder.reordered_ebo.empty()) {
+        size_t ebo_bytes = result->ebo_reorder.reordered_ebo.size() * sizeof(uint32_t);
+        if (ebo_bytes <= mgpu.ebo_capacity) {
+            gl_->glNamedBufferSubData(mgpu.ebo, 0, ebo_bytes,
+                                      result->ebo_reorder.reordered_ebo.data());
+        }
+    }
+
+    // Swap draw info.
+    if (result->ebo_reorder.reordered_draw_info.size() == mgpu.draw_info.size()) {
+        mgpu.draw_info = std::move(result->ebo_reorder.reordered_draw_info);
+    }
+
+    model_bvhs_[result->model_id] = std::move(result->bvh_set);
+
+    qDebug("BVH activated for model %u", result->model_id);
 }
 
 void ViewportWindow::setSelectedObjectId(uint32_t id) {
@@ -499,7 +749,6 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     int w = width() * devicePixelRatio();
     int h = height() * devicePixelRatio();
 
-    // Create/resize pick FBO if needed
     if (pick_width_ != w || pick_height_ != h) {
         if (pick_fbo_) gl_->glDeleteFramebuffers(1, &pick_fbo_);
         if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
@@ -533,7 +782,6 @@ void ViewportWindow::updateCamera() {
     float yaw_rad = qDegreesToRadians(camera_yaw_);
     float pitch_rad = qDegreesToRadians(camera_pitch_);
 
-    // IFC / Blender convention: X right, Y forward, Z up.
     QVector3D eye;
     eye.setX(camera_target_.x() + camera_distance_ * cosf(pitch_rad) * cosf(yaw_rad));
     eye.setY(camera_target_.y() + camera_distance_ * cosf(pitch_rad) * sinf(yaw_rad));
@@ -547,17 +795,61 @@ void ViewportWindow::updateCamera() {
     proj_matrix_.perspective(45.0f, aspect, 0.1f, camera_distance_ * 10.0f);
 }
 
+bool ViewportWindow::aabbInFrustum(const float aabb_min[3], const float aabb_max[3],
+                                   const float planes[6][4]) {
+    for (int p = 0; p < 6; ++p) {
+        float px = planes[p][0] >= 0.0f ? aabb_max[0] : aabb_min[0];
+        float py = planes[p][1] >= 0.0f ? aabb_max[1] : aabb_min[1];
+        float pz = planes[p][2] >= 0.0f ? aabb_max[2] : aabb_min[2];
+        float dist = planes[p][0] * px + planes[p][1] * py + planes[p][2] * pz + planes[p][3];
+        if (dist < 0.0f) return false;
+    }
+    return true;
+}
+
+void ViewportWindow::traverseBvh(const ModelBvh& mbvh, const ModelGpuData& mgpu,
+                                 const float planes[6][4]) {
+    if (mbvh.nodes.empty()) return;
+
+    uint32_t stack[64];
+    int sp = 0;
+    stack[sp++] = 0;  // root
+
+    // Get the current model's draw command being built.
+    auto& cmd = frame_draw_cmds_.back();
+
+    while (sp > 0) {
+        uint32_t ni = stack[--sp];
+        const BvhNode& node = mbvh.nodes[ni];
+
+        if (!aabbInFrustum(node.aabb_min, node.aabb_max, planes))
+            continue;
+
+        if (node.count > 0) {
+            for (uint32_t i = 0; i < node.count; ++i) {
+                uint32_t oi = mbvh.object_indices[node.right_or_first + i];
+                const auto& obj = mgpu.draw_info[oi];
+                if (aabbInFrustum(obj.aabb_min, obj.aabb_max, planes)) {
+                    cmd.counts.push_back(static_cast<GLsizei>(obj.index_count));
+                    cmd.offsets.push_back(reinterpret_cast<const void*>(
+                        static_cast<uintptr_t>(obj.index_offset)));
+                    visible_triangles_ += obj.index_count / 3;
+                }
+            }
+        } else {
+            if (sp < 63) {
+                stack[sp++] = node.right_or_first;
+                stack[sp++] = ni + 1;
+            }
+        }
+    }
+}
+
 void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
-    visible_counts_.clear();
-    visible_offsets_.clear();
+    frame_draw_cmds_.clear();
     visible_triangles_ = 0;
 
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    if (object_draw_info_.empty()) return;
-
     // Extract 6 frustum planes from the view-projection matrix.
-    // Each plane is (a, b, c, d) where ax + by + cz + d >= 0 is inside.
-    // QMatrix4x4 is stored column-major; operator(row, col) gives element.
     float planes[6][4];
     for (int i = 0; i < 4; ++i) {
         planes[0][i] = vp(3, i) + vp(0, i);  // left
@@ -567,7 +859,6 @@ void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
         planes[4][i] = vp(3, i) + vp(2, i);  // near
         planes[5][i] = vp(3, i) - vp(2, i);  // far
     }
-    // Normalize planes.
     for (int p = 0; p < 6; ++p) {
         float len = std::sqrt(planes[p][0] * planes[p][0] +
                               planes[p][1] * planes[p][1] +
@@ -581,31 +872,40 @@ void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
         }
     }
 
-    visible_counts_.reserve(object_draw_info_.size());
-    visible_offsets_.reserve(object_draw_info_.size());
+    for (auto& [model_id, mgpu] : models_gpu_) {
+        if (mgpu.hidden || mgpu.active_draw_count == 0) continue;
 
-    for (const auto& obj : object_draw_info_) {
-        // Skip hidden or removed models.
-        if (hidden_models_.count(obj.model_id) || removed_models_.count(obj.model_id))
-            continue;
+        frame_draw_cmds_.push_back({mgpu.vao, {}, {}});
+        auto& cmd = frame_draw_cmds_.back();
+        cmd.counts.reserve(mgpu.active_draw_count);
+        cmd.offsets.reserve(mgpu.active_draw_count);
 
-        bool visible = true;
-        for (int p = 0; p < 6; ++p) {
-            // p-vertex: the AABB corner most in the direction of the plane normal.
-            float px = planes[p][0] >= 0.0f ? obj.aabb_max[0] : obj.aabb_min[0];
-            float py = planes[p][1] >= 0.0f ? obj.aabb_max[1] : obj.aabb_min[1];
-            float pz = planes[p][2] >= 0.0f ? obj.aabb_max[2] : obj.aabb_min[2];
-            float dist = planes[p][0] * px + planes[p][1] * py + planes[p][2] * pz + planes[p][3];
-            if (dist < 0.0f) {
-                visible = false;
-                break;
+        bool fully_loaded = (mgpu.active_draw_count == mgpu.draw_info.size());
+        auto bvh_it = model_bvhs_.find(model_id);
+
+        // Only use BVH if model is fully uploaded; during progressive upload,
+        // fall back to linear scan of active objects.
+        if (fully_loaded && bvh_it != model_bvhs_.end() && bvh_it->second) {
+            const auto& bvh_set = *bvh_it->second;
+            auto mbvh_it = bvh_set.models.find(model_id);
+            if (mbvh_it != bvh_set.models.end()) {
+                traverseBvh(mbvh_it->second, mgpu, planes);
+            }
+        } else {
+            // Linear scan of active objects only.
+            for (uint32_t i = 0; i < mgpu.active_draw_count; ++i) {
+                const auto& obj = mgpu.draw_info[i];
+                if (aabbInFrustum(obj.aabb_min, obj.aabb_max, planes)) {
+                    cmd.counts.push_back(static_cast<GLsizei>(obj.index_count));
+                    cmd.offsets.push_back(reinterpret_cast<const void*>(
+                        static_cast<uintptr_t>(obj.index_offset)));
+                    visible_triangles_ += obj.index_count / 3;
+                }
             }
         }
-        if (visible) {
-            visible_counts_.push_back(static_cast<GLsizei>(obj.index_count));
-            visible_offsets_.push_back(reinterpret_cast<const void*>(
-                static_cast<uintptr_t>(obj.index_offset)));
-            visible_triangles_ += obj.index_count / 3;
+
+        if (cmd.counts.empty()) {
+            frame_draw_cmds_.pop_back();
         }
     }
 }
@@ -614,6 +914,8 @@ void ViewportWindow::render() {
     if (!gl_initialized_ || !isExposed()) return;
 
     context_->makeCurrent(this);
+    applyBvhResult();
+    processPendingUploads();
     updateCamera();
 
     int w = width() * devicePixelRatio();
@@ -628,21 +930,20 @@ void ViewportWindow::render() {
     gl_->glUniform3f(gl_->glGetUniformLocation(main_program_, "u_light_dir"), 0.3f, 0.5f, 0.8f);
     gl_->glUniform1ui(gl_->glGetUniformLocation(main_program_, "u_selected_id"), selected_object_id_);
 
-    gl_->glBindVertexArray(vao_);
-
     buildVisibleList(vp);
-    if (!visible_counts_.empty()) {
+    for (const auto& cmd : frame_draw_cmds_) {
+        gl_->glBindVertexArray(cmd.vao);
         gl_->glMultiDrawElements(GL_TRIANGLES,
-            visible_counts_.data(), GL_UNSIGNED_INT,
-            visible_offsets_.data(),
-            static_cast<GLsizei>(visible_counts_.size()));
+            cmd.counts.data(), GL_UNSIGNED_INT,
+            cmd.offsets.data(),
+            static_cast<GLsizei>(cmd.counts.size()));
     }
 
     renderAxisGizmo();
 
     context_->swapBuffers(this);
 
-    // Compute FPS (updated once per second to avoid flicker).
+    // Compute FPS.
     float dt = frame_clock_.restart() / 1000.0f;
     accumulated_time_ += dt;
     frame_count_++;
@@ -651,12 +952,23 @@ void ViewportWindow::render() {
         frame_count_ = 0;
         accumulated_time_ = 0.0f;
 
+        uint32_t total_obj = 0, total_tri = 0, vis_obj = 0;
+        for (const auto& [mid, m] : models_gpu_) {
+            if (!m.hidden) {
+                total_obj += static_cast<uint32_t>(m.draw_info.size());
+                total_tri += m.total_triangles;
+            }
+        }
+        for (const auto& cmd : frame_draw_cmds_) {
+            vis_obj += static_cast<uint32_t>(cmd.counts.size());
+        }
+
         FrameStats stats;
         stats.fps = last_fps_;
         stats.frame_time_ms = 1000.0f / last_fps_;
-        stats.total_objects = static_cast<uint32_t>(object_draw_info_.size());
-        stats.visible_objects = static_cast<uint32_t>(visible_counts_.size());
-        stats.total_triangles = total_triangles_;
+        stats.total_objects = total_obj;
+        stats.visible_objects = vis_obj;
+        stats.total_triangles = total_tri;
         stats.visible_triangles = visible_triangles_;
         emit frameStatsUpdated(stats);
     }
@@ -672,8 +984,6 @@ void ViewportWindow::renderAxisGizmo() {
     gl_->glViewport(margin, margin, gizmo_size, gizmo_size);
     gl_->glDisable(GL_DEPTH_TEST);
 
-    // Build a view matrix from the same camera orientation but with a fixed
-    // close-up distance, so the gizmo rotates with the scene camera. Z-up.
     float yaw_rad = qDegreesToRadians(camera_yaw_);
     float pitch_rad = qDegreesToRadians(camera_pitch_);
 
@@ -693,7 +1003,7 @@ void ViewportWindow::renderAxisGizmo() {
     gl_->glUseProgram(axis_program_);
     gl_->glUniformMatrix4fv(gl_->glGetUniformLocation(axis_program_, "u_mvp"), 1, GL_FALSE, mvp.constData());
 
-    gl_->glLineWidth(2.5f);  // ignored on some core-profile drivers, that's OK
+    gl_->glLineWidth(2.5f);
     gl_->glBindVertexArray(axis_vao_);
     gl_->glDrawArrays(GL_LINES, 0, 6);
 
@@ -712,14 +1022,13 @@ void ViewportWindow::renderPickPass() {
     gl_->glUseProgram(pick_program_);
     gl_->glUniformMatrix4fv(gl_->glGetUniformLocation(pick_program_, "u_view_projection"), 1, GL_FALSE, vp.constData());
 
-    gl_->glBindVertexArray(vao_);
-
     // Reuse the visible list from the most recent render() call.
-    if (!visible_counts_.empty()) {
+    for (const auto& cmd : frame_draw_cmds_) {
+        gl_->glBindVertexArray(cmd.vao);
         gl_->glMultiDrawElements(GL_TRIANGLES,
-            visible_counts_.data(), GL_UNSIGNED_INT,
-            visible_offsets_.data(),
-            static_cast<GLsizei>(visible_counts_.size()));
+            cmd.counts.data(), GL_UNSIGNED_INT,
+            cmd.offsets.data(),
+            static_cast<GLsizei>(cmd.counts.size()));
     }
 
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -774,7 +1083,6 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
 
     if (active_button_ == Qt::MiddleButton) {
         if (e->modifiers() & Qt::ShiftModifier) {
-            // Pan in screen space, derived from the Z-up camera basis.
             float pan_speed = camera_distance_ * 0.002f;
             float yaw_rad = qDegreesToRadians(camera_yaw_);
             float pitch_rad = qDegreesToRadians(camera_pitch_);
@@ -786,7 +1094,6 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
             camera_target_ -= right * delta.x() * pan_speed;
             camera_target_ += up * delta.y() * pan_speed;
         } else {
-            // Orbit
             camera_yaw_ -= delta.x() * 0.3f;
             camera_pitch_ += delta.y() * 0.3f;
             camera_pitch_ = qBound(-89.0f, camera_pitch_, 89.0f);

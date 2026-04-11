@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include "AppSettings.h"
 #include "SettingsWindow.h"
+#include "SidecarCache.h"
 
 #include <QApplication>
 #include <QMenuBar>
@@ -61,7 +62,14 @@ MainWindow::MainWindow(QWidget* parent)
     resize(1400, 900);
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() {
+    joinSidecarThread();
+}
+
+void MainWindow::joinSidecarThread() {
+    if (sidecar_read_thread_.joinable())
+        sidecar_read_thread_.join();
+}
 
 void MainWindow::setupUi() {
     // 3D Viewport as central widget
@@ -158,7 +166,7 @@ void MainWindow::addFiles(const QStringList& paths) {
     }
 
     if (loading_model_id_ == 0) {
-        startNextLoad();
+        QTimer::singleShot(0, this, &MainWindow::startNextLoad);
     }
 }
 
@@ -184,16 +192,133 @@ void MainWindow::startNextLoad() {
     load_queue_.pop_front();
 
     auto& model = models_[loading_model_id_];
-    connectStreamer(model.streamer);
-
-    progress_bar_->setValue(0);
-    progress_bar_->setVisible(true);
-    status_label_->setText("Loading: " + model.display_name);
 
     load_timer_.restart();
-    element_poll_timer_.start();
-    model.streamer->loadFile(
-        model.file_path.toStdString(), next_object_id_, loading_model_id_);
+    status_label_->setText("Loading: " + model.display_name);
+
+    // Try sidecar on a background thread so the UI stays responsive.
+    std::string ifc_path = model.file_path.toStdString();
+    uint64_t file_size = static_cast<uint64_t>(QFileInfo(model.file_path).size());
+    ModelId mid = loading_model_id_;
+
+    joinSidecarThread();
+    sidecar_read_thread_ = std::thread([this, ifc_path, file_size, mid]() {
+        QElapsedTimer rt; rt.start();
+        auto cached = readSidecar(ifc_path, file_size);
+        qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
+        auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
+        QMetaObject::invokeMethod(this, [this, mid, result]() {
+            if (*result && !(*result)->draw_info.empty()) {
+                applySidecarData(mid, std::move(**result));
+            } else {
+                // No sidecar — fall back to streaming from IFC.
+                auto it = models_.find(mid);
+                if (it == models_.end()) return;
+                auto& m = it->second;
+                connectStreamer(m.streamer);
+                progress_bar_->setValue(0);
+                progress_bar_->setVisible(true);
+                status_label_->setText("Loading: " + m.display_name);
+                element_poll_timer_.start();
+                m.streamer->loadFile(
+                    m.file_path.toStdString(), next_object_id_, loading_model_id_);
+            }
+        }, Qt::QueuedConnection);
+    });
+}
+
+void MainWindow::applySidecarData(ModelId mid, SidecarData data) {
+    auto it = models_.find(mid);
+    if (it == models_.end()) return;
+    auto& model = it->second;
+
+    QElapsedTimer t;
+
+    qDebug("Sidecar hit: %s (%zu objects, %zu verts, %zu indices, %.1f MB)",
+           model.file_path.toStdString().c_str(), data.draw_info.size(),
+           data.vertices.size() / 8, data.indices.size(),
+           (data.vertices.size() * 4 + data.indices.size() * 4) / (1024.0 * 1024.0));
+
+    // GL upload — fast, single buffer copy.
+    t.start();
+    viewport_->uploadBulk(mid, data.vertices, data.indices,
+                          data.draw_info, std::move(data.bvh_set));
+    qDebug("  GL upload: %lld ms", t.elapsed());
+
+    // Update next_object_id_ past all objects in this model.
+    for (const auto& elem : data.elements) {
+        if (elem.object_id >= next_object_id_)
+            next_object_id_ = elem.object_id + 1;
+    }
+
+    // Suppress per-item layout recalcs while building the tree.
+    t.restart();
+    element_tree_->setUpdatesEnabled(false);
+    populateTreeFromSidecar(model, data.elements, data.string_table);
+    element_tree_->setUpdatesEnabled(true);
+    qDebug("  Tree build: %lld ms (%zu elements)", t.elapsed(), data.elements.size());
+
+    progress_bar_->setVisible(false);
+
+    qint64 ms = load_timer_.elapsed();
+    QString elapsed = (ms >= 1000)
+        ? QString::number(ms / 1000.0, 'f', 2) + " s"
+        : QString::number(ms) + " ms";
+
+    status_label_->setText(QString("%1 elements across %2 model(s) — loaded from cache in %3")
+        .arg(element_map_.size())
+        .arg(models_.size())
+        .arg(elapsed));
+
+    loading_model_id_ = 0;
+    QTimer::singleShot(0, this, &MainWindow::startNextLoad);
+}
+
+void MainWindow::populateTreeFromSidecar(ModelHandle& model,
+                                          const std::vector<PackedElementInfo>& elements,
+                                          const std::string& stbl) {
+    auto str = [&](uint32_t offset, uint32_t length) -> std::string {
+        if (length == 0 || offset + length > stbl.size()) return {};
+        return stbl.substr(offset, length);
+    };
+
+    for (const auto& pe : elements) {
+        ElementInfo info;
+        info.object_id = pe.object_id;
+        info.model_id = pe.model_id;
+        info.ifc_id = pe.ifc_id;
+        info.parent_id = pe.parent_id;
+        info.guid = str(pe.guid_offset, pe.guid_length);
+        info.name = str(pe.name_offset, pe.name_length);
+        info.type = str(pe.type_offset, pe.type_length);
+
+        element_map_[info.object_id] = info;
+        scoped_ifc_id_to_object_id_[scopedKey(info.model_id, info.ifc_id)] = info.object_id;
+
+        // Find parent tree item.
+        QTreeWidgetItem* parent_item = model.tree_root;
+        auto parent_obj_it = scoped_ifc_id_to_object_id_.find(
+            scopedKey(info.model_id, info.parent_id));
+        if (parent_obj_it != scoped_ifc_id_to_object_id_.end()) {
+            auto tree_it = tree_items_.find(parent_obj_it->second);
+            if (tree_it != tree_items_.end()) {
+                parent_item = tree_it->second;
+            }
+        }
+
+        QString display_name = QString::fromStdString(info.name);
+        if (display_name.isEmpty()) {
+            display_name = QString::fromStdString(info.type) + " #" + QString::number(info.ifc_id);
+        }
+
+        auto* item = new QTreeWidgetItem(parent_item);
+        item->setText(0, display_name);
+        item->setText(1, QString::fromStdString(info.type));
+        item->setText(2, QString::fromStdString(info.guid));
+        item->setData(0, Qt::UserRole, info.object_id);
+
+        tree_items_[info.object_id] = item;
+    }
 }
 
 void MainWindow::onProgressChanged(int percent) {
@@ -229,6 +354,41 @@ void MainWindow::onStreamingFinished() {
         .arg(total_elements)
         .arg(num_models)
         .arg(elapsed));
+
+    // Build BVH and write sidecar (geometry + metadata + BVH).
+    if (loading_model_id_ != 0) {
+        auto it = models_.find(loading_model_id_);
+        if (it != models_.end()) {
+            std::string ifc_path = it->second.file_path.toStdString();
+            QFileInfo fi(it->second.file_path);
+            uint64_t file_size = static_cast<uint64_t>(fi.size());
+
+            // Pack element info for the sidecar (only this model's elements).
+            std::vector<PackedElementInfo> packed;
+            std::string stbl;
+            for (const auto& [oid, info] : element_map_) {
+                if (info.model_id != loading_model_id_) continue;
+                PackedElementInfo pe;
+                pe.object_id = info.object_id;
+                pe.model_id = info.model_id;
+                pe.ifc_id = info.ifc_id;
+                pe.parent_id = info.parent_id;
+                pe.guid_offset = static_cast<uint32_t>(stbl.size());
+                pe.guid_length = static_cast<uint32_t>(info.guid.size());
+                stbl += info.guid;
+                pe.name_offset = static_cast<uint32_t>(stbl.size());
+                pe.name_length = static_cast<uint32_t>(info.name.size());
+                stbl += info.name;
+                pe.type_offset = static_cast<uint32_t>(stbl.size());
+                pe.type_length = static_cast<uint32_t>(info.type.size());
+                stbl += info.type;
+                packed.push_back(pe);
+            }
+
+            viewport_->buildBvhAsync(loading_model_id_, ifc_path, file_size,
+                                     std::move(packed), std::move(stbl));
+        }
+    }
 
     // Start next model if queued.
     startNextLoad();

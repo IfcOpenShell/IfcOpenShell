@@ -31,6 +31,7 @@
 
 #include <map>
 #include <deque>
+#include <thread>
 #include <unordered_map>
 
 #include "ViewportWindow.h"
@@ -72,6 +73,11 @@ private:
     void setupMenus();
     void populateProperties(uint32_t object_id);
     void startNextLoad();
+    void applySidecarData(ModelId mid, SidecarData data);
+    void joinSidecarThread();
+    void populateTreeFromSidecar(ModelHandle& model,
+                                 const std::vector<PackedElementInfo>& elements,
+                                 const std::string& string_table);
     void connectStreamer(GeometryStreamer* streamer);
 
     ViewportWindow* viewport_ = nullptr;
@@ -91,6 +97,7 @@ private:
     uint32_t next_object_id_ = 1; // monotonically increasing across all models
     std::deque<ModelId> load_queue_;
     ModelId loading_model_id_ = 0;
+    std::thread sidecar_read_thread_;
 
     // Map object_id -> tree item and element info
     std::unordered_map<uint32_t, ElementInfo> element_map_;

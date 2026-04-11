@@ -11,16 +11,16 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 |  | Element  | | 3D Viewport              ||
 |  | Tree     | | (QWindow + OpenGL 4.5)   ||
 |  | (per-    | |                          ||
-|  |  model)  | | Single VBO/EBO           ||
+|  |  model)  | | Per-model VAO/VBO/EBO    ||
 |  +----------+ | glMultiDrawElements      ||
-|  | Property | | frustum culling          ||
+|  | Property | | BVH frustum culling      ||
 |  | Table    | | GPU pick pass            ||
 |  +----------+ +--------------------------+|
 |  | Status / Progress / Stats              |
 +-------------------------------------------+
         ^                    ^
         |                    |
-  element metadata     UploadChunks
+  element metadata     UploadChunks / Sidecar
         |                    |
 +-------------------------------------------+
 |  GeometryStreamer (one per loaded model)   |
@@ -32,11 +32,13 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 ### Key design decisions
 
 - **QWindow viewport** embedded via `QWidget::createWindowContainer()`. This gives us a raw native surface for OpenGL, bypassing `QOpenGLWidget`'s compositor overhead.
-- **One big vertex buffer + index buffer** (64 MB + 32 MB initial). Geometry is appended as it streams in. No per-object VBOs, no rebinding.
+- **Per-model GPU buffers**: each loaded model gets its own VAO/VBO/EBO. No shared buffer, no cross-model copies on growth. Removing a model frees its GPU memory immediately.
 - **Interleaved vertex format**: position (3 floats) + normal (3 floats) + object ID (1 float, bitcast uint32) + color (RGBA8 packed into 1 float) = 32 bytes per vertex.
-- **Per-object frustum culling**: each object's AABB is tested against 6 frustum planes each frame. Only visible objects are drawn via `glMultiDrawElements`.
+- **Progressive GPU upload**: bulk sidecar loads allocate empty GPU buffers, then stream data in 48 MB chunks per frame. VBO uploads first (no objects visible), then EBO (objects appear progressively as their index range lands). The viewport stays interactive throughout — you can orbit already-loaded models while new ones stream in.
+- **Non-blocking sidecar loading**: sidecar files are read on a background thread. The heavy disk I/O (potentially gigabytes) never blocks the render loop. Only the final GPU upload and tree population happen on the main thread.
+- **BVH frustum culling**: per-model BVH trees cull entire subtrees of objects in one frustum test, reducing per-frame cost from O(N) to O(log N). Falls back to linear scan during progressive upload; BVH activates once the model is fully loaded.
 - **GPU object picking**: a second render pass writes object IDs to an R32UI framebuffer. Click reads back one pixel. No CPU-side raycasting.
-- **Multi-model support**: multiple IFC files can be loaded simultaneously. Each model gets its own `GeometryStreamer` (owning the `ifcopenshell::file` for property lookup). Models are loaded sequentially; geometry from all models coexists in the shared VBO/EBO. Per-model visibility toggle and removal are supported.
+- **Multi-model support**: multiple IFC files can be loaded simultaneously. Each model gets its own `GeometryStreamer` (owning the `ifcopenshell::file` for property lookup). Models are loaded sequentially. Per-model visibility toggle and removal are supported.
 - **Multi-threaded tessellation**: `IfcGeom::Iterator` runs on a background thread and internally parallelizes geometry conversion across all CPU cores.
 - **Non-blocking streaming**: the iterator emits `UploadChunk` signals via Qt's queued connection. The main thread uploads to the GPU without blocking iteration.
 - **World coordinates**: geometry is emitted in world space (`use-world-coords=true`) so no per-object transform matrices are needed on the GPU.
@@ -47,8 +49,10 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 |------|---------|
 | `main.cpp` | Application entry point, GL 4.5 surface format, CLI argument parsing |
 | `MainWindow.h/cpp` | Qt main window: multi-model project management, element tree, property table, status bar |
-| `ViewportWindow.h/cpp` | OpenGL 4.5 Core renderer: shaders, buffer management, camera, frustum culling, picking |
+| `ViewportWindow.h/cpp` | OpenGL 4.5 Core renderer: shaders, buffer management, camera, frustum culling, BVH traversal, picking |
 | `GeometryStreamer.h/cpp` | Background geometry processing: loads IFC, runs iterator, emits chunks (one per model) |
+| `BvhAccel.h/cpp` | BVH construction (median-split), per-model trees, EBO reordering |
+| `SidecarCache.h/cpp` | Raw binary `.ifcview` sidecar read/write |
 | `AppSettings.h/cpp` | Persisted application preferences (geometry library, show stats) |
 | `SettingsWindow.h/cpp` | Settings dialog UI |
 | `CMakeLists.txt` | Build configuration |
@@ -142,8 +146,9 @@ object that enters the GPU buffers:
 
 ```cpp
 struct ObjectDrawInfo {
-    uint32_t index_offset;   // byte offset into the shared EBO
+    uint32_t index_offset;   // byte offset into the model's EBO
     uint32_t index_count;    // number of indices (triangles * 3)
+    uint32_t model_id;       // which model this object belongs to
     float    aabb_min[3];    // world-space axis-aligned bounding box
     float    aabb_max[3];    // (computed from vertex positions at upload time)
 };
@@ -211,108 +216,207 @@ Phase 1 is sufficient for models up to ~100k objects. Beyond that, the CPU-side
 frustum test becomes a measurable fraction of the frame budget, motivating
 phase 3.
 
-### Phase 2: Spatial Tiling (optional, for large models)
+### Phase 2: BVH Acceleration (optional, for large models)
 
-For models exceeding ~10k objects, spatial tiling groups nearby objects into
-tiles and culls at the tile level rather than per-object. This reduces the
-number of frustum tests from N_objects to N_tiles (typically hundreds to low
-thousands).
+**Status:** Implemented.
 
-#### When tiling activates
+For models exceeding ~100 objects, a bounding volume hierarchy (BVH) groups
+nearby objects into a binary tree and culls entire subtrees in one frustum
+test. This reduces the number of AABB-frustum tests from O(N_objects) to
+O(log N) in the best case (camera zoomed into a corner) and gives a constant
+overhead for the common case where most of the model is on screen.
 
-Tiling is **optional and non-disruptive**. The system treats a non-tiled model
-as the degenerate case of "one tile containing everything" — the rendering loop
-always iterates tiles, so no separate code path is needed.
+A BVH was chosen over an octree because BIM data is spatially non-uniform —
+dense MEP risers in one zone, sparse open atriums in another. An octree
+subdivides space uniformly, wasting nodes on empty regions and creating deep
+chains in dense ones. A BVH adapts its splits to the actual object
+distribution, producing balanced trees regardless of density variation.
 
-Tiling activates in one of three ways:
+#### When the BVH activates
 
-1. **Preprocessed cache exists**: If a `.ifcview` sidecar file is found next to
-   the `.ifc` file, the tile structure is loaded from it instantly. The model
-   uploads geometry in tile order.
-2. **Automatic by size**: If the model has more than a configurable threshold of
-   objects (default 10k), a background task builds the spatial tree after
-   initial loading completes. Until it finishes, phase 1 culling handles
-   visibility.
-3. **Explicit user action**: A "preprocess for performance" option builds the
-   spatial tree and saves the sidecar for future loads.
+The BVH is **optional and non-disruptive**. Until it is built, phase 1's
+linear scan handles all culling. The rendering loop checks for an active BVH
+and falls back to the linear scan for any model that doesn't have one.
 
-#### Spatial subdivision
+The BVH activates in one of two ways:
 
-The world-space bounding box of the entire model is subdivided using a
-**loose octree**:
+1. **Sidecar cache exists**: If a `.ifcview` file is found next to the `.ifc`
+   file, the BVH is loaded from it instantly (raw memory read, no parsing).
+   The model uses BVH culling from the first frame after loading.
+2. **Automatic build**: After streaming finishes, a background thread builds
+   the BVH from the per-object AABBs already computed in phase 1. Until it
+   completes, phase 1 culling handles visibility. On completion, the render
+   thread picks up the BVH on the next frame. The sidecar is written for
+   future loads.
 
-- The root node covers the scene AABB.
-- Each node is split when it contains more than a threshold number of objects
-  (e.g. 256).
-- Objects are assigned to the smallest node that fully contains their AABB.
-- "Loose" bounds (inflated by 1.5x) reduce the number of objects that span
-  multiple nodes.
-- Leaf nodes become tiles.
+Models with fewer than 32 objects skip the BVH entirely — the overhead of tree
+traversal is worse than a linear scan at that scale.
 
-An octree adapts to non-uniform object density (common in buildings — lots of
-detail in MEP risers, sparse in open atriums) better than a uniform grid.
+#### BVH node layout
 
-#### EBO re-sorting
-
-For tile-level culling to translate into contiguous index ranges, the EBO must
-be sorted so that all indices for objects in the same tile are adjacent.
-
-This happens via **deferred compaction**:
-
-1. During initial load, geometry uploads in iterator order (fast first frame,
-   phase 1 culling active).
-2. After loading completes, a background thread:
-   a. Builds the octree from the per-object AABBs (already computed in phase 1).
-   b. Determines the tile for each object.
-   c. Computes the new index order (sorted by tile, then by object within tile).
-   d. Builds a new EBO on the CPU.
-3. The main thread uploads the new EBO in one `glNamedBufferSubData` call and
-   swaps in the tile metadata. One frame of stutter, bounded by EBO upload
-   time.
-
-The per-tile metadata:
+Each node is 32 bytes, so two nodes fit in one 64-byte cache line:
 
 ```cpp
-struct TileInfo {
-    float    aabb_min[3];    // tile bounding box (union of contained AABBs)
-    float    aabb_max[3];
-    uint32_t index_offset;   // into the re-sorted EBO
-    uint32_t index_count;    // sum of all contained objects' indices
-    uint32_t object_count;   // for stats / debugging
+struct BvhNode {
+    float    aabb_min[3];     // world-space bounding box (12 bytes)
+    float    aabb_max[3];     // (12 bytes)
+    uint32_t right_or_first;  // interior: right child index; leaf: first object index (4 bytes)
+    uint16_t count;           // 0 = interior node; >0 = leaf with this many objects (2 bytes)
+    uint16_t axis;            // split axis for interior (0=x, 1=y, 2=z); unused for leaf (2 bytes)
 };
 ```
 
-#### Preprocessed sidecar format
+Interior nodes store the right child index; the left child is always the
+immediately next node in the array (implicit in pre-order DFS layout, no
+pointer needed). Leaf nodes reference a contiguous range in a sorted
+object-index array.
 
-The `.ifcview` file stores:
+The BVH is stored as a flat `std::vector<BvhNode>` in pre-order DFS layout.
+This means a depth-first traversal (which is what frustum culling does) reads
+memory sequentially, maximizing prefetch and cache-line utilization.
 
-- Octree structure (node hierarchy, split planes).
-- Per-object tile assignment (object_id → tile_id mapping).
-- Per-tile index order (so the EBO can be built in tile order directly during
-  upload, skipping the compaction pass entirely).
-- File hash of the source `.ifc` (invalidation check).
+#### Build algorithm: object-median split
 
-This makes second-and-subsequent loads of the same model significantly faster:
-the spatial tree doesn't need to be rebuilt, and geometry uploads in tile order
-from the start.
+1. Compute the centroid of each object's AABB.
+2. Find the longest axis of the current node's bounding box.
+3. Use `std::nth_element` to partition objects at the median centroid on that
+   axis. This is O(n) — no full sort needed.
+4. Recurse on each half. Terminate when the node contains ≤ 8 objects (leaf).
+5. Write nodes into the flat array in pre-order DFS.
+
+Total build time is O(n log n). For 100k objects this is well under 100 ms on
+a single core.
+
+SAH (Surface Area Heuristic) is the gold standard for ray-tracing BVHs, but
+for frustum culling — where we test 6 planes and early-out entire subtrees —
+the quality difference vs. median split is negligible. Median split is simpler
+and produces reliably balanced trees.
+
+#### Frustum traversal
+
+The traversal uses an explicit stack on the C++ stack (no heap allocation,
+no recursion):
+
+```
+stack[64] = {0}   // start at root; depth 64 handles billions of objects
+while stack not empty:
+    node = nodes[stack.pop()]
+    if node AABB outside frustum: continue   // cull entire subtree
+    if leaf:
+        for each object in node:
+            if object AABB in frustum: emit to visible list
+    else:
+        push right child, push left child    // left processed first (DFS)
+```
+
+When the camera is zoomed into a corner of the model, the traversal skips
+large portions of the tree after testing only a handful of interior nodes.
+When zoomed out to see everything, the traversal visits all leaves but the
+overhead of the interior-node tests is small relative to the leaf work.
+
+#### Per-model BVH
+
+Each loaded model gets its own BVH. During frustum culling, the outer loop
+iterates over models (skipping hidden/removed ones); the inner loop traverses
+that model's BVH. This means hiding or removing a model is free — just skip
+its BVH, no tree modification needed.
+
+```cpp
+struct ModelBvh {
+    uint32_t model_id;
+    std::vector<BvhNode> nodes;            // flat BVH node array
+    std::vector<uint32_t> object_indices;  // indices into object_draw_info_
+};
+```
+
+#### EBO re-sorting
+
+For BVH culling to maximise GPU cache performance, the EBO is re-sorted so
+that objects in the same BVH leaf are contiguous. This happens via **deferred
+compaction**:
+
+1. During initial load, geometry uploads in iterator order (fast first frame,
+   phase 1 culling active).
+2. After the BVH build completes on the background thread:
+   a. Walk the BVH leaves in DFS order.
+   b. For each object in each leaf, copy its index data to a new EBO buffer,
+      updating `ObjectDrawInfo::index_offset` accordingly.
+   c. Package the reordered EBO + updated draw info as a `BvhBuildResult`.
+3. The render thread picks up the result on the next frame: one
+   `glNamedBufferSubData` call to re-upload the EBO, then swap in the new
+   draw info and activate the BVH. One frame of stutter, bounded by EBO
+   upload time (~5 ms for 32 MB).
+
+#### Async build and render-thread handoff
+
+The BVH build must not stall the render loop:
+
+1. `buildBvhAsync()` snapshots `object_draw_info_` under the upload mutex,
+   then launches a `std::thread`.
+2. The thread builds the BVH and reordered EBO, then stores the result in a
+   `pending_bvh_result_` pointer under a separate mutex.
+3. At the top of each `render()` call, `applyBvhResult()` checks for a
+   pending result. If found, it re-uploads the EBO (requires GL context),
+   swaps the draw info, and activates the BVH.
+4. Until the BVH is ready, phase 1's linear scan runs every frame as before.
+
+#### Preprocessed sidecar format (`.ifcview`)
+
+The sidecar is a raw memory dump (Blender `.blend`-style) — no serialization
+format, no parsing. It stores everything needed to display the model without
+re-tessellating: vertex data, index data, per-object metadata, element tree
+info, and the BVH. Loading is just `fread` into vectors → GPU upload →
+render. The expensive `IfcGeom::Iterator` tessellation is skipped entirely.
+
+The IFC file is still parsed on demand (in background) for detailed property
+lookup; the sidecar provides the basic properties (name, type, GUID)
+immediately.
+
+```
+SidecarHeader            (16 bytes: magic, version, endian, reserved)
+uint64_t                 source_file_size
+
+uint32_t + float[]       vertex data    (interleaved, 8 floats/vertex)
+uint32_t + uint32_t[]    index data     (global indices, ready for EBO)
+uint32_t + ObjectDrawInfo[]   per-object draw metadata
+uint32_t + PackedElementInfo[]  element tree records (fixed-size)
+uint32_t + char[]        string table   (concatenated UTF-8: guid, name, type)
+
+uint32_t                 num_bvh_models
+per model:
+  uint32_t model_id
+  uint32_t + BvhNode[]        BVH node array
+  uint32_t + uint32_t[]       object indices
+```
+
+Staleness check: `source_file_size` is compared against the actual IFC file
+size. If mismatched, the sidecar is stale and is rebuilt. This is cheap and
+sufficient for a local cache (no hash computation on multi-GB files).
+
+Endianness: if the marker reads back as `0x01020304`, the file was written on
+the same architecture — just `fread` the structs directly. Otherwise, reject
+the sidecar and rebuild.
 
 #### Performance characteristics
 
 | Metric | Value |
 |--------|-------|
-| Tile count (typical) | 500–5,000 for a large building |
-| Per-frame frustum tests | N_tiles instead of N_objects |
-| 500k objects, ~2k tiles | ~0.01 ms frustum testing |
-| Memory overhead | ~64 bytes/tile + 32 bytes/object (phase 1 metadata retained) |
-| Background compaction | 1–5 seconds for 1M objects (single-threaded) |
-| Sidecar file size | ~10–50 KB (indices + tree, no geometry) |
+| BVH build time (100k objects) | < 100 ms (single-threaded, background) |
+| Per-frame traversal (100k objects, 50% visible) | ~0.1 ms |
+| Per-frame traversal (100k objects, 5% visible) | ~0.02 ms |
+| Memory overhead | 32 bytes/node + 4 bytes/object index (~1.5× object count) |
+| EBO reorder (one-time) | 1–5 ms upload for 32 MB EBO |
+| Sidecar file size | ~same as geometry data (vertices + indices + metadata) |
+| Sidecar read time | bounded by disk I/O (~500 ms for 640 MB, ~2 s for 2.8 GB from NVMe) |
+| GPU upload time | progressive: ~48 MB/frame (~1 s for 2.8 GB at 60 fps, non-blocking) |
 
 #### Spatial coherence bonus
 
-Beyond culling, tile-sorted EBOs improve GPU cache performance. When the GPU
-rasterizes a tile's triangles, the vertices are contiguous in the VBO, so the
-post-transform vertex cache hits more often. This can yield 10–20% rasterization
-speedup even when nothing is culled (e.g. zoomed out to see the whole model).
+Beyond culling, BVH-leaf-sorted EBOs improve GPU cache performance. When the
+GPU rasterizes a leaf's triangles, the vertices are close together in the VBO,
+so the post-transform vertex cache hits more often. This can yield 10–20%
+rasterization speedup even when nothing is culled (e.g. zoomed out to see the
+whole model).
 
 ### Phase 3: GPU-Driven Indirect Draw
 
@@ -322,20 +426,20 @@ visibility decisions to the GPU via compute shaders and indirect draw commands.
 
 #### How it works
 
-Phase 3 is **approach 2 layered on top of approach 3**. It does not replace
-tiling — it accelerates it.
+Phase 3 builds on the BVH from phase 2. It does not replace the BVH — it
+moves the per-frame traversal to the GPU.
 
 1. **Upload phase** (once, at load time):
-   - Per-tile AABBs are uploaded to a GPU SSBO (`tile_aabbs`).
-   - One `DrawElementsIndirectCommand` per tile is written to an indirect draw
-     buffer:
+   - Per-leaf AABBs from the BVH are uploaded to a GPU SSBO (`leaf_aabbs`).
+   - One `DrawElementsIndirectCommand` per BVH leaf is written to an indirect
+     draw buffer:
      ```c
      struct DrawElementsIndirectCommand {
-         uint count;          // tile's total index count
+         uint count;          // leaf's total index count
          uint instanceCount;  // 1
-         uint firstIndex;     // offset into EBO
+         uint firstIndex;     // offset into EBO (from BVH leaf order)
          uint baseVertex;     // 0 (indices are global)
-         uint baseInstance;   // tile_id (available in shader via gl_DrawID)
+         uint baseInstance;   // leaf_id (available in shader via gl_DrawID)
      };
      ```
    - A "template" copy of the indirect buffer is kept so the compute shader
@@ -343,20 +447,20 @@ tiling — it accelerates it.
 
 2. **Cull phase** (every frame, on the GPU):
    - The CPU uploads 6 frustum plane vec4s as a uniform or small UBO.
-   - A compute shader dispatches `ceil(N_tiles / 64)` workgroups:
+   - A compute shader dispatches `ceil(N_leaves / 64)` workgroups:
      ```glsl
      layout(local_size_x = 64) in;
 
      void main() {
-         uint tile_id = gl_GlobalInvocationID.x;
-         if (tile_id >= tile_count) return;
+         uint leaf_id = gl_GlobalInvocationID.x;
+         if (leaf_id >= leaf_count) return;
 
          // Copy from template (resets any previously zeroed commands)
-         commands[tile_id] = template_commands[tile_id];
+         commands[leaf_id] = template_commands[leaf_id];
 
          // Frustum test
-         if (!aabb_vs_frustum(tile_aabbs[tile_id], frustum_planes)) {
-             commands[tile_id].count = 0;  // culled: GPU skips zero-count draws
+         if (!aabb_vs_frustum(leaf_aabbs[leaf_id], frustum_planes)) {
+             commands[leaf_id].count = 0;  // culled: GPU skips zero-count draws
          }
      }
      ```
@@ -364,7 +468,7 @@ tiling — it accelerates it.
 
 3. **Draw phase** (every frame):
    - One call: `glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT,
-     nullptr, N_tiles, 0)`.
+     nullptr, N_leaves, 0)`.
    - The GPU reads the indirect buffer, skips tiles with `count == 0`, and
      draws the rest. Zero CPU-side per-object or per-tile work.
 
@@ -382,12 +486,12 @@ That's it. The CPU frame time is essentially constant regardless of model size.
 Once the compute-based cull pass exists, it's straightforward to add:
 
 - **Hierarchical-Z occlusion culling**: render a coarse depth buffer from the
-  previous frame, then test tile AABBs against it in the compute shader. Tiles
-  fully behind closer geometry get culled. This handles interior-heavy BIM
-  models well (most rooms are occluded from any given viewpoint).
+  previous frame, then test BVH leaf AABBs against it in the compute shader.
+  Leaves fully behind closer geometry get culled. This handles interior-heavy
+  BIM models well (most rooms are occluded from any given viewpoint).
 - **Distance-based LOD**: the compute shader can select different index ranges
-  (coarse vs. fine tessellation) per tile based on distance to camera.
-- **Contribution culling**: tiles whose screen-space projection is below a
+  (coarse vs. fine tessellation) per leaf based on distance to camera.
+- **Contribution culling**: leaves whose screen-space projection is below a
   pixel threshold get `count = 0`. Removes distant small objects.
 
 #### Performance characteristics
@@ -395,10 +499,10 @@ Once the compute-based cull pass exists, it's straightforward to add:
 | Metric | Value |
 |--------|-------|
 | CPU per-frame work | ~0.01 ms (constant, independent of model size) |
-| GPU compute dispatch | ~0.02 ms for 2k tiles |
+| GPU compute dispatch | ~0.02 ms for 2k leaves |
 | Draw call overhead | 1 indirect multi-draw call |
-| GPU memory overhead | ~48 bytes/tile (AABB SSBO) + 20 bytes/tile (indirect commands) × 2 (template + live) |
-| Total for 2k tiles | ~176 KB GPU memory |
+| GPU memory overhead | ~48 bytes/leaf (AABB SSBO) + 20 bytes/leaf (indirect commands) × 2 (template + live) |
+| Total for 2k leaves | ~176 KB GPU memory |
 | Implementation complexity | High (compute shaders, SSBOs, memory barriers, indirect draw) |
 
 #### When to use
@@ -411,8 +515,8 @@ Phase 3 is worthwhile when:
   the viewer requires 4.5).
 
 For models under 100k objects, phase 1 alone is sufficient. For 100k–500k,
-phase 2 (tiling) keeps CPU culling under 1 ms. Phase 3 is the final step that
-makes the CPU frame time constant.
+phase 2 (BVH) keeps CPU culling well under 1 ms. Phase 3 is the final step
+that makes the CPU frame time constant.
 
 ### Summary
 
@@ -429,28 +533,33 @@ The load path:
 
 ```
 open(model.ifc):
-  ├─ sidecar exists?
-  │   ├─ yes: load tile tree from .ifcview
-  │   │       upload geometry in tile order
-  │   │       (skip background compaction)
-  │   └─ no:  upload geometry in iterator order (fast first frame)
-  │           phase 1 culling active immediately
-  │           if object_count > threshold:
-  │               background: build octree, re-sort EBO, save .ifcview
-  │               on completion: swap in tile structure
-  └─ rendering:
-      ├─ phase 3 available? → compute cull + indirect multi-draw
-      └─ else               → CPU frustum test + glMultiDrawElements
+  ├─ sidecar exists (.ifcview)?
+  │   ├─ yes: background thread reads sidecar file (non-blocking I/O)
+  │   │       → allocate per-model VAO/VBO/EBO (empty, exact size)
+  │   │       → progressive GPU upload: 48 MB/frame VBO, then EBO
+  │   │       → objects appear as EBO chunks land
+  │   │       → BVH activates once fully loaded
+  │   │       → viewport interactive throughout
+  │   └─ no:  stream from IFC via GeometryStreamer
+  │           → uploadChunk() appends to per-model buffers (immediately drawable)
+  │           → phase 1 linear-scan culling active from first chunk
+  │           → on completion: background BVH build, re-sort EBO, save .ifcview
+  └─ rendering (per model, per frame):
+      ├─ phase 3 available?  → compute cull + indirect multi-draw
+      ├─ BVH available?      → BVH traversal + glMultiDrawElements
+      └─ else / progressive  → linear scan of active objects + glMultiDrawElements
 ```
 
 ## Roadmap
 
 - [x] Material color support (per-vertex RGBA8)
-- [x] Buffer growth (dynamic VBO/EBO resizing up to 4 GB)
+- [x] Per-model GPU buffers (VAO/VBO/EBO per model, no cross-model copies)
 - [x] Per-object frustum culling (phase 1)
-- [ ] Spatial tiling with octree (phase 2)
+- [x] BVH acceleration with per-model trees (phase 2)
+- [x] Raw binary `.ifcview` sidecar cache (full geometry + BVH, Blender-style)
+- [x] Non-blocking sidecar loading (background thread I/O)
+- [x] Progressive GPU upload (48 MB/frame chunked VBO/EBO transfer)
 - [ ] GPU-driven indirect draw (phase 3)
-- [ ] Preprocessed `.ifcview` sidecar for fast re-loads
 - [ ] Hierarchical-Z occlusion culling
 - [ ] Distance-based LOD selection
 - [ ] Vulkan/MoltenVK backend for macOS
