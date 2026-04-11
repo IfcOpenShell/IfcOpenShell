@@ -24,6 +24,7 @@
 #include <QApplication>
 #include <QMenuBar>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QHeaderView>
@@ -35,14 +36,6 @@ MainWindow::MainWindow(QWidget* parent)
 {
     setupUi();
     setupMenus();
-
-    streamer_ = new GeometryStreamer(this);
-    connect(streamer_, &GeometryStreamer::progressChanged, this, &MainWindow::onProgressChanged, Qt::QueuedConnection);
-    connect(streamer_, &GeometryStreamer::elementReady, this, &MainWindow::onElementReady, Qt::QueuedConnection);
-    connect(streamer_, &GeometryStreamer::finished, this, &MainWindow::onStreamingFinished, Qt::QueuedConnection);
-    connect(streamer_, &GeometryStreamer::errorOccurred, this, [this](const QString& msg) {
-        QMessageBox::warning(this, "Error", msg);
-    }, Qt::QueuedConnection);
 
     connect(viewport_, &ViewportWindow::frameStatsUpdated, this, [this](const ViewportWindow::FrameStats& s) {
         if (!stats_label_->isVisible()) return;
@@ -118,7 +111,7 @@ void MainWindow::setupUi() {
 
 void MainWindow::setupMenus() {
     auto* file_menu = menuBar()->addMenu("&File");
-    auto* open_action = file_menu->addAction("&Open...", this, &MainWindow::onFileOpen);
+    auto* open_action = file_menu->addAction("&Add Files...", this, &MainWindow::onFileOpen);
     open_action->setShortcut(QKeySequence::Open);
     file_menu->addAction("&Settings...", this, &MainWindow::onFileSettings);
     file_menu->addSeparator();
@@ -126,9 +119,11 @@ void MainWindow::setupMenus() {
 }
 
 void MainWindow::onFileOpen() {
-    QString path = QFileDialog::getOpenFileName(this, "Open IFC File", QString(), "IFC Files (*.ifc *.ifcxml *.ifczip);;All Files (*)");
-    if (!path.isEmpty()) {
-        openFile(path);
+    QStringList paths = QFileDialog::getOpenFileNames(
+        this, "Add IFC Files", QString(),
+        "IFC Files (*.ifc *.ifcxml *.ifczip);;All Files (*)");
+    if (!paths.isEmpty()) {
+        addFiles(paths);
     }
 }
 
@@ -141,21 +136,64 @@ void MainWindow::onFileSettings() {
     settings_->raise();
 }
 
-void MainWindow::openFile(const QString& path) {
-    viewport_->resetScene();
-    element_tree_->clear();
-    property_table_->setRowCount(0);
-    element_map_.clear();
-    tree_items_.clear();
-    ifc_id_to_object_id_.clear();
+void MainWindow::addFiles(const QStringList& paths) {
+    for (const auto& path : paths) {
+        ModelId id = next_model_id_++;
+
+        ModelHandle handle;
+        handle.id = id;
+        handle.file_path = path;
+        handle.display_name = QFileInfo(path).fileName();
+        handle.streamer = new GeometryStreamer(this);
+
+        // Create top-level tree item for this model
+        auto* root = new QTreeWidgetItem(element_tree_);
+        root->setText(0, handle.display_name);
+        root->setText(1, "IFC Model");
+        root->setData(0, Qt::UserRole, static_cast<uint32_t>(0)); // 0 = not a pickable object
+        handle.tree_root = root;
+
+        models_[id] = handle;
+        load_queue_.push_back(id);
+    }
+
+    if (loading_model_id_ == 0) {
+        startNextLoad();
+    }
+}
+
+void MainWindow::connectStreamer(GeometryStreamer* streamer) {
+    connect(streamer, &GeometryStreamer::progressChanged,
+            this, &MainWindow::onProgressChanged, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::elementReady,
+            this, &MainWindow::onElementReady, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::finished,
+            this, &MainWindow::onStreamingFinished, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::errorOccurred, this, [this](const QString& msg) {
+        QMessageBox::warning(this, "Error", msg);
+    }, Qt::QueuedConnection);
+}
+
+void MainWindow::startNextLoad() {
+    if (load_queue_.empty()) {
+        loading_model_id_ = 0;
+        return;
+    }
+
+    loading_model_id_ = load_queue_.front();
+    load_queue_.pop_front();
+
+    auto& model = models_[loading_model_id_];
+    connectStreamer(model.streamer);
 
     progress_bar_->setValue(0);
     progress_bar_->setVisible(true);
-    status_label_->setText("Loading: " + path);
+    status_label_->setText("Loading: " + model.display_name);
 
     load_timer_.restart();
     element_poll_timer_.start();
-    streamer_->loadFile(path.toStdString());
+    model.streamer->loadFile(
+        model.file_path.toStdString(), next_object_id_, loading_model_id_);
 }
 
 void MainWindow::onProgressChanged(int percent) {
@@ -170,15 +208,30 @@ void MainWindow::onStreamingFinished() {
     element_poll_timer_.stop();
     pollNewElements(); // drain remaining
 
+    // Update next_object_id_ from the streamer that just finished.
+    if (loading_model_id_ != 0) {
+        auto it = models_.find(loading_model_id_);
+        if (it != models_.end()) {
+            next_object_id_ = it->second.streamer->lastObjectId();
+        }
+    }
+
     progress_bar_->setVisible(false);
 
     qint64 ms = load_timer_.elapsed();
     QString elapsed = (ms >= 1000)
         ? QString::number(ms / 1000.0, 'f', 2) + " s"
         : QString::number(ms) + " ms";
-    status_label_->setText(QString("Loaded %1 elements in %2")
-        .arg(element_map_.size())
+
+    size_t total_elements = element_map_.size();
+    size_t num_models = models_.size();
+    status_label_->setText(QString("%1 elements across %2 model(s) — last loaded in %3")
+        .arg(total_elements)
+        .arg(num_models)
         .arg(elapsed));
+
+    // Start next model if queued.
+    startNextLoad();
 }
 
 void MainWindow::onObjectPicked(uint32_t object_id) {
@@ -205,15 +258,23 @@ void MainWindow::onTreeSelectionChanged() {
 }
 
 void MainWindow::pollNewElements() {
-    auto elements = streamer_->drainElements();
+    if (loading_model_id_ == 0) return;
+
+    auto it = models_.find(loading_model_id_);
+    if (it == models_.end()) return;
+
+    auto& model = it->second;
+    auto elements = model.streamer->drainElements();
+
     for (auto& info : elements) {
         element_map_[info.object_id] = info;
-        ifc_id_to_object_id_[info.ifc_id] = info.object_id;
+        scoped_ifc_id_to_object_id_[scopedKey(info.model_id, info.ifc_id)] = info.object_id;
 
-        // Find parent tree item
-        QTreeWidgetItem* parent_item = nullptr;
-        auto parent_obj_it = ifc_id_to_object_id_.find(info.parent_id);
-        if (parent_obj_it != ifc_id_to_object_id_.end()) {
+        // Find parent tree item (scoped to this model)
+        QTreeWidgetItem* parent_item = model.tree_root;
+        auto parent_obj_it = scoped_ifc_id_to_object_id_.find(
+            scopedKey(info.model_id, info.parent_id));
+        if (parent_obj_it != scoped_ifc_id_to_object_id_.end()) {
             auto tree_it = tree_items_.find(parent_obj_it->second);
             if (tree_it != tree_items_.end()) {
                 parent_item = tree_it->second;
@@ -225,12 +286,7 @@ void MainWindow::pollNewElements() {
             display_name = QString::fromStdString(info.type) + " #" + QString::number(info.ifc_id);
         }
 
-        QTreeWidgetItem* item;
-        if (parent_item) {
-            item = new QTreeWidgetItem(parent_item);
-        } else {
-            item = new QTreeWidgetItem(element_tree_);
-        }
+        auto* item = new QTreeWidgetItem(parent_item);
         item->setText(0, display_name);
         item->setText(1, QString::fromStdString(info.type));
         item->setText(2, QString::fromStdString(info.guid));
@@ -261,8 +317,11 @@ void MainWindow::populateProperties(uint32_t object_id) {
     addRow("Name", QString::fromStdString(info.name));
     addRow("Type", QString::fromStdString(info.type));
 
-    // If the file is loaded, try to get property sets
-    auto* file = streamer_->ifcFile();
+    // Find the correct model's file for property lookup
+    auto model_it = models_.find(info.model_id);
+    if (model_it == models_.end()) return;
+
+    auto* file = model_it->second.streamer->ifcFile();
     if (!file) return;
 
     auto product = file->instance_by_id(info.ifc_id);
@@ -280,7 +339,6 @@ void MainWindow::populateProperties(uint32_t object_id) {
                     try {
                         str_val = static_cast<std::string>(val);
                     } catch (...) {
-                        // Not a string-convertible attribute (entity ref, aggregate, etc.)
                         str_val = "<" + std::string(ifcopenshell::argument_type_to_string(val.type())) + ">";
                     }
                     addRow(QString::fromStdString(attr->name()), QString::fromStdString(str_val));

@@ -29,6 +29,8 @@
 #include <QTimer>
 #include <QElapsedTimer>
 
+#include <map>
+#include <deque>
 #include <unordered_map>
 
 #include "ViewportWindow.h"
@@ -36,13 +38,24 @@
 
 class SettingsWindow;
 
+using ModelId = uint32_t;
+
+struct ModelHandle {
+    ModelId id = 0;
+    QString file_path;
+    QString display_name;
+    GeometryStreamer* streamer = nullptr;
+    QTreeWidgetItem* tree_root = nullptr;
+    bool visible = true;
+};
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-    void openFile(const QString& path);
+    void addFiles(const QStringList& paths);
 
 private slots:
     void onFileOpen();
@@ -58,6 +71,8 @@ private:
     void setupUi();
     void setupMenus();
     void populateProperties(uint32_t object_id);
+    void startNextLoad();
+    void connectStreamer(GeometryStreamer* streamer);
 
     ViewportWindow* viewport_ = nullptr;
     SettingsWindow* settings_ = nullptr;
@@ -70,12 +85,22 @@ private:
     QTimer element_poll_timer_;
     QElapsedTimer load_timer_;
 
-    GeometryStreamer* streamer_ = nullptr;
+    // Multi-model state
+    std::map<ModelId, ModelHandle> models_;
+    ModelId next_model_id_ = 1;
+    uint32_t next_object_id_ = 1; // monotonically increasing across all models
+    std::deque<ModelId> load_queue_;
+    ModelId loading_model_id_ = 0;
 
     // Map object_id -> tree item and element info
     std::unordered_map<uint32_t, ElementInfo> element_map_;
     std::unordered_map<uint32_t, QTreeWidgetItem*> tree_items_;
-    std::unordered_map<int, uint32_t> ifc_id_to_object_id_;
+    // Scoped (model_id, ifc_id) -> object_id
+    std::unordered_map<uint64_t, uint32_t> scoped_ifc_id_to_object_id_;
+
+    static uint64_t scopedKey(uint32_t model_id, int ifc_id) {
+        return (static_cast<uint64_t>(model_id) << 32) | static_cast<uint32_t>(ifc_id);
+    }
 };
 
 #endif // MAINWINDOW_H

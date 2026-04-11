@@ -38,6 +38,7 @@
 
 struct ElementInfo {
     uint32_t object_id;
+    uint32_t model_id;
     int ifc_id;
     std::string guid;
     std::string name;
@@ -51,11 +52,13 @@ public:
     explicit GeometryStreamer(QObject* parent = nullptr);
     ~GeometryStreamer();
 
-    void loadFile(const std::string& path, int num_threads = 0);
+    void loadFile(const std::string& path, uint32_t start_object_id, uint32_t model_id, int num_threads = 0);
     void cancel();
 
     bool isRunning() const { return running_.load(); }
     int progress() const { return progress_.load(); }
+    uint32_t lastObjectId() const { return next_object_id_; }
+    uint32_t modelId() const { return model_id_; }
 
     ifcopenshell::file* ifcFile() const { return ifc_file_.get(); }
 
@@ -82,8 +85,8 @@ private:
     std::mutex elements_mutex_;
     std::vector<ElementInfo> pending_elements_;
 
-    // Map from IFC product id to our compact object_id
     uint32_t next_object_id_ = 1; // 0 = no object
+    uint32_t model_id_ = 0;
 };
 
 #endif // GEOMETRYSTREAMER_H

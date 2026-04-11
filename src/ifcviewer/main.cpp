@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     QCommandLineParser parser;
     parser.setApplicationDescription("IfcOpenShell IFC Viewer");
     parser.addHelpOption();
-    parser.addPositionalArgument("file", "IFC file to open");
+    parser.addPositionalArgument("files", "IFC file(s) to open", "[files...]");
     parser.process(app);
 
     MainWindow window;
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
     auto args = parser.positionalArguments();
     if (!args.isEmpty()) {
-        window.openFile(args.first());
+        window.addFiles(args);
     }
 
     return app.exec();

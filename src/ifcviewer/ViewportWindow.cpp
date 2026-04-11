@@ -427,6 +427,7 @@ void ViewportWindow::uploadChunk(const UploadChunk& chunk) {
     ObjectDrawInfo info;
     info.index_offset = static_cast<uint32_t>(ebo_used_);
     info.index_count = static_cast<uint32_t>(chunk.indices.size());
+    info.model_id = chunk.model_id;
 
     const size_t num_verts = chunk.vertices.size() / VERTEX_STRIDE;
     if (num_verts > 0) {
@@ -467,6 +468,23 @@ void ViewportWindow::resetScene() {
     total_triangles_ = 0;
     selected_object_id_ = 0;
     object_draw_info_.clear();
+    hidden_models_.clear();
+    removed_models_.clear();
+}
+
+void ViewportWindow::hideModel(uint32_t model_id) {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    hidden_models_.insert(model_id);
+}
+
+void ViewportWindow::showModel(uint32_t model_id) {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    hidden_models_.erase(model_id);
+}
+
+void ViewportWindow::removeModel(uint32_t model_id) {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    removed_models_.insert(model_id);
 }
 
 void ViewportWindow::setSelectedObjectId(uint32_t id) {
@@ -567,6 +585,10 @@ void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
     visible_offsets_.reserve(object_draw_info_.size());
 
     for (const auto& obj : object_draw_info_) {
+        // Skip hidden or removed models.
+        if (hidden_models_.count(obj.model_id) || removed_models_.count(obj.model_id))
+            continue;
+
         bool visible = true;
         for (int p = 0; p < 6; ++p) {
             // p-vertex: the AABB corner most in the direction of the plane normal.

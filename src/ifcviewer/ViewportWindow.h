@@ -29,6 +29,7 @@
 #include <QVector3D>
 
 #include <vector>
+#include <unordered_set>
 #include <cstdint>
 #include <mutex>
 
@@ -39,6 +40,7 @@ struct MaterialInfo {
 struct ObjectDrawInfo {
     uint32_t index_offset;  // byte offset into EBO
     uint32_t index_count;   // number of indices
+    uint32_t model_id;      // which model this object belongs to
     float aabb_min[3];      // world-space AABB
     float aabb_max[3];
 };
@@ -51,6 +53,7 @@ struct UploadChunk {
     std::vector<float> vertices;
     std::vector<uint32_t> indices; // local to this chunk's vertices
     uint32_t object_id = 0;
+    uint32_t model_id = 0;
 };
 
 class ViewportWindow : public QWindow {
@@ -61,6 +64,10 @@ public:
 
     void uploadChunk(const UploadChunk& chunk);
     void resetScene();
+
+    void hideModel(uint32_t model_id);
+    void showModel(uint32_t model_id);
+    void removeModel(uint32_t model_id);
 
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
@@ -136,6 +143,8 @@ private:
 
     // Per-object draw metadata for frustum culling.
     std::vector<ObjectDrawInfo> object_draw_info_;
+    std::unordered_set<uint32_t> hidden_models_;
+    std::unordered_set<uint32_t> removed_models_;
     uint32_t total_index_count_ = 0;
     std::mutex upload_mutex_;
 

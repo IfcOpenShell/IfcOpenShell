@@ -40,7 +40,7 @@ GeometryStreamer::~GeometryStreamer() {
     }
 }
 
-void GeometryStreamer::loadFile(const std::string& path, int num_threads) {
+void GeometryStreamer::loadFile(const std::string& path, uint32_t start_object_id, uint32_t model_id, int num_threads) {
     if (running_.load()) {
         cancel();
         if (worker_thread_ && worker_thread_->isRunning()) {
@@ -52,7 +52,8 @@ void GeometryStreamer::loadFile(const std::string& path, int num_threads) {
     cancel_requested_ = false;
     running_ = true;
     progress_ = 0;
-    next_object_id_ = 1;
+    next_object_id_ = start_object_id;
+    model_id_ = model_id;
 
     {
         std::lock_guard<std::mutex> lock(elements_mutex_);
@@ -139,6 +140,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         // Record element metadata
         ElementInfo info;
         info.object_id = object_id;
+        info.model_id = model_id_;
         info.ifc_id = tri_elem->id();
         info.guid = tri_elem->guid();
         info.name = tri_elem->name();
@@ -201,6 +203,7 @@ static inline uint32_t packRGBA8(const MaterialInfo& m) {
 UploadChunk GeometryStreamer::convertElement(const IfcGeom::TriangulationElement* elem, uint32_t object_id) {
     UploadChunk chunk;
     chunk.object_id = object_id;
+    chunk.model_id = model_id_;
 
     const auto& geom = elem->geometry();
     const auto& verts = geom.verts();
