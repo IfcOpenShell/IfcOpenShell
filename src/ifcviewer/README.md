@@ -10,21 +10,22 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 |  +----------+ +--------------------------+|
 |  | Element  | | 3D Viewport              ||
 |  | Tree     | | (QWindow + OpenGL 4.5)   ||
-|  |          | |                          ||
-|  +----------+ | Single VBO/EBO           ||
-|  | Property | | DrawElementsBaseVertex   ||
+|  | (per-    | |                          ||
+|  |  model)  | | Single VBO/EBO           ||
+|  +----------+ | glMultiDrawElements      ||
+|  | Property | | frustum culling          ||
 |  | Table    | | GPU pick pass            ||
 |  +----------+ +--------------------------+|
-|  | Status / Progress                      |
+|  | Status / Progress / Stats              |
 +-------------------------------------------+
         ^                    ^
         |                    |
   element metadata     UploadChunks
         |                    |
 +-------------------------------------------+
-|  GeometryStreamer (background QThread)     |
+|  GeometryStreamer (one per loaded model)   |
 |  IfcGeom::Iterator with N threads         |
-|  (one per CPU core by default)            |
+|  (models loaded sequentially)             |
 +-------------------------------------------+
 ```
 
@@ -32,8 +33,10 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 
 - **QWindow viewport** embedded via `QWidget::createWindowContainer()`. This gives us a raw native surface for OpenGL, bypassing `QOpenGLWidget`'s compositor overhead.
 - **One big vertex buffer + index buffer** (64 MB + 32 MB initial). Geometry is appended as it streams in. No per-object VBOs, no rebinding.
-- **Interleaved vertex format**: position (3 floats) + normal (3 floats) + object ID (1 float, bitcast uint32) = 28 bytes per vertex.
+- **Interleaved vertex format**: position (3 floats) + normal (3 floats) + object ID (1 float, bitcast uint32) + color (RGBA8 packed into 1 float) = 32 bytes per vertex.
+- **Per-object frustum culling**: each object's AABB is tested against 6 frustum planes each frame. Only visible objects are drawn via `glMultiDrawElements`.
 - **GPU object picking**: a second render pass writes object IDs to an R32UI framebuffer. Click reads back one pixel. No CPU-side raycasting.
+- **Multi-model support**: multiple IFC files can be loaded simultaneously. Each model gets its own `GeometryStreamer` (owning the `ifcopenshell::file` for property lookup). Models are loaded sequentially; geometry from all models coexists in the shared VBO/EBO. Per-model visibility toggle and removal are supported.
 - **Multi-threaded tessellation**: `IfcGeom::Iterator` runs on a background thread and internally parallelizes geometry conversion across all CPU cores.
 - **Non-blocking streaming**: the iterator emits `UploadChunk` signals via Qt's queued connection. The main thread uploads to the GPU without blocking iteration.
 - **World coordinates**: geometry is emitted in world space (`use-world-coords=true`) so no per-object transform matrices are needed on the GPU.
@@ -43,9 +46,11 @@ A high-performance native IFC viewer built on IfcOpenShell's C++ geometry engine
 | File | Purpose |
 |------|---------|
 | `main.cpp` | Application entry point, GL 4.5 surface format, CLI argument parsing |
-| `MainWindow.h/cpp` | Qt main window: dockable element tree, property table, status bar, menus |
-| `ViewportWindow.h/cpp` | OpenGL 4.5 Core renderer: shaders, buffer management, camera, picking |
-| `GeometryStreamer.h/cpp` | Background geometry processing: loads IFC, runs iterator, emits chunks |
+| `MainWindow.h/cpp` | Qt main window: multi-model project management, element tree, property table, status bar |
+| `ViewportWindow.h/cpp` | OpenGL 4.5 Core renderer: shaders, buffer management, camera, frustum culling, picking |
+| `GeometryStreamer.h/cpp` | Background geometry processing: loads IFC, runs iterator, emits chunks (one per model) |
+| `AppSettings.h/cpp` | Persisted application preferences (geometry library, show stats) |
+| `SettingsWindow.h/cpp` | Settings dialog UI |
 | `CMakeLists.txt` | Build configuration |
 
 ## Dependencies
@@ -94,10 +99,10 @@ make -j$(nproc)
 ## Usage
 
 ```sh
-# Open a file directly
-./IfcViewer model.ifc
+# Open one or more files from the command line
+./IfcViewer arch.ifc struct.ifc mep.ifc
 
-# Or use File -> Open from the menu
+# Or use File -> Add Files from the menu (supports multiselect)
 ./IfcViewer
 ```
 
@@ -114,7 +119,7 @@ make -j$(nproc)
 
 | Key | Action |
 |-----|--------|
-| Ctrl+O | Open file |
+| Ctrl+O | Add files |
 | Ctrl+Q | Quit |
 
 ## Performance Strategy
