@@ -1,0 +1,103 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#ifndef INSTANCEDGEOMETRY_H
+#define INSTANCEDGEOMETRY_H
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+// Per-vertex layout for instanced meshes, stored in local coordinates.
+// 28 bytes per vertex:
+//   pos(3 float)    -- 12 B
+//   normal(3 float) -- 12 B
+//   color(4 bytes RGBA8, read as GL_UNSIGNED_BYTE*4 normalized) -- 4 B
+static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 28;
+static constexpr int INSTANCED_VERTEX_STRIDE_FLOATS = 7;
+
+// Per-mesh metadata on the CPU side.  Meshes own a slice of the model's
+// VBO and EBO (both local-coords/mesh-local indices).
+struct MeshInfo {
+    uint32_t vbo_byte_offset = 0;    // where this mesh's vertices start
+    uint32_t vertex_count    = 0;
+    uint32_t ebo_byte_offset = 0;    // where this mesh's indices start
+    uint32_t index_count     = 0;
+    float    local_aabb_min[3]{};
+    float    local_aabb_max[3]{};
+    uint32_t first_instance  = 0;    // index into per-model instances array
+    uint32_t instance_count  = 0;
+};
+static_assert(sizeof(MeshInfo) == 48, "MeshInfo must be 48 bytes");
+
+// Per-instance record uploaded to an SSBO and read by the vertex shader.
+// Layout deliberately matches std430 expectations:
+//   mat4 transform (64 B column-major)
+//   uint object_id
+//   uint color_override_rgba8   -- 0 = use baked vertex color, else override
+//   uint _pad0, _pad1           -- align to 16 for std430
+struct alignas(16) InstanceGpu {
+    float    transform[16];
+    uint32_t object_id            = 0;
+    uint32_t color_override_rgba8 = 0;
+    uint32_t _pad0                = 0;
+    uint32_t _pad1                = 0;
+};
+static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
+
+// CPU-side per-instance data.  The GPU record above is derived from this;
+// we also retain the world AABB for BVH construction and the mesh_id.
+struct InstanceCpu {
+    uint32_t mesh_id              = 0;  // index into meshes array
+    uint32_t object_id            = 0;
+    uint32_t color_override_rgba8 = 0;
+    uint32_t model_id             = 0;
+    float    transform[16]{};
+    float    world_aabb_min[3]{};
+    float    world_aabb_max[3]{};
+};
+
+// Chunks emitted by the streamer to the viewport (main thread).
+
+// Emitted the first time a representation id is seen.  Carries the mesh
+// geometry in local coords.  `local_mesh_id` is the streamer-assigned id
+// within this model.
+struct MeshChunk {
+    uint32_t model_id      = 0;
+    uint32_t local_mesh_id = 0;
+    std::vector<float>    vertices;  // 7 floats * N_verts (pos3+norm3+color1_packed)
+    std::vector<uint32_t> indices;
+    float    local_aabb_min[3]{};
+    float    local_aabb_max[3]{};
+};
+
+// Emitted for every placement (every triangulation element from the
+// iterator).  For the first instance of a mesh, the MeshChunk is emitted
+// just before this.
+struct InstanceChunk {
+    uint32_t model_id             = 0;
+    uint32_t local_mesh_id        = 0;
+    uint32_t object_id            = 0;
+    uint32_t color_override_rgba8 = 0;
+    float    transform[16]{};
+    float    world_aabb_min[3]{};
+    float    world_aabb_max[3]{};
+};
+
+#endif // INSTANCEDGEOMETRY_H

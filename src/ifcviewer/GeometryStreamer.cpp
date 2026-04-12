@@ -20,15 +20,51 @@
 #include "GeometryStreamer.h"
 #include "AppSettings.h"
 #include "../ifcgeom/hybrid_kernel.h"
+#include "../ifcgeom/taxonomy.h"
+
+#include <Eigen/Dense>
 
 #include <thread>
 #include <unordered_map>
 #include <cmath>
 #include <cstring>
 #include <algorithm>
+#include <limits>
 
 #include <QDebug>
 #include <QElapsedTimer>
+
+struct MaterialInfo {
+    float r = 0.75f, g = 0.75f, b = 0.78f, a = 1.0f;
+};
+
+static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
+    MaterialInfo m;
+    if (!style) return m;
+    const auto& color = style->get_color();
+    if (color) {
+        m.r = static_cast<float>(color.r());
+        m.g = static_cast<float>(color.g());
+        m.b = static_cast<float>(color.b());
+    }
+    if (!std::isnan(style->transparency)) {
+        m.a = 1.0f - static_cast<float>(style->transparency);
+    }
+    return m;
+}
+
+static inline uint32_t packRGBA8(const MaterialInfo& m) {
+    auto to_byte = [](float v) -> uint32_t {
+        float c = std::clamp(v, 0.0f, 1.0f);
+        return static_cast<uint32_t>(c * 255.0f + 0.5f);
+    };
+    uint32_t r = to_byte(m.r);
+    uint32_t g = to_byte(m.g);
+    uint32_t b = to_byte(m.b);
+    uint32_t a = to_byte(m.a);
+    // Little-endian byte layout [r,g,b,a] for GL_UNSIGNED_BYTE * 4 normalized.
+    return r | (g << 8) | (b << 16) | (a << 24);
+}
 
 GeometryStreamer::GeometryStreamer(QObject* parent)
     : QObject(parent)
@@ -96,6 +132,130 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
     return result;
 }
 
+// Build a mesh chunk (local coords, 28-byte interleaved vertices) from a
+// TriangulationElement. Per-vertex color is baked from material_ids so that
+// triangulations with per-face materials still render correctly.
+static MeshChunk buildMeshChunk(uint32_t model_id,
+                                uint32_t local_mesh_id,
+                                const IfcGeom::TriangulationElement* elem) {
+    MeshChunk chunk;
+    chunk.model_id = model_id;
+    chunk.local_mesh_id = local_mesh_id;
+
+    const auto& geom = elem->geometry();
+    const auto& verts = geom.verts();
+    const auto& faces = geom.faces();
+    const auto& normals = geom.normals();
+    const auto& materials = geom.materials();
+    const auto& material_ids = geom.material_ids();
+
+    if (verts.empty() || faces.empty()) return chunk;
+
+    const size_t num_verts_src = verts.size() / 3;
+    const size_t num_tris = faces.size() / 3;
+    const bool have_per_tri_material = (material_ids.size() == num_tris);
+
+    // Dedupe (original vertex index, material id) so vertices shared across
+    // triangles of the same material stay shared; vertices spanning multiple
+    // materials are split (per-face color demands it).
+    auto make_key = [](uint32_t orig_idx, int mat_id) -> uint64_t {
+        return (static_cast<uint64_t>(orig_idx) << 32) | static_cast<uint32_t>(mat_id);
+    };
+
+    std::unordered_map<uint64_t, uint32_t> remap;
+    remap.reserve(num_verts_src);
+
+    chunk.vertices.reserve(num_verts_src * INSTANCED_VERTEX_STRIDE_FLOATS);
+    chunk.indices.reserve(faces.size());
+
+    // Track local AABB as we emit vertices.
+    float amin[3] = { std::numeric_limits<float>::max(),
+                      std::numeric_limits<float>::max(),
+                      std::numeric_limits<float>::max() };
+    float amax[3] = { -std::numeric_limits<float>::max(),
+                      -std::numeric_limits<float>::max(),
+                      -std::numeric_limits<float>::max() };
+
+    auto emit_vertex = [&](uint32_t orig_idx, int mat_id) -> uint32_t {
+        const uint64_t key = make_key(orig_idx, mat_id);
+        auto it = remap.find(key);
+        if (it != remap.end()) return it->second;
+
+        const uint32_t new_idx = static_cast<uint32_t>(
+            chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+
+        float px = static_cast<float>(verts[orig_idx * 3 + 0]);
+        float py = static_cast<float>(verts[orig_idx * 3 + 1]);
+        float pz = static_cast<float>(verts[orig_idx * 3 + 2]);
+        chunk.vertices.push_back(px);
+        chunk.vertices.push_back(py);
+        chunk.vertices.push_back(pz);
+        if (px < amin[0]) amin[0] = px; if (px > amax[0]) amax[0] = px;
+        if (py < amin[1]) amin[1] = py; if (py > amax[1]) amax[1] = py;
+        if (pz < amin[2]) amin[2] = pz; if (pz > amax[2]) amax[2] = pz;
+
+        if (orig_idx * 3 + 2 < normals.size()) {
+            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
+            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 1]));
+            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 2]));
+        } else {
+            chunk.vertices.push_back(0.0f);
+            chunk.vertices.push_back(1.0f);
+            chunk.vertices.push_back(0.0f);
+        }
+
+        MaterialInfo m;
+        if (mat_id >= 0 && mat_id < static_cast<int>(materials.size())) {
+            m = materialFromStyle(materials[mat_id]);
+        }
+        uint32_t packed = packRGBA8(m);
+        float packed_as_float;
+        std::memcpy(&packed_as_float, &packed, sizeof(float));
+        chunk.vertices.push_back(packed_as_float);
+
+        remap.emplace(key, new_idx);
+        return new_idx;
+    };
+
+    for (size_t t = 0; t < num_tris; ++t) {
+        const int mat_id = have_per_tri_material ? material_ids[t] : -1;
+        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 0]), mat_id));
+        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 1]), mat_id));
+        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 2]), mat_id));
+    }
+
+    if (chunk.vertices.empty()) {
+        for (int a = 0; a < 3; ++a) amin[a] = amax[a] = 0.0f;
+    }
+    for (int a = 0; a < 3; ++a) {
+        chunk.local_aabb_min[a] = amin[a];
+        chunk.local_aabb_max[a] = amax[a];
+    }
+    return chunk;
+}
+
+// Compute the world-space AABB by transforming the 8 corners of the local
+// AABB through the column-major 4x4 transform.
+static void worldAabbFromLocal(const float local_min[3],
+                               const float local_max[3],
+                               const float M[16],
+                               float out_min[3], float out_max[3]) {
+    out_min[0] = out_min[1] = out_min[2] =  std::numeric_limits<float>::max();
+    out_max[0] = out_max[1] = out_max[2] = -std::numeric_limits<float>::max();
+    for (int c = 0; c < 8; ++c) {
+        float x = (c & 1) ? local_max[0] : local_min[0];
+        float y = (c & 2) ? local_max[1] : local_min[1];
+        float z = (c & 4) ? local_max[2] : local_min[2];
+        // Column-major: world = M * [x,y,z,1].
+        float wx = M[0]*x + M[4]*y + M[8]*z  + M[12];
+        float wy = M[1]*x + M[5]*y + M[9]*z  + M[13];
+        float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
+        if (wx < out_min[0]) out_min[0] = wx; if (wx > out_max[0]) out_max[0] = wx;
+        if (wy < out_min[1]) out_min[1] = wy; if (wy > out_max[1]) out_max[1] = wy;
+        if (wz < out_min[2]) out_min[2] = wz; if (wz > out_max[2]) out_max[2] = wz;
+    }
+}
+
 void GeometryStreamer::run(const std::string& path, int num_threads) {
     try {
         ifc_file_ = std::make_unique<ifcopenshell::file>(path);
@@ -105,7 +265,9 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     }
 
     ifcopenshell::geometry::Settings settings;
-    settings.set("use-world-coords", true);
+    // Instancing path: geometry stays in local coords; the transform is
+    // applied on the GPU per instance.
+    settings.set("use-world-coords", false);
     settings.set("weld-vertices", false);
     settings.set("apply-default-materials", true);
 
@@ -129,17 +291,14 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
     int last_progress = 0;
 
-    // Instancing analysis: count shapes grouped by representation id.
-    struct GeomStat {
-        uint32_t count = 0;
-        size_t vertex_count = 0;
-        size_t index_count = 0;
-        std::string example_type;
-    };
-    std::unordered_map<std::string, GeomStat> geom_stats;
+    // geom.id() → local_mesh_id within this model.
+    std::unordered_map<std::string, uint32_t> geom_to_local_mesh_id;
+    // local_mesh_id → (local AABB) so we can derive world AABBs for later instances.
+    struct MeshAabb { float lmin[3], lmax[3]; };
+    std::vector<MeshAabb> mesh_aabbs;
+
     uint32_t total_shapes = 0;
-    size_t total_vertices = 0;
-    size_t total_indices = 0;
+    uint32_t total_meshes = 0;
     QElapsedTimer stream_timer;
     stream_timer.start();
 
@@ -152,9 +311,12 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
         if (!tri_elem) continue;
 
+        const auto& geom = tri_elem->geometry();
+        if (geom.verts().empty() || geom.faces().empty()) continue;
+
         uint32_t object_id = next_object_id_++;
 
-        // Record element metadata
+        // Element metadata.
         ElementInfo info;
         info.object_id = object_id;
         info.model_id = model_id_;
@@ -163,35 +325,61 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         info.name = tri_elem->name();
         info.type = tri_elem->type();
         info.parent_id = tri_elem->parent_id();
-
-        // Instancing stats: key by representation id, count unique vs repeated.
-        const auto& geom = tri_elem->geometry();
-        const std::string& geom_id = geom.id();
-        size_t nv = geom.verts().size() / 3;
-        size_t ni = geom.faces().size();
-        if (!geom_id.empty()) {
-            auto& gs = geom_stats[geom_id];
-            gs.count++;
-            if (gs.count == 1) {
-                gs.vertex_count = nv;
-                gs.index_count = ni;
-                gs.example_type = info.type;
-            }
-        }
-        total_shapes++;
-        total_vertices += nv;
-        total_indices += ni;
-
         {
             std::lock_guard<std::mutex> lock(elements_mutex_);
             pending_elements_.push_back(std::move(info));
         }
 
-        // Convert geometry to upload chunk
-        UploadChunk chunk = convertElement(tri_elem, object_id);
-        if (!chunk.indices.empty()) {
-            emit elementReady(std::move(chunk));
+        // Representation dedup.
+        const std::string& geom_id = geom.id();
+        uint32_t local_mesh_id;
+        bool first_sight = false;
+        if (geom_id.empty()) {
+            // No representation key — treat as unique.
+            local_mesh_id = total_meshes++;
+            first_sight = true;
+        } else {
+            auto it = geom_to_local_mesh_id.find(geom_id);
+            if (it == geom_to_local_mesh_id.end()) {
+                local_mesh_id = total_meshes++;
+                geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
+                first_sight = true;
+            } else {
+                local_mesh_id = it->second;
+            }
         }
+
+        if (first_sight) {
+            MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
+            MeshAabb ma;
+            for (int a = 0; a < 3; ++a) {
+                ma.lmin[a] = mesh_chunk.local_aabb_min[a];
+                ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+            }
+            if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
+            mesh_aabbs[local_mesh_id] = ma;
+            if (!mesh_chunk.indices.empty()) {
+                emit meshReady(std::move(mesh_chunk));
+            }
+        }
+
+        // Transform (column-major 4x4, cast to float).
+        const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
+        InstanceChunk inst;
+        inst.model_id = model_id_;
+        inst.local_mesh_id = local_mesh_id;
+        inst.object_id = object_id;
+        inst.color_override_rgba8 = 0; // 0 = use baked vertex color
+        for (int i = 0; i < 16; ++i) {
+            inst.transform[i] = static_cast<float>(mat_d.data()[i]);
+        }
+
+        const MeshAabb& ma = mesh_aabbs[local_mesh_id];
+        worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
+                           inst.world_aabb_min, inst.world_aabb_max);
+
+        emit instanceReady(std::move(inst));
+        total_shapes++;
 
         int p = iterator->progress();
         if (p != last_progress) {
@@ -204,188 +392,9 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     progress_ = 100;
     emit progressChanged(100);
 
-    // === Instancing report ===
-    {
-        size_t unique_geoms = geom_stats.size();
-        size_t unique_vertices = 0;
-        size_t unique_indices = 0;
-        size_t repeated_shapes = 0; // total shapes that share a repr with another
-        for (const auto& [gid, gs] : geom_stats) {
-            unique_vertices += gs.vertex_count;
-            unique_indices += gs.index_count;
-            if (gs.count > 1) repeated_shapes += gs.count;
-        }
-
-        // Bytes assuming current layout (32 B/vertex, 4 B/index).
-        size_t baked_vbo_bytes = total_vertices * 32;
-        size_t baked_ebo_bytes = total_indices * 4;
-        size_t instanced_vbo_bytes = unique_vertices * 32;
-        size_t instanced_ebo_bytes = unique_indices * 4;
-        // Per-instance data: 64 B transform + 8 B (object_id + color).
-        size_t per_instance_bytes = 72;
-        size_t instance_ssbo_bytes = total_shapes * per_instance_bytes;
-
-        double dedup_ratio = unique_geoms > 0
-            ? static_cast<double>(total_shapes) / static_cast<double>(unique_geoms)
-            : 1.0;
-
-        qDebug("=== Instancing analysis: %s ===", path.c_str());
-        qDebug("  Stream time: %.2f s", stream_timer.elapsed() / 1000.0);
-        qDebug("  Total shapes:      %u", total_shapes);
-        qDebug("  Unique geometries: %zu  (dedup ratio %.2fx)",
-               unique_geoms, dedup_ratio);
-        qDebug("  Repeated shapes:   %zu  (%.1f%% of total)",
-               repeated_shapes,
-               total_shapes > 0 ? 100.0 * repeated_shapes / total_shapes : 0.0);
-        qDebug("  Baked geometry:    VBO %.1f MB + EBO %.1f MB = %.1f MB",
-               baked_vbo_bytes / (1024.0*1024.0),
-               baked_ebo_bytes / (1024.0*1024.0),
-               (baked_vbo_bytes + baked_ebo_bytes) / (1024.0*1024.0));
-        qDebug("  If instanced:      VBO %.1f MB + EBO %.1f MB + SSBO %.1f MB = %.1f MB",
-               instanced_vbo_bytes / (1024.0*1024.0),
-               instanced_ebo_bytes / (1024.0*1024.0),
-               instance_ssbo_bytes / (1024.0*1024.0),
-               (instanced_vbo_bytes + instanced_ebo_bytes + instance_ssbo_bytes)
-                   / (1024.0*1024.0));
-        size_t baked_total = baked_vbo_bytes + baked_ebo_bytes;
-        size_t inst_total = instanced_vbo_bytes + instanced_ebo_bytes + instance_ssbo_bytes;
-        if (inst_total > 0 && baked_total > inst_total) {
-            qDebug("  Potential savings: %.1f MB (%.1f%%)",
-                   (baked_total - inst_total) / (1024.0*1024.0),
-                   100.0 * (baked_total - inst_total) / baked_total);
-        } else {
-            qDebug("  Potential savings: none (instance overhead exceeds dedup win)");
-        }
-
-        // Top-5 most duplicated representations.
-        std::vector<std::pair<std::string, GeomStat>> sorted(geom_stats.begin(), geom_stats.end());
-        std::partial_sort(sorted.begin(),
-                          sorted.begin() + std::min<size_t>(5, sorted.size()),
-                          sorted.end(),
-                          [](const auto& a, const auto& b) { return a.second.count > b.second.count; });
-        qDebug("  Top duplicated representations:");
-        for (size_t i = 0; i < std::min<size_t>(5, sorted.size()); ++i) {
-            const auto& [gid, gs] = sorted[i];
-            qDebug("    [%zu] count=%u  verts=%zu  type=%s  repr_id=%s",
-                   i + 1, gs.count, gs.vertex_count,
-                   gs.example_type.c_str(), gid.c_str());
-        }
-    }
-}
-
-static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
-    MaterialInfo m;
-    if (!style) return m;
-
-    const auto& color = style->get_color();
-    if (color) {
-        m.r = static_cast<float>(color.r());
-        m.g = static_cast<float>(color.g());
-        m.b = static_cast<float>(color.b());
-    }
-    if (!std::isnan(style->transparency)) {
-        m.a = 1.0f - static_cast<float>(style->transparency);
-    }
-    return m;
-}
-
-static inline uint32_t packRGBA8(const MaterialInfo& m) {
-    auto to_byte = [](float v) -> uint32_t {
-        float c = std::clamp(v, 0.0f, 1.0f);
-        return static_cast<uint32_t>(c * 255.0f + 0.5f);
-    };
-    uint32_t r = to_byte(m.r);
-    uint32_t g = to_byte(m.g);
-    uint32_t b = to_byte(m.b);
-    uint32_t a = to_byte(m.a);
-    // Layout in memory (little-endian) reads as bytes [r, g, b, a] which is
-    // what the GL_UNSIGNED_BYTE * 4 normalized vertex attribute expects.
-    return r | (g << 8) | (b << 16) | (a << 24);
-}
-
-UploadChunk GeometryStreamer::convertElement(const IfcGeom::TriangulationElement* elem, uint32_t object_id) {
-    UploadChunk chunk;
-    chunk.object_id = object_id;
-    chunk.model_id = model_id_;
-
-    const auto& geom = elem->geometry();
-    const auto& verts = geom.verts();
-    const auto& faces = geom.faces();
-    const auto& normals = geom.normals();
-    const auto& materials = geom.materials();
-    const auto& material_ids = geom.material_ids();
-
-    if (verts.empty() || faces.empty()) return chunk;
-
-    // Encode object_id as float bits for the vertex attribute
-    float id_as_float;
-    static_assert(sizeof(float) == sizeof(uint32_t));
-    std::memcpy(&id_as_float, &object_id, sizeof(float));
-
-    const size_t num_verts = verts.size() / 3;
-    const size_t num_tris = faces.size() / 3;
-    const bool have_per_tri_material = (material_ids.size() == num_tris);
-
-    // Per-vertex color requires that any vertex shared between triangles with
-    // *different* materials be split. We dedupe (orig_vert_idx, mat_id) pairs
-    // so vertices that are only ever used by one material stay shared.
-    auto make_key = [](uint32_t orig_idx, int mat_id) -> uint64_t {
-        return (static_cast<uint64_t>(orig_idx) << 32) |
-               static_cast<uint32_t>(mat_id);
-    };
-
-    std::unordered_map<uint64_t, uint32_t> remap;
-    remap.reserve(num_verts);
-
-    chunk.vertices.reserve(num_verts * 8);
-    chunk.indices.reserve(faces.size());
-
-    auto emit_vertex = [&](uint32_t orig_idx, int mat_id) -> uint32_t {
-        const uint64_t key = make_key(orig_idx, mat_id);
-        auto it = remap.find(key);
-        if (it != remap.end()) return it->second;
-
-        const uint32_t new_idx = static_cast<uint32_t>(chunk.vertices.size() / 8);
-
-        // pos
-        chunk.vertices.push_back(static_cast<float>(verts[orig_idx * 3 + 0]));
-        chunk.vertices.push_back(static_cast<float>(verts[orig_idx * 3 + 1]));
-        chunk.vertices.push_back(static_cast<float>(verts[orig_idx * 3 + 2]));
-
-        // normal
-        if (orig_idx * 3 + 2 < normals.size()) {
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 1]));
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 2]));
-        } else {
-            chunk.vertices.push_back(0.0f);
-            chunk.vertices.push_back(1.0f);
-            chunk.vertices.push_back(0.0f);
-        }
-
-        // object_id (float bits)
-        chunk.vertices.push_back(id_as_float);
-
-        // color (packed RGBA8 reinterpreted as float)
-        MaterialInfo m;
-        if (mat_id >= 0 && mat_id < static_cast<int>(materials.size())) {
-            m = materialFromStyle(materials[mat_id]);
-        }
-        uint32_t packed = packRGBA8(m);
-        float packed_as_float;
-        std::memcpy(&packed_as_float, &packed, sizeof(float));
-        chunk.vertices.push_back(packed_as_float);
-
-        remap.emplace(key, new_idx);
-        return new_idx;
-    };
-
-    for (size_t t = 0; t < num_tris; ++t) {
-        const int mat_id = have_per_tri_material ? material_ids[t] : -1;
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 0]), mat_id));
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 1]), mat_id));
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 2]), mat_id));
-    }
-
-    return chunk;
+    double dedup_ratio = total_meshes > 0
+        ? static_cast<double>(total_shapes) / static_cast<double>(total_meshes) : 1.0;
+    qDebug("Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx",
+           path.c_str(), stream_timer.elapsed() / 1000.0,
+           total_shapes, total_meshes, dedup_ratio);
 }

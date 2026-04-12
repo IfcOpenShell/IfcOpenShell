@@ -173,8 +173,10 @@ void MainWindow::addFiles(const QStringList& paths) {
 void MainWindow::connectStreamer(GeometryStreamer* streamer) {
     connect(streamer, &GeometryStreamer::progressChanged,
             this, &MainWindow::onProgressChanged, Qt::QueuedConnection);
-    connect(streamer, &GeometryStreamer::elementReady,
-            this, &MainWindow::onElementReady, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::meshReady,
+            this, &MainWindow::onMeshReady, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::instanceReady,
+            this, &MainWindow::onInstanceReady, Qt::QueuedConnection);
     connect(streamer, &GeometryStreamer::finished,
             this, &MainWindow::onStreamingFinished, Qt::QueuedConnection);
     connect(streamer, &GeometryStreamer::errorOccurred, this, [this](const QString& msg) {
@@ -208,7 +210,7 @@ void MainWindow::startNextLoad() {
         qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result]() {
-            if (*result && !(*result)->draw_info.empty()) {
+            if (*result && !(*result)->meshes.empty()) {
                 applySidecarData(mid, std::move(**result));
             } else {
                 // No sidecar — fall back to streaming from IFC.
@@ -227,51 +229,10 @@ void MainWindow::startNextLoad() {
     });
 }
 
-void MainWindow::applySidecarData(ModelId mid, SidecarData data) {
-    auto it = models_.find(mid);
-    if (it == models_.end()) return;
-    auto& model = it->second;
-
-    QElapsedTimer t;
-
-    qDebug("Sidecar hit: %s (%zu objects, %zu verts, %zu indices, %.1f MB)",
-           model.file_path.toStdString().c_str(), data.draw_info.size(),
-           data.vertices.size() / 8, data.indices.size(),
-           (data.vertices.size() * 4 + data.indices.size() * 4) / (1024.0 * 1024.0));
-
-    // GL upload — fast, single buffer copy.
-    t.start();
-    viewport_->uploadBulk(mid, data.vertices, data.indices,
-                          data.draw_info, std::move(data.bvh_set));
-    qDebug("  GL upload: %lld ms", t.elapsed());
-
-    // Update next_object_id_ past all objects in this model.
-    for (const auto& elem : data.elements) {
-        if (elem.object_id >= next_object_id_)
-            next_object_id_ = elem.object_id + 1;
-    }
-
-    // Suppress per-item layout recalcs while building the tree.
-    t.restart();
-    element_tree_->setUpdatesEnabled(false);
-    populateTreeFromSidecar(model, data.elements, data.string_table);
-    element_tree_->setUpdatesEnabled(true);
-    qDebug("  Tree build: %lld ms (%zu elements)", t.elapsed(), data.elements.size());
-
-    progress_bar_->setVisible(false);
-
-    qint64 ms = load_timer_.elapsed();
-    QString elapsed = (ms >= 1000)
-        ? QString::number(ms / 1000.0, 'f', 2) + " s"
-        : QString::number(ms) + " ms";
-
-    status_label_->setText(QString("%1 elements across %2 model(s) — loaded from cache in %3")
-        .arg(element_map_.size())
-        .arg(models_.size())
-        .arg(elapsed));
-
-    loading_model_id_ = 0;
-    QTimer::singleShot(0, this, &MainWindow::startNextLoad);
+void MainWindow::applySidecarData(ModelId /*mid*/, SidecarData /*data*/) {
+    // Commit A: readSidecar() always returns nullopt, so this is unreachable.
+    // Restored in Commit B along with the v4 on-disk format.
+    qWarning("applySidecarData called but sidecar is disabled in Commit A");
 }
 
 void MainWindow::populateTreeFromSidecar(ModelHandle& model,
@@ -325,8 +286,12 @@ void MainWindow::onProgressChanged(int percent) {
     progress_bar_->setValue(percent);
 }
 
-void MainWindow::onElementReady(UploadChunk chunk) {
-    viewport_->uploadChunk(chunk);
+void MainWindow::onMeshReady(MeshChunk chunk) {
+    viewport_->uploadMeshChunk(chunk);
+}
+
+void MainWindow::onInstanceReady(InstanceChunk chunk) {
+    viewport_->uploadInstanceChunk(chunk);
 }
 
 void MainWindow::onStreamingFinished() {
@@ -355,39 +320,10 @@ void MainWindow::onStreamingFinished() {
         .arg(num_models)
         .arg(elapsed));
 
-    // Build BVH and write sidecar (geometry + metadata + BVH).
+    // Sort instances by mesh and upload the per-model instance SSBO.
+    // Sidecar write is stubbed in Commit A.
     if (loading_model_id_ != 0) {
-        auto it = models_.find(loading_model_id_);
-        if (it != models_.end()) {
-            std::string ifc_path = it->second.file_path.toStdString();
-            QFileInfo fi(it->second.file_path);
-            uint64_t file_size = static_cast<uint64_t>(fi.size());
-
-            // Pack element info for the sidecar (only this model's elements).
-            std::vector<PackedElementInfo> packed;
-            std::string stbl;
-            for (const auto& [oid, info] : element_map_) {
-                if (info.model_id != loading_model_id_) continue;
-                PackedElementInfo pe;
-                pe.object_id = info.object_id;
-                pe.model_id = info.model_id;
-                pe.ifc_id = info.ifc_id;
-                pe.parent_id = info.parent_id;
-                pe.guid_offset = static_cast<uint32_t>(stbl.size());
-                pe.guid_length = static_cast<uint32_t>(info.guid.size());
-                stbl += info.guid;
-                pe.name_offset = static_cast<uint32_t>(stbl.size());
-                pe.name_length = static_cast<uint32_t>(info.name.size());
-                stbl += info.name;
-                pe.type_offset = static_cast<uint32_t>(stbl.size());
-                pe.type_length = static_cast<uint32_t>(info.type.size());
-                stbl += info.type;
-                packed.push_back(pe);
-            }
-
-            viewport_->buildBvhAsync(loading_model_id_, ifc_path, file_size,
-                                     std::move(packed), std::move(stbl));
-        }
+        viewport_->finalizeModel(loading_model_id_);
     }
 
     // Start next model if queued.

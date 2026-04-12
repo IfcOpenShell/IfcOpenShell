@@ -62,7 +62,8 @@ private slots:
     void onFileOpen();
     void onFileSettings();
     void onProgressChanged(int percent);
-    void onElementReady(UploadChunk chunk);
+    void onMeshReady(MeshChunk chunk);
+    void onInstanceReady(InstanceChunk chunk);
     void onStreamingFinished();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();

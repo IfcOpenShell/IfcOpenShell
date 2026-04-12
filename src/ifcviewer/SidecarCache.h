@@ -17,22 +17,28 @@
  *                                                                              *
  ********************************************************************************/
 
+// NOTE: Sidecar format v3 is being rewritten to v4 (instanced geometry layout).
+// During the instancing rewrite (Commit A) the cache is a no-op: reads always
+// miss and writes always succeed without producing a file. Commit B will
+// re-introduce the on-disk format with MeshInfo + InstanceGpu sections.
+
 #ifndef SIDECARCACHE_H
 #define SIDECARCACHE_H
 
-#include "BvhAccel.h"
+#include "InstancedGeometry.h"
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
+#include <memory>
 
 static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
-static constexpr uint32_t SIDECAR_VERSION = 3;
+static constexpr uint32_t SIDECAR_VERSION = 4;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
-// Fixed-size element record for the sidecar.  Strings are stored as
-// (offset, length) pairs into a separate string table.
+// Fixed-size element record.  Strings are stored as (offset, length) pairs
+// into a separate string table.
 struct PackedElementInfo {
     uint32_t object_id;
     uint32_t model_id;
@@ -46,30 +52,27 @@ struct PackedElementInfo {
     uint32_t type_length;
 };
 
-// Everything the viewer needs to display a model without tessellating.
+// Everything needed to display an already-tessellated model without
+// re-running the iterator.  v4 schema: instanced geometry.
 struct SidecarData {
-    // GPU geometry (ready to upload as-is)
-    std::vector<float>    vertices;      // interleaved, 8 floats per vertex
-    std::vector<uint32_t> indices;       // global (already remapped)
+    // Per-model GPU geometry (local coords).  28 bytes/vertex.
+    std::vector<float>        vertices;
+    std::vector<uint32_t>     indices;
 
-    // Per-object metadata
-    std::vector<ObjectDrawInfo> draw_info;
+    // Mesh dictionary and per-instance data.
+    std::vector<MeshInfo>     meshes;        // indexed by local_mesh_id
+    std::vector<InstanceCpu>  instances;     // sorted by mesh_id
 
-    // Element tree metadata
+    // Element tree metadata.
     std::vector<PackedElementInfo> elements;
-    std::string string_table;            // concatenated UTF-8
-
-    // BVH acceleration
-    std::shared_ptr<BvhSet> bvh_set;
+    std::string               string_table;
 };
 
-// Write a full sidecar next to the IFC file.
-// Returns true on success.
+// v4 writer/reader are stubbed for Commit A — no disk I/O happens.
 bool writeSidecar(const std::string& ifc_path,
                   const SidecarData& data,
                   uint64_t ifc_file_size);
 
-// Read a sidecar.  Returns nullopt on any failure (missing, stale, corrupt).
 std::optional<SidecarData> readSidecar(const std::string& ifc_path,
                                        uint64_t ifc_file_size);
 

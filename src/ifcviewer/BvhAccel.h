@@ -26,22 +26,22 @@
 #include <unordered_set>
 #include <memory>
 
-struct ObjectDrawInfo {
-    uint32_t index_offset;  // byte offset into EBO
-    uint32_t index_count;   // number of indices
-    uint32_t model_id;      // which model this object belongs to
-    float aabb_min[3];      // world-space AABB
-    float aabb_max[3];
+// Generic BVH item — anything with a world AABB and a model_id.
+// For the instanced renderer each item represents one InstanceCpu.
+struct BvhItem {
+    float    aabb_min[3];
+    float    aabb_max[3];
+    uint32_t model_id;
 };
 
 static constexpr uint32_t BVH_MAX_LEAF_SIZE = 8;
-static constexpr uint32_t BVH_MIN_OBJECTS = 32;
+static constexpr uint32_t BVH_MIN_OBJECTS   = 32;
 
 struct BvhNode {
-    float aabb_min[3];
-    float aabb_max[3];
-    uint32_t right_or_first; // interior: right child index (left is always this_index+1); leaf: first object index
-    uint16_t count;           // 0 = interior; >0 = leaf with this many objects
+    float    aabb_min[3];
+    float    aabb_max[3];
+    uint32_t right_or_first; // interior: right child index (left is always this_index+1); leaf: first item index
+    uint16_t count;           // 0 = interior; >0 = leaf with this many items
     uint16_t axis;            // split axis (0/1/2) for interior; unused for leaf
 };
 static_assert(sizeof(BvhNode) == 32, "BvhNode must be 32 bytes for cache alignment and sidecar format");
@@ -49,7 +49,7 @@ static_assert(sizeof(BvhNode) == 32, "BvhNode must be 32 bytes for cache alignme
 struct ModelBvh {
     uint32_t model_id = 0;
     std::vector<BvhNode> nodes;
-    std::vector<uint32_t> object_indices;  // indices into object_draw_info_
+    std::vector<uint32_t> item_indices;  // indices into the model's InstanceCpu array
 };
 
 struct BvhSet {
@@ -57,19 +57,10 @@ struct BvhSet {
     std::unordered_set<uint32_t> bvh_model_ids;
 };
 
-struct EboReorderResult {
-    std::vector<uint32_t> reordered_ebo;
-    std::vector<ObjectDrawInfo> reordered_draw_info;
-};
-
-// Build BVH trees for all models in the given draw info snapshot.
-// Only builds the tree structure; does not touch EBO data.
-std::shared_ptr<BvhSet> buildBvhSet(const std::vector<ObjectDrawInfo>& draw_info);
-
-// Reorder the EBO so objects within each BVH leaf are contiguous.
-// Must be called with the CURRENT run's EBO and draw_info (not cached).
-EboReorderResult reorderEbo(const BvhSet& bvh_set,
-                            const std::vector<ObjectDrawInfo>& draw_info,
-                            const std::vector<uint32_t>& original_ebo);
+// Build BVH trees for all models in the given item snapshot.
+// Items are expected to already be grouped/filtered by caller if needed.
+// item_indices in the result reference positions within the full `items`
+// vector — callers providing a single model's items will see 0..N-1.
+std::shared_ptr<BvhSet> buildBvhSet(const std::vector<BvhItem>& items);
 
 #endif // BVHACCEL_H

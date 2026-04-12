@@ -26,15 +26,13 @@
 #include <string>
 #include <vector>
 #include <atomic>
-#include <functional>
 #include <memory>
 #include <mutex>
-#include <deque>
 
 #include "../ifcparse/file.h"
 #include "../ifcgeom/Iterator.h"
 
-#include "ViewportWindow.h"
+#include "InstancedGeometry.h"
 
 struct ElementInfo {
     uint32_t object_id;
@@ -67,14 +65,13 @@ public:
 
 signals:
     void progressChanged(int percent);
-    void elementReady(UploadChunk chunk);
+    void meshReady(MeshChunk chunk);
+    void instanceReady(InstanceChunk chunk);
     void finished();
     void errorOccurred(const QString& message);
 
 private:
     void run(const std::string& path, int num_threads);
-
-    UploadChunk convertElement(const IfcGeom::TriangulationElement* elem, uint32_t object_id);
 
     std::unique_ptr<ifcopenshell::file> ifc_file_;
     std::unique_ptr<QThread> worker_thread_;
@@ -85,7 +82,7 @@ private:
     std::mutex elements_mutex_;
     std::vector<ElementInfo> pending_elements_;
 
-    uint32_t next_object_id_ = 1; // 0 = no object
+    uint32_t next_object_id_ = 1;
     uint32_t model_id_ = 0;
 };
 
