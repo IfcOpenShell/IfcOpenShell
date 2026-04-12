@@ -210,7 +210,7 @@ void MainWindow::startNextLoad() {
         qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result]() {
-            if (*result && !(*result)->meshes.empty()) {
+            if (*result && !(*result)->instances.empty()) {
                 applySidecarData(mid, std::move(**result));
             } else {
                 // No sidecar — fall back to streaming from IFC.
@@ -229,10 +229,54 @@ void MainWindow::startNextLoad() {
     });
 }
 
-void MainWindow::applySidecarData(ModelId /*mid*/, SidecarData /*data*/) {
-    // Commit A: readSidecar() always returns nullopt, so this is unreachable.
-    // Restored in Commit B along with the v4 on-disk format.
-    qWarning("applySidecarData called but sidecar is disabled in Commit A");
+void MainWindow::applySidecarData(ModelId mid, SidecarData data) {
+    auto it = models_.find(mid);
+    if (it == models_.end()) return;
+    auto& model = it->second;
+
+    qDebug("Sidecar hit: %s (%zu verts, %zu indices, %zu meshes, %zu instances, %zu elements)",
+           model.file_path.toStdString().c_str(),
+           data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS,
+           data.indices.size(),
+           data.meshes.size(),
+           data.instances.size(),
+           data.elements.size());
+
+    QElapsedTimer t;
+    t.start();
+
+    // Update next_object_id_ past all objects in this model before the
+    // extracted `elements` is moved out of `data`.
+    for (const auto& elem : data.elements) {
+        if (elem.object_id >= next_object_id_)
+            next_object_id_ = elem.object_id + 1;
+    }
+
+    // Hand off geometry to GPU in a single call.
+    std::vector<PackedElementInfo> elements = std::move(data.elements);
+    std::string stbl                        = std::move(data.string_table);
+    viewport_->applyCachedModel(mid, std::move(data));
+    qDebug("  GL upload: %lld ms", t.elapsed());
+
+    t.restart();
+    element_tree_->setUpdatesEnabled(false);
+    populateTreeFromSidecar(model, elements, stbl);
+    element_tree_->setUpdatesEnabled(true);
+    qDebug("  Tree build: %lld ms (%zu elements)", t.elapsed(), elements.size());
+
+    progress_bar_->setVisible(false);
+
+    qint64 ms = load_timer_.elapsed();
+    QString elapsed = (ms >= 1000)
+        ? QString::number(ms / 1000.0, 'f', 2) + " s"
+        : QString::number(ms) + " ms";
+    status_label_->setText(QString("%1 elements across %2 model(s) — loaded from cache in %3")
+        .arg(element_map_.size())
+        .arg(models_.size())
+        .arg(elapsed));
+
+    loading_model_id_ = 0;
+    QTimer::singleShot(0, this, &MainWindow::startNextLoad);
 }
 
 void MainWindow::populateTreeFromSidecar(ModelHandle& model,
@@ -320,10 +364,44 @@ void MainWindow::onStreamingFinished() {
         .arg(num_models)
         .arg(elapsed));
 
-    // Sort instances by mesh and upload the per-model instance SSBO.
-    // Sidecar write is stubbed in Commit A.
+    // Sort instances by mesh, upload the per-model instance SSBO, and
+    // persist a v4 sidecar for next load.
     if (loading_model_id_ != 0) {
         viewport_->finalizeModel(loading_model_id_);
+
+        auto it = models_.find(loading_model_id_);
+        if (it != models_.end()) {
+            SidecarData sd;
+            if (viewport_->snapshotModel(loading_model_id_, sd)) {
+                // Pack this model's element metadata + string table.
+                for (const auto& [oid, info] : element_map_) {
+                    if (info.model_id != loading_model_id_) continue;
+                    PackedElementInfo pe;
+                    pe.object_id = info.object_id;
+                    pe.model_id  = info.model_id;
+                    pe.ifc_id    = info.ifc_id;
+                    pe.parent_id = info.parent_id;
+                    pe.guid_offset = static_cast<uint32_t>(sd.string_table.size());
+                    pe.guid_length = static_cast<uint32_t>(info.guid.size());
+                    sd.string_table += info.guid;
+                    pe.name_offset = static_cast<uint32_t>(sd.string_table.size());
+                    pe.name_length = static_cast<uint32_t>(info.name.size());
+                    sd.string_table += info.name;
+                    pe.type_offset = static_cast<uint32_t>(sd.string_table.size());
+                    pe.type_length = static_cast<uint32_t>(info.type.size());
+                    sd.string_table += info.type;
+                    sd.elements.push_back(pe);
+                }
+
+                std::string ifc_path = it->second.file_path.toStdString();
+                uint64_t file_size = static_cast<uint64_t>(
+                    QFileInfo(it->second.file_path).size());
+                QElapsedTimer t; t.start();
+                bool ok = writeSidecar(ifc_path, sd, file_size);
+                qDebug("  Sidecar write: %lld ms (%s)",
+                       t.elapsed(), ok ? "ok" : "FAILED");
+            }
+        }
     }
 
     // Start next model if queued.

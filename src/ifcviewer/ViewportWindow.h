@@ -84,6 +84,16 @@ public:
 
     void resetScene();
 
+    // Snapshot the finalised model into a SidecarData struct for caching.
+    // Vertices + indices are read back from the GPU; meshes/instances come
+    // from the CPU-side vectors.  Leaves `elements` and `string_table` empty
+    // for the caller to fill in.
+    bool snapshotModel(uint32_t model_id, SidecarData& out) const;
+
+    // Restore a finalised model from a cached SidecarData struct.  Replaces
+    // any existing state for model_id and marks it drawable.
+    void applyCachedModel(uint32_t model_id, SidecarData data);
+
     void hideModel(uint32_t model_id);
     void showModel(uint32_t model_id);
     void removeModel(uint32_t model_id);

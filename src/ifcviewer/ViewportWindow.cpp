@@ -523,6 +523,103 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
            ssbo_bytes / (1024.0*1024.0));
 }
 
+bool ViewportWindow::snapshotModel(uint32_t model_id, SidecarData& out) const {
+    auto it = models_gpu_.find(model_id);
+    if (!gl_ || it == models_gpu_.end()) return false;
+    const auto& m = it->second;
+    if (!m.finalized) return false;
+
+    // GPU readback of the packed VBO/EBO ranges actually in use.
+    if (m.vbo_used > 0) {
+        out.vertices.resize(m.vbo_used / sizeof(float));
+        gl_->glGetNamedBufferSubData(m.vbo, 0, m.vbo_used, out.vertices.data());
+    }
+    if (m.ebo_used > 0) {
+        out.indices.resize(m.ebo_used / sizeof(uint32_t));
+        gl_->glGetNamedBufferSubData(m.ebo, 0, m.ebo_used, out.indices.data());
+    }
+
+    out.meshes    = m.meshes;
+    out.instances = m.instances;
+    return true;
+}
+
+void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
+    if (!gl_initialized_) return;
+    context_->makeCurrent(this);
+
+    // Drop any existing state for this model_id.
+    auto existing = models_gpu_.find(model_id);
+    if (existing != models_gpu_.end()) {
+        if (existing->second.vao)  gl_->glDeleteVertexArrays(1, &existing->second.vao);
+        if (existing->second.vbo)  gl_->glDeleteBuffers(1, &existing->second.vbo);
+        if (existing->second.ebo)  gl_->glDeleteBuffers(1, &existing->second.ebo);
+        if (existing->second.ssbo) gl_->glDeleteBuffers(1, &existing->second.ssbo);
+        models_gpu_.erase(existing);
+    }
+
+    ModelGpuData m;
+    gl_->glCreateVertexArrays(1, &m.vao);
+    gl_->glCreateBuffers(1, &m.vbo);
+    gl_->glCreateBuffers(1, &m.ebo);
+
+    const size_t vb_bytes = data.vertices.size() * sizeof(float);
+    const size_t ib_bytes = data.indices.size()  * sizeof(uint32_t);
+    m.vbo_capacity = std::max<size_t>(vb_bytes, 1);
+    m.ebo_capacity = std::max<size_t>(ib_bytes, 1);
+    gl_->glNamedBufferStorage(m.vbo, m.vbo_capacity,
+                              vb_bytes ? data.vertices.data() : nullptr,
+                              GL_DYNAMIC_STORAGE_BIT);
+    gl_->glNamedBufferStorage(m.ebo, m.ebo_capacity,
+                              ib_bytes ? data.indices.data() : nullptr,
+                              GL_DYNAMIC_STORAGE_BIT);
+    setupVaoLayout(m.vao, m.vbo, m.ebo);
+
+    m.vbo_used = vb_bytes;
+    m.ebo_used = ib_bytes;
+    m.vertex_count = static_cast<uint32_t>(
+        data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+    m.meshes = std::move(data.meshes);
+    m.instances = std::move(data.instances);
+
+    uint32_t total_tri = 0;
+    for (const auto& mesh : m.meshes) {
+        total_tri += (mesh.index_count / 3) * mesh.instance_count;
+    }
+    m.total_triangles = total_tri;
+
+    // Build and upload the instance SSBO.
+    std::vector<InstanceGpu> gpu(m.instances.size());
+    for (size_t i = 0; i < m.instances.size(); ++i) {
+        const InstanceCpu& src = m.instances[i];
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, src.transform, sizeof(dst.transform));
+        dst.object_id = src.object_id;
+        dst.color_override_rgba8 = src.color_override_rgba8;
+        dst._pad0 = 0;
+        dst._pad1 = 0;
+    }
+    gl_->glCreateBuffers(1, &m.ssbo);
+    const size_t ssbo_bytes = gpu.size() * sizeof(InstanceGpu);
+    if (ssbo_bytes > 0) {
+        gl_->glNamedBufferStorage(m.ssbo, ssbo_bytes, gpu.data(), 0);
+    }
+    m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
+
+    m.finalized = true;
+    models_gpu_.emplace(model_id, std::move(m));
+
+    qDebug("Sidecar apply: model %u  %zu verts, %zu meshes, %zu instances  "
+           "%.1f MB vram (vbo %.1f + ebo %.1f + ssbo %.1f)",
+           model_id, data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS,
+           models_gpu_[model_id].meshes.size(),
+           models_gpu_[model_id].instances.size(),
+           (vb_bytes + ib_bytes + ssbo_bytes) / (1024.0*1024.0),
+           vb_bytes / (1024.0*1024.0),
+           ib_bytes / (1024.0*1024.0),
+           ssbo_bytes / (1024.0*1024.0));
+}
+
 void ViewportWindow::resetScene() {
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
