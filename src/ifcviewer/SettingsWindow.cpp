@@ -44,6 +44,12 @@ void SettingsWindow::setupUi() {
     show_stats_check_ = new QCheckBox(this);
     form->addRow("Show Performance Stats", show_stats_check_);
 
+    backface_culling_check_ = new QCheckBox(this);
+    backface_culling_check_->setToolTip(
+        "Skip triangles facing away from the camera.  Big FPS win on "
+        "closed solids; disable if you see holes in open geometry.");
+    form->addRow("Backface Culling", backface_culling_check_);
+
     auto* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
@@ -65,10 +71,12 @@ void SettingsWindow::showEvent(QShowEvent* event) {
 void SettingsWindow::syncFromSettings() {
     geometry_library_edit_->setText(AppSettings::instance().geometryLibrary());
     show_stats_check_->setChecked(AppSettings::instance().showStats());
+    backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
 }
 
 void SettingsWindow::onAccepted() {
     AppSettings::instance().setGeometryLibrary(geometry_library_edit_->text());
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
+    AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
     accept();
 }

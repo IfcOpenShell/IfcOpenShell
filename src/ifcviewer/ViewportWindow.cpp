@@ -19,6 +19,8 @@
 
 #include "ViewportWindow.h"
 
+#include "AppSettings.h"
+
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QSurfaceFormat>
@@ -91,10 +93,17 @@ void main() {
     vec4 world = inst.transform * vec4(a_position, 1.0);
     gl_Position = u_view_projection * world;
 
-    // Rotate the normal by the upper-3x3 of the transform. For the vast
-    // majority of BIM placements this is a rigid rotation (+ uniform scale),
-    // so we skip the inverse-transpose.
-    v_normal = normalize(mat3(inst.transform) * a_normal);
+    // Rotate the normal by the upper-3x3 of the transform.  BIM placements
+    // are overwhelmingly rigid rotations (+ optional uniform scale +
+    // optional reflection), so we skip the full inverse-transpose but do
+    // need to flip the normal when the transform contains a reflection,
+    // otherwise mirrored instances shade as if inside-out.  The same
+    // determinant sign is what GL_CULL_FACE uses to decide winding, so
+    // keeping them in agreement means backface culling is safe to enable.
+    mat3 rot = mat3(inst.transform);
+    vec3 n = rot * a_normal;
+    if (determinant(rot) < 0.0) n = -n;
+    v_normal = normalize(n);
 
     vec4 baked = a_color;
     if (inst.color_override != 0u) {
@@ -123,11 +132,11 @@ uniform vec3 u_light_dir;
 out vec4 frag_color;
 
 void main() {
-    // Two-sided lighting: IFC placements frequently embed reflections
-    // (mirrored families), which flip triangle winding and invert the
-    // transformed normal.  Taking abs(dot) — or equivalently flipping n
-    // based on gl_FrontFacing — makes both sides shade correctly
-    // regardless of winding / reflection state.
+    // v_normal already has the reflection flip applied in the vertex
+    // shader.  When backface culling is off, open shells let us see the
+    // "wrong" side of a face — flip based on gl_FrontFacing so both
+    // sides light correctly.  When culling is on this branch is always
+    // true and has no effect.
     vec3 n = normalize(v_normal);
     if (!gl_FrontFacing) n = -n;
     float ndotl = max(dot(n, u_light_dir), 0.0);
@@ -229,6 +238,17 @@ static GLuint linkProgram(QOpenGLFunctions_4_5_Core* gl, GLuint vert, GLuint fra
 }
 
 // -----------------------------------------------------------------------------
+
+// Determinant of the upper-left 3x3 of a column-major mat4 stored as 16 floats.
+// Sign tells us whether the transform contains a reflection, which is what
+// decides which glFrontFace winding to draw the instance with.
+static bool transformIsReflected(const float t[16]) {
+    const float det =
+        t[0] * (t[5] * t[10] - t[9] * t[6])
+      - t[4] * (t[1] * t[10] - t[9] * t[2])
+      + t[8] * (t[1] * t[6]  - t[5] * t[2]);
+    return det < 0.0f;
+}
 
 static bool aabbInFrustum(const float aabb_min[3], const float aabb_max[3],
                           const float planes[6][4]) {
@@ -344,6 +364,19 @@ void ViewportWindow::initGL() {
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
     gl_->glClearColor(0.18f, 0.20f, 0.22f, 1.0f);
+    gl_->glCullFace(GL_BACK);
+    if (AppSettings::instance().backfaceCulling()) gl_->glEnable(GL_CULL_FACE);
+    else                                            gl_->glDisable(GL_CULL_FACE);
+
+    // Hot-toggle cull state when the setting changes.  Queued so we touch GL
+    // state only when render() is about to run.
+    connect(&AppSettings::instance(), &AppSettings::backfaceCullingChanged,
+            this, [this](bool on) {
+                if (!gl_initialized_ || !gl_) return;
+                context_->makeCurrent(this);
+                if (on) gl_->glEnable(GL_CULL_FACE);
+                else    gl_->glDisable(GL_CULL_FACE);
+            });
 
     gl_initialized_ = true;
     frame_clock_.start();
@@ -552,6 +585,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
     std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
     m.instances.push_back(inst);
+    m.instance_reflected.push_back(transformIsReflected(inst.transform) ? 1 : 0);
 
     // Append the GPU record to the instance SSBO so the model is drawable
     // immediately, without waiting for finalizeModel.  The visible-list
@@ -693,6 +727,13 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     }
     m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
 
+    // Recompute the reflection flag from each instance's transform — the
+    // sidecar only caches InstanceCpu, not the parallel reflection flags.
+    m.instance_reflected.resize(m.instances.size());
+    for (size_t i = 0; i < m.instances.size(); ++i) {
+        m.instance_reflected[i] = transformIsReflected(m.instances[i].transform) ? 1 : 0;
+    }
+
     buildBvhForModel(m, model_id);
 
     m.finalized = true;
@@ -783,15 +824,25 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
 }
 
 void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]) {
-    // Ensure per-mesh scratch sized.
-    if (visible_by_mesh_.size() < m.meshes.size()) visible_by_mesh_.resize(m.meshes.size());
-    for (size_t i = 0; i < m.meshes.size(); ++i) visible_by_mesh_[i].clear();
+    // Per-mesh scratch, split by winding: fwd = non-reflected (CCW in screen
+    // space), rev = reflected (CW in screen space).  Splitting lets the draw
+    // pass toggle glFrontFace once between two MDI calls so GL_CULL_FACE does
+    // the right thing for both.
+    if (visible_by_mesh_fwd_.size() < m.meshes.size()) visible_by_mesh_fwd_.resize(m.meshes.size());
+    if (visible_by_mesh_rev_.size() < m.meshes.size()) visible_by_mesh_rev_.resize(m.meshes.size());
+    for (size_t i = 0; i < m.meshes.size(); ++i) {
+        visible_by_mesh_fwd_[i].clear();
+        visible_by_mesh_rev_[i].clear();
+    }
 
     auto test_and_push = [&](uint32_t inst_idx) {
         const InstanceCpu& inst = m.instances[inst_idx];
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
-        if (inst.mesh_id < visible_by_mesh_.size())
-            visible_by_mesh_[inst.mesh_id].push_back(inst_idx);
+        if (inst.mesh_id >= m.meshes.size()) return;
+        const bool reflected = inst_idx < m.instance_reflected.size()
+            && m.instance_reflected[inst_idx] != 0;
+        if (reflected) visible_by_mesh_rev_[inst.mesh_id].push_back(inst_idx);
+        else           visible_by_mesh_fwd_[inst.mesh_id].push_back(inst_idx);
     };
 
     if (!m.bvh.nodes.empty()) {
@@ -820,27 +871,34 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         for (uint32_t i = 0; i < m.instances.size(); ++i) test_and_push(i);
     }
 
-    // Flatten into visible_flat_ and build one DrawElementsIndirectCommand
-    // per non-empty mesh.
+    // Flatten fwd-slice first, then rev-slice, into visible_flat_.  Build
+    // matching DrawElementsIndirectCommands; commands for the fwd slice fill
+    // [0, indirect_forward_count), rev fills [indirect_forward_count, end).
     visible_flat_.clear();
     indirect_scratch_.clear();
-    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-        const auto& mesh = m.meshes[mi];
-        const uint32_t vis_count = static_cast<uint32_t>(visible_by_mesh_[mi].size());
-        if (vis_count == 0 || mesh.index_count == 0) continue;
 
-        DrawElementsIndirectCommand cmd;
-        cmd.count         = mesh.index_count;
-        cmd.instanceCount = vis_count;
-        cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
-        cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
-        cmd.baseInstance  = static_cast<uint32_t>(visible_flat_.size());
-        indirect_scratch_.push_back(cmd);
+    auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh) {
+        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+            const auto& mesh = m.meshes[mi];
+            const uint32_t vis_count = static_cast<uint32_t>(by_mesh[mi].size());
+            if (vis_count == 0 || mesh.index_count == 0) continue;
 
-        visible_flat_.insert(visible_flat_.end(),
-                             visible_by_mesh_[mi].begin(),
-                             visible_by_mesh_[mi].end());
-    }
+            DrawElementsIndirectCommand cmd;
+            cmd.count         = mesh.index_count;
+            cmd.instanceCount = vis_count;
+            cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
+            cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
+            cmd.baseInstance  = static_cast<uint32_t>(visible_flat_.size());
+            indirect_scratch_.push_back(cmd);
+
+            visible_flat_.insert(visible_flat_.end(),
+                                 by_mesh[mi].begin(), by_mesh[mi].end());
+        }
+    };
+
+    emit_slice(visible_by_mesh_fwd_);
+    m.indirect_forward_count = static_cast<uint32_t>(indirect_scratch_.size());
+    emit_slice(visible_by_mesh_rev_);
     m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
 
     // Upload visible list (keep binding alive even when empty).
@@ -915,6 +973,10 @@ void ViewportWindow::render() {
     gl_draw_calls_ = 0;
     indirect_sub_draws_ = 0;
 
+    // Start each frame with CCW-is-front; the two-pass draw below flips
+    // back and forth.  Harmless when culling is off.
+    gl_->glFrontFace(GL_CCW);
+
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
@@ -925,16 +987,34 @@ void ViewportWindow::render() {
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
         gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
-        gl_->glMultiDrawElementsIndirect(
-            GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-            static_cast<GLsizei>(m.indirect_command_count), 0);
+
+        const uint32_t fwd = m.indirect_forward_count;
+        const uint32_t rev = m.indirect_command_count - fwd;
+        // Forward pass: non-reflected instances, standard CCW winding.
+        if (fwd > 0) {
+            gl_->glFrontFace(GL_CCW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+                static_cast<GLsizei>(fwd), 0);
+            ++gl_draw_calls_;
+        }
+        // Reverse pass: reflected instances — their world-space winding is
+        // flipped, so telling GL the front is CW keeps cull-back working.
+        if (rev > 0) {
+            gl_->glFrontFace(GL_CW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT,
+                reinterpret_cast<const void*>(fwd * sizeof(DrawElementsIndirectCommand)),
+                static_cast<GLsizei>(rev), 0);
+            ++gl_draw_calls_;
+            gl_->glFrontFace(GL_CCW);
+        }
 
         for (const auto& cmd : indirect_scratch_) {
             visible_triangles_ += (cmd.count / 3) * cmd.instanceCount;
             visible_objects_   += cmd.instanceCount;
         }
         indirect_sub_draws_ += m.indirect_command_count;
-        ++gl_draw_calls_;
     }
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
@@ -1006,6 +1086,8 @@ void ViewportWindow::renderPickPass() {
     GLint u_vp       = gl_->glGetUniformLocation(pick_program_, "u_view_projection");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
 
+    gl_->glFrontFace(GL_CCW);
+
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
@@ -1016,9 +1098,23 @@ void ViewportWindow::renderPickPass() {
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
         gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
-        gl_->glMultiDrawElementsIndirect(
-            GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-            static_cast<GLsizei>(m.indirect_command_count), 0);
+
+        const uint32_t fwd = m.indirect_forward_count;
+        const uint32_t rev = m.indirect_command_count - fwd;
+        if (fwd > 0) {
+            gl_->glFrontFace(GL_CCW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+                static_cast<GLsizei>(fwd), 0);
+        }
+        if (rev > 0) {
+            gl_->glFrontFace(GL_CW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT,
+                reinterpret_cast<const void*>(fwd * sizeof(DrawElementsIndirectCommand)),
+                static_cast<GLsizei>(rev), 0);
+            gl_->glFrontFace(GL_CCW);
+        }
     }
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);

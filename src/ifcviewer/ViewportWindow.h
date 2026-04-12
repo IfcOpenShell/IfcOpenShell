@@ -71,7 +71,12 @@ struct ModelGpuData {
     uint32_t total_triangles = 0;
 
     std::vector<MeshInfo>    meshes;
-    std::vector<InstanceCpu> instances;    // unsorted until finalize
+    std::vector<InstanceCpu> instances;    // unsorted
+    // 1:1 with instances[] — true when the instance transform has
+    // det < 0 (a reflection).  Reflected instances need their
+    // triangle winding treated as reversed so GL_CULL_FACE culls
+    // the correct side.
+    std::vector<uint8_t>     instance_reflected;
     uint32_t                 ssbo_instance_count = 0;
 
     // Per-instance world AABB + BVH (built at finalize).  The BVH is the
@@ -88,7 +93,8 @@ struct ModelGpuData {
     // non-empty mesh.  Re-uploaded each frame.
     GLuint  indirect_buffer = 0;
     size_t  indirect_capacity = 0;        // bytes
-    uint32_t indirect_command_count = 0;  // valid commands this frame
+    uint32_t indirect_command_count = 0;  // total valid commands this frame
+    uint32_t indirect_forward_count = 0;  // first N are CCW-winding draws
 
     bool finalized = false;
     bool hidden    = false;
@@ -211,7 +217,8 @@ private:
     // per-frame allocation.  indirect_scratch_ is the matching array of
     // DrawElementsIndirectCommand records — forward-declared as bytes so
     // the header doesn't need the struct definition.
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_;
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_;
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_;
     std::vector<uint32_t>                  visible_flat_;
     std::vector<DrawElementsIndirectCommand> indirect_scratch_;
 

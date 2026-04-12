@@ -37,9 +37,13 @@ public:
     bool showStats() const;
     void setShowStats(bool value);
 
+    bool backfaceCulling() const;
+    void setBackfaceCulling(bool value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
+    void backfaceCullingChanged(bool value);
 
 private:
     AppSettings();
@@ -48,6 +52,7 @@ private:
 
     QString geometry_library_;
     bool show_stats_ = false;
+    bool backface_culling_ = true;
 };
 
 #endif // APPSETTINGS_H

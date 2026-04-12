@@ -25,6 +25,7 @@ namespace {
 constexpr const char* kGeometryLibraryKey = "geometry/library";
 constexpr const char* kGeometryLibraryDefault = "hybrid-cgal-simple-opencascade";
 constexpr const char* kShowStatsKey = "viewport/show_stats";
+constexpr const char* kBackfaceCullingKey = "viewport/backface_culling";
 }
 
 AppSettings& AppSettings::instance() {
@@ -58,14 +59,27 @@ void AppSettings::setShowStats(bool value) {
     emit showStatsChanged(value);
 }
 
+bool AppSettings::backfaceCulling() const {
+    return backface_culling_;
+}
+
+void AppSettings::setBackfaceCulling(bool value) {
+    if (backface_culling_ == value) return;
+    backface_culling_ = value;
+    persist();
+    emit backfaceCullingChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
     show_stats_ = settings.value(kShowStatsKey, false).toBool();
+    backface_culling_ = settings.value(kBackfaceCullingKey, true).toBool();
 }
 
 void AppSettings::persist() {
     QSettings settings;
     settings.setValue(kGeometryLibraryKey, geometry_library_);
     settings.setValue(kShowStatsKey, show_stats_);
+    settings.setValue(kBackfaceCullingKey, backface_culling_);
 }
