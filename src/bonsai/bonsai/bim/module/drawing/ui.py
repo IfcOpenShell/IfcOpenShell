@@ -104,6 +104,10 @@ class BIM_PT_camera(Panel):
         row.prop(props, "linework_mode")
         row = self.layout.row()
         row.prop(props, "generate_material_layers")
+        if props.generate_material_layers:
+            row = self.layout.row()
+            row.separator(factor=1.0)
+            row.prop(props, "join_coplanar_surfaces")
         if props.linework_mode == "OPENCASCADE":
             row = self.layout.row()
             row.prop(props, "fill_mode")

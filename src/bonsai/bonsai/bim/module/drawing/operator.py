@@ -1005,14 +1005,16 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
-            self.remove_coplanar_boundary_lines(root)
+            if self.cprops.generate_material_layers and self.cprops.join_coplanar_surfaces:
+                self.remove_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
-            self.remove_coplanar_boundary_lines(root)
+            if self.cprops.generate_material_layers and self.cprops.join_coplanar_surfaces:
+                self.remove_coplanar_boundary_lines(root)
             self.move_elements_to_top(root)
 
         if self.cprops.fill_mode == "SHAPELY":

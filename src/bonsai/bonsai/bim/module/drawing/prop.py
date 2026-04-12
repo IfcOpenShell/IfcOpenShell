@@ -500,6 +500,11 @@ class BIMCameraProperties(PropertyGroup):
     generate_material_layers: bpy.props.BoolProperty(
         name="Generate Material Layers", description="Generate material layer linework in drawings", default=True
     )
+    join_coplanar_surfaces: bpy.props.BoolProperty(
+        name="Join Coplanar Surfaces",
+        description="Remove shared boundary lines between adjacent coplanar elements of the same material",
+        default=False,
+    )
     fill_mode: EnumProperty(
         items=[
             ("NONE", "None", "Disable filling areas seen in projection"),
