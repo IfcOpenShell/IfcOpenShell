@@ -55,6 +55,7 @@ struct ModelGpuData {
 
     size_t vbo_capacity = 0;
     size_t ebo_capacity = 0;
+    size_t ssbo_capacity = 0;       // bytes
     size_t vbo_used = 0;
     size_t ebo_used = 0;
     uint32_t vertex_count = 0;      // total (across all meshes)
@@ -148,6 +149,7 @@ private:
     void setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo);
     bool growModelVbo(ModelGpuData& m, size_t needed_total);
     bool growModelEbo(ModelGpuData& m, size_t needed_total);
+    bool growModelSsbo(ModelGpuData& m, size_t needed_total);
     ModelGpuData& getOrCreateModel(uint32_t model_id);
 
     // Populate m.mesh_vis_first / mesh_vis_count and upload visible indices

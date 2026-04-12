@@ -30,9 +30,10 @@
 #include <algorithm>
 #include <limits>
 
-static const size_t INITIAL_VBO_SIZE = 64 * 1024 * 1024;   // 64 MB
-static const size_t INITIAL_EBO_SIZE = 32 * 1024 * 1024;   // 32 MB
-static const size_t MAX_BUFFER_SIZE  = 4ull * 1024 * 1024 * 1024;  // 4 GB
+static const size_t INITIAL_VBO_SIZE  = 64 * 1024 * 1024;   // 64 MB
+static const size_t INITIAL_EBO_SIZE  = 32 * 1024 * 1024;   // 32 MB
+static const size_t INITIAL_SSBO_SIZE = 4  * 1024 * 1024;   // 4 MB (~52k instances)
+static const size_t MAX_BUFFER_SIZE   = 4ull * 1024 * 1024 * 1024;  // 4 GB
 
 // -----------------------------------------------------------------------------
 // Shaders
@@ -420,6 +421,27 @@ bool ViewportWindow::growModelVbo(ModelGpuData& m, size_t needed_total) {
     return true;
 }
 
+bool ViewportWindow::growModelSsbo(ModelGpuData& m, size_t needed_total) {
+    size_t new_capacity = m.ssbo_capacity ? m.ssbo_capacity : INITIAL_SSBO_SIZE;
+    while (new_capacity < needed_total) new_capacity *= 2;
+    if (new_capacity > MAX_BUFFER_SIZE) {
+        qWarning("Instance SSBO grow request (%zu MB) exceeds cap", new_capacity / (1024*1024));
+        return false;
+    }
+    GLuint new_ssbo = 0;
+    gl_->glCreateBuffers(1, &new_ssbo);
+    gl_->glNamedBufferStorage(new_ssbo, new_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
+    const size_t used = m.ssbo_instance_count * sizeof(InstanceGpu);
+    if (m.ssbo && used > 0) {
+        gl_->glCopyNamedBufferSubData(m.ssbo, new_ssbo, 0, 0, used);
+    }
+    if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
+    m.ssbo = new_ssbo;
+    m.ssbo_capacity = new_capacity;
+    qInfo("Model instance SSBO grew to %zu MB", m.ssbo_capacity / (1024*1024));
+    return true;
+}
+
 bool ViewportWindow::growModelEbo(ModelGpuData& m, size_t needed_total) {
     size_t new_capacity = m.ebo_capacity;
     while (new_capacity < needed_total) new_capacity *= 2;
@@ -455,6 +477,11 @@ ModelGpuData& ViewportWindow::getOrCreateModel(uint32_t model_id) {
     gl_->glNamedBufferStorage(m.vbo, m.vbo_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
     gl_->glNamedBufferStorage(m.ebo, m.ebo_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
     setupVaoLayout(m.vao, m.vbo, m.ebo);
+
+    // Pre-allocate instance SSBO so we can append during streaming.
+    gl_->glCreateBuffers(1, &m.ssbo);
+    m.ssbo_capacity = INITIAL_SSBO_SIZE;
+    gl_->glNamedBufferStorage(m.ssbo, m.ssbo_capacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
     return models_gpu_.emplace(model_id, std::move(m)).first->second;
 }
@@ -501,8 +528,8 @@ void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
 
 void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     if (!gl_initialized_) return;
-    // We don't need a GL context here since we're only touching CPU state,
-    // but the signal may fire on the render thread so keep it simple.
+    context_->makeCurrent(this);
+
     ModelGpuData& m = getOrCreateModel(chunk.model_id);
 
     InstanceCpu inst;
@@ -514,6 +541,23 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
     std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
     m.instances.push_back(inst);
+
+    // Append the GPU record to the instance SSBO so the model is drawable
+    // immediately, without waiting for finalizeModel.  The visible-list
+    // architecture means SSBO order is irrelevant to correctness.
+    InstanceGpu gpu;
+    std::memcpy(gpu.transform, inst.transform, sizeof(gpu.transform));
+    gpu.object_id = inst.object_id;
+    gpu.color_override_rgba8 = inst.color_override_rgba8;
+    gpu._pad0 = 0;
+    gpu._pad1 = 0;
+
+    const size_t offset = m.ssbo_instance_count * sizeof(InstanceGpu);
+    if (offset + sizeof(InstanceGpu) > m.ssbo_capacity) {
+        if (!growModelSsbo(m, offset + sizeof(InstanceGpu))) return;
+    }
+    gl_->glNamedBufferSubData(m.ssbo, offset, sizeof(InstanceGpu), &gpu);
+    m.ssbo_instance_count++;
 
     if (chunk.local_mesh_id < m.meshes.size()) {
         m.total_triangles += m.meshes[chunk.local_mesh_id].index_count / 3;
@@ -527,64 +571,30 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
-    if (m.instances.empty()) { m.finalized = true; return; }
 
-    // Sort instances by mesh_id (stable for deterministic ordering).
-    std::stable_sort(m.instances.begin(), m.instances.end(),
-        [](const InstanceCpu& a, const InstanceCpu& b) {
-            return a.mesh_id < b.mesh_id;
-        });
-
-    // Assign per-mesh contiguous range.
+    // Instance SSBO has been populated incrementally during streaming, so
+    // we don't re-upload here.  What finalize still does:
+    //   (1) compute per-mesh instance counts — used by stats and the sidecar
+    //       round-trip (first_instance is unused by the visible-list renderer),
+    //   (2) build the per-model BVH over instance world AABBs.
     for (auto& mesh : m.meshes) { mesh.first_instance = 0; mesh.instance_count = 0; }
-    uint32_t current = UINT32_MAX;
-    uint32_t run_start = 0;
-    for (uint32_t i = 0; i < m.instances.size(); ++i) {
-        uint32_t mid = m.instances[i].mesh_id;
-        if (mid != current) {
-            if (current != UINT32_MAX && current < m.meshes.size()) {
-                m.meshes[current].first_instance = run_start;
-                m.meshes[current].instance_count = i - run_start;
-            }
-            current = mid;
-            run_start = i;
-        }
+    for (const auto& inst : m.instances) {
+        if (inst.mesh_id < m.meshes.size()) ++m.meshes[inst.mesh_id].instance_count;
     }
-    if (current != UINT32_MAX && current < m.meshes.size()) {
-        m.meshes[current].first_instance = run_start;
-        m.meshes[current].instance_count = static_cast<uint32_t>(m.instances.size()) - run_start;
-    }
-
-    // Build GPU-layout array.
-    std::vector<InstanceGpu> gpu(m.instances.size());
-    for (size_t i = 0; i < m.instances.size(); ++i) {
-        const InstanceCpu& src = m.instances[i];
-        InstanceGpu& dst = gpu[i];
-        std::memcpy(dst.transform, src.transform, sizeof(dst.transform));
-        dst.object_id = src.object_id;
-        dst.color_override_rgba8 = src.color_override_rgba8;
-        dst._pad0 = 0;
-        dst._pad1 = 0;
-    }
-
-    // Allocate and upload SSBO.
-    if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
-    gl_->glCreateBuffers(1, &m.ssbo);
-    const size_t ssbo_bytes = gpu.size() * sizeof(InstanceGpu);
-    gl_->glNamedBufferStorage(m.ssbo, ssbo_bytes, gpu.data(), 0);
-    m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
 
     buildBvhForModel(m, model_id);
 
     m.finalized = true;
 
+    const size_t ssbo_bytes = m.ssbo_instance_count * sizeof(InstanceGpu);
     qDebug("Model %u finalized: %zu verts, %zu meshes, %zu instances, %.1f MB vram "
-           "(vbo %.1f + ebo %.1f + ssbo %.1f)",
+           "(vbo %.1f + ebo %.1f + ssbo-used %.1f / %.1f cap)",
            model_id, size_t(m.vertex_count), m.meshes.size(), m.instances.size(),
-           (m.vbo_capacity + m.ebo_capacity + ssbo_bytes) / (1024.0*1024.0),
+           (m.vbo_capacity + m.ebo_capacity + m.ssbo_capacity) / (1024.0*1024.0),
            m.vbo_capacity / (1024.0*1024.0),
            m.ebo_capacity / (1024.0*1024.0),
-           ssbo_bytes / (1024.0*1024.0));
+           ssbo_bytes / (1024.0*1024.0),
+           m.ssbo_capacity / (1024.0*1024.0));
 }
 
 bool ViewportWindow::snapshotModel(uint32_t model_id, SidecarData& out) const {
@@ -869,7 +879,7 @@ void ViewportWindow::render() {
     instanced_draws_ = 0;
 
     for (auto& [model_id, m] : models_gpu_) {
-        if (m.hidden || !m.finalized || !m.ssbo) continue;
+        if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         cullAndUploadVisible(m, planes);
         if (visible_flat_.empty()) continue;
@@ -913,7 +923,7 @@ void ViewportWindow::render() {
         size_t num_models = 0, num_hidden = 0;
         for (const auto& [mid, mm] : models_gpu_) {
             num_models++;
-            if (mm.hidden || !mm.finalized) { num_hidden++; continue; }
+            if (mm.hidden) { num_hidden++; continue; }
             total_obj += static_cast<uint32_t>(mm.instances.size());
             total_tri += mm.total_triangles;
             total_meshes += static_cast<uint32_t>(mm.meshes.size());
@@ -965,7 +975,7 @@ void ViewportWindow::renderPickPass() {
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
 
     for (auto& [model_id, m] : models_gpu_) {
-        if (m.hidden || !m.finalized || !m.ssbo) continue;
+        if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         cullAndUploadVisible(m, planes);
         if (visible_flat_.empty()) continue;
