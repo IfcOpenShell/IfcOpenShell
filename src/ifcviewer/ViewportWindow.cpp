@@ -838,16 +838,25 @@ void ViewportWindow::traverseBvh(const ModelBvh& mbvh, const ModelGpuData& mgpu,
             continue;
 
         if (node.count > 0) {
+            // Leaf-batched draw: after reorderEbo, a leaf's objects occupy a
+            // contiguous EBO range. Emit one draw command covering all of them
+            // instead of N per-object tests/draws. The leaf AABB test above is
+            // already a conservative cull; any overdraw (up to BVH_MAX_LEAF_SIZE
+            // objects that may be fully outside the frustum but inside the leaf
+            // AABB) costs far less than the per-draw CPU/driver overhead we save.
+            uint32_t first_oi = mbvh.object_indices[node.right_or_first];
+            const auto& first_obj = mgpu.draw_info[first_oi];
+            uint32_t leaf_offset = first_obj.index_offset;
+            uint32_t leaf_count = 0;
             for (uint32_t i = 0; i < node.count; ++i) {
                 uint32_t oi = mbvh.object_indices[node.right_or_first + i];
-                const auto& obj = mgpu.draw_info[oi];
-                if (aabbInFrustum(obj.aabb_min, obj.aabb_max, planes)) {
-                    cmd.counts.push_back(static_cast<GLsizei>(obj.index_count));
-                    cmd.offsets.push_back(reinterpret_cast<const void*>(
-                        static_cast<uintptr_t>(obj.index_offset)));
-                    visible_triangles_ += obj.index_count / 3;
-                }
+                leaf_count += mgpu.draw_info[oi].index_count;
             }
+            cmd.counts.push_back(static_cast<GLsizei>(leaf_count));
+            cmd.offsets.push_back(reinterpret_cast<const void*>(
+                static_cast<uintptr_t>(leaf_offset)));
+            visible_triangles_ += leaf_count / 3;
+            visible_objects_ += node.count;
         } else {
             if (sp < 63) {
                 stack[sp++] = node.right_or_first;
@@ -860,6 +869,7 @@ void ViewportWindow::traverseBvh(const ModelBvh& mbvh, const ModelGpuData& mgpu,
 void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
     frame_draw_cmds_.clear();
     visible_triangles_ = 0;
+    visible_objects_ = 0;
 
     // Extract 6 frustum planes from the view-projection matrix.
     float planes[6][4];
@@ -912,6 +922,7 @@ void ViewportWindow::buildVisibleList(const QMatrix4x4& vp) {
                     cmd.offsets.push_back(reinterpret_cast<const void*>(
                         static_cast<uintptr_t>(obj.index_offset)));
                     visible_triangles_ += obj.index_count / 3;
+                    visible_objects_++;
                 }
             }
         }
@@ -964,9 +975,10 @@ void ViewportWindow::render() {
         frame_count_ = 0;
         accumulated_time_ = 0.0f;
 
-        uint32_t total_obj = 0, total_tri = 0, vis_obj = 0;
+        uint32_t total_obj = 0, total_tri = 0;
         size_t total_vram = 0, total_vbo = 0, total_ebo = 0;
         size_t num_models = 0, num_hidden = 0;
+        size_t total_leaf_draws = 0;
         for (const auto& [mid, m] : models_gpu_) {
             num_models++;
             if (m.hidden) { num_hidden++; continue; }
@@ -977,29 +989,31 @@ void ViewportWindow::render() {
         }
         total_vram = total_vbo + total_ebo;
         for (const auto& cmd : frame_draw_cmds_) {
-            vis_obj += static_cast<uint32_t>(cmd.counts.size());
+            total_leaf_draws += cmd.counts.size();
         }
 
         FrameStats stats;
         stats.fps = last_fps_;
         stats.frame_time_ms = 1000.0f / last_fps_;
         stats.total_objects = total_obj;
-        stats.visible_objects = vis_obj;
+        stats.visible_objects = visible_objects_;
         stats.total_triangles = total_tri;
         stats.visible_triangles = visible_triangles_;
         emit frameStatsUpdated(stats);
 
-        double vis_obj_pct = total_obj > 0 ? 100.0 * vis_obj / total_obj : 0.0;
+        double vis_obj_pct = total_obj > 0 ? 100.0 * visible_objects_ / total_obj : 0.0;
         double vis_tri_pct = total_tri > 0 ? 100.0 * visible_triangles_ / total_tri : 0.0;
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u (%.1f%%)  tri %u/%u (%.1f%%)  "
-               "vram %.1f MB (vbo %.1f + ebo %.1f)  models %zu (%zu hidden)  draws %zu  pending_uploads %zu",
+               "vram %.1f MB (vbo %.1f + ebo %.1f)  models %zu (%zu hidden)  "
+               "leaf_draws %zu  model_draws %zu  pending_uploads %zu",
                last_fps_, 1000.0f / last_fps_,
-               vis_obj, total_obj, vis_obj_pct,
+               visible_objects_, total_obj, vis_obj_pct,
                visible_triangles_, total_tri, vis_tri_pct,
                total_vram / (1024.0 * 1024.0),
                total_vbo / (1024.0 * 1024.0),
                total_ebo / (1024.0 * 1024.0),
                num_models, num_hidden,
+               total_leaf_draws,
                frame_draw_cmds_.size(),
                pending_uploads_.size());
     }

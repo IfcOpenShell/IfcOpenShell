@@ -201,6 +201,7 @@ private:
     };
     std::vector<ModelDrawCmd> frame_draw_cmds_;
     uint32_t visible_triangles_ = 0;
+    uint32_t visible_objects_ = 0;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};
