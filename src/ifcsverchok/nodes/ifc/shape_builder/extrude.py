@@ -32,7 +32,7 @@ class SvIfcSbExtrude(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
     bl_idname = "SvIfcSbExtrude"
     bl_label = "IFC Extrude"
 
-    extrude_axis: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    extrude_axis: bpy.props.EnumProperty(
         default="Z",
         items=[
             ("X", "X", "Interpret curve as in XY plane and extrude along X+."),

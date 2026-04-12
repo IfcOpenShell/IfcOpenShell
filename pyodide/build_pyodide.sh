@@ -14,18 +14,11 @@ source .venv/bin/activate
 uv pip install pyodide-build
 # `uv run` is required, so xbuildenv would skip using `pip`.
 uv run pyodide xbuildenv install
+uv run pyodide xbuildenv install-emscripten
 
-# Emscripten doesn't come with xbuildenv.
-if [ ! -d emsdk ]; then
-  git clone https://github.com/emscripten-core/emsdk
-fi
-pushd emsdk
-PYODIDE_EMSCRIPTEN_VERSION=$(pyodide config get emscripten_version)
-./emsdk install ${PYODIDE_EMSCRIPTEN_VERSION}
-./emsdk activate ${PYODIDE_EMSCRIPTEN_VERSION}
-source emsdk_env.sh
+EMSDK_ROOT=$(pyodide config get emscripten_dir)
+source ${EMSDK_ROOT}/emsdk_env.sh
 which emcc
-popd
 
 mkdir -p packages/ifcopenshell
 VERSION=`cat IfcOpenShell/VERSION`

@@ -240,7 +240,7 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy Property To Selection"
     bl_options = {"REGISTER", "UNDO"}
 
-    name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.StringProperty()
 
     if TYPE_CHECKING:
         name: str
@@ -280,10 +280,10 @@ class BIM_OT_add_property_to_edit(bpy.types.Operator):
     bl_label = "Add Property to Edit"
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
-    index: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty(default=-1)
 
     if TYPE_CHECKING:
         option: tool.Pset.BulkOperationType
@@ -307,9 +307,9 @@ class BIM_OT_remove_property_to_edit(bpy.types.Operator):
     bl_label = "Remove Property from Editing"
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    index2: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
+    index2: bpy.props.IntProperty(default=-1)
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
 
@@ -336,7 +336,7 @@ class BIM_OT_bulk_edit_clear_list(bpy.types.Operator):
     bl_label = "Clear List of Properties"
     bl_idname = "bim.pset_bulk_edit_clear_list"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
 

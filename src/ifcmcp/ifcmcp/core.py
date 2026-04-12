@@ -278,7 +278,12 @@ class IfcSession:
         return info.info(model, element)
 
     def ifc_select(self, query: str) -> list[dict[str, Any]]:
-        """Filter elements using ifcopenshell selector syntax (e.g. 'IfcWall', 'IfcWindow')."""
+        """Filter elements using ifcopenshell selector syntax.
+
+        Examples: ``IfcWall``, ``IfcWall, IfcColumn``, ``! IfcWall``,
+        ``IfcWall, Name = "My Wall"``, ``type = "Concrete Wall"``,
+        ``material = "Concrete"``.
+        """
         return select.select(self._require_model(), query)
 
     def ifc_relations(self, element_id: int, traverse: str = "") -> dict[str, Any] | list[dict[str, Any]]:
@@ -536,7 +541,12 @@ class IfcSession:
             {
                 "type": "function",
                 "name": "ifc_select",
-                "description": "Select elements using ifcopenshell selector syntax (e.g. 'IfcWall').",
+                "description": (
+                    "Select elements using ifcopenshell selector syntax. "
+                    "Examples: 'IfcWall', 'IfcWall, IfcColumn', '! IfcWall', "
+                    "'IfcWall, Name = \"My Wall\"', 'type = \"Concrete Wall\"', "
+                    "'material = \"Concrete\"'."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {"query": {"type": "string"}},

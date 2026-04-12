@@ -26,7 +26,16 @@ import ifcopenshell.util.selector
 
 
 def select(model: ifcopenshell.file, query: str) -> list[dict[str, Any]]:
-    """Filter elements using selector syntax and return matching element summaries."""
+    """Filter elements using ifcopenshell selector syntax and return matching element summaries.
+
+    Examples:
+    - ``IfcWall`` — all walls
+    - ``IfcWall, IfcColumn`` — walls and columns
+    - ``! IfcWall`` — everything except walls
+    - ``IfcWall, Name = "My Wall"`` — walls with a specific name attribute
+    - ``type = "Concrete Wall"`` — elements assigned that type product
+    - ``material = "Concrete"`` — elements with that material
+    """
     elements = ifcopenshell.util.selector.filter_elements(model, query)
     results = []
     for element in sorted(elements, key=lambda e: e.id()):

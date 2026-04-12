@@ -346,6 +346,13 @@ public:
         }
     }
 
+    template <typename T>
+    void from_arrangement(T& arr) {
+        for (auto it = arr.edges_begin(); it != arr.edges_end(); ++it) {
+            insert(it->source()->point(), it->target()->point());
+        }
+    }
+
     void assert_symmetric() {
 #ifdef SVGFILL_DEBUG
 #if 0

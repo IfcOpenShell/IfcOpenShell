@@ -3,8 +3,9 @@ name = "IfcOpenShell"
 version = "0.0.0"
 dependencies = [
     "black==26.3.1",
-    "ruff==0.15.8",
+    "ruff==0.15.9",
     "poethepoet",
+    "ty==0.0.29",
     "gersemi==0.26.1",
 ]
 
@@ -28,6 +29,9 @@ extend-exclude = '''
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
+reportRedeclaration = false
+# Ignore warnings from bpy stubs missing actual source files.
+reportMissingModuleSource = false
 # Pylance doesn't respect gitignore, so we have to exclude files manually here
 # to avoid VS Code slowing down.
 # https://github.com/microsoft/pylance-release/issues/5169
@@ -84,7 +88,6 @@ all = "ignore"
 # Structural rules (no deep type inference needed, easier to adapt).
 abstract-method-in-final-class = "error"
 ambiguous-protocol-member = "error"
-byte-string-type-annotation = "error"
 conflicting-declarations = "error"
 conflicting-metaclass = "error"
 cyclic-class-definition = "error"
@@ -96,7 +99,6 @@ empty-body = "error"
 escape-character-in-forward-annotation = "error"
 final-on-non-method = "error"
 final-without-value = "error"
-fstring-type-annotation = "error"
 ignore-comment-unknown-rule = "error"
 implicit-concatenated-string-type-annotation = "error"
 inconsistent-mro = "error"
@@ -224,7 +226,7 @@ ty.sequence = ["ty-bonsai", "ty-ios"]
 ty.help = "Run ty type checker. Requires ty-venv to be set up first."
 ty-bonsai = "ty check src/bonsai --python=src/bonsai/.venv"
 
-ty-venv.sequence = ["ty-venv-bonsai", "ty-venv-ios"]
+ty-venv.sequence = ["bonsai-deps", "ty-venv-bonsai", "ty-venv-ios"]
 
 ty-venv-bonsai.sequence = [
     {cmd = "uv venv src/bonsai/.venv --python=3.11 --allow-existing"},

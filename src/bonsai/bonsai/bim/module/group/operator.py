@@ -43,11 +43,11 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Toggle Group"
     bl_options = {"REGISTER", "UNDO"}
 
-    ifc_definition_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    group_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    ifc_definition_id: bpy.props.IntProperty()
+    group_type: bpy.props.EnumProperty(
         items=[(i, i, "") for i in get_args(tool.Group.GroupType)],
     )
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(i, i, "") for i in get_args(tool.Group.ToggleOption)],
     )
 

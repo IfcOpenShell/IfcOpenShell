@@ -136,7 +136,7 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
         "Will unassign element from a type if type has a representation."
     )
     bl_options = {"REGISTER", "UNDO"}
-    mode: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    mode: bpy.props.EnumProperty(
         default="BOOLEAN",
         items=tuple((i, i, "") for i in get_args(SplitAlongEdgeMode)),
     )
@@ -359,7 +359,7 @@ class ConfirmQuickFavoriteOperator(bpy.types.Operator):
     bl_idname = "bim.confirm_quick_favorite_operator"
     bl_label = "Confirm Operator"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         index: int
@@ -452,10 +452,8 @@ class MoveQuickFavoritesItem(bpy.types.Operator):
     bl_idname = "bim.move_quick_favorites_item"
     bl_label = "Move Quick Favorites Item"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    direction: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
-        items=[("UP", "Up", ""), ("DOWN", "Down", "")]
-    )
+    index: bpy.props.IntProperty()
+    direction: bpy.props.EnumProperty(items=[("UP", "Up", ""), ("DOWN", "Down", "")])
 
     if TYPE_CHECKING:
         index: int
@@ -474,7 +472,7 @@ class RemoveQuickFavoritesItem(bpy.types.Operator):
     bl_idname = "bim.remove_quick_favorites_item"
     bl_label = "Remove Quick Favorites Item"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         index: int

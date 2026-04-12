@@ -126,6 +126,9 @@ namespace svgfill {
         // 0: outer perimiter and corridor center lines
         // 1: input polygons, corridor center lines and segments connecting corridor center lines to input polygons
         int topology_reconstruction_algo = 0;
+        // 0: join segment runs
+        // 1: local badness reduction
+        int line_cleaning_algo = 0;
         bool perform_cleanup = true;
         double subdivision_factor = 16.;
     };
