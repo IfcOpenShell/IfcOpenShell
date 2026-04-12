@@ -28,6 +28,7 @@
 #include <QtOpenGL/QOpenGLVersionFunctionsFactory>
 
 #include <cstring>
+#include <cstdlib>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -988,10 +989,32 @@ void ViewportWindow::render() {
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
         gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
 
-        const uint32_t fwd = m.indirect_forward_count;
-        const uint32_t rev = m.indirect_command_count - fwd;
+        uint32_t fwd = m.indirect_forward_count;
+        uint32_t rev = m.indirect_command_count - fwd;
+        // Perf diagnostics (confirmed 2026-04 on GTX 1650 @ 128M tris:
+        // draw-bound, not upload-bound — see README Phase 3):
+        //   IFC_SKIP_MDI=1         skip the actual MDI draws (keeps cull +
+        //                          upload + binds).  FPS jump == draw-bound.
+        //   IFC_MAX_SUBDRAWS=N     truncate drawcount to N per MDI.  Lets
+        //                          you distinguish per-subdraw command-
+        //                          processor overhead from raw tri work.
+        static const bool skip_mdi = []{
+            const char* e = std::getenv("IFC_SKIP_MDI");
+            return e && e[0] == '1';
+        }();
+        static const uint32_t max_subdraws = []{
+            const char* e = std::getenv("IFC_MAX_SUBDRAWS");
+            return (e && *e) ? static_cast<uint32_t>(std::atoi(e))
+                             : std::numeric_limits<uint32_t>::max();
+        }();
+        if (max_subdraws < m.indirect_command_count) {
+            // Keep the fwd/rev ratio so the workload mix is preserved.
+            const uint32_t total = m.indirect_command_count;
+            fwd = static_cast<uint32_t>((uint64_t)fwd * max_subdraws / total);
+            rev = max_subdraws - fwd;
+        }
         // Forward pass: non-reflected instances, standard CCW winding.
-        if (fwd > 0) {
+        if (fwd > 0 && !skip_mdi) {
             gl_->glFrontFace(GL_CCW);
             gl_->glMultiDrawElementsIndirect(
                 GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
@@ -1000,11 +1023,11 @@ void ViewportWindow::render() {
         }
         // Reverse pass: reflected instances — their world-space winding is
         // flipped, so telling GL the front is CW keeps cull-back working.
-        if (rev > 0) {
+        if (rev > 0 && !skip_mdi) {
             gl_->glFrontFace(GL_CW);
             gl_->glMultiDrawElementsIndirect(
                 GL_TRIANGLES, GL_UNSIGNED_INT,
-                reinterpret_cast<const void*>(fwd * sizeof(DrawElementsIndirectCommand)),
+                reinterpret_cast<const void*>(m.indirect_forward_count * sizeof(DrawElementsIndirectCommand)),
                 static_cast<GLsizei>(rev), 0);
             ++gl_draw_calls_;
             gl_->glFrontFace(GL_CCW);

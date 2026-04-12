@@ -333,101 +333,148 @@ buffer. The renderer issues MDI twice: fwd with `glFrontFace(GL_CCW)`,
 rev with `glFrontFace(GL_CW)`. `GL_CULL_FACE` stays on and does the
 right thing in both passes.
 
-### Current bottleneck — Phase 3 as designed is already obsolete
+### Current bottleneck — draw-bound, not upload-bound
 
 The original README's Phase 3 ("GPU-driven indirect draw") described
 moving draw submission to the GPU via compute. In the meantime, GPU
 instancing and MDI made the CPU-side draw cost essentially free (10
 `glMultiDrawElementsIndirect` calls per frame for 10 models). **That
-goal is met.** The real Phase 3 problem is different.
+goal is met.** The real ceiling lies elsewhere, and it took a couple of
+bad hypotheses to pin down.
 
-#### Diagnosed on a 10-model / 379 k-instance / 128 M-triangle scene
+#### Profiled scene
 
-Observed numbers (everything in view, no movement):
+10 models / 379 k instances / 128 M triangles, everything in view, no
+camera motion, GTX 1650 (PCIe dGPU, 4 GB VRAM):
 
 | Metric | Value |
 |--------|-------|
-| FPS | 10 |
-| Frame time | ~100 ms |
+| FPS | 6.7 |
+| Frame time | 149 ms |
 | gl_draws | 10 |
 | Sub-draws packed in indirect buffers | 67 037 |
 
-Elimination experiments:
+`nvidia-smi` reports 95 % GPU utilisation during render — the GPU is
+the thing that's pinned.
 
-| Probe | Result | Interpretation |
-|-------|--------|----------------|
-| Camera off-screen (nothing visible) | → 60 fps | GPU is idle; CPU path is cheap |
-| Resize window to 1/4 area | no change | Not fragment/raster bound |
-| `setSamples(4)` → `setSamples(1)` | no change | Not MSAA/resolve bound |
-| Comment out the two `glNamedBufferSubData` in `cullAndUploadVisible` | → 60 fps (screen blank) | **The per-frame uploads are the bottleneck.** |
+#### False lead: "the per-frame uploads are the bottleneck"
 
-So the bottleneck is two `glNamedBufferSubData` calls per model per
-frame uploading ~1.5 MB (visible list) + ~1.3 MB (indirect buffer).
-3 MB/frame / 60 fps = 180 MB/s — trivial for the bus, but `glNamedBufferSubData`
-against a buffer the GPU is still reading forces the driver to stall
-the CPU or orphan/reallocate the backing store, and we're hitting that
-on 20 buffers per frame.
+The first round of probes pointed at the two `glNamedBufferSubData`
+calls per model per frame (visible list ~1.5 MB + indirect buffer
+~1.3 MB):
 
-### Phase 3 (proposed) — Eliminate per-frame upload stalls
+| Probe | Result | Initial interpretation |
+|-------|--------|------------------------|
+| Camera off-screen (nothing visible) | 60 fps | GPU idle → CPU path cheap |
+| Comment out the two `glNamedBufferSubData` | 60 fps, blank screen | Uploads are the bottleneck |
 
-Two ways to attack it, in ascending order of effort:
+This led to an aborted Phase 3A implementation of persistent-mapped
+triple-buffered rings (and then staging + VRAM-resident with
+`glCopyNamedBufferSubData`). Neither moved the FPS needle — both still
+sat at 6.7 fps.
 
-#### 3A. Persistent mapped ring buffers (near-term)
+The probe was wrong: **commenting out the uploads emptied the indirect
+buffer, so MDI drew zero triangles. "No upload" and "no draw" were
+indistinguishable in the test.**
 
-Allocate each of the per-frame-written buffers with
-`glBufferStorage(GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_WRITE_BIT)`
-at 3× the needed size. Keep one `void*` from `glMapBufferRange` forever.
-Each frame, write the CPU-side data into slice `frame % 3` and bind
-that slice via `glBindBufferRange`. The GPU reads slice N−1 while the
-CPU writes slice N — no driver sync, no orphan, no stall.
+#### What actually isolates the draw cost
 
-Scope: ~80 lines across `ModelGpuData` + `cullAndUploadVisible` +
-binding in `render()` / `renderPickPass()`. No algorithmic change, no
-shader change. Expected result on the stats scene: 10 fps → ~60 fps
-(the measured ceiling once uploads are removed).
+Two diagnostic env vars now live in `render()`:
 
-#### 3B. GPU-side culling (longer-term)
+- `IFC_SKIP_MDI=1` — keep everything (cull, upload, binds) but skip the
+  actual `glMultiDrawElementsIndirect` calls.
+- `IFC_MAX_SUBDRAWS=N` — truncate each MDI's drawcount to N while still
+  running the rest of the frame.
 
-Push culling itself to the GPU. A compute shader reads the
-`InstanceCpu`-equivalent SSBO + frustum planes, builds the visible list
-and indirect commands in-place via atomics. Zero CPU→GPU per-frame
-bytes. Also lays the foundation for occlusion and contribution culling
-(both want to run on the GPU anyway, with access to the depth buffer
-or screen-space projection).
+Results on the profiled scene:
 
-Scope: compute shader + atomic counter + BVH-traversal-on-GPU (or a
-linear compute scan — simpler and still gains most of the win since
-traversal isn't the bottleneck once upload is gone). Bigger change;
-worth doing after 3A is measured, because 3A may be enough for a long
-while.
+| Probe | FPS | Frame time |
+|-------|-----|-----------|
+| baseline | 6.7 | 149 ms |
+| `IFC_SKIP_MDI=1` | 62.5 | 16 ms |
+| `IFC_MAX_SUBDRAWS=30000` | 6.7 | 149 ms |
+| `IFC_MAX_SUBDRAWS=10000` | 7.5 | 133 ms |
+| `IFC_MAX_SUBDRAWS=1000` | 20.2 | 49 ms |
+
+Readings:
+
+1. `SKIP_MDI` gives 62 fps with all upload/bind machinery still running
+   — the non-draw path fits in ~16 ms easily. **Not upload-bound.**
+2. Halving the sub-draw count (67 k → 30 k) saves 0 ms. If per-sub-draw
+   command-processor overhead were material, dropping 37 k sub-draws
+   would save measurable time no matter which sub-draws were dropped.
+   It doesn't. **67 k sub-draws is not the bottleneck** — the long tail
+   carries almost no triangles, and the heavyweights dominate.
+3. Time only starts coming down once the cap is low enough to shed bulk
+   triangle work (1000 sub-draws → 49 ms). The curve is consistent with
+   a long-tailed distribution: a handful of very big meshes × instance
+   counts do most of the rasterisation.
+
+**Conclusion: the GTX 1650 is rasterising 128 M triangles at ~850 M
+tri/s, and that eats ~133 ms of the 149 ms frame.** No CPU-side or
+upload-side work will recover it. The only way forward is to draw
+fewer triangles.
+
+### Phase 3 (revised) — Shed triangles, not bytes
+
+In order of effort/payoff for BIM workloads:
+
+#### 3A. Screen-space contribution culling (near-term)
+
+Project each visible-instance AABB to screen space during BVH
+traversal. Reject instances whose projected size is below a threshold
+(~4 px). In BIM this is the single biggest win: at viewer zoom levels
+that encompass a whole building, most MEP fittings, fixings, furniture
+legs, door hardware etc. occupy < 1 px and contribute nothing.
+
+Scope: a projection + pixel-area test inside
+`ViewportWindow::cullAndUploadVisible`. Zero new GPU state. Expect
+10–30× reduction in drawn triangles on plant/MEP-dense scenes; full
+buildings viewed in overview should approach 60 fps.
+
+#### 3B. Distance / contribution LOD (medium-term)
+
+Pre-simplify unique representations at ingress time (store LOD 0 / 1 /
+2 meshes in the VBO/EBO with offsets), select LOD per instance per
+frame by the same projected-size metric as 3A. The visible-SSBO
+plumbing and MDI structure don't change — only `firstIndex`/`count` in
+the indirect command does. Ingress side needs a decimation pass
+(`meshoptimizer` or similar); GPU side is nearly free.
+
+#### 3C. Hierarchical-Z occlusion culling (longer-term)
+
+Render large occluders first, build a depth pyramid, test instance
+AABBs against it. In dense BIM most geometry is behind other geometry
+from any given interior viewpoint; historically a 3–10× reduction in
+drawn instances. Most valuable *after* 3A+3B, which together handle
+the far-away and small-detail cases. Pairs naturally with GPU-side
+culling (a compute shader doing the HiZ test and writing the visible
+list + indirect buffer in place).
+
+#### 3D. GPU-side culling via compute (longer-term)
+
+Push the cull loop to a compute shader reading the per-instance SSBO +
+frustum planes + HiZ pyramid, emitting the visible list and indirect
+commands with atomic counters. Eliminates all CPU→GPU per-frame bytes
+and lets 3C scale to millions of instances. Worth doing once 3A–3C
+have stabilised the CPU-side algorithm we'd be porting.
 
 ### Planned follow-ups (post-Phase-3)
 
-- **Screen-space contribution cull.** Reject instances whose projected
-  screen-space AABB is below a pixel threshold. Cheap CPU-side filter
-  that eliminates distant MEP detail. Big win on unfiltered plant-room
-  scenes.
-- **Hierarchical-Z occlusion culling.** Render large occluders, build a
-  depth pyramid, test BVH / instance AABBs against it. In dense BIM,
-  most geometry is behind other geometry from any given viewpoint; this
-  is historically a 3–10× reduction in drawn instances.
-- **Distance / contribution LOD.** Unique meshes pre-simplified at load
-  time; compute shader selects an LOD per instance per frame based on
-  screen-space size. Same visible-SSBO plumbing, different `firstIndex`.
-- **Mesh shaders / meshlets.** Ceiling-raising but overkill until the
-  above are exhausted.
+- **Mesh shaders / meshlets.** Ceiling-raising, but overkill until the
+  above are exhausted and we've hit silicon limits on vertex/raster
+  throughput.
 
 ## Summary table
 
 ```
-Scene size                      Bottleneck           Fix
------------                     ----------           ---
-< 100k instances                CPU cull scan        Phase 1 only (current)
-100k–500k                       CPU cull scan        BVH (Phase 2) — done
-500k+ across many models        visible/indirect     Phase 3A mapped rings
-                                buffer uploads       (next)
----                             ---                  ---
-multi-million + occlusion-heavy fragment / overdraw  HiZ occlusion + LOD
+Scene size                      Bottleneck              Fix
+-----------                     ----------              ---
+< 100k instances                CPU cull scan           Phase 1 only
+100k–500k                       CPU cull scan           BVH (Phase 2) — done
+500k+ tris / overview shot      GPU vertex + raster     Phase 3A contribution cull
+                                                        (+ 3B LOD for close-ups)
+multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
 ```
 
 ## Roadmap
@@ -444,10 +491,10 @@ multi-million + occlusion-heavy fragment / overdraw  HiZ occlusion + LOD
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [ ] **Phase 3A — persistent-mapped ring buffers for visible + indirect** (next)
-- [ ] Phase 3B — GPU-side compute-shader culling
-- [ ] Screen-space contribution culling
-- [ ] Hierarchical-Z occlusion culling
-- [ ] Distance-based LOD selection
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`)
+- [ ] **Phase 3A — screen-space contribution culling** (next)
+- [ ] Phase 3B — distance / contribution LOD
+- [ ] Phase 3C — Hierarchical-Z occlusion culling
+- [ ] Phase 3D — GPU-side compute-shader culling
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
