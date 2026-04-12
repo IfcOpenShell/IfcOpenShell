@@ -41,13 +41,15 @@ MainWindow::MainWindow(QWidget* parent)
     connect(viewport_, &ViewportWindow::frameStatsUpdated, this, [this](const ViewportWindow::FrameStats& s) {
         if (!stats_label_->isVisible()) return;
         stats_label_->setText(
-            QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri")
+            QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 gl_draws (%8 sub)")
                 .arg(s.fps, 0, 'f', 1)
                 .arg(s.frame_time_ms, 0, 'f', 1)
                 .arg(s.visible_objects)
                 .arg(s.total_objects)
                 .arg(s.visible_triangles)
-                .arg(s.total_triangles));
+                .arg(s.total_triangles)
+                .arg(s.gl_draw_calls)
+                .arg(s.indirect_sub_draws));
     });
 
     connect(&AppSettings::instance(), &AppSettings::showStatsChanged, this, [this](bool show) {

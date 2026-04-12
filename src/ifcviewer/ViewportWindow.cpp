@@ -123,7 +123,13 @@ uniform vec3 u_light_dir;
 out vec4 frag_color;
 
 void main() {
+    // Two-sided lighting: IFC placements frequently embed reflections
+    // (mirrored families), which flip triangle winding and invert the
+    // transformed normal.  Taking abs(dot) — or equivalently flipping n
+    // based on gl_FrontFacing — makes both sides shade correctly
+    // regardless of winding / reflection state.
     vec3 n = normalize(v_normal);
+    if (!gl_FrontFacing) n = -n;
     float ndotl = max(dot(n, u_light_dir), 0.0);
     float ambient = 0.25;
     float diffuse = 0.75 * ndotl;
@@ -906,7 +912,8 @@ void ViewportWindow::render() {
 
     visible_triangles_ = 0;
     visible_objects_ = 0;
-    instanced_draws_ = 0;
+    gl_draw_calls_ = 0;
+    indirect_sub_draws_ = 0;
 
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
@@ -926,7 +933,8 @@ void ViewportWindow::render() {
             visible_triangles_ += (cmd.count / 3) * cmd.instanceCount;
             visible_objects_   += cmd.instanceCount;
         }
-        instanced_draws_ += m.indirect_command_count;
+        indirect_sub_draws_ += m.indirect_command_count;
+        ++gl_draw_calls_;
     }
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
@@ -964,16 +972,17 @@ void ViewportWindow::render() {
         stats.total_triangles = total_tri;
         stats.visible_triangles = visible_triangles_;
         stats.unique_meshes = total_meshes;
-        stats.instanced_draws = instanced_draws_;
+        stats.gl_draw_calls = gl_draw_calls_;
+        stats.indirect_sub_draws = indirect_sub_draws_;
         emit frameStatsUpdated(stats);
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
-               "meshes %u  inst_draws %u  "
+               "meshes %u  gl_draws %u  sub_draws %u  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
                visible_triangles_, total_tri,
-               total_meshes, instanced_draws_,
+               total_meshes, gl_draw_calls_, indirect_sub_draws_,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),

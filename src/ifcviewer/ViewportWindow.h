@@ -136,7 +136,8 @@ public:
         uint32_t total_triangles;
         uint32_t visible_triangles;
         uint32_t unique_meshes;
-        uint32_t instanced_draws;
+        uint32_t gl_draw_calls;        // actual glMultiDrawElementsIndirect issues per frame
+        uint32_t indirect_sub_draws;   // total commands packed into those indirect buffers
     };
 
 signals:
@@ -202,7 +203,8 @@ private:
     // Per-frame stats
     uint32_t visible_triangles_ = 0;
     uint32_t visible_objects_ = 0;
-    uint32_t instanced_draws_ = 0;
+    uint32_t gl_draw_calls_ = 0;
+    uint32_t indirect_sub_draws_ = 0;
 
     // Reused scratch: visible-instance index lists per mesh, flattened into
     // `visible_flat_` for upload.  Both live in the parent object to avoid
