@@ -1646,7 +1646,7 @@ class CreateDrawing(bpy.types.Operator):
         camera_looks_up = self.camera.matrix_world.col[2].z < 0
 
         # GUIDs of pairs under investigation (first 12 chars used as key)
-        _dg = {"39Iwvbn41B7O", "08yv0FO$j2Aw", "1dM2d4kqjFH8", "2lwj_pzhrADf"}
+        _dg = {"39Iwvbn41B7O", "08yv0FO$j2Aw", "1dM2d4kqjFH8", "2lwj_pzhrADf", "2NR8CMK21CwO", "0XMcotQ9nDsx"}
 
         obj_cache = {}
 
@@ -1740,11 +1740,14 @@ class CreateDrawing(bpy.types.Operator):
                         return False
                 return True
 
-            contained = aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a)
-            if contained:
-                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS contained")
-                adjacency_cache[key] = True
-                return True
+            if aabb_contains(corners_a, corners_b):
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS contained (b inside a)")
+                adjacency_cache[key] = "contained_b"
+                return "contained_b"
+            if aabb_contains(corners_b, corners_a):
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS contained (a inside b)")
+                adjacency_cache[key] = "contained_a"
+                return "contained_a"
             # Coplanarity check: use the largest-face normal for each object.
             # Area-weighted averages fail for slabs because top/bottom faces cancel.
             def dominant_world_normal(obj):
@@ -2116,11 +2119,14 @@ class CreateDrawing(bpy.types.Operator):
                     if style_j != style_i:
                         if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} SKIP style style_i={style_i} style_j={style_j}")
                         continue
-                    if not are_coplanar_and_adjacent(guid_i, guid_j):
+                    _copl_result = are_coplanar_and_adjacent(guid_i, guid_j)
+                    if not _copl_result:
                         if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} SKIP coplanar")
                         continue
                     if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} JOINED — segs_i={len(segs_i)} segs_j={len(segs_j)}")
                     matched = 0
+
+                    _is_contained = _copl_result in ("contained_a", "contained_b")
 
                     # Group each element's segments by axis-aligned line.
                     # All segments on the same line (within TOL) are merged into a
@@ -2143,6 +2149,17 @@ class CreateDrawing(bpy.types.Operator):
                     lines_i = group_by_line(segs_i)
                     lines_j = group_by_line(segs_j)
 
+                    if _is_contained and _wp:
+                        print(f"[DBG] CONTAINED keys_i={sorted(lines_i)} keys_j={sorted(lines_j)}")
+                        print(f"[DBG] CONTAINED bbox_i={segs_bbox(segs_i)} bbox_j={segs_bbox(segs_j)}")
+                        for _k in sorted(set(lines_i) & set(lines_j)):
+                            _ui = ivs_union(lines_i[_k]["ivs"])
+                            _uj = ivs_union(lines_j[_k]["ivs"])
+                            print(f"[DBG] SHARED key={_k} union_i={_ui} union_j={_uj} intersect={ivs_intersect(_ui, _uj)}")
+                        for _k in sorted(set(lines_i) - set(lines_j)):
+                            _ui = ivs_union(lines_i[_k]["ivs"])
+                            print(f"[DBG] ONLY-I  key={_k} union_i={_ui}")
+
                     # Track whether bilateral found shared keys but skipped them
                     # due to offset overlap.  If so, both elements have explicit
                     # segments at the shared line — the unilateral fallback must
@@ -2158,14 +2175,11 @@ class CreateDrawing(bpy.types.Operator):
                         if not shared:
                             continue
                         _bilateral_had_explicit_keys = True
-                        # Only remove when the shared portion covers the full union
-                        # of at least one element on this line.  An offset partial
-                        # overlap — where two back-to-back walls happen to have
-                        # segments on the same line but at different running-direction
-                        # positions — would cover neither element's full union and
-                        # must not be removed (the line between them is a real
-                        # architectural boundary).
-                        if not (ivs_equal(shared, union_i) or ivs_equal(shared, union_j)):
+                        # For contained pairs the ivs_equal full-extent guard is
+                        # skipped: a partial overlap between an outer element's long
+                        # edge and a physically-contained inner element's short edge
+                        # is still a genuine shared interface, not an offset-wall case.
+                        if not _is_contained and not (ivs_equal(shared, union_i) or ivs_equal(shared, union_j)):
                             if _wp: print(f"[DBG] SKIP offset-overlap key={key} shared={shared} union_i={union_i} union_j={union_j}")
                             continue
                         if _wp: print(f"[DBG] MATCHED key={key} shared={shared} union_i={union_i} union_j={union_j}")
@@ -2187,7 +2201,9 @@ class CreateDrawing(bpy.types.Operator):
                     # (not explicitly drawn as a path segment), segments from the other
                     # element that lie on the boundary of that element's SVG bbox are
                     # still on the shared face and should be removed.
-                    if matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
+                    # Not applicable to contained pairs (bilateral handles their
+                    # shared interface; unilateral would over-remove here).
+                    if not _is_contained and matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
                         bbox_i = segs_bbox(segs_i)
                         bbox_j = segs_bbox(segs_j)
                         if bbox_i and bbox_j:
