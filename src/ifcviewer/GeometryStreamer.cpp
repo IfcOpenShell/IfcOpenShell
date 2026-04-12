@@ -270,6 +270,11 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     settings.set("use-world-coords", false);
     settings.set("weld-vertices", false);
     settings.set("apply-default-materials", true);
+    // Off by default in IfcOpenShell — makes face winding consistent within
+    // each shell, which we need for GL_CULL_FACE and for per-vertex normals
+    // to shade a solid without dark inside-out patches.  Costs some iterator
+    // time, but results are cached in the sidecar so it's a one-shot hit.
+    settings.set("reorient-shells", true);
 
     std::unique_ptr<IfcGeom::Iterator> iterator;
     try {
