@@ -68,6 +68,9 @@ struct InstanceRecord {
 layout(std430, binding = 0) readonly buffer Instances {
     InstanceRecord instances[];
 };
+layout(std430, binding = 1) readonly buffer VisibleIndices {
+    uint visible[];
+};
 
 uniform mat4 u_view_projection;
 uniform uint u_instance_offset;
@@ -79,7 +82,8 @@ flat out uint v_object_id;
 flat out uint v_selected;
 
 void main() {
-    InstanceRecord inst = instances[u_instance_offset + uint(gl_InstanceID)];
+    uint iid = visible[u_instance_offset + uint(gl_InstanceID)];
+    InstanceRecord inst = instances[iid];
     vec4 world = inst.transform * vec4(a_position, 1.0);
     gl_Position = u_view_projection * world;
 
@@ -139,6 +143,9 @@ struct InstanceRecord {
 layout(std430, binding = 0) readonly buffer Instances {
     InstanceRecord instances[];
 };
+layout(std430, binding = 1) readonly buffer VisibleIndices {
+    uint visible[];
+};
 
 uniform mat4 u_view_projection;
 uniform uint u_instance_offset;
@@ -146,7 +153,8 @@ uniform uint u_instance_offset;
 flat out uint v_object_id;
 
 void main() {
-    InstanceRecord inst = instances[u_instance_offset + uint(gl_InstanceID)];
+    uint iid = visible[u_instance_offset + uint(gl_InstanceID)];
+    InstanceRecord inst = instances[iid];
     gl_Position = u_view_projection * inst.transform * vec4(a_position, 1.0);
     v_object_id = inst.object_id;
 }
@@ -211,6 +219,59 @@ static GLuint linkProgram(QOpenGLFunctions_4_5_Core* gl, GLuint vert, GLuint fra
 
 // -----------------------------------------------------------------------------
 
+static bool aabbInFrustum(const float aabb_min[3], const float aabb_max[3],
+                          const float planes[6][4]) {
+    for (int p = 0; p < 6; ++p) {
+        float px = planes[p][0] >= 0.0f ? aabb_max[0] : aabb_min[0];
+        float py = planes[p][1] >= 0.0f ? aabb_max[1] : aabb_min[1];
+        float pz = planes[p][2] >= 0.0f ? aabb_max[2] : aabb_min[2];
+        float dist = planes[p][0] * px + planes[p][1] * py + planes[p][2] * pz + planes[p][3];
+        if (dist < 0.0f) return false;
+    }
+    return true;
+}
+
+static void extractFrustumPlanes(const QMatrix4x4& vp, float planes[6][4]) {
+    for (int i = 0; i < 4; ++i) {
+        planes[0][i] = vp(3, i) + vp(0, i);
+        planes[1][i] = vp(3, i) - vp(0, i);
+        planes[2][i] = vp(3, i) + vp(1, i);
+        planes[3][i] = vp(3, i) - vp(1, i);
+        planes[4][i] = vp(3, i) + vp(2, i);
+        planes[5][i] = vp(3, i) - vp(2, i);
+    }
+    for (int p = 0; p < 6; ++p) {
+        float len = std::sqrt(planes[p][0]*planes[p][0] +
+                              planes[p][1]*planes[p][1] +
+                              planes[p][2]*planes[p][2]);
+        if (len > 0.0f) {
+            float inv = 1.0f / len;
+            planes[p][0] *= inv; planes[p][1] *= inv;
+            planes[p][2] *= inv; planes[p][3] *= inv;
+        }
+    }
+}
+
+// Build bvh_items (one per instance, 1:1 ordering) and a per-model BVH.
+// Items with instances.size() < BVH_MIN_OBJECTS leave bvh empty — the
+// render path falls back to drawing every instance.
+static void buildBvhForModel(ModelGpuData& m, uint32_t model_id) {
+    m.bvh_items.clear();
+    m.bvh_items.reserve(m.instances.size());
+    for (const auto& inst : m.instances) {
+        BvhItem it;
+        std::memcpy(it.aabb_min, inst.world_aabb_min, sizeof(it.aabb_min));
+        std::memcpy(it.aabb_max, inst.world_aabb_max, sizeof(it.aabb_max));
+        it.model_id = inst.model_id;
+        m.bvh_items.push_back(it);
+    }
+    if (m.bvh_items.size() >= BVH_MIN_OBJECTS) {
+        m.bvh = buildModelBvhOne(m.bvh_items, model_id);
+    } else {
+        m.bvh = ModelBvh{};
+    }
+}
+
 ViewportWindow::ViewportWindow(QWindow* parent)
     : QWindow(parent)
 {
@@ -239,6 +300,7 @@ ViewportWindow::~ViewportWindow() {
                 if (m.vbo)  gl_->glDeleteBuffers(1, &m.vbo);
                 if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
                 if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
+                if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
@@ -512,6 +574,8 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
     gl_->glNamedBufferStorage(m.ssbo, ssbo_bytes, gpu.data(), 0);
     m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
 
+    buildBvhForModel(m, model_id);
+
     m.finalized = true;
 
     qDebug("Model %u finalized: %zu verts, %zu meshes, %zu instances, %.1f MB vram "
@@ -555,6 +619,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.vbo)  gl_->glDeleteBuffers(1, &existing->second.vbo);
         if (existing->second.ebo)  gl_->glDeleteBuffers(1, &existing->second.ebo);
         if (existing->second.ssbo) gl_->glDeleteBuffers(1, &existing->second.ssbo);
+        if (existing->second.visible_ssbo) gl_->glDeleteBuffers(1, &existing->second.visible_ssbo);
         models_gpu_.erase(existing);
     }
 
@@ -606,6 +671,8 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     }
     m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
 
+    buildBvhForModel(m, model_id);
+
     m.finalized = true;
     models_gpu_.emplace(model_id, std::move(m));
 
@@ -628,6 +695,7 @@ void ViewportWindow::resetScene() {
         if (m.vbo)  gl_->glDeleteBuffers(1, &m.vbo);
         if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
         if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
+        if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
@@ -652,6 +720,7 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.vbo)  gl_->glDeleteBuffers(1, &it->second.vbo);
         if (it->second.ebo)  gl_->glDeleteBuffers(1, &it->second.ebo);
         if (it->second.ssbo) gl_->glDeleteBuffers(1, &it->second.ssbo);
+        if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
         models_gpu_.erase(it);
     }
 }
@@ -689,6 +758,74 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     return pixel;
 }
 
+void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]) {
+    // Ensure per-mesh scratch sized.
+    if (visible_by_mesh_.size() < m.meshes.size()) visible_by_mesh_.resize(m.meshes.size());
+    for (size_t i = 0; i < m.meshes.size(); ++i) visible_by_mesh_[i].clear();
+
+    auto test_and_push = [&](uint32_t inst_idx) {
+        const InstanceCpu& inst = m.instances[inst_idx];
+        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+        if (inst.mesh_id < visible_by_mesh_.size())
+            visible_by_mesh_[inst.mesh_id].push_back(inst_idx);
+    };
+
+    if (!m.bvh.nodes.empty()) {
+        uint32_t stack[64];
+        int sp = 0;
+        stack[sp++] = 0;
+        while (sp > 0) {
+            uint32_t ni = stack[--sp];
+            const BvhNode& n = m.bvh.nodes[ni];
+            if (!aabbInFrustum(n.aabb_min, n.aabb_max, planes)) continue;
+            if (n.count > 0) {
+                for (uint32_t k = 0; k < n.count; ++k) {
+                    uint32_t item_idx = m.bvh.item_indices[n.right_or_first + k];
+                    test_and_push(item_idx);
+                }
+            } else {
+                // Left child = ni + 1, right child = n.right_or_first.
+                // Push right first so left is popped next (DFS order).
+                if (sp + 2 <= 64) {
+                    stack[sp++] = n.right_or_first;
+                    stack[sp++] = ni + 1;
+                }
+            }
+        }
+    } else {
+        for (uint32_t i = 0; i < m.instances.size(); ++i) test_and_push(i);
+    }
+
+    // Flatten into visible_flat_ and record per-mesh ranges.
+    visible_flat_.clear();
+    m.mesh_vis_first.assign(m.meshes.size(), 0);
+    m.mesh_vis_count.assign(m.meshes.size(), 0);
+    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+        m.mesh_vis_first[mi] = static_cast<uint32_t>(visible_flat_.size());
+        m.mesh_vis_count[mi] = static_cast<uint32_t>(visible_by_mesh_[mi].size());
+        visible_flat_.insert(visible_flat_.end(),
+                             visible_by_mesh_[mi].begin(),
+                             visible_by_mesh_[mi].end());
+    }
+
+    // Grow/create visible SSBO as needed. Keep at least 4 bytes so the binding
+    // is always valid even when nothing is visible.
+    size_t bytes = std::max<size_t>(visible_flat_.size() * sizeof(uint32_t),
+                                    sizeof(uint32_t));
+    if (m.visible_ssbo == 0 || m.visible_ssbo_capacity < bytes) {
+        if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
+        size_t new_cap = m.visible_ssbo_capacity ? m.visible_ssbo_capacity : 4096;
+        while (new_cap < bytes) new_cap *= 2;
+        gl_->glCreateBuffers(1, &m.visible_ssbo);
+        gl_->glNamedBufferStorage(m.visible_ssbo, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        m.visible_ssbo_capacity = new_cap;
+    }
+    if (!visible_flat_.empty()) {
+        gl_->glNamedBufferSubData(m.visible_ssbo, 0,
+            visible_flat_.size() * sizeof(uint32_t), visible_flat_.data());
+    }
+}
+
 void ViewportWindow::updateCamera() {
     float yaw_rad = qDegreesToRadians(camera_yaw_);
     float pitch_rad = qDegreesToRadians(camera_pitch_);
@@ -715,6 +852,8 @@ void ViewportWindow::render() {
     gl_->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     QMatrix4x4 vp = proj_matrix_ * view_matrix_;
+    float planes[6][4];
+    extractFrustumPlanes(vp, planes);
 
     gl_->glUseProgram(main_program_);
     GLint u_vp        = gl_->glGetUniformLocation(main_program_, "u_view_projection");
@@ -731,21 +870,28 @@ void ViewportWindow::render() {
 
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.finalized || !m.ssbo) continue;
+
+        cullAndUploadVisible(m, planes);
+        if (visible_flat_.empty()) continue;
+
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
 
-        for (const auto& mesh : m.meshes) {
-            if (mesh.instance_count == 0 || mesh.index_count == 0) continue;
-            gl_->glUniform1ui(u_inst_off, mesh.first_instance);
+        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+            const auto& mesh = m.meshes[mi];
+            uint32_t vis_count = m.mesh_vis_count[mi];
+            if (vis_count == 0 || mesh.index_count == 0) continue;
+            gl_->glUniform1ui(u_inst_off, m.mesh_vis_first[mi]);
             gl_->glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES,
                 static_cast<GLsizei>(mesh.index_count),
                 GL_UNSIGNED_INT,
                 reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh.ebo_byte_offset)),
-                static_cast<GLsizei>(mesh.instance_count),
+                static_cast<GLsizei>(vis_count),
                 static_cast<GLint>(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES));
-            visible_triangles_ += (mesh.index_count / 3) * mesh.instance_count;
-            visible_objects_   += mesh.instance_count;
+            visible_triangles_ += (mesh.index_count / 3) * vis_count;
+            visible_objects_   += vis_count;
             ++instanced_draws_;
         }
     }
@@ -810,6 +956,9 @@ void ViewportWindow::renderPickPass() {
     gl_->glClear(GL_DEPTH_BUFFER_BIT);
 
     QMatrix4x4 vp = proj_matrix_ * view_matrix_;
+    float planes[6][4];
+    extractFrustumPlanes(vp, planes);
+
     gl_->glUseProgram(pick_program_);
     GLint u_vp       = gl_->glGetUniformLocation(pick_program_, "u_view_projection");
     GLint u_inst_off = gl_->glGetUniformLocation(pick_program_, "u_instance_offset");
@@ -817,17 +966,25 @@ void ViewportWindow::renderPickPass() {
 
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.finalized || !m.ssbo) continue;
+
+        cullAndUploadVisible(m, planes);
+        if (visible_flat_.empty()) continue;
+
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
-        for (const auto& mesh : m.meshes) {
-            if (mesh.instance_count == 0 || mesh.index_count == 0) continue;
-            gl_->glUniform1ui(u_inst_off, mesh.first_instance);
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
+
+        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+            const auto& mesh = m.meshes[mi];
+            uint32_t vis_count = m.mesh_vis_count[mi];
+            if (vis_count == 0 || mesh.index_count == 0) continue;
+            gl_->glUniform1ui(u_inst_off, m.mesh_vis_first[mi]);
             gl_->glDrawElementsInstancedBaseVertex(
                 GL_TRIANGLES,
                 static_cast<GLsizei>(mesh.index_count),
                 GL_UNSIGNED_INT,
                 reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh.ebo_byte_offset)),
-                static_cast<GLsizei>(mesh.instance_count),
+                static_cast<GLsizei>(vis_count),
                 static_cast<GLint>(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES));
         }
     }

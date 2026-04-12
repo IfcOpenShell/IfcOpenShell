@@ -34,6 +34,7 @@
 #include <mutex>
 #include <memory>
 
+#include "BvhAccel.h"
 #include "InstancedGeometry.h"
 #include "SidecarCache.h"
 
@@ -62,6 +63,20 @@ struct ModelGpuData {
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceCpu> instances;    // unsorted until finalize
     uint32_t                 ssbo_instance_count = 0;
+
+    // Per-instance world AABB + BVH (built at finalize).  The BVH is the
+    // same ordering as `instances`; bvh_items[i] corresponds to instances[i].
+    std::vector<BvhItem> bvh_items;
+    ModelBvh             bvh;
+
+    // Dynamic visible-instance index buffer (std430, binding = 1).
+    // Re-uploaded each frame from frame_visible_scratch_.
+    GLuint  visible_ssbo = 0;
+    size_t  visible_ssbo_capacity = 0;  // bytes
+
+    // Per-mesh visible-list offset/count, rebuilt each frame.
+    std::vector<uint32_t> mesh_vis_first;
+    std::vector<uint32_t> mesh_vis_count;
 
     bool finalized = false;
     bool hidden    = false;
@@ -135,6 +150,10 @@ private:
     bool growModelEbo(ModelGpuData& m, size_t needed_total);
     ModelGpuData& getOrCreateModel(uint32_t model_id);
 
+    // Populate m.mesh_vis_first / mesh_vis_count and upload visible indices
+    // to m.visible_ssbo.  Uses BVH when available, else linear scan.
+    void cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]);
+
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
     void handleMouseRelease(QMouseEvent* event);
@@ -170,6 +189,12 @@ private:
     uint32_t visible_triangles_ = 0;
     uint32_t visible_objects_ = 0;
     uint32_t instanced_draws_ = 0;
+
+    // Reused scratch: visible-instance index lists per mesh, flattened into
+    // `visible_flat_` for upload.  Both live in the parent object to avoid
+    // per-frame allocation.
+    std::vector<std::vector<uint32_t>> visible_by_mesh_;
+    std::vector<uint32_t>              visible_flat_;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};

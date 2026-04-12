@@ -119,6 +119,12 @@ ModelBvh buildModelBvh(const std::vector<BvhItem>& items,
 
 } // anonymous namespace
 
+ModelBvh buildModelBvhOne(const std::vector<BvhItem>& items, uint32_t model_id) {
+    std::vector<uint32_t> idxs(items.size());
+    for (uint32_t i = 0; i < items.size(); ++i) idxs[i] = i;
+    return buildModelBvh(items, idxs, model_id);
+}
+
 std::shared_ptr<BvhSet> buildBvhSet(const std::vector<BvhItem>& items) {
     auto bvh_set = std::make_shared<BvhSet>();
 

@@ -63,4 +63,8 @@ struct BvhSet {
 // vector — callers providing a single model's items will see 0..N-1.
 std::shared_ptr<BvhSet> buildBvhSet(const std::vector<BvhItem>& items);
 
+// Build a single-model BVH over `items`.  model_id is stored on the result
+// for identification; item_indices will be 0..items.size()-1.
+ModelBvh buildModelBvhOne(const std::vector<BvhItem>& items, uint32_t model_id);
+
 #endif // BVHACCEL_H
