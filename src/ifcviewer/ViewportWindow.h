@@ -173,7 +173,13 @@ private:
     // Frustum-cull m's instances (BVH if available, else linear scan),
     // build the per-mesh DrawElementsIndirectCommand array + flat visible
     // list, and upload both to m.indirect_buffer / m.visible_ssbo.
-    void cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]);
+    //
+    // `min_pixel_radius` controls contribution culling: instances (and BVH
+    // subtrees) whose projected bounding-sphere radius would be below this
+    // many pixels are dropped.  0 = disabled (all frustum-visible kept),
+    // which is what the pick pass uses so clickable targets aren't filtered.
+    void cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
+                              float focal_px, float min_pixel_radius);
 
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
@@ -224,9 +230,11 @@ private:
 
     // Camera
     QVector3D camera_target_{0, 0, 0};
+    QVector3D camera_eye_{0, 0, 0};      // world-space eye, set in updateCamera
     float camera_distance_ = 50.0f;
     float camera_yaw_ = 45.0f;
     float camera_pitch_ = 30.0f;
+    float camera_fov_y_deg_ = 45.0f;
     QMatrix4x4 view_matrix_;
     QMatrix4x4 proj_matrix_;
 

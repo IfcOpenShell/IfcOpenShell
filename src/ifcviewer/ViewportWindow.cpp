@@ -824,7 +824,8 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     return pixel;
 }
 
-void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]) {
+void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
+                                          float focal_px, float min_pixel_radius) {
     // Per-mesh scratch, split by winding: fwd = non-reflected (CCW in screen
     // space), rev = reflected (CW in screen space).  Splitting lets the draw
     // pass toggle glFrontFace once between two MDI calls so GL_CULL_FACE does
@@ -836,9 +837,44 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         visible_by_mesh_rev_[i].clear();
     }
 
+    // Bounding-sphere contribution test: approximate an AABB by its enclosing
+    // sphere (centre = midpoint, radius = half-diagonal).  Project radius to
+    // pixels as r_px = focal_px * r / distance (perspective).  Reject if
+    // smaller than the threshold.  Returns true when the node/instance
+    // should be kept.
+    //
+    // If the camera is inside the AABB the sphere-radius test would reject
+    // by distance going to zero / negative — we handle that by skipping the
+    // test whenever the camera lies within an inflated AABB.  Cheap and
+    // conservative: never drops things you're standing next to.
+    const float cx = camera_eye_.x();
+    const float cy = camera_eye_.y();
+    const float cz = camera_eye_.z();
+    auto contributionPasses = [&](const float mn[3], const float mx[3]) -> bool {
+        if (min_pixel_radius <= 0.0f) return true;
+        // Camera inside AABB? Always keep.
+        if (cx >= mn[0] && cx <= mx[0] &&
+            cy >= mn[1] && cy <= mx[1] &&
+            cz >= mn[2] && cz <= mx[2]) {
+            return true;
+        }
+        float ex = 0.5f * (mx[0] - mn[0]);
+        float ey = 0.5f * (mx[1] - mn[1]);
+        float ez = 0.5f * (mx[2] - mn[2]);
+        float radius = std::sqrt(ex*ex + ey*ey + ez*ez);
+        float dx = 0.5f * (mx[0] + mn[0]) - cx;
+        float dy = 0.5f * (mx[1] + mn[1]) - cy;
+        float dz = 0.5f * (mx[2] + mn[2]) - cz;
+        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        // r_px = focal_px * radius / dist; compare r_px >= min_pixel_radius,
+        // rearranged to avoid the divide.
+        return focal_px * radius >= min_pixel_radius * dist;
+    };
+
     auto test_and_push = [&](uint32_t inst_idx) {
         const InstanceCpu& inst = m.instances[inst_idx];
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+        if (!contributionPasses(inst.world_aabb_min, inst.world_aabb_max)) return;
         if (inst.mesh_id >= m.meshes.size()) return;
         const bool reflected = inst_idx < m.instance_reflected.size()
             && m.instance_reflected[inst_idx] != 0;
@@ -854,6 +890,9 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
             uint32_t ni = stack[--sp];
             const BvhNode& n = m.bvh.nodes[ni];
             if (!aabbInFrustum(n.aabb_min, n.aabb_max, planes)) continue;
+            // Contribution cull the whole subtree: if the node's enclosing
+            // sphere is below threshold, every child is too.
+            if (!contributionPasses(n.aabb_min, n.aabb_max)) continue;
             if (n.count > 0) {
                 for (uint32_t k = 0; k < n.count; ++k) {
                     uint32_t item_idx = m.bvh.item_indices[n.right_or_first + k];
@@ -939,11 +978,12 @@ void ViewportWindow::updateCamera() {
     eye.setX(camera_target_.x() + camera_distance_ * cosf(pitch_rad) * cosf(yaw_rad));
     eye.setY(camera_target_.y() + camera_distance_ * cosf(pitch_rad) * sinf(yaw_rad));
     eye.setZ(camera_target_.z() + camera_distance_ * sinf(pitch_rad));
+    camera_eye_ = eye;
     view_matrix_.setToIdentity();
     view_matrix_.lookAt(eye, camera_target_, QVector3D(0, 0, 1));
     proj_matrix_.setToIdentity();
     float aspect = width() > 0 ? float(width()) / float(height()) : 1.0f;
-    proj_matrix_.perspective(45.0f, aspect, 0.1f, camera_distance_ * 10.0f);
+    proj_matrix_.perspective(camera_fov_y_deg_, aspect, 0.1f, camera_distance_ * 10.0f);
 }
 
 void ViewportWindow::render() {
@@ -960,6 +1000,20 @@ void ViewportWindow::render() {
     QMatrix4x4 vp = proj_matrix_ * view_matrix_;
     float planes[6][4];
     extractFrustumPlanes(vp, planes);
+
+    // Pixels-per-radian vertical focal length.  Combined with per-instance
+    // world-space radius this gives screen-space pixel size for contribution
+    // culling below.
+    const float focal_px = 0.5f * static_cast<float>(h) /
+        std::tan(qDegreesToRadians(0.5f * camera_fov_y_deg_));
+    // Drop frustum-visible objects smaller than this many pixels.  Override
+    // with IFC_MIN_PX (0 = disabled).  2 px radius = ~4x4 pixels, well below
+    // what's meaningful at normal viewing distances and eliminates the long
+    // tail of distant MEP/fixings that dominate BIM triangle counts.
+    static const float min_pixel_radius = []{
+        const char* e = std::getenv("IFC_MIN_PX");
+        return (e && *e) ? static_cast<float>(std::atof(e)) : 2.0f;
+    }();
 
     gl_->glUseProgram(main_program_);
     GLint u_vp        = gl_->glGetUniformLocation(main_program_, "u_view_projection");
@@ -981,7 +1035,7 @@ void ViewportWindow::render() {
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
-        cullAndUploadVisible(m, planes);
+        cullAndUploadVisible(m, planes, focal_px, min_pixel_radius);
         if (m.indirect_command_count == 0) continue;
 
         gl_->glBindVertexArray(m.vao);
@@ -1114,7 +1168,9 @@ void ViewportWindow::renderPickPass() {
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
-        cullAndUploadVisible(m, planes);
+        // Pick pass: contribution-cull disabled (0.0 threshold) so every
+        // frustum-visible object is clickable, even sub-pixel ones.
+        cullAndUploadVisible(m, planes, 1.0f, 0.0f);
         if (m.indirect_command_count == 0) continue;
 
         gl_->glBindVertexArray(m.vao);
