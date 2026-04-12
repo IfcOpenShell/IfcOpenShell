@@ -70,6 +70,9 @@ class QuickFavoriteProperty(PropertyGroup):
     )
 
     def set_value(self, value: Any) -> None:
+        if self.value_prop == "enum_value" and isinstance(value, int):
+            if 0 <= value < len(self.enum_items):
+                value = self.enum_items[value].name
         setattr(self, self.value_prop, value)
 
     def set_enum_items(self, items: list[tuple[str, str, str]]) -> None:
