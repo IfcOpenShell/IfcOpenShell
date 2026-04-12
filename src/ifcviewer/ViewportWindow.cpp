@@ -592,7 +592,19 @@ void ViewportWindow::processPendingUploads() {
         model_bvhs_[pu.model_id] = std::move(pu.bvh_set);
     }
 
-    qDebug("Progressive upload complete: model %u", pu.model_id);
+    size_t total_vbo = 0, total_ebo = 0;
+    for (const auto& [mid, mg] : models_gpu_) {
+        total_vbo += mg.vbo_capacity;
+        total_ebo += mg.ebo_capacity;
+    }
+    qDebug("Progressive upload complete: model %u  (this: vbo %.1f MB + ebo %.1f MB, "
+           "%u objects, %u triangles)  scene total vram %.1f MB",
+           pu.model_id,
+           mgpu.vbo_capacity / (1024.0 * 1024.0),
+           mgpu.ebo_capacity / (1024.0 * 1024.0),
+           static_cast<uint32_t>(mgpu.draw_info.size()),
+           mgpu.total_triangles,
+           (total_vbo + total_ebo) / (1024.0 * 1024.0));
     pending_uploads_.pop_front();
 }
 
@@ -953,12 +965,17 @@ void ViewportWindow::render() {
         accumulated_time_ = 0.0f;
 
         uint32_t total_obj = 0, total_tri = 0, vis_obj = 0;
+        size_t total_vram = 0, total_vbo = 0, total_ebo = 0;
+        size_t num_models = 0, num_hidden = 0;
         for (const auto& [mid, m] : models_gpu_) {
-            if (!m.hidden) {
-                total_obj += static_cast<uint32_t>(m.draw_info.size());
-                total_tri += m.total_triangles;
-            }
+            num_models++;
+            if (m.hidden) { num_hidden++; continue; }
+            total_obj += static_cast<uint32_t>(m.draw_info.size());
+            total_tri += m.total_triangles;
+            total_vbo += m.vbo_capacity;
+            total_ebo += m.ebo_capacity;
         }
+        total_vram = total_vbo + total_ebo;
         for (const auto& cmd : frame_draw_cmds_) {
             vis_obj += static_cast<uint32_t>(cmd.counts.size());
         }
@@ -971,6 +988,20 @@ void ViewportWindow::render() {
         stats.total_triangles = total_tri;
         stats.visible_triangles = visible_triangles_;
         emit frameStatsUpdated(stats);
+
+        double vis_obj_pct = total_obj > 0 ? 100.0 * vis_obj / total_obj : 0.0;
+        double vis_tri_pct = total_tri > 0 ? 100.0 * visible_triangles_ / total_tri : 0.0;
+        qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u (%.1f%%)  tri %u/%u (%.1f%%)  "
+               "vram %.1f MB (vbo %.1f + ebo %.1f)  models %zu (%zu hidden)  draws %zu  pending_uploads %zu",
+               last_fps_, 1000.0f / last_fps_,
+               vis_obj, total_obj, vis_obj_pct,
+               visible_triangles_, total_tri, vis_tri_pct,
+               total_vram / (1024.0 * 1024.0),
+               total_vbo / (1024.0 * 1024.0),
+               total_ebo / (1024.0 * 1024.0),
+               num_models, num_hidden,
+               frame_draw_cmds_.size(),
+               pending_uploads_.size());
     }
 }
 

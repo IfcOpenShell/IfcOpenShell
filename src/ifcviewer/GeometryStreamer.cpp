@@ -27,6 +27,9 @@
 #include <cstring>
 #include <algorithm>
 
+#include <QDebug>
+#include <QElapsedTimer>
+
 GeometryStreamer::GeometryStreamer(QObject* parent)
     : QObject(parent)
 {
@@ -126,6 +129,20 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
     int last_progress = 0;
 
+    // Instancing analysis: count shapes grouped by representation id.
+    struct GeomStat {
+        uint32_t count = 0;
+        size_t vertex_count = 0;
+        size_t index_count = 0;
+        std::string example_type;
+    };
+    std::unordered_map<std::string, GeomStat> geom_stats;
+    uint32_t total_shapes = 0;
+    size_t total_vertices = 0;
+    size_t total_indices = 0;
+    QElapsedTimer stream_timer;
+    stream_timer.start();
+
     do {
         if (cancel_requested_.load()) break;
 
@@ -146,6 +163,24 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         info.name = tri_elem->name();
         info.type = tri_elem->type();
         info.parent_id = tri_elem->parent_id();
+
+        // Instancing stats: key by representation id, count unique vs repeated.
+        const auto& geom = tri_elem->geometry();
+        const std::string& geom_id = geom.id();
+        size_t nv = geom.verts().size() / 3;
+        size_t ni = geom.faces().size();
+        if (!geom_id.empty()) {
+            auto& gs = geom_stats[geom_id];
+            gs.count++;
+            if (gs.count == 1) {
+                gs.vertex_count = nv;
+                gs.index_count = ni;
+                gs.example_type = info.type;
+            }
+        }
+        total_shapes++;
+        total_vertices += nv;
+        total_indices += ni;
 
         {
             std::lock_guard<std::mutex> lock(elements_mutex_);
@@ -168,6 +203,74 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
     progress_ = 100;
     emit progressChanged(100);
+
+    // === Instancing report ===
+    {
+        size_t unique_geoms = geom_stats.size();
+        size_t unique_vertices = 0;
+        size_t unique_indices = 0;
+        size_t repeated_shapes = 0; // total shapes that share a repr with another
+        for (const auto& [gid, gs] : geom_stats) {
+            unique_vertices += gs.vertex_count;
+            unique_indices += gs.index_count;
+            if (gs.count > 1) repeated_shapes += gs.count;
+        }
+
+        // Bytes assuming current layout (32 B/vertex, 4 B/index).
+        size_t baked_vbo_bytes = total_vertices * 32;
+        size_t baked_ebo_bytes = total_indices * 4;
+        size_t instanced_vbo_bytes = unique_vertices * 32;
+        size_t instanced_ebo_bytes = unique_indices * 4;
+        // Per-instance data: 64 B transform + 8 B (object_id + color).
+        size_t per_instance_bytes = 72;
+        size_t instance_ssbo_bytes = total_shapes * per_instance_bytes;
+
+        double dedup_ratio = unique_geoms > 0
+            ? static_cast<double>(total_shapes) / static_cast<double>(unique_geoms)
+            : 1.0;
+
+        qDebug("=== Instancing analysis: %s ===", path.c_str());
+        qDebug("  Stream time: %.2f s", stream_timer.elapsed() / 1000.0);
+        qDebug("  Total shapes:      %u", total_shapes);
+        qDebug("  Unique geometries: %zu  (dedup ratio %.2fx)",
+               unique_geoms, dedup_ratio);
+        qDebug("  Repeated shapes:   %zu  (%.1f%% of total)",
+               repeated_shapes,
+               total_shapes > 0 ? 100.0 * repeated_shapes / total_shapes : 0.0);
+        qDebug("  Baked geometry:    VBO %.1f MB + EBO %.1f MB = %.1f MB",
+               baked_vbo_bytes / (1024.0*1024.0),
+               baked_ebo_bytes / (1024.0*1024.0),
+               (baked_vbo_bytes + baked_ebo_bytes) / (1024.0*1024.0));
+        qDebug("  If instanced:      VBO %.1f MB + EBO %.1f MB + SSBO %.1f MB = %.1f MB",
+               instanced_vbo_bytes / (1024.0*1024.0),
+               instanced_ebo_bytes / (1024.0*1024.0),
+               instance_ssbo_bytes / (1024.0*1024.0),
+               (instanced_vbo_bytes + instanced_ebo_bytes + instance_ssbo_bytes)
+                   / (1024.0*1024.0));
+        size_t baked_total = baked_vbo_bytes + baked_ebo_bytes;
+        size_t inst_total = instanced_vbo_bytes + instanced_ebo_bytes + instance_ssbo_bytes;
+        if (inst_total > 0 && baked_total > inst_total) {
+            qDebug("  Potential savings: %.1f MB (%.1f%%)",
+                   (baked_total - inst_total) / (1024.0*1024.0),
+                   100.0 * (baked_total - inst_total) / baked_total);
+        } else {
+            qDebug("  Potential savings: none (instance overhead exceeds dedup win)");
+        }
+
+        // Top-5 most duplicated representations.
+        std::vector<std::pair<std::string, GeomStat>> sorted(geom_stats.begin(), geom_stats.end());
+        std::partial_sort(sorted.begin(),
+                          sorted.begin() + std::min<size_t>(5, sorted.size()),
+                          sorted.end(),
+                          [](const auto& a, const auto& b) { return a.second.count > b.second.count; });
+        qDebug("  Top duplicated representations:");
+        for (size_t i = 0; i < std::min<size_t>(5, sorted.size()); ++i) {
+            const auto& [gid, gs] = sorted[i];
+            qDebug("    [%zu] count=%u  verts=%zu  type=%s  repr_id=%s",
+                   i + 1, gs.count, gs.vertex_count,
+                   gs.example_type.c_str(), gid.c_str());
+        }
+    }
 }
 
 static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
