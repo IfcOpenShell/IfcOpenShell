@@ -1645,6 +1645,9 @@ class CreateDrawing(bpy.types.Operator):
         # local Z axis in world space points downward, the camera looks upward.
         camera_looks_up = self.camera.matrix_world.col[2].z < 0
 
+        # GUIDs of pairs under investigation (first 12 chars used as key)
+        _dg = {"39Iwvbn41B7O", "08yv0FO$j2Aw", "1dM2d4kqjFH8", "2lwj_pzhrADf"}
+
         obj_cache = {}
 
         def get_obj(guid):
@@ -1667,9 +1670,11 @@ class CreateDrawing(bpy.types.Operator):
             key = (min(guid_a, guid_b), max(guid_a, guid_b))
             if key in adjacency_cache:
                 return adjacency_cache[key]
+            _dbg = guid_a[:12] in _dg and guid_b[:12] in _dg
             obj_a = get_obj(guid_a)
             obj_b = get_obj(guid_b)
             if obj_a is None or obj_b is None or obj_a.type != "MESH" or obj_b.type != "MESH":
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS (no mesh)")
                 adjacency_cache[key] = True
                 return True
             # Quick AABB guard
@@ -1681,9 +1686,11 @@ class CreateDrawing(bpy.types.Operator):
                 min_b = min(c[axis] for c in corners_b)
                 max_b = max(c[axis] for c in corners_b)
                 if min_a > max_b + tol:
+                    if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} FAIL aabb axis={axis}")
                     adjacency_cache[key] = False
                     return False
                 if min_b > max_a + tol:
+                    if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} FAIL aabb axis={axis}")
                     adjacency_cache[key] = False
                     return False
             # Proximity check: vertex-to-vertex OR vertex-to-edge.
@@ -1718,8 +1725,10 @@ class CreateDrawing(bpy.types.Operator):
                 # Slower vertex-on-edge check for containment cases
                 has_shared = vertex_near_edges(verts_b, obj_a, tol_sq) or vertex_near_edges(verts_a, obj_b, tol_sq)
             if not has_shared:
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} FAIL proximity")
                 adjacency_cache[key] = False
                 return False
+            if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS proximity")
             # Containment check: if one AABB fully contains the other, the
             # dominant-normal test is unreliable (a flat inner element's largest
             # face is its top/bottom, not its side face). Skip normal check.
@@ -1733,6 +1742,7 @@ class CreateDrawing(bpy.types.Operator):
 
             contained = aabb_contains(corners_a, corners_b) or aabb_contains(corners_b, corners_a)
             if contained:
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS contained")
                 adjacency_cache[key] = True
                 return True
             # Coplanarity check: use the largest-face normal for each object.
@@ -1747,27 +1757,41 @@ class CreateDrawing(bpy.types.Operator):
             n_a = dominant_world_normal(obj_a)
             n_b = dominant_world_normal(obj_b)
             if n_a is None or n_b is None:
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} PASS (no normal)")
                 adjacency_cache[key] = True
                 return True
             dot = abs(n_a.dot(n_b))
+            if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} n_a={tuple(round(x,3) for x in n_a)} n_b={tuple(round(x,3) for x in n_b)} dot={dot:.6f}")
             if dot <= 1.0 - 3.8e-5:  # ~0.5° tolerance
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} FAIL normal dot={dot:.6f}")
                 adjacency_cache[key] = False
                 return False
-            # Check whether both elements are at the same depth relative to the
-            # camera. Project vertices onto the camera look direction: elements
-            # at the same camera depth have overlapping ranges; depth-stacked
-            # elements (one in front of the other) have separated ranges.
-            # Using the camera direction rather than n_a is critical — n_a may
-            # be perpendicular to the camera (e.g. X-normal boxes in plan view)
-            # which would produce zero overlap for legitimate side-by-side pairs.
+            # Face-plane check: parallel normals don't guarantee the elements are
+            # on the same plane — they could be offset (e.g. two walls facing the
+            # same direction at different Y positions meeting at a corner).
+            # Project all vertices of both elements onto n_a (using n_a for both
+            # so that anti-parallel normals +Y/-Y produce matching values).
+            #
+            plane_pos_a = {round(v.dot(n_a), 5) for v in verts_a}
+            plane_pos_b = {round(v.dot(n_a), 5) for v in verts_b}
+            same_plane = any(abs(pa - pb) < tol for pa in plane_pos_a for pb in plane_pos_b)
+            if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} plane_pos_a={sorted(plane_pos_a)} plane_pos_b={sorted(plane_pos_b)} same_plane={same_plane}")
+            if not same_plane:
+                if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} FAIL face-plane")
+                adjacency_cache[key] = False
+                return False
+            # Depth check: confirm both elements span the same camera depth range.
+            # Catches elements at the same X-Y face plane but different Z heights
+            # (e.g. same wall type on two different floor levels).
             projs_a = [v.dot(_cam_look) for v in verts_a]
             projs_b = [v.dot(_cam_look) for v in verts_b]
             range_a = (min(projs_a), max(projs_a))
             range_b = (min(projs_b), max(projs_b))
             overlap = min(range_a[1], range_b[1]) - max(range_a[0], range_b[0])
-            same_plane = overlap > tol
-            adjacency_cache[key] = same_plane
-            return same_plane
+            same_depth = overlap > tol
+            if _dbg: print(f"[DBG] COPL {guid_a[:12]}/{guid_b[:12]} depth range_a={tuple(round(x,3) for x in range_a)} range_b={tuple(round(x,3) for x in range_b)} overlap={overlap:.4f} -> {'PASS' if same_depth else 'FAIL'}")
+            adjacency_cache[key] = same_depth
+            return same_depth
 
         def parse_line(d):
             # Format is "Mx0,y0 Lx1,y1" (no space after M/L)
@@ -1897,6 +1921,15 @@ class CreateDrawing(bpy.types.Operator):
             if kind == "h":
                 return ((lo, coord), (hi, coord))
             return ((coord, lo), (coord, hi))
+
+        def ivs_equal(a, b):
+            """True if two interval lists are equal within TOL."""
+            if len(a) != len(b):
+                return False
+            return all(
+                abs(a_lo - b_lo) <= TOL and abs(a_hi - b_hi) <= TOL
+                for (a_lo, a_hi), (b_lo, b_hi) in zip(a, b)
+            )
 
         # Group projection <g> elements by their immediate parent
         parent_to_groups = {}
@@ -2076,12 +2109,17 @@ class CreateDrawing(bpy.types.Operator):
                 for j, (grp_j, mat_j, face_j, style_j, segs_j, guid_j) in enumerate(group_data):
                     if j <= i:
                         continue
+                    _wp = guid_i[:12] in _dg and guid_j[:12] in _dg
                     if not mat_keys_match(mat_i, mat_j, face_i, face_j):
+                        if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} SKIP mat mat_i={mat_i} mat_j={mat_j} face_i={face_i} face_j={face_j}")
                         continue
                     if style_j != style_i:
+                        if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} SKIP style style_i={style_i} style_j={style_j}")
                         continue
                     if not are_coplanar_and_adjacent(guid_i, guid_j):
+                        if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} SKIP coplanar")
                         continue
+                    if _wp: print(f"[DBG] PAIR {guid_i[:12]}/{guid_j[:12]} JOINED — segs_i={len(segs_i)} segs_j={len(segs_j)}")
                     matched = 0
 
                     # Group each element's segments by axis-aligned line.
@@ -2105,6 +2143,12 @@ class CreateDrawing(bpy.types.Operator):
                     lines_i = group_by_line(segs_i)
                     lines_j = group_by_line(segs_j)
 
+                    # Track whether bilateral found shared keys but skipped them
+                    # due to offset overlap.  If so, both elements have explicit
+                    # segments at the shared line — the unilateral fallback must
+                    # not run for this pair (it would remove the same boundary
+                    # segments that bilateral correctly rejected).
+                    _bilateral_had_explicit_keys = False
                     for key in set(lines_i) & set(lines_j):
                         entry_i = lines_i[key]
                         entry_j = lines_j[key]
@@ -2113,6 +2157,18 @@ class CreateDrawing(bpy.types.Operator):
                         shared = ivs_intersect(union_i, union_j)
                         if not shared:
                             continue
+                        _bilateral_had_explicit_keys = True
+                        # Only remove when the shared portion covers the full union
+                        # of at least one element on this line.  An offset partial
+                        # overlap — where two back-to-back walls happen to have
+                        # segments on the same line but at different running-direction
+                        # positions — would cover neither element's full union and
+                        # must not be removed (the line between them is a real
+                        # architectural boundary).
+                        if not (ivs_equal(shared, union_i) or ivs_equal(shared, union_j)):
+                            if _wp: print(f"[DBG] SKIP offset-overlap key={key} shared={shared} union_i={union_i} union_j={union_j}")
+                            continue
+                        if _wp: print(f"[DBG] MATCHED key={key} shared={shared} union_i={union_i} union_j={union_j}")
                         matched += len(shared)
                         kind = key[0]
                         coord = entry_i["coord"]
@@ -2131,16 +2187,18 @@ class CreateDrawing(bpy.types.Operator):
                     # (not explicitly drawn as a path segment), segments from the other
                     # element that lie on the boundary of that element's SVG bbox are
                     # still on the shared face and should be removed.
-                    if matched == 0 and segs_i and segs_j:
+                    if matched == 0 and not _bilateral_had_explicit_keys and segs_i and segs_j:
                         bbox_i = segs_bbox(segs_i)
                         bbox_j = segs_bbox(segs_j)
                         if bbox_i and bbox_j:
                             for path_j, line_j in segs_j:
                                 if seg_on_boundary_of(line_j, bbox_i, bbox_j):
+                                    if _wp: print(f"[DBG] UNILATERAL j->i seg={line_j}")
                                     to_remove.add(id(path_j))
                                     matched += 1
                             for path_i, line_i in segs_i:
                                 if seg_on_boundary_of(line_i, bbox_j, bbox_i):
+                                    if _wp: print(f"[DBG] UNILATERAL i->j seg={line_i}")
                                     to_remove.add(id(path_i))
                                     matched += 1
 
