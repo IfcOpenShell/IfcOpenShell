@@ -38,6 +38,15 @@
 #include "InstancedGeometry.h"
 #include "SidecarCache.h"
 
+// Matches GL_DRAW_INDIRECT_BUFFER layout for glMultiDrawElementsIndirect.
+struct DrawElementsIndirectCommand {
+    uint32_t count;
+    uint32_t instanceCount;
+    uint32_t firstIndex;
+    uint32_t baseVertex;
+    uint32_t baseInstance;
+};
+
 // Per-model GPU state for the instanced render path.
 //
 //   VBO: local-coord interleaved verts (pos3 + normal3 + color1_packed) — 28 B.
@@ -71,13 +80,15 @@ struct ModelGpuData {
     ModelBvh             bvh;
 
     // Dynamic visible-instance index buffer (std430, binding = 1).
-    // Re-uploaded each frame from frame_visible_scratch_.
+    // Re-uploaded each frame from visible_flat_.
     GLuint  visible_ssbo = 0;
     size_t  visible_ssbo_capacity = 0;  // bytes
 
-    // Per-mesh visible-list offset/count, rebuilt each frame.
-    std::vector<uint32_t> mesh_vis_first;
-    std::vector<uint32_t> mesh_vis_count;
+    // GL_DRAW_INDIRECT_BUFFER of DrawElementsIndirectCommand[], one per
+    // non-empty mesh.  Re-uploaded each frame.
+    GLuint  indirect_buffer = 0;
+    size_t  indirect_capacity = 0;        // bytes
+    uint32_t indirect_command_count = 0;  // valid commands this frame
 
     bool finalized = false;
     bool hidden    = false;
@@ -152,8 +163,9 @@ private:
     bool growModelSsbo(ModelGpuData& m, size_t needed_total);
     ModelGpuData& getOrCreateModel(uint32_t model_id);
 
-    // Populate m.mesh_vis_first / mesh_vis_count and upload visible indices
-    // to m.visible_ssbo.  Uses BVH when available, else linear scan.
+    // Frustum-cull m's instances (BVH if available, else linear scan),
+    // build the per-mesh DrawElementsIndirectCommand array + flat visible
+    // list, and upload both to m.indirect_buffer / m.visible_ssbo.
     void cullAndUploadVisible(ModelGpuData& m, const float planes[6][4]);
 
     // Mouse interaction
@@ -194,9 +206,12 @@ private:
 
     // Reused scratch: visible-instance index lists per mesh, flattened into
     // `visible_flat_` for upload.  Both live in the parent object to avoid
-    // per-frame allocation.
-    std::vector<std::vector<uint32_t>> visible_by_mesh_;
-    std::vector<uint32_t>              visible_flat_;
+    // per-frame allocation.  indirect_scratch_ is the matching array of
+    // DrawElementsIndirectCommand records — forward-declared as bytes so
+    // the header doesn't need the struct definition.
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_;
+    std::vector<uint32_t>                  visible_flat_;
+    std::vector<DrawElementsIndirectCommand> indirect_scratch_;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};

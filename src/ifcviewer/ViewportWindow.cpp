@@ -35,6 +35,8 @@ static const size_t INITIAL_EBO_SIZE  = 32 * 1024 * 1024;   // 32 MB
 static const size_t INITIAL_SSBO_SIZE = 4  * 1024 * 1024;   // 4 MB (~52k instances)
 static const size_t MAX_BUFFER_SIZE   = 4ull * 1024 * 1024 * 1024;  // 4 GB
 
+static_assert(sizeof(DrawElementsIndirectCommand) == 20, "indirect cmd must be 20 bytes");
+
 // -----------------------------------------------------------------------------
 // Shaders
 // -----------------------------------------------------------------------------
@@ -55,6 +57,7 @@ static const size_t MAX_BUFFER_SIZE   = 4ull * 1024 * 1024 * 1024;  // 4 GB
 
 static const char* MAIN_VERTEX_SHADER = R"(
 #version 450 core
+#extension GL_ARB_shader_draw_parameters : require
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec4 a_color;
@@ -74,7 +77,6 @@ layout(std430, binding = 1) readonly buffer VisibleIndices {
 };
 
 uniform mat4 u_view_projection;
-uniform uint u_instance_offset;
 uniform uint u_selected_id;
 
 out vec3 v_normal;
@@ -83,7 +85,8 @@ flat out uint v_object_id;
 flat out uint v_selected;
 
 void main() {
-    uint iid = visible[u_instance_offset + uint(gl_InstanceID)];
+    uint slot = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
+    uint iid = visible[slot];
     InstanceRecord inst = instances[iid];
     vec4 world = inst.transform * vec4(a_position, 1.0);
     gl_Position = u_view_projection * world;
@@ -132,6 +135,7 @@ void main() {
 
 static const char* PICK_VERTEX_SHADER = R"(
 #version 450 core
+#extension GL_ARB_shader_draw_parameters : require
 layout(location = 0) in vec3 a_position;
 
 struct InstanceRecord {
@@ -149,12 +153,12 @@ layout(std430, binding = 1) readonly buffer VisibleIndices {
 };
 
 uniform mat4 u_view_projection;
-uniform uint u_instance_offset;
 
 flat out uint v_object_id;
 
 void main() {
-    uint iid = visible[u_instance_offset + uint(gl_InstanceID)];
+    uint slot = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
+    uint iid = visible[slot];
     InstanceRecord inst = instances[iid];
     gl_Position = u_view_projection * inst.transform * vec4(a_position, 1.0);
     v_object_id = inst.object_id;
@@ -302,6 +306,7 @@ ViewportWindow::~ViewportWindow() {
                 if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
                 if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
                 if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
+                if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
@@ -630,6 +635,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.ebo)  gl_->glDeleteBuffers(1, &existing->second.ebo);
         if (existing->second.ssbo) gl_->glDeleteBuffers(1, &existing->second.ssbo);
         if (existing->second.visible_ssbo) gl_->glDeleteBuffers(1, &existing->second.visible_ssbo);
+        if (existing->second.indirect_buffer) gl_->glDeleteBuffers(1, &existing->second.indirect_buffer);
         models_gpu_.erase(existing);
     }
 
@@ -706,6 +712,7 @@ void ViewportWindow::resetScene() {
         if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
         if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
+        if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
@@ -731,6 +738,7 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.ebo)  gl_->glDeleteBuffers(1, &it->second.ebo);
         if (it->second.ssbo) gl_->glDeleteBuffers(1, &it->second.ssbo);
         if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
+        if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
         models_gpu_.erase(it);
     }
 }
@@ -806,26 +814,36 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         for (uint32_t i = 0; i < m.instances.size(); ++i) test_and_push(i);
     }
 
-    // Flatten into visible_flat_ and record per-mesh ranges.
+    // Flatten into visible_flat_ and build one DrawElementsIndirectCommand
+    // per non-empty mesh.
     visible_flat_.clear();
-    m.mesh_vis_first.assign(m.meshes.size(), 0);
-    m.mesh_vis_count.assign(m.meshes.size(), 0);
+    indirect_scratch_.clear();
     for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-        m.mesh_vis_first[mi] = static_cast<uint32_t>(visible_flat_.size());
-        m.mesh_vis_count[mi] = static_cast<uint32_t>(visible_by_mesh_[mi].size());
+        const auto& mesh = m.meshes[mi];
+        const uint32_t vis_count = static_cast<uint32_t>(visible_by_mesh_[mi].size());
+        if (vis_count == 0 || mesh.index_count == 0) continue;
+
+        DrawElementsIndirectCommand cmd;
+        cmd.count         = mesh.index_count;
+        cmd.instanceCount = vis_count;
+        cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
+        cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
+        cmd.baseInstance  = static_cast<uint32_t>(visible_flat_.size());
+        indirect_scratch_.push_back(cmd);
+
         visible_flat_.insert(visible_flat_.end(),
                              visible_by_mesh_[mi].begin(),
                              visible_by_mesh_[mi].end());
     }
+    m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
 
-    // Grow/create visible SSBO as needed. Keep at least 4 bytes so the binding
-    // is always valid even when nothing is visible.
-    size_t bytes = std::max<size_t>(visible_flat_.size() * sizeof(uint32_t),
-                                    sizeof(uint32_t));
-    if (m.visible_ssbo == 0 || m.visible_ssbo_capacity < bytes) {
+    // Upload visible list (keep binding alive even when empty).
+    size_t vis_bytes = std::max<size_t>(visible_flat_.size() * sizeof(uint32_t),
+                                        sizeof(uint32_t));
+    if (m.visible_ssbo == 0 || m.visible_ssbo_capacity < vis_bytes) {
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
         size_t new_cap = m.visible_ssbo_capacity ? m.visible_ssbo_capacity : 4096;
-        while (new_cap < bytes) new_cap *= 2;
+        while (new_cap < vis_bytes) new_cap *= 2;
         gl_->glCreateBuffers(1, &m.visible_ssbo);
         gl_->glNamedBufferStorage(m.visible_ssbo, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
         m.visible_ssbo_capacity = new_cap;
@@ -834,6 +852,19 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         gl_->glNamedBufferSubData(m.visible_ssbo, 0,
             visible_flat_.size() * sizeof(uint32_t), visible_flat_.data());
     }
+
+    // Upload indirect command buffer.
+    size_t ind_bytes = indirect_scratch_.size() * sizeof(DrawElementsIndirectCommand);
+    if (ind_bytes == 0) return;
+    if (m.indirect_buffer == 0 || m.indirect_capacity < ind_bytes) {
+        if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
+        size_t new_cap = m.indirect_capacity ? m.indirect_capacity : 4096;
+        while (new_cap < ind_bytes) new_cap *= 2;
+        gl_->glCreateBuffers(1, &m.indirect_buffer);
+        gl_->glNamedBufferStorage(m.indirect_buffer, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        m.indirect_capacity = new_cap;
+    }
+    gl_->glNamedBufferSubData(m.indirect_buffer, 0, ind_bytes, indirect_scratch_.data());
 }
 
 void ViewportWindow::updateCamera() {
@@ -869,7 +900,6 @@ void ViewportWindow::render() {
     GLint u_vp        = gl_->glGetUniformLocation(main_program_, "u_view_projection");
     GLint u_light     = gl_->glGetUniformLocation(main_program_, "u_light_dir");
     GLint u_sel       = gl_->glGetUniformLocation(main_program_, "u_selected_id");
-    GLint u_inst_off  = gl_->glGetUniformLocation(main_program_, "u_instance_offset");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
     gl_->glUniform3f(u_light, 0.3f, 0.5f, 0.8f);
     gl_->glUniform1ui(u_sel, selected_object_id_);
@@ -882,29 +912,23 @@ void ViewportWindow::render() {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         cullAndUploadVisible(m, planes);
-        if (visible_flat_.empty()) continue;
+        if (m.indirect_command_count == 0) continue;
 
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
+        gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
+        gl_->glMultiDrawElementsIndirect(
+            GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+            static_cast<GLsizei>(m.indirect_command_count), 0);
 
-        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-            const auto& mesh = m.meshes[mi];
-            uint32_t vis_count = m.mesh_vis_count[mi];
-            if (vis_count == 0 || mesh.index_count == 0) continue;
-            gl_->glUniform1ui(u_inst_off, m.mesh_vis_first[mi]);
-            gl_->glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES,
-                static_cast<GLsizei>(mesh.index_count),
-                GL_UNSIGNED_INT,
-                reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh.ebo_byte_offset)),
-                static_cast<GLsizei>(vis_count),
-                static_cast<GLint>(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES));
-            visible_triangles_ += (mesh.index_count / 3) * vis_count;
-            visible_objects_   += vis_count;
-            ++instanced_draws_;
+        for (const auto& cmd : indirect_scratch_) {
+            visible_triangles_ += (cmd.count / 3) * cmd.instanceCount;
+            visible_objects_   += cmd.instanceCount;
         }
+        instanced_draws_ += m.indirect_command_count;
     }
+    gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
     renderAxisGizmo();
 
@@ -971,33 +995,23 @@ void ViewportWindow::renderPickPass() {
 
     gl_->glUseProgram(pick_program_);
     GLint u_vp       = gl_->glGetUniformLocation(pick_program_, "u_view_projection");
-    GLint u_inst_off = gl_->glGetUniformLocation(pick_program_, "u_instance_offset");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
 
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         cullAndUploadVisible(m, planes);
-        if (visible_flat_.empty()) continue;
+        if (m.indirect_command_count == 0) continue;
 
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
-
-        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-            const auto& mesh = m.meshes[mi];
-            uint32_t vis_count = m.mesh_vis_count[mi];
-            if (vis_count == 0 || mesh.index_count == 0) continue;
-            gl_->glUniform1ui(u_inst_off, m.mesh_vis_first[mi]);
-            gl_->glDrawElementsInstancedBaseVertex(
-                GL_TRIANGLES,
-                static_cast<GLsizei>(mesh.index_count),
-                GL_UNSIGNED_INT,
-                reinterpret_cast<const void*>(static_cast<uintptr_t>(mesh.ebo_byte_offset)),
-                static_cast<GLsizei>(vis_count),
-                static_cast<GLint>(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES));
-        }
+        gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
+        gl_->glMultiDrawElementsIndirect(
+            GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+            static_cast<GLsizei>(m.indirect_command_count), 0);
     }
+    gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
