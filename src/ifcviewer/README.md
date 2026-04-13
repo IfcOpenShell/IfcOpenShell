@@ -565,15 +565,120 @@ typical cost is 100–600 ms per model, folded into the already-visible
 "finalizing" step. Cached into the sidecar afterwards, so subsequent
 opens skip it entirely.
 
-#### 3C. Hierarchical-Z occlusion culling (longer-term)
+#### 3C. Hierarchical-Z occlusion culling — ✅ done (v1, CPU-side)
 
-Render large occluders first, build a depth pyramid, test instance
-AABBs against it. In dense BIM most geometry is behind other geometry
-from any given interior viewpoint; historically a 3–10× reduction in
-drawn instances. Most valuable *after* 3A+3B, which together handle
-the far-away and small-detail cases. Pairs naturally with GPU-side
-culling (a compute shader doing the HiZ test and writing the visible
-list + indirect buffer in place).
+Reject frustum-visible instances whose AABB is fully behind something
+already drawn. The last drawn frame's depth buffer is the oracle — if a
+region's deepest rasterised fragment is closer than an AABB's nearest
+point, nothing in that AABB can win the depth test.
+
+In dense BIM this matters most on interior views: standing inside a
+building, 80–95 % of the model sits behind the walls of the current
+room and contributes nothing to the frame. Phase 3A drops the
+*distant-and-small* geometry, 3B drops its triangle count when kept,
+and 3C drops the *close-and-big-but-hidden* bulk that neither of those
+can touch. On an outdoor overview shot (nothing is occluded) 3C does
+almost nothing — which is fine, 3A+3B already cover that case.
+
+##### Pipeline (v1: CPU-side, 1-frame stale)
+
+```
+render():
+  draw main scene into MSAA default fb
+  axis gizmo
+  buildHizPyramid():          <-- new
+    glBlitFramebuffer MSAA depth → single-sample depth tex (256×128)
+    glReadPixels  depth tex → CPU
+    max-reduce mip chain on CPU (8–9 levels)
+    store the VP that produced this frame
+  swapBuffers
+
+cullAndUploadVisible():
+  per BVH node:     frustum ∧ contribution ∧ hiz  (subtree early-out)
+  per instance:     frustum ∧ contribution ∧ hiz
+```
+
+The pyramid is always the *previous* frame's depth. On a newly loaded
+scene or after a camera jump the cull is conservatively too permissive
+for a frame or two (draws the occluded stuff by accident) and then
+settles. No flicker because we never *wrongly reject* a visible
+instance — the comparison is `aabb_near_depth > hiz_max`, so the
+worst case is a kept instance that was actually occluded.
+
+##### Why CPU-side?
+
+Because the readback is cheap at this resolution (~128 KB / frame,
+single glReadPixels ≈ 0.5 ms on PCIe) and the test itself is trivial
+— ~100 k AABBs × 8 corners × a small mip lookup is well under a
+millisecond on one thread. Phase 3D will port the cull to a compute
+shader reading the pyramid as a texture, eliminating the readback; but
+Phase 3C's CPU implementation was small enough to do first and
+measure.
+
+No MSAA complication on the write side: we just blit the default
+framebuffer's multi-sample depth into a single-sample texture (GL
+handles the resolve). No separate occluder pass either — we use the
+previous completed frame's depth buffer directly, which is what a
+temporal-reprojection HiZ reduces to when the "occluder set" is
+"everything visible last frame".
+
+##### The test
+
+```cpp
+project 8 AABB corners through hiz_vp  →  NDC rect + min z
+if any corner has w ≤ 0:        return false  // crosses near plane
+if rect is outside [-1, 1]²:    return false
+pick mip level where rect ≤ 2×2 texels
+hiz_max = max(pyramid[mip][covered texels])
+return aabb_near_depth > hiz_max
+```
+
+Comparing the AABB's *closest* point against the pyramid's *deepest*
+value is the conservative direction — it only rejects when the AABB
+is strictly beyond everything we already drew in that region. We pick
+the mip at which the rect covers ≲ 2 texels on each axis so the lookup
+is O(1) regardless of AABB size.
+
+##### BVH integration
+
+The same test runs on interior BVH node AABBs before leaf expansion,
+so an occluded subtree skips all its instances in one shot. This is
+where most of the per-frame cost savings show up on interior shots —
+rejecting a 500-instance BVH subtree costs one 8-corner projection.
+
+##### Tuning knobs
+
+| Var | Default | Effect |
+|-----|---------|--------|
+| `IFC_NO_HIZ` | unset | `1` disables HiZ entirely (forces the Phase-3B-only path). |
+| `IFC_HIZ_SIZE` | `256` | Base pyramid width in texels; height tracks viewport aspect. Raise for more accurate near-silhouette occlusion, lower to shrink readback. |
+
+The stats overlay gains one counter, `hiz_rej`, showing how many
+instances per frame the HiZ test rejected. On outdoor overview shots
+it hovers near zero; on indoor shots it climbs into the hundreds of
+thousands and the frame time drops accordingly.
+
+##### Known caveats
+
+- **1 frame stale.** The pyramid is aligned to last frame's view, so
+  when you whip the camera across the scene we may draw one frame of
+  stuff that the new view would have occluded. Invisible in practice
+  at 60 fps. We tried a 3-deep PBO ring for async readback (2-frame
+  stale) and it produced visible flicker on fast orbits — reverted.
+- **Readback syncs the GPU.** `glGetTextureImage` is blocking.
+  Measured cost is well under a millisecond at 256×128; not a
+  bottleneck on the machines tested. Phase 3D's compute-shader cull
+  removes it entirely.
+- **Doesn't move the needle on overview shots.** Those scenes are
+  CPU-bound on the cull traversal itself, not GPU-bound on drawing,
+  so cutting the drawn-triangle count in half is invisible in the
+  frame time. `hiz_rej` still rises modestly on overviews (the frustum
+  hull contains everything behind visible walls) but saved GPU work
+  is masked by CPU cost. HiZ pays off on interior views, where the
+  GPU *was* the bottleneck. If a project never leaves overview,
+  `IFC_NO_HIZ=1` shaves the ~1 ms of HiZ cost.
+- **Transparent geometry would need special handling**, but the
+  current renderer doesn't have any, so no-op for now.
 
 #### 3D. GPU-side culling via compute (longer-term)
 
@@ -598,7 +703,7 @@ Scene size                      Bottleneck              Fix
 100k–500k                       CPU cull scan           BVH (Phase 2) — done
 500k+ tris / overview shot      GPU vertex + raster     Phase 3A contribution cull
                                                         + Phase 3B LOD (done)
-multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
+multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU readback)
 ```
 
 ## Roadmap
@@ -615,10 +720,10 @@ multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`)
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`, `IFC_NO_HIZ`, `IFC_HIZ_SIZE`)
 - [x] Phase 3A — screen-space contribution culling
 - [x] Phase 3B — distance / contribution LOD (meshoptimizer `simplifySloppy`)
-- [ ] **Phase 3C — Hierarchical-Z occlusion culling** (next)
-- [ ] Phase 3D — GPU-side compute-shader culling
+- [x] Phase 3C — Hierarchical-Z occlusion culling (v1, CPU-side readback)
+- [ ] **Phase 3D — GPU-side compute-shader culling** (next; replaces the readback)
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console

@@ -343,6 +343,10 @@ ViewportWindow::~ViewportWindow() {
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
+            if (hiz_fbo_)         gl_->glDeleteFramebuffers(1, &hiz_fbo_);
+            if (hiz_depth_tex_)   gl_->glDeleteTextures(1, &hiz_depth_tex_);
+            if (hiz_resolve_fbo_) gl_->glDeleteFramebuffers(1, &hiz_resolve_fbo_);
+            if (hiz_resolve_depth_tex_) gl_->glDeleteTextures(1, &hiz_resolve_depth_tex_);
         }
         context_->doneCurrent();
     }
@@ -821,6 +825,240 @@ void ViewportWindow::removeModel(uint32_t model_id) {
 
 void ViewportWindow::setSelectedObjectId(uint32_t id) { selected_object_id_ = id; }
 
+// --- HiZ occlusion culling (Phase 3C) -----------------------------------
+
+// Baseline HiZ resolution.  256x128 is enough to cull big occluders
+// (walls, slabs) reliably; finer detail doesn't help much because we're
+// sampling the pyramid at the mip level where the AABB's rect is ~2
+// texels anyway.  Readback cost is ~128 KB/frame ≈ negligible.
+// IFC_HIZ_SIZE=<N> overrides the width; height tracks aspect.
+static int hizBaseWidth() {
+    static const int w = []{
+        const char* e = std::getenv("IFC_HIZ_SIZE");
+        return (e && *e) ? std::max(64, std::atoi(e)) : 256;
+    }();
+    return w;
+}
+
+static bool hizEnabled() {
+    static const bool disabled = []{
+        const char* e = std::getenv("IFC_NO_HIZ");
+        return e && e[0] == '1';
+    }();
+    return !disabled;
+}
+
+void ViewportWindow::buildHizPyramid() {
+    if (!gl_initialized_) return;
+
+    const int win_w = width()  * devicePixelRatio();
+    const int win_h = height() * devicePixelRatio();
+    if (win_w <= 0 || win_h <= 0) return;
+
+    const int base_w = hizBaseWidth();
+    const int base_h = std::max(1, (base_w * win_h) / win_w);
+
+    // Depth format must match the default FBO's depth format for the blit
+    // to succeed — GL spec requires identical internal formats for depth
+    // blits.  Qt's default surface uses 24-bit depth (setDepthBufferSize(24)
+    // in initGL), so we match with DEPTH_COMPONENT24 on both textures.
+    //
+    // Resolve target (full window size, single sample).  Needed because
+    // GL also forbids scale-blitting from an MSAA source: resolve at 1:1
+    // first, then down-blit.
+    if (win_w != hiz_resolve_w_ || win_h != hiz_resolve_h_) {
+        if (hiz_resolve_fbo_)        gl_->glDeleteFramebuffers(1, &hiz_resolve_fbo_);
+        if (hiz_resolve_depth_tex_)  gl_->glDeleteTextures(1, &hiz_resolve_depth_tex_);
+        gl_->glCreateTextures(GL_TEXTURE_2D, 1, &hiz_resolve_depth_tex_);
+        gl_->glTextureStorage2D(hiz_resolve_depth_tex_, 1,
+                                GL_DEPTH_COMPONENT24, win_w, win_h);
+        gl_->glCreateFramebuffers(1, &hiz_resolve_fbo_);
+        gl_->glNamedFramebufferTexture(hiz_resolve_fbo_, GL_DEPTH_ATTACHMENT,
+                                       hiz_resolve_depth_tex_, 0);
+        hiz_resolve_w_ = win_w;
+        hiz_resolve_h_ = win_h;
+    }
+
+    if (base_w != hiz_base_w_ || base_h != hiz_base_h_) {
+        if (hiz_fbo_)       gl_->glDeleteFramebuffers(1, &hiz_fbo_);
+        if (hiz_depth_tex_) gl_->glDeleteTextures(1, &hiz_depth_tex_);
+        gl_->glCreateTextures(GL_TEXTURE_2D, 1, &hiz_depth_tex_);
+        gl_->glTextureStorage2D(hiz_depth_tex_, 1, GL_DEPTH_COMPONENT24,
+                                base_w, base_h);
+        gl_->glCreateFramebuffers(1, &hiz_fbo_);
+        gl_->glNamedFramebufferTexture(hiz_fbo_, GL_DEPTH_ATTACHMENT,
+                                       hiz_depth_tex_, 0);
+
+        hiz_base_w_ = base_w;
+        hiz_base_h_ = base_h;
+        hiz_depth_readback_.assign(base_w * base_h, 1.0f);
+
+        // Build the mip-offset table.  Level 0 = base_w x base_h.
+        hiz_mip_offset_.clear();
+        hiz_mip_w_.clear();
+        hiz_mip_h_.clear();
+        uint32_t off = 0;
+        int mw = base_w, mh = base_h;
+        while (mw >= 1 && mh >= 1) {
+            hiz_mip_offset_.push_back(off);
+            hiz_mip_w_.push_back(static_cast<uint32_t>(mw));
+            hiz_mip_h_.push_back(static_cast<uint32_t>(mh));
+            off += static_cast<uint32_t>(mw) * static_cast<uint32_t>(mh);
+            if (mw == 1 && mh == 1) break;
+            mw = std::max(1, mw / 2);
+            mh = std::max(1, mh / 2);
+        }
+        hiz_pyramid_.assign(off, 1.0f);
+    }
+
+    // Two-step: MSAA default-fb → full-size SS resolve, then SS → down-scaled.
+    // GL forbids scaling a blit whose source is multisampled, and also
+    // requires matching depth internal formats — hence this dance.
+    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hiz_resolve_fbo_);
+    gl_->glBlitFramebuffer(0, 0, win_w, win_h,
+                           0, 0, win_w, win_h,
+                           GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, hiz_resolve_fbo_);
+    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hiz_fbo_);
+    gl_->glBlitFramebuffer(0, 0, win_w, win_h,
+                           0, 0, hiz_base_w_, hiz_base_h_,
+                           GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    // One-shot diagnostic so blit failures aren't silent.  We only warn
+    // the first handful of times — GL errors can pile up and spam.
+    static int err_warn_budget = 3;
+    if (err_warn_budget > 0) {
+        GLenum e = gl_->glGetError();
+        if (e != GL_NO_ERROR) {
+            qWarning("HiZ blit/readback GL error 0x%04x (win %dx%d → %dx%d → %dx%d)",
+                     e, win_w, win_h, win_w, win_h, hiz_base_w_, hiz_base_h_);
+            --err_warn_budget;
+        }
+    }
+
+    // Synchronous readback into level 0 of the pyramid.  At 256x128 this
+    // is ~128 KB and the driver copy is fast enough not to matter in
+    // practice; PBO-ring async was tried and made orbiting flicker worse
+    // (2-frame-stale depth vs 1-frame).
+    gl_->glGetTextureImage(hiz_depth_tex_, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+                           static_cast<GLsizei>(hiz_depth_readback_.size() * sizeof(float)),
+                           hiz_depth_readback_.data());
+
+    // Copy level 0 into the pyramid, then max-reduce subsequent levels.
+    std::memcpy(hiz_pyramid_.data() + hiz_mip_offset_[0],
+                hiz_depth_readback_.data(),
+                hiz_depth_readback_.size() * sizeof(float));
+    for (size_t lvl = 1; lvl < hiz_mip_offset_.size(); ++lvl) {
+        const uint32_t pw = hiz_mip_w_[lvl - 1];
+        const uint32_t ph = hiz_mip_h_[lvl - 1];
+        const uint32_t cw = hiz_mip_w_[lvl];
+        const uint32_t ch = hiz_mip_h_[lvl];
+        const float* parent = hiz_pyramid_.data() + hiz_mip_offset_[lvl - 1];
+        float* child  = hiz_pyramid_.data() + hiz_mip_offset_[lvl];
+        for (uint32_t y = 0; y < ch; ++y) {
+            const uint32_t py0 = std::min(2 * y,     ph - 1);
+            const uint32_t py1 = std::min(2 * y + 1, ph - 1);
+            for (uint32_t x = 0; x < cw; ++x) {
+                const uint32_t px0 = std::min(2 * x,     pw - 1);
+                const uint32_t px1 = std::min(2 * x + 1, pw - 1);
+                const float a = parent[py0 * pw + px0];
+                const float b = parent[py0 * pw + px1];
+                const float c = parent[py1 * pw + px0];
+                const float d = parent[py1 * pw + px1];
+                child[y * cw + x] = std::max(std::max(a, b), std::max(c, d));
+            }
+        }
+    }
+
+    hiz_vp_ = proj_matrix_ * view_matrix_;
+    hiz_vp_valid_ = true;
+}
+
+bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) const {
+    if (!hiz_vp_valid_ || hiz_pyramid_.empty()) return false;
+
+    // Project all 8 corners through the HiZ frame's VP (stored last frame).
+    // Track NDC min/max over x, y, z.  If any corner has w <= 0, the AABB
+    // straddles the near plane and we skip (behaves like "not occluded").
+    float sx_min =  std::numeric_limits<float>::infinity();
+    float sx_max = -std::numeric_limits<float>::infinity();
+    float sy_min =  std::numeric_limits<float>::infinity();
+    float sy_max = -std::numeric_limits<float>::infinity();
+    float sz_min =  std::numeric_limits<float>::infinity();
+    const float* vp = hiz_vp_.constData();  // column-major
+    for (int c = 0; c < 8; ++c) {
+        const float x = (c & 1) ? mx[0] : mn[0];
+        const float y = (c & 2) ? mx[1] : mn[1];
+        const float z = (c & 4) ? mx[2] : mn[2];
+        const float cx = vp[0]*x + vp[4]*y + vp[8]*z  + vp[12];
+        const float cy = vp[1]*x + vp[5]*y + vp[9]*z  + vp[13];
+        const float cz = vp[2]*x + vp[6]*y + vp[10]*z + vp[14];
+        const float cw = vp[3]*x + vp[7]*y + vp[11]*z + vp[15];
+        if (cw <= 1e-4f) return false;  // near-plane straddle
+        const float inv = 1.0f / cw;
+        const float nx = cx * inv;
+        const float ny = cy * inv;
+        const float nz = cz * inv;
+        if (nx < sx_min) sx_min = nx;  if (nx > sx_max) sx_max = nx;
+        if (ny < sy_min) sy_min = ny;  if (ny > sy_max) sy_max = ny;
+        if (nz < sz_min) sz_min = nz;
+    }
+
+    if (sx_max < -1.0f || sx_min > 1.0f ||
+        sy_max < -1.0f || sy_min > 1.0f) return false;
+    if (sz_min < -1.0f) return false;
+
+    sx_min = std::max(sx_min, -1.0f);
+    sx_max = std::min(sx_max,  1.0f);
+    sy_min = std::max(sy_min, -1.0f);
+    sy_max = std::min(sy_max,  1.0f);
+
+    const float u_min = 0.5f * (sx_min + 1.0f);
+    const float u_max = 0.5f * (sx_max + 1.0f);
+    const float v_min = 0.5f * (sy_min + 1.0f);
+    const float v_max = 0.5f * (sy_max + 1.0f);
+    const float aabb_near_depth = 0.5f * (sz_min + 1.0f);
+
+    // Pick mip level where the projected rect covers at most 2 texels on
+    // each axis; sample the max over the covered texels there.
+    const float px_w = (u_max - u_min) * static_cast<float>(hiz_base_w_);
+    const float px_h = (v_max - v_min) * static_cast<float>(hiz_base_h_);
+    int mip = 0;
+    while ((int)hiz_mip_offset_.size() - 1 > mip &&
+           ((px_w / (1 << mip)) > 2.0f || (px_h / (1 << mip)) > 2.0f)) {
+        ++mip;
+    }
+
+    const uint32_t mw = hiz_mip_w_[mip];
+    const uint32_t mh = hiz_mip_h_[mip];
+    int x0 = static_cast<int>(std::floor(u_min * mw));
+    int x1 = static_cast<int>(std::ceil (u_max * mw));
+    int y0 = static_cast<int>(std::floor(v_min * mh));
+    int y1 = static_cast<int>(std::ceil (v_max * mh));
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 > (int)mw) x1 = mw;
+    if (y1 > (int)mh) y1 = mh;
+    if (x1 <= x0 || y1 <= y0) return false;
+
+    const float* level = hiz_pyramid_.data() + hiz_mip_offset_[mip];
+    float hiz_max = 0.0f;
+    for (int y = y0; y < y1; ++y) {
+        const float* row = level + static_cast<size_t>(y) * mw;
+        for (int x = x0; x < x1; ++x) {
+            if (row[x] > hiz_max) hiz_max = row[x];
+        }
+    }
+
+    // AABB's closest point must be strictly farther than everything drawn
+    // in the region for it to be fully occluded.
+    return aabb_near_depth > hiz_max;
+}
+
 uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     if (!gl_initialized_) return 0;
     context_->makeCurrent(this);
@@ -936,10 +1174,19 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
                            : std::numeric_limits<float>::infinity();
     };
 
+    // HiZ occlusion is skipped entirely when the pick pass runs
+    // (min_pixel_radius == 0 on that path), when the user disables it via
+    // env var, or before the first pyramid has been built.
+    const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_valid_;
+
     auto test_and_push = [&](uint32_t inst_idx) {
         const InstanceCpu& inst = m.instances[inst_idx];
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
         if (!contributionPasses(inst.world_aabb_min, inst.world_aabb_max)) return;
+        if (hiz_on && aabbOccludedByHiz(inst.world_aabb_min, inst.world_aabb_max)) {
+            ++hiz_reject_count_;
+            return;
+        }
         if (inst.mesh_id >= m.meshes.size()) return;
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
         const bool want_lod1 = mesh.lod1_index_count > 0 &&
@@ -966,6 +1213,12 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
             // Contribution cull the whole subtree: if the node's enclosing
             // sphere is below threshold, every child is too.
             if (!contributionPasses(n.aabb_min, n.aabb_max)) continue;
+            // HiZ cull the whole subtree: if the node AABB is fully
+            // occluded, every leaf is too.  The conservative test (AABB
+            // near-depth vs max pyramid depth) never rejects a visible
+            // parent wrongly even when some children could have peeked
+            // through.
+            if (hiz_on && aabbOccludedByHiz(n.aabb_min, n.aabb_max)) continue;
             if (n.count > 0) {
                 for (uint32_t k = 0; k < n.count; ++k) {
                     uint32_t item_idx = m.bvh.item_indices[n.right_or_first + k];
@@ -1108,6 +1361,7 @@ void ViewportWindow::render() {
     visible_objects_ = 0;
     gl_draw_calls_ = 0;
     indirect_sub_draws_ = 0;
+    hiz_reject_count_ = 0;
 
     // Start each frame with CCW-is-front; the two-pass draw below flips
     // back and forth.  Harmless when culling is off.
@@ -1178,6 +1432,13 @@ void ViewportWindow::render() {
 
     renderAxisGizmo();
 
+    // Build HiZ from this frame's resolved depth for next frame's cull.
+    // Synchronous glReadPixels inside — cost ~0.5 ms at 256x128 on a
+    // mid-range dGPU.  Skippable via IFC_NO_HIZ=1.
+    if (hizEnabled()) {
+        buildHizPyramid();
+    }
+
     context_->swapBuffers(this);
 
     float dt = frame_clock_.restart() / 1000.0f;
@@ -1215,12 +1476,13 @@ void ViewportWindow::render() {
         emit frameStatsUpdated(stats);
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
-               "meshes %u  gl_draws %u  sub_draws %u  "
+               "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
                visible_triangles_, total_tri,
                total_meshes, gl_draw_calls_, indirect_sub_draws_,
+               hiz_reject_count_,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),

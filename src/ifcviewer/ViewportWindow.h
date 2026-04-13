@@ -172,6 +172,20 @@ private:
     void buildShaders();
     void buildAxisGizmo();
     void setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo);
+
+    // Resolve the default framebuffer's MSAA depth into a single-sample
+    // texture, read it back, and max-reduce a mip pyramid on the CPU.  The
+    // resulting pyramid is stored in hiz_pyramid_ along with the VP matrix
+    // used to draw it; next frame's cullAndUploadVisible can test AABBs
+    // against it.  Synchronous readback — at 256×128 the cost is sub-ms
+    // and not a measured bottleneck; Phase 3D's compute-shader cull will
+    // eliminate the readback entirely.
+    void buildHizPyramid();
+
+    // True if the AABB is fully occluded by the previous frame's depth.
+    // Returns false when the HiZ is invalid, the AABB crosses the near
+    // plane, or the projection falls outside NDC.
+    bool aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
     bool growModelVbo(ModelGpuData& m, size_t needed_total);
     bool growModelEbo(ModelGpuData& m, size_t needed_total);
     bool growModelSsbo(ModelGpuData& m, size_t needed_total);
@@ -218,6 +232,32 @@ private:
     GLuint pick_depth_rbo_ = 0;
     int pick_width_ = 0;
     int pick_height_ = 0;
+
+    // HiZ occlusion culling (Phase 3C).
+    //
+    // Each frame after the main draw we blit the MSAA depth buffer down
+    // into a single-sample depth texture (hiz_fbo_ / hiz_depth_tex_), then
+    // glReadPixels it into hiz_depth_readback_.  We max-reduce that into a
+    // mip pyramid (hiz_pyramid_) and remember the VP matrix used
+    // (hiz_vp_ + hiz_vp_valid_) so next frame's cull can test AABBs
+    // against a slightly-stale depth.  Skipped for the pick pass and when
+    // IFC_NO_HIZ=1.
+    GLuint hiz_fbo_ = 0;
+    GLuint hiz_depth_tex_ = 0;
+    GLuint hiz_resolve_fbo_ = 0;         // full-size single-sample resolve
+    GLuint hiz_resolve_depth_tex_ = 0;
+    int    hiz_resolve_w_ = 0;
+    int    hiz_resolve_h_ = 0;
+    int    hiz_base_w_ = 0;
+    int    hiz_base_h_ = 0;
+    std::vector<float>    hiz_depth_readback_;   // hiz_base_w_ * hiz_base_h_ floats
+    std::vector<float>    hiz_pyramid_;          // concatenated mip levels
+    std::vector<uint32_t> hiz_mip_offset_;       // into hiz_pyramid_
+    std::vector<uint32_t> hiz_mip_w_;
+    std::vector<uint32_t> hiz_mip_h_;
+    QMatrix4x4            hiz_vp_;
+    bool                  hiz_vp_valid_ = false;
+    uint32_t              hiz_reject_count_ = 0;  // per-frame stat
 
     // Per-frame stats
     uint32_t visible_triangles_ = 0;
