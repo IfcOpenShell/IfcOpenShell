@@ -44,6 +44,7 @@ bool OpenCascadeKernel::convert(const taxonomy::bspline_surface::ptr bs, Handle(
 	}
 
 	if (is_rational) {
+		i = 0;
 		for (auto it = bs->weights->begin(); it != bs->weights->end(); ++it, ++i) {
 			j = 0;
 			for (auto jt = (*it).begin(); jt != (*it).end(); ++jt, ++j) {
