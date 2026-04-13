@@ -32,6 +32,7 @@ namespace rocksdb {
 #include <type_traits>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <list>
 #include <set>
 
@@ -250,7 +251,10 @@ namespace ifcopenshell {
     };
 
     struct parse_context_pool {
-        std::vector<parse_context> nodes_;
+        // parse_context::push() stores child handles on the current context after
+        // requesting a new pool slot. The pool therefore needs stable addresses
+        // for existing contexts while it grows.
+        std::deque<parse_context> nodes_;
         uint32_t used_ = 0;
 
         void reset() { used_ = 0; }
