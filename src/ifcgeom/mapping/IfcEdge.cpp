@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge& inst) {
     auto v1 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
-    auto v2 = inst.EdgeStart().as<IfcSchema::IfcVertexPoint>();
+    auto v2 = inst.EdgeEnd().as<IfcSchema::IfcVertexPoint>();
     if (!v1 || !v2) {
 		logger::message(logger::LOG_ERROR, "Only IfcVertexPoints are supported for EdgeStart and -End", inst);
 		return nullptr;
