@@ -155,7 +155,7 @@ namespace {
 				if (!face_points(face, points)) {
 					continue;
 				}
-				auto total = external * part_matrix * item_matrix(face) * item_matrix(face->children.front());
+                auto total = external * part_matrix; // *item_matrix(face) * item_matrix(face->children.front());
 				std::vector<int> indices;
 				indices.reserve(points.size());
 				for (const auto& point : points) {
