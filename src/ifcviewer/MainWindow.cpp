@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include "AppSettings.h"
 #include "SettingsWindow.h"
+#include "LodBuilder.h"
 #include "SidecarCache.h"
 
 #include <QApplication>
@@ -394,6 +395,19 @@ void MainWindow::onStreamingFinished() {
                     sd.string_table += info.type;
                     sd.elements.push_back(pe);
                 }
+
+                // Build LOD1 for eligible meshes (extends sd.indices and
+                // populates MeshInfo::lod1_*), push the extension onto the
+                // live GPU state so this session benefits too, then cache.
+                QElapsedTimer t_lod; t_lod.start();
+                buildLods(sd);
+                LodStats ls = summariseLods(sd);
+                qDebug("  LOD build: %lld ms — %u/%u meshes got LOD1 "
+                       "(%u tris → %u tris for those meshes)",
+                       t_lod.elapsed(),
+                       ls.meshes_with_lod1, ls.meshes_total,
+                       ls.tris_lod0_for_lod1, ls.tris_lod1);
+                viewport_->applyLodExtension(loading_model_id_, sd);
 
                 std::string ifc_path = it->second.file_path.toStdString();
                 uint64_t file_size = static_cast<uint64_t>(

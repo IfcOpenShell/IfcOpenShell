@@ -92,7 +92,8 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 | `GeometryStreamer.h/cpp` | Background iterator runner; emits `MeshChunk` + `InstanceChunk` |
 | `InstancedGeometry.h` | Shared structs: `MeshInfo`, `InstanceCpu`, `InstanceGpu`, chunk records |
 | `BvhAccel.h/cpp` | Median-split BVH builder; operates on instance world-AABBs |
-| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v4) sidecar read/write |
+| `LodBuilder.h/cpp` | Post-stream decimation of unique meshes via meshoptimizer (`simplifySloppy`) |
+| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v5) sidecar read/write |
 | `AppSettings.h/cpp` | Persisted preferences (geometry library, stats overlay, backface culling) |
 | `SettingsWindow.h/cpp` | Settings dialog |
 | `CMakeLists.txt` | Build configuration |
@@ -106,6 +107,9 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
   at GL 4.1).
 - **IfcOpenShell C++ libraries** (IfcParse, IfcGeom, and their
   dependencies: Open CASCADE, Boost, Eigen3, optionally CGAL).
+- **[meshoptimizer](https://github.com/zeux/meshoptimizer)** — linked via
+  `find_package(meshoptimizer REQUIRED)`. Used at sidecar-build time for LOD
+  decimation; not needed at runtime once a sidecar exists.
 
 ## Building
 
@@ -266,7 +270,7 @@ while stack not empty:
 Depth 64 is enough for billions of items on any balanced tree. The stack
 is on the C++ stack, zero per-frame allocation.
 
-#### Sidecar format (`.ifcview`, v4)
+#### Sidecar format (`.ifcview`, v5)
 
 Raw memory dump, Blender-`.blend`-style — no serialisation, no parsing.
 Stores everything needed to skip the `IfcGeom::Iterator` pass:
@@ -276,7 +280,7 @@ SidecarHeader            (magic "IFVW", version, endian, ...)
 uint64_t                 source_file_size
 uint32_t + float[]       vertex data    (7 floats × N_verts, local coords)
 uint32_t + uint32_t[]    index data     (mesh-local)
-uint32_t + MeshInfo[]    per-unique-mesh metadata (48 B each)
+uint32_t + MeshInfo[]    per-unique-mesh metadata (56 B each, incl. LOD1 slice)
 uint32_t + InstanceCpu[] per-placement records (transform + AABB + ids)
 uint32_t + PackedElementInfo[]   element tree records
 uint32_t + char[]        string table
@@ -449,14 +453,117 @@ At 4 px, frame time breakdown matches: ~16 ms non-draw baseline (from
 throughput on the post-cull geometry — next steps (LOD, HiZ) attack
 that directly.
 
-#### 3B. Distance / contribution LOD (medium-term)
+#### 3B. Distance / contribution LOD — ✅ done
 
-Pre-simplify unique representations at ingress time (store LOD 0 / 1 /
-2 meshes in the VBO/EBO with offsets), select LOD per instance per
-frame by the same projected-size metric as 3A. The visible-SSBO
-plumbing and MDI structure don't change — only `firstIndex`/`count` in
-the indirect command does. Ingress side needs a decimation pass
-(`meshoptimizer` or similar); GPU side is nearly free.
+Decimate each unique representation once (at sidecar-build time), store
+the reduced index slice in the same EBO, and switch to it per-instance
+per-frame whenever the projected sphere radius is small enough that the
+reduced silhouette is indistinguishable from the original.
+
+##### Pipeline
+
+1. **After streaming finishes**, `MainWindow` calls `buildLods(sd)` on
+   the snapshotted `SidecarData`. Each eligible mesh's decimated index
+   list is appended to `sd.indices`; the per-mesh `MeshInfo` gains two
+   new fields:
+
+   ```cpp
+   uint32_t lod1_ebo_byte_offset;  // appended slice, same VBO
+   uint32_t lod1_index_count;      // 0 = no LOD1 was built
+   ```
+
+   `MeshInfo` grew from 48 to 56 bytes, which also bumps the sidecar
+   format to v5.
+
+2. `viewport_->applyLodExtension(model_id, sd)` pushes the new index
+   suffix onto the live EBO via `glNamedBufferSubData` and replaces the
+   CPU-side `m.meshes` vector. The VBO and instance SSBO are untouched
+   — LOD1 reuses the same vertices, only the indices differ.
+
+3. The sidecar is then written with both LOD0 and LOD1 indices baked in,
+   so subsequent loads of the same file pick up LOD1 for free.
+
+##### Selection
+
+The contribution-cull pass already computes each instance's projected
+pixel radius. LOD1 is selected when that radius falls below
+`IFC_LOD1_PX` (default 30 px) and the mesh has a non-empty LOD1 slice.
+Camera-inside-AABB short-circuits select LOD0 (treated as "infinite
+radius") so you never accidentally see the reduced mesh up close.
+
+The visible-instance pipeline gains two more buckets (`fwd_lod1_`,
+`rev_lod1_`), so the four-way split is now `{fwd, rev} × {LOD0, LOD1}`.
+LOD0/LOD1 within a winding slice are contiguous — only winding requires
+`glFrontFace` to flip between MDI calls, LOD does not. `firstIndex` /
+`count` in the `DrawElementsIndirectCommand` pick which slice of the EBO
+to walk; everything else (base vertex, base instance, SSBO bindings,
+shader) is unchanged.
+
+##### Decimator choice: `meshopt_simplifySloppy`
+
+The first attempt used `meshopt_simplify`, which is an edge-collapse
+decimator. It returned every input mesh unchanged (`err = 0.0`) for two
+reasons, both inherent to BIM brep output:
+
+1. **Per-triangle vertex duplication.** The instanced VBO stores each
+   triangle's vertices separately so that hard-edge normals can differ
+   across triangles. Topologically there are no shared vertices, so no
+   edges exist for `meshopt_simplify` to collapse. A
+   `meshopt_generateShadowIndexBuffer` welding pass (hash xyz only,
+   ignore the interleaved normal/colour) fixes this half cheaply — the
+   VBO isn't touched, only a per-call shadow index buffer is built.
+2. **Non-manifold topology even after welding.** BIM brep output has
+   T-junctions, coplanar slivers, separate solids meeting at a plane,
+   and multi-material cuts. `meshopt_simplify` needs valid 2-manifold
+   edge pairs to score collapses; it refuses the non-manifold ones, the
+   priority queue never fires, and it returns the input untouched.
+
+`meshopt_simplifySloppy` is a **voxel-clustering decimator** — it
+quantises positions into cells and merges everything in a cell to a
+single point. Topology is irrelevant, so it works directly on the
+original indices (welding isn't even needed). The trade-off is that it
+rounds off sharp corners and can produce slightly degenerate triangles,
+so it doesn't look great at mid-screen size. For a LOD1 that only
+activates below 30 px projected radius that's invisible in practice. If
+you ever want LOD1 to remain active at larger sizes, the only robust
+fix is to pre-process BIM meshes into manifold form (fuse coplanar
+faces, split at T-junctions) — a significant project unto itself.
+
+##### Tuning knobs (env vars)
+
+| Var | Default | Effect |
+|-----|---------|--------|
+| `IFC_LOD1_PX` | `30` | Projected sphere radius (px) below which LOD1 kicks in. `0` disables LOD1 entirely. |
+| `IFC_LOD_SLOPPY` | `1` | `0` falls back to edge-collapse (`meshopt_simplify`) on shadow-welded indices. Typically produces zero LOD1 output for BIM — useful only for A/B comparison. |
+| `IFC_LOD_ERROR` | `0.2` | Target relative error passed to meshopt. |
+| `IFC_LOD_RATIO` | `0.25` | Target triangle-count ratio (LOD1 aims for 25 % of LOD0 tris). |
+| `IFC_LOD_MIN_SAVINGS` | `0.25` | Reject the LOD1 result if it doesn't shave at least this fraction of triangles. |
+| `IFC_LOD_LOCK_BORDER` | `0` | `1` re-enables `meshopt_SimplifyLockBorder` (only meaningful with `IFC_LOD_SLOPPY=0`). |
+| `IFC_LOD_DEBUG` | `0` | `1` prints per-mesh `tris / target / got / err` for the first 8 candidate meshes plus an accept/reject summary per model. |
+
+##### Measured results
+
+Same 10-model / 128 M-tri scene as Phase 3A (GTX 1650), 2 px contribution
+threshold, overview camera, all models finalised with LOD1 built:
+
+| Build | FPS | Frame time | Visible tris | Visible objs |
+|-------|-----|-----------|--------------|--------------|
+| Phase 3A alone (2 px) | 20.2 | 49 ms | 40 M | 89 k |
+| Phase 3A + 3B (LOD1 ≤ 30 px) | **43.2** | **23 ms** | 14 M | 81 k |
+
+Roughly half the remaining frame time, same object count (LOD is
+lossless w.r.t. visibility — swapping index slice doesn't hide
+anything). The triangle reduction on meshes that qualified for LOD1 is
+~80 %: e.g. 4.17 M → 0.82 M tris for the 3618 eligible meshes of Model
+1, 3.25 M → 0.65 M for Model 2, etc. Only about 20 % of unique meshes
+qualify (the threshold is 500 tris — below that the indirect-command
+overhead dominates), but those are the fat tail carrying most of the
+rasterisation cost.
+
+LOD build itself runs on the main thread inside `onStreamingFinished`;
+typical cost is 100–600 ms per model, folded into the already-visible
+"finalizing" step. Cached into the sidecar afterwards, so subsequent
+opens skip it entirely.
 
 #### 3C. Hierarchical-Z occlusion culling (longer-term)
 
@@ -490,7 +597,7 @@ Scene size                      Bottleneck              Fix
 < 100k instances                CPU cull scan           Phase 1 only
 100k–500k                       CPU cull scan           BVH (Phase 2) — done
 500k+ tris / overview shot      GPU vertex + raster     Phase 3A contribution cull
-                                                        (+ 3B LOD for close-ups)
+                                                        + Phase 3B LOD (done)
 multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
 ```
 
@@ -508,10 +615,10 @@ multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`)
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`)
 - [x] Phase 3A — screen-space contribution culling
-- [ ] **Phase 3B — distance / contribution LOD** (next)
-- [ ] Phase 3C — Hierarchical-Z occlusion culling
+- [x] Phase 3B — distance / contribution LOD (meshoptimizer `simplifySloppy`)
+- [ ] **Phase 3C — Hierarchical-Z occlusion culling** (next)
 - [ ] Phase 3D — GPU-side compute-shader culling
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console

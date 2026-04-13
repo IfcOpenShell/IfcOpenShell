@@ -751,6 +751,34 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
            ssbo_bytes / (1024.0*1024.0));
 }
 
+void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd) {
+    if (!gl_initialized_) return;
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end() || !it->second.finalized) return;
+    ModelGpuData& m = it->second;
+
+    const size_t total_ib_bytes = sd.indices.size() * sizeof(uint32_t);
+    if (total_ib_bytes <= m.ebo_used) {
+        // buildLods didn't add anything; just refresh the meshes vector in
+        // case lod1_* fields were touched.
+        m.meshes = sd.meshes;
+        return;
+    }
+
+    context_->makeCurrent(this);
+    if (total_ib_bytes > m.ebo_capacity) {
+        if (!growModelEbo(m, total_ib_bytes)) return;
+    }
+    const size_t append_bytes = total_ib_bytes - m.ebo_used;
+    const uint32_t* appended_src =
+        sd.indices.data() + (m.ebo_used / sizeof(uint32_t));
+    gl_->glNamedBufferSubData(m.ebo, m.ebo_used, append_bytes, appended_src);
+    m.ebo_used = total_ib_bytes;
+
+    // Replace mesh metadata so cullAndUploadVisible sees the new lod1_ fields.
+    m.meshes = sd.meshes;
+}
+
 void ViewportWindow::resetScene() {
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
@@ -826,16 +854,32 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
 
 void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
                                           float focal_px, float min_pixel_radius) {
-    // Per-mesh scratch, split by winding: fwd = non-reflected (CCW in screen
-    // space), rev = reflected (CW in screen space).  Splitting lets the draw
+    // Per-mesh scratch, split by winding × LOD.  Winding split lets the draw
     // pass toggle glFrontFace once between two MDI calls so GL_CULL_FACE does
-    // the right thing for both.
-    if (visible_by_mesh_fwd_.size() < m.meshes.size()) visible_by_mesh_fwd_.resize(m.meshes.size());
-    if (visible_by_mesh_rev_.size() < m.meshes.size()) visible_by_mesh_rev_.resize(m.meshes.size());
+    // the right thing for both.  LOD split means instances that want the
+    // decimated mesh go into a different bucket that emits against
+    // mesh.lod1_ebo_byte_offset / lod1_index_count.
+    auto resize_if = [&](std::vector<std::vector<uint32_t>>& v) {
+        if (v.size() < m.meshes.size()) v.resize(m.meshes.size());
+    };
+    resize_if(visible_by_mesh_fwd_lod0_);
+    resize_if(visible_by_mesh_fwd_lod1_);
+    resize_if(visible_by_mesh_rev_lod0_);
+    resize_if(visible_by_mesh_rev_lod1_);
     for (size_t i = 0; i < m.meshes.size(); ++i) {
-        visible_by_mesh_fwd_[i].clear();
-        visible_by_mesh_rev_[i].clear();
+        visible_by_mesh_fwd_lod0_[i].clear();
+        visible_by_mesh_fwd_lod1_[i].clear();
+        visible_by_mesh_rev_lod0_[i].clear();
+        visible_by_mesh_rev_lod1_[i].clear();
     }
+
+    // LOD1 switches in when projected sphere radius (in pixels) drops below
+    // this threshold.  Overridable for tuning.  Set to 0 to disable LOD1
+    // entirely (always draw LOD0).
+    static const float lod1_px_threshold = []{
+        const char* e = std::getenv("IFC_LOD1_PX");
+        return (e && *e) ? static_cast<float>(std::atof(e)) : 30.0f;
+    }();
 
     // Bounding-sphere contribution test: approximate an AABB by its enclosing
     // sphere (centre = midpoint, radius = half-diagonal).  Project radius to
@@ -871,15 +915,44 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         return focal_px * radius >= min_pixel_radius * dist;
     };
 
+    // Returns projected sphere radius in pixels (or +inf when camera is
+    // inside the AABB).  Shares the geometry with contributionPasses; this
+    // version returns the value so we can also use it for LOD selection.
+    auto pixelRadius = [&](const float mn[3], const float mx[3]) -> float {
+        if (cx >= mn[0] && cx <= mx[0] &&
+            cy >= mn[1] && cy <= mx[1] &&
+            cz >= mn[2] && cz <= mx[2]) {
+            return std::numeric_limits<float>::infinity();
+        }
+        float ex = 0.5f * (mx[0] - mn[0]);
+        float ey = 0.5f * (mx[1] - mn[1]);
+        float ez = 0.5f * (mx[2] - mn[2]);
+        float radius = std::sqrt(ex*ex + ey*ey + ez*ez);
+        float dx = 0.5f * (mx[0] + mn[0]) - cx;
+        float dy = 0.5f * (mx[1] + mn[1]) - cy;
+        float dz = 0.5f * (mx[2] + mn[2]) - cz;
+        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        return dist > 0.0f ? focal_px * radius / dist
+                           : std::numeric_limits<float>::infinity();
+    };
+
     auto test_and_push = [&](uint32_t inst_idx) {
         const InstanceCpu& inst = m.instances[inst_idx];
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
         if (!contributionPasses(inst.world_aabb_min, inst.world_aabb_max)) return;
         if (inst.mesh_id >= m.meshes.size()) return;
+        const MeshInfo& mesh = m.meshes[inst.mesh_id];
+        const bool want_lod1 = mesh.lod1_index_count > 0 &&
+            lod1_px_threshold > 0.0f &&
+            pixelRadius(inst.world_aabb_min, inst.world_aabb_max) < lod1_px_threshold;
         const bool reflected = inst_idx < m.instance_reflected.size()
             && m.instance_reflected[inst_idx] != 0;
-        if (reflected) visible_by_mesh_rev_[inst.mesh_id].push_back(inst_idx);
-        else           visible_by_mesh_fwd_[inst.mesh_id].push_back(inst_idx);
+        auto& bucket =
+            reflected ? (want_lod1 ? visible_by_mesh_rev_lod1_
+                                   : visible_by_mesh_rev_lod0_)
+                      : (want_lod1 ? visible_by_mesh_fwd_lod1_
+                                   : visible_by_mesh_fwd_lod0_);
+        bucket[inst.mesh_id].push_back(inst_idx);
     };
 
     if (!m.bvh.nodes.empty()) {
@@ -911,22 +984,28 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         for (uint32_t i = 0; i < m.instances.size(); ++i) test_and_push(i);
     }
 
-    // Flatten fwd-slice first, then rev-slice, into visible_flat_.  Build
-    // matching DrawElementsIndirectCommands; commands for the fwd slice fill
-    // [0, indirect_forward_count), rev fills [indirect_forward_count, end).
+    // Flatten fwd-slice first (LOD0 then LOD1), then rev-slice (ditto), into
+    // visible_flat_.  Commands for the fwd slice fill [0, indirect_forward_count),
+    // rev fills [indirect_forward_count, end).  LOD0/LOD1 within a winding
+    // slice are contiguous — winding is what requires glFrontFace to flip
+    // between MDI calls, LOD is not.
     visible_flat_.clear();
     indirect_scratch_.clear();
 
-    auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh) {
+    auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh, int lod) {
         for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
             const auto& mesh = m.meshes[mi];
             const uint32_t vis_count = static_cast<uint32_t>(by_mesh[mi].size());
-            if (vis_count == 0 || mesh.index_count == 0) continue;
+            const uint32_t idx_count =
+                (lod == 1) ? mesh.lod1_index_count : mesh.index_count;
+            const uint32_t ebo_off =
+                (lod == 1) ? mesh.lod1_ebo_byte_offset : mesh.ebo_byte_offset;
+            if (vis_count == 0 || idx_count == 0) continue;
 
             DrawElementsIndirectCommand cmd;
-            cmd.count         = mesh.index_count;
+            cmd.count         = idx_count;
             cmd.instanceCount = vis_count;
-            cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
+            cmd.firstIndex    = ebo_off / sizeof(uint32_t);
             cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
             cmd.baseInstance  = static_cast<uint32_t>(visible_flat_.size());
             indirect_scratch_.push_back(cmd);
@@ -936,9 +1015,11 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         }
     };
 
-    emit_slice(visible_by_mesh_fwd_);
+    emit_slice(visible_by_mesh_fwd_lod0_, 0);
+    emit_slice(visible_by_mesh_fwd_lod1_, 1);
     m.indirect_forward_count = static_cast<uint32_t>(indirect_scratch_.size());
-    emit_slice(visible_by_mesh_rev_);
+    emit_slice(visible_by_mesh_rev_lod0_, 0);
+    emit_slice(visible_by_mesh_rev_lod1_, 1);
     m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
 
     // Upload visible list (keep binding alive even when empty).

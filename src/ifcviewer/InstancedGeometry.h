@@ -33,18 +33,28 @@ static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 28;
 static constexpr int INSTANCED_VERTEX_STRIDE_FLOATS = 7;
 
 // Per-mesh metadata on the CPU side.  Meshes own a slice of the model's
-// VBO and EBO (both local-coords/mesh-local indices).
+// VBO (shared across LODs) and one or more slices of the EBO, one per LOD.
+//
+// LOD0 is the original, full-resolution tessellation — the fields
+// `ebo_byte_offset` / `index_count` describe it.
+//
+// LOD1 is an optional decimated copy of the same triangles referencing the
+// same vertex buffer.  Built at sidecar time via meshoptimizer for meshes
+// whose triangle count crosses a threshold.  `lod1_index_count == 0`
+// means no LOD1 was built; the renderer must use LOD0 at every distance.
 struct MeshInfo {
     uint32_t vbo_byte_offset = 0;    // where this mesh's vertices start
     uint32_t vertex_count    = 0;
-    uint32_t ebo_byte_offset = 0;    // where this mesh's indices start
-    uint32_t index_count     = 0;
+    uint32_t ebo_byte_offset = 0;    // LOD0 indices
+    uint32_t index_count     = 0;    // LOD0 index count
     float    local_aabb_min[3]{};
     float    local_aabb_max[3]{};
     uint32_t first_instance  = 0;    // index into per-model instances array
     uint32_t instance_count  = 0;
+    uint32_t lod1_ebo_byte_offset = 0;
+    uint32_t lod1_index_count     = 0;   // 0 = no LOD1 available
 };
-static_assert(sizeof(MeshInfo) == 48, "MeshInfo must be 48 bytes");
+static_assert(sizeof(MeshInfo) == 56, "MeshInfo must be 56 bytes");
 
 // Per-instance record uploaded to an SSBO and read by the vertex shader.
 // Layout deliberately matches std430 expectations:

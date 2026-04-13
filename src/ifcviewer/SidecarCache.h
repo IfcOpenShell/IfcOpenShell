@@ -34,7 +34,10 @@
 #include <memory>
 
 static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
-static constexpr uint32_t SIDECAR_VERSION = 4;
+// v5 = MeshInfo extended with lod1_ebo_byte_offset + lod1_index_count (56 B).
+//      sd.indices may contain an appended LOD1 index slice for each mesh
+//      where meshoptimizer decimation produced useful output.
+static constexpr uint32_t SIDECAR_VERSION = 5;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

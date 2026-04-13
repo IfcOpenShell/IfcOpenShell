@@ -26,6 +26,7 @@ set(QT_VERSION 6 CACHE STRING "Qt version")
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets OpenGL REQUIRED PATHS ${QT_DIR})
 
 find_package(OpenGL REQUIRED)
+find_package(meshoptimizer REQUIRED)
 
 file(GLOB IFCVIEWER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
@@ -51,6 +52,7 @@ target_link_libraries(IfcViewer PRIVATE
     Qt${QT_VERSION}::Widgets
     Qt${QT_VERSION}::OpenGL
     OpenGL::GL
+    meshoptimizer::meshoptimizer
 )
 
 if(UNIX AND NOT APPLE)

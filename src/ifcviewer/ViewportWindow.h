@@ -127,6 +127,13 @@ public:
     // any existing state for model_id and marks it drawable.
     void applyCachedModel(uint32_t model_id, SidecarData data);
 
+    // After buildLods() has extended sd.indices + populated lod1_* fields,
+    // push just the appended index slice + the refreshed mesh metadata onto
+    // the live GPU state for model_id.  VBO / SSBO / instance array are left
+    // alone; only the EBO grows and m.meshes is replaced.  No-op if the
+    // model isn't finalised on the viewport.
+    void applyLodExtension(uint32_t model_id, const SidecarData& sd);
+
     void hideModel(uint32_t model_id);
     void showModel(uint32_t model_id);
     void removeModel(uint32_t model_id);
@@ -223,8 +230,13 @@ private:
     // per-frame allocation.  indirect_scratch_ is the matching array of
     // DrawElementsIndirectCommand records — forward-declared as bytes so
     // the header doesn't need the struct definition.
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_;
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_;
+    // Four buckets = {fwd, rev} × {LOD0, LOD1}.  LOD1 buckets are only
+    // populated when the mesh has lod1_index_count > 0 and the projected
+    // pixel radius is below the LOD switch threshold.
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_lod0_;
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_lod1_;
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_lod0_;
+    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_lod1_;
     std::vector<uint32_t>                  visible_flat_;
     std::vector<DrawElementsIndirectCommand> indirect_scratch_;
 

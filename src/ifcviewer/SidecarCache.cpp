@@ -17,7 +17,11 @@
  *                                                                              *
  ********************************************************************************/
 
-// v4 layout (all multi-byte fields native-endian; endianness marker in header):
+// v5 layout (all multi-byte fields native-endian; endianness marker in header).
+// Same sequence as v4; the only change is that MeshInfo grew two uint32_ts
+// (lod1_ebo_byte_offset + lod1_index_count) and `indices` may contain extra
+// appended LOD1 slices pointed at by those offsets.
+//
 //
 //   SidecarHeader (16 bytes)
 //   uint64_t  source_file_size
