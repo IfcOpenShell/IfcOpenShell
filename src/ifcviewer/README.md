@@ -419,18 +419,35 @@ fewer triangles.
 
 In order of effort/payoff for BIM workloads:
 
-#### 3A. Screen-space contribution culling (near-term)
+#### 3A. Screen-space contribution culling — ✅ done
 
-Project each visible-instance AABB to screen space during BVH
-traversal. Reject instances whose projected size is below a threshold
-(~4 px). In BIM this is the single biggest win: at viewer zoom levels
-that encompass a whole building, most MEP fittings, fixings, furniture
-legs, door hardware etc. occupy < 1 px and contribute nothing.
+Reject frustum-visible objects whose bounding-sphere projects below a
+pixel-radius threshold. Applied both at BVH-node level (whole subtrees
+pruned, so distant parts of the model never touch per-instance tests)
+and per-instance level. Short-circuits when the camera is inside the
+AABB so nothing-you're-standing-next-to is ever lost. Pick pass uses
+threshold 0 so sub-pixel objects remain clickable.
 
-Scope: a projection + pixel-area test inside
-`ViewportWindow::cullAndUploadVisible`. Zero new GPU state. Expect
-10–30× reduction in drawn triangles on plant/MEP-dense scenes; full
-buildings viewed in overview should approach 60 fps.
+Sphere-based (centre = AABB midpoint, radius = half-diagonal,
+r_px = focal_px · radius / distance). Loses a little precision on
+very elongated bounds vs. 8-corner projection, but costs ~5× less per
+test, and because BVH-node pre-cull handles the long tail in one shot
+it doesn't matter.
+
+Threshold defaults to 2 px radius, overridable via `IFC_MIN_PX` env
+var. Measured on the 10-model / 128 M-tri test scene (GTX 1650):
+
+| Threshold | FPS | Triangles drawn | Objects drawn |
+|-----------|-----|-----------------|---------------|
+| 0 px (off) | 6.7 | 128 M | 379 k |
+| 2 px | 20.2 | 40 M (31 %) | 89 k (24 %) |
+| 4 px | 30.3 | 15 M (12 %) | 29 k (8 %) |
+
+At 4 px, frame time breakdown matches: ~16 ms non-draw baseline (from
+`IFC_SKIP_MDI=1`) + ~18 ms of raster (15 M tris / 850 M tri/s) ≈ 34 ms
+= observed 33 ms. The ceiling is now genuinely vertex/raster
+throughput on the post-cull geometry — next steps (LOD, HiZ) attack
+that directly.
 
 #### 3B. Distance / contribution LOD (medium-term)
 
@@ -491,9 +508,9 @@ multi-million + occluders       redundant rasterisation Phase 3C HiZ occlusion
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`)
-- [ ] **Phase 3A — screen-space contribution culling** (next)
-- [ ] Phase 3B — distance / contribution LOD
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`)
+- [x] Phase 3A — screen-space contribution culling
+- [ ] **Phase 3B — distance / contribution LOD** (next)
 - [ ] Phase 3C — Hierarchical-Z occlusion culling
 - [ ] Phase 3D — GPU-side compute-shader culling
 - [ ] Vulkan/MoltenVK backend for macOS
