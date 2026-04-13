@@ -29,7 +29,7 @@ jobs:
         with:
           repository: IfcOpenShell/wasm-wheels
           path: wasm-wheels
-          token: ${{ secrets.WASM_WHEELS_TOKEN }}
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
 
       - name: Commit and push wheel to wasm-wheels
         run: |
