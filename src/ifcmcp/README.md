@@ -8,10 +8,10 @@ sessions.
 ## Installation
 
 ```bash
-pip install ifcmcp
+pip install ifcopenshell-mcp
 ```
 
-Requires `ifcopenshell`, `ifcquery`, and `ifcedit`. The `mcp` package is an optional dependency needed to run the server; install it with `pip install ifcmcp[mcp]` or add `mcp` separately.
+Requires `ifcopenshell`, `ifcquery`, and `ifcedit`. The `mcp` package is an optional dependency needed to run the server; install it with `pip install ifcopenshell-mcp[mcp]` or add `mcp` separately.
 
 ## Running the server
 
