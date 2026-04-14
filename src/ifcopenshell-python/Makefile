@@ -5,8 +5,8 @@ VERSION_DATE:=$(shell date '+%y%m%d')
 PYVERSION:=py311
 PLATFORM:=linux64
 
-PYTHON:=python3.11
-PIP:=pip3.11
+PYTHON:=python3
+PIP:=pip3
 SED:=sed -i
 VENV_ACTIVATE:=bin/activate
 

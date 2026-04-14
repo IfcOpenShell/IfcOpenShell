@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 SHELL := sh
-PYTHON:=python3.11
-PIP:=pip3.11
+PYTHON:=python3
+PIP:=pip3
 PATCH:=patch
 SED:=sed -i
 VENV_ACTIVATE:=bin/activate
