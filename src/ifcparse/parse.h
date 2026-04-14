@@ -43,7 +43,7 @@
 #include <vector>
 
 
-extern const char *IFCOPENSHELL_VERSION;
+extern IFC_PARSE_API const char *IFCOPENSHELL_VERSION;
 
 namespace ifcopenshell {
 
@@ -59,6 +59,9 @@ class IFC_PARSE_API spf_lexer {
     mutable size_t pool_index = 0;
 
   public:
+    spf_lexer(const spf_lexer&) = delete;
+    spf_lexer& operator=(const spf_lexer&) = delete;
+
     std::string& get_temp_string() const;
     void reset_pool() const {
         pool_index = 0;

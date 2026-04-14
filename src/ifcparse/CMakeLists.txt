@@ -34,6 +34,7 @@ list(APPEND IFCPARSE_CPP_FILES
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
+add_library(parse ALIAS IfcParse)
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 if(IFCXML_SUPPORT)
@@ -49,9 +50,9 @@ if(IFCXML_SUPPORT)
 endif()
 
 if(WASM_BUILD)
-    target_link_libraries(IfcParse ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${BCRYPT_LIBRARIES})
 else()
-    target_link_libraries(IfcParse ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
+    target_link_libraries(IfcParse plugin ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES})
 endif()
 
 # CMake installation targets

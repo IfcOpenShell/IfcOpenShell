@@ -590,7 +590,7 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	return values[k];
 }
 
-std::atomic_uint32_t item::counter_(0);
+IFC_GEOM_API std::atomic_uint32_t item::counter_(0);
 
 void ifcopenshell::geometry::taxonomy::item::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;

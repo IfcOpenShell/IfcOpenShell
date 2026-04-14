@@ -17,20 +17,21 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SERIALIZER_H
-#define SERIALIZER_H
+#ifndef PLUGIN_API_H
+#define PLUGIN_API_H
 
-#include "ifc_geom_api.h"
-#include "../ifcparse/file.h"
-
-class IFC_GEOM_API Serializer {
-public:
-	virtual ~Serializer() {}
-
-	virtual bool ready() = 0;
-	virtual void writeHeader() = 0;
-	virtual void finalize() = 0;
-	virtual void setFile(ifcopenshell::file*) = 0;
-};
+#ifdef IFC_SHARED_BUILD
+#ifdef _WIN32
+#ifdef PLUGIN_EXPORTS
+#define PLUGIN_API __declspec(dllexport)
+#else
+#define PLUGIN_API __declspec(dllimport)
+#endif
+#else
+#define PLUGIN_API __attribute__((visibility("default")))
+#endif
+#else
+#define PLUGIN_API
+#endif
 
 #endif

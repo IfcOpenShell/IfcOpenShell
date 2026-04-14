@@ -28,6 +28,8 @@
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
 
+#include <string_view>
+
 static const double ALMOST_ZERO = 1.e-9;
 
 template <typename T>
@@ -78,6 +80,12 @@ namespace ifcopenshell {
 		const Settings& settings() const;
 		const std::string& geometry_library() const {
 			return geometry_library_;
+		}
+		virtual std::string_view backend_id() const {
+			return geometry_library_;
+		}
+		virtual bool accepts(const IfcGeom::ConversionResultShape& shape) const {
+			return shape.backend_id() == backend_id();
 		}
 
 		virtual bool supports_boolean_operations() const = 0;

@@ -17,20 +17,83 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SERIALIZER_H
-#define SERIALIZER_H
+#ifndef IFCOPENSHELL_PLUGIN_H
+#define IFCOPENSHELL_PLUGIN_H
 
-#include "ifc_geom_api.h"
-#include "../ifcparse/file.h"
+#include "plugin_api.h"
 
-class IFC_GEOM_API Serializer {
-public:
-	virtual ~Serializer() {}
+#include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
-	virtual bool ready() = 0;
-	virtual void writeHeader() = 0;
-	virtual void finalize() = 0;
-	virtual void setFile(ifcopenshell::file*) = 0;
+namespace ifcopenshell {
+namespace plugin {
+
+enum class kind {
+	parse_schema,
+	mapping,
+	kernel,
+	document_serializer,
+	geometry_serializer,
+	opencascade_geometry_ifc_writer
 };
+
+struct PLUGIN_API abi_info {
+	uint32_t plugin_api_version = 1;
+	uint32_t pointer_size = sizeof(void*);
+	bool debug_build = false;
+	std::string compiler_id;
+	std::string compiler_version;
+	std::string ifcopenshell_version;
+};
+
+struct PLUGIN_API metadata {
+	kind kind_ = kind::kernel;
+	std::string id;
+	std::string schema;
+	std::string format;
+};
+
+class PLUGIN_API module {
+public:
+	module();
+	explicit module(const metadata& metadata);
+
+	static module builtin(const metadata& metadata);
+
+	const metadata& meta() const;
+	const std::filesystem::path& path() const;
+	bool is_dynamic() const;
+	bool is_loaded() const;
+
+private:
+	struct data;
+	std::shared_ptr<data> data_;
+
+	explicit module(std::shared_ptr<data> data);
+
+	friend class manager;
+};
+
+class PLUGIN_API manager {
+public:
+	manager();
+
+	void add_search_path(const std::filesystem::path& path);
+	const std::vector<std::filesystem::path>& search_paths() const;
+
+	module load(const std::filesystem::path& path) const;
+
+private:
+	std::vector<std::filesystem::path> search_paths_;
+};
+
+PLUGIN_API abi_info host_abi();
+PLUGIN_API void validate_abi(const abi_info& abi);
+
+}
+}
 
 #endif

@@ -562,6 +562,8 @@ if(NOT Boost_VERSION LESS 105800)
     add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
 endif()
 
+add_subdirectory(../src/plugin plugin)
+
 add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 

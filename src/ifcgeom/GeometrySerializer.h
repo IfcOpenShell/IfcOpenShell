@@ -103,7 +103,7 @@ class SerializerSettings : public SettingsContainer <
 }
 }
 
-class stream_or_filename {
+class IFC_GEOM_API stream_or_filename {
 private:
 	std::shared_ptr<std::ofstream> ofs_;
 	std::shared_ptr<std::ostringstream> oss_;
@@ -139,7 +139,7 @@ public:
 	}
 };
 
-class GeometrySerializer : public Serializer {
+class IFC_GEOM_API GeometrySerializer : public Serializer {
 public:
 	enum read_type { READ_BREP, READ_TRIANGULATION };
 
@@ -175,7 +175,7 @@ protected:
 	ifcopenshell::geometry::SerializerSettings settings_;
 };
 
-class WriteOnlyGeometrySerializer : public GeometrySerializer {
+class IFC_GEOM_API WriteOnlyGeometrySerializer : public GeometrySerializer {
 public:
 	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings) : GeometrySerializer(geometry_settings, settings) {}
 

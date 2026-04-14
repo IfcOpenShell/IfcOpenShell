@@ -22,6 +22,7 @@ public:
 	explicit PassthroughShape(std::vector<PassthroughPart>&& parts);
 
 	const std::vector<PassthroughPart>& parts() const { return parts_; }
+	virtual std::string_view backend_id() const { return "passthrough"; }
 
 	virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
 	virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;

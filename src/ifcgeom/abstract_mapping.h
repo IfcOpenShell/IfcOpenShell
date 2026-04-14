@@ -23,6 +23,7 @@
 #include "../ifcparse/express.h"
 #include "../ifcgeom/taxonomy.h"
 #include "../ifcgeom/ConversionSettings.h"
+#include "../plugin/plugin.h"
 
 #include <boost/function.hpp>
 
@@ -79,7 +80,23 @@ namespace geometry {
 	namespace impl {
 		typedef boost::function2<abstract_mapping*, ifcopenshell::file*, Settings&> mapping_fn;
 
-		class IFC_GEOM_API MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
+		class IFC_GEOM_API mapping_registry {
+		public:
+			void bind(const std::string& schema_name, mapping_fn fn, const plugin::module& module = plugin::module());
+			abstract_mapping* construct(ifcopenshell::file* file, Settings& settings);
+
+		private:
+			struct entry {
+				mapping_fn fn_;
+				plugin::module module_;
+			};
+
+			std::map<std::string, entry> entries_;
+		};
+
+		IFC_GEOM_API mapping_registry& mapping_registry_instance();
+
+		class IFC_GEOM_API MappingFactoryImplementation {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);

@@ -5,6 +5,7 @@ file(GLOB SERIALIZERS_CPP_FILES *.cpp)
 set(SERIALIZERS_FILES ${SERIALIZERS_H_FILES} ${SERIALIZERS_CPP_FILES})
 
 add_library(Serializers ${SERIALIZERS_FILES})
+add_library(serialization ALIAS Serializers)
 set_target_properties(Serializers PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS" VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 set(SERIALIZER_SCHEMA_LIBRARIES Serializers ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)
 
@@ -20,7 +21,7 @@ endif()
 target_link_libraries(Serializers
     PRIVATE
     ${SERIALIZER_SCHEMA_LIBRARIES} ${OPENCOLLADA_LIBRARIES} ${USD_LIBRARIES}
-    IfcGeom ${OpenCASCADE_LIBRARIES} ${kernel_libraries} IfcParse
+    IfcGeom ${OpenCASCADE_LIBRARIES} IfcParse
 )
 
 install(TARGETS Serializers)

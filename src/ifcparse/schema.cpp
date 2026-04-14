@@ -22,6 +22,7 @@
 #include "express.h"
 
 #include <map>
+#include <mutex>
 
 #ifdef HAS_SCHEMA_2x3
 #include "schemas/Ifc2x3.h"
@@ -128,7 +129,60 @@ ifcopenshell::entity::~entity() {
         delete inverse_attribute;
     }
 }
-static std::map<std::string, const ifcopenshell::schema_definition*> schemas;
+namespace {
+	std::string schema_key(const std::string& schema_name) {
+		return boost::to_upper_copy(schema_name);
+	}
+
+	ifcopenshell::plugin::module builtin_schema_module(const std::string& schema_name) {
+		ifcopenshell::plugin::metadata metadata;
+		metadata.kind_ = ifcopenshell::plugin::kind::parse_schema;
+		metadata.id = "parse.schema." + boost::to_lower_copy(schema_name);
+		metadata.schema = schema_name;
+		return ifcopenshell::plugin::module::builtin(metadata);
+	}
+
+	void register_builtin_schemas(ifcopenshell::schema_registry& registry) {
+		registry.bind("HEADER_SECTION_SCHEMA", &Header_section_schema::get_schema, &Header_section_schema::clear_schema, builtin_schema_module("HEADER_SECTION_SCHEMA"));
+#ifdef HAS_SCHEMA_2x3
+		registry.bind("IFC2X3", &Ifc2x3::get_schema, &Ifc2x3::clear_schema, builtin_schema_module("IFC2X3"));
+#endif
+#ifdef HAS_SCHEMA_4
+		registry.bind("IFC4", &Ifc4::get_schema, &Ifc4::clear_schema, builtin_schema_module("IFC4"));
+#endif
+#ifdef HAS_SCHEMA_4x1
+		registry.bind("IFC4X1", &Ifc4x1::get_schema, &Ifc4x1::clear_schema, builtin_schema_module("IFC4X1"));
+#endif
+#ifdef HAS_SCHEMA_4x2
+		registry.bind("IFC4X2", &Ifc4x2::get_schema, &Ifc4x2::clear_schema, builtin_schema_module("IFC4X2"));
+#endif
+#ifdef HAS_SCHEMA_4x3_rc1
+		registry.bind("IFC4X3_RC1", &Ifc4x3_rc1::get_schema, &Ifc4x3_rc1::clear_schema, builtin_schema_module("IFC4X3_RC1"));
+#endif
+#ifdef HAS_SCHEMA_4x3_rc2
+		registry.bind("IFC4X3_RC2", &Ifc4x3_rc2::get_schema, &Ifc4x3_rc2::clear_schema, builtin_schema_module("IFC4X3_RC2"));
+#endif
+#ifdef HAS_SCHEMA_4x3_rc3
+		registry.bind("IFC4X3_RC3", &Ifc4x3_rc3::get_schema, &Ifc4x3_rc3::clear_schema, builtin_schema_module("IFC4X3_RC3"));
+#endif
+#ifdef HAS_SCHEMA_4x3_rc4
+		registry.bind("IFC4X3_RC4", &Ifc4x3_rc4::get_schema, &Ifc4x3_rc4::clear_schema, builtin_schema_module("IFC4X3_RC4"));
+#endif
+#ifdef HAS_SCHEMA_4x3
+		registry.bind("IFC4X3", &Ifc4x3::get_schema, &Ifc4x3::clear_schema, builtin_schema_module("IFC4X3"));
+#endif
+#ifdef HAS_SCHEMA_4x3_tc1
+		registry.bind("IFC4X3_TC1", &Ifc4x3_tc1::get_schema, &Ifc4x3_tc1::clear_schema, builtin_schema_module("IFC4X3_TC1"));
+#endif
+#ifdef HAS_SCHEMA_4x3_add1
+		registry.bind("IFC4X3_ADD1", &Ifc4x3_add1::get_schema, &Ifc4x3_add1::clear_schema, builtin_schema_module("IFC4X3_ADD1"));
+#endif
+#ifdef HAS_SCHEMA_4x3_add2
+		registry.bind("IFC4X3_ADD2", &Ifc4x3_add2::get_schema, &Ifc4x3_add2::clear_schema, builtin_schema_module("IFC4X3_ADD2"));
+#endif
+	}
+
+}
 
 ifcopenshell::schema_definition::schema_definition(const std::string& name, const std::vector<const declaration*>& declarations)
     : name_(name)
@@ -151,7 +205,7 @@ ifcopenshell::schema_definition::schema_definition(const std::string& name, cons
             entities_.push_back((**it).as_entity());
         }
     }
-    schemas[name_] = this;
+    register_schema(this);
 }
 
 ifcopenshell::schema_definition::~schema_definition() {
@@ -161,111 +215,67 @@ ifcopenshell::schema_definition::~schema_definition() {
 }
 
 void ifcopenshell::register_schema(schema_definition* schema) {
-    schemas.insert({boost::to_upper_copy(schema->name()), schema});
+    schema_registry_instance().bind(schema);
+}
+
+ifcopenshell::schema_registry& ifcopenshell::schema_registry_instance() {
+	static schema_registry registry;
+	static std::once_flag once;
+	std::call_once(once, register_builtin_schemas, std::ref(registry));
+	return registry;
+}
+
+void ifcopenshell::schema_registry::bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const plugin::module& module) {
+	auto& entry = entries_[schema_key(schema_name)];
+	entry.get_ = get;
+	entry.clear_ = clear;
+	entry.module_ = module;
+}
+
+void ifcopenshell::schema_registry::bind(schema_definition* schema) {
+	auto& entry = entries_[schema_key(schema->name())];
+	entry.schema_ = schema;
+}
+
+const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const std::string& schema_name) {
+	auto iter = entries_.find(schema_key(schema_name));
+	if (iter == entries_.end()) {
+		throw ifcopenshell::exception("No schema named " + schema_name);
+	}
+	if (!iter->second.schema_ && iter->second.get_) {
+		iter->second.schema_ = &iter->second.get_();
+	}
+	if (!iter->second.schema_) {
+		throw ifcopenshell::exception("No schema named " + schema_name);
+	}
+	return iter->second.schema_;
+}
+
+std::vector<std::string> ifcopenshell::schema_registry::names() const {
+	std::vector<std::string> names;
+	for (const auto& pair : entries_) {
+		names.push_back(pair.first);
+	}
+	return names;
+}
+
+void ifcopenshell::schema_registry::clear() {
+	for (auto& pair : entries_) {
+		if (pair.second.clear_) {
+			pair.second.clear_();
+		}
+		pair.second.schema_ = nullptr;
+	}
 }
 
 const ifcopenshell::schema_definition* ifcopenshell::schema_by_name(const std::string& name) {
-    // TODO: initialize automatically somehow
-    Header_section_schema::get_schema();
-#ifdef HAS_SCHEMA_2x3
-    Ifc2x3::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4
-    Ifc4::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x1
-    Ifc4x1::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x2
-    Ifc4x2::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-    Ifc4x3_rc1::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-    Ifc4x3_rc2::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-    Ifc4x3_rc3::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-    Ifc4x3_rc4::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3
-    Ifc4x3::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-    Ifc4x3_tc1::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-    Ifc4x3_add1::get_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-    Ifc4x3_add2::get_schema();
-#endif
-
-    std::map<std::string, const ifcopenshell::schema_definition*>::const_iterator iter = schemas.find(boost::to_upper_copy(name));
-    if (iter == schemas.end()) {
-        throw ifcopenshell::exception("No schema named " + name);
-    }
-    return iter->second;
+	return schema_registry_instance().get(name);
 }
 
 std::vector<std::string> ifcopenshell::schema_names() {
-    // Load schema modules
-    try {
-        ifcopenshell::schema_by_name("IFC2X3");
-    } catch (ifcopenshell::exception&) {
-    }
-
-    // Populate vector with map keys
-    std::vector<std::string> return_value;
-    for (auto& pair : schemas) {
-        return_value.push_back(pair.first);
-    }
-
-    return return_value;
+    return schema_registry_instance().names();
 }
 
 void ifcopenshell::clear_schemas() {
-#ifdef HAS_SCHEMA_2x3
-    Ifc2x3::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4
-    Ifc4::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x1
-    Ifc4x1::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x2
-    Ifc4x2::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-    Ifc4x3_rc1::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-    Ifc4x3_rc2::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-    Ifc4x3_rc3::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-    Ifc4x3_rc4::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3
-    Ifc4x3::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-    Ifc4x3_tc1::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-    Ifc4x3_add1::clear_schema();
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-    Ifc4x3_add2::clear_schema();
-#endif
-    Header_section_schema::clear_schema();
-
-	// Schemas are owned by their respective modules in a unique_ptr, so just clear the map
-    schemas.clear();
+    schema_registry_instance().clear();
 }

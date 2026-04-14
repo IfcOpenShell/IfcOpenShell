@@ -39,7 +39,7 @@ namespace {
     };
 }
 
-void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geometry::impl::MappingFactoryImplementation* mapping) {
+void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geometry::impl::mapping_registry* mapping) {
     static const std::string schema_name = STRINGIFY(IfcSchema);
     POSTFIX_SCHEMA(factory_t) factory;
     mapping->bind(schema_name, factory);

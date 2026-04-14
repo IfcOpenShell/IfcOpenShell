@@ -17,20 +17,54 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef SERIALIZER_H
-#define SERIALIZER_H
+#ifndef KERNEL_REGISTRY_H
+#define KERNEL_REGISTRY_H
 
-#include "ifc_geom_api.h"
-#include "../ifcparse/file.h"
+#include "../ifcgeom/AbstractKernel.h"
+#include "../plugin/plugin.h"
 
-class IFC_GEOM_API Serializer {
-public:
-	virtual ~Serializer() {}
+#include <boost/function.hpp>
 
-	virtual bool ready() = 0;
-	virtual void writeHeader() = 0;
-	virtual void finalize() = 0;
-	virtual void setFile(ifcopenshell::file*) = 0;
-};
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace ifcopenshell {
+	class file;
+
+	namespace geometry {
+		namespace kernels {
+
+			struct IFC_GEOM_API kernel_info {
+				std::string backend_id;
+				bool supports_boolean_operations = false;
+			};
+
+			class IFC_GEOM_API kernel_registry {
+			public:
+				typedef boost::function2<AbstractKernel*, ifcopenshell::file*, Settings&> create_fn;
+
+				void bind(const kernel_info& info, create_fn create, const plugin::module& module = plugin::module());
+				bool has(const std::string& backend_id) const;
+				std::unique_ptr<AbstractKernel> create(const std::string& backend_id, ifcopenshell::file* file, Settings& settings) const;
+				std::vector<kernel_info> kernels() const;
+
+			private:
+				struct entry {
+					kernel_info info_;
+					create_fn create_;
+					plugin::module module_;
+				};
+
+				std::map<std::string, entry> entries_;
+			};
+
+			IFC_GEOM_API kernel_registry& kernel_registry_instance();
+			IFC_GEOM_API std::unique_ptr<AbstractKernel> construct(ifcopenshell::file* file, const std::string& geometry_library, Settings& settings);
+
+		}
+	}
+}
 
 #endif

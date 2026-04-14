@@ -52,6 +52,7 @@ namespace ifcopenshell {
 
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
+			virtual std::string_view backend_id() const { return "opencascade"; }
 
 			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
 			virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
