@@ -239,7 +239,7 @@ void MainWindow::applySidecarData(ModelId mid, SidecarData data) {
 
     qDebug("Sidecar hit: %s (%zu verts, %zu indices, %zu meshes, %zu instances, %zu elements)",
            model.file_path.toStdString().c_str(),
-           data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS,
+           data.vertices.size() / INSTANCED_VERTEX_STRIDE_BYTES,
            data.indices.size(),
            data.meshes.size(),
            data.instances.size(),

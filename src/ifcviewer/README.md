@@ -46,9 +46,12 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 - **Per-model GPU buffers**: each loaded model gets its own
   VAO/VBO/EBO/instance-SSBO/visible-SSBO/indirect-buffer. No cross-model
   growth copies. Removing a model frees its GPU memory immediately.
-- **Local-coordinate vertex format (28 B):** position (3 floats) + normal
-  (3 floats) + packed RGBA8 colour (1 uint). The per-instance transform is
-  applied in the vertex shader via an SSBO lookup. No world-baked vertex data.
+- **Quantized local-coordinate vertex format (16 B):** position as
+  `u16x3` normalised against each mesh's local AABB, octahedral-encoded
+  normal as `i16x2`, packed RGBA8 colour. Dequantisation basis is per
+  mesh, uploaded once in a `MeshGpu` SSBO at binding 2. The per-instance
+  transform is applied in the vertex shader. No world-baked vertex data.
+  ~43 % smaller VBO and sidecar than the previous 28 B float layout.
 - **Multi-draw indirect:** every frame the CPU builds a flat list of visible
   instance indices and one `DrawElementsIndirectCommand` per non-empty mesh,
   then issues a single `glMultiDrawElementsIndirect` per model. 50k visible
@@ -93,7 +96,7 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 | `InstancedGeometry.h` | Shared structs: `MeshInfo`, `InstanceCpu`, `InstanceGpu`, chunk records |
 | `BvhAccel.h/cpp` | Median-split BVH builder; operates on instance world-AABBs |
 | `LodBuilder.h/cpp` | Post-stream decimation of unique meshes via meshoptimizer (`simplifySloppy`) |
-| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v5) sidecar read/write |
+| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v6) sidecar read/write |
 | `AppSettings.h/cpp` | Persisted preferences (geometry library, stats overlay, backface culling) |
 | `SettingsWindow.h/cpp` | Settings dialog |
 | `CMakeLists.txt` | Build configuration |
@@ -270,7 +273,7 @@ while stack not empty:
 Depth 64 is enough for billions of items on any balanced tree. The stack
 is on the C++ stack, zero per-frame allocation.
 
-#### Sidecar format (`.ifcview`, v5)
+#### Sidecar format (`.ifcview`, v6)
 
 Raw memory dump, Blender-`.blend`-style — no serialisation, no parsing.
 Stores everything needed to skip the `IfcGeom::Iterator` pass:
@@ -278,7 +281,7 @@ Stores everything needed to skip the `IfcGeom::Iterator` pass:
 ```
 SidecarHeader            (magic "IFVW", version, endian, ...)
 uint64_t                 source_file_size
-uint32_t + float[]       vertex data    (7 floats × N_verts, local coords)
+uint32_t + uint8_t[]     vertex data    (16 B/vert quantized; per-mesh basis in MeshInfo)
 uint32_t + uint32_t[]    index data     (mesh-local)
 uint32_t + MeshInfo[]    per-unique-mesh metadata (56 B each, incl. LOD1 slice)
 uint32_t + InstanceCpu[] per-placement records (transform + AABB + ids)
@@ -298,7 +301,8 @@ Per-model state on the GPU:
 
 | Buffer | Contents | Lifetime |
 |--------|----------|----------|
-| `VBO` | Interleaved local-coord vertex data (28 B/vert). One range per unique representation. | Grow-on-demand during streaming; static after finalize. |
+| `VBO` | Quantized local-coord vertex data (16 B/vert: u16x3 pos, oct i16x2 normal, RGBA8). One range per unique representation. | Grow-on-demand during streaming; static after finalize. |
+| `MeshGpu SSBO` (binding 2) | Per-mesh dequant basis (`vec4 aabb_min`, `vec4 aabb_max`). | Grow-on-demand; static after finalize. |
 | `EBO` | Mesh-local uint32 indices. One range per unique representation. | Same. |
 | `SSBO` (binding 0) | `InstanceGpu[]` (80 B each: mat4 transform, object_id, color_override, pad). | Appended during streaming, static after finalize. |
 | `visible SSBO` (binding 1) | `uint32[]` — flat list of visible instance indices, ordered by mesh, uploaded each frame. | Rewritten every frame. |
@@ -311,7 +315,7 @@ struct DrawElementsIndirectCommand {
     uint32_t count;         // mesh.index_count
     uint32_t instanceCount; // visible-list length for this mesh
     uint32_t firstIndex;    // mesh.ebo_byte_offset / 4
-    uint32_t baseVertex;    // mesh.vbo_byte_offset / 28
+    uint32_t baseVertex;    // mesh.vbo_byte_offset / 16
     uint32_t baseInstance;  // offset into the flat visible-index array
 };
 ```

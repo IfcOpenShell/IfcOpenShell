@@ -44,16 +44,17 @@ static_assert(sizeof(DrawElementsIndirectCommand) == 20, "indirect cmd must be 2
 // Shaders
 // -----------------------------------------------------------------------------
 //
-// Vertex layout (GL side, 28 bytes):
-//   location 0: vec3 a_position     (local coords)
-//   location 1: vec3 a_normal       (local)
-//   location 2: vec4 a_color        (GL_UNSIGNED_BYTE * 4 normalized)
+// Vertex layout (GL side, 16 bytes — quantized; see InstancedGeometry.h):
+//   location 0: vec3 a_position_q   (u16x3 normalized, per-mesh AABB basis)
+//   location 1: vec2 a_normal_oct   (i16x2 normalized, octahedral)
+//   location 2: vec4 a_color        (u8x4 normalized)
 //
 // Per-instance record in SSBO std430 (80 bytes):
 //   mat4 transform
 //   uint object_id
 //   uint color_override_rgba8     -- 0 => use baked a_color
-//   uint _pad0, _pad1
+//   uint mesh_id                  -- index into per-model MeshGpu[]
+//   uint _pad1
 //
 // The draw calls pass `u_instance_offset = mesh.first_instance`; the shader
 // reads `instances[u_instance_offset + gl_InstanceID]`.
@@ -61,15 +62,16 @@ static_assert(sizeof(DrawElementsIndirectCommand) == 20, "indirect cmd must be 2
 static const char* MAIN_VERTEX_SHADER = R"(
 #version 450 core
 #extension GL_ARB_shader_draw_parameters : require
-layout(location = 0) in vec3 a_position;
-layout(location = 1) in vec3 a_normal;
+// Quantized vertex inputs — see InstancedGeometry.h for layout.
+layout(location = 0) in vec3 a_position_q;  // u16x3 normalized -> [0,1]
+layout(location = 1) in vec2 a_normal_oct;  // i16x2 normalized -> [-1,1]
 layout(location = 2) in vec4 a_color;
 
 struct InstanceRecord {
     mat4 transform;
     uint object_id;
     uint color_override;
-    uint _pad0;
+    uint mesh_id;
     uint _pad1;
 };
 layout(std430, binding = 0) readonly buffer Instances {
@@ -77,6 +79,10 @@ layout(std430, binding = 0) readonly buffer Instances {
 };
 layout(std430, binding = 1) readonly buffer VisibleIndices {
     uint visible[];
+};
+struct MeshQuant { vec4 aabb_min; vec4 aabb_max; };
+layout(std430, binding = 2) readonly buffer Meshes {
+    MeshQuant meshes[];
 };
 
 uniform mat4 u_view_projection;
@@ -87,11 +93,24 @@ out vec4 v_color;
 flat out uint v_object_id;
 flat out uint v_selected;
 
+// Meyer et al. octahedral normal decode.  Input is in [-1,1]^2.
+vec3 octDecode(vec2 e) {
+    vec3 n = vec3(e.xy, 1.0 - abs(e.x) - abs(e.y));
+    if (n.z < 0.0) n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0,
+                                                    n.y >= 0.0 ? 1.0 : -1.0);
+    return normalize(n);
+}
+
 void main() {
     uint slot = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
     uint iid = visible[slot];
     InstanceRecord inst = instances[iid];
-    vec4 world = inst.transform * vec4(a_position, 1.0);
+    MeshQuant mq = meshes[inst.mesh_id];
+
+    // Dequantize local position against this mesh's AABB.
+    vec3 pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, a_position_q);
+
+    vec4 world = inst.transform * vec4(pos_local, 1.0);
     gl_Position = u_view_projection * world;
 
     // Rotate the normal by the upper-3x3 of the transform.  BIM placements
@@ -101,8 +120,9 @@ void main() {
     // otherwise mirrored instances shade as if inside-out.  The same
     // determinant sign is what GL_CULL_FACE uses to decide winding, so
     // keeping them in agreement means backface culling is safe to enable.
+    vec3 n_local = octDecode(a_normal_oct);
     mat3 rot = mat3(inst.transform);
-    vec3 n = rot * a_normal;
+    vec3 n = rot * n_local;
     if (determinant(rot) < 0.0) n = -n;
     v_normal = normalize(n);
 
@@ -152,13 +172,13 @@ void main() {
 static const char* PICK_VERTEX_SHADER = R"(
 #version 450 core
 #extension GL_ARB_shader_draw_parameters : require
-layout(location = 0) in vec3 a_position;
+layout(location = 0) in vec3 a_position_q;
 
 struct InstanceRecord {
     mat4 transform;
     uint object_id;
     uint color_override;
-    uint _pad0;
+    uint mesh_id;
     uint _pad1;
 };
 layout(std430, binding = 0) readonly buffer Instances {
@@ -166,6 +186,10 @@ layout(std430, binding = 0) readonly buffer Instances {
 };
 layout(std430, binding = 1) readonly buffer VisibleIndices {
     uint visible[];
+};
+struct MeshQuant { vec4 aabb_min; vec4 aabb_max; };
+layout(std430, binding = 2) readonly buffer Meshes {
+    MeshQuant meshes[];
 };
 
 uniform mat4 u_view_projection;
@@ -176,7 +200,9 @@ void main() {
     uint slot = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
     uint iid = visible[slot];
     InstanceRecord inst = instances[iid];
-    gl_Position = u_view_projection * inst.transform * vec4(a_position, 1.0);
+    MeshQuant mq = meshes[inst.mesh_id];
+    vec3 pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, a_position_q);
+    gl_Position = u_view_projection * inst.transform * vec4(pos_local, 1.0);
     v_object_id = inst.object_id;
 }
 )";
@@ -239,6 +265,51 @@ static GLuint linkProgram(QOpenGLFunctions_4_5_Core* gl, GLuint vert, GLuint fra
 }
 
 // -----------------------------------------------------------------------------
+
+// Meyer et al. octahedral normal encode.  Input unit vector -> [-1,1]^2.
+static void octEncode(const float n[3], float out[2]) {
+    float ax = std::fabs(n[0]), ay = std::fabs(n[1]), az = std::fabs(n[2]);
+    float denom = ax + ay + az;
+    if (denom < 1e-12f) { out[0] = 0.0f; out[1] = 0.0f; return; }
+    float px = n[0] / denom;
+    float py = n[1] / denom;
+    if (n[2] < 0.0f) {
+        float sx = px >= 0.0f ? 1.0f : -1.0f;
+        float sy = py >= 0.0f ? 1.0f : -1.0f;
+        float nx = (1.0f - std::fabs(py)) * sx;
+        float ny = (1.0f - std::fabs(px)) * sy;
+        px = nx; py = ny;
+    }
+    out[0] = px;
+    out[1] = py;
+}
+
+// Quantize a streamer-format vertex (pos3 + normal3 + color-as-float) into
+// the 16 B VBO record, given the mesh's tight local AABB.  `extent_recip`
+// is 1/(max-min) per axis, or 0 for degenerate axes (quantum becomes 0).
+static void quantizeVertex(const float src[7],
+                           const float aabb_min[3],
+                           const float extent_recip[3],
+                           uint8_t dst[INSTANCED_VERTEX_STRIDE_BYTES]) {
+    // Position -> u16 normalized.
+    uint16_t* p = reinterpret_cast<uint16_t*>(dst + INSTANCED_VERTEX_POS_OFFSET);
+    for (int a = 0; a < 3; ++a) {
+        float t = (src[a] - aabb_min[a]) * extent_recip[a];
+        if (t < 0.0f) t = 0.0f; else if (t > 1.0f) t = 1.0f;
+        p[a] = static_cast<uint16_t>(t * 65535.0f + 0.5f);
+    }
+    // Normal -> oct i16x2.
+    float oct[2];
+    octEncode(src + 3, oct);
+    int16_t* n = reinterpret_cast<int16_t*>(dst + INSTANCED_VERTEX_NORMAL_OFFSET);
+    for (int a = 0; a < 2; ++a) {
+        float v = oct[a];
+        if (v < -1.0f) v = -1.0f; else if (v > 1.0f) v = 1.0f;
+        n[a] = static_cast<int16_t>(std::lrintf(v * 32767.0f));
+    }
+    // Color passes through — streamer packs 4 bytes into the 7th float slot.
+    std::memcpy(dst + INSTANCED_VERTEX_COLOR_OFFSET, src + 6, 4);
+}
 
 // Determinant of the upper-left 3x3 of a column-major mat4 stored as 16 floats.
 // Sign tells us whether the transform contains a reflection, which is what
@@ -334,6 +405,7 @@ ViewportWindow::~ViewportWindow() {
                 if (m.vbo)  gl_->glDeleteBuffers(1, &m.vbo);
                 if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
                 if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
+                if (m.mesh_info_ssbo) gl_->glDeleteBuffers(1, &m.mesh_info_ssbo);
                 if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
                 if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
             }
@@ -396,19 +468,22 @@ void ViewportWindow::setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo) {
     gl_->glVertexArrayVertexBuffer(vao, 0, vbo, 0, INSTANCED_VERTEX_STRIDE_BYTES);
     gl_->glVertexArrayElementBuffer(vao, ebo);
 
-    // position (3 float @ 0)
+    // position (3 x u16 normalized @ 0)
     gl_->glEnableVertexArrayAttrib(vao, 0);
-    gl_->glVertexArrayAttribFormat(vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    gl_->glVertexArrayAttribFormat(vao, 0, 3, GL_UNSIGNED_SHORT, GL_TRUE,
+                                   INSTANCED_VERTEX_POS_OFFSET);
     gl_->glVertexArrayAttribBinding(vao, 0, 0);
 
-    // normal (3 float @ 12)
+    // normal oct-encoded (2 x i16 normalized @ 8)
     gl_->glEnableVertexArrayAttrib(vao, 1);
-    gl_->glVertexArrayAttribFormat(vao, 1, 3, GL_FLOAT, GL_FALSE, 12);
+    gl_->glVertexArrayAttribFormat(vao, 1, 2, GL_SHORT, GL_TRUE,
+                                   INSTANCED_VERTEX_NORMAL_OFFSET);
     gl_->glVertexArrayAttribBinding(vao, 1, 0);
 
-    // color (4 ubyte @ 24, normalized)
+    // color (4 x u8 normalized @ 12)
     gl_->glEnableVertexArrayAttrib(vao, 2);
-    gl_->glVertexArrayAttribFormat(vao, 2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 24);
+    gl_->glVertexArrayAttribFormat(vao, 2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+                                   INSTANCED_VERTEX_COLOR_OFFSET);
     gl_->glVertexArrayAttribBinding(vao, 2, 0);
 }
 
@@ -544,8 +619,44 @@ void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
 
     ModelGpuData& m = getOrCreateModel(chunk.model_id);
 
-    const size_t vb_size = chunk.vertices.size() * sizeof(float);
-    const size_t ib_size = chunk.indices.size()  * sizeof(uint32_t);
+    // Streamer format: 7 floats/vertex (pos3 + normal3 + color-as-float).
+    const size_t src_stride_floats = 7;
+    const size_t n_verts = chunk.vertices.size() / src_stride_floats;
+
+    // Recompute a tight local AABB from the actual vertex positions — the
+    // chunk-provided AABB can be slightly loose, which wastes quantization
+    // precision.  Also derives the dequant basis we'll ship to the GPU.
+    float bmin[3] = {  std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity() };
+    float bmax[3] = { -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity() };
+    for (size_t i = 0; i < n_verts; ++i) {
+        const float* v = chunk.vertices.data() + i * src_stride_floats;
+        for (int a = 0; a < 3; ++a) {
+            if (v[a] < bmin[a]) bmin[a] = v[a];
+            if (v[a] > bmax[a]) bmax[a] = v[a];
+        }
+    }
+    // Degenerate / zero-extent axis: collapse to a single quantum.  The
+    // dequant shader will output bmin[a] for every vertex, which is correct.
+    float extent_recip[3];
+    for (int a = 0; a < 3; ++a) {
+        float ext = bmax[a] - bmin[a];
+        extent_recip[a] = ext > 0.0f ? 1.0f / ext : 0.0f;
+    }
+
+    // Quantize into a scratch buffer sized to the destination layout.
+    std::vector<uint8_t> quant(n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
+    for (size_t i = 0; i < n_verts; ++i) {
+        quantizeVertex(chunk.vertices.data() + i * src_stride_floats,
+                       bmin, extent_recip,
+                       quant.data() + i * INSTANCED_VERTEX_STRIDE_BYTES);
+    }
+
+    const size_t vb_size = quant.size();
+    const size_t ib_size = chunk.indices.size() * sizeof(uint32_t);
 
     if (m.vbo_used + vb_size > m.vbo_capacity) {
         if (!growModelVbo(m, m.vbo_used + vb_size)) return;
@@ -556,18 +667,17 @@ void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
 
     MeshInfo info;
     info.vbo_byte_offset = static_cast<uint32_t>(m.vbo_used);
-    info.vertex_count    = static_cast<uint32_t>(
-        chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+    info.vertex_count    = static_cast<uint32_t>(n_verts);
     info.ebo_byte_offset = static_cast<uint32_t>(m.ebo_used);
     info.index_count     = static_cast<uint32_t>(chunk.indices.size());
     for (int a = 0; a < 3; ++a) {
-        info.local_aabb_min[a] = chunk.local_aabb_min[a];
-        info.local_aabb_max[a] = chunk.local_aabb_max[a];
+        info.local_aabb_min[a] = bmin[a];
+        info.local_aabb_max[a] = bmax[a];
     }
     info.first_instance = 0;
     info.instance_count = 0;
 
-    gl_->glNamedBufferSubData(m.vbo, m.vbo_used, vb_size, chunk.vertices.data());
+    gl_->glNamedBufferSubData(m.vbo, m.vbo_used, vb_size, quant.data());
     gl_->glNamedBufferSubData(m.ebo, m.ebo_used, ib_size, chunk.indices.data());
     m.vbo_used += vb_size;
     m.ebo_used += ib_size;
@@ -575,6 +685,33 @@ void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
 
     if (m.meshes.size() <= chunk.local_mesh_id) m.meshes.resize(chunk.local_mesh_id + 1);
     m.meshes[chunk.local_mesh_id] = info;
+
+    // Write the matching dequant basis into the MeshGpu SSBO.  Grow on
+    // demand; geometrically doubling keeps this amortized O(1) over streaming.
+    MeshGpu mg{};
+    for (int a = 0; a < 3; ++a) {
+        mg.aabb_min[a] = bmin[a];
+        mg.aabb_max[a] = bmax[a];
+    }
+    mg.aabb_min[3] = 0.0f;
+    mg.aabb_max[3] = 0.0f;
+
+    const size_t mg_offset = chunk.local_mesh_id * sizeof(MeshGpu);
+    if (mg_offset + sizeof(MeshGpu) > m.mesh_info_capacity) {
+        size_t new_cap = m.mesh_info_capacity ? m.mesh_info_capacity : 32 * sizeof(MeshGpu);
+        while (new_cap < mg_offset + sizeof(MeshGpu)) new_cap *= 2;
+        GLuint new_ssbo = 0;
+        gl_->glCreateBuffers(1, &new_ssbo);
+        gl_->glNamedBufferStorage(new_ssbo, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        if (m.mesh_info_ssbo && m.mesh_info_capacity > 0) {
+            gl_->glCopyNamedBufferSubData(m.mesh_info_ssbo, new_ssbo, 0, 0,
+                                          m.mesh_info_capacity);
+            gl_->glDeleteBuffers(1, &m.mesh_info_ssbo);
+        }
+        m.mesh_info_ssbo = new_ssbo;
+        m.mesh_info_capacity = new_cap;
+    }
+    gl_->glNamedBufferSubData(m.mesh_info_ssbo, mg_offset, sizeof(MeshGpu), &mg);
 }
 
 void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
@@ -594,6 +731,15 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     m.instances.push_back(inst);
     m.instance_reflected.push_back(transformIsReflected(inst.transform) ? 1 : 0);
 
+    // Mirror into bvh_items so the hot cull path (which reads AABBs out of
+    // bvh_items even when no BVH has been built yet) stays correct during
+    // streaming.  finalizeModel rebuilds the real BVH over these items.
+    BvhItem bi;
+    std::memcpy(bi.aabb_min, inst.world_aabb_min, sizeof(bi.aabb_min));
+    std::memcpy(bi.aabb_max, inst.world_aabb_max, sizeof(bi.aabb_max));
+    bi.model_id = inst.model_id;
+    m.bvh_items.push_back(bi);
+
     // Append the GPU record to the instance SSBO so the model is drawable
     // immediately, without waiting for finalizeModel.  The visible-list
     // architecture means SSBO order is irrelevant to correctness.
@@ -601,7 +747,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     std::memcpy(gpu.transform, inst.transform, sizeof(gpu.transform));
     gpu.object_id = inst.object_id;
     gpu.color_override_rgba8 = inst.color_override_rgba8;
-    gpu._pad0 = 0;
+    gpu.mesh_id = inst.mesh_id;
     gpu._pad1 = 0;
 
     const size_t offset = m.ssbo_instance_count * sizeof(InstanceGpu);
@@ -659,9 +805,10 @@ bool ViewportWindow::snapshotModel(uint32_t model_id, SidecarData& out) const {
     const auto& m = it->second;
     if (!m.finalized) return false;
 
-    // GPU readback of the packed VBO/EBO ranges actually in use.
+    // GPU readback of the packed VBO/EBO ranges actually in use.  VBO is
+    // raw bytes at the quantized layout.
     if (m.vbo_used > 0) {
-        out.vertices.resize(m.vbo_used / sizeof(float));
+        out.vertices.resize(m.vbo_used);
         gl_->glGetNamedBufferSubData(m.vbo, 0, m.vbo_used, out.vertices.data());
     }
     if (m.ebo_used > 0) {
@@ -685,6 +832,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.vbo)  gl_->glDeleteBuffers(1, &existing->second.vbo);
         if (existing->second.ebo)  gl_->glDeleteBuffers(1, &existing->second.ebo);
         if (existing->second.ssbo) gl_->glDeleteBuffers(1, &existing->second.ssbo);
+        if (existing->second.mesh_info_ssbo) gl_->glDeleteBuffers(1, &existing->second.mesh_info_ssbo);
         if (existing->second.visible_ssbo) gl_->glDeleteBuffers(1, &existing->second.visible_ssbo);
         if (existing->second.indirect_buffer) gl_->glDeleteBuffers(1, &existing->second.indirect_buffer);
         models_gpu_.erase(existing);
@@ -695,7 +843,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     gl_->glCreateBuffers(1, &m.vbo);
     gl_->glCreateBuffers(1, &m.ebo);
 
-    const size_t vb_bytes = data.vertices.size() * sizeof(float);
+    const size_t vb_bytes = data.vertices.size();
     const size_t ib_bytes = data.indices.size()  * sizeof(uint32_t);
     m.vbo_capacity = std::max<size_t>(vb_bytes, 1);
     m.ebo_capacity = std::max<size_t>(ib_bytes, 1);
@@ -709,8 +857,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 
     m.vbo_used = vb_bytes;
     m.ebo_used = ib_bytes;
-    m.vertex_count = static_cast<uint32_t>(
-        data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+    m.vertex_count = static_cast<uint32_t>(vb_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
     m.meshes = std::move(data.meshes);
     m.instances = std::move(data.instances);
 
@@ -728,7 +875,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         std::memcpy(dst.transform, src.transform, sizeof(dst.transform));
         dst.object_id = src.object_id;
         dst.color_override_rgba8 = src.color_override_rgba8;
-        dst._pad0 = 0;
+        dst.mesh_id = src.mesh_id;
         dst._pad1 = 0;
     }
     gl_->glCreateBuffers(1, &m.ssbo);
@@ -737,6 +884,30 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         gl_->glNamedBufferStorage(m.ssbo, ssbo_bytes, gpu.data(), 0);
     }
     m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
+
+    // Build and upload the per-mesh quantization SSBO from cached meshes.
+    {
+        std::vector<MeshGpu> mesh_gpu(m.meshes.size());
+        for (size_t i = 0; i < m.meshes.size(); ++i) {
+            for (int a = 0; a < 3; ++a) {
+                mesh_gpu[i].aabb_min[a] = m.meshes[i].local_aabb_min[a];
+                mesh_gpu[i].aabb_max[a] = m.meshes[i].local_aabb_max[a];
+            }
+            mesh_gpu[i].aabb_min[3] = 0.0f;
+            mesh_gpu[i].aabb_max[3] = 0.0f;
+        }
+        const size_t mg_bytes = mesh_gpu.size() * sizeof(MeshGpu);
+        gl_->glCreateBuffers(1, &m.mesh_info_ssbo);
+        if (mg_bytes > 0) {
+            gl_->glNamedBufferStorage(m.mesh_info_ssbo, mg_bytes,
+                                      mesh_gpu.data(), GL_DYNAMIC_STORAGE_BIT);
+            m.mesh_info_capacity = mg_bytes;
+        } else {
+            gl_->glNamedBufferStorage(m.mesh_info_ssbo, sizeof(MeshGpu),
+                                      nullptr, GL_DYNAMIC_STORAGE_BIT);
+            m.mesh_info_capacity = sizeof(MeshGpu);
+        }
+    }
 
     // Recompute the reflection flag from each instance's transform — the
     // sidecar only caches InstanceCpu, not the parallel reflection flags.
@@ -754,7 +925,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 
     qDebug("Sidecar apply: model %u  %zu verts, %zu meshes, %zu instances  "
            "%.1f MB vram (vbo %.1f + ebo %.1f + ssbo %.1f)",
-           model_id, data.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS,
+           model_id, vb_bytes / INSTANCED_VERTEX_STRIDE_BYTES,
            models_gpu_[model_id].meshes.size(),
            models_gpu_[model_id].instances.size(),
            (vb_bytes + ib_bytes + ssbo_bytes) / (1024.0*1024.0),
@@ -803,6 +974,7 @@ void ViewportWindow::resetScene() {
         if (m.vbo)  gl_->glDeleteBuffers(1, &m.vbo);
         if (m.ebo)  gl_->glDeleteBuffers(1, &m.ebo);
         if (m.ssbo) gl_->glDeleteBuffers(1, &m.ssbo);
+        if (m.mesh_info_ssbo) gl_->glDeleteBuffers(1, &m.mesh_info_ssbo);
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
         if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
     }
@@ -839,6 +1011,7 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.vbo)  gl_->glDeleteBuffers(1, &it->second.vbo);
         if (it->second.ebo)  gl_->glDeleteBuffers(1, &it->second.ebo);
         if (it->second.ssbo) gl_->glDeleteBuffers(1, &it->second.ssbo);
+        if (it->second.mesh_info_ssbo) gl_->glDeleteBuffers(1, &it->second.mesh_info_ssbo);
         if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
         if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
         models_gpu_.erase(it);
@@ -1455,6 +1628,7 @@ void ViewportWindow::render() {
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
         gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
 
         uint32_t fwd = m.indirect_forward_count;
@@ -1622,6 +1796,7 @@ void ViewportWindow::renderPickPass() {
         gl_->glBindVertexArray(m.vao);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
         gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.visible_ssbo);
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
         gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.indirect_buffer);
 
         const uint32_t fwd = m.indirect_forward_count;

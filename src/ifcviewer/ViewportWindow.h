@@ -60,6 +60,8 @@ struct ModelGpuData {
     GLuint vbo = 0;
     GLuint ebo = 0;
     GLuint ssbo = 0;
+    GLuint mesh_info_ssbo = 0;   // MeshGpu[] — per-mesh quantization basis
+    size_t mesh_info_capacity = 0;  // bytes
 
     size_t vbo_capacity = 0;
     size_t ebo_capacity = 0;

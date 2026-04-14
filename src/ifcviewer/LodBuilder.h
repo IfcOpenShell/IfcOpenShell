@@ -35,9 +35,10 @@
 //   target_ratio  = 0.25    — aim for 25% of original tris
 //   target_error  = 0.05    — stop if relative error exceeds 5%
 //
-// `sd.vertices` is read (position is the first 3 floats of each
-// INSTANCED_VERTEX_STRIDE_FLOATS-wide vertex) but not modified — LOD1
-// reuses the same vertex buffer, just with a different index list.
+// `sd.vertices` is raw bytes at the quantized layout; positions are
+// dequantized per-mesh (using MeshInfo.local_aabb_min/max) into a temp
+// float array before feeding meshoptimizer.  Vertices are not modified —
+// LOD1 reuses the same VBO, just with a different index list.
 void buildLods(SidecarData& sd,
                int min_triangles = 500,
                float target_ratio = 0.25f,

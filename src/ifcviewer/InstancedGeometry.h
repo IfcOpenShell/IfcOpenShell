@@ -24,13 +24,35 @@
 #include <string>
 #include <vector>
 
-// Per-vertex layout for instanced meshes, stored in local coordinates.
-// 28 bytes per vertex:
-//   pos(3 float)    -- 12 B
-//   normal(3 float) -- 12 B
-//   color(4 bytes RGBA8, read as GL_UNSIGNED_BYTE*4 normalized) -- 4 B
-static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 28;
+// Per-vertex layout for instanced meshes, stored in local coordinates,
+// quantized against each mesh's local AABB.  16 bytes per vertex:
+//   offset 0   pos     3 x uint16   normalized -> [0,1]; dequant to
+//                                   mix(mesh.aabb_min, mesh.aabb_max, t)
+//   offset 6   _pad    2 bytes
+//   offset 8   normal  2 x int16    normalized -> [-1,1]; octahedral-decoded
+//   offset 12  color   4 x uint8    normalized -> [0,1]
+//
+// Quantization basis is per mesh, stored in the MeshGpu SSBO bound at
+// binding=2.  The vertex shader looks up its basis via the instance's mesh_id.
+static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 16;
+
+// Streamer-side intermediate format: 7 floats per vertex (pos3 + normal3 +
+// color-as-float).  GeometryStreamer writes this into MeshChunk.vertices;
+// ViewportWindow::uploadMeshChunk quantizes it down to STRIDE_BYTES on the
+// way to the VBO.  Not the GPU layout — purely a transfer convention.
 static constexpr int INSTANCED_VERTEX_STRIDE_FLOATS = 7;
+
+static constexpr int INSTANCED_VERTEX_POS_OFFSET    = 0;
+static constexpr int INSTANCED_VERTEX_NORMAL_OFFSET = 8;
+static constexpr int INSTANCED_VERTEX_COLOR_OFFSET  = 12;
+
+// Per-mesh quantization basis, uploaded to a std430 SSBO.  Two vec4s so
+// std430 layout is trivial (no alignment surprises).  w components unused.
+struct alignas(16) MeshGpu {
+    float aabb_min[4];  // xyz = local AABB min; w = 0
+    float aabb_max[4];  // xyz = local AABB max; w = 0
+};
+static_assert(sizeof(MeshGpu) == 32, "MeshGpu must be 32 bytes");
 
 // Per-mesh metadata on the CPU side.  Meshes own a slice of the model's
 // VBO (shared across LODs) and one or more slices of the EBO, one per LOD.
@@ -61,12 +83,13 @@ static_assert(sizeof(MeshInfo) == 56, "MeshInfo must be 56 bytes");
 //   mat4 transform (64 B column-major)
 //   uint object_id
 //   uint color_override_rgba8   -- 0 = use baked vertex color, else override
-//   uint _pad0, _pad1           -- align to 16 for std430
+//   uint mesh_id                -- index into per-model MeshGpu[]
+//   uint _pad1                  -- align to 16 for std430
 struct alignas(16) InstanceGpu {
     float    transform[16];
     uint32_t object_id            = 0;
     uint32_t color_override_rgba8 = 0;
-    uint32_t _pad0                = 0;
+    uint32_t mesh_id              = 0;   // index into per-model MeshGpu[]
     uint32_t _pad1                = 0;
 };
 static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");

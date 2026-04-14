@@ -37,7 +37,9 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 // v5 = MeshInfo extended with lod1_ebo_byte_offset + lod1_index_count (56 B).
 //      sd.indices may contain an appended LOD1 index slice for each mesh
 //      where meshoptimizer decimation produced useful output.
-static constexpr uint32_t SIDECAR_VERSION = 5;
+// v6 = VBO vertices quantized to 16 B/vertex (pos u16x3 + normal oct i16x2 +
+//      color u8x4).  Dequant basis is per-mesh MeshInfo.local_aabb_min/max.
+static constexpr uint32_t SIDECAR_VERSION = 6;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
@@ -56,10 +58,11 @@ struct PackedElementInfo {
 };
 
 // Everything needed to display an already-tessellated model without
-// re-running the iterator.  v4 schema: instanced geometry.
+// re-running the iterator.  v6 schema: instanced + quantized geometry.
 struct SidecarData {
-    // Per-model GPU geometry (local coords).  28 bytes/vertex.
-    std::vector<float>        vertices;
+    // Per-model GPU geometry (local coords).  Raw VBO bytes at the
+    // INSTANCED_VERTEX_STRIDE_BYTES layout (16 B/vertex as of v6).
+    std::vector<uint8_t>      vertices;
     std::vector<uint32_t>     indices;
 
     // Mesh dictionary and per-instance data.

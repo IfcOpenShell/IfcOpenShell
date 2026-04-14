@@ -33,9 +33,8 @@ void buildLods(SidecarData& sd,
                float target_error) {
     if (sd.meshes.empty() || sd.vertices.empty() || sd.indices.empty()) return;
 
-    const size_t vtx_stride_bytes  = INSTANCED_VERTEX_STRIDE_BYTES;
-    const size_t vtx_stride_floats = INSTANCED_VERTEX_STRIDE_FLOATS;
-    const size_t total_vertex_count = sd.vertices.size() / vtx_stride_floats;
+    const size_t vtx_stride_bytes   = INSTANCED_VERTEX_STRIDE_BYTES;
+    const size_t total_vertex_count = sd.vertices.size() / vtx_stride_bytes;
 
     // Env var knobs so we can tune without rebuilding.
     //   IFC_LOD_LOCK_BORDER=1      re-enable LockBorder (off by default: BIM
@@ -73,8 +72,10 @@ void buildLods(SidecarData& sd,
     // Scratch buffers reused across meshes so we only allocate once.
     std::vector<uint32_t> simplified;
     std::vector<uint32_t> shadow;
+    std::vector<float>    dequant_pos;   // 3 floats/vertex, dequantized
     simplified.reserve(1024);
     shadow.reserve(1024);
+    dequant_pos.reserve(1024 * 3);
 
     int dbg_printed = 0;
     int dbg_rejected_savings = 0;
@@ -101,8 +102,27 @@ void buildLods(SidecarData& sd,
         const uint32_t first_index = mesh.ebo_byte_offset / sizeof(uint32_t);
         if (first_index + mesh.index_count > sd.indices.size()) continue;
 
-        const float* positions =
-            sd.vertices.data() + base_vertex * vtx_stride_floats;
+        // Dequantize positions for this mesh into a temp float array.
+        // meshopt needs contiguous float3 positions with a known stride;
+        // quantized bytes aren't directly usable.
+        const uint8_t* quant_base =
+            sd.vertices.data() + base_vertex * vtx_stride_bytes;
+        dequant_pos.resize(static_cast<size_t>(mesh.vertex_count) * 3);
+        const float extent[3] = {
+            mesh.local_aabb_max[0] - mesh.local_aabb_min[0],
+            mesh.local_aabb_max[1] - mesh.local_aabb_min[1],
+            mesh.local_aabb_max[2] - mesh.local_aabb_min[2],
+        };
+        for (uint32_t v = 0; v < mesh.vertex_count; ++v) {
+            const uint16_t* p = reinterpret_cast<const uint16_t*>(
+                quant_base + v * vtx_stride_bytes);
+            for (int a = 0; a < 3; ++a) {
+                float t = p[a] / 65535.0f;
+                dequant_pos[v * 3 + a] = mesh.local_aabb_min[a] + t * extent[a];
+            }
+        }
+        const float* positions = dequant_pos.data();
+        const size_t local_pos_stride = sizeof(float) * 3;
         const uint32_t* indices = sd.indices.data() + first_index;
 
         const size_t target_index_count = std::max<size_t>(
@@ -121,7 +141,7 @@ void buildLods(SidecarData& sd,
             indices, mesh.index_count,
             positions, mesh.vertex_count,
             sizeof(float) * 3,       // compare only xyz
-            vtx_stride_bytes);
+            local_pos_stride);
 
         simplified.resize(mesh.index_count);
         float result_error = 0.0f;
@@ -135,7 +155,7 @@ void buildLods(SidecarData& sd,
             new_index_count = meshopt_simplifySloppy(
                 simplified.data(),
                 indices, mesh.index_count,
-                positions, mesh.vertex_count, vtx_stride_bytes,
+                positions, mesh.vertex_count, local_pos_stride,
                 target_index_count, target_error,
                 &result_error);
         } else {
@@ -144,7 +164,7 @@ void buildLods(SidecarData& sd,
             new_index_count = meshopt_simplify(
                 simplified.data(),
                 shadow.data(), mesh.index_count,
-                positions, mesh.vertex_count, vtx_stride_bytes,
+                positions, mesh.vertex_count, local_pos_stride,
                 target_index_count, target_error,
                 options, &result_error);
         }

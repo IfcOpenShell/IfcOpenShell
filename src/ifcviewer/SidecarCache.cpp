@@ -17,17 +17,16 @@
  *                                                                              *
  ********************************************************************************/
 
-// v5 layout (all multi-byte fields native-endian; endianness marker in header).
-// Same sequence as v4; the only change is that MeshInfo grew two uint32_ts
-// (lod1_ebo_byte_offset + lod1_index_count) and `indices` may contain extra
-// appended LOD1 slices pointed at by those offsets.
+// v6 layout (all multi-byte fields native-endian; endianness marker in header).
+// Same sequence as v5; the only change is that vertex data is now raw bytes
+// at the 16 B/vertex quantized layout (see InstancedGeometry.h).
 //
 //
 //   SidecarHeader (16 bytes)
 //   uint64_t  source_file_size
 //
-//   uint32_t  num_vertices_floats
-//   float[]   vertex data (28 B/vertex: pos3 + normal3 + color1_packed)
+//   uint32_t  num_vertex_bytes
+//   uint8_t[] vertex data (16 B/vertex: pos u16x3 + pad2 + oct-normal i16x2 + rgba8)
 //   uint32_t  num_indices
 //   uint32_t[] index data (mesh-local indices; base_vertex applied at draw time)
 //
