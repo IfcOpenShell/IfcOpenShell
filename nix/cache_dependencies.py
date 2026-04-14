@@ -1,3 +1,5 @@
+# /// script
+# ///
 """
 Cache built dependencies for builds.
 

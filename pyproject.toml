@@ -215,10 +215,7 @@ exclude = [
 
 [tool.poe.tasks]
 
-ruff-main = "ruff check --extend-exclude nix/build-all.py"
-# It's actually Python 3.6, but ruff only supports 3.7+, but it should do.
-ruff-old = "ruff check nix/build-all.py --target-version py37"
-ruff.sequence = ["ruff-main", "ruff-old"]
+ruff = "ruff check"
 
 black = "black ."
 
@@ -238,7 +235,7 @@ ty-venv-ios.sequence = [
     {cmd = "uv pip install -r src/ifcopenshell-python/type-check-requirements.txt --python=src/ifcopenshell-python/.venv"},
 ]
 
-format.sequence = ["black", "ruff-main", "ruff-old"]
+format.sequence = ["black", "ruff"]
 
 cmake-format = "gersemi . --in-place"
 
