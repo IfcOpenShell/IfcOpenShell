@@ -96,7 +96,10 @@ Things to update:
 - ``.github/workflows/ci-ifcsverchok.yml`` - release ifcsverchok Blender add-on in GitHub releases
 - ``.github/workflows/ci-ifctester-pypi.yml`` - release `ifctester <https://pypi.org/project/ifctester/>`_ to PyPI
 - ``.github/workflows/ci-pyodide-wasm-release.yml`` - release pyodide wasm wheel to `wasm-wheels <https://github.com/IfcOpenShell/wasm-wheels>`_
-- Release Bonsai Blender extension - zip files from ci-bonsai.yml releases should be uploaded manually to `Blender extensions platform <https://extensions.blender.org/add-ons/bonsai/>`_
+- ``.github/workflows/publish-bonsai-releases.yml`` - publish Bonsai Blender extension to `Blender extensions platform <https://extensions.blender.org/add-ons/bonsai/>`_
+
+  - ❗ Requires ``BLENDER_EXTENSIONS_TOKEN`` secret to be set - ❗ not yet configured
+
 - Publishing documentation and websites (see `website <https://github.com/IfcOpenShell/website>`_ repository):
 
   - `ifcopenshell-docs.yml` - builds and publishes IfcOpenShell documentation to `docs.ifcopenshell.org <https://docs.ifcopenshell.org>`_ (`ifcopenshell_org_docs <https://github.com/IfcOpenShell/ifcopenshell_org_docs>`_ repo)
