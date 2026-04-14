@@ -78,6 +78,14 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
   through load.
 - **Non-blocking sidecar loading**: sidecars are read on a background
   thread; only the final GPU upload touches the main thread.
+- **Event-driven rendering:** no continuous render timer. Frames are
+  scheduled via `QWindow::requestUpdate()` only when something changes
+  (camera move, streaming chunk, hover, settings). When the camera and
+  scene are idle the cull pass and HiZ readback are skipped entirely
+  and the main thread blocks in the Qt event loop — the viewer costs
+  zero CPU/GPU on a static scene. FPS is still reported accurately
+  because frame cost is measured *inside* `render()`, not as wall-clock
+  between frames.
 - **GPU object picking**: a second render pass writes object IDs into an
   R32UI framebuffer. Click reads back one pixel. No CPU-side raycasting.
 - **Multi-model support**: multiple IFCs can be loaded simultaneously.
@@ -728,6 +736,8 @@ multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU 
 - [x] Phase 3A — screen-space contribution culling
 - [x] Phase 3B — distance / contribution LOD (meshoptimizer `simplifySloppy`)
 - [x] Phase 3C — Hierarchical-Z occlusion culling (v1, CPU-side readback)
+- [x] Quantized VBO (16 B/vert, sidecar v6)
+- [x] Event-driven rendering (zero idle CPU/GPU, cull skipped on still frames)
 - [ ] **Phase 3D — GPU-side compute-shader culling** (next; replaces the readback)
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
