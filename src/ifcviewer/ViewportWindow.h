@@ -23,7 +23,6 @@
 #include <QWindow>
 #include <QOpenGLContext>
 #include <QtOpenGL/QOpenGLFunctions_4_5_Core>
-#include <QTimer>
 #include <QElapsedTimer>
 #include <QMatrix4x4>
 #include <QVector3D>
@@ -107,6 +106,11 @@ struct ModelGpuData {
     bool hidden    = false;
 };
 
+// Rendering is event-driven: render() runs only when QEvent::UpdateRequest
+// is delivered, posted via requestUpdate().  An idle scene costs zero CPU.
+// INVARIANT: every public mutator that changes what should be on screen
+// (camera, selection, model lifecycle, visibility) MUST call requestUpdate()
+// before returning, or the viewport will go silently stale.
 class ViewportWindow : public QWindow {
     Q_OBJECT
 public:
@@ -217,8 +221,6 @@ private:
 
     QOpenGLContext* context_ = nullptr;
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
-    QTimer render_timer_;
-    QElapsedTimer frame_clock_;
     bool gl_initialized_ = false;
 
     // Shaders

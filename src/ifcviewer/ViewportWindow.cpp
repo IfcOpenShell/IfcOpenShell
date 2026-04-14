@@ -317,10 +317,12 @@ ViewportWindow::ViewportWindow(QWindow* parent)
     fmt.setSamples(4);
     setFormat(fmt);
 
-    connect(&render_timer_, &QTimer::timeout, this, [this]() {
-        if (isExposed()) render();
-    });
-    render_timer_.setInterval(16);
+    // Redraw is driven by QEvent::UpdateRequest.  We post one via
+    // requestUpdate() from every function that mutates visible state
+    // (mouse/wheel, model lifecycle, selection, resize).  When nothing
+    // changes — the common case for a static BIM model — we don't burn
+    // CPU/GPU redrawing the same frame.  Qt coalesces multiple
+    // requestUpdate() calls inside a single vblank.
 }
 
 ViewportWindow::~ViewportWindow() {
@@ -381,11 +383,11 @@ void ViewportWindow::initGL() {
                 context_->makeCurrent(this);
                 if (on) gl_->glEnable(GL_CULL_FACE);
                 else    gl_->glDisable(GL_CULL_FACE);
+                requestUpdate();
             });
 
     gl_initialized_ = true;
-    frame_clock_.start();
-    render_timer_.start();
+    requestUpdate();
 
     emit initialized();
 }
@@ -613,6 +615,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
         m.total_triangles += m.meshes[chunk.local_mesh_id].index_count / 3;
     }
     have_cached_cull_ = false;
+    requestUpdate();
 }
 
 void ViewportWindow::finalizeModel(uint32_t model_id) {
@@ -637,6 +640,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
 
     m.finalized = true;
     have_cached_cull_ = false;
+    requestUpdate();
 
     const size_t ssbo_bytes = m.ssbo_instance_count * sizeof(InstanceGpu);
     qDebug("Model %u finalized: %zu verts, %zu meshes, %zu instances, %.1f MB vram "
@@ -746,6 +750,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.finalized = true;
     models_gpu_.emplace(model_id, std::move(m));
     have_cached_cull_ = false;
+    requestUpdate();
 
     qDebug("Sidecar apply: model %u  %zu verts, %zu meshes, %zu instances  "
            "%.1f MB vram (vbo %.1f + ebo %.1f + ssbo %.1f)",
@@ -770,6 +775,7 @@ void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd)
         // case lod1_* fields were touched.
         m.meshes = sd.meshes;
         have_cached_cull_ = false;
+        requestUpdate();
         return;
     }
 
@@ -786,6 +792,7 @@ void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd)
     // Replace mesh metadata so cullAndUploadVisible sees the new lod1_ fields.
     m.meshes = sd.meshes;
     have_cached_cull_ = false;
+    requestUpdate();
 }
 
 void ViewportWindow::resetScene() {
@@ -802,6 +809,7 @@ void ViewportWindow::resetScene() {
     models_gpu_.clear();
     selected_object_id_ = 0;
     have_cached_cull_ = false;
+    requestUpdate();
 }
 
 void ViewportWindow::hideModel(uint32_t model_id) {
@@ -809,6 +817,7 @@ void ViewportWindow::hideModel(uint32_t model_id) {
     if (it != models_gpu_.end()) {
         it->second.hidden = true;
         have_cached_cull_ = false;
+        requestUpdate();
     }
 }
 
@@ -817,6 +826,7 @@ void ViewportWindow::showModel(uint32_t model_id) {
     if (it != models_gpu_.end()) {
         it->second.hidden = false;
         have_cached_cull_ = false;
+        requestUpdate();
     }
 }
 
@@ -833,10 +843,14 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
         models_gpu_.erase(it);
         have_cached_cull_ = false;
+        requestUpdate();
     }
 }
 
-void ViewportWindow::setSelectedObjectId(uint32_t id) { selected_object_id_ = id; }
+void ViewportWindow::setSelectedObjectId(uint32_t id) {
+    selected_object_id_ = id;
+    requestUpdate();
+}
 
 // --- HiZ occlusion culling (Phase 3C) -----------------------------------
 
@@ -1367,6 +1381,9 @@ void ViewportWindow::updateCamera() {
 void ViewportWindow::render() {
     if (!gl_initialized_ || !isExposed()) return;
 
+    QElapsedTimer frame_cost_clock;
+    frame_cost_clock.start();
+
     context_->makeCurrent(this);
     updateCamera();
 
@@ -1508,8 +1525,13 @@ void ViewportWindow::render() {
 
     context_->swapBuffers(this);
 
-    float dt = frame_clock_.restart() / 1000.0f;
-    accumulated_time_ += dt;
+    // Measure frame *cost* (time spent inside render()) rather than the
+    // wall-clock gap between frames.  With event-driven rendering, idle gaps
+    // between requestUpdate() calls would otherwise pollute the FPS window.
+    // Reported fps = "if I rendered continuously, this is the rate I'd hit",
+    // which is what profiling actually wants.
+    const float frame_cost_s = frame_cost_clock.nsecsElapsed() * 1e-9f;
+    accumulated_time_ += frame_cost_s;
     frame_count_++;
     if (accumulated_time_ >= 1.0f) {
         last_fps_ = static_cast<float>(frame_count_) / accumulated_time_;
@@ -1649,13 +1671,19 @@ void ViewportWindow::renderAxisGizmo() {
 }
 
 void ViewportWindow::exposeEvent(QExposeEvent*) {
-    if (isExposed() && !gl_initialized_) initGL();
+    if (isExposed()) {
+        if (!gl_initialized_) initGL();
+        else                  requestUpdate();
+    }
 }
 void ViewportWindow::resizeEvent(QResizeEvent*) {
-    if (gl_initialized_) render();
+    if (gl_initialized_) requestUpdate();
 }
 bool ViewportWindow::event(QEvent* e) {
     switch (e->type()) {
+    case QEvent::UpdateRequest:
+        if (isExposed() && gl_initialized_) render();
+        return true;
     case QEvent::MouseButtonPress:   handleMousePress(static_cast<QMouseEvent*>(e));   return true;
     case QEvent::MouseButtonRelease: handleMouseRelease(static_cast<QMouseEvent*>(e)); return true;
     case QEvent::MouseMove:          handleMouseMove(static_cast<QMouseEvent*>(e));    return true;
@@ -1673,6 +1701,7 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
         uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
         selected_object_id_ = id;
         emit objectPicked(id);
+        requestUpdate();  // selection highlight changed
     }
     active_button_ = Qt::NoButton;
 }
@@ -1695,10 +1724,12 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
             camera_pitch_ += delta.y() * 0.3f;
             camera_pitch_ = qBound(-89.0f, camera_pitch_, 89.0f);
         }
+        requestUpdate();
     }
 }
 void ViewportWindow::handleWheel(QWheelEvent* e) {
     float factor = e->angleDelta().y() > 0 ? 0.9f : 1.1f;
     camera_distance_ *= factor;
     camera_distance_ = qMax(0.1f, camera_distance_);
+    requestUpdate();
 }
