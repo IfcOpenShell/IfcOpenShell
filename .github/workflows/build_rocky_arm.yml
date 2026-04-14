@@ -9,6 +9,13 @@ jobs:
     container: arm64v8/rockylinux:9
 
     steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
+
+      - name: Install Python
+        # Installs latest Python version so it's preferred by uv over Rocky's system Python.
+        run: uv python install
+
       - name: Install Dependencies
         run: |
           dnf update -y
@@ -18,7 +25,6 @@ jobs:
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils xz byacc patchelf libxkbcommon-devel
-          python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
 
       - name: Install aws cli
@@ -46,7 +52,7 @@ jobs:
       - name: Unpack Dependencies
         run: |
           cd build
-          python3 ../nix/cache_dependencies.py unpack
+          uv run ../nix/cache_dependencies.py unpack
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.22
@@ -57,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_IFCVIEWER=ON python3 ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_IFCVIEWER=ON uv run ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()
@@ -72,7 +78,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd build
-          python3 ../nix/cache_dependencies.py pack
+          uv run ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |
