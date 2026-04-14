@@ -73,6 +73,22 @@ def poll_related_object(self: "BIMObjectAggregateProperties", related_obj: bpy.t
     return True
 
 
+def update_relating_object(self, context):
+    if self.relating_object:
+        ifc_id = tool.Blender.get_object_bim_props(self.relating_object).ifc_definition_id
+        if ifc_id:
+            bpy.ops.bim.aggregate_assign_object(relating_object=ifc_id)
+            bpy.ops.bim.disable_editing_aggregate()
+
+
+def update_related_object(self, context):
+    if self.related_object:
+        ifc_id = tool.Blender.get_object_bim_props(self.related_object).ifc_definition_id
+        if ifc_id:
+            bpy.ops.bim.aggregate_assign_object(related_object=ifc_id)
+            bpy.ops.bim.disable_editing_aggregate()
+
+
 def update_aggregate_decorator(self, context):
     if self.aggregate_decorator:
         AggregateDecorator.install(bpy.context)
@@ -89,12 +105,15 @@ def update_aggregate_mode_decorator(self, context):
 
 class BIMObjectAggregateProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
-    relating_object: PointerProperty(name="Relating Whole", type=bpy.types.Object, poll=poll_relating_object)
+    relating_object: PointerProperty(
+        name="Relating Whole", type=bpy.types.Object, poll=poll_relating_object, update=update_relating_object
+    )
     related_object: PointerProperty(
         name="Related Part",
         description="Related Part, will be used to derive the Relating Object",
         type=bpy.types.Object,
         poll=poll_related_object,
+        update=update_related_object,
     )
 
     if TYPE_CHECKING:

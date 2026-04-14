@@ -307,6 +307,35 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
             }
         }
 
+    def test_getting_complex_properties_verbose(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="pset")
+        complex_property = self.file.create_entity("IfcComplexProperty", Name="prop", UsageName="usage_name")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=complex_property, properties={"a": "b"})
+        pset.HasProperties = [complex_property]
+        properties = subject.get_properties(pset.HasProperties, verbose=True)
+        prop_value = properties["prop"]["value"]
+        nested_prop = prop_value["properties"]["a"]
+        assert properties == {
+            "prop": {
+                "id": complex_property.id(),
+                "class": "IfcComplexProperty",
+                "value": {
+                    "UsageName": "usage_name",
+                    "id": complex_property.id(),
+                    "type": "IfcComplexProperty",
+                    "properties": {
+                        "a": {
+                            "id": nested_prop["id"],
+                            "class": "IfcPropertySingleValue",
+                            "value": "b",
+                            "value_type": "IfcLabel",
+                        }
+                    },
+                },
+            }
+        }
+
 
 class TestGetElementsUsingPset(test.bootstrap.IFC4):
     def test_run(self):

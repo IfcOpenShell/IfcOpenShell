@@ -307,3 +307,22 @@ class FalseColorRadiance(bpy.types.Operator):
 
             traceback.print_exc()
             return {"CANCELLED"}
+
+
+class RADIANCE_OT_select_camera(bpy.types.Operator):
+    bl_idname = "radiance.select_camera"
+    bl_label = "Select Camera"
+    bl_description = "Select a camera from the viewport"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.type == "CAMERA"
+
+    def execute(self, context):
+        props = tool.Blender.get_radiance_exporter_props()
+        props.selected_camera = context.object
+        props.use_active_camera = False
+        return {"FINISHED"}
+
+

@@ -83,7 +83,7 @@ class DecorationShader:
         PARALLEL DISTRIBUTED FORCE,
         DISTRIBUTED MOMENT,
         """
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty:ignore[too-many-positional-arguments]
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
         vert_out.smooth("VEC3", "forces")
         vert_out.smooth("VEC3", "co")
 
@@ -203,7 +203,7 @@ class DecorationShader:
         """param: pattern: type of pattern
         SINGLE FORCE,
         SINGLE MOMENT"""
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty: ignore[too-many-positional-arguments]
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
         vert_out.smooth("VEC3", "co")
 
         shader_info = gpu.types.GPUShaderCreateInfo()
@@ -253,7 +253,7 @@ class DecorationShader:
 
     def get_planar_shader(self) -> gpu.types.GPUShader:
         """shader for planar loads"""
-        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")  # ty: ignore[too-many-positional-arguments]
+        vert_out = gpu.types.GPUStageInterfaceInfo("my_interface")
         vert_out.smooth("VEC3", "co")
 
         shader_info = gpu.types.GPUShaderCreateInfo()

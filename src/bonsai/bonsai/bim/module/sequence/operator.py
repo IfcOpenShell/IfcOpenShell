@@ -106,7 +106,7 @@ class ActivateStatusFilters(bpy.types.Operator):
     bl_description = "Filter and display objects based on currently selected IFC statuses"
     bl_options = {"REGISTER", "UNDO"}
 
-    only_if_enabled: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    only_if_enabled: bpy.props.BoolProperty(
         name="Only If Filters are Enabled",
         description="Activate status filters only in case if they were enabled from the UI before.",
         default=False,
@@ -137,7 +137,7 @@ class SelectStatusFilter(bpy.types.Operator):
     bl_description = "Select elements with currently selected status"
     bl_options = {"REGISTER", "UNDO"}
 
-    status: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    status: bpy.props.StringProperty()
 
     if TYPE_CHECKING:
         status: tool.Sequence.ElementStatusUI
@@ -156,7 +156,7 @@ class AssignStatus(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Assign status to the selected elements.\n\nAlt+CLICK to unassign the status."
     bl_options = {"REGISTER", "UNDO"}
 
-    should_override_previous_status: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    should_override_previous_status: bpy.props.BoolProperty(
         name="Override Previous Status",
         description=(
             "Whether assigning new status should override previous one.\n\n"
@@ -165,8 +165,8 @@ class AssignStatus(bpy.types.Operator, tool.Ifc.Operator):
         ),
         default=True,
     )
-    status: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
-    should_unassign_status: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    status: bpy.props.StringProperty()
+    should_unassign_status: bpy.props.BoolProperty(
         options={"SKIP_SAVE"},
     )
 
@@ -415,7 +415,7 @@ class CopyWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy Work Schedule"
     bl_description = "Create a duplicate of the provided work schedule."
     bl_options = {"REGISTER", "UNDO"}
-    work_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    work_schedule: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         work_schedule: int

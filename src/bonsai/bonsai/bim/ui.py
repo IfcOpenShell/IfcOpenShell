@@ -665,7 +665,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
-    should_always_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    should_always_cache: BoolProperty(
         name="Always Cache Geometry",
         description="Whether to always cache geometry regardless of 'Cache' setting during Advanced Project Load.",
     )

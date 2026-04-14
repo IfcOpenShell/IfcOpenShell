@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from typing import TYPE_CHECKING
 
 import bpy
@@ -383,6 +384,18 @@ class BIM_PT_new_project_wizard(Panel):
         self.layout.use_property_split = True
         row = self.layout.row()
         row.operator("bim.create_project")
+
+        if shutil.which("git"):
+            git_props = context.scene.IfcGitProperties
+            box = self.layout.box()
+            row = box.row()
+            row.label(text="Clone a remote Git repository")
+            row = box.row()
+            row.prop(git_props, "remote_url")
+            row = box.row()
+            row.prop(git_props, "local_folder")
+            row = box.row()
+            row.operator("ifcgit.clone_repo", icon="IMPORT")
 
 
 class BIM_PT_project_library(Panel):

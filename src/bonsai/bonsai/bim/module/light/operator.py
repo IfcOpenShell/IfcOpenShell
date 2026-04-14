@@ -21,7 +21,7 @@
 All operator classes are defined in their respective submodules:
   - export.py:   ExportOBJ, CleanupRadianceFiles
   - prepare.py:  PrepareRadianceScene
-  - render.py:   RadianceRender, FalseColorRadiance
+  - render.py:   RadianceRender, FalseColorRadiance, RADIANCE_OT_select_camera
   - solar.py:    ImportTrueNorth, ImportLatLong, MoveSunPathTo3DCursor,
                  ViewFromSun, LightPickCoordinates, LightSetTimeToNow
   - material.py: RefreshIFCMaterials, UnmapMaterial,
@@ -46,6 +46,7 @@ from bonsai.bim.module.light.material import (  # noqa: F401
 from bonsai.bim.module.light.prepare import PrepareRadianceScene  # noqa: F401
 from bonsai.bim.module.light.render import (  # noqa: F401
     FalseColorRadiance,
+    RADIANCE_OT_select_camera,
     RadianceRender,
 )
 from bonsai.bim.module.light.solar import (  # noqa: F401

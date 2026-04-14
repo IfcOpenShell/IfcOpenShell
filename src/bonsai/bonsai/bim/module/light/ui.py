@@ -70,6 +70,7 @@ class BIM_PT_radiance_scene_setup(bpy.types.Panel):
         if not props.use_active_camera:
             row = layout.row()
             row.prop(props, "selected_camera")
+            row.operator("radiance.select_camera", text="", icon="EYEDROPPER")
 
         row = layout.row(align=True)
         row.label(text="Resolution")

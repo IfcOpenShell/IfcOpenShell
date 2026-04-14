@@ -202,7 +202,7 @@ class DeleteTag(bpy.types.Operator):
 class RefreshGit(bpy.types.Operator):
     """Refresh revision list"""
 
-    bl_label = ""
+    bl_label = "Refresh"
     bl_idname = "ifcgit.refresh"
     bl_options = {"REGISTER"}
 
@@ -225,7 +225,7 @@ class RefreshGit(bpy.types.Operator):
 class DisplayRevision(bpy.types.Operator):
     """Colourise objects by selected revision"""
 
-    bl_label = ""
+    bl_label = "Colourise Revision"
     bl_idname = "ifcgit.display_revision"
     bl_options = {"REGISTER"}
 
@@ -260,7 +260,7 @@ class DisplayUncommitted(bpy.types.Operator):
 class SwitchRevision(bpy.types.Operator):
     """Switches the repository to the selected revision and reloads the IFC file"""
 
-    bl_label = ""
+    bl_label = "Switch Revision"
     bl_idname = "ifcgit.switch_revision"
     bl_options = {"REGISTER"}
 
@@ -278,7 +278,7 @@ class SwitchRevision(bpy.types.Operator):
 
 
 class Merge(bpy.types.Operator):
-    """Merges the selected branch into working branch"""
+    """Merges the selected branch into working branch.\nCtrl+click to preview without merging"""
 
     bl_label = "Merge this branch"
     bl_idname = "ifcgit.merge"
@@ -292,13 +292,82 @@ class Merge(bpy.types.Operator):
             return True
         return False
 
-    def execute(self, context):
+    def invoke(self, context, event):
+        if event.ctrl:
+            core.dry_run_merge(tool.IfcGit, tool.Ifc, self)
+            refresh()
+            return {"FINISHED"}
+        return self.execute(context)
 
+    def execute(self, context):
         if core.merge_branch(tool.IfcGit, tool.Ifc, self) is not False:
             refresh()
             return {"FINISHED"}
         else:
             return {"CANCELLED"}
+
+
+class SelectConflictEntity(bpy.types.Operator):
+    """Select the conflicting entity in the viewport"""
+
+    bl_label = "Select Conflict Entity"
+    bl_idname = "ifcgit.select_conflict_entity"
+    bl_options = {"REGISTER"}
+
+    step_id: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        step_id: int
+
+    def execute(self, context):
+        model = tool.Ifc.get()
+        if not model:
+            return {"CANCELLED"}
+
+        try:
+            entity = model.by_id(self.step_id)
+        except Exception:
+            self.report({"WARNING"}, f"Entity #{self.step_id} not found (may have been deleted locally)")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(entity)
+        if obj is None:
+            # Walk inverse references up to 5 hops to find nearest entity with a Blender object
+            visited = {entity.id()}
+            queue = [entity]
+            for _ in range(5):
+                next_queue = []
+                for ent in queue:
+                    for inv in model.get_inverse(ent):
+                        if inv.id() in visited:
+                            continue
+                        visited.add(inv.id())
+                        obj = tool.Ifc.get_object(inv)
+                        if obj is not None:
+                            break
+                        next_queue.append(inv)
+                    if obj is not None:
+                        break
+                if obj is not None:
+                    break
+                queue = next_queue
+
+        if obj is None:
+            self.report({"INFO"}, f"No viewport representation found for #{self.step_id} ({entity.is_a()})")
+            return {"CANCELLED"}
+
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                region = next((r for r in area.regions if r.type == "WINDOW"), None)
+                if region:
+                    with context.temp_override(area=area, region=region):
+                        bpy.ops.view3d.view_selected()
+                break
+
+        return {"FINISHED"}
 
 
 class Push(bpy.types.Operator):
@@ -446,7 +515,7 @@ class RunGitDiff(bpy.types.Operator):
     )
     bl_options = set()
 
-    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    save_to_temp: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         save_to_temp: bool
@@ -468,4 +537,38 @@ class RunGitDiff(bpy.types.Operator):
 
     def execute(self, context):
         core.run_git_diff(tool.IfcGit, self, self.save_to_temp)
+        return {"FINISHED"}
+
+
+class RenameBranch(bpy.types.Operator):
+    """Rename the current branch"""
+
+    bl_label = "Rename Branch"
+    bl_idname = "ifcgit.rename_branch"
+    bl_options = {"REGISTER"}
+
+    new_name: bpy.props.StringProperty(name="New name")
+
+    if TYPE_CHECKING:
+        new_name: str
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if not IfcGitData.data["repo"]:
+            return False
+        if IfcGitData.data["is_detached"]:
+            return False
+        if IfcGitData.data["is_dirty"]:
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.new_name = IfcGitData.data["active_branch_name"]
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        repo = IfcGitData.data["repo"]
+        core.rename_branch(tool.IfcGit, repo, self.new_name)
+        refresh()
         return {"FINISHED"}

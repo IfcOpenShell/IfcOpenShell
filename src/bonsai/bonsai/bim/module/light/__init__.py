@@ -37,6 +37,7 @@ classes = (
     solar.MoveSunPathTo3DCursor,
     render.RadianceRender,
     render.FalseColorRadiance,
+    render.RADIANCE_OT_select_camera,
     solar.ViewFromSun,
     solar.LightPickCoordinates,
     solar.LightSetTimeToNow,

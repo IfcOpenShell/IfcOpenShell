@@ -41,7 +41,7 @@ class BIMAttributeProperties(PropertyGroup):
 
 
 class ExplorerEntity(PropertyGroup):
-    ifc_definition_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    ifc_definition_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         ifc_definition_id: int
@@ -60,7 +60,7 @@ class BIMExplorerProperties(PropertyGroup):
             self.property_unset("editing_entity_id")
             self.entity_attributes.clear()
 
-    is_loaded: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    is_loaded: BoolProperty(
         name="Toggle Explorer UI",
         update=update_is_loaded,
     )
@@ -76,15 +76,15 @@ class BIMExplorerProperties(PropertyGroup):
     def update_ifc_class(self, context: object) -> None:
         tool.Attribute.refresh_uilist_entities()
 
-    ifc_class: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    ifc_class: EnumProperty(
         name="IFC Class To Search",
         items=get_ifc_class,
         update=update_ifc_class,
     )
-    entities: CollectionProperty(type=ExplorerEntity)  # pyright: ignore[reportRedeclaration]
-    active_entity_index: IntProperty()  # pyright: ignore[reportRedeclaration]
-    editing_entity_id: IntProperty()  # pyright: ignore[reportRedeclaration]
-    entity_attributes: CollectionProperty(type=Attribute)  # pyright: ignore[reportRedeclaration]
+    entities: CollectionProperty(type=ExplorerEntity)
+    active_entity_index: IntProperty()
+    editing_entity_id: IntProperty()
+    entity_attributes: CollectionProperty(type=Attribute)
 
     if TYPE_CHECKING:
         is_loaded: bool

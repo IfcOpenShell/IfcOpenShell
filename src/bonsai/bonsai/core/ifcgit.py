@@ -87,6 +87,10 @@ def delete_remote(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str) -
     ifcgit.delete_remote(repo, remote_name)
 
 
+def rename_branch(ifcgit: type[tool.IfcGit], repo: git.Repo, new_name: str) -> None:
+    ifcgit.rename_branch(repo, new_name)
+
+
 def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: bpy.types.Operator) -> None:
     error_message = ifcgit.push(repo, remote_name, ifcgit.get_active_branch_name())
     if error_message:
@@ -94,6 +98,7 @@ def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: 
 
 
 def refresh_revision_list(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
+    ifcgit.clear_merge_conflicts()
     if ifcgit.repo_has_commits():
         ifcgit.refresh_revision_list(ifc.get_path())
 
@@ -143,17 +148,61 @@ def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.t
         operator.report({"ERROR"}, "Unknown IFC Merge failure")
         return False
     elif merge_result == "conflict":
-        error = ifcgit.git_mergetool(mergetool)
-        if error:
+        conflicts = ifcgit.git_mergetool(mergetool, path_ifc)
+        if conflicts is not None:
             ifcgit.git_merge_abort()
-            operator.report({"ERROR"}, "IFC Merge failed:" + error)
+            if conflicts:
+                ifcgit.store_merge_conflicts(conflicts)
+                operator.report({"WARNING"}, "Merge failed — see the conflict report in the panel below")
+            else:
+                operator.report({"ERROR"}, "Merge tool failed — check that ifcmerge is installed correctly")
             return False
         ifcgit.commit_merge(path_ifc)
 
+    ifcgit.clear_merge_conflicts()
     ifcgit.set_display_branch()
+    ifcgit.git_checkout(path_ifc)
     ifcgit.load_project(path_ifc)
     ifcgit.refresh_revision_list(path_ifc)
     ifcgit.decolourise()
+
+
+def dry_run_merge(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.types.Operator) -> None:
+    path_ifc = ifc.get_path()
+    ifcgit.config_ifcmerge()
+
+    branch_name = ifcgit.get_selected_branch()
+    if branch_name is None:
+        return
+
+    mergetool = ifcgit.get_merge_tool(branch_name)
+    merge_result = ifcgit.git_merge_no_commit(branch_name)
+
+    if merge_result == "error":
+        try:
+            ifcgit.git_merge_abort()
+        except Exception:
+            pass
+        operator.report({"ERROR"}, "Unknown IFC Merge failure")
+        return
+
+    if merge_result == "conflict":
+        conflicts = ifcgit.git_mergetool(mergetool, path_ifc)
+        ifcgit.git_merge_abort()
+        if conflicts is not None:
+            ifcgit.store_merge_conflicts(conflicts)
+            operator.report({"WARNING"}, "Merge preview: conflicts found — see the panel below")
+        else:
+            ifcgit.clear_merge_conflicts()
+            operator.report({"INFO"}, "Merge preview: no conflicts")
+    else:
+        # Clean merge or already up to date — abort the pending merge state if any
+        try:
+            ifcgit.git_merge_abort()
+        except Exception:
+            pass
+        ifcgit.clear_merge_conflicts()
+        operator.report({"INFO"}, "Merge preview: no conflicts")
 
 
 def entity_log(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], step_id: int, operator: bpy.types.Operator) -> None:
