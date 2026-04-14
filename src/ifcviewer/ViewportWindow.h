@@ -259,6 +259,16 @@ private:
     bool                  hiz_vp_valid_ = false;
     uint32_t              hiz_reject_count_ = 0;  // per-frame stat
 
+    // Cull-phase timers.  Accumulated across all frames in the current
+    // 1-second stats window; divided by frame_count_ at print time to
+    // give per-frame average ms.  Reset each window.  Lets us see where
+    // CPU time actually goes: bucket clears vs BVH traversal vs emit vs
+    // GPU upload.
+    uint64_t cull_clear_ns_    = 0;
+    uint64_t cull_traverse_ns_ = 0;
+    uint64_t cull_emit_ns_     = 0;
+    uint64_t cull_upload_ns_   = 0;
+
     // Per-frame stats
     uint32_t visible_triangles_ = 0;
     uint32_t visible_objects_ = 0;

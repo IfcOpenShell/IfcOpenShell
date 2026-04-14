@@ -1097,6 +1097,9 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     // the right thing for both.  LOD split means instances that want the
     // decimated mesh go into a different bucket that emits against
     // mesh.lod1_ebo_byte_offset / lod1_index_count.
+    QElapsedTimer phase_timer;
+    phase_timer.start();
+
     auto resize_if = [&](std::vector<std::vector<uint32_t>>& v) {
         if (v.size() < m.meshes.size()) v.resize(m.meshes.size());
     };
@@ -1110,6 +1113,8 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         visible_by_mesh_rev_lod0_[i].clear();
         visible_by_mesh_rev_lod1_[i].clear();
     }
+    cull_clear_ns_ += phase_timer.nsecsElapsed();
+    phase_timer.restart();
 
     // LOD1 switches in when projected sphere radius (in pixels) drops below
     // this threshold.  Overridable for tuning.  Set to 0 to disable LOD1
@@ -1179,19 +1184,26 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     // env var, or before the first pyramid has been built.
     const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_valid_;
 
+    // Hot path: read the AABB from the compact bvh_items array (28 B stride)
+    // rather than the wide InstanceCpu (104 B stride).  Most instances fail
+    // frustum or contribution, so we want to avoid touching the wider struct
+    // until a survivor needs its mesh_id.  This alone turns the cull from
+    // cache-miss-per-instance into stream-friendly linear reads.
     auto test_and_push = [&](uint32_t inst_idx) {
-        const InstanceCpu& inst = m.instances[inst_idx];
-        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
-        if (!contributionPasses(inst.world_aabb_min, inst.world_aabb_max)) return;
-        if (hiz_on && aabbOccludedByHiz(inst.world_aabb_min, inst.world_aabb_max)) {
+        const BvhItem& item = m.bvh_items[inst_idx];
+        if (!aabbInFrustum(item.aabb_min, item.aabb_max, planes)) return;
+        if (!contributionPasses(item.aabb_min, item.aabb_max)) return;
+        if (hiz_on && aabbOccludedByHiz(item.aabb_min, item.aabb_max)) {
             ++hiz_reject_count_;
             return;
         }
+        // Survivor — now pay the wide-struct fetch for mesh_id.
+        const InstanceCpu& inst = m.instances[inst_idx];
         if (inst.mesh_id >= m.meshes.size()) return;
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
         const bool want_lod1 = mesh.lod1_index_count > 0 &&
             lod1_px_threshold > 0.0f &&
-            pixelRadius(inst.world_aabb_min, inst.world_aabb_max) < lod1_px_threshold;
+            pixelRadius(item.aabb_min, item.aabb_max) < lod1_px_threshold;
         const bool reflected = inst_idx < m.instance_reflected.size()
             && m.instance_reflected[inst_idx] != 0;
         auto& bucket =
@@ -1236,6 +1248,8 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     } else {
         for (uint32_t i = 0; i < m.instances.size(); ++i) test_and_push(i);
     }
+    cull_traverse_ns_ += phase_timer.nsecsElapsed();
+    phase_timer.restart();
 
     // Flatten fwd-slice first (LOD0 then LOD1), then rev-slice (ditto), into
     // visible_flat_.  Commands for the fwd slice fill [0, indirect_forward_count),
@@ -1274,6 +1288,8 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     emit_slice(visible_by_mesh_rev_lod0_, 0);
     emit_slice(visible_by_mesh_rev_lod1_, 1);
     m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
+    cull_emit_ns_ += phase_timer.nsecsElapsed();
+    phase_timer.restart();
 
     // Upload visible list (keep binding alive even when empty).
     size_t vis_bytes = std::max<size_t>(visible_flat_.size() * sizeof(uint32_t),
@@ -1293,7 +1309,10 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
 
     // Upload indirect command buffer.
     size_t ind_bytes = indirect_scratch_.size() * sizeof(DrawElementsIndirectCommand);
-    if (ind_bytes == 0) return;
+    if (ind_bytes == 0) {
+        cull_upload_ns_ += phase_timer.nsecsElapsed();
+        return;
+    }
     if (m.indirect_buffer == 0 || m.indirect_capacity < ind_bytes) {
         if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
         size_t new_cap = m.indirect_capacity ? m.indirect_capacity : 4096;
@@ -1303,6 +1322,7 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         m.indirect_capacity = new_cap;
     }
     gl_->glNamedBufferSubData(m.indirect_buffer, 0, ind_bytes, indirect_scratch_.data());
+    cull_upload_ns_ += phase_timer.nsecsElapsed();
 }
 
 void ViewportWindow::updateCamera() {
@@ -1446,6 +1466,7 @@ void ViewportWindow::render() {
     frame_count_++;
     if (accumulated_time_ >= 1.0f) {
         last_fps_ = static_cast<float>(frame_count_) / accumulated_time_;
+        const uint32_t frames_in_window = static_cast<uint32_t>(frame_count_);
         frame_count_ = 0;
         accumulated_time_ = 0.0f;
 
@@ -1475,14 +1496,24 @@ void ViewportWindow::render() {
         stats.indirect_sub_draws = indirect_sub_draws_;
         emit frameStatsUpdated(stats);
 
+        const double inv_frames = frames_in_window > 0
+            ? 1.0 / static_cast<double>(frames_in_window) : 0.0;
+        const double clr_ms = cull_clear_ns_    * 1e-6 * inv_frames;
+        const double trv_ms = cull_traverse_ns_ * 1e-6 * inv_frames;
+        const double emt_ms = cull_emit_ns_     * 1e-6 * inv_frames;
+        const double upl_ms = cull_upload_ns_   * 1e-6 * inv_frames;
+        cull_clear_ns_ = cull_traverse_ns_ = cull_emit_ns_ = cull_upload_ns_ = 0;
+
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
+               "cull[clr %.2f trv %.2f emt %.2f upl %.2f]ms  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
                visible_triangles_, total_tri,
                total_meshes, gl_draw_calls_, indirect_sub_draws_,
                hiz_reject_count_,
+               clr_ms, trv_ms, emt_ms, upl_ms,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),
