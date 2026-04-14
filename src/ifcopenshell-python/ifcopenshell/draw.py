@@ -42,7 +42,8 @@ WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
 
-ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, 'arrange_polygon_settings') else None
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, "arrange_polygon_settings") else None
+
 
 @dataclass
 class draw_settings:
