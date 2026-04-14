@@ -79,6 +79,13 @@ struct ModelGpuData {
     std::vector<uint8_t>     instance_reflected;
     uint32_t                 ssbo_instance_count = 0;
 
+    // Stats snapshot from the last cullAndUploadVisible call.  Cached so we
+    // can report the same numbers on skipped-cull frames (see
+    // have_cached_cull_ on ViewportWindow) without iterating the per-model
+    // scratch array again.
+    uint32_t cached_visible_objects   = 0;
+    uint32_t cached_visible_triangles = 0;
+
     // Per-instance world AABB + BVH (built at finalize).  The BVH is the
     // same ordering as `instances`; bvh_items[i] corresponds to instances[i].
     std::vector<BvhItem> bvh_items;
@@ -268,6 +275,15 @@ private:
     uint64_t cull_traverse_ns_ = 0;
     uint64_t cull_emit_ns_     = 0;
     uint64_t cull_upload_ns_   = 0;
+    uint32_t cull_skipped_frames_ = 0;
+
+    // Skip cullAndUploadVisible + buildHizPyramid when the camera and scene
+    // haven't changed since the last cull.  The existing per-model
+    // indirect_buffer / visible_ssbo are still correct and just get
+    // redrawn.  Invalidated by any function that mutates models_gpu_.
+    QMatrix4x4 last_cull_view_;
+    QMatrix4x4 last_cull_proj_;
+    bool       have_cached_cull_ = false;
 
     // Per-frame stats
     uint32_t visible_triangles_ = 0;

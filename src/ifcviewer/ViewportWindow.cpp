@@ -612,6 +612,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     if (chunk.local_mesh_id < m.meshes.size()) {
         m.total_triangles += m.meshes[chunk.local_mesh_id].index_count / 3;
     }
+    have_cached_cull_ = false;
 }
 
 void ViewportWindow::finalizeModel(uint32_t model_id) {
@@ -635,6 +636,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
     buildBvhForModel(m, model_id);
 
     m.finalized = true;
+    have_cached_cull_ = false;
 
     const size_t ssbo_bytes = m.ssbo_instance_count * sizeof(InstanceGpu);
     qDebug("Model %u finalized: %zu verts, %zu meshes, %zu instances, %.1f MB vram "
@@ -743,6 +745,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 
     m.finalized = true;
     models_gpu_.emplace(model_id, std::move(m));
+    have_cached_cull_ = false;
 
     qDebug("Sidecar apply: model %u  %zu verts, %zu meshes, %zu instances  "
            "%.1f MB vram (vbo %.1f + ebo %.1f + ssbo %.1f)",
@@ -766,6 +769,7 @@ void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd)
         // buildLods didn't add anything; just refresh the meshes vector in
         // case lod1_* fields were touched.
         m.meshes = sd.meshes;
+        have_cached_cull_ = false;
         return;
     }
 
@@ -781,6 +785,7 @@ void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd)
 
     // Replace mesh metadata so cullAndUploadVisible sees the new lod1_ fields.
     m.meshes = sd.meshes;
+    have_cached_cull_ = false;
 }
 
 void ViewportWindow::resetScene() {
@@ -796,16 +801,23 @@ void ViewportWindow::resetScene() {
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
+    have_cached_cull_ = false;
 }
 
 void ViewportWindow::hideModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
-    if (it != models_gpu_.end()) it->second.hidden = true;
+    if (it != models_gpu_.end()) {
+        it->second.hidden = true;
+        have_cached_cull_ = false;
+    }
 }
 
 void ViewportWindow::showModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
-    if (it != models_gpu_.end()) it->second.hidden = false;
+    if (it != models_gpu_.end()) {
+        it->second.hidden = false;
+        have_cached_cull_ = false;
+    }
 }
 
 void ViewportWindow::removeModel(uint32_t model_id) {
@@ -820,6 +832,7 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
         if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
         models_gpu_.erase(it);
+        have_cached_cull_ = false;
     }
 }
 
@@ -1288,6 +1301,17 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     emit_slice(visible_by_mesh_rev_lod0_, 0);
     emit_slice(visible_by_mesh_rev_lod1_, 1);
     m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
+
+    // Per-model stats snapshot — summed into the frame counters regardless
+    // of whether this frame ran a full cull or reused the cached one.
+    uint32_t model_vis_obj = 0, model_vis_tri = 0;
+    for (const auto& cmd : indirect_scratch_) {
+        model_vis_tri += (cmd.count / 3) * cmd.instanceCount;
+        model_vis_obj += cmd.instanceCount;
+    }
+    m.cached_visible_objects   = model_vis_obj;
+    m.cached_visible_triangles = model_vis_tri;
+
     cull_emit_ns_ += phase_timer.nsecsElapsed();
     phase_timer.restart();
 
@@ -1381,7 +1405,23 @@ void ViewportWindow::render() {
     visible_objects_ = 0;
     gl_draw_calls_ = 0;
     indirect_sub_draws_ = 0;
-    hiz_reject_count_ = 0;
+    // Only reset hiz_reject_count_ on frames where we actually re-cull;
+    // otherwise we'd wipe the previous cull's number and print 0 every
+    // still frame.  See the cull_this_frame branch below.
+
+    // Decide whether this frame's view+scene is identical to the last
+    // successful cull.  If so the per-model indirect buffers / visible
+    // SSBOs are still valid — we just re-issue the draws from them and
+    // skip the expensive cull traversal entirely.
+    const bool camera_unchanged = have_cached_cull_
+        && last_cull_view_ == view_matrix_
+        && last_cull_proj_ == proj_matrix_;
+    const bool cull_this_frame = !camera_unchanged;
+    if (cull_this_frame) {
+        hiz_reject_count_ = 0;
+    } else {
+        ++cull_skipped_frames_;
+    }
 
     // Start each frame with CCW-is-front; the two-pass draw below flips
     // back and forth.  Harmless when culling is off.
@@ -1390,7 +1430,9 @@ void ViewportWindow::render() {
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
-        cullAndUploadVisible(m, planes, focal_px, min_pixel_radius);
+        if (cull_this_frame) {
+            cullAndUploadVisible(m, planes, focal_px, min_pixel_radius);
+        }
         if (m.indirect_command_count == 0) continue;
 
         gl_->glBindVertexArray(m.vao);
@@ -1442,11 +1484,14 @@ void ViewportWindow::render() {
             gl_->glFrontFace(GL_CCW);
         }
 
-        for (const auto& cmd : indirect_scratch_) {
-            visible_triangles_ += (cmd.count / 3) * cmd.instanceCount;
-            visible_objects_   += cmd.instanceCount;
-        }
+        visible_triangles_  += m.cached_visible_triangles;
+        visible_objects_    += m.cached_visible_objects;
         indirect_sub_draws_ += m.indirect_command_count;
+    }
+    if (cull_this_frame) {
+        last_cull_view_     = view_matrix_;
+        last_cull_proj_     = proj_matrix_;
+        have_cached_cull_   = true;
     }
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
@@ -1454,8 +1499,10 @@ void ViewportWindow::render() {
 
     // Build HiZ from this frame's resolved depth for next frame's cull.
     // Synchronous glReadPixels inside — cost ~0.5 ms at 256x128 on a
-    // mid-range dGPU.  Skippable via IFC_NO_HIZ=1.
-    if (hizEnabled()) {
+    // mid-range dGPU.  Skippable via IFC_NO_HIZ=1.  Also skipped on
+    // still frames: if we didn't re-cull, the depth buffer is
+    // bit-identical to the one we already turned into a pyramid.
+    if (hizEnabled() && cull_this_frame) {
         buildHizPyramid();
     }
 
@@ -1503,10 +1550,12 @@ void ViewportWindow::render() {
         const double emt_ms = cull_emit_ns_     * 1e-6 * inv_frames;
         const double upl_ms = cull_upload_ns_   * 1e-6 * inv_frames;
         cull_clear_ns_ = cull_traverse_ns_ = cull_emit_ns_ = cull_upload_ns_ = 0;
+        const uint32_t skipped = cull_skipped_frames_;
+        cull_skipped_frames_ = 0;
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
-               "cull[clr %.2f trv %.2f emt %.2f upl %.2f]ms  "
+               "cull[clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
@@ -1514,6 +1563,7 @@ void ViewportWindow::render() {
                total_meshes, gl_draw_calls_, indirect_sub_draws_,
                hiz_reject_count_,
                clr_ms, trv_ms, emt_ms, upl_ms,
+               skipped, frames_in_window,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),
