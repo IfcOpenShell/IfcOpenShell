@@ -694,11 +694,19 @@ thousands and the frame time drops accordingly.
 
 ##### Known caveats
 
-- **1 frame stale.** The pyramid is aligned to last frame's view, so
-  when you whip the camera across the scene we may draw one frame of
-  stuff that the new view would have occluded. Invisible in practice
-  at 60 fps. We tried a 3-deep PBO ring for async readback (2-frame
-  stale) and it produced visible flicker on fast orbits — reverted.
+- **Disabled while the camera moves.** The pyramid is aligned to the
+  VP matrix of the frame that produced it. On a moving camera the
+  stored VP no longer matches the current one, and reusing it would
+  pop objects in and out as the stale depth falsely claims they're
+  occluded. The cull now compares `hiz_vp_ == current_vp` and drops
+  HiZ rejection entirely when they differ, so HiZ only contributes on
+  still frames. The honest cost: orbiting — the exact motion where
+  the frame rate tends to dip — gets no HiZ help. A proper fix needs
+  a same-frame depth pre-pass (draw cheap depth, build HiZ from *that*
+  frame's VP, then issue the colour pass against it); deferred to the
+  GPU-compute cull rewrite in Phase 3E where we're touching this code
+  anyway. We also tried a 3-deep PBO ring for async readback (2-frame
+  stale) which produced visible flicker on fast orbits — reverted.
 - **Readback syncs the GPU.** `glGetTextureImage` is blocking.
   Measured cost is well under a millisecond at 256×128; not a
   bottleneck on the machines tested. Phase 3D's compute-shader cull
