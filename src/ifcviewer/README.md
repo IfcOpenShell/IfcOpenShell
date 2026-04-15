@@ -60,6 +60,13 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 - **BVH frustum culling over instances**: per-model BVH trees cull whole
   subtrees of placements with one frustum test. Falls back to a linear scan
   during progressive upload and for very small models (< 32 instances).
+- **Parallel per-model cull:** each model's CPU cull (frustum + contribution
+  + HiZ + bucketing + indirect-command emit) is independent, so `render()`
+  fans them out via `std::async` and joins before the serial GL-upload
+  pass. On an 18-model scene this took wall-clock cull from ~25 ms to
+  ~5 ms. The cull scratch buffers live on `ModelGpuData` so each worker
+  owns its output storage; phase-timer counters are atomic for the same
+  reason. `IFC_CULL_THREADS=0` forces single-threaded fallback.
 - **Reflection-aware two-pass draw:** IFC placements can have negative-
   determinant transforms (mirrored families). These flip the screen-space
   winding of their triangles, which would make them vanish under
@@ -692,13 +699,35 @@ thousands and the frame time drops accordingly.
 - **Transparent geometry would need special handling**, but the
   current renderer doesn't have any, so no-op for now.
 
-#### 3D. GPU-side culling via compute (longer-term)
+#### 3D. Parallel per-model cull (CPU, done)
+
+A cheaper intermediate step before going full-GPU: each model's cull is
+independent (no shared mutable state beyond atomic timing counters), so
+`render()` fans the per-model culls out to a `std::async` pool and joins
+before the serial GL-upload pass. On the 18-model / 569 k-instance test
+scene this took the cull from ~25 ms wall-clock to ~5 ms — roughly a 4×
+speedup on an 8-core machine, tracking `std::thread::hardware_concurrency()`
+up to the model count. Load balancing is static (one job per model); a
+single massive model still bottlenecks to single-threaded speed and would
+need intra-model partitioning, but in practice BIM projects are
+multi-discipline so the coarse partition lands well.
+
+The stats line now reports `cull[wall X | work: clr Y trv Z emt W upl U]`:
+`wall` is frame-time impact, the `work` numbers are per-thread sums showing
+where CPU cycles went. `IFC_CULL_THREADS=0` forces single-threaded mode
+for comparison.
+
+#### 3E. GPU-side culling via compute (longer-term)
 
 Push the cull loop to a compute shader reading the per-instance SSBO +
 frustum planes + HiZ pyramid, emitting the visible list and indirect
-commands with atomic counters. Eliminates all CPU→GPU per-frame bytes
-and lets 3C scale to millions of instances. Worth doing once 3A–3C
-have stabilised the CPU-side algorithm we'd be porting.
+commands with atomic counters. Three compute dispatches per model: (1)
+count survivors per `(mesh, winding, LOD)` bucket, (2) prefix-sum the
+counts into `baseInstance` offsets and write the indirect command buffer,
+(3) re-test and compact survivors into the dense visible list. HiZ moves
+to a GPU depth texture sampled directly in the shader, eliminating the
+Phase 3C readback. Lets culling scale to millions of instances and
+single-model scenes where Phase 3D can't parallelise.
 
 ### Planned follow-ups (post-Phase-3)
 
@@ -716,6 +745,8 @@ Scene size                      Bottleneck              Fix
 500k+ tris / overview shot      GPU vertex + raster     Phase 3A contribution cull
                                                         + Phase 3B LOD (done)
 multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU readback)
+many models, serial cull        single-thread BVH trv   Phase 3D parallel cull (done)
+single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (planned)
 ```
 
 ## Roadmap
@@ -732,12 +763,13 @@ multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU 
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`, `IFC_NO_HIZ`, `IFC_HIZ_SIZE`)
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`, `IFC_NO_HIZ`, `IFC_HIZ_SIZE`, `IFC_CULL_THREADS`)
 - [x] Phase 3A — screen-space contribution culling
 - [x] Phase 3B — distance / contribution LOD (meshoptimizer `simplifySloppy`)
 - [x] Phase 3C — Hierarchical-Z occlusion culling (v1, CPU-side readback)
+- [x] Phase 3D — Parallel per-model CPU cull (`std::async` fan-out)
 - [x] Quantized VBO (16 B/vert, sidecar v6)
 - [x] Event-driven rendering (zero idle CPU/GPU, cull skipped on still frames)
-- [ ] **Phase 3D — GPU-side compute-shader culling** (next; replaces the readback)
+- [ ] **Phase 3E — GPU-side compute-shader culling** (next; replaces the HiZ readback)
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
