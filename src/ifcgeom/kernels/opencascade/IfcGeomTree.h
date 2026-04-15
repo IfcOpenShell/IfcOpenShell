@@ -1102,7 +1102,7 @@ namespace IfcGeom {
                                 clash intersection = test_intersection(task.b, task.a, tolerance, check_all);
                                 if (intersection.clash_type != -1) {
                                     //We invert the result, in order to keep the initial order, otherwise, it's all mixed.
-                                    result = {intersection.clash_type,intersection.b,intersection.a,intersection.distance,intersection.p1,intersection.p2}
+                                    result = {intersection.clash_type,intersection.b,intersection.a,intersection.distance,intersection.p2,intersection.p1}
 
                                     // Replace the clash result if any of these criteria apply:
                                     // - We don't have a clash yet
