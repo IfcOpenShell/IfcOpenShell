@@ -1285,7 +1285,6 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
-        result = ""
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -1299,13 +1298,10 @@ class SelectIfcClass(Operator):
                         obj.hide_set(False)
                     tool.Blender.select_object(obj)
 
-            # copy selection query to clipboard
-            if not result:
-                result = f"{cls}"
-            else:
-                result += f", {cls}"
-            bpy.context.window_manager.clipboard = result
-            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+        # copy selection query to clipboard
+        result = " + ".join(classes)
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
         return {"FINISHED"}
 
