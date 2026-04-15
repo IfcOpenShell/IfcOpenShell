@@ -61,6 +61,8 @@ When Blender ships with a new Python version:
      - What to update
    * - ``.github/workflows/ci-lint.yaml``
      - ``MIN_BLENDER_PY_VERSION``
+   * - ``.github/scripts/publish-bonsai-releases.py``
+     - ``CURRENT_PYTHON_VERSION``
    * - ``src/bonsai/Makefile``
      - ``SUPPORTED_PYVERSIONS``
    * - ``src/bonsai/scripts/dev_environment.py``
