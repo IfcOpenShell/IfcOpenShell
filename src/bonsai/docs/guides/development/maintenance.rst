@@ -118,5 +118,5 @@ Things to update:
 
   - `ifcopenshell-docs.yml` - builds and publishes IfcOpenShell documentation to `docs.ifcopenshell.org <https://docs.ifcopenshell.org>`_ (`ifcopenshell_org_docs <https://github.com/IfcOpenShell/ifcopenshell_org_docs>`_ repo)
   - `bonsai-docs.yml` - builds and publishes Bonsai documentation to `docs.bonsaibim.org <https://docs.bonsaibim.org>`_ (`bonsaibim_org_docs <https://github.com/IfcOpenShell/bonsaibim_org_docs>`_ repo)
-  - `main.yml` - publishes `bonsaibim.org <https://bonsaibim.org>`_ (`bonsaibim_org_static_html <https://github.com/IfcOpenShell/bonsaibim_org_static_html>`_ repo) and `ifcopenshell.org <https://ifcopenshell.org>`_ (`ifcopenshell_org_static_html <https://github.com/IfcOpenShell/ifcopenshell_org_static_html>`_ repo)
+  - `publish-websites.yml` - publishes `bonsaibim.org <https://bonsaibim.org>`_ (`bonsaibim_org_static_html <https://github.com/IfcOpenShell/bonsaibim_org_static_html>`_ repo) and `ifcopenshell.org <https://ifcopenshell.org>`_ (`ifcopenshell_org_static_html <https://github.com/IfcOpenShell/ifcopenshell_org_static_html>`_ repo)
 - ``VERSION`` to the release version - **UPDATE THIS LAST** as all workflows above typically depend on it to set the version correctly
