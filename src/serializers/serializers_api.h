@@ -20,18 +20,14 @@
 #ifndef IFC_SERIALIZERS_API_H
 #define IFC_SERIALIZERS_API_H
 
-#ifdef IFC_SHARED_BUILD
-  #ifdef _WIN32
-    #ifdef SERIALIZERS_EXPORTS
-      #define SERIALIZERS_API __declspec(dllexport)
-    #else
-      #define SERIALIZERS_API __declspec(dllimport)
-    #endif
-  #else // simply assume *nix + GCC-like compiler
-    #define SERIALIZERS_API __attribute__((visibility("default")))
+#ifdef _WIN32
+  #ifdef SERIALIZERS_EXPORTS
+    #define SERIALIZERS_API __declspec(dllexport)
+  #else
+    #define SERIALIZERS_API __declspec(dllimport)
   #endif
 #else
-  #define SERIALIZERS_API
+  #define SERIALIZERS_API __attribute__((visibility("default")))
 #endif
 
 #endif

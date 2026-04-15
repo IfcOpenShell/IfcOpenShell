@@ -43,10 +43,10 @@
 
 #include "../ifcgeom/Iterator.h"
 #include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom/kernel_registry.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 #include "../ifcparse/file.h"
 #include "../ifcparse/logger.h"
-
-#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -605,7 +605,7 @@ int main () {
 			settings.get<ifcopenshell::geometry::settings::MesherLinearDeflection>().value = deflection;
 
 			file = new ifcopenshell::file(data, (int)len);
-			iterator = new IfcGeom::Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(new IfcGeom::OpenCascadeKernel(settings)), settings, file);
+			iterator = new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, "opencascade", settings), settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);

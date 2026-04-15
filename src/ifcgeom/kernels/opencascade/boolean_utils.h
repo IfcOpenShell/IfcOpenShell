@@ -35,13 +35,13 @@
 namespace IfcGeom {
 	namespace util {
 
-		void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r);
+		IFC_GEOMLIBRARY_API void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r);
 
-		TopoDS_Shape copy_operand(const TopoDS_Shape& s);
+		IFC_GEOMLIBRARY_API TopoDS_Shape copy_operand(const TopoDS_Shape& s);
 
-		double min_edge_length(const TopoDS_Shape& a);
+		IFC_GEOMLIBRARY_API double min_edge_length(const TopoDS_Shape& a);
 
-		double min_vertex_edge_distance(const TopoDS_Shape& a, double min_search, double max_search);
+		IFC_GEOMLIBRARY_API double min_vertex_edge_distance(const TopoDS_Shape& a, double min_search, double max_search);
 
 		class points_on_planar_face_generator {
 		private:
@@ -69,34 +69,34 @@ namespace IfcGeom {
 			bool operator()(gp_Pnt& p);
 		};
 
-		bool faces_overlap(const TopoDS_Face& f, const TopoDS_Face& g);
+		IFC_GEOMLIBRARY_API bool faces_overlap(const TopoDS_Face& f, const TopoDS_Face& g);
 
-		double min_face_face_distance(const TopoDS_Shape& a, double max_search);
+		IFC_GEOMLIBRARY_API double min_face_face_distance(const TopoDS_Shape& a, double max_search);
 
-		int bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c);
+		IFC_GEOMLIBRARY_API int bounding_box_overlap(double p, const TopoDS_Shape& a, const TopTools_ListOfShape& b, TopTools_ListOfShape& c);
 
-		bool get_edge_axis(const TopoDS_Edge& e, gp_Ax1& ax);
+		IFC_GEOMLIBRARY_API bool get_edge_axis(const TopoDS_Edge& e, gp_Ax1& ax);
 
-		bool is_subset(const TopTools_IndexedMapOfShape& lhs, const TopTools_IndexedMapOfShape& rhs);
+		IFC_GEOMLIBRARY_API bool is_subset(const TopTools_IndexedMapOfShape& lhs, const TopTools_IndexedMapOfShape& rhs);
 
-		bool is_extrusion(const gp_Vec& v, const TopoDS_Shape& s, TopoDS_Face& base, std::pair<double, double>& interval);
+		IFC_GEOMLIBRARY_API bool is_extrusion(const gp_Vec& v, const TopoDS_Shape& s, TopoDS_Face& base, std::pair<double, double>& interval);
 
-		int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const TopTools_ListOfShape& bs, TopTools_ListOfShape& c);
+		IFC_GEOMLIBRARY_API int eliminate_touching_operands(double prec, const TopoDS_Shape& a, const TopTools_ListOfShape& bs, TopTools_ListOfShape& c);
 
-		int eliminate_narrow_operands(double prec, const TopTools_ListOfShape& bs, TopTools_ListOfShape & c);
+		IFC_GEOMLIBRARY_API int eliminate_narrow_operands(double prec, const TopTools_ListOfShape& bs, TopTools_ListOfShape & c);
 
-		bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, TopoDS_Shape& result, double eps);
+		IFC_GEOMLIBRARY_API bool boolean_subtraction_2d_using_builder(const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, TopoDS_Shape& result, double eps);
 
 		struct boolean_settings {
 			bool debug, attempt_2d;
 			double precision;
 		};
 
-		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+		IFC_GEOMLIBRARY_API bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopTools_ListOfShape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 
-		bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
+		IFC_GEOMLIBRARY_API bool boolean_operation(const boolean_settings& settings, const TopoDS_Shape&, const TopoDS_Shape&, BOPAlgo_Operation, TopoDS_Shape&, double fuzziness = -1.);
 
-		TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
+		IFC_GEOMLIBRARY_API TopoDS_Shape ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol);
 	}
 }
 

@@ -19,6 +19,7 @@
 
 #include "kernel_registry.h"
 
+#include "../ifcgeom/kernel_plugin.h"
 #include "../ifcgeom/hybrid_kernel.h"
 #include "../ifcparse/file.h"
 
@@ -27,66 +28,9 @@
 #include <cstring>
 #include <mutex>
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
-#undef Handle
-#endif
-
-#ifdef IFOPSH_WITH_CGAL
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#undef CGAL_KERNEL_H
-#undef CGALCONVERSIONRESULT_H
-#define IFOPSH_SIMPLE_KERNEL
-#include "../ifcgeom/kernels/cgal/CgalKernel.h"
-#undef CgalKernel
-#undef IFOPSH_SIMPLE_KERNEL
-#endif
-
-#ifdef IFOPSH_WITH_MANIFOLD
-#include "../ifcgeom/kernels/manifold/ManifoldKernel.h"
-#endif
-#include "../ifcgeom/kernels/passthrough/PassthroughKernel.h"
-
 namespace {
 	std::string kernel_key(const std::string& backend_id) {
 		return boost::to_lower_copy(backend_id);
-	}
-
-	ifcopenshell::plugin::module builtin_kernel_module(const std::string& backend_id) {
-		ifcopenshell::plugin::metadata metadata;
-		metadata.kind_ = ifcopenshell::plugin::kind::kernel;
-		metadata.id = "geometry.kernel." + kernel_key(backend_id);
-		return ifcopenshell::plugin::module::builtin(metadata);
-	}
-
-	void register_builtin_kernels(ifcopenshell::geometry::kernels::kernel_registry& registry) {
-#ifdef IFOPSH_WITH_OPENCASCADE
-		ifcopenshell::geometry::kernels::kernel_info opencascade_info;
-		opencascade_info.backend_id = "opencascade";
-		opencascade_info.supports_boolean_operations = true;
-		registry.bind(opencascade_info, [](ifcopenshell::file*, ifcopenshell::geometry::Settings& settings) { return new IfcGeom::OpenCascadeKernel(settings); }, builtin_kernel_module("opencascade"));
-#endif
-#ifdef IFOPSH_WITH_CGAL
-		ifcopenshell::geometry::kernels::kernel_info cgal_info;
-		cgal_info.backend_id = "cgal";
-		cgal_info.supports_boolean_operations = true;
-		registry.bind(cgal_info, [](ifcopenshell::file*, ifcopenshell::geometry::Settings& settings) { return new ifcopenshell::geometry::kernels::CgalKernel(settings); }, builtin_kernel_module("cgal"));
-
-		ifcopenshell::geometry::kernels::kernel_info cgal_simple_info;
-		cgal_simple_info.backend_id = "cgal-simple";
-		cgal_simple_info.supports_boolean_operations = false;
-		registry.bind(cgal_simple_info, [](ifcopenshell::file*, ifcopenshell::geometry::Settings& settings) { return new ifcopenshell::geometry::kernels::SimpleCgalKernel(settings); }, builtin_kernel_module("cgal-simple"));
-#endif
-#ifdef IFOPSH_WITH_MANIFOLD
-		ifcopenshell::geometry::kernels::kernel_info manifold_info;
-		manifold_info.backend_id = "manifold";
-		manifold_info.supports_boolean_operations = true;
-		registry.bind(manifold_info, [](ifcopenshell::file*, ifcopenshell::geometry::Settings& settings) { return new ifcopenshell::geometry::kernels::ManifoldKernel(settings); }, builtin_kernel_module("manifold"));
-#endif
-		ifcopenshell::geometry::kernels::kernel_info passthrough_info;
-		passthrough_info.backend_id = "passthrough";
-		passthrough_info.supports_boolean_operations = false;
-		registry.bind(passthrough_info, [](ifcopenshell::file*, ifcopenshell::geometry::Settings& settings) { return new ifcopenshell::geometry::kernels::PassthroughKernel(settings); }, builtin_kernel_module("passthrough"));
 	}
 
 }
@@ -122,7 +66,7 @@ std::vector<ifcopenshell::geometry::kernels::kernel_info> ifcopenshell::geometry
 ifcopenshell::geometry::kernels::kernel_registry& ifcopenshell::geometry::kernels::kernel_registry_instance() {
 	static kernel_registry registry;
 	static std::once_flag once;
-	std::call_once(once, register_builtin_kernels, std::ref(registry));
+	std::call_once(once, load_kernel_plugins, std::ref(registry));
 	return registry;
 }
 

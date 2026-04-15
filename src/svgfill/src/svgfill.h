@@ -21,7 +21,6 @@
 #ifndef SVGFILL_H
 #define SVGFILL_H
 
-#ifdef IFC_SHARED_BUILD
 #ifdef _WIN32
 #ifdef svgfill_EXPORTS
 #define SVGFILL_API __declspec(dllexport)
@@ -30,9 +29,6 @@
 #endif
 #else // simply assume *nix + GCC-like compiler
 #define SVGFILL_API __attribute__((visibility("default")))
-#endif
-#else
-#define SVGFILL_API
 #endif
 
 #include <array>

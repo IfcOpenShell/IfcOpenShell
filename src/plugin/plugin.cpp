@@ -19,14 +19,17 @@
 
 #include "plugin.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/dll/shared_library.hpp>
 
+#include <algorithm>
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
 
 namespace {
-	using plugin_abi_fn = ifcopenshell::plugin::abi_info(*)();
-	using plugin_metadata_fn = ifcopenshell::plugin::metadata(*)();
+	using plugin_abi_fn = ifcopenshell::plugin::abi_info();
+	using plugin_metadata_fn = ifcopenshell::plugin::metadata();
 
 	std::string compiler_id() {
 #if defined(_MSC_VER)
@@ -101,6 +104,13 @@ bool ifcopenshell::plugin::module::is_loaded() const {
 	return data_->library_ && data_->library_->is_loaded();
 }
 
+boost::dll::shared_library& ifcopenshell::plugin::module::library() const {
+	if (!data_->library_) {
+		throw std::runtime_error("Plugin module is not dynamic");
+	}
+	return *data_->library_;
+}
+
 ifcopenshell::plugin::manager::manager() = default;
 
 void ifcopenshell::plugin::manager::add_search_path(const std::filesystem::path& path) {
@@ -109,6 +119,39 @@ void ifcopenshell::plugin::manager::add_search_path(const std::filesystem::path&
 
 const std::vector<std::filesystem::path>& ifcopenshell::plugin::manager::search_paths() const {
 	return search_paths_;
+}
+
+std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const std::string& basename_prefix) const {
+	std::vector<std::filesystem::path> result;
+	const auto suffix = boost::dll::shared_library::suffix().string();
+	const auto prefixed_basename = "lib" + basename_prefix;
+
+	for (const auto& search_path : search_paths_) {
+		if (!std::filesystem::exists(search_path) || !std::filesystem::is_directory(search_path)) {
+			continue;
+		}
+
+		for (const auto& entry : std::filesystem::directory_iterator(search_path)) {
+			if (!entry.is_regular_file()) {
+				continue;
+			}
+
+			const auto filename = entry.path().filename().string();
+			if (!boost::algorithm::iends_with(filename, suffix)) {
+				continue;
+			}
+			if (!boost::algorithm::istarts_with(filename, basename_prefix) &&
+				!boost::algorithm::istarts_with(filename, prefixed_basename)) {
+				continue;
+			}
+
+			result.push_back(entry.path());
+		}
+	}
+
+	std::sort(result.begin(), result.end());
+	result.erase(std::unique(result.begin(), result.end()), result.end());
+	return result;
 }
 
 ifcopenshell::plugin::module ifcopenshell::plugin::manager::load(const std::filesystem::path& path) const {

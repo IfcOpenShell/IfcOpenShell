@@ -55,7 +55,7 @@ option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter fr
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
 
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." OFF)
+option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." ON)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
@@ -81,7 +81,6 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
 option(WITH_ZSTD "Use Zstd compression in RocksDB writes" OFF)
 
@@ -119,6 +118,10 @@ if(MINIMAL_BUILD)
     set(HDF5_SUPPORT OFF)
     set(IFCXML_SUPPORT OFF)
     set(USD_SUPPORT OFF)
+endif()
+
+if(NOT BUILD_SHARED_LIBS)
+    message(FATAL_ERROR "IfcOpenShell now requires BUILD_SHARED_LIBS=ON.")
 endif()
 
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
@@ -170,14 +173,11 @@ if(NOT IS_ABSOLUTE ${INCLUDEDIR})
 endif()
 message(STATUS "INCLUDEDIR: ${INCLUDEDIR}")
 
-if(BUILD_SHARED_LIBS)
-    add_definitions(-DIFC_SHARED_BUILD)
-    if(MSVC)
-        message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
-        # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
-        # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
-        add_definitions(-wd4251)
-    endif()
+if(MSVC)
+    message(WARNING "Building DLLs against the static VC run-time. This is not recommended if the DLLs are to be redistributed.")
+    # C4521: 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
+    # There will be couple hundreds of these so suppress them away, https://msdn.microsoft.com/en-us/library/esew7y1w.aspx
+    add_definitions(-wd4251)
 endif()
 
 UNIFY_ENVVARS_AND_CACHE(BOOST_ROOT)

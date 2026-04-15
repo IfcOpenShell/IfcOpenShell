@@ -24,6 +24,10 @@ target_link_libraries(Serializers
     IfcGeom ${OpenCASCADE_LIBRARIES} IfcParse
 )
 
+if(WITH_OPENCASCADE)
+    target_link_libraries(Serializers PRIVATE geometry_kernel_opencascade)
+endif()
+
 install(TARGETS Serializers)
 
 install(FILES ${SERIALIZERS_H_FILES}

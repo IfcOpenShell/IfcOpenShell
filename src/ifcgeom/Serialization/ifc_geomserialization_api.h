@@ -20,7 +20,6 @@
 #ifndef IFC_GEOMSERIALIZATION_API_H
 #define IFC_GEOMSERIALIZATION_API_H
 
-#ifdef IFC_SHARED_BUILD
 #ifdef _WIN32
 #ifdef IFC_GEOMSERIALIZATION_EXPORTS
 #define IFC_GEOMSERIALIZATION_API __declspec(dllexport)
@@ -29,9 +28,6 @@
 #endif
 #else // simply assume *nix + GCC-like compiler
 #define IFC_GEOMSERIALIZATION_API __attribute__((visibility("default")))
-#endif
-#else
-#define IFC_GEOMSERIALIZATION_API
 #endif
 
 #endif

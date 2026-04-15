@@ -47,6 +47,28 @@ namespace {
 	}
 }
 
+ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape(const TopoDS_Shape& shape)
+	: shape_(shape) {}
+
+ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape(TopoDS_Shape&& shape)
+	: shape_(std::move(shape)) {}
+
+const TopoDS_Shape& ifcopenshell::geometry::OpenCascadeShape::shape() const {
+	return shape_;
+}
+
+ifcopenshell::geometry::OpenCascadeShape::operator const TopoDS_Shape& () {
+	return shape_;
+}
+
+std::string_view ifcopenshell::geometry::OpenCascadeShape::backend_id() const {
+	return "opencascade";
+}
+
+IfcGeom::ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::clone() const {
+	return new OpenCascadeShape(shape_);
+}
+
 void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
 
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);

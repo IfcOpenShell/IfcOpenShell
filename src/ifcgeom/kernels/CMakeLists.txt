@@ -1,6 +1,6 @@
-find_package(Eigen3 REQUIRED)
-
 message(STATUS "GEOMETRY_KERNELS ${GEOMETRY_KERNELS}")
+
+set(kernel_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
 
 foreach(kernel ${GEOMETRY_KERNELS})
     string(TOUPPER ${kernel} KERNEL_UPPER)
@@ -9,25 +9,34 @@ foreach(kernel ${GEOMETRY_KERNELS})
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
-
-    add_library(${KERNEL_TARGET} OBJECT ${IFCGEOM_FILES})
-    set_property(TARGET ${KERNEL_TARGET} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+    add_library(${KERNEL_TARGET} SHARED ${IFCGEOM_FILES})
+    set_target_properties(${KERNEL_TARGET} PROPERTIES
+        COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
+        OUTPUT_NAME "geometry.kernel.${kernel}"
+        RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+        LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+    )
     list(APPEND kernel_libraries ${KERNEL_TARGET})
-    target_link_libraries(${KERNEL_TARGET} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+    target_link_libraries(${KERNEL_TARGET} PRIVATE plugin IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
     install(TARGETS ${KERNEL_TARGET})
 
     if(${kernel} STREQUAL "cgal")
         set_property(TARGET ${KERNEL_TARGET} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
-        
+
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
-        add_library(${KERNEL_TARGET_SIMPLE} OBJECT ${IFCGEOM_FILES})
-        set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
+        add_library(${KERNEL_TARGET_SIMPLE} SHARED ${IFCGEOM_FILES})
+        set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES
+            COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
+            OUTPUT_NAME "geometry.kernel.cgalsimple"
+            RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+            LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+        )
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
-        target_link_libraries(${KERNEL_TARGET_SIMPLE} ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+        target_link_libraries(${KERNEL_TARGET_SIMPLE} PRIVATE plugin IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
         install(TARGETS ${KERNEL_TARGET_SIMPLE})
     elseif(${kernel} STREQUAL "opencascade")
-        target_link_libraries(${KERNEL_TARGET} ${OpenCASCADE_LIBRARIES})
+        target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
     endif()
 
     install(FILES ${IFCGEOM_H_FILES}

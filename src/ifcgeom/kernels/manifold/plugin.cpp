@@ -17,17 +17,40 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef PLUGIN_API_H
-#define PLUGIN_API_H
+#include "../../kernel_plugin.h"
+#include "ManifoldKernel.h"
 
-#ifdef _WIN32
-#ifdef PLUGIN_EXPORTS
-#define PLUGIN_API __declspec(dllexport)
-#else
-#define PLUGIN_API __declspec(dllimport)
-#endif
-#else
-#define PLUGIN_API __attribute__((visibility("default")))
-#endif
+#include <boost/dll/alias.hpp>
 
-#endif
+namespace ifcopenshell {
+	namespace geometry {
+		namespace kernels {
+			namespace manifold_plugin {
+
+				plugin::abi_info plugin_abi() {
+					return plugin::host_abi();
+				}
+
+				plugin::metadata plugin_metadata() {
+					return kernel_plugin_metadata("manifold");
+				}
+
+				AbstractKernel* create_kernel(ifcopenshell::file*, Settings& settings) {
+					return new ManifoldKernel(settings);
+				}
+
+				void register_plugin(kernel_registry& registry, const plugin::module& module) {
+					kernel_info info;
+					info.backend_id = "manifold";
+					info.supports_boolean_operations = true;
+					registry.bind(info, create_kernel, module);
+				}
+
+			}
+		}
+	}
+}
+
+BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::manifold_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::manifold_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::kernels::manifold_plugin::register_plugin, ifcopenshell_register_kernel_plugin_v1)

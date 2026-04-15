@@ -20,7 +20,6 @@
 #ifndef IFC_PARSE_API_H
 #define IFC_PARSE_API_H
 
-#ifdef IFC_SHARED_BUILD
 #ifdef _WIN32
 #ifdef IFC_PARSE_EXPORTS
 #define IFC_PARSE_API __declspec(dllexport)
@@ -29,9 +28,6 @@
 #endif
 #else // simply assume *nix + GCC-like compiler
 #define IFC_PARSE_API __attribute__((visibility("default")))
-#endif
-#else
-#define IFC_PARSE_API
 #endif
 
 #endif

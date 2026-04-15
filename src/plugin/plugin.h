@@ -22,6 +22,8 @@
 
 #include "plugin_api.h"
 
+#include <boost/dll/shared_library.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -68,11 +70,17 @@ public:
 	bool is_dynamic() const;
 	bool is_loaded() const;
 
+	template <typename T>
+	decltype(auto) get_alias(const char* name) const {
+		return library().get_alias<T>(name);
+	}
+
 private:
 	struct data;
 	std::shared_ptr<data> data_;
 
 	explicit module(std::shared_ptr<data> data);
+	boost::dll::shared_library& library() const;
 
 	friend class manager;
 };
@@ -84,6 +92,7 @@ public:
 	void add_search_path(const std::filesystem::path& path);
 	const std::vector<std::filesystem::path>& search_paths() const;
 
+	std::vector<std::filesystem::path> discover(const std::string& basename_prefix) const;
 	module load(const std::filesystem::path& path) const;
 
 private:

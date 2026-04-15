@@ -17,17 +17,26 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef PLUGIN_API_H
-#define PLUGIN_API_H
+#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
+#define IFCOPENSHELL_KERNEL_PLUGIN_H
 
-#ifdef _WIN32
-#ifdef PLUGIN_EXPORTS
-#define PLUGIN_API __declspec(dllexport)
-#else
-#define PLUGIN_API __declspec(dllimport)
-#endif
-#else
-#define PLUGIN_API __attribute__((visibility("default")))
-#endif
+#include "../ifcgeom/kernel_registry.h"
+
+#include <filesystem>
+
+namespace ifcopenshell {
+	namespace geometry {
+		namespace kernels {
+
+			typedef void register_kernel_plugin_fn(kernel_registry&, const plugin::module&);
+
+			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
+			IFC_GEOM_API plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
+			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
+			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+
+		}
+	}
+}
 
 #endif
