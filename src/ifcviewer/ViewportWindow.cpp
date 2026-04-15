@@ -1292,6 +1292,12 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
 
 void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
                                           float focal_px, float min_pixel_radius) {
+    cullModelCpu(m, planes, focal_px, min_pixel_radius);
+    uploadCullResults(m);
+}
+
+void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
+                                  float focal_px, float min_pixel_radius) {
     // Per-mesh scratch, split by winding × LOD.  Winding split lets the draw
     // pass toggle glFrontFace once between two MDI calls so GL_CULL_FACE does
     // the right thing for both.  LOD split means instances that want the
@@ -1303,15 +1309,15 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     auto resize_if = [&](std::vector<std::vector<uint32_t>>& v) {
         if (v.size() < m.meshes.size()) v.resize(m.meshes.size());
     };
-    resize_if(visible_by_mesh_fwd_lod0_);
-    resize_if(visible_by_mesh_fwd_lod1_);
-    resize_if(visible_by_mesh_rev_lod0_);
-    resize_if(visible_by_mesh_rev_lod1_);
+    resize_if(m.vis_fwd_lod0);
+    resize_if(m.vis_fwd_lod1);
+    resize_if(m.vis_rev_lod0);
+    resize_if(m.vis_rev_lod1);
     for (size_t i = 0; i < m.meshes.size(); ++i) {
-        visible_by_mesh_fwd_lod0_[i].clear();
-        visible_by_mesh_fwd_lod1_[i].clear();
-        visible_by_mesh_rev_lod0_[i].clear();
-        visible_by_mesh_rev_lod1_[i].clear();
+        m.vis_fwd_lod0[i].clear();
+        m.vis_fwd_lod1[i].clear();
+        m.vis_rev_lod0[i].clear();
+        m.vis_rev_lod1[i].clear();
     }
     cull_clear_ns_ += phase_timer.nsecsElapsed();
     phase_timer.restart();
@@ -1394,7 +1400,7 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         if (!aabbInFrustum(item.aabb_min, item.aabb_max, planes)) return;
         if (!contributionPasses(item.aabb_min, item.aabb_max)) return;
         if (hiz_on && aabbOccludedByHiz(item.aabb_min, item.aabb_max)) {
-            ++hiz_reject_count_;
+            hiz_reject_count_.fetch_add(1, std::memory_order_relaxed);
             return;
         }
         // Survivor — now pay the wide-struct fetch for mesh_id.
@@ -1407,10 +1413,10 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         const bool reflected = inst_idx < m.instance_reflected.size()
             && m.instance_reflected[inst_idx] != 0;
         auto& bucket =
-            reflected ? (want_lod1 ? visible_by_mesh_rev_lod1_
-                                   : visible_by_mesh_rev_lod0_)
-                      : (want_lod1 ? visible_by_mesh_fwd_lod1_
-                                   : visible_by_mesh_fwd_lod0_);
+            reflected ? (want_lod1 ? m.vis_rev_lod1
+                                   : m.vis_rev_lod0)
+                      : (want_lod1 ? m.vis_fwd_lod1
+                                   : m.vis_fwd_lod0);
         bucket[inst.mesh_id].push_back(inst_idx);
     };
 
@@ -1456,8 +1462,8 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     // rev fills [indirect_forward_count, end).  LOD0/LOD1 within a winding
     // slice are contiguous — winding is what requires glFrontFace to flip
     // between MDI calls, LOD is not.
-    visible_flat_.clear();
-    indirect_scratch_.clear();
+    m.visible_flat.clear();
+    m.indirect_scratch.clear();
 
     auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh, int lod) {
         for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
@@ -1474,25 +1480,25 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
             cmd.instanceCount = vis_count;
             cmd.firstIndex    = ebo_off / sizeof(uint32_t);
             cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
-            cmd.baseInstance  = static_cast<uint32_t>(visible_flat_.size());
-            indirect_scratch_.push_back(cmd);
+            cmd.baseInstance  = static_cast<uint32_t>(m.visible_flat.size());
+            m.indirect_scratch.push_back(cmd);
 
-            visible_flat_.insert(visible_flat_.end(),
-                                 by_mesh[mi].begin(), by_mesh[mi].end());
+            m.visible_flat.insert(m.visible_flat.end(),
+                                  by_mesh[mi].begin(), by_mesh[mi].end());
         }
     };
 
-    emit_slice(visible_by_mesh_fwd_lod0_, 0);
-    emit_slice(visible_by_mesh_fwd_lod1_, 1);
-    m.indirect_forward_count = static_cast<uint32_t>(indirect_scratch_.size());
-    emit_slice(visible_by_mesh_rev_lod0_, 0);
-    emit_slice(visible_by_mesh_rev_lod1_, 1);
-    m.indirect_command_count = static_cast<uint32_t>(indirect_scratch_.size());
+    emit_slice(m.vis_fwd_lod0, 0);
+    emit_slice(m.vis_fwd_lod1, 1);
+    m.indirect_forward_count = static_cast<uint32_t>(m.indirect_scratch.size());
+    emit_slice(m.vis_rev_lod0, 0);
+    emit_slice(m.vis_rev_lod1, 1);
+    m.indirect_command_count = static_cast<uint32_t>(m.indirect_scratch.size());
 
     // Per-model stats snapshot — summed into the frame counters regardless
     // of whether this frame ran a full cull or reused the cached one.
     uint32_t model_vis_obj = 0, model_vis_tri = 0;
-    for (const auto& cmd : indirect_scratch_) {
+    for (const auto& cmd : m.indirect_scratch) {
         model_vis_tri += (cmd.count / 3) * cmd.instanceCount;
         model_vis_obj += cmd.instanceCount;
     }
@@ -1500,10 +1506,14 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
     m.cached_visible_triangles = model_vis_tri;
 
     cull_emit_ns_ += phase_timer.nsecsElapsed();
-    phase_timer.restart();
+}
+
+void ViewportWindow::uploadCullResults(ModelGpuData& m) {
+    QElapsedTimer phase_timer;
+    phase_timer.start();
 
     // Upload visible list (keep binding alive even when empty).
-    size_t vis_bytes = std::max<size_t>(visible_flat_.size() * sizeof(uint32_t),
+    size_t vis_bytes = std::max<size_t>(m.visible_flat.size() * sizeof(uint32_t),
                                         sizeof(uint32_t));
     if (m.visible_ssbo == 0 || m.visible_ssbo_capacity < vis_bytes) {
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
@@ -1513,13 +1523,13 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         gl_->glNamedBufferStorage(m.visible_ssbo, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
         m.visible_ssbo_capacity = new_cap;
     }
-    if (!visible_flat_.empty()) {
+    if (!m.visible_flat.empty()) {
         gl_->glNamedBufferSubData(m.visible_ssbo, 0,
-            visible_flat_.size() * sizeof(uint32_t), visible_flat_.data());
+            m.visible_flat.size() * sizeof(uint32_t), m.visible_flat.data());
     }
 
     // Upload indirect command buffer.
-    size_t ind_bytes = indirect_scratch_.size() * sizeof(DrawElementsIndirectCommand);
+    size_t ind_bytes = m.indirect_scratch.size() * sizeof(DrawElementsIndirectCommand);
     if (ind_bytes == 0) {
         cull_upload_ns_ += phase_timer.nsecsElapsed();
         return;
@@ -1532,7 +1542,7 @@ void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6]
         gl_->glNamedBufferStorage(m.indirect_buffer, new_cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
         m.indirect_capacity = new_cap;
     }
-    gl_->glNamedBufferSubData(m.indirect_buffer, 0, ind_bytes, indirect_scratch_.data());
+    gl_->glNamedBufferSubData(m.indirect_buffer, 0, ind_bytes, m.indirect_scratch.data());
     cull_upload_ns_ += phase_timer.nsecsElapsed();
 }
 
@@ -1608,7 +1618,7 @@ void ViewportWindow::render() {
         && last_cull_proj_ == proj_matrix_;
     const bool cull_this_frame = !camera_unchanged;
     if (cull_this_frame) {
-        hiz_reject_count_ = 0;
+        hiz_reject_count_.store(0, std::memory_order_relaxed);
     } else {
         ++cull_skipped_frames_;
     }
@@ -1617,11 +1627,47 @@ void ViewportWindow::render() {
     // back and forth.  Harmless when culling is off.
     gl_->glFrontFace(GL_CCW);
 
+    // Parallel cull: each model's CPU cull is independent (no shared mutable
+    // state other than the atomic timing counters), so we fan them out to
+    // std::async and join before the (serial, GL-touching) upload pass.
+    // IFC_CULL_THREADS=0 forces the single-threaded fallback.
+    static const bool mt_cull_enabled = []{
+        const char* e = std::getenv("IFC_CULL_THREADS");
+        return !(e && e[0] == '0');
+    }();
+    QElapsedTimer cull_wall_timer;
+    if (cull_this_frame) {
+        cull_wall_timer.start();
+        std::vector<ModelGpuData*> cull_targets;
+        cull_targets.reserve(models_gpu_.size());
+        for (auto& [mid, m] : models_gpu_) {
+            if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
+            cull_targets.push_back(&m);
+        }
+        if (mt_cull_enabled && cull_targets.size() > 1) {
+            std::vector<std::future<void>> futs;
+            futs.reserve(cull_targets.size());
+            for (ModelGpuData* mp : cull_targets) {
+                const float mpr = min_pixel_radius;
+                futs.emplace_back(std::async(std::launch::async,
+                    [this, mp, &planes, focal_px, mpr]() {
+                        cullModelCpu(*mp, planes, focal_px, mpr);
+                    }));
+            }
+            for (auto& f : futs) f.get();
+        } else {
+            for (ModelGpuData* mp : cull_targets) {
+                cullModelCpu(*mp, planes, focal_px, min_pixel_radius);
+            }
+        }
+        cull_wall_ns_ += cull_wall_timer.nsecsElapsed();
+    }
+
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         if (cull_this_frame) {
-            cullAndUploadVisible(m, planes, focal_px, min_pixel_radius);
+            uploadCullResults(m);
         }
         if (m.indirect_command_count == 0) continue;
 
@@ -1741,24 +1787,29 @@ void ViewportWindow::render() {
 
         const double inv_frames = frames_in_window > 0
             ? 1.0 / static_cast<double>(frames_in_window) : 0.0;
-        const double clr_ms = cull_clear_ns_    * 1e-6 * inv_frames;
-        const double trv_ms = cull_traverse_ns_ * 1e-6 * inv_frames;
-        const double emt_ms = cull_emit_ns_     * 1e-6 * inv_frames;
-        const double upl_ms = cull_upload_ns_   * 1e-6 * inv_frames;
-        cull_clear_ns_ = cull_traverse_ns_ = cull_emit_ns_ = cull_upload_ns_ = 0;
+        const double clr_ms = cull_clear_ns_.load()    * 1e-6 * inv_frames;
+        const double trv_ms = cull_traverse_ns_.load() * 1e-6 * inv_frames;
+        const double emt_ms = cull_emit_ns_.load()     * 1e-6 * inv_frames;
+        const double upl_ms = cull_upload_ns_.load()   * 1e-6 * inv_frames;
+        const double wall_ms = cull_wall_ns_           * 1e-6 * inv_frames;
+        cull_clear_ns_.store(0);
+        cull_traverse_ns_.store(0);
+        cull_emit_ns_.store(0);
+        cull_upload_ns_.store(0);
+        cull_wall_ns_ = 0;
         const uint32_t skipped = cull_skipped_frames_;
         cull_skipped_frames_ = 0;
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
-               "cull[clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
+               "cull[wall %.2f | work: clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
                visible_triangles_, total_tri,
                total_meshes, gl_draw_calls_, indirect_sub_draws_,
-               hiz_reject_count_,
-               clr_ms, trv_ms, emt_ms, upl_ms,
+               hiz_reject_count_.load(),
+               wall_ms, clr_ms, trv_ms, emt_ms, upl_ms,
                skipped, frames_in_window,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),

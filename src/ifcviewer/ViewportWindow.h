@@ -32,6 +32,8 @@
 #include <cstdint>
 #include <mutex>
 #include <memory>
+#include <atomic>
+#include <future>
 
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
@@ -103,6 +105,15 @@ struct ModelGpuData {
     size_t  indirect_capacity = 0;        // bytes
     uint32_t indirect_command_count = 0;  // total valid commands this frame
     uint32_t indirect_forward_count = 0;  // first N are CCW-winding draws
+
+    // Per-model cull scratch — owned by the model so each cull job runs
+    // without sharing mutable state.  Four buckets = {fwd, rev} × {LOD0, LOD1}.
+    std::vector<std::vector<uint32_t>>       vis_fwd_lod0;
+    std::vector<std::vector<uint32_t>>       vis_fwd_lod1;
+    std::vector<std::vector<uint32_t>>       vis_rev_lod0;
+    std::vector<std::vector<uint32_t>>       vis_rev_lod1;
+    std::vector<uint32_t>                    visible_flat;
+    std::vector<DrawElementsIndirectCommand> indirect_scratch;
 
     bool finalized = false;
     bool hidden    = false;
@@ -215,6 +226,18 @@ private:
     void cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
                               float focal_px, float min_pixel_radius);
 
+    // Thread-safe: CPU-only cull (frustum + contribution + HiZ + bucketing +
+    // emit).  Writes survivors into m.vis_* / m.visible_flat / m.indirect_scratch
+    // and sets m.indirect_forward_count / m.indirect_command_count /
+    // m.cached_visible_*.  Touches no GL state and no ViewportWindow mutable
+    // state other than the atomic counters below — safe to run on a worker.
+    void cullModelCpu(ModelGpuData& m, const float planes[6][4],
+                      float focal_px, float min_pixel_radius);
+
+    // Main-thread only: uploads m.visible_flat / m.indirect_scratch into the
+    // model's SSBO + indirect buffer, growing them if needed.
+    void uploadCullResults(ModelGpuData& m);
+
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
     void handleMouseRelease(QMouseEvent* event);
@@ -268,17 +291,23 @@ private:
     std::vector<uint32_t> hiz_mip_h_;
     QMatrix4x4            hiz_vp_;
     bool                  hiz_vp_valid_ = false;
-    uint32_t              hiz_reject_count_ = 0;  // per-frame stat
+    std::atomic<uint32_t> hiz_reject_count_{0};  // per-frame stat
 
     // Cull-phase timers.  Accumulated across all frames in the current
     // 1-second stats window; divided by frame_count_ at print time to
     // give per-frame average ms.  Reset each window.  Lets us see where
     // CPU time actually goes: bucket clears vs BVH traversal vs emit vs
     // GPU upload.
-    uint64_t cull_clear_ns_    = 0;
-    uint64_t cull_traverse_ns_ = 0;
-    uint64_t cull_emit_ns_     = 0;
-    uint64_t cull_upload_ns_   = 0;
+    // Atomic so parallel cull workers can fetch_add into them without
+    // contending on a lock.  clr/trv/emt are SUMS across all worker threads
+    // for the frame — they describe total CPU work, not wall-clock.  The
+    // wall counter is measured once around the dispatch block in render()
+    // and is what actually determines frame time.
+    std::atomic<uint64_t> cull_clear_ns_{0};
+    std::atomic<uint64_t> cull_traverse_ns_{0};
+    std::atomic<uint64_t> cull_emit_ns_{0};
+    std::atomic<uint64_t> cull_upload_ns_{0};
+    uint64_t              cull_wall_ns_ = 0;    // main-thread only
     uint32_t cull_skipped_frames_ = 0;
 
     // Skip cullAndUploadVisible + buildHizPyramid when the camera and scene
@@ -294,21 +323,6 @@ private:
     uint32_t visible_objects_ = 0;
     uint32_t gl_draw_calls_ = 0;
     uint32_t indirect_sub_draws_ = 0;
-
-    // Reused scratch: visible-instance index lists per mesh, flattened into
-    // `visible_flat_` for upload.  Both live in the parent object to avoid
-    // per-frame allocation.  indirect_scratch_ is the matching array of
-    // DrawElementsIndirectCommand records — forward-declared as bytes so
-    // the header doesn't need the struct definition.
-    // Four buckets = {fwd, rev} × {LOD0, LOD1}.  LOD1 buckets are only
-    // populated when the mesh has lod1_index_count > 0 and the projected
-    // pixel radius is below the LOD switch threshold.
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_lod0_;
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_fwd_lod1_;
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_lod0_;
-    std::vector<std::vector<uint32_t>>     visible_by_mesh_rev_lod1_;
-    std::vector<uint32_t>                  visible_flat_;
-    std::vector<DrawElementsIndirectCommand> indirect_scratch_;
 
     // Camera
     QVector3D camera_target_{0, 0, 0};
