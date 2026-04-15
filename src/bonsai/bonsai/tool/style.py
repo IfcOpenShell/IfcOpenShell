@@ -682,18 +682,32 @@ class Style(bonsai.core.tool.Style):
             style_elements = tool.Style.get_style_elements(blender_material)
             rendering_style = None
             texture_style = None
+            shading_only_style = None
 
             for surface_style in style_elements.values():
                 if surface_style.is_a() == "IfcSurfaceStyleShading":
+                    shading_only_style = surface_style
                     tool.Loader.create_surface_style_shading(blender_material, surface_style)
                 elif surface_style.is_a("IfcSurfaceStyleRendering"):
                     rendering_style = surface_style
+                    shading_only_style = None  # rendering overrides shading-only path
                     tool.Loader.create_surface_style_rendering(blender_material, surface_style)
                 elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
                     texture_style = surface_style
 
             if rendering_style and texture_style:
                 tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+            elif shading_only_style and not rendering_style:
+                # create a minimal Principled BSDF so Material Preview/Rendered shows the colour instead of white.
+                tool.Style.set_use_nodes(blender_material, True)
+                tool.Loader.restart_material_node_tree(blender_material)
+                bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+                if bsdf:
+                    r, g, b, a = blender_material.diffuse_color
+                    bsdf.inputs["Base Color"].default_value = (r, g, b, 1)
+                    bsdf.inputs["Alpha"].default_value = a
+                    if a < 1.0:
+                        blender_material.blend_method = "BLEND"
         else:
             assert False, f"Invalid style type found: {style_type}"
 

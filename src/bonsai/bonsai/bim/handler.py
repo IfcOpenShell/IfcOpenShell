@@ -336,13 +336,9 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
 
 def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
     shading_type = area.spaces.active.shading.type
-    has_any_textures = tool.Style.restore_material_style_types(shading_type)
+    tool.Style.restore_material_style_types(shading_type)
     if shading_type == "SOLID":
-        if has_any_textures:
-            tool.Style.ensure_uv_maps_for_textured_objects()
-            area.spaces.active.shading.color_type = "TEXTURE"
-        else:
-            area.spaces.active.shading.color_type = "MATERIAL"
+        area.spaces.active.shading.color_type = "MATERIAL"
 
 
 def subscribe_to_viewport_shading_changes():

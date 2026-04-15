@@ -365,6 +365,22 @@ def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context)
         tool.Style.switch_shading(blender_material, self.active_style_type)
 
 
+def update_prefer_ifc_shading(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
+    blender_material = self.id_data
+    style_elements = tool.Style.get_style_elements(blender_material)
+    has_external = tool.Style.has_blender_external_style(style_elements)
+    if self.prefer_ifc_shading:
+        self.active_style_type = "Shading"
+        tool.Style.switch_shading(blender_material, "Shading")
+    elif has_external:
+        self.active_style_type = "External"
+        tool.Style.switch_shading(blender_material, "External")
+    else:
+        self.active_style_type = "Shading"
+        tool.Style.switch_shading(blender_material, "Shading")
+    blender_material.update_tag()
+
+
 class BIMStyleProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     active_style_type: EnumProperty(
@@ -375,12 +391,13 @@ class BIMStyleProperties(PropertyGroup):
         update=update_shading_style,
     )
     prefer_ifc_shading: BoolProperty(
-        name="Prefer IFC Shading",
+        name="Fast / Pretty",
         description=(
-            "Use IFC-native shading (Rendering/Shading) even if an external .blend style is available. "
-            "When enabled, viewport switches to Material Preview or Rendered will not activate the external style."
+            "Toggle between Fast (IFC-native shading) and Pretty (external .blend style). "
+            "When set to Fast, viewport switches to Material Preview or Rendered will not activate the external style."
         ),
-        default=False,
+        default=True,
+        update=update_prefer_ifc_shading,
     )
     is_renaming: BoolProperty(description="Used to prevent triggering handler callback.", default=False)
 

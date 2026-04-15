@@ -162,6 +162,8 @@ class BIM_PT_styles(Panel):
         space = tool.Blender.get_view3d_space()
         box = self.layout.box()
 
+        obj = bpy.context.active_object
+
         parts = []
         if space:
             shading_type = space.shading.type
@@ -172,44 +174,49 @@ class BIM_PT_styles(Panel):
                 "WIREFRAME": "Wireframe",
             }
             parts.append(f"Viewport: {shading_labels.get(shading_type, shading_type)}")
-            if shading_type == "SOLID":
-                parts.append(f"Color: {space.shading.color_type}")
         else:
             parts.append("No 3D viewport")
+            shading_type = None
 
-        style_elements = tool.Style.get_style_elements(material)
-        present = set(style_elements.keys())
-        for ifc_class, short in (
-            ("IfcSurfaceStyleShading", "Shading"),
-            ("IfcSurfaceStyleRendering", "Rendering"),
-            ("IfcSurfaceStyleWithTextures", "Texture"),
-            ("IfcSurfaceStyleLighting", "Lighting"),
-            ("IfcSurfaceStyleRefraction", "Refraction"),
-            ("IfcExternallyDefinedSurfaceStyle", "External"),
-        ):
-            mark = "\u2713" if ifc_class in present else "\u2717"
-            parts.append(f"{short} {mark}")
+        if obj:
+            obj_has_uv = isinstance(obj.data, bpy.types.Mesh) and bool(obj.data.uv_layers)
+            uv_label = "UV \u2713" if obj_has_uv else "UV \u2717"
+            parts.append(f"Selected Object: {obj.name}  {uv_label}")
+        else:
+            parts.append("Selected Object: None")
 
-        obj = bpy.context.active_object
-        has_uv = bool(obj and isinstance(obj.data, bpy.types.Mesh) and obj.data.uv_layers)
-        uv_mark = "\u2713" if has_uv else "\u2717"
-        parts.append(f"UV {uv_mark}")
+        if shading_type == "SOLID":
+            is_fast = space.shading.color_type != "TEXTURE"
+            if is_fast:
+                parts.append("Fast:  Shade")
+            else:
+                parts.append("Pretty:  Texture  \u2192  Shade")
+        elif shading_type in ("MATERIAL", "RENDERED"):
+            is_fast = msprops.prefer_ifc_shading
+            if is_fast:
+                parts.append("Fast:  Render+Texture  \u2192  Render  \u2192  Shade")
+            else:
+                parts.append("Pretty:  External  \u2192  Render+Texture  \u2192  Render  \u2192  Shade")
 
-        parts.append(f"Shader: {self._get_shader_label(material, msprops)}")
-
-        row = box.row(align=True)
-        row.label(text="  |  ".join(parts))
+        row1 = box.row(align=True)
+        row1.label(text="  |  ".join(parts))
 
         row2 = box.row(align=True)
         row2.alignment = "RIGHT"
-        row2.prop(msprops, "prefer_ifc_shading", text="Prefer IFC", toggle=True)
-        style_id = tool.Blender.get_ifc_definition_id(material)
-        if style_id:
-            op = row2.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
-            op.style_id = style_id
+        if shading_type == "SOLID":
+            is_fast = space.shading.color_type != "TEXTURE"
+            shading_text = "Fast" if is_fast else "Pretty"
+            op = row2.operator("bim.toggle_prefer_ifc_shading", text=shading_text, depress=is_fast)
+        else:
+            shading_text = "Fast" if msprops.prefer_ifc_shading else "Pretty"
+            op = row2.operator("bim.toggle_prefer_ifc_shading", text=shading_text, depress=msprops.prefer_ifc_shading)
+        op.material_name = material.name
 
     @staticmethod
     def _get_shader_label(material: bpy.types.Material, msprops: "BIMStyleProperties") -> str:
+        space = tool.Blender.get_view3d_space()
+        if space and space.shading.type == "SOLID":
+            return "Not Applicable"
         if msprops.active_style_type == "External":
             return "External (.blend)"
         if not material.node_tree:

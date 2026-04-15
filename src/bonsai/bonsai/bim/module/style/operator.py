@@ -503,6 +503,74 @@ class ActivateExternalStyle(bpy.types.Operator):
             set_prop(prop_name)
 
 
+class TogglePreferIfcShading(bpy.types.Operator):
+    bl_idname = "bim.toggle_prefer_ifc_shading"
+    bl_label = "Toggle Fast/Pretty"
+    bl_description = (
+        "Toggle between Fast (IFC-native shading) and Pretty (external .blend style) for ALL styles.\n\n"
+        "SHIFT+CLICK to apply to this style only"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    material_name: bpy.props.StringProperty(name="Material Name", default="", options={"SKIP_SAVE"})
+    single_only: bpy.props.BoolProperty(name="Single Only", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.shift:
+            self.single_only = True
+        return self.execute(context)
+
+    def execute(self, context):
+        wm = context.window_manager
+        space = tool.Blender.get_view3d_space()
+        is_solid = space and space.shading.type == "SOLID"
+
+        if is_solid:
+            if space.shading.color_type == "TEXTURE":
+                space.shading.color_type = "MATERIAL"
+            else:
+                meshes_needing_uv = []
+                for obj in bpy.context.scene.objects:
+                    if not isinstance(obj.data, bpy.types.Mesh):
+                        continue
+                    for slot in obj.material_slots:
+                        mat = slot.material
+                        if not mat or not tool.Blender.get_ifc_definition_id(mat):
+                            continue
+                        style_elements = tool.Style.get_style_elements(mat)
+                        if style_elements.get("IfcSurfaceStyleWithTextures") and not obj.data.uv_layers:
+                            meshes_needing_uv.append(obj.data)
+                            break
+                wm.progress_begin(0, max(len(meshes_needing_uv), 1))
+                try:
+                    for i, mesh in enumerate(meshes_needing_uv):
+                        tool.Loader.load_generated_uv_map(mesh)
+                        wm.progress_update(i)
+                finally:
+                    wm.progress_end()
+                space.shading.color_type = "TEXTURE"
+            return {"FINISHED"}
+
+        if self.single_only:
+            mat = bpy.data.materials.get(self.material_name)
+            if not mat:
+                return {"CANCELLED"}
+            msprops = tool.Style.get_material_style_props(mat)
+            msprops.prefer_ifc_shading = not msprops.prefer_ifc_shading
+        else:
+            # Default: apply to all IFC materials
+            source_mat = bpy.data.materials.get(self.material_name)
+            new_value = not source_mat.BIMStyleProperties.prefer_ifc_shading if source_mat else True
+            ifc_mats = [m for m in bpy.data.materials if tool.Blender.get_ifc_definition_id(m)]
+            wm.progress_begin(0, max(len(ifc_mats), 1))
+            try:
+                for i, mat in enumerate(ifc_mats):
+                    tool.Style.get_material_style_props(mat).prefer_ifc_shading = new_value
+                    wm.progress_update(i)
+            finally:
+                wm.progress_end()
+        return {"FINISHED"}
+
+
 class DisableEditingStyles(bpy.types.Operator):
     bl_idname = "bim.disable_editing_styles"
     bl_options = {"REGISTER", "UNDO"}

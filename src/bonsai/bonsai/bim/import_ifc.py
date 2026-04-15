@@ -133,10 +133,6 @@ class MaterialCreator:
                 if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
                     continue
                 tool.Loader.load_indexed_map(coords, self.mesh)
-            elif tool.Style.get_texture_style(material):
-                # No explicit coordinate mapping (e.g. IFC2X3 has no IsMappedBy,
-                # and IFC4 COORD uses generated UVs). Bake XY→UV as fallback.
-                tool.Loader.load_generated_uv_map(self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
