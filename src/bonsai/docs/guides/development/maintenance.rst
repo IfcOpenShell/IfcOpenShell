@@ -80,6 +80,12 @@ Notes:
   - The hyphen is required for semantic versioning compliance; Blender will not process ``.post1`` suffixes correctly
   - Follow the standard release process for the corrective version
 
+- Multiple Blender Python Versions:
+
+  - Blender does not allow multiple builds for the same platform with different Python versions (e.g., cannot have both ``bonsai_py311-0.8.5-windows-x64.zip`` and ``bonsai_py313-0.8.5-windows-x64.zip``)
+  - Workaround: publish different Python versions as different extension versions (e.g., py313 as ``0.8.5`` and py311 as ``0.8.5-post1``)
+  - Set the maximum Blender version on the Blender extensions platform UI to prevent conflicts (e.g., set max version ``5.1.0`` for ``0.8.5-post1``, which restricts it to versions below 5.1.0)
+
 Things to update:
 
 - ``.github/workflows/ci-bcf-pypi.yml`` - release `bcf-client <https://pypi.org/project/bcf-client/>`_ to PyPI
