@@ -1282,6 +1282,13 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
 
     renderPickPass();
 
+    // The pick pass overwrote each model's visible_ssbo / indirect_buffer with
+    // pick-specific cull params (no contribution cull, no HiZ).  Invalidate
+    // the cached cull so the next render() rebuilds them with main-render
+    // params; otherwise the viewport draws with stale pick-pass buffers and
+    // shading looks wrong until the camera moves.
+    have_cached_cull_ = false;
+
     int px = x * devicePixelRatio();
     int py = (height() - y) * devicePixelRatio();
     uint32_t pixel = 0;

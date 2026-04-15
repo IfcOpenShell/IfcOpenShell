@@ -248,11 +248,28 @@ void MainWindow::applySidecarData(ModelId mid, SidecarData data) {
     QElapsedTimer t;
     t.start();
 
-    // Update next_object_id_ past all objects in this model before the
-    // extracted `elements` is moved out of `data`.
-    for (const auto& elem : data.elements) {
-        if (elem.object_id >= next_object_id_)
-            next_object_id_ = elem.object_id + 1;
+    // Sidecars store raw object_ids and model_ids from the session that wrote
+    // them.  On load we must rebase both onto the current session's ID space,
+    // or two cached models collide (both starting at object_id=1, both
+    // claiming the original model_id).  Offset by (next_object_id_ - min_id)
+    // so the first cached object takes the next free slot.
+    uint32_t min_oid = UINT32_MAX;
+    for (const auto& pe : data.elements) {
+        if (pe.object_id < min_oid) min_oid = pe.object_id;
+    }
+    uint32_t oid_offset = 0;
+    if (!data.elements.empty() && min_oid < UINT32_MAX) {
+        oid_offset = next_object_id_ - min_oid;
+    }
+    for (auto& pe : data.elements) {
+        pe.object_id += oid_offset;
+        pe.model_id   = mid;
+        if (pe.object_id >= next_object_id_)
+            next_object_id_ = pe.object_id + 1;
+    }
+    for (auto& inst : data.instances) {
+        inst.object_id += oid_offset;
+        inst.model_id   = mid;
     }
 
     // Hand off geometry to GPU in a single call.

@@ -307,6 +307,14 @@ uint32_t + char[]        string table
 Staleness check: `source_file_size` vs actual file size. Mismatched →
 reject and rebuild. Endianness marker rejects cross-arch caches.
 
+Sidecars store the raw `object_id` / `model_id` values from the session
+that wrote them. On load they are rebased onto the current session's ID
+space (`object_id += next_object_id_ - min_id_in_sidecar`, `model_id`
+overwritten with the freshly-assigned handle) before the elements hit
+`element_map_` or the viewport. Without this, two cached models loaded
+back-to-back collide — both start at `object_id=1` and the second model's
+property lookups return the first model's data.
+
 ### GPU Instancing pipeline (the central pillar)
 
 Everything above plugs into a single data-flow, worth documenting on its
@@ -450,6 +458,13 @@ pruned, so distant parts of the model never touch per-instance tests)
 and per-instance level. Short-circuits when the camera is inside the
 AABB so nothing-you're-standing-next-to is ever lost. Pick pass uses
 threshold 0 so sub-pixel objects remain clickable.
+
+Because the pick pass re-runs the cull with its own parameters (no
+contribution cull, no HiZ) and writes into each model's shared
+`visible_ssbo` / indirect buffer, `pickObjectAt()` must invalidate
+`have_cached_cull_` on exit. Otherwise the next `render()` sees an
+unchanged camera, skips the cull, and draws the pick-pass buffers —
+the user sees obviously-wrong shading until they nudge the camera.
 
 Sphere-based (centre = AABB midpoint, radius = half-diagonal,
 r_px = focal_px · radius / distance). Loses a little precision on
