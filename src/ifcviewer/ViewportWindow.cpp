@@ -1388,7 +1388,21 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     // HiZ occlusion is skipped entirely when the pick pass runs
     // (min_pixel_radius == 0 on that path), when the user disables it via
     // env var, or before the first pyramid has been built.
-    const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_valid_;
+    //
+    // Crucially, HiZ is also skipped when the stored VP (hiz_vp_, captured at
+    // the end of the previous frame) differs from this frame's VP — i.e.
+    // whenever the camera has moved.  The stored depth buffer encodes what
+    // was visible from hiz_vp_'s viewpoint; projecting a current-frame AABB
+    // through that VP answers "was this occluded LAST frame?", which is only
+    // a correct proxy for "is this occluded NOW?" when the camera is static.
+    // Orbiting past a wall would otherwise leave objects persistently culled
+    // because prior frames' depth buffers only ever contained the wall (the
+    // objects behind it were themselves HiZ-culled, never drawn, so never in
+    // the buffer — a self-reinforcing feedback loop).  On static views HiZ
+    // kicks in after a single frame of lag.
+    const QMatrix4x4 current_vp = proj_matrix_ * view_matrix_;
+    const bool hiz_vp_matches = hiz_vp_valid_ && hiz_vp_ == current_vp;
+    const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_matches;
 
     // Hot path: read the AABB from the compact bvh_items array (28 B stride)
     // rather than the wide InstanceCpu (104 B stride).  Most instances fail
