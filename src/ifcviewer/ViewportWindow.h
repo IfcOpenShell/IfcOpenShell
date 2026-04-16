@@ -267,6 +267,15 @@ private:
     GLuint pick_program_ = 0;
     GLuint axis_program_ = 0;
 
+    // Phase 3E compute cull (frustum-only, validation).  Runs alongside the
+    // CPU cull when IFC_GPU_CULL=1; result is cross-checked against CPU's
+    // visible_objects count.  No draw-path side effects yet.
+    GLuint cull_program_ = 0;
+    GLuint gpu_cull_counter_ssbo_ = 0;
+    uint32_t gpu_cull_last_survivors_ = 0;
+    uint32_t gpu_cull_last_input_     = 0;
+    uint64_t gpu_cull_ns_             = 0;  // per-window accumulator
+
     // Axis gizmo
     GLuint axis_vao_ = 0;
     GLuint axis_vbo_ = 0;

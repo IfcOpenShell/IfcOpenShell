@@ -247,6 +247,53 @@ static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const ch
     return shader;
 }
 
+// Phase 3E compute cull (frustum-only, validation).  Reads a model's
+// per-instance AABB SSBO, tests against 6 planes, atomicAdds on a global
+// counter.  No visible list / indirect writeout yet; result is cross-checked
+// against the CPU cull's visible_objects count to prove plumbing is correct
+// before we hand the GPU the full emit responsibility.  Gated by IFC_GPU_CULL=1.
+static const char* CULL_COMPUTE_SHADER = R"(
+#version 450 core
+layout(local_size_x = 64) in;
+// Each instance contributes two vec4 entries: (min.xyz, meshid_as_float),
+// (max.xyz, flags_as_float).  We ignore the w components here — they'll be
+// needed once the shader also emits the per-mesh / fwd-rev buckets.
+layout(std430, binding = 0) readonly buffer AabbBuf { vec4 entries[]; };
+layout(std430, binding = 1) coherent buffer CountBuf { uint counter; };
+uniform vec4 u_planes[6];
+uniform uint u_count;
+void main() {
+    uint gid = gl_GlobalInvocationID.x;
+    if (gid >= u_count) return;
+    vec3 mn = entries[gid * 2u].xyz;
+    vec3 mx = entries[gid * 2u + 1u].xyz;
+    for (int i = 0; i < 6; ++i) {
+        vec3 pv = vec3(
+            u_planes[i].x >= 0.0 ? mx.x : mn.x,
+            u_planes[i].y >= 0.0 ? mx.y : mn.y,
+            u_planes[i].z >= 0.0 ? mx.z : mn.z);
+        if (dot(u_planes[i].xyz, pv) + u_planes[i].w < 0.0) return;
+    }
+    atomicAdd(counter, 1u);
+}
+)";
+
+static GLuint linkComputeProgram(QOpenGLFunctions_4_5_Core* gl, const char* src) {
+    GLuint cs = compileShader(gl, GL_COMPUTE_SHADER, src);
+    GLuint prog = gl->glCreateProgram();
+    gl->glAttachShader(prog, cs);
+    gl->glLinkProgram(prog);
+    GLint ok = 0;
+    gl->glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+    if (!ok) {
+        char log[2048];
+        gl->glGetProgramInfoLog(prog, sizeof(log), nullptr, log);
+        qWarning("Compute program link error: %s", log);
+    }
+    gl->glDeleteShader(cs);
+    return prog;
+}
+
 static GLuint linkProgram(QOpenGLFunctions_4_5_Core* gl, GLuint vert, GLuint frag) {
     GLuint prog = gl->glCreateProgram();
     gl->glAttachShader(prog, vert);
@@ -415,6 +462,8 @@ ViewportWindow::~ViewportWindow() {
             if (main_program_)  gl_->glDeleteProgram(main_program_);
             if (pick_program_)  gl_->glDeleteProgram(pick_program_);
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
+            if (cull_program_)  gl_->glDeleteProgram(cull_program_);
+            if (gpu_cull_counter_ssbo_) gl_->glDeleteBuffers(1, &gpu_cull_counter_ssbo_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
@@ -504,6 +553,10 @@ void ViewportWindow::buildShaders() {
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, AXIS_FRAGMENT_SHADER);
         axis_program_ = linkProgram(gl_, vs, fs);
     }
+    cull_program_ = linkComputeProgram(gl_, CULL_COMPUTE_SHADER);
+    gl_->glCreateBuffers(1, &gpu_cull_counter_ssbo_);
+    gl_->glNamedBufferStorage(gpu_cull_counter_ssbo_, sizeof(uint32_t), nullptr,
+                              GL_DYNAMIC_STORAGE_BIT);
 }
 
 void ViewportWindow::buildAxisGizmo() {
@@ -1732,6 +1785,49 @@ void ViewportWindow::render() {
         cull_wall_ns_ += cull_wall_timer.nsecsElapsed();
     }
 
+    // Phase 3E validation dispatch: frustum-only GPU cull, result compared
+    // against the CPU cull's visible_objects count.  Gated, no draw-path
+    // effect.  Synchronous readback is intentional — we want ground truth.
+    static const bool gpu_cull_enabled = []{
+        const char* e = std::getenv("IFC_GPU_CULL");
+        return e && e[0] == '1';
+    }();
+    if (gpu_cull_enabled && cull_this_frame && cull_program_) {
+        QElapsedTimer t; t.start();
+        uint32_t zero = 0;
+        gl_->glNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(zero), &zero);
+
+        gl_->glUseProgram(cull_program_);
+        GLint u_planes = gl_->glGetUniformLocation(cull_program_, "u_planes");
+        GLint u_count  = gl_->glGetUniformLocation(cull_program_, "u_count");
+        float planes_flat[24];
+        for (int i = 0; i < 6; ++i) {
+            planes_flat[i*4+0] = planes[i][0];
+            planes_flat[i*4+1] = planes[i][1];
+            planes_flat[i*4+2] = planes[i][2];
+            planes_flat[i*4+3] = planes[i][3];
+        }
+        gl_->glUniform4fv(u_planes, 6, planes_flat);
+
+        uint32_t total_in = 0;
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, gpu_cull_counter_ssbo_);
+        for (const auto& [mid, m] : models_gpu_) {
+            if (m.hidden || !m.aabb_ssbo || m.instances.empty()) continue;
+            const uint32_t n = static_cast<uint32_t>(m.instances.size());
+            total_in += n;
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.aabb_ssbo);
+            gl_->glUniform1ui(u_count, n);
+            gl_->glDispatchCompute((n + 63u) / 64u, 1, 1);
+        }
+        gl_->glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+        uint32_t survivors = 0;
+        gl_->glGetNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(survivors), &survivors);
+        gpu_cull_last_survivors_ = survivors;
+        gpu_cull_last_input_     = total_in;
+        gpu_cull_ns_            += t.nsecsElapsed();
+        gl_->glUseProgram(main_program_);
+    }
+
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
@@ -1868,10 +1964,13 @@ void ViewportWindow::render() {
         cull_wall_ns_ = 0;
         const uint32_t skipped = cull_skipped_frames_;
         cull_skipped_frames_ = 0;
+        const double gpu_cull_ms = gpu_cull_ns_ * 1e-6 * inv_frames;
+        gpu_cull_ns_ = 0;
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
                "cull[wall %.2f | work: clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
+               "gpu_cull[%.2fms in=%u surv=%u]  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
@@ -1880,6 +1979,7 @@ void ViewportWindow::render() {
                hiz_reject_count_.load(),
                wall_ms, clr_ms, trv_ms, emt_ms, upl_ms,
                skipped, frames_in_window,
+               gpu_cull_ms, gpu_cull_last_input_, gpu_cull_last_survivors_,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),
