@@ -571,6 +571,97 @@ class TogglePreferIfcShading(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.suggest_shade_from_external_style"
+    bl_label = "Suggest Shade from External Style"
+    bl_description = (
+        "Generate a Shade style (Surface Colour + Transparency) from the external .blend style.\n\n"
+        "ALT+CLICK to apply to all styles with an external .blend style"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+    material_name: bpy.props.StringProperty(name="Material Name", default="", options={"SKIP_SAVE"})
+    all_styles: bpy.props.BoolProperty(name="All Styles", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.alt:
+            self.all_styles = True
+        return self.execute(context)
+
+    def _execute(self, context):
+        if self.all_styles:
+            candidates = [
+                (mat, tool.Style.get_style_elements(mat))
+                for mat in bpy.data.materials
+                if tool.Blender.get_ifc_definition_id(mat)
+            ]
+            candidates = [(mat, se) for mat, se in candidates if tool.Style.has_blender_external_style(se)]
+            wm = context.window_manager
+            wm.progress_begin(0, max(len(candidates), 1))
+            count = 0
+            try:
+                for i, (mat, style_elements) in enumerate(candidates):
+                    wm.progress_update(i)
+                    if self._apply_to_material(mat, style_elements):
+                        count += 1
+            finally:
+                wm.progress_end()
+            self.report({"INFO"}, f"Shade style generated for {count} style(s).")
+        else:
+            mat = bpy.data.materials.get(self.material_name)
+            if not mat:
+                return {"CANCELLED"}
+            style_elements = tool.Style.get_style_elements(mat)
+            if not tool.Style.has_blender_external_style(style_elements):
+                self.report({"ERROR"}, "No external .blend style assigned. Please assign an external style first.")
+                return {"CANCELLED"}
+            self._apply_to_material(mat, style_elements)
+        props = tool.Style.get_style_props()
+        if props.is_editing:
+            core.load_styles(tool.Style, style_type=props.style_type)
+
+    def _apply_to_material(self, material: bpy.types.Material, style_elements: dict) -> bool:
+        external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
+        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+        data_block_type, data_block = external_style.Identification.split("/")
+
+        try:
+            db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
+        except OSError as e:
+            self.report({"WARNING"}, f'Could not open blend file for "{material.name}": {e}')
+            return False
+        if not db["data_block"]:
+            self.report({"WARNING"}, f'Could not load external style for "{material.name}": {db["msg"]}')
+            return False
+
+        ext_mat = db["data_block"]
+        surface_colour, transparency = tool.Style.get_representative_material_color(ext_mat)
+        bpy.data.materials.remove(ext_mat)
+
+        ifc_style = tool.Ifc.get_entity(material)
+        attributes: dict = {
+            "SurfaceColour": {
+                "Name": None,
+                "Red": surface_colour[0],
+                "Green": surface_colour[1],
+                "Blue": surface_colour[2],
+            },
+        }
+        if tool.Ifc.get_schema() != "IFC2X3":
+            attributes["Transparency"] = transparency
+
+        shading_style = style_elements.get("IfcSurfaceStyleShading")
+        if shading_style:
+            tool.Ifc.run("style.edit_surface_style", style=shading_style, attributes=attributes)
+        else:
+            tool.Ifc.run(
+                "style.add_surface_style",
+                style=ifc_style,
+                ifc_class="IfcSurfaceStyleShading",
+                attributes=attributes,
+            )
+        return True
+
+
 class DisableEditingStyles(bpy.types.Operator):
     bl_idname = "bim.disable_editing_styles"
     bl_options = {"REGISTER", "UNDO"}

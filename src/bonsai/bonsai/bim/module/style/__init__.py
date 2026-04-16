@@ -45,6 +45,7 @@ classes = (
     operator.SelectByStyle,
     operator.SelectStyleInStylesUI,
     operator.SetAssetMaterialToExternalStyle,
+    operator.SuggestShadeFromExternalStyle,
     operator.UnlinkStyle,
     operator.TogglePreferIfcShading,
     operator.UpdateCurrentStyle,

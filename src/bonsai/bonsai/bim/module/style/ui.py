@@ -203,6 +203,8 @@ class BIM_PT_styles(Panel):
 
         row2 = box.row(align=True)
         row2.alignment = "RIGHT"
+        op = row2.operator("bim.suggest_shade_from_external_style", text="", icon="BRUSHES_ALL")
+        op.material_name = material.name
         if shading_type == "SOLID":
             is_fast = space.shading.color_type != "TEXTURE"
             shading_text = "Fast" if is_fast else "Pretty"

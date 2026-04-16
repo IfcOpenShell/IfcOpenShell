@@ -593,6 +593,98 @@ class Style(bonsai.core.tool.Style):
         return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
+    def get_representative_material_color(
+        cls, material: bpy.types.Material
+    ) -> tuple[tuple[float, float, float], float]:
+        if material.node_tree:
+            nodes = material.node_tree.nodes
+            for node in nodes:
+                if node.type == "BSDF_PRINCIPLED":
+                    color = cls._resolve_color_socket(node.inputs["Base Color"])
+                    alpha_socket = node.inputs["Alpha"]
+                    alpha_source = cls._upstream_color_source(alpha_socket)
+                    if alpha_source and alpha_source[0] == "IMAGE":
+                        pixels = alpha_source[1].pixels[:]
+                        n = len(pixels) // 4
+                        step = max(1, n // 4096)
+                        a_sum = sum(pixels[i * 4 + 3] for i in range(0, n, step))
+                        count = len(range(0, n, step)) or 1
+                        transparency = 1.0 - (a_sum / count)
+                    else:
+                        transparency = 1.0 - alpha_socket.default_value
+                    return color, transparency
+            for node in nodes:
+                if node.type in ("BSDF_DIFFUSE", "DIFFUSE_BSDF"):
+                    return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            for node in nodes:
+                if node.type == "BSDF_GLASS":
+                    return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+        color = tuple(material.diffuse_color[:3])
+        transparency = 1.0 - material.diffuse_color[3]
+        return color, transparency
+
+    @classmethod
+    def _upstream_color_source(
+        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
+    ) -> tuple[str, object] | None:
+        if seen is None:
+            seen = set()
+        for link in socket.links:
+            node = link.from_node
+            if node.name in seen:
+                continue
+            seen.add(node.name)
+            if node.type == "TEX_IMAGE":
+                return ("IMAGE", node.image)
+            if node.type == "VALTORGB":
+                return ("COLORRAMP", node)
+            for inp in node.inputs:
+                if inp.is_linked:
+                    result = cls._upstream_color_source(inp, seen)
+                    if result:
+                        return result
+        return None
+
+    @classmethod
+    def _resolve_color_socket(cls, socket: bpy.types.NodeSocket) -> tuple[float, float, float]:
+        source = cls._upstream_color_source(socket)
+        if source is None:
+            return tuple(socket.default_value[:3])
+        kind, obj = source
+        if kind == "IMAGE":
+            return cls._average_image_color(obj)
+        if kind == "COLORRAMP":
+            return cls._average_colorramp_color(obj)
+        return tuple(socket.default_value[:3])
+
+    @staticmethod
+    def _average_image_color(image: bpy.types.Image) -> tuple[float, float, float]:
+        pixels = image.pixels[:]
+        n = len(pixels) // 4
+        if n == 0:
+            return (0.5, 0.5, 0.5)
+        step = max(1, n // 4096)
+        r_sum = g_sum = b_sum = 0.0
+        count = 0
+        for i in range(0, n, step):
+            base = i * 4
+            r_sum += pixels[base]
+            g_sum += pixels[base + 1]
+            b_sum += pixels[base + 2]
+            count += 1
+        return (r_sum / count, g_sum / count, b_sum / count)
+
+    @staticmethod
+    def _average_colorramp_color(node: bpy.types.Node) -> tuple[float, float, float]:
+        elements = node.color_ramp.elements
+        if not elements:
+            return (0.5, 0.5, 0.5)
+        r = sum(e.color[0] for e in elements) / len(elements)
+        g = sum(e.color[1] for e in elements) / len(elements)
+        b = sum(e.color[2] for e in elements) / len(elements)
+        return (r, g, b)
+
+    @classmethod
     def is_editing_styles(cls) -> bool:
         props = cls.get_style_props()
         return props.is_editing
