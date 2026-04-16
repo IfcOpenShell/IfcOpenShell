@@ -463,6 +463,40 @@ class Blender(bonsai.core.tool.Blender):
         shader_editor.pin = previous_pin_setting
 
     @classmethod
+    def copy_node_graph_additive(
+        cls, material_to: bpy.types.Material, material_from: bpy.types.Material
+    ) -> "bpy.types.ShaderNodeOutputMaterial | None":
+        """Paste nodes from material_from alongside the existing nodes in material_to.
+
+        Unlike copy_node_graph this does NOT clear the existing node tree first.
+        Returns the OUTPUT_MATERIAL node that was added from material_from, or None.
+        """
+        temp_override = cls.get_shader_editor_context()
+        shader_editor = temp_override["space"]
+
+        before_names = {n.name for n in material_to.node_tree.nodes}
+
+        previous_pin_setting = shader_editor.pin
+        shader_editor.pin = True
+        shader_editor.node_tree = material_from.node_tree
+
+        for node in material_from.node_tree.nodes:
+            node.select = True
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_copy()
+
+        shader_editor.node_tree = material_to.node_tree
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_paste(offset=(0, 0))
+
+        shader_editor.pin = previous_pin_setting
+
+        for node in material_to.node_tree.nodes:
+            if node.name not in before_names and node.type == "OUTPUT_MATERIAL":
+                return node
+        return None
+
+    @classmethod
     def get_material_node(
         cls, blender_material: bpy.types.Material, node_type: str, kwargs: Optional[dict] = {}
     ) -> Union[bpy.types.ShaderNode, None]:

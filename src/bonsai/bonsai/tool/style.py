@@ -762,8 +762,178 @@ class Style(bonsai.core.tool.Style):
         props.active_style_type = props.active_style_type
 
     @classmethod
+    def get_branch_outputs(
+        cls, material: bpy.types.Material
+    ) -> "tuple[bpy.types.ShaderNode | None, bpy.types.ShaderNode | None]":
+        """Return (external_output_node, flat_output_node), or (None, None) if not dual-branch."""
+        if not material.node_tree:
+            return None, None
+        ext = material.node_tree.nodes.get("BIM_Output_External")
+        fast = material.node_tree.nodes.get("BIM_Output_Flat")
+        return ext, fast
+
+    @classmethod
+    def _remove_external_branch(cls, material: bpy.types.Material) -> None:
+        """Remove all nodes reachable from BIM_Output_External (walks links backwards)."""
+        if not material.node_tree:
+            return
+        nodes = material.node_tree.nodes
+        output = nodes.get("BIM_Output_External")
+        if not output:
+            return
+        to_remove: set[str] = set()
+        stack = [output]
+        while stack:
+            node = stack.pop()
+            if node.name in to_remove:
+                continue
+            to_remove.add(node.name)
+            for inp in node.inputs:
+                for link in inp.links:
+                    stack.append(link.from_node)
+        for name in list(to_remove):
+            n = nodes.get(name)
+            if n:
+                nodes.remove(n)
+
+    @classmethod
+    def _build_flat_branch_nodes(cls, material: bpy.types.Material) -> "bpy.types.ShaderNode":
+        """Add a Principled BSDF flat-branch to material's existing node tree.
+
+        Reads IfcSurfaceStyleRendering or IfcSurfaceStyleShading from the linked IFC entity.
+        Defaults to a white BSDF when no IFC shading data is available.
+        Returns the new Material Output node (named BIM_Output_Flat, is_active_output=False).
+        """
+        from mathutils import Vector
+
+        style_elements = cls.get_style_elements(material)
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        bsdf.location = Vector((10, -600))
+        output = nodes.new("ShaderNodeOutputMaterial")
+        output.name = "BIM_Output_Flat"
+        output.location = Vector((300, -600))
+        output.is_active_output = False
+        links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
+
+        rendering_style = None
+        shading_only = None
+        for surface_style in style_elements.values():
+            if surface_style.is_a() == "IfcSurfaceStyleShading":
+                shading_only = surface_style
+            elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                rendering_style = surface_style
+                shading_only = None
+
+        if rendering_style:
+            d = tool.Loader.surface_style_to_dict(rendering_style)
+            if d.get("DiffuseColour"):
+                ctype, cval = d["DiffuseColour"]
+                if ctype == "IfcColourRgb":
+                    bsdf.inputs["Base Color"].default_value = cval + (1,)
+                    solid_color = cval
+                else:
+                    cval = tuple(v * cval for v in d["SurfaceColour"])
+                    bsdf.inputs["Base Color"].default_value = cval + (1,)
+                    solid_color = cval
+            else:
+                r, g, b = d["SurfaceColour"]
+                bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+                solid_color = (r, g, b)
+            if d.get("SpecularColour"):
+                ctype, cval = d["SpecularColour"]
+                if ctype == "IfcNormalisedRatioMeasure":
+                    bsdf.inputs["Metallic"].default_value = cval
+            if d.get("SpecularHighlight"):
+                bsdf.inputs["Roughness"].default_value = d["SpecularHighlight"]
+            transparency = d.get("Transparency") or 0.0
+            bsdf.inputs["Alpha"].default_value = 1 - transparency
+            if transparency > 0:
+                material.blend_method = "BLEND"
+            material.diffuse_color = solid_color + (1.0 - transparency,)
+        elif shading_only:
+            d = tool.Loader.surface_style_to_dict(shading_only)
+            r, g, b = d["SurfaceColour"]
+            alpha = 1 - (d.get("Transparency") or 0.0)
+            bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+            bsdf.inputs["Alpha"].default_value = alpha
+            if alpha < 1.0:
+                material.blend_method = "BLEND"
+            material.diffuse_color = (r, g, b, alpha)
+        # else: leave default white Principled BSDF
+        return output
+
+    @classmethod
+    def setup_dual_branch(cls, material: bpy.types.Material, ext_material: bpy.types.Material) -> bool:
+        """Build a dual-branch node tree: fast branch from IFC data + external branch from ext_material.
+
+        Clears any existing nodes and builds both branches from scratch.
+        External branch output (BIM_Output_External) is set active — Pretty mode.
+        Flat branch output (BIM_Output_Flat) is inactive — Flat mode.
+        Returns True on success; False if no shader editor is available (falls back to single-branch).
+        """
+        cls.set_use_nodes(material, True)
+        for n in material.node_tree.nodes[:]:
+            material.node_tree.nodes.remove(n)
+
+        cls._build_flat_branch_nodes(material)
+
+        ext_output = tool.Blender.copy_node_graph_additive(material, ext_material)
+        if not ext_output:
+            # No shader editor available: fall back to single-branch
+            tool.Blender.copy_node_graph(material, ext_material)
+            return False
+
+        ext_output.name = "BIM_Output_External"
+        ext_output.is_active_output = True
+        material["bim_dual_branch"] = True
+        return True
+
+    @classmethod
+    def update_external_branch(cls, material: bpy.types.Material, ext_material: bpy.types.Material) -> None:
+        """Replace the external-branch nodes of an already dual-branch material."""
+        cls._remove_external_branch(material)
+        ext_output = tool.Blender.copy_node_graph_additive(material, ext_material)
+        if ext_output:
+            ext_output.name = "BIM_Output_External"
+            ext_output.is_active_output = True
+            fast = material.node_tree.nodes.get("BIM_Output_Flat")
+            if fast:
+                fast.is_active_output = False
+
+    @classmethod
+    def sync_flat_branch_shading(
+        cls, material: bpy.types.Material, surface_colour: tuple[float, float, float], transparency: float
+    ) -> None:
+        """Update the flat-branch Principled BSDF with new shading values.
+
+        Call this after creating or editing IfcSurfaceStyleShading so the flat branch
+        stays in sync without requiring a full setup_dual_branch rebuild.
+        """
+        if not material.node_tree:
+            return
+        fast_output = material.node_tree.nodes.get("BIM_Output_Flat")
+        if not fast_output:
+            return
+        for link in fast_output.inputs["Surface"].links:
+            if link.from_node.type == "BSDF_PRINCIPLED":
+                bsdf = link.from_node
+                r, g, b = surface_colour
+                bsdf.inputs["Base Color"].default_value = (r, g, b, 1.0)
+                bsdf.inputs["Alpha"].default_value = 1.0 - transparency
+                break
+
+    @classmethod
     def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:
         if style_type == "External":
+            ext, fast = cls.get_branch_outputs(blender_material)
+            if ext and fast:
+                ext.is_active_output = True
+                fast.is_active_output = False
+                blender_material.update_tag()
+                return
             try:
                 bpy.ops.bim.activate_external_style(material_name=blender_material.name)
             except RuntimeError as error:
@@ -771,6 +941,12 @@ class Style(bonsai.core.tool.Style):
                     return
                 raise error
         elif style_type == "Shading":
+            ext, fast = cls.get_branch_outputs(blender_material)
+            if ext and fast:
+                fast.is_active_output = True
+                ext.is_active_output = False
+                blender_material.update_tag()
+                return
             style_elements = tool.Style.get_style_elements(blender_material)
             rendering_style = None
             texture_style = None
@@ -872,18 +1048,3 @@ class Style(bonsai.core.tool.Style):
                 else:
                     props.active_style_type = "Shading"
         return has_any_textures
-
-    @classmethod
-    def ensure_uv_maps_for_textured_objects(cls) -> None:
-        """Generate UV maps for all mesh objects whose IFC material has IfcSurfaceStyleWithTextures."""
-        for obj in bpy.context.scene.objects:
-            if not isinstance(obj.data, bpy.types.Mesh):
-                continue
-            for slot in obj.material_slots:
-                material = slot.material
-                if not material or not tool.Blender.get_ifc_definition_id(material):
-                    continue
-                style_elements = cls.get_style_elements(material)
-                if style_elements.get("IfcSurfaceStyleWithTextures") and not obj.data.uv_layers:
-                    tool.Loader.load_generated_uv_map(obj.data)
-                    break

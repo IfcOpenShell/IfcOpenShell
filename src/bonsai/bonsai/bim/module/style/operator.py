@@ -458,10 +458,14 @@ class ActivateExternalStyle(bpy.types.Operator):
             self.report({"ERROR"}, f"Error loading external style for \"{material.name}\" - {db['msg']}")
             return {"CANCELLED"}
 
-        self.copy_material_attributes(db["data_block"], material)
+        ext_mat = db["data_block"]
+        self.copy_material_attributes(ext_mat, material)
         if tool.Style.get_use_nodes(material):
-            tool.Blender.copy_node_graph(material, db["data_block"])
-        bpy.data.materials.remove(db["data_block"])
+            if material.get("bim_dual_branch"):
+                tool.Style.update_external_branch(material, ext_mat)
+            else:
+                tool.Style.setup_dual_branch(material, ext_mat)
+        bpy.data.materials.remove(ext_mat)
         return {"FINISHED"}
 
     def copy_material_attributes(self, source, target):
@@ -506,9 +510,9 @@ class ActivateExternalStyle(bpy.types.Operator):
 
 class TogglePreferIfcShading(bpy.types.Operator):
     bl_idname = "bim.toggle_prefer_ifc_shading"
-    bl_label = "Toggle Fast/Pretty"
+    bl_label = "Toggle Flat/Pretty"
     bl_description = (
-        "Toggle between Fast (IFC-native shading) and Pretty (external .blend style) for ALL styles.\n\n"
+        "Toggle between Flat (IFC-native shading) and Pretty (external .blend style) for ALL styles.\n\n"
         "SHIFT+CLICK to apply to this style only"
     )
     bl_options = {"REGISTER", "UNDO"}
@@ -562,13 +566,8 @@ class TogglePreferIfcShading(bpy.types.Operator):
             source_mat = bpy.data.materials.get(self.material_name)
             new_value = not source_mat.BIMStyleProperties.prefer_ifc_shading if source_mat else True
             ifc_mats = [m for m in bpy.data.materials if tool.Blender.get_ifc_definition_id(m)]
-            wm.progress_begin(0, max(len(ifc_mats), 1))
-            try:
-                for i, mat in enumerate(ifc_mats):
-                    tool.Style.get_material_style_props(mat).prefer_ifc_shading = new_value
-                    wm.progress_update(i)
-            finally:
-                wm.progress_end()
+            for mat in ifc_mats:
+                tool.Style.get_material_style_props(mat).prefer_ifc_shading = new_value
         return {"FINISHED"}
 
 
@@ -626,10 +625,13 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             wm = context.window_manager
             wm.progress_begin(0, max(len(candidates), 1))
             count = 0
+            color_cache: dict[tuple[str, str, str], tuple | None] = {}
             try:
                 for i, (mat, style_elements) in enumerate(candidates):
                     wm.progress_update(i)
-                    if self._apply_to_material(mat, style_elements, self.value_offset, self.saturation_factor):
+                    if self._apply_to_material(
+                        mat, style_elements, self.value_offset, self.saturation_factor, color_cache
+                    ):
                         count += 1
             finally:
                 wm.progress_end()
@@ -653,23 +655,37 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
         style_elements: dict,
         value_offset: float = 0.0,
         saturation_factor: float = 1.0,
+        color_cache: "dict[tuple[str, str, str], tuple | None] | None" = None,
     ) -> bool:
         external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
         style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
         data_block_type, data_block = external_style.Identification.split("/")
 
-        try:
-            db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
-        except OSError as e:
-            self.report({"WARNING"}, f'Could not open blend file for "{material.name}": {e}')
-            return False
-        if not db["data_block"]:
-            self.report({"WARNING"}, f'Could not load external style for "{material.name}": {db["msg"]}')
-            return False
+        cache_key = (str(style_path), data_block_type, data_block)
+        if color_cache is not None and cache_key in color_cache:
+            cached = color_cache[cache_key]
+            if cached is None:
+                return False  # previously failed for this path
+            surface_colour, transparency = cached
+        else:
+            try:
+                db = tool.Blender.append_data_block(str(style_path), data_block_type, data_block)
+            except OSError as e:
+                self.report({"WARNING"}, f'Could not open blend file for "{material.name}": {e}')
+                if color_cache is not None:
+                    color_cache[cache_key] = None
+                return False
+            if not db["data_block"]:
+                self.report({"WARNING"}, f'Could not load external style for "{material.name}": {db["msg"]}')
+                if color_cache is not None:
+                    color_cache[cache_key] = None
+                return False
 
-        ext_mat = db["data_block"]
-        surface_colour, transparency = tool.Style.get_representative_material_color(ext_mat)
-        bpy.data.materials.remove(ext_mat)
+            ext_mat = db["data_block"]
+            surface_colour, transparency = tool.Style.get_representative_material_color(ext_mat)
+            bpy.data.materials.remove(ext_mat)
+            if color_cache is not None:
+                color_cache[cache_key] = (surface_colour, transparency)
 
         if value_offset != 0.0 or saturation_factor != 1.0:
             h, s, v = colorsys.rgb_to_hsv(*surface_colour)
@@ -700,6 +716,7 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes=attributes,
             )
         material.diffuse_color = (*surface_colour, 1.0 - transparency)
+        tool.Style.sync_flat_branch_shading(material, surface_colour, transparency)
         return True
 
 

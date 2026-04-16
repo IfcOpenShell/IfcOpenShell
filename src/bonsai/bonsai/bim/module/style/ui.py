@@ -186,21 +186,21 @@ class BIM_PT_styles(Panel):
             parts.append("Selected Object: None")
 
         if shading_type == "SOLID":
-            is_fast = space.shading.color_type != "TEXTURE"
-            mode_label = "Fast"
+            is_flat = space.shading.color_type != "TEXTURE"
+            mode_label = "Flat"
             dep_label = "Shade"
-            if not is_fast:
+            if not is_flat:
                 mode_label = "Pretty"
                 dep_label = "Texture  \u2192  Shade"
         elif shading_type in ("MATERIAL", "RENDERED"):
-            is_fast = msprops.prefer_ifc_shading
-            mode_label = "Fast"
+            is_flat = msprops.prefer_ifc_shading
+            mode_label = "Flat"
             dep_label = "Render+Texture  \u2192  Render  \u2192  Shade"
-            if not is_fast:
+            if not is_flat:
                 mode_label = "Pretty"
                 dep_label = "External  \u2192  Render+Texture  \u2192  Render  \u2192  Shade"
         else:
-            is_fast = False
+            is_flat = False
             mode_label = ""
             dep_label = ""
 
