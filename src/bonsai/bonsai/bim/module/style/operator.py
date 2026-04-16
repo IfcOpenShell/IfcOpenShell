@@ -659,6 +659,7 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class="IfcSurfaceStyleShading",
                 attributes=attributes,
             )
+        material.diffuse_color = (*surface_colour, 1.0 - transparency)
         return True
 
 

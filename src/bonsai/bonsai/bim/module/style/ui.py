@@ -187,31 +187,35 @@ class BIM_PT_styles(Panel):
 
         if shading_type == "SOLID":
             is_fast = space.shading.color_type != "TEXTURE"
-            if is_fast:
-                parts.append("Fast:  Shade")
-            else:
-                parts.append("Pretty:  Texture  \u2192  Shade")
+            mode_label = "Fast"
+            dep_label = "Shade"
+            if not is_fast:
+                mode_label = "Pretty"
+                dep_label = "Texture  \u2192  Shade"
         elif shading_type in ("MATERIAL", "RENDERED"):
             is_fast = msprops.prefer_ifc_shading
-            if is_fast:
-                parts.append("Fast:  Render+Texture  \u2192  Render  \u2192  Shade")
-            else:
-                parts.append("Pretty:  External  \u2192  Render+Texture  \u2192  Render  \u2192  Shade")
+            mode_label = "Fast"
+            dep_label = "Render+Texture  \u2192  Render  \u2192  Shade"
+            if not is_fast:
+                mode_label = "Pretty"
+                dep_label = "External  \u2192  Render+Texture  \u2192  Render  \u2192  Shade"
+        else:
+            is_fast = False
+            mode_label = ""
+            dep_label = ""
 
         row1 = box.row(align=True)
         row1.label(text="  |  ".join(parts))
 
-        row2 = box.row(align=True)
-        row2.alignment = "RIGHT"
-        op = row2.operator("bim.suggest_shade_from_external_style", text="", icon="BRUSHES_ALL")
+        if mode_label:
+            row2 = box.row(align=True)
+            row2.label(text=f"Current Mode: {mode_label}  —  {dep_label}")
+
+        row3 = box.row(align=True)
+        row3.alignment = "RIGHT"
+        op = row3.operator("bim.suggest_shade_from_external_style", text="", icon="BRUSHES_ALL")
         op.material_name = material.name
-        if shading_type == "SOLID":
-            is_fast = space.shading.color_type != "TEXTURE"
-            shading_text = "Fast" if is_fast else "Pretty"
-            op = row2.operator("bim.toggle_prefer_ifc_shading", text=shading_text, depress=is_fast)
-        else:
-            shading_text = "Fast" if msprops.prefer_ifc_shading else "Pretty"
-            op = row2.operator("bim.toggle_prefer_ifc_shading", text=shading_text, depress=msprops.prefer_ifc_shading)
+        op = row3.operator("bim.toggle_prefer_ifc_shading", text="", icon="UV_SYNC_SELECT")
         op.material_name = material.name
 
     @staticmethod
