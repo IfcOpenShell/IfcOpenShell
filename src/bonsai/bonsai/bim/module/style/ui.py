@@ -107,6 +107,13 @@ class BIM_PT_styles(Panel):
 
         # style ui tools
         if active_style:
+            row = self.layout.row(align=True)
+            if material := style.blender_material:
+                msprops = tool.Style.get_material_style_props(material)
+                row.prop(msprops, "active_style_type", icon="SHADING_RENDERED", text="")
+                op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
+                op.style_id = style.ifc_definition_id
+
             if self.props.style_type == "IfcSurfaceStyle":
                 self.layout.label(text="Surface Style Element:")
                 col = self.layout.column(align=True)
