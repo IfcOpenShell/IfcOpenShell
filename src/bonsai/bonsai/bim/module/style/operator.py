@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import colorsys
 import os
 from pathlib import Path
 from typing import Any, Union
@@ -581,11 +582,38 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     material_name: bpy.props.StringProperty(name="Material Name", default="", options={"SKIP_SAVE"})
     all_styles: bpy.props.BoolProperty(name="All Styles", default=False, options={"SKIP_SAVE"})
+    value_offset: bpy.props.FloatProperty(
+        name="Value",
+        description="Offset added to the colour's value (-1 = fully dark, 0 = unchanged, +1 = fully light)",
+        default=0.0,
+        min=-1.0,
+        max=1.0,
+        step=1,
+        precision=2,
+        options={"SKIP_SAVE"},
+    )
+    saturation_factor: bpy.props.FloatProperty(
+        name="Saturation",
+        description="Scale applied to the colour's saturation (0 = greyscale, 1 = unchanged, >1 = more saturated)",
+        default=1.0,
+        min=0.0,
+        max=2.0,
+        step=1,
+        precision=2,
+        options={"SKIP_SAVE"},
+    )
 
     def invoke(self, context, event):
         if event.alt:
             self.all_styles = True
-        return self.execute(context)
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "value_offset", slider=True)
+        layout.prop(self, "saturation_factor", slider=True)
+        if self.all_styles:
+            layout.label(text="Will apply to all external styles", icon="INFO")
 
     def _execute(self, context):
         if self.all_styles:
@@ -601,7 +629,7 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 for i, (mat, style_elements) in enumerate(candidates):
                     wm.progress_update(i)
-                    if self._apply_to_material(mat, style_elements):
+                    if self._apply_to_material(mat, style_elements, self.value_offset, self.saturation_factor):
                         count += 1
             finally:
                 wm.progress_end()
@@ -614,12 +642,18 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             if not tool.Style.has_blender_external_style(style_elements):
                 self.report({"ERROR"}, "No external .blend style assigned. Please assign an external style first.")
                 return {"CANCELLED"}
-            self._apply_to_material(mat, style_elements)
+            self._apply_to_material(mat, style_elements, self.value_offset, self.saturation_factor)
         props = tool.Style.get_style_props()
         if props.is_editing:
             core.load_styles(tool.Style, style_type=props.style_type)
 
-    def _apply_to_material(self, material: bpy.types.Material, style_elements: dict) -> bool:
+    def _apply_to_material(
+        self,
+        material: bpy.types.Material,
+        style_elements: dict,
+        value_offset: float = 0.0,
+        saturation_factor: float = 1.0,
+    ) -> bool:
         external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
         style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
         data_block_type, data_block = external_style.Identification.split("/")
@@ -636,6 +670,12 @@ class SuggestShadeFromExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
         ext_mat = db["data_block"]
         surface_colour, transparency = tool.Style.get_representative_material_color(ext_mat)
         bpy.data.materials.remove(ext_mat)
+
+        if value_offset != 0.0 or saturation_factor != 1.0:
+            h, s, v = colorsys.rgb_to_hsv(*surface_colour)
+            v = max(0.0, min(1.0, v + value_offset))
+            s = max(0.0, min(1.0, s * saturation_factor))
+            surface_colour = colorsys.hsv_to_rgb(h, s, v)
 
         ifc_style = tool.Ifc.get_entity(material)
         attributes: dict = {
