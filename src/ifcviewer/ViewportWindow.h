@@ -94,6 +94,14 @@ struct ModelGpuData {
     std::vector<BvhItem> bvh_items;
     ModelBvh             bvh;
 
+    // Per-instance world AABB on the GPU, 1:1 with `instances`.
+    // Populated at finalize / applyCachedModel.  Consumed by the upcoming
+    // GPU-compute cull (Phase 3E); the CPU cull still reads from bvh_items.
+    // Layout: struct { vec3 min; uint mesh_id; vec3 max; uint flags; } = 32 B.
+    // `flags` bit 0 = reflected (for winding-bucket selection).
+    GLuint aabb_ssbo = 0;
+    size_t aabb_ssbo_capacity = 0;  // bytes
+
     // Dynamic visible-instance index buffer (std430, binding = 1).
     // Re-uploaded each frame from visible_flat_.
     GLuint  visible_ssbo = 0;
@@ -214,6 +222,12 @@ private:
     bool growModelEbo(ModelGpuData& m, size_t needed_total);
     bool growModelSsbo(ModelGpuData& m, size_t needed_total);
     ModelGpuData& getOrCreateModel(uint32_t model_id);
+
+    // (Re)build the per-instance world AABB SSBO from m.instances +
+    // m.instance_reflected.  One-shot upload called after finalizeModel /
+    // applyCachedModel once instances are settled.  Consumed by the GPU
+    // compute cull (Phase 3E, in progress).
+    void uploadInstanceAabbs(ModelGpuData& m);
 
     // Frustum-cull m's instances (BVH if available, else linear scan),
     // build the per-mesh DrawElementsIndirectCommand array + flat visible

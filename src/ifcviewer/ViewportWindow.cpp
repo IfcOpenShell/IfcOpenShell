@@ -408,6 +408,7 @@ ViewportWindow::~ViewportWindow() {
                 if (m.mesh_info_ssbo) gl_->glDeleteBuffers(1, &m.mesh_info_ssbo);
                 if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
                 if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
+                if (m.aabb_ssbo) gl_->glDeleteBuffers(1, &m.aabb_ssbo);
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
@@ -764,6 +765,48 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     requestUpdate();
 }
 
+// Matches the std430 layout the GPU compute cull will consume.
+struct InstanceAabbGpu {
+    float    min[3];
+    uint32_t mesh_id;
+    float    max[3];
+    uint32_t flags;   // bit 0 = reflected
+};
+static_assert(sizeof(InstanceAabbGpu) == 32, "InstanceAabbGpu must be 32 bytes");
+
+void ViewportWindow::uploadInstanceAabbs(ModelGpuData& m) {
+    const size_t n = m.instances.size();
+    const size_t bytes = n * sizeof(InstanceAabbGpu);
+
+    if (m.aabb_ssbo && m.aabb_ssbo_capacity < bytes) {
+        gl_->glDeleteBuffers(1, &m.aabb_ssbo);
+        m.aabb_ssbo = 0;
+        m.aabb_ssbo_capacity = 0;
+    }
+    if (!m.aabb_ssbo) {
+        gl_->glCreateBuffers(1, &m.aabb_ssbo);
+        const size_t cap = std::max<size_t>(bytes, sizeof(InstanceAabbGpu));
+        gl_->glNamedBufferStorage(m.aabb_ssbo, cap, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        m.aabb_ssbo_capacity = cap;
+    }
+    if (n == 0) return;
+
+    std::vector<InstanceAabbGpu> packed(n);
+    for (size_t i = 0; i < n; ++i) {
+        const InstanceCpu& src = m.instances[i];
+        InstanceAabbGpu&   dst = packed[i];
+        dst.min[0] = src.world_aabb_min[0];
+        dst.min[1] = src.world_aabb_min[1];
+        dst.min[2] = src.world_aabb_min[2];
+        dst.max[0] = src.world_aabb_max[0];
+        dst.max[1] = src.world_aabb_max[1];
+        dst.max[2] = src.world_aabb_max[2];
+        dst.mesh_id = src.mesh_id;
+        dst.flags = (i < m.instance_reflected.size() && m.instance_reflected[i]) ? 1u : 0u;
+    }
+    gl_->glNamedBufferSubData(m.aabb_ssbo, 0, bytes, packed.data());
+}
+
 void ViewportWindow::finalizeModel(uint32_t model_id) {
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
@@ -783,6 +826,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
     }
 
     buildBvhForModel(m, model_id);
+    uploadInstanceAabbs(m);
 
     m.finalized = true;
     have_cached_cull_ = false;
@@ -835,6 +879,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.mesh_info_ssbo) gl_->glDeleteBuffers(1, &existing->second.mesh_info_ssbo);
         if (existing->second.visible_ssbo) gl_->glDeleteBuffers(1, &existing->second.visible_ssbo);
         if (existing->second.indirect_buffer) gl_->glDeleteBuffers(1, &existing->second.indirect_buffer);
+        if (existing->second.aabb_ssbo) gl_->glDeleteBuffers(1, &existing->second.aabb_ssbo);
         models_gpu_.erase(existing);
     }
 
@@ -917,6 +962,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     }
 
     buildBvhForModel(m, model_id);
+    uploadInstanceAabbs(m);
 
     m.finalized = true;
     models_gpu_.emplace(model_id, std::move(m));
@@ -977,6 +1023,7 @@ void ViewportWindow::resetScene() {
         if (m.mesh_info_ssbo) gl_->glDeleteBuffers(1, &m.mesh_info_ssbo);
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
         if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
+        if (m.aabb_ssbo) gl_->glDeleteBuffers(1, &m.aabb_ssbo);
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
@@ -1014,6 +1061,7 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.mesh_info_ssbo) gl_->glDeleteBuffers(1, &it->second.mesh_info_ssbo);
         if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
         if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
+        if (it->second.aabb_ssbo) gl_->glDeleteBuffers(1, &it->second.aabb_ssbo);
         models_gpu_.erase(it);
         have_cached_cull_ = false;
         requestUpdate();
