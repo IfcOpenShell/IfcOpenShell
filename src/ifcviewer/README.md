@@ -793,6 +793,16 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (plann
 - [x] Phase 3D — Parallel per-model CPU cull (`std::async` fan-out)
 - [x] Quantized VBO (16 B/vert, sidecar v6)
 - [x] Event-driven rendering (zero idle CPU/GPU, cull skipped on still frames)
-- [ ] **Phase 3E — GPU-side compute-shader culling** (next; replaces the HiZ readback)
+- [~] **Phase 3E — GPU-side compute-shader culling** (in progress)
+      - [x] 3a: `IFC_GPU_CULL=1` drives rendering via compute cull (frustum +
+            contribution, single bucket per mesh).  Correctness matches CPU
+            path; perf regressed — we submit one sub-draw per mesh even
+            when `instanceCount=0`.  Fix is MDI compaction via
+            `glMultiDrawElementsIndirectCount`, deferred to 3a-followup so
+            we don't pull a GL 4.6 entrypoint loader into this commit.
+      - [ ] 3a-followup: compact non-empty commands, use count-buffer MDI
+      - [ ] 3b: fwd/rev reflection bucketing on GPU
+      - [ ] 3c: LOD0/LOD1 selection on GPU
+      - [ ] 3d: HiZ with same-frame depth pre-pass
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
