@@ -278,7 +278,8 @@ static const char* CULL_COMPACT_COMPUTE_SHADER = R"(
 #version 450 core
 layout(local_size_x = 64) in;
 // Each instance contributes two vec4 entries: (min.xyz, mesh_id_as_float),
-// (max.xyz, flags_as_float).  mesh_id is packed via floatBitsToUint.
+// (max.xyz, flags_as_float).  mesh_id is packed via floatBitsToUint;
+// flags bit 0 = reflected (winding-bucket selector).
 layout(std430, binding = 0) readonly buffer AabbBuf     { vec4 entries[]; };
 layout(std430, binding = 1) coherent  buffer IndirectBuf { uint ind[]; };
 layout(std430, binding = 2) writeonly buffer VisibleBuf  { uint visible[]; };
@@ -286,6 +287,7 @@ layout(std430, binding = 3) readonly buffer MeshBaseBuf  { uint mesh_base[]; };
 
 uniform vec4  u_planes[6];
 uniform uint  u_count;             // num instances
+uniform uint  u_fwd_mesh_count;    // M; reflected bucket is mesh_id + M
 uniform vec3  u_camera_eye;
 uniform float u_focal_px;
 uniform float u_min_pixel_radius;
@@ -322,9 +324,12 @@ void main() {
     vec3 mx = hi.xyz;
     if (!frustum(mn, mx))      return;
     if (!contribution(mn, mx)) return;
-    uint mesh_id = floatBitsToUint(lo.w);
-    uint local   = atomicAdd(ind[mesh_id * 5u + 1u], 1u);
-    visible[mesh_base[mesh_id] + local] = gid;
+    uint mesh_id  = floatBitsToUint(lo.w);
+    uint flags    = floatBitsToUint(hi.w);
+    uint bucket   = ((flags & 1u) != 0u) ? (mesh_id + u_fwd_mesh_count)
+                                         : mesh_id;
+    uint local    = atomicAdd(ind[bucket * 5u + 1u], 1u);
+    visible[mesh_base[bucket] + local] = gid;
 }
 )";
 
@@ -913,13 +918,27 @@ void ViewportWindow::uploadInstanceAabbs(ModelGpuData& m) {
 
 void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
     const uint32_t M = static_cast<uint32_t>(m.meshes.size());
-    m.gpu_mesh_command_count = M;
+    m.gpu_mesh_command_count    = 2u * M;
+    m.gpu_forward_command_count = M;
 
-    // Prefix-sum instance_count to get per-mesh base offsets.  Also build a
-    // DrawElementsIndirectCommand template per mesh (count / firstIndex /
-    // baseVertex / baseInstance static; instanceCount starts at 0).
-    std::vector<uint32_t> mesh_base(M, 0);
-    std::vector<DrawElementsIndirectCommand> indir(M);
+    // Count fwd / rev instances per mesh so each bucket gets a tight
+    // per-mesh slot range.  (Sum of fwd + rev = total_instances, so the
+    // visible buffer is no bigger than the single-bucket version.)
+    std::vector<uint32_t> fwd_n(M, 0), rev_n(M, 0);
+    for (size_t i = 0; i < m.instances.size(); ++i) {
+        const uint32_t mid = m.instances[i].mesh_id;
+        if (mid >= M) continue;
+        const bool reflected = i < m.instance_reflected.size()
+            && m.instance_reflected[i];
+        (reflected ? rev_n[mid] : fwd_n[mid]) += 1u;
+    }
+
+    // Prefix sums.  mesh_base[0..M) for fwd, mesh_base[M..2M) for rev.
+    // Same layout for the indirect commands.  baseInstance of each
+    // command points at its visible[] slot so the vertex shader's
+    // gl_BaseInstanceARB + gl_InstanceID indexes directly into it.
+    std::vector<uint32_t> mesh_base(2u * M, 0);
+    std::vector<DrawElementsIndirectCommand> indir(2u * M);
     uint32_t running = 0;
     for (uint32_t i = 0; i < M; ++i) {
         const MeshInfo& mesh = m.meshes[i];
@@ -930,12 +949,23 @@ void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
         cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
         cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
         cmd.baseInstance  = running;
-        running += mesh.instance_count;
+        running += fwd_n[i];
+    }
+    for (uint32_t i = 0; i < M; ++i) {
+        const MeshInfo& mesh = m.meshes[i];
+        mesh_base[M + i] = running;
+        DrawElementsIndirectCommand& cmd = indir[M + i];
+        cmd.count         = mesh.index_count;
+        cmd.instanceCount = 0;
+        cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
+        cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
+        cmd.baseInstance  = running;
+        running += rev_n[i];
     }
     const uint32_t total_instances = running;
 
-    // Indirect buffer.
-    const size_t ind_bytes = std::max<size_t>(M * sizeof(DrawElementsIndirectCommand),
+    // Indirect buffer — 2M commands (fwd bucket then rev bucket).
+    const size_t ind_bytes = std::max<size_t>(2u * M * sizeof(DrawElementsIndirectCommand),
                                               sizeof(DrawElementsIndirectCommand));
     if (m.gpu_indirect_buffer && m.gpu_indirect_capacity < ind_bytes) {
         gl_->glDeleteBuffers(1, &m.gpu_indirect_buffer);
@@ -950,10 +980,10 @@ void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
     }
     if (M > 0) {
         gl_->glNamedBufferSubData(m.gpu_indirect_buffer, 0,
-            M * sizeof(DrawElementsIndirectCommand), indir.data());
+            2u * M * sizeof(DrawElementsIndirectCommand), indir.data());
     }
 
-    // Visible list — sized to worst case (every instance survives).
+    // Visible list — exact: fwd + rev per-mesh counts sum to total_instances.
     const size_t vis_bytes = std::max<size_t>(total_instances * sizeof(uint32_t),
                                               sizeof(uint32_t));
     if (m.gpu_visible_ssbo && m.gpu_visible_capacity < vis_bytes) {
@@ -968,8 +998,8 @@ void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
         m.gpu_visible_capacity = vis_bytes;
     }
 
-    // Mesh-base SSBO.
-    const size_t mb_bytes = std::max<size_t>(M * sizeof(uint32_t), sizeof(uint32_t));
+    // Mesh-base SSBO — 2M entries (one per bucket).
+    const size_t mb_bytes = std::max<size_t>(2u * M * sizeof(uint32_t), sizeof(uint32_t));
     if (m.gpu_mesh_base_ssbo && m.gpu_mesh_base_capacity < mb_bytes) {
         gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
         m.gpu_mesh_base_ssbo = 0;
@@ -983,7 +1013,7 @@ void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
     }
     if (M > 0) {
         gl_->glNamedBufferSubData(m.gpu_mesh_base_ssbo, 0,
-            M * sizeof(uint32_t), mesh_base.data());
+            2u * M * sizeof(uint32_t), mesh_base.data());
     }
 }
 
@@ -1932,10 +1962,10 @@ void ViewportWindow::render() {
 
     // Phase 3E: the GPU-cull path.  When IFC_GPU_CULL=1 we dispatch two
     // tiny compute shaders per model (reset + compact), then let the draw
-    // loop below issue MDI from gpu_indirect_buffer.  Single-bucket-per-
-    // mesh for now — LOD selection, reflection winding split, and HiZ
-    // still live only on the CPU path.  Reflected instances therefore
-    // render with wrong winding under this gate; that's the next commit.
+    // loop below issue MDI from gpu_indirect_buffer.  Commands are laid
+    // out as two buckets of M entries each — fwd (CCW) then rev (CW) —
+    // so reflected instances render with correct winding.  LOD and HiZ
+    // still live only on the CPU path.
     if (gpu_cull_enabled && cull_this_frame && cull_compact_program_) {
         QElapsedTimer t; t.start();
         float planes_flat[24];
@@ -1970,6 +2000,8 @@ void ViewportWindow::render() {
             gl_->glUniform4fv(gl_->glGetUniformLocation(cull_compact_program_, "u_planes"),
                               6, planes_flat);
             gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_count"), n);
+            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_fwd_mesh_count"),
+                              m.gpu_forward_command_count);
             gl_->glUniform3f (gl_->glGetUniformLocation(cull_compact_program_, "u_camera_eye"),
                               camera_eye_.x(), camera_eye_.y(), camera_eye_.z());
             gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_focal_px"),
@@ -2004,10 +2036,10 @@ void ViewportWindow::render() {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         if (gpu_cull_enabled) {
-            // GPU path: compact shader already wrote visible indices into
-            // gpu_visible_ssbo at [mesh_base[i], mesh_base[i]+count) and
-            // set each command's instanceCount.  One MDI per model, no
-            // fwd/rev split yet — reflected winding is wrong; step 3b.
+            // GPU path: compact shader routed survivors into fwd/rev
+            // buckets (commands [0..M) and [M..2M)).  Two MDIs: CCW then
+            // CW.  LOD and HiZ still CPU-only; reflected winding is now
+            // correct.
             if (!m.gpu_indirect_buffer || !m.gpu_visible_ssbo ||
                 m.gpu_mesh_command_count == 0) continue;
 
@@ -2017,18 +2049,29 @@ void ViewportWindow::render() {
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
             gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
 
-            uint32_t count = m.gpu_mesh_command_count;
-            if (max_subdraws < count) count = max_subdraws;
-            if (count > 0 && !skip_mdi) {
+            uint32_t fwd = m.gpu_forward_command_count;
+            uint32_t rev = m.gpu_mesh_command_count - fwd;
+            if (max_subdraws < m.gpu_mesh_command_count) {
+                const uint32_t total = m.gpu_mesh_command_count;
+                fwd = static_cast<uint32_t>((uint64_t)fwd * max_subdraws / total);
+                rev = max_subdraws - fwd;
+            }
+            if (fwd > 0 && !skip_mdi) {
                 gl_->glFrontFace(GL_CCW);
                 gl_->glMultiDrawElementsIndirect(
                     GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                    static_cast<GLsizei>(count), 0);
+                    static_cast<GLsizei>(fwd), 0);
                 ++gl_draw_calls_;
             }
-            // Stats: we don't have visible_objects / visible_triangles
-            // from the GPU yet (would need a readback).  Report command
-            // count as a proxy for indirect_sub_draws_.
+            if (rev > 0 && !skip_mdi) {
+                gl_->glFrontFace(GL_CW);
+                gl_->glMultiDrawElementsIndirect(
+                    GL_TRIANGLES, GL_UNSIGNED_INT,
+                    reinterpret_cast<const void*>(m.gpu_forward_command_count * sizeof(DrawElementsIndirectCommand)),
+                    static_cast<GLsizei>(rev), 0);
+                ++gl_draw_calls_;
+                gl_->glFrontFace(GL_CCW);
+            }
             indirect_sub_draws_ += m.gpu_mesh_command_count;
             continue;
         }
@@ -2140,11 +2183,15 @@ void ViewportWindow::render() {
                 gl_->glGetNamedBufferSubData(mm.gpu_indirect_buffer, 0,
                     mm.gpu_mesh_command_count * sizeof(DrawElementsIndirectCommand),
                     readback.data());
+                // Commands [0..M) are fwd, [M..2M) are rev for the same
+                // mesh — index meshes[] modulo forward_command_count.
+                const uint32_t M = mm.gpu_forward_command_count;
                 for (uint32_t i = 0; i < mm.gpu_mesh_command_count; ++i) {
                     const uint32_t ic = readback[i].instanceCount;
+                    const uint32_t mesh_i = (M > 0) ? (i % M) : 0;
                     gpu_surv += ic;
                     gpu_obj  += ic;
-                    gpu_tri  += ic * (mm.meshes[i].index_count / 3u);
+                    gpu_tri  += ic * (mm.meshes[mesh_i].index_count / 3u);
                 }
             }
             gpu_cull_last_survivors_ = gpu_surv;
