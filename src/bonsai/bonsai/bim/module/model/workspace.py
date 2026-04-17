@@ -1303,6 +1303,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.recalculate_wall()
         elif self.active_material_usage == "LAYER3":
             bpy.ops.bim.recalculate_slab()
+            wall_objs = tool.Model.get_connected_wall_objs(element)
+            if wall_objs:
+                core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, wall_objs)
         elif tool.System.get_ports(element):
             bpy.ops.bim.regenerate_distribution_element()
         elif self.active_material_usage == "PROFILE":
