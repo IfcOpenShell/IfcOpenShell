@@ -108,20 +108,13 @@ struct ModelGpuData {
     // the instanceCount field of gpu_indirect_buffer is rewritten by the
     // cull shader (zeroed by the reset shader, atomically incremented as
     // survivors are appended into gpu_visible_ssbo at mesh_base[i] + local).
-    // Layout per model:
-    //   commands[0..M)        fwd bucket (non-reflected, CCW winding)
-    //   commands[M..2M)       rev bucket (reflected, CW winding)
-    // gpu_mesh_command_count = 2M; gpu_forward_command_count = M.
-    // Each bucket gets its own mesh_base[] slot and its own visible[]
-    // range, sized to the exact per-mesh count of fwd / rev instances.
-    GLuint   gpu_indirect_buffer       = 0;
-    size_t   gpu_indirect_capacity     = 0;
-    GLuint   gpu_visible_ssbo          = 0;
-    size_t   gpu_visible_capacity      = 0;
-    GLuint   gpu_mesh_base_ssbo        = 0;
-    size_t   gpu_mesh_base_capacity    = 0;
-    uint32_t gpu_mesh_command_count    = 0;
-    uint32_t gpu_forward_command_count = 0;
+    GLuint   gpu_indirect_buffer     = 0;
+    size_t   gpu_indirect_capacity   = 0;
+    GLuint   gpu_visible_ssbo        = 0;
+    size_t   gpu_visible_capacity    = 0;
+    GLuint   gpu_mesh_base_ssbo      = 0;
+    size_t   gpu_mesh_base_capacity  = 0;
+    uint32_t gpu_mesh_command_count  = 0;
 
     // Dynamic visible-instance index buffer (std430, binding = 1).
     // Re-uploaded each frame from visible_flat_.
