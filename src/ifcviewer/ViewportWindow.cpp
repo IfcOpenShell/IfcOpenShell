@@ -1685,6 +1685,8 @@ void ViewportWindow::emitFromGpuSurvivors(
     const uint32_t* survivor_indices, uint32_t count,
     float focal_px, float min_pixel_radius) {
 
+    QElapsedTimer pt; pt.start();
+
     auto resize_if = [&](std::vector<std::vector<uint32_t>>& v) {
         if (v.size() < m.meshes.size()) v.resize(m.meshes.size());
     };
@@ -1692,12 +1694,16 @@ void ViewportWindow::emitFromGpuSurvivors(
     resize_if(m.vis_fwd_lod1);
     resize_if(m.vis_rev_lod0);
     resize_if(m.vis_rev_lod1);
-    for (size_t i = 0; i < m.meshes.size(); ++i) {
-        m.vis_fwd_lod0[i].clear();
-        m.vis_fwd_lod1[i].clear();
-        m.vis_rev_lod0[i].clear();
-        m.vis_rev_lod1[i].clear();
+    for (uint32_t mi : m.dirty_meshes) {
+        m.vis_fwd_lod0[mi].clear();
+        m.vis_fwd_lod1[mi].clear();
+        m.vis_rev_lod0[mi].clear();
+        m.vis_rev_lod1[mi].clear();
     }
+    m.dirty_meshes.clear();
+
+    gpu_consume_clear_ns_.fetch_add(pt.nsecsElapsed(), std::memory_order_relaxed);
+    pt.restart();
 
     static const float lod1_px_threshold = []{
         const char* e = std::getenv("IFC_LOD1_PX");
@@ -1729,6 +1735,9 @@ void ViewportWindow::emitFromGpuSurvivors(
     const bool hiz_vp_matches = hiz_vp_valid_ && hiz_vp_ == current_vp;
     const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_matches;
 
+    thread_local std::vector<bool> mesh_seen;
+    mesh_seen.assign(m.meshes.size(), false);
+
     for (uint32_t si = 0; si < count; ++si) {
         uint32_t inst_idx = survivor_indices[si];
         if (inst_idx >= m.bvh_items.size()) continue;
@@ -1751,13 +1760,20 @@ void ViewportWindow::emitFromGpuSurvivors(
                       : (want_lod1 ? m.vis_fwd_lod1
                                    : m.vis_fwd_lod0);
         bucket[inst.mesh_id].push_back(inst_idx);
+        if (!mesh_seen[inst.mesh_id]) {
+            mesh_seen[inst.mesh_id] = true;
+            m.dirty_meshes.push_back(inst.mesh_id);
+        }
     }
+
+    gpu_consume_class_ns_.fetch_add(pt.nsecsElapsed(), std::memory_order_relaxed);
+    pt.restart();
 
     m.visible_flat.clear();
     m.indirect_scratch.clear();
 
     auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh, int lod) {
-        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+        for (uint32_t mi : m.dirty_meshes) {
             const auto& mesh = m.meshes[mi];
             const uint32_t vis_count = static_cast<uint32_t>(by_mesh[mi].size());
             const uint32_t idx_count =
@@ -1793,6 +1809,8 @@ void ViewportWindow::emitFromGpuSurvivors(
     }
     m.cached_visible_objects   = model_vis_obj;
     m.cached_visible_triangles = model_vis_tri;
+
+    gpu_consume_emit_ns_.fetch_add(pt.nsecsElapsed(), std::memory_order_relaxed);
 }
 
 void ViewportWindow::uploadCullResults(ModelGpuData& m) {
@@ -1990,6 +2008,8 @@ void ViewportWindow::render() {
                             per_model_survivors[model_idx].push_back(local_idx);
                         }
                     }
+                    gpu_consume_bin_ns_.fetch_add(consume_timer.nsecsElapsed(),
+                                                  std::memory_order_relaxed);
 
                     // Parallel emit across models.
                     if (mt_cull_enabled && n_models > 1) {
@@ -2294,14 +2314,23 @@ void ViewportWindow::render() {
         const double gpu_dispatch_ms = gpu_cull_dispatch_ns_ * 1e-6 * inv_frames;
         const double gpu_readback_ms = gpu_cull_readback_ns_ * 1e-6 * inv_frames;
         const double gpu_consume_ms  = gpu_cull_consume_ns_  * 1e-6 * inv_frames;
+        const double gc_bin_ms   = gpu_consume_bin_ns_.load()   * 1e-6 * inv_frames;
+        const double gc_clear_ms = gpu_consume_clear_ns_.load() * 1e-6 * inv_frames;
+        const double gc_class_ms = gpu_consume_class_ns_.load() * 1e-6 * inv_frames;
+        const double gc_emit_ms  = gpu_consume_emit_ns_.load()  * 1e-6 * inv_frames;
         gpu_cull_dispatch_ns_ = 0;
         gpu_cull_readback_ns_ = 0;
         gpu_cull_consume_ns_  = 0;
+        gpu_consume_bin_ns_.store(0);
+        gpu_consume_clear_ns_.store(0);
+        gpu_consume_class_ns_.store(0);
+        gpu_consume_emit_ns_.store(0);
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
                "cull[wall %.2f | work: clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
-               "gpu_cull[disp %.2f rdback %.2f consume %.2fms in=%u surv=%u]  "
+               "gpu_cull[disp %.2f rdback %.2f consume %.2f "
+               "(bin %.2f clr %.2f class %.2f emit %.2f)ms in=%u surv=%u]  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
@@ -2311,6 +2340,7 @@ void ViewportWindow::render() {
                wall_ms, clr_ms, trv_ms, emt_ms, upl_ms,
                skipped, frames_in_window,
                gpu_dispatch_ms, gpu_readback_ms, gpu_consume_ms,
+               gc_bin_ms, gc_clear_ms, gc_class_ms, gc_emit_ms,
                gpu_cull_last_input_, gpu_cull_last_survivors_,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),

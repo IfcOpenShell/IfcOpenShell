@@ -122,6 +122,7 @@ struct ModelGpuData {
     std::vector<std::vector<uint32_t>>       vis_rev_lod1;
     std::vector<uint32_t>                    visible_flat;
     std::vector<DrawElementsIndirectCommand> indirect_scratch;
+    std::vector<uint32_t>                    dirty_meshes;
 
     bool finalized = false;
     bool hidden    = false;
@@ -296,6 +297,11 @@ private:
     uint64_t gpu_cull_dispatch_ns_    = 0;   // GPU-side dispatch time
     uint64_t gpu_cull_readback_ns_    = 0;   // CPU-side readback time
     uint64_t gpu_cull_consume_ns_     = 0;   // CPU-side consume (emit) time
+    // Consume sub-phase profiling (atomics — safe from worker threads).
+    std::atomic<uint64_t> gpu_consume_bin_ns_{0};    // survivor binning by model
+    std::atomic<uint64_t> gpu_consume_clear_ns_{0};  // per-model bucket clearing
+    std::atomic<uint64_t> gpu_consume_class_ns_{0};  // LOD + winding classification
+    std::atomic<uint64_t> gpu_consume_emit_ns_{0};   // indirect command building
     // Stashed per-frame dispatch metadata for one-frame-late consumption.
     struct GpuCullPending {
         std::vector<std::pair<uint32_t, ModelGpuData*>> model_targets;
