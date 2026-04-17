@@ -52,6 +52,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression& i
    if (inst.OffsetVertical().has_value()) {
        auto offset_vertical = inst.OffsetVertical().value() * length_unit_;
        o += offset_vertical * z;
+
+       auto tmp1 = (z * offset_vertical).eval();
+       auto tmp2 = (Eigen::Vector3d(0, 0, 1) * offset_vertical).eval();
+       auto tmp3 = (tmp1 - tmp2).eval();
+
+       std::ostringstream oss;
+       oss << "local z: " << z.x() << "," << z.y() << "," << z.z() << "; delta: " << tmp3.x() << "," << tmp3.y() << "," << tmp3.z();
+       auto osss = oss.str();
+       std::wcout << osss.c_str() << std::endl;
    }
 
    if (inst.OffsetLongitudinal().has_value()) {
