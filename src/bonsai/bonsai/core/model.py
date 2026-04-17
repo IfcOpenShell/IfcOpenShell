@@ -143,6 +143,31 @@ def align_objects(
     model.align_objects(reference_obj, objs, align_type)
 
 
+def regenerate_wall_to_underside(
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    model: type[tool.Model],
+    wall_objs: list[bpy.types.Object],
+) -> None:
+    """Re-clip walls to their connected underside objects after the slab has moved."""
+    clipped_objs = []
+    for obj in wall_objs:
+        wall = ifc.get_entity(obj)
+        slab_objs = model.get_connected_slab_objs(wall)
+        if not slab_objs:
+            continue
+        if ifc.is_moved(obj):
+            geometry.run_edit_object_placement(obj=obj)
+        model.remove_wall_to_underside_booleans(wall)
+        for slab_obj in slab_objs:
+            clip = model.get_slab_clipping_bmesh(slab_obj)
+            if clip:
+                model.clip_wall_to_slab(wall, clip)
+        clipped_objs.append(obj)
+    if clipped_objs:
+        model.reload_body_representation(clipped_objs)
+
+
 def extend_wall_to_slab(
     ifc: type[tool.Ifc],
     geometry: type[tool.Geometry],

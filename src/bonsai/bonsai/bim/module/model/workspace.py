@@ -1300,7 +1300,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
-            bpy.ops.bim.recalculate_wall()
+            if element and any(
+                rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP"
+                for rel in element.ConnectedFrom
+            ):
+                bpy.ops.bim.regenerate_wall_to_underside()
+            else:
+                bpy.ops.bim.recalculate_wall()
         elif self.active_material_usage == "LAYER3":
             bpy.ops.bim.recalculate_slab()
         elif tool.System.get_ports(element):

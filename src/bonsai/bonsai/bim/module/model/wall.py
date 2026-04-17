@@ -216,6 +216,24 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Please select at least one LAYER2 element and an active element")
 
 
+class RegenerateWallToUnderside(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.regenerate_wall_to_underside"
+    bl_label = "Regenerate Wall to Underside"
+    bl_description = "Re-clip selected walls to their connected underside objects after the slab has moved"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        wall_objs = [
+            obj
+            for obj in tool.Blender.get_selected_objects()
+            if (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER2"
+        ]
+        if wall_objs:
+            core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, wall_objs)
+        else:
+            self.report({"ERROR"}, "Please select at least one LAYER2 element")
+
+
 class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_wall"
     bl_label = "Extend Walls To Wall"
