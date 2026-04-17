@@ -233,49 +233,6 @@ out vec4 frag_color;
 void main() { frag_color = vec4(v_color, 1.0); }
 )";
 
-// Depth-only fragment shader — paired with MAIN_VERTEX_SHADER for the HiZ
-// depth pre-pass.  The vertex shader does the full transform; the fragment
-// shader is a no-op (early-Z writes depth, we discard color via glColorMask).
-static const char* DEPTH_ONLY_FRAGMENT_SHADER = R"(
-#version 450 core
-void main() {}
-)";
-
-// Copy the depth texture into pyramid level 0 (R32F).  One thread per texel.
-static const char* HIZ_COPY_COMPUTE_SHADER = R"(
-#version 450 core
-layout(local_size_x = 16, local_size_y = 16) in;
-uniform sampler2D u_depth;
-layout(r32f, binding = 0) writeonly uniform image2D u_dst;
-uniform ivec2 u_size;
-void main() {
-    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
-    if (pos.x >= u_size.x || pos.y >= u_size.y) return;
-    float d = texelFetch(u_depth, pos, 0).r;
-    imageStore(u_dst, pos, vec4(d));
-}
-)";
-
-// Max-reduce one mip level.  Reads 2×2 texels from level N−1, writes
-// max to level N.  u_src is bound to level N−1 via glBindImageTexture.
-static const char* HIZ_REDUCE_COMPUTE_SHADER = R"(
-#version 450 core
-layout(local_size_x = 16, local_size_y = 16) in;
-layout(r32f, binding = 0) readonly  uniform image2D u_src;
-layout(r32f, binding = 1) writeonly uniform image2D u_dst;
-uniform ivec2 u_dst_size;
-void main() {
-    ivec2 dp = ivec2(gl_GlobalInvocationID.xy);
-    if (dp.x >= u_dst_size.x || dp.y >= u_dst_size.y) return;
-    ivec2 sp = dp * 2;
-    float d0 = imageLoad(u_src, sp).r;
-    float d1 = imageLoad(u_src, sp + ivec2(1,0)).r;
-    float d2 = imageLoad(u_src, sp + ivec2(0,1)).r;
-    float d3 = imageLoad(u_src, sp + ivec2(1,1)).r;
-    imageStore(u_dst, dp, vec4(max(max(d0,d1), max(d2,d3))));
-}
-)";
-
 static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const char* source) {
     GLuint shader = gl->glCreateShader(type);
     gl->glShaderSource(shader, 1, &source, nullptr);
@@ -337,12 +294,6 @@ uniform float u_focal_px;
 uniform float u_min_pixel_radius;
 uniform float u_lod1_px_threshold;
 
-// HiZ occlusion — enabled in phase 2 of the two-phase dispatch.
-uniform uint  u_hiz_enabled;
-uniform mat4  u_hiz_vp;
-uniform vec2  u_hiz_size;           // base pyramid dimensions
-uniform sampler2D u_hiz_pyramid;
-
 bool frustum(vec3 mn, vec3 mx) {
     for (int i = 0; i < 6; ++i) {
         vec3 pv = vec3(
@@ -364,48 +315,6 @@ float pixelRadius(vec3 mn, vec3 mx) {
     return u_focal_px * radius / max(dist, 0.001);
 }
 
-bool hizOccluded(vec3 mn, vec3 mx) {
-    if (u_hiz_enabled == 0u) return false;
-    // Project 8 AABB corners to clip space.
-    float near_depth = 1.0;
-    float sx_min = 1.0, sx_max = -1.0;
-    float sy_min = 1.0, sy_max = -1.0;
-    for (int i = 0; i < 8; ++i) {
-        vec3 c = vec3(
-            ((i & 1) != 0) ? mx.x : mn.x,
-            ((i & 2) != 0) ? mx.y : mn.y,
-            ((i & 4) != 0) ? mx.z : mn.z);
-        vec4 clip = u_hiz_vp * vec4(c, 1.0);
-        if (clip.w <= 1e-4) return false;
-        vec3 ndc = clip.xyz / clip.w;
-        near_depth = min(near_depth, ndc.z * 0.5 + 0.5);
-        sx_min = min(sx_min, ndc.x);
-        sx_max = max(sx_max, ndc.x);
-        sy_min = min(sy_min, ndc.y);
-        sy_max = max(sy_max, ndc.y);
-    }
-    sx_min = clamp(sx_min, -1.0, 1.0);
-    sx_max = clamp(sx_max, -1.0, 1.0);
-    sy_min = clamp(sy_min, -1.0, 1.0);
-    sy_max = clamp(sy_max, -1.0, 1.0);
-    vec2 uv_min = vec2(sx_min, sy_min) * 0.5 + 0.5;
-    vec2 uv_max = vec2(sx_max, sy_max) * 0.5 + 0.5;
-    // Pick mip where covered rect fits in ≤2×2 texels.
-    vec2 extent = (uv_max - uv_min) * u_hiz_size;
-    float level = ceil(log2(max(max(extent.x, extent.y), 1.0)));
-    int ilevel = clamp(int(level), 0, textureQueryLevels(u_hiz_pyramid) - 1);
-    // Sample 4 corners at chosen mip — texelFetch for exact max-reduction.
-    ivec2 mip_size = textureSize(u_hiz_pyramid, ilevel);
-    ivec2 tmin = clamp(ivec2(uv_min * vec2(mip_size)), ivec2(0), mip_size - 1);
-    ivec2 tmax = clamp(ivec2(uv_max * vec2(mip_size)), ivec2(0), mip_size - 1);
-    float hiz_max = 0.0;
-    hiz_max = max(hiz_max, texelFetch(u_hiz_pyramid, ivec2(tmin.x, tmin.y), ilevel).r);
-    hiz_max = max(hiz_max, texelFetch(u_hiz_pyramid, ivec2(tmax.x, tmin.y), ilevel).r);
-    hiz_max = max(hiz_max, texelFetch(u_hiz_pyramid, ivec2(tmin.x, tmax.y), ilevel).r);
-    hiz_max = max(hiz_max, texelFetch(u_hiz_pyramid, ivec2(tmax.x, tmax.y), ilevel).r);
-    return near_depth > hiz_max;
-}
-
 void main() {
     uint gid = gl_GlobalInvocationID.x;
     if (gid >= u_count) return;
@@ -416,7 +325,6 @@ void main() {
     if (!frustum(mn, mx)) return;
     float px_rad = pixelRadius(mn, mx);
     if (px_rad < u_min_pixel_radius) return;
-    if (hizOccluded(mn, mx)) return;
 
     uint mesh_id  = floatBitsToUint(lo.w);
     uint flags    = floatBitsToUint(hi.w);
@@ -626,12 +534,6 @@ ViewportWindow::~ViewportWindow() {
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (cull_reset_program_)   gl_->glDeleteProgram(cull_reset_program_);
             if (cull_compact_program_) gl_->glDeleteProgram(cull_compact_program_);
-            if (hiz_gpu_depth_prog_)   gl_->glDeleteProgram(hiz_gpu_depth_prog_);
-            if (hiz_gpu_copy_prog_)    gl_->glDeleteProgram(hiz_gpu_copy_prog_);
-            if (hiz_gpu_reduce_prog_)  gl_->glDeleteProgram(hiz_gpu_reduce_prog_);
-            if (hiz_gpu_fbo_)          gl_->glDeleteFramebuffers(1, &hiz_gpu_fbo_);
-            if (hiz_gpu_depth_tex_)    gl_->glDeleteTextures(1, &hiz_gpu_depth_tex_);
-            if (hiz_gpu_pyramid_tex_)  gl_->glDeleteTextures(1, &hiz_gpu_pyramid_tex_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
@@ -723,13 +625,6 @@ void ViewportWindow::buildShaders() {
     }
     cull_reset_program_   = linkComputeProgram(gl_, CULL_RESET_COMPUTE_SHADER);
     cull_compact_program_ = linkComputeProgram(gl_, CULL_COMPACT_COMPUTE_SHADER);
-    {
-        GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, MAIN_VERTEX_SHADER);
-        GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, DEPTH_ONLY_FRAGMENT_SHADER);
-        hiz_gpu_depth_prog_ = linkProgram(gl_, vs, fs);
-    }
-    hiz_gpu_copy_prog_   = linkComputeProgram(gl_, HIZ_COPY_COMPUTE_SHADER);
-    hiz_gpu_reduce_prog_ = linkComputeProgram(gl_, HIZ_REDUCE_COMPUTE_SHADER);
 }
 
 void ViewportWindow::buildAxisGizmo() {
@@ -2003,42 +1898,6 @@ void ViewportWindow::updateCamera() {
     proj_matrix_.perspective(camera_fov_y_deg_, aspect, 0.1f, camera_distance_ * 10.0f);
 }
 
-void ViewportWindow::ensureHizGpuResources(int vp_w, int vp_h) {
-    // Target: half-viewport resolution for the HiZ pyramid.
-    const int w = std::max(vp_w / 2, 1);
-    const int h = std::max(vp_h / 2, 1);
-    if (w == hiz_gpu_w_ && h == hiz_gpu_h_ && hiz_gpu_fbo_) return;
-    hiz_gpu_w_ = w;
-    hiz_gpu_h_ = h;
-    hiz_gpu_levels_ = 1 + static_cast<int>(std::floor(std::log2(
-        static_cast<double>(std::max(w, h)))));
-
-    if (hiz_gpu_fbo_)         gl_->glDeleteFramebuffers(1, &hiz_gpu_fbo_);
-    if (hiz_gpu_depth_tex_)   gl_->glDeleteTextures(1, &hiz_gpu_depth_tex_);
-    if (hiz_gpu_pyramid_tex_) gl_->glDeleteTextures(1, &hiz_gpu_pyramid_tex_);
-
-    // Depth-only FBO for the pre-pass.
-    gl_->glCreateTextures(GL_TEXTURE_2D, 1, &hiz_gpu_depth_tex_);
-    gl_->glTextureStorage2D(hiz_gpu_depth_tex_, 1, GL_DEPTH_COMPONENT32F, w, h);
-    gl_->glTextureParameteri(hiz_gpu_depth_tex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    gl_->glTextureParameteri(hiz_gpu_depth_tex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    gl_->glCreateFramebuffers(1, &hiz_gpu_fbo_);
-    gl_->glNamedFramebufferTexture(hiz_gpu_fbo_, GL_DEPTH_ATTACHMENT,
-                                   hiz_gpu_depth_tex_, 0);
-    gl_->glNamedFramebufferDrawBuffer(hiz_gpu_fbo_, GL_NONE);
-    gl_->glNamedFramebufferReadBuffer(hiz_gpu_fbo_, GL_NONE);
-
-    // Pyramid texture (R32F, full mip chain).
-    gl_->glCreateTextures(GL_TEXTURE_2D, 1, &hiz_gpu_pyramid_tex_);
-    gl_->glTextureStorage2D(hiz_gpu_pyramid_tex_, hiz_gpu_levels_,
-                            GL_R32F, w, h);
-    gl_->glTextureParameteri(hiz_gpu_pyramid_tex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    gl_->glTextureParameteri(hiz_gpu_pyramid_tex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    gl_->glTextureParameteri(hiz_gpu_pyramid_tex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    gl_->glTextureParameteri(hiz_gpu_pyramid_tex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-}
-
 void ViewportWindow::render() {
     if (!gl_initialized_ || !isExposed()) return;
 
@@ -2148,22 +2007,17 @@ void ViewportWindow::render() {
         cull_wall_ns_ += cull_wall_timer.nsecsElapsed();
     }
 
-    // Phase 3E: two-phase GPU cull + same-frame HiZ.
-    //   Phase 1: frustum + contribution + LOD, no HiZ → survivors for depth pre-pass
-    //   Depth pre-pass: render survivors depth-only into HiZ FBO
-    //   HiZ build: max-reduce depth into pyramid mip chain
-    //   Phase 2: same cull + HiZ test → final survivors for color pass
+    // Phase 3E: the GPU-cull path.  When IFC_GPU_CULL=1 we dispatch two
+    // tiny compute shaders per model (reset + compact), then let the draw
+    // loop below issue MDI from gpu_indirect_buffer.  4M commands per model:
+    // fwd_lod0, fwd_lod1, rev_lod0, rev_lod1.  Two MDIs: CCW for [0..2M),
+    // CW for [2M..4M).  HiZ still CPU-only.
     static const float gpu_lod1_px_threshold = []{
         const char* e = std::getenv("IFC_LOD1_PX");
         return (e && *e) ? static_cast<float>(std::atof(e)) : 30.0f;
     }();
     if (gpu_cull_enabled && cull_this_frame && cull_compact_program_) {
         QElapsedTimer t; t.start();
-        const int dpr = devicePixelRatio();
-        const int vp_w = width() * dpr;
-        const int vp_h = height() * dpr;
-        ensureHizGpuResources(vp_w, vp_h);
-
         float planes_flat[24];
         for (int i = 0; i < 6; ++i) {
             planes_flat[i*4+0] = planes[i][0];
@@ -2171,11 +2025,6 @@ void ViewportWindow::render() {
             planes_flat[i*4+2] = planes[i][2];
             planes_flat[i*4+3] = planes[i][3];
         }
-        QMatrix4x4 vp_hiz = proj_matrix_ * view_matrix_;
-
-        // Collect models eligible for GPU cull.
-        struct CullTarget { uint32_t mid; ModelGpuData* m; uint32_t n; };
-        std::vector<CullTarget> targets;
         uint32_t total_in = 0;
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden || !m.aabb_ssbo || m.instances.empty()) continue;
@@ -2183,128 +2032,38 @@ void ViewportWindow::render() {
                 !m.gpu_mesh_base_ssbo || !m.gpu_mesh_flags_ssbo) continue;
             const uint32_t n = static_cast<uint32_t>(m.instances.size());
             total_in += n;
-            targets.push_back({mid, &m, n});
+
+            // Reset — zero instanceCount on all 4M commands.
+            gl_->glUseProgram(cull_reset_program_);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.gpu_indirect_buffer);
+            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_reset_program_, "u_mesh_count"),
+                              m.gpu_mesh_command_count);
+            gl_->glDispatchCompute((m.gpu_mesh_command_count + 63u) / 64u, 1, 1);
+            gl_->glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+            // Compact — frustum + contribution cull, LOD select, scatter.
+            gl_->glUseProgram(cull_compact_program_);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.aabb_ssbo);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_indirect_buffer);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.gpu_visible_ssbo);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m.gpu_mesh_base_ssbo);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m.gpu_mesh_flags_ssbo);
+            gl_->glUniform4fv(gl_->glGetUniformLocation(cull_compact_program_, "u_planes"),
+                              6, planes_flat);
+            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_count"), n);
+            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_M"),
+                              m.gpu_forward_command_count);
+            gl_->glUniform3f (gl_->glGetUniformLocation(cull_compact_program_, "u_camera_eye"),
+                              camera_eye_.x(), camera_eye_.y(), camera_eye_.z());
+            gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_focal_px"),
+                              focal_px);
+            gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_min_pixel_radius"),
+                              min_pixel_radius);
+            gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_lod1_px_threshold"),
+                              gpu_lod1_px_threshold);
+            gl_->glDispatchCompute((n + 63u) / 64u, 1, 1);
         }
-
-        // Helper: dispatch reset + compact for all targets.
-        auto dispatchCull = [&](bool hiz_enabled) {
-            for (auto& tgt : targets) {
-                ModelGpuData& m = *tgt.m;
-                gl_->glUseProgram(cull_reset_program_);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.gpu_indirect_buffer);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_reset_program_, "u_mesh_count"),
-                                  m.gpu_mesh_command_count);
-                gl_->glDispatchCompute((m.gpu_mesh_command_count + 63u) / 64u, 1, 1);
-                gl_->glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-                gl_->glUseProgram(cull_compact_program_);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.aabb_ssbo);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_indirect_buffer);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.gpu_visible_ssbo);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m.gpu_mesh_base_ssbo);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m.gpu_mesh_flags_ssbo);
-                gl_->glUniform4fv(gl_->glGetUniformLocation(cull_compact_program_, "u_planes"),
-                                  6, planes_flat);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_count"), tgt.n);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_M"),
-                                  m.gpu_forward_command_count);
-                gl_->glUniform3f (gl_->glGetUniformLocation(cull_compact_program_, "u_camera_eye"),
-                                  camera_eye_.x(), camera_eye_.y(), camera_eye_.z());
-                gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_focal_px"),
-                                  focal_px);
-                gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_min_pixel_radius"),
-                                  min_pixel_radius);
-                gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_lod1_px_threshold"),
-                                  gpu_lod1_px_threshold);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_hiz_enabled"),
-                                  hiz_enabled ? 1u : 0u);
-                if (hiz_enabled) {
-                    gl_->glUniformMatrix4fv(
-                        gl_->glGetUniformLocation(cull_compact_program_, "u_hiz_vp"),
-                        1, GL_FALSE, vp_hiz.constData());
-                    gl_->glUniform2f(
-                        gl_->glGetUniformLocation(cull_compact_program_, "u_hiz_size"),
-                        static_cast<float>(hiz_gpu_w_), static_cast<float>(hiz_gpu_h_));
-                    gl_->glActiveTexture(GL_TEXTURE0);
-                    gl_->glBindTexture(GL_TEXTURE_2D, hiz_gpu_pyramid_tex_);
-                    gl_->glUniform1i(
-                        gl_->glGetUniformLocation(cull_compact_program_, "u_hiz_pyramid"), 0);
-                }
-                gl_->glDispatchCompute((tgt.n + 63u) / 64u, 1, 1);
-            }
-            gl_->glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
-        };
-
-        // Phase 1: cull without HiZ.
-        dispatchCull(false);
-
-        // Depth pre-pass: render phase 1 survivors into hiz_gpu_fbo_.
-        gl_->glBindFramebuffer(GL_FRAMEBUFFER, hiz_gpu_fbo_);
-        gl_->glViewport(0, 0, hiz_gpu_w_, hiz_gpu_h_);
-        gl_->glClear(GL_DEPTH_BUFFER_BIT);
-        gl_->glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        gl_->glUseProgram(hiz_gpu_depth_prog_);
-        GLint u_vp_depth = gl_->glGetUniformLocation(hiz_gpu_depth_prog_, "u_view_projection");
-        gl_->glUniformMatrix4fv(u_vp_depth, 1, GL_FALSE, vp_hiz.constData());
-        for (auto& tgt : targets) {
-            ModelGpuData& m = *tgt.m;
-            gl_->glBindVertexArray(m.vao);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_visible_ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
-            gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
-            const uint32_t M = m.gpu_forward_command_count;
-            gl_->glFrontFace(GL_CCW);
-            gl_->glMultiDrawElementsIndirect(
-                GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                static_cast<GLsizei>(2u * M), 0);
-            gl_->glFrontFace(GL_CW);
-            gl_->glMultiDrawElementsIndirect(
-                GL_TRIANGLES, GL_UNSIGNED_INT,
-                reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
-                static_cast<GLsizei>(2u * M), 0);
-        }
-        gl_->glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-        // Build HiZ pyramid: copy depth → pyramid L0, then max-reduce.
-        gl_->glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
-        gl_->glUseProgram(hiz_gpu_copy_prog_);
-        gl_->glActiveTexture(GL_TEXTURE0);
-        gl_->glBindTexture(GL_TEXTURE_2D, hiz_gpu_depth_tex_);
-        gl_->glUniform1i(gl_->glGetUniformLocation(hiz_gpu_copy_prog_, "u_depth"), 0);
-        gl_->glUniform2i(gl_->glGetUniformLocation(hiz_gpu_copy_prog_, "u_size"),
-                         hiz_gpu_w_, hiz_gpu_h_);
-        gl_->glBindImageTexture(0, hiz_gpu_pyramid_tex_, 0, GL_FALSE, 0,
-                                GL_WRITE_ONLY, GL_R32F);
-        gl_->glDispatchCompute((hiz_gpu_w_ + 15) / 16, (hiz_gpu_h_ + 15) / 16, 1);
-        gl_->glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-        gl_->glUseProgram(hiz_gpu_reduce_prog_);
-        int sw = hiz_gpu_w_, sh = hiz_gpu_h_;
-        for (int lev = 1; lev < hiz_gpu_levels_; ++lev) {
-            int dw = std::max(sw / 2, 1);
-            int dh = std::max(sh / 2, 1);
-            gl_->glBindImageTexture(0, hiz_gpu_pyramid_tex_, lev - 1, GL_FALSE, 0,
-                                    GL_READ_ONLY, GL_R32F);
-            gl_->glBindImageTexture(1, hiz_gpu_pyramid_tex_, lev, GL_FALSE, 0,
-                                    GL_WRITE_ONLY, GL_R32F);
-            gl_->glUniform2i(gl_->glGetUniformLocation(hiz_gpu_reduce_prog_, "u_dst_size"),
-                             dw, dh);
-            gl_->glDispatchCompute((dw + 15) / 16, (dh + 15) / 16, 1);
-            gl_->glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-            sw = dw;
-            sh = dh;
-        }
-
-        // Restore main FBO + viewport for phase 2 and the color pass.
-        gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        gl_->glViewport(0, 0, vp_w, vp_h);
-
-        // Phase 2: cull with HiZ — overwrites indirect + visible with
-        // the tighter set.
-        gl_->glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
-        dispatchCull(true);
-
+        gl_->glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
         gpu_cull_last_input_ = total_in;
         gpu_cull_ns_        += t.nsecsElapsed();
         gl_->glUseProgram(main_program_);

@@ -803,12 +803,7 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (plann
             pixel radius and routes to LOD1 bucket when below threshold.
             Per-mesh `has_lod1` flags SSBO.  4 buckets per mesh (fwd/rev ×
             LOD0/LOD1), 4M commands total, 2 MDIs per model.
-      - [x] 3d: same-frame HiZ — two-phase dispatch: phase 1 (no HiZ)
-            drives a depth-only pre-pass, GPU max-reduce builds HiZ
-            pyramid, phase 2 (with HiZ) produces final survivors.
-            Occlusion halves survivors on dense interiors.  Depth
-            pre-pass has same CP overhead as color pass (690k empty
-            sub-draws); cost dominated by MDI command processing.
+      - [ ] 3d: HiZ with same-frame depth pre-pass
       - [ ] MDI compaction — compact non-empty commands into contiguous
             buffer, use `glMultiDrawElementsIndirectCount` (GL 4.6 /
             `ARB_indirect_parameters`).  Deferred until all feature buckets

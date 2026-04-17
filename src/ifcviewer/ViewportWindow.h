@@ -258,7 +258,6 @@ private:
     // Called after uploadInstanceAabbs at finalize / applyCachedModel once
     // m.meshes[].instance_count has been populated.
     void uploadGpuCullStaticBuffers(ModelGpuData& m);
-    void ensureHizGpuResources(int vp_w, int vp_h);
 
     // Frustum-cull m's instances (BVH if available, else linear scan),
     // build the per-mesh DrawElementsIndirectCommand array + flat visible
@@ -298,28 +297,16 @@ private:
     GLuint pick_program_ = 0;
     GLuint axis_program_ = 0;
 
-    // Phase 3E compute cull.  Two-phase dispatch when IFC_GPU_CULL=1:
-    //   Phase 1: frustum + contribution + LOD, no HiZ → depth pre-pass
-    //   Phase 2: same + HiZ test → final survivors for color pass
+    // Phase 3E compute cull.  When IFC_GPU_CULL=1, render() uses the GPU
+    // path exclusively: cull_reset_program_ zeros each mesh's instanceCount
+    // in gpu_indirect_buffer, then cull_compact_program_ runs frustum +
+    // contribution cull per instance and atomically appends survivors into
+    // gpu_visible_ssbo at mesh_base[mesh_id] + local_slot.  No LOD / HiZ /
+    // reflection bucketing yet — reflected instances render with wrong
+    // winding under the gate, which is why this stays gated until the
+    // fwd/rev split lands (step 3b).
     GLuint cull_reset_program_   = 0;
     GLuint cull_compact_program_ = 0;
-
-    // Depth-only program for the HiZ depth pre-pass — same vertex shader
-    // as main_program_, trivial fragment shader.
-    GLuint hiz_gpu_depth_prog_   = 0;
-
-    // GPU HiZ pyramid: depth pre-pass renders into hiz_gpu_fbo_ at
-    // hiz_gpu_w_ × hiz_gpu_h_; copy+reduce compute shaders build a
-    // max-reduction mip chain in hiz_gpu_pyramid_tex_ (R32F).
-    GLuint hiz_gpu_fbo_          = 0;
-    GLuint hiz_gpu_depth_tex_    = 0;
-    GLuint hiz_gpu_pyramid_tex_  = 0;
-    GLuint hiz_gpu_copy_prog_    = 0;
-    GLuint hiz_gpu_reduce_prog_  = 0;
-    int    hiz_gpu_w_            = 0;
-    int    hiz_gpu_h_            = 0;
-    int    hiz_gpu_levels_       = 0;
-
     uint32_t gpu_cull_last_survivors_ = 0;
     uint32_t gpu_cull_last_input_     = 0;
     uint64_t gpu_cull_ns_             = 0;  // per-window accumulator
