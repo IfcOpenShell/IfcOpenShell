@@ -2390,7 +2390,8 @@ class Model(bonsai.core.tool.Model):
             face.normal_update()
             normal = face.normal.to_4d()
             normal.w = 0
-            if (obj.matrix_world @ normal).z >= -0.5:
+            world_normal_z = (obj.matrix_world @ normal).z
+            if world_normal_z >= -0.5:
                 continue
             new_verts = []
             for vert in face.verts:
@@ -2404,6 +2405,7 @@ class Model(bonsai.core.tool.Model):
             return
 
         bmesh.ops.recalc_face_normals(clipping_bm, faces=clipping_bm.faces)
+        clipping_bm.faces.ensure_lookup_table()
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
@@ -2417,17 +2419,53 @@ class Model(bonsai.core.tool.Model):
         min_z = min(zs)
         max_z = max(zs)
 
-        operand = None
-        if (z := max_z - min_z) and not np.isclose(z, 0.0):
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
 
-            result = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-            extruded_verts = [elem for elem in result["geom"] if isinstance(elem, bmesh.types.BMVert)]
-            bmesh.ops.translate(bm, verts=extruded_verts, vec=(0, 0, z))
+        # Build one IfcPolygonalFaceSet clip solid per clipping face.
+        # Each solid uses a rectangle on the slope plane rather than the exact face
+        # footprint.  The original approach (exact footprint) caused a kissing-solid /
+        # boundary-coincidence bug when the operator is called twice for a ridge roof: the
+        # two slope solids share an exact ridge edge, and OCCT produces spurious extra
+        # vertices.  Extending each solid slightly past the ridge (by margin) creates a
+        # volumetric overlap instead of a kissing boundary — OCCT handles overlapping
+        # DIFFERENCE operands correctly.
+        margin = 1.0  # project units past the face edge — enough to ensure overlap at ridge
+        operands = []
+        for face in bm.faces:
+            face.normal_update()
+            normal = Vector(face.normal).normalized()
 
-            verts = [v.co for v in bm.verts]
-            faces = [[v.index for v in p.verts] for p in bm.faces]
-            operand = builder.mesh(verts, faces)
+            # Orthonormal basis spanning the slope plane.
+            ref = Vector((0, 0, 1)) if abs(normal.z) < 0.9 else Vector((1, 0, 0))
+            tangent1 = normal.cross(ref).normalized()
+            tangent2 = normal.cross(tangent1).normalized()
+
+            centroid = sum((v.co for v in face.verts), Vector()) / len(face.verts)
+
+            # Tight bounding rectangle in slope-plane coords, plus a small margin.
+            t1_coords = [(v.co - centroid).dot(tangent1) for v in face.verts]
+            t2_coords = [(v.co - centroid).dot(tangent2) for v in face.verts]
+            half1 = max(abs(c) for c in t1_coords) + margin
+            half2 = max(abs(c) for c in t2_coords) + margin
+
+            # Rectangle on the slope plane, extruded upward in wall-local Z.
+            clip_bm = bmesh.new()
+            v0 = clip_bm.verts.new(centroid + half1 * tangent1 + half2 * tangent2)
+            v1 = clip_bm.verts.new(centroid - half1 * tangent1 + half2 * tangent2)
+            v2 = clip_bm.verts.new(centroid - half1 * tangent1 - half2 * tangent2)
+            v3 = clip_bm.verts.new(centroid + half1 * tangent1 - half2 * tangent2)
+            bottom_face = clip_bm.faces.new([v0, v1, v2, v3])
+            result = bmesh.ops.extrude_face_region(clip_bm, geom=[bottom_face])
+            top_verts = [e for e in result["geom"] if isinstance(e, bmesh.types.BMVert)]
+            bmesh.ops.translate(clip_bm, verts=top_verts, vec=Vector((0, 0, max_z - min_z)))
+            clip_bm.verts.ensure_lookup_table()
+
+            clip_verts = [v.co for v in clip_bm.verts]
+            clip_faces = [[v.index for v in f.verts] for f in clip_bm.faces]
+            operand = builder.mesh(clip_verts, clip_faces)
+            clip_bm.free()
+            operands.append(operand)
 
         for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
             if extrusion.Position:
@@ -2444,9 +2482,9 @@ class Model(bonsai.core.tool.Model):
 
             extrusion.Depth = max_z / direction[2]
 
-            if operand:
+            if operands:
                 booleans = ifcopenshell.api.geometry.add_boolean(
-                    tool.Ifc.get(), first_item=extrusion, second_items=[operand]
+                    ifc_file, first_item=extrusion, second_items=operands
                 )
                 tool.Model.mark_manual_booleans(wall, booleans)
 
