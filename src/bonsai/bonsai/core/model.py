@@ -168,8 +168,9 @@ def extend_wall_to_slab(
     slab_obj: bpy.types.Object,
     wall_objs: list[bpy.types.Object],
 ) -> None:
-    if not (clip := model.get_slab_clipping_bmesh(slab_obj)):
-        return  # Nothing to clip?
+    clip = model.get_slab_clipping_bmesh(slab_obj)
+    if not clip:
+        return
     slab = ifc.get_entity(slab_obj)
     for obj in wall_objs:
         if ifc.is_moved(obj):
