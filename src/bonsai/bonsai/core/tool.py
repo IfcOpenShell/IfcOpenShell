@@ -679,6 +679,7 @@ class Model:
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
+    def get_connected_slab_objs(cls, wall): pass
     def get_manual_booleans(cls, element): pass
     def get_material_layer_parameters(cls, element): pass
     def get_slab_clipping_bmesh(cls, obj): pass
@@ -694,6 +695,7 @@ class Model:
     def regenerate_profile(cls, obj): pass
     def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
+    def remove_wall_to_underside_booleans(cls, wall): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 
