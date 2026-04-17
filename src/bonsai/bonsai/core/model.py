@@ -172,20 +172,26 @@ def extend_wall_to_slab(
     ifc: type[tool.Ifc],
     geometry: type[tool.Geometry],
     model: type[tool.Model],
-    slab_obj: bpy.types.Object,
+    slab_objs: list[bpy.types.Object],
     wall_objs: list[bpy.types.Object],
 ) -> None:
-    clip = model.get_slab_clipping_bmesh(slab_obj)
-    if not clip:
-        return
-    slab = ifc.get_entity(slab_obj)
     for obj in wall_objs:
         if ifc.is_moved(obj):
             geometry.run_edit_object_placement(obj=obj)
-        wall = ifc.get_entity(obj)
-        model.clip_wall_to_slab(wall, clip)
-        model.connect_wall_to_slab(wall, slab)
-    model.reload_body_representation(wall_objs)
+    clipped_walls = []
+    for slab_obj in slab_objs:
+        clip = model.get_slab_clipping_bmesh(slab_obj)
+        if not clip:
+            continue
+        slab = ifc.get_entity(slab_obj)
+        for obj in wall_objs:
+            wall = ifc.get_entity(obj)
+            model.clip_wall_to_slab(wall, clip)
+            model.connect_wall_to_slab(wall, slab)
+            if obj not in clipped_walls:
+                clipped_walls.append(obj)
+    if clipped_walls:
+        model.reload_body_representation(clipped_walls)
 
 
 class RequireTwoWallsError(Exception):
