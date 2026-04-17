@@ -193,21 +193,29 @@ def extend_wall_to_slab(
     slab_objs: list[bpy.types.Object],
     wall_objs: list[bpy.types.Object],
 ) -> None:
+    clipped_walls = []
     for obj in wall_objs:
         if ifc.is_moved(obj):
             geometry.run_edit_object_placement(obj=obj)
-    clipped_walls = []
-    for slab_obj in slab_objs:
-        clip = model.get_slab_clipping_bmesh(slab_obj)
-        if not clip:
-            continue
-        slab = ifc.get_entity(slab_obj)
-        for obj in wall_objs:
-            wall = ifc.get_entity(obj)
+        wall = ifc.get_entity(obj)
+        # Merge previously connected slabs with newly requested ones so that
+        # re-running the operator never produces duplicate booleans and never
+        # silently discards clips that were applied in an earlier call.
+        existing = model.get_connected_slab_objs(wall)
+        seen = {id(s) for s in existing}
+        all_slab_objs = list(existing) + [s for s in slab_objs if id(s) not in seen]
+        # Remove stale booleans once, then re-clip against the full set.
+        model.remove_wall_to_underside_booleans(wall)
+        did_clip = False
+        for slab_obj in all_slab_objs:
+            clip = model.get_slab_clipping_bmesh(slab_obj)
+            if not clip:
+                continue
             model.clip_wall_to_slab(wall, clip)
-            model.connect_wall_to_slab(wall, slab)
-            if obj not in clipped_walls:
-                clipped_walls.append(obj)
+            model.connect_wall_to_slab(wall, ifc.get_entity(slab_obj))
+            did_clip = True
+        if did_clip:
+            clipped_walls.append(obj)
     if clipped_walls:
         model.reload_body_representation(clipped_walls)
 
