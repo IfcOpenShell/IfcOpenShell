@@ -436,42 +436,6 @@ void main() {
 }
 )";
 
-// Pack non-empty indirect commands from the source (4M) into a compact
-// buffer.  Forward commands [0..2M) pack to dst[0..], reverse [2M..4M) pack
-// to dst[2M..].  Two atomic counters in counts[]: [0]=fwd, [1]=rev.
-static const char* CULL_PACK_COMPUTE_SHADER = R"(
-#version 450 core
-layout(local_size_x = 64) in;
-layout(std430, binding = 0) readonly  buffer SrcBuf   { uint src[]; };
-layout(std430, binding = 1) writeonly buffer DstBuf   { uint dst[]; };
-layout(std430, binding = 2) coherent  buffer CountBuf { uint counts[]; };
-uniform uint u_total_cmds;
-uniform uint u_fwd_cmds;
-void main() {
-    uint i = gl_GlobalInvocationID.x;
-    if (i >= u_total_cmds) return;
-    uint ic = src[i * 5u + 1u];
-    if (ic == 0u) return;
-    bool is_fwd = (i < u_fwd_cmds);
-    uint slot = is_fwd ? atomicAdd(counts[0], 1u)
-                       : atomicAdd(counts[1], 1u) + u_fwd_cmds;
-    dst[slot * 5u + 0u] = src[i * 5u + 0u];
-    dst[slot * 5u + 1u] = ic;
-    dst[slot * 5u + 2u] = src[i * 5u + 2u];
-    dst[slot * 5u + 3u] = src[i * 5u + 3u];
-    dst[slot * 5u + 4u] = src[i * 5u + 4u];
-}
-)";
-
-#ifndef GL_PARAMETER_BUFFER_ARB
-#define GL_PARAMETER_BUFFER_ARB 0x80EE
-#endif
-
-using PFN_glMultiDrawElementsIndirectCount = void (*)(
-    GLenum mode, GLenum type, const void* indirect,
-    GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride);
-static PFN_glMultiDrawElementsIndirectCount glMultiDrawElementsIndirectCount_ = nullptr;
-
 static GLuint linkComputeProgram(QOpenGLFunctions_4_5_Core* gl, const char* src) {
     GLuint cs = compileShader(gl, GL_COMPUTE_SHADER, src);
     GLuint prog = gl->glCreateProgram();
@@ -654,8 +618,6 @@ ViewportWindow::~ViewportWindow() {
                 if (m.gpu_visible_ssbo)     gl_->glDeleteBuffers(1, &m.gpu_visible_ssbo);
                 if (m.gpu_mesh_base_ssbo)   gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
                 if (m.gpu_mesh_flags_ssbo)  gl_->glDeleteBuffers(1, &m.gpu_mesh_flags_ssbo);
-                if (m.gpu_compacted_buffer) gl_->glDeleteBuffers(1, &m.gpu_compacted_buffer);
-                if (m.gpu_draw_count_buffer) gl_->glDeleteBuffers(1, &m.gpu_draw_count_buffer);
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
@@ -664,7 +626,6 @@ ViewportWindow::~ViewportWindow() {
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (cull_reset_program_)   gl_->glDeleteProgram(cull_reset_program_);
             if (cull_compact_program_) gl_->glDeleteProgram(cull_compact_program_);
-            if (cull_pack_program_)    gl_->glDeleteProgram(cull_pack_program_);
             if (hiz_gpu_depth_prog_)   gl_->glDeleteProgram(hiz_gpu_depth_prog_);
             if (hiz_gpu_copy_prog_)    gl_->glDeleteProgram(hiz_gpu_copy_prog_);
             if (hiz_gpu_reduce_prog_)  gl_->glDeleteProgram(hiz_gpu_reduce_prog_);
@@ -769,20 +730,6 @@ void ViewportWindow::buildShaders() {
     }
     hiz_gpu_copy_prog_   = linkComputeProgram(gl_, HIZ_COPY_COMPUTE_SHADER);
     hiz_gpu_reduce_prog_ = linkComputeProgram(gl_, HIZ_REDUCE_COMPUTE_SHADER);
-    cull_pack_program_   = linkComputeProgram(gl_, CULL_PACK_COMPUTE_SHADER);
-
-    if (!glMultiDrawElementsIndirectCount_) {
-        glMultiDrawElementsIndirectCount_ =
-            reinterpret_cast<PFN_glMultiDrawElementsIndirectCount>(
-                context_->getProcAddress("glMultiDrawElementsIndirectCount"));
-        if (!glMultiDrawElementsIndirectCount_) {
-            glMultiDrawElementsIndirectCount_ =
-                reinterpret_cast<PFN_glMultiDrawElementsIndirectCount>(
-                    context_->getProcAddress("glMultiDrawElementsIndirectCountARB"));
-        }
-        if (!glMultiDrawElementsIndirectCount_)
-            qWarning("glMultiDrawElementsIndirectCount not available — MDI compaction disabled");
-    }
 }
 
 void ViewportWindow::buildAxisGizmo() {
@@ -1217,26 +1164,6 @@ void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
         gl_->glNamedBufferSubData(m.gpu_mesh_flags_ssbo, 0,
             M * sizeof(uint32_t), mesh_flags.data());
     }
-
-    // Compacted indirect buffer — same capacity as the source buffer.
-    if (m.gpu_compacted_buffer && m.gpu_compacted_capacity < ind_bytes) {
-        gl_->glDeleteBuffers(1, &m.gpu_compacted_buffer);
-        m.gpu_compacted_buffer = 0;
-        m.gpu_compacted_capacity = 0;
-    }
-    if (!m.gpu_compacted_buffer) {
-        gl_->glCreateBuffers(1, &m.gpu_compacted_buffer);
-        gl_->glNamedBufferStorage(m.gpu_compacted_buffer, ind_bytes, nullptr,
-                                  GL_DYNAMIC_STORAGE_BIT);
-        m.gpu_compacted_capacity = ind_bytes;
-    }
-
-    // Draw-count buffer — 2 × uint32: [fwd_count, rev_count].
-    if (!m.gpu_draw_count_buffer) {
-        gl_->glCreateBuffers(1, &m.gpu_draw_count_buffer);
-        gl_->glNamedBufferStorage(m.gpu_draw_count_buffer, 2 * sizeof(uint32_t),
-                                  nullptr, GL_DYNAMIC_STORAGE_BIT);
-    }
 }
 
 void ViewportWindow::finalizeModel(uint32_t model_id) {
@@ -1317,8 +1244,6 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.gpu_visible_ssbo)     gl_->glDeleteBuffers(1, &existing->second.gpu_visible_ssbo);
         if (existing->second.gpu_mesh_base_ssbo)   gl_->glDeleteBuffers(1, &existing->second.gpu_mesh_base_ssbo);
         if (existing->second.gpu_mesh_flags_ssbo)  gl_->glDeleteBuffers(1, &existing->second.gpu_mesh_flags_ssbo);
-        if (existing->second.gpu_compacted_buffer) gl_->glDeleteBuffers(1, &existing->second.gpu_compacted_buffer);
-        if (existing->second.gpu_draw_count_buffer) gl_->glDeleteBuffers(1, &existing->second.gpu_draw_count_buffer);
         models_gpu_.erase(existing);
     }
 
@@ -1468,8 +1393,6 @@ void ViewportWindow::resetScene() {
         if (m.gpu_visible_ssbo)     gl_->glDeleteBuffers(1, &m.gpu_visible_ssbo);
         if (m.gpu_mesh_base_ssbo)   gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
         if (m.gpu_mesh_flags_ssbo)  gl_->glDeleteBuffers(1, &m.gpu_mesh_flags_ssbo);
-        if (m.gpu_compacted_buffer) gl_->glDeleteBuffers(1, &m.gpu_compacted_buffer);
-        if (m.gpu_draw_count_buffer) gl_->glDeleteBuffers(1, &m.gpu_draw_count_buffer);
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
@@ -1512,8 +1435,6 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.gpu_visible_ssbo)     gl_->glDeleteBuffers(1, &it->second.gpu_visible_ssbo);
         if (it->second.gpu_mesh_base_ssbo)   gl_->glDeleteBuffers(1, &it->second.gpu_mesh_base_ssbo);
         if (it->second.gpu_mesh_flags_ssbo)  gl_->glDeleteBuffers(1, &it->second.gpu_mesh_flags_ssbo);
-        if (it->second.gpu_compacted_buffer) gl_->glDeleteBuffers(1, &it->second.gpu_compacted_buffer);
-        if (it->second.gpu_draw_count_buffer) gl_->glDeleteBuffers(1, &it->second.gpu_draw_count_buffer);
         models_gpu_.erase(it);
         have_cached_cull_ = false;
         requestUpdate();
@@ -2314,35 +2235,8 @@ void ViewportWindow::render() {
             gl_->glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
         };
 
-        const bool mdi_count_available =
-            glMultiDrawElementsIndirectCount_ && cull_pack_program_;
-
-        // Pack non-empty commands into contiguous fwd / rev ranges.
-        auto dispatchPack = [&]() {
-            if (!mdi_count_available) return;
-            for (auto& tgt : targets) {
-                ModelGpuData& m = *tgt.m;
-                const uint32_t total_cmds = m.gpu_mesh_command_count;
-                const uint32_t fwd_cmds   = 2u * m.gpu_forward_command_count;
-                const uint32_t zero[2] = {0, 0};
-                gl_->glNamedBufferSubData(m.gpu_draw_count_buffer, 0,
-                                          sizeof(zero), zero);
-                gl_->glUseProgram(cull_pack_program_);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.gpu_indirect_buffer);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_compacted_buffer);
-                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.gpu_draw_count_buffer);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_pack_program_, "u_total_cmds"),
-                                  total_cmds);
-                gl_->glUniform1ui(gl_->glGetUniformLocation(cull_pack_program_, "u_fwd_cmds"),
-                                  fwd_cmds);
-                gl_->glDispatchCompute((total_cmds + 63u) / 64u, 1, 1);
-            }
-            gl_->glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
-        };
-
         // Phase 1: cull without HiZ.
         dispatchCull(false);
-        dispatchPack();
 
         // Depth pre-pass: render phase 1 survivors into hiz_gpu_fbo_.
         gl_->glBindFramebuffer(GL_FRAMEBUFFER, hiz_gpu_fbo_);
@@ -2358,31 +2252,17 @@ void ViewportWindow::render() {
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_visible_ssbo);
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
+            gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
             const uint32_t M = m.gpu_forward_command_count;
-            if (mdi_count_available && m.gpu_compacted_buffer && m.gpu_draw_count_buffer) {
-                gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_compacted_buffer);
-                gl_->glBindBuffer(GL_PARAMETER_BUFFER_ARB, m.gpu_draw_count_buffer);
-                gl_->glFrontFace(GL_CCW);
-                glMultiDrawElementsIndirectCount_(
-                    GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                    0, static_cast<GLsizei>(2u * M), 0);
-                gl_->glFrontFace(GL_CW);
-                glMultiDrawElementsIndirectCount_(
-                    GL_TRIANGLES, GL_UNSIGNED_INT,
-                    reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
-                    sizeof(uint32_t), static_cast<GLsizei>(2u * M), 0);
-            } else {
-                gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
-                gl_->glFrontFace(GL_CCW);
-                gl_->glMultiDrawElementsIndirect(
-                    GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                    static_cast<GLsizei>(2u * M), 0);
-                gl_->glFrontFace(GL_CW);
-                gl_->glMultiDrawElementsIndirect(
-                    GL_TRIANGLES, GL_UNSIGNED_INT,
-                    reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
-                    static_cast<GLsizei>(2u * M), 0);
-            }
+            gl_->glFrontFace(GL_CCW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+                static_cast<GLsizei>(2u * M), 0);
+            gl_->glFrontFace(GL_CW);
+            gl_->glMultiDrawElementsIndirect(
+                GL_TRIANGLES, GL_UNSIGNED_INT,
+                reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
+                static_cast<GLsizei>(2u * M), 0);
         }
         gl_->glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -2424,7 +2304,6 @@ void ViewportWindow::render() {
         // the tighter set.
         gl_->glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
         dispatchCull(true);
-        dispatchPack();
 
         gpu_cull_last_input_ = total_in;
         gpu_cull_ns_        += t.nsecsElapsed();
@@ -2451,6 +2330,9 @@ void ViewportWindow::render() {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
 
         if (gpu_cull_enabled) {
+            // GPU path: compact shader routed survivors into 4 buckets
+            // (fwd_lod0, fwd_lod1, rev_lod0, rev_lod1), each with M
+            // commands.  CCW MDI for [0..2M), CW MDI for [2M..4M).
             if (!m.gpu_indirect_buffer || !m.gpu_visible_ssbo ||
                 m.gpu_mesh_command_count == 0) continue;
 
@@ -2458,51 +2340,31 @@ void ViewportWindow::render() {
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_visible_ssbo);
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
+            gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
 
             const uint32_t M = m.gpu_forward_command_count;
-            if (glMultiDrawElementsIndirectCount_ &&
-                m.gpu_compacted_buffer && m.gpu_draw_count_buffer) {
-                gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_compacted_buffer);
-                gl_->glBindBuffer(GL_PARAMETER_BUFFER_ARB, m.gpu_draw_count_buffer);
-                if (!skip_mdi) {
-                    gl_->glFrontFace(GL_CCW);
-                    glMultiDrawElementsIndirectCount_(
-                        GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                        0, static_cast<GLsizei>(2u * M), 0);
-                    ++gl_draw_calls_;
-                    gl_->glFrontFace(GL_CW);
-                    glMultiDrawElementsIndirectCount_(
-                        GL_TRIANGLES, GL_UNSIGNED_INT,
-                        reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
-                        sizeof(uint32_t), static_cast<GLsizei>(2u * M), 0);
-                    ++gl_draw_calls_;
-                    gl_->glFrontFace(GL_CCW);
-                }
-            } else {
-                gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
-                uint32_t fwd = 2u * M;
-                uint32_t rev = 2u * M;
-                if (max_subdraws < m.gpu_mesh_command_count) {
-                    const uint32_t total = m.gpu_mesh_command_count;
-                    fwd = static_cast<uint32_t>((uint64_t)fwd * max_subdraws / total);
-                    rev = max_subdraws - fwd;
-                }
-                if (fwd > 0 && !skip_mdi) {
-                    gl_->glFrontFace(GL_CCW);
-                    gl_->glMultiDrawElementsIndirect(
-                        GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                        static_cast<GLsizei>(fwd), 0);
-                    ++gl_draw_calls_;
-                }
-                if (rev > 0 && !skip_mdi) {
-                    gl_->glFrontFace(GL_CW);
-                    gl_->glMultiDrawElementsIndirect(
-                        GL_TRIANGLES, GL_UNSIGNED_INT,
-                        reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
-                        static_cast<GLsizei>(rev), 0);
-                    ++gl_draw_calls_;
-                    gl_->glFrontFace(GL_CCW);
-                }
+            uint32_t fwd = 2u * M;   // fwd_lod0 + fwd_lod1
+            uint32_t rev = 2u * M;   // rev_lod0 + rev_lod1
+            if (max_subdraws < m.gpu_mesh_command_count) {
+                const uint32_t total = m.gpu_mesh_command_count;
+                fwd = static_cast<uint32_t>((uint64_t)fwd * max_subdraws / total);
+                rev = max_subdraws - fwd;
+            }
+            if (fwd > 0 && !skip_mdi) {
+                gl_->glFrontFace(GL_CCW);
+                gl_->glMultiDrawElementsIndirect(
+                    GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
+                    static_cast<GLsizei>(fwd), 0);
+                ++gl_draw_calls_;
+            }
+            if (rev > 0 && !skip_mdi) {
+                gl_->glFrontFace(GL_CW);
+                gl_->glMultiDrawElementsIndirect(
+                    GL_TRIANGLES, GL_UNSIGNED_INT,
+                    reinterpret_cast<const void*>(2u * M * sizeof(DrawElementsIndirectCommand)),
+                    static_cast<GLsizei>(rev), 0);
+                ++gl_draw_calls_;
+                gl_->glFrontFace(GL_CCW);
             }
             indirect_sub_draws_ += m.gpu_mesh_command_count;
             continue;
@@ -2635,18 +2497,6 @@ void ViewportWindow::render() {
             gpu_cull_last_survivors_ = gpu_surv;
             visible_objects_         = gpu_obj;
             visible_triangles_       = gpu_tri;
-
-            if (glMultiDrawElementsIndirectCount_) {
-                uint32_t compacted_sub_draws = 0;
-                uint32_t counts[2];
-                for (auto& [mid2, mm2] : models_gpu_) {
-                    if (mm2.hidden || !mm2.gpu_draw_count_buffer) continue;
-                    gl_->glGetNamedBufferSubData(mm2.gpu_draw_count_buffer, 0,
-                        sizeof(counts), counts);
-                    compacted_sub_draws += counts[0] + counts[1];
-                }
-                indirect_sub_draws_ = compacted_sub_draws;
-            }
         }
 
         FrameStats stats;

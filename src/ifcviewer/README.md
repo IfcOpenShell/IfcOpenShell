@@ -809,12 +809,9 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (plann
             Occlusion halves survivors on dense interiors.  Depth
             pre-pass has same CP overhead as color pass (690k empty
             sub-draws); cost dominated by MDI command processing.
-      - [x] MDI compaction — pack compute shader compacts non-empty
-            commands into contiguous fwd/rev ranges; drawn via
-            `glMultiDrawElementsIndirectCount` (GL 4.6 /
-            `ARB_indirect_parameters`, loaded via `getProcAddress`).
-            Eliminates ~690k empty sub-draws from both depth pre-pass
-            and color pass.  Falls back to uncompacted MDI when the
-            entrypoint is unavailable.
+      - [ ] MDI compaction — compact non-empty commands into contiguous
+            buffer, use `glMultiDrawElementsIndirectCount` (GL 4.6 /
+            `ARB_indirect_parameters`).  Deferred until all feature buckets
+            land so we can introduce GL 4.6 loading once, cleanly.
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
