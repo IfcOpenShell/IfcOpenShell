@@ -301,20 +301,21 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
         # of the selected walls has an in-progress parametric draft, commit it before
         # extending, so the slab clip operates on the just-finalised IFC state.
         _commit_pending_wall_edits_for_selection(context)
-        slab = None
+        slabs: list[bpy.types.Object] = []
         walls: list[bpy.types.Object] = []
-        if (obj := tool.Blender.get_active_object(is_selected=True)) and (element := tool.Ifc.get_entity(obj)):
-            slab = obj
-        for obj in tool.Blender.get_selected_objects(include_active=False):
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
-            usage = tool.Model.get_usage_type(element) if element else None
-            if element and usage == "LAYER2":
+            if not element:
+                continue
+            if tool.Model.get_usage_type(element) == "LAYER2":
                 walls.append(obj)
-        if slab and walls:
-            core.extend_wall_to_slab(tool.Ifc, tool.Geometry, tool.Model, slab, walls)
+            else:
+                slabs.append(obj)
+        if slabs and walls:
+            core.extend_wall_to_slab(tool.Ifc, tool.Geometry, tool.Model, slabs, walls)
             _resync_walls_after_mutation(walls)
         else:
-            self.report({"ERROR"}, "Please select at least one LAYER2 element and an active element")
+            self.report({"ERROR"}, "Please select at least one LAYER2 element and at least one other IFC element")
 
 
 class RegenerateWallToUnderside(bpy.types.Operator, tool.Ifc.Operator):
