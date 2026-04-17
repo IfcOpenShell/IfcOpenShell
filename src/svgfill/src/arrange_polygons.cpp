@@ -3256,7 +3256,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         double threshold;
         clean_noisy_paths(debug_output, arr, segment_lookup, threshold);
         remove_colinear_vertices(arr);
-        clean_noisy_bounds(debug_output, arr, segment_lookup, threshold);
+        // clean_noisy_bounds(debug_output, arr, segment_lookup, threshold);
     }
 
     t0.stop();

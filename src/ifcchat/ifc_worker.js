@@ -29,16 +29,7 @@ async function ensurePyodide() {
         const micropip = pyodide.pyimport("micropip");
         micropip.install("python-dateutil")
         
-        // Detect python minor version (3.12 vs 3.13) and pick a matching wheel.
-        const pyVer = pyodide.runPython(`
-import sys
-f"{sys.version_info.major}.{sys.version_info.minor}"
-    `);
-
-        const wheelUrl =
-            pyVer === "3.13"
-                ? "https://ifcopenshell.github.io/wasm-wheels/ifcopenshell-0.8.3+34a1bc6-cp313-cp313-emscripten_4_0_9_wasm32.whl"
-                : "https://ifcopenshell.github.io/wasm-wheels/ifcopenshell-0.8.2+d50e806-cp312-cp312-emscripten_3_1_58_wasm32.whl";
+        const wheelUrl = "https://ifcopenshell.github.io/wasm-wheels/ifcopenshell-0.8.5-cp313-cp313-pyodide_2025_0_wasm32.whl";
 
         await micropip.install(wheelUrl);
 
