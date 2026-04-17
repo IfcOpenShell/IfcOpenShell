@@ -252,21 +252,31 @@ static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const ch
 // counter.  No visible list / indirect writeout yet; result is cross-checked
 // against the CPU cull's visible_objects count to prove plumbing is correct
 // before we hand the GPU the full emit responsibility.  Gated by IFC_GPU_CULL=1.
+// GPU frustum + contribution cull.  Per-model AABB SSBO at binding 0; shared
+// counter at binding 1; shared survivor-index output at binding 2.  Each
+// survivor is written as (u_model_tag | local_instance_index) so the CPU can
+// unpack model + local index from one uint.
 static const char* CULL_COMPUTE_SHADER = R"(
 #version 450 core
 layout(local_size_x = 64) in;
-// Each instance contributes two vec4 entries: (min.xyz, meshid_as_float),
-// (max.xyz, flags_as_float).  We ignore the w components here — they'll be
-// needed once the shader also emits the per-mesh / fwd-rev buckets.
-layout(std430, binding = 0) readonly buffer AabbBuf { vec4 entries[]; };
+
+layout(std430, binding = 0) readonly buffer AabbBuf  { vec4 entries[]; };
 layout(std430, binding = 1) coherent buffer CountBuf { uint counter; };
-uniform vec4 u_planes[6];
-uniform uint u_count;
+layout(std430, binding = 2) writeonly buffer OutBuf  { uint survivors[]; };
+
+uniform vec4  u_planes[6];
+uniform uint  u_count;
+uniform vec3  u_camera_eye;
+uniform float u_focal_px;
+uniform float u_min_pixel_radius;
+uniform uint  u_model_tag;
+
 void main() {
     uint gid = gl_GlobalInvocationID.x;
     if (gid >= u_count) return;
     vec3 mn = entries[gid * 2u].xyz;
     vec3 mx = entries[gid * 2u + 1u].xyz;
+
     for (int i = 0; i < 6; ++i) {
         vec3 pv = vec3(
             u_planes[i].x >= 0.0 ? mx.x : mn.x,
@@ -274,7 +284,21 @@ void main() {
             u_planes[i].z >= 0.0 ? mx.z : mn.z);
         if (dot(u_planes[i].xyz, pv) + u_planes[i].w < 0.0) return;
     }
-    atomicAdd(counter, 1u);
+
+    if (u_min_pixel_radius > 0.0) {
+        bool inside = all(greaterThanEqual(u_camera_eye, mn))
+                   && all(lessThanEqual(u_camera_eye, mx));
+        if (!inside) {
+            vec3 ext = 0.5 * (mx - mn);
+            float radius = length(ext);
+            vec3 center = 0.5 * (mn + mx);
+            float dist = length(center - u_camera_eye);
+            if (u_focal_px * radius < u_min_pixel_radius * dist) return;
+        }
+    }
+
+    uint slot = atomicAdd(counter, 1u);
+    survivors[slot] = u_model_tag | gid;
 }
 )";
 
@@ -464,6 +488,13 @@ ViewportWindow::~ViewportWindow() {
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (cull_program_)  gl_->glDeleteProgram(cull_program_);
             if (gpu_cull_counter_ssbo_) gl_->glDeleteBuffers(1, &gpu_cull_counter_ssbo_);
+            if (gpu_cull_survivor_ssbo_) gl_->glDeleteBuffers(1, &gpu_cull_survivor_ssbo_);
+            if (gpu_cull_readback_buf_) {
+                gl_->glUnmapNamedBuffer(gpu_cull_readback_buf_);
+                gl_->glDeleteBuffers(1, &gpu_cull_readback_buf_);
+            }
+            if (gpu_cull_fence_) gl_->glDeleteSync(gpu_cull_fence_);
+            if (gpu_cull_ts_[0]) gl_->glDeleteQueries(2, gpu_cull_ts_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
@@ -557,6 +588,7 @@ void ViewportWindow::buildShaders() {
     gl_->glCreateBuffers(1, &gpu_cull_counter_ssbo_);
     gl_->glNamedBufferStorage(gpu_cull_counter_ssbo_, sizeof(uint32_t), nullptr,
                               GL_DYNAMIC_STORAGE_BIT);
+    gl_->glGenQueries(2, gpu_cull_ts_);
 }
 
 void ViewportWindow::buildAxisGizmo() {
@@ -1079,6 +1111,24 @@ void ViewportWindow::resetScene() {
         if (m.aabb_ssbo) gl_->glDeleteBuffers(1, &m.aabb_ssbo);
     }
     models_gpu_.clear();
+    if (gpu_cull_survivor_ssbo_) {
+        gl_->glDeleteBuffers(1, &gpu_cull_survivor_ssbo_);
+        gpu_cull_survivor_ssbo_ = 0;
+        gpu_cull_survivor_capacity_ = 0;
+    }
+    if (gpu_cull_readback_buf_) {
+        gl_->glUnmapNamedBuffer(gpu_cull_readback_buf_);
+        gl_->glDeleteBuffers(1, &gpu_cull_readback_buf_);
+        gpu_cull_readback_buf_ = 0;
+        gpu_cull_readback_ptr_ = nullptr;
+        gpu_cull_readback_capacity_ = 0;
+    }
+    if (gpu_cull_fence_) {
+        gl_->glDeleteSync(gpu_cull_fence_);
+        gpu_cull_fence_ = nullptr;
+    }
+    gpu_cull_pending_.model_targets.clear();
+    gpu_cull_pending_.total_in = 0;
     selected_object_id_ = 0;
     have_cached_cull_ = false;
     requestUpdate();
@@ -1630,6 +1680,121 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     cull_emit_ns_ += phase_timer.nsecsElapsed();
 }
 
+void ViewportWindow::emitFromGpuSurvivors(
+    ModelGpuData& m,
+    const uint32_t* survivor_indices, uint32_t count,
+    float focal_px, float min_pixel_radius) {
+
+    auto resize_if = [&](std::vector<std::vector<uint32_t>>& v) {
+        if (v.size() < m.meshes.size()) v.resize(m.meshes.size());
+    };
+    resize_if(m.vis_fwd_lod0);
+    resize_if(m.vis_fwd_lod1);
+    resize_if(m.vis_rev_lod0);
+    resize_if(m.vis_rev_lod1);
+    for (size_t i = 0; i < m.meshes.size(); ++i) {
+        m.vis_fwd_lod0[i].clear();
+        m.vis_fwd_lod1[i].clear();
+        m.vis_rev_lod0[i].clear();
+        m.vis_rev_lod1[i].clear();
+    }
+
+    static const float lod1_px_threshold = []{
+        const char* e = std::getenv("IFC_LOD1_PX");
+        return (e && *e) ? static_cast<float>(std::atof(e)) : 30.0f;
+    }();
+
+    const float cx = camera_eye_.x();
+    const float cy = camera_eye_.y();
+    const float cz = camera_eye_.z();
+    auto pixelRadius = [&](const float mn[3], const float mx[3]) -> float {
+        if (cx >= mn[0] && cx <= mx[0] &&
+            cy >= mn[1] && cy <= mx[1] &&
+            cz >= mn[2] && cz <= mx[2]) {
+            return std::numeric_limits<float>::infinity();
+        }
+        float ex = 0.5f * (mx[0] - mn[0]);
+        float ey = 0.5f * (mx[1] - mn[1]);
+        float ez = 0.5f * (mx[2] - mn[2]);
+        float radius = std::sqrt(ex*ex + ey*ey + ez*ez);
+        float dx = 0.5f * (mx[0] + mn[0]) - cx;
+        float dy = 0.5f * (mx[1] + mn[1]) - cy;
+        float dz = 0.5f * (mx[2] + mn[2]) - cz;
+        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        return dist > 0.0f ? focal_px * radius / dist
+                           : std::numeric_limits<float>::infinity();
+    };
+
+    const QMatrix4x4 current_vp = proj_matrix_ * view_matrix_;
+    const bool hiz_vp_matches = hiz_vp_valid_ && hiz_vp_ == current_vp;
+    const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_matches;
+
+    for (uint32_t si = 0; si < count; ++si) {
+        uint32_t inst_idx = survivor_indices[si];
+        if (inst_idx >= m.bvh_items.size()) continue;
+        const BvhItem& item = m.bvh_items[inst_idx];
+        if (hiz_on && aabbOccludedByHiz(item.aabb_min, item.aabb_max)) {
+            hiz_reject_count_.fetch_add(1, std::memory_order_relaxed);
+            continue;
+        }
+        const InstanceCpu& inst = m.instances[inst_idx];
+        if (inst.mesh_id >= m.meshes.size()) continue;
+        const MeshInfo& mesh = m.meshes[inst.mesh_id];
+        const bool want_lod1 = mesh.lod1_index_count > 0 &&
+            lod1_px_threshold > 0.0f &&
+            pixelRadius(item.aabb_min, item.aabb_max) < lod1_px_threshold;
+        const bool reflected = inst_idx < m.instance_reflected.size()
+            && m.instance_reflected[inst_idx] != 0;
+        auto& bucket =
+            reflected ? (want_lod1 ? m.vis_rev_lod1
+                                   : m.vis_rev_lod0)
+                      : (want_lod1 ? m.vis_fwd_lod1
+                                   : m.vis_fwd_lod0);
+        bucket[inst.mesh_id].push_back(inst_idx);
+    }
+
+    m.visible_flat.clear();
+    m.indirect_scratch.clear();
+
+    auto emit_slice = [&](std::vector<std::vector<uint32_t>>& by_mesh, int lod) {
+        for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+            const auto& mesh = m.meshes[mi];
+            const uint32_t vis_count = static_cast<uint32_t>(by_mesh[mi].size());
+            const uint32_t idx_count =
+                (lod == 1) ? mesh.lod1_index_count : mesh.index_count;
+            const uint32_t ebo_off =
+                (lod == 1) ? mesh.lod1_ebo_byte_offset : mesh.ebo_byte_offset;
+            if (vis_count == 0 || idx_count == 0) continue;
+
+            DrawElementsIndirectCommand cmd;
+            cmd.count         = idx_count;
+            cmd.instanceCount = vis_count;
+            cmd.firstIndex    = ebo_off / sizeof(uint32_t);
+            cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
+            cmd.baseInstance  = static_cast<uint32_t>(m.visible_flat.size());
+            m.indirect_scratch.push_back(cmd);
+
+            m.visible_flat.insert(m.visible_flat.end(),
+                                  by_mesh[mi].begin(), by_mesh[mi].end());
+        }
+    };
+
+    emit_slice(m.vis_fwd_lod0, 0);
+    emit_slice(m.vis_fwd_lod1, 1);
+    m.indirect_forward_count = static_cast<uint32_t>(m.indirect_scratch.size());
+    emit_slice(m.vis_rev_lod0, 0);
+    emit_slice(m.vis_rev_lod1, 1);
+    m.indirect_command_count = static_cast<uint32_t>(m.indirect_scratch.size());
+
+    uint32_t model_vis_obj = 0, model_vis_tri = 0;
+    for (const auto& cmd : m.indirect_scratch) {
+        model_vis_tri += (cmd.count / 3) * cmd.instanceCount;
+        model_vis_obj += cmd.instanceCount;
+    }
+    m.cached_visible_objects   = model_vis_obj;
+    m.cached_visible_triangles = model_vis_tri;
+}
+
 void ViewportWindow::uploadCullResults(ModelGpuData& m) {
     QElapsedTimer phase_timer;
     phase_timer.start();
@@ -1749,14 +1914,15 @@ void ViewportWindow::render() {
     // back and forth.  Harmless when culling is off.
     gl_->glFrontFace(GL_CCW);
 
-    // Parallel cull: each model's CPU cull is independent (no shared mutable
-    // state other than the atomic timing counters), so we fan them out to
-    // std::async and join before the (serial, GL-touching) upload pass.
-    // IFC_CULL_THREADS=0 forces the single-threaded fallback.
+    static const bool gpu_cull_enabled = []{
+        const char* e = std::getenv("IFC_GPU_CULL");
+        return e && e[0] == '1';
+    }();
     static const bool mt_cull_enabled = []{
         const char* e = std::getenv("IFC_CULL_THREADS");
         return !(e && e[0] == '0');
     }();
+
     QElapsedTimer cull_wall_timer;
     if (cull_this_frame) {
         cull_wall_timer.start();
@@ -1766,66 +1932,227 @@ void ViewportWindow::render() {
             if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
             cull_targets.push_back(&m);
         }
-        if (mt_cull_enabled && cull_targets.size() > 1) {
-            std::vector<std::future<void>> futs;
-            futs.reserve(cull_targets.size());
-            for (ModelGpuData* mp : cull_targets) {
-                const float mpr = min_pixel_radius;
-                futs.emplace_back(std::async(std::launch::async,
-                    [this, mp, &planes, focal_px, mpr]() {
-                        cullModelCpu(*mp, planes, focal_px, mpr);
-                    }));
-            }
-            for (auto& f : futs) f.get();
-        } else {
-            for (ModelGpuData* mp : cull_targets) {
-                cullModelCpu(*mp, planes, focal_px, min_pixel_radius);
+
+        // --- Try to consume last frame's GPU cull results (one-frame-late) ---
+        bool gpu_consumed = false;
+        if (gpu_cull_enabled && gpu_cull_fence_) {
+            GLenum sync_status = gl_->glClientWaitSync(
+                gpu_cull_fence_, 0, 0);
+            if (sync_status == GL_ALREADY_SIGNALED ||
+                sync_status == GL_CONDITION_SATISFIED) {
+                gl_->glDeleteSync(gpu_cull_fence_);
+                gpu_cull_fence_ = nullptr;
+
+                // Read GPU timestamp delta.
+                uint64_t ts0 = 0, ts1 = 0;
+                gl_->glGetQueryObjectui64v(gpu_cull_ts_[0], GL_QUERY_RESULT, &ts0);
+                gl_->glGetQueryObjectui64v(gpu_cull_ts_[1], GL_QUERY_RESULT, &ts1);
+                gpu_cull_dispatch_ns_ += (ts1 > ts0) ? (ts1 - ts0) : 0;
+
+                QElapsedTimer readback_timer; readback_timer.start();
+
+                // Read counter from persistent-mapped readback buffer.
+                // Counter is at offset 0, survivor indices follow at offset 4.
+                uint32_t survivor_count = gpu_cull_readback_ptr_[0];
+                const uint32_t* surv_data = gpu_cull_readback_ptr_ + 1;
+
+                gpu_cull_last_survivors_ = survivor_count;
+                gpu_cull_last_input_     = gpu_cull_pending_.total_in;
+
+                // Validate the models from the pending dispatch still match
+                // the current scene.  If models were added/removed between
+                // frames, the tags are stale — fall through to CPU.
+                bool targets_match = true;
+                if (gpu_cull_pending_.model_targets.size() != cull_targets.size()) {
+                    targets_match = false;
+                } else {
+                    for (size_t ti = 0; ti < cull_targets.size(); ++ti) {
+                        if (gpu_cull_pending_.model_targets[ti].second != cull_targets[ti]) {
+                            targets_match = false;
+                            break;
+                        }
+                    }
+                }
+
+                gpu_cull_readback_ns_ += readback_timer.nsecsElapsed();
+
+                if (targets_match && survivor_count <= gpu_cull_pending_.total_in) {
+                    QElapsedTimer consume_timer; consume_timer.start();
+
+                    // Bin survivors by model tag.
+                    const size_t n_models = cull_targets.size();
+                    std::vector<std::vector<uint32_t>> per_model_survivors(n_models);
+                    for (uint32_t si = 0; si < survivor_count; ++si) {
+                        uint32_t packed = surv_data[si];
+                        uint32_t model_idx = packed >> 20u;
+                        uint32_t local_idx = packed & 0xFFFFFu;
+                        if (model_idx < n_models) {
+                            per_model_survivors[model_idx].push_back(local_idx);
+                        }
+                    }
+
+                    // Parallel emit across models.
+                    if (mt_cull_enabled && n_models > 1) {
+                        std::vector<std::future<void>> futs;
+                        futs.reserve(n_models);
+                        const float fp = focal_px;
+                        const float mpr = min_pixel_radius;
+                        for (size_t ti = 0; ti < n_models; ++ti) {
+                            futs.emplace_back(std::async(std::launch::async,
+                                [this, ti, &cull_targets, &per_model_survivors, fp, mpr]() {
+                                    emitFromGpuSurvivors(
+                                        *cull_targets[ti],
+                                        per_model_survivors[ti].data(),
+                                        static_cast<uint32_t>(per_model_survivors[ti].size()),
+                                        fp, mpr);
+                                }));
+                        }
+                        for (auto& f : futs) f.get();
+                    } else {
+                        for (size_t ti = 0; ti < n_models; ++ti) {
+                            emitFromGpuSurvivors(
+                                *cull_targets[ti],
+                                per_model_survivors[ti].data(),
+                                static_cast<uint32_t>(per_model_survivors[ti].size()),
+                                focal_px, min_pixel_radius);
+                        }
+                    }
+
+                    gpu_cull_consume_ns_ += consume_timer.nsecsElapsed();
+                    gpu_consumed = true;
+                }
+            } else {
+                // Fence not ready — GPU is still working.  Fall through to CPU.
             }
         }
+
+        // --- CPU fallback if GPU results weren't available ---
+        if (!gpu_consumed) {
+            if (mt_cull_enabled && cull_targets.size() > 1) {
+                std::vector<std::future<void>> futs;
+                futs.reserve(cull_targets.size());
+                for (ModelGpuData* mp : cull_targets) {
+                    const float mpr = min_pixel_radius;
+                    futs.emplace_back(std::async(std::launch::async,
+                        [this, mp, &planes, focal_px, mpr]() {
+                            cullModelCpu(*mp, planes, focal_px, mpr);
+                        }));
+                }
+                for (auto& f : futs) f.get();
+            } else {
+                for (ModelGpuData* mp : cull_targets) {
+                    cullModelCpu(*mp, planes, focal_px, min_pixel_radius);
+                }
+            }
+        }
+
+        // --- Dispatch this frame's GPU cull (results consumed next frame) ---
+        if (gpu_cull_enabled && cull_program_) {
+            // Clean up any lingering fence (shouldn't happen — consumed above).
+            if (gpu_cull_fence_) {
+                gl_->glDeleteSync(gpu_cull_fence_);
+                gpu_cull_fence_ = nullptr;
+            }
+
+            uint32_t total_in = 0;
+            for (ModelGpuData* mp : cull_targets) {
+                total_in += static_cast<uint32_t>(mp->instances.size());
+            }
+
+            // Ensure survivor SSBO + readback buffer are large enough.
+            // Layout of readback: [uint32 counter][uint32 survivors[total_in]]
+            const size_t buf_bytes = (1 + total_in) * sizeof(uint32_t);
+            const size_t needed = std::max<size_t>(buf_bytes, sizeof(uint32_t));
+            if (!gpu_cull_survivor_ssbo_ || gpu_cull_survivor_capacity_ < needed) {
+                if (gpu_cull_survivor_ssbo_)
+                    gl_->glDeleteBuffers(1, &gpu_cull_survivor_ssbo_);
+                size_t cap = gpu_cull_survivor_capacity_ ? gpu_cull_survivor_capacity_ : 4096;
+                while (cap < needed) cap *= 2;
+                gl_->glCreateBuffers(1, &gpu_cull_survivor_ssbo_);
+                gl_->glNamedBufferStorage(gpu_cull_survivor_ssbo_, cap, nullptr,
+                                          GL_DYNAMIC_STORAGE_BIT);
+                gpu_cull_survivor_capacity_ = cap;
+            }
+            if (!gpu_cull_readback_buf_ || gpu_cull_readback_capacity_ < needed) {
+                if (gpu_cull_readback_buf_) {
+                    gl_->glUnmapNamedBuffer(gpu_cull_readback_buf_);
+                    gl_->glDeleteBuffers(1, &gpu_cull_readback_buf_);
+                    gpu_cull_readback_ptr_ = nullptr;
+                }
+                size_t cap = gpu_cull_readback_capacity_ ? gpu_cull_readback_capacity_ : 4096;
+                while (cap < needed) cap *= 2;
+                gl_->glCreateBuffers(1, &gpu_cull_readback_buf_);
+                gl_->glNamedBufferStorage(gpu_cull_readback_buf_, cap, nullptr,
+                    GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+                gpu_cull_readback_ptr_ = static_cast<uint32_t*>(
+                    gl_->glMapNamedBufferRange(gpu_cull_readback_buf_, 0, cap,
+                        GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
+                gpu_cull_readback_capacity_ = cap;
+            }
+
+            // Reset counter.
+            uint32_t zero = 0;
+            gl_->glNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(zero), &zero);
+
+            gl_->glUseProgram(cull_program_);
+            GLint u_planes_loc = gl_->glGetUniformLocation(cull_program_, "u_planes");
+            GLint u_count_loc  = gl_->glGetUniformLocation(cull_program_, "u_count");
+            GLint u_eye_loc    = gl_->glGetUniformLocation(cull_program_, "u_camera_eye");
+            GLint u_focal_loc  = gl_->glGetUniformLocation(cull_program_, "u_focal_px");
+            GLint u_minpx_loc  = gl_->glGetUniformLocation(cull_program_, "u_min_pixel_radius");
+            GLint u_tag_loc    = gl_->glGetUniformLocation(cull_program_, "u_model_tag");
+
+            float planes_flat[24];
+            for (int i = 0; i < 6; ++i) {
+                planes_flat[i*4+0] = planes[i][0];
+                planes_flat[i*4+1] = planes[i][1];
+                planes_flat[i*4+2] = planes[i][2];
+                planes_flat[i*4+3] = planes[i][3];
+            }
+            gl_->glUniform4fv(u_planes_loc, 6, planes_flat);
+            gl_->glUniform3f(u_eye_loc, camera_eye_.x(), camera_eye_.y(), camera_eye_.z());
+            gl_->glUniform1f(u_focal_loc, focal_px);
+            gl_->glUniform1f(u_minpx_loc, min_pixel_radius);
+
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, gpu_cull_counter_ssbo_);
+            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, gpu_cull_survivor_ssbo_);
+
+            gl_->glQueryCounter(gpu_cull_ts_[0], GL_TIMESTAMP);
+            for (size_t ti = 0; ti < cull_targets.size(); ++ti) {
+                ModelGpuData* mp = cull_targets[ti];
+                const uint32_t n = static_cast<uint32_t>(mp->instances.size());
+                gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mp->aabb_ssbo);
+                gl_->glUniform1ui(u_count_loc, n);
+                gl_->glUniform1ui(u_tag_loc, static_cast<uint32_t>(ti) << 20u);
+                gl_->glDispatchCompute((n + 63u) / 64u, 1, 1);
+            }
+            gl_->glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            gl_->glQueryCounter(gpu_cull_ts_[1], GL_TIMESTAMP);
+
+            // Copy counter + survivors into the readback buffer.
+            gl_->glCopyNamedBufferSubData(gpu_cull_counter_ssbo_, gpu_cull_readback_buf_,
+                                          0, 0, sizeof(uint32_t));
+            if (total_in > 0) {
+                gl_->glCopyNamedBufferSubData(gpu_cull_survivor_ssbo_, gpu_cull_readback_buf_,
+                    0, sizeof(uint32_t), total_in * sizeof(uint32_t));
+            }
+
+            gpu_cull_fence_ = gl_->glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+            // Stash model targets for next frame's consumption.
+            gpu_cull_pending_.model_targets.clear();
+            gpu_cull_pending_.model_targets.reserve(cull_targets.size());
+            for (size_t ti = 0; ti < cull_targets.size(); ++ti) {
+                gpu_cull_pending_.model_targets.emplace_back(
+                    static_cast<uint32_t>(cull_targets[ti]->instances.size()),
+                    cull_targets[ti]);
+            }
+            gpu_cull_pending_.total_in = total_in;
+
+            gl_->glUseProgram(main_program_);
+        }
+
         cull_wall_ns_ += cull_wall_timer.nsecsElapsed();
-    }
-
-    // Phase 3E validation dispatch: frustum-only GPU cull, result compared
-    // against the CPU cull's visible_objects count.  Gated, no draw-path
-    // effect.  Synchronous readback is intentional — we want ground truth.
-    static const bool gpu_cull_enabled = []{
-        const char* e = std::getenv("IFC_GPU_CULL");
-        return e && e[0] == '1';
-    }();
-    if (gpu_cull_enabled && cull_this_frame && cull_program_) {
-        QElapsedTimer t; t.start();
-        uint32_t zero = 0;
-        gl_->glNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(zero), &zero);
-
-        gl_->glUseProgram(cull_program_);
-        GLint u_planes = gl_->glGetUniformLocation(cull_program_, "u_planes");
-        GLint u_count  = gl_->glGetUniformLocation(cull_program_, "u_count");
-        float planes_flat[24];
-        for (int i = 0; i < 6; ++i) {
-            planes_flat[i*4+0] = planes[i][0];
-            planes_flat[i*4+1] = planes[i][1];
-            planes_flat[i*4+2] = planes[i][2];
-            planes_flat[i*4+3] = planes[i][3];
-        }
-        gl_->glUniform4fv(u_planes, 6, planes_flat);
-
-        uint32_t total_in = 0;
-        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, gpu_cull_counter_ssbo_);
-        for (const auto& [mid, m] : models_gpu_) {
-            if (m.hidden || !m.aabb_ssbo || m.instances.empty()) continue;
-            const uint32_t n = static_cast<uint32_t>(m.instances.size());
-            total_in += n;
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.aabb_ssbo);
-            gl_->glUniform1ui(u_count, n);
-            gl_->glDispatchCompute((n + 63u) / 64u, 1, 1);
-        }
-        gl_->glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-        uint32_t survivors = 0;
-        gl_->glGetNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(survivors), &survivors);
-        gpu_cull_last_survivors_ = survivors;
-        gpu_cull_last_input_     = total_in;
-        gpu_cull_ns_            += t.nsecsElapsed();
-        gl_->glUseProgram(main_program_);
     }
 
     for (auto& [model_id, m] : models_gpu_) {
@@ -1964,13 +2291,17 @@ void ViewportWindow::render() {
         cull_wall_ns_ = 0;
         const uint32_t skipped = cull_skipped_frames_;
         cull_skipped_frames_ = 0;
-        const double gpu_cull_ms = gpu_cull_ns_ * 1e-6 * inv_frames;
-        gpu_cull_ns_ = 0;
+        const double gpu_dispatch_ms = gpu_cull_dispatch_ns_ * 1e-6 * inv_frames;
+        const double gpu_readback_ms = gpu_cull_readback_ns_ * 1e-6 * inv_frames;
+        const double gpu_consume_ms  = gpu_cull_consume_ns_  * 1e-6 * inv_frames;
+        gpu_cull_dispatch_ns_ = 0;
+        gpu_cull_readback_ns_ = 0;
+        gpu_cull_consume_ns_  = 0;
 
         qDebug("[frame] %.1f fps  %.2f ms  obj %u/%u  tri %u/%u  "
                "meshes %u  gl_draws %u  sub_draws %u  hiz_rej %u  "
                "cull[wall %.2f | work: clr %.2f trv %.2f emt %.2f upl %.2f]ms  skipped %u/%u  "
-               "gpu_cull[%.2fms in=%u surv=%u]  "
+               "gpu_cull[disp %.2f rdback %.2f consume %.2fms in=%u surv=%u]  "
                "vram %.1f MB (vbo %.1f + ebo %.1f + ssbo %.1f)  models %zu (%zu hidden)",
                last_fps_, 1000.0f / last_fps_,
                visible_objects_, total_obj,
@@ -1979,7 +2310,8 @@ void ViewportWindow::render() {
                hiz_reject_count_.load(),
                wall_ms, clr_ms, trv_ms, emt_ms, upl_ms,
                skipped, frames_in_window,
-               gpu_cull_ms, gpu_cull_last_input_, gpu_cull_last_survivors_,
+               gpu_dispatch_ms, gpu_readback_ms, gpu_consume_ms,
+               gpu_cull_last_input_, gpu_cull_last_survivors_,
                (total_vbo + total_ebo + total_ssbo) / (1024.0*1024.0),
                total_vbo / (1024.0*1024.0),
                total_ebo / (1024.0*1024.0),

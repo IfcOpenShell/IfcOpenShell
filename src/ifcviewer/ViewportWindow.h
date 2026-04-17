@@ -248,6 +248,13 @@ private:
     void cullModelCpu(ModelGpuData& m, const float planes[6][4],
                       float focal_px, float min_pixel_radius);
 
+    // Emit pass for GPU cull path: given a flat list of surviving instance
+    // indices (already frustum+contribution filtered by GPU), perform HiZ,
+    // LOD selection, winding bucketing, and build indirect commands.
+    void emitFromGpuSurvivors(ModelGpuData& m,
+                              const uint32_t* survivor_indices, uint32_t count,
+                              float focal_px, float min_pixel_radius);
+
     // Main-thread only: uploads m.visible_flat / m.indirect_scratch into the
     // model's SSBO + indirect buffer, growing them if needed.
     void uploadCullResults(ModelGpuData& m);
@@ -267,14 +274,34 @@ private:
     GLuint pick_program_ = 0;
     GLuint axis_program_ = 0;
 
-    // Phase 3E compute cull (frustum-only, validation).  Runs alongside the
-    // CPU cull when IFC_GPU_CULL=1; result is cross-checked against CPU's
-    // visible_objects count.  No draw-path side effects yet.
-    GLuint cull_program_ = 0;
-    GLuint gpu_cull_counter_ssbo_ = 0;
+    // Phase 3E GPU frustum+contribution cull.  When IFC_GPU_CULL=1, replaces
+    // the CPU BVH walk + frustum + contribution stages.  Produces a scene-wide
+    // compact survivor-index list; CPU still handles LOD, winding, HiZ, emit.
+    //
+    // Uses one-frame-late async readback: frame N dispatches and fences, frame
+    // N+1 reads the results via a persistent-mapped buffer.  The first frame
+    // (or any frame where the previous dispatch hasn't completed) falls back
+    // to the CPU path.
+    GLuint cull_program_              = 0;
+    GLuint gpu_cull_counter_ssbo_     = 0;   // single uint32 atomic counter
+    GLuint gpu_cull_survivor_ssbo_    = 0;   // uint32[] packed survivors (GPU write)
+    size_t gpu_cull_survivor_capacity_= 0;   // bytes
+    GLuint gpu_cull_readback_buf_     = 0;   // persistent-mapped readback buffer
+    size_t gpu_cull_readback_capacity_= 0;
+    uint32_t* gpu_cull_readback_ptr_  = nullptr;  // persistent map pointer
+    GLsync gpu_cull_fence_            = nullptr;
+    GLuint gpu_cull_ts_[2]            = {};   // GPU timestamp queries
     uint32_t gpu_cull_last_survivors_ = 0;
     uint32_t gpu_cull_last_input_     = 0;
-    uint64_t gpu_cull_ns_             = 0;  // per-window accumulator
+    uint64_t gpu_cull_dispatch_ns_    = 0;   // GPU-side dispatch time
+    uint64_t gpu_cull_readback_ns_    = 0;   // CPU-side readback time
+    uint64_t gpu_cull_consume_ns_     = 0;   // CPU-side consume (emit) time
+    // Stashed per-frame dispatch metadata for one-frame-late consumption.
+    struct GpuCullPending {
+        std::vector<std::pair<uint32_t, ModelGpuData*>> model_targets;
+        uint32_t total_in = 0;
+    };
+    GpuCullPending gpu_cull_pending_;
 
     // Axis gizmo
     GLuint axis_vao_ = 0;
