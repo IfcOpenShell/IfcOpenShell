@@ -844,6 +844,29 @@ class Model(bonsai.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_connected_slab_objs(cls, wall: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Return Blender objects for slabs connected to wall via IfcRelConnectsElements(TOP)."""
+        result = []
+        for rel in wall.ConnectedFrom:
+            if rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP":
+                slab_obj = tool.Ifc.get_object(rel.RelatingElement)
+                if slab_obj:
+                    result.append(slab_obj)
+        return result
+
+    @classmethod
+    def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
+        """Remove all IfcBooleanResult items previously added by extend_walls_to_underside."""
+        manual_booleans = cls.get_manual_booleans(wall)
+        if not manual_booleans:
+            return
+        mesh_operands = [
+            b.SecondOperand for b in manual_booleans if b.SecondOperand.is_a("IfcTessellatedFaceSet")
+        ]
+        for mesh in mesh_operands:
+            tool.Geometry.remove_representation_item(mesh, wall)
+
+    @classmethod
     def get_manual_booleans(
         cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
     ) -> list[ifcopenshell.entity_instance]:
