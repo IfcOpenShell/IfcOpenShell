@@ -669,6 +669,7 @@ class Model:
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
     def get_connected_slab_objs(cls, wall): pass
+    def get_connected_wall_objs(cls, slab): pass
     def get_manual_booleans(cls, element): pass
     def get_material_layer_parameters(cls, element): pass
     def get_slab_clipping_bmesh(cls, obj): pass
