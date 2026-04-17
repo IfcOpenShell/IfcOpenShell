@@ -85,6 +85,7 @@ classes = (
     wall.EnableEditingWall,
     wall.ExtendWallHeightToCursor,
     wall.ExtendWallsToUnderside,
+    wall.RegenerateWallToUnderside,
     wall.ExtendWallsToWall,
     wall.ExtendWallsToPolylinePoint,
     wall.ExtendWallToCursor,
