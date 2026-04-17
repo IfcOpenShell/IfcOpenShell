@@ -126,6 +126,14 @@ struct ModelGpuData {
     uint32_t gpu_mesh_command_count    = 0;
     uint32_t gpu_forward_command_count = 0;
 
+    // MDI compaction: non-empty commands are packed here by the pack shader.
+    // Same capacity as gpu_indirect_buffer; fwd at [0..2M), rev at [2M..4M).
+    // gpu_draw_count_buffer holds 2 × uint32: [fwd_count, rev_count], read
+    // by glMultiDrawElementsIndirectCount as GL_PARAMETER_BUFFER.
+    GLuint   gpu_compacted_buffer     = 0;
+    size_t   gpu_compacted_capacity   = 0;
+    GLuint   gpu_draw_count_buffer    = 0;
+
     // Dynamic visible-instance index buffer (std430, binding = 1).
     // Re-uploaded each frame from visible_flat_.
     GLuint  visible_ssbo = 0;
@@ -303,6 +311,7 @@ private:
     //   Phase 2: same + HiZ test → final survivors for color pass
     GLuint cull_reset_program_   = 0;
     GLuint cull_compact_program_ = 0;
+    GLuint cull_pack_program_    = 0;
 
     // Depth-only program for the HiZ depth pre-pass — same vertex shader
     // as main_program_, trivial fragment shader.
