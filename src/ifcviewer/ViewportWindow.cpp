@@ -247,84 +247,34 @@ static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const ch
     return shader;
 }
 
-// Phase 3E compute cull.  Two tiny shaders, dispatched per model per frame
-// when IFC_GPU_CULL=1:
-//
-//   RESET — zero the instanceCount field of each DrawElementsIndirectCommand
-//   in gpu_indirect_buffer.  One thread per mesh command.
-//
-//   COMPACT — for each instance, test frustum + contribution; if it survives,
-//   atomicAdd on ind[mesh_id].instanceCount to claim a local slot, then write
-//   the instance index into visible_ssbo[mesh_base[mesh_id] + local_slot].
-//   The baseInstance / firstIndex / count fields are static — filled at
-//   finalize and left alone here.
-//
-// `ind[]` is addressed as uint[] because DrawElementsIndirectCommand is 5
-// uints (count, instanceCount, firstIndex, baseVertex, baseInstance) and
-// we only need to touch index 1 per command.
-static const char* CULL_RESET_COMPUTE_SHADER = R"(
+// Phase 3E compute cull (frustum-only, validation).  Reads a model's
+// per-instance AABB SSBO, tests against 6 planes, atomicAdds on a global
+// counter.  No visible list / indirect writeout yet; result is cross-checked
+// against the CPU cull's visible_objects count to prove plumbing is correct
+// before we hand the GPU the full emit responsibility.  Gated by IFC_GPU_CULL=1.
+static const char* CULL_COMPUTE_SHADER = R"(
 #version 450 core
 layout(local_size_x = 64) in;
-layout(std430, binding = 0) buffer IndirectBuf { uint ind[]; };
-uniform uint u_mesh_count;
+// Each instance contributes two vec4 entries: (min.xyz, meshid_as_float),
+// (max.xyz, flags_as_float).  We ignore the w components here — they'll be
+// needed once the shader also emits the per-mesh / fwd-rev buckets.
+layout(std430, binding = 0) readonly buffer AabbBuf { vec4 entries[]; };
+layout(std430, binding = 1) coherent buffer CountBuf { uint counter; };
+uniform vec4 u_planes[6];
+uniform uint u_count;
 void main() {
-    uint mi = gl_GlobalInvocationID.x;
-    if (mi >= u_mesh_count) return;
-    ind[mi * 5u + 1u] = 0u;
-}
-)";
-
-static const char* CULL_COMPACT_COMPUTE_SHADER = R"(
-#version 450 core
-layout(local_size_x = 64) in;
-// Each instance contributes two vec4 entries: (min.xyz, mesh_id_as_float),
-// (max.xyz, flags_as_float).  mesh_id is packed via floatBitsToUint.
-layout(std430, binding = 0) readonly buffer AabbBuf     { vec4 entries[]; };
-layout(std430, binding = 1) coherent  buffer IndirectBuf { uint ind[]; };
-layout(std430, binding = 2) writeonly buffer VisibleBuf  { uint visible[]; };
-layout(std430, binding = 3) readonly buffer MeshBaseBuf  { uint mesh_base[]; };
-
-uniform vec4  u_planes[6];
-uniform uint  u_count;             // num instances
-uniform vec3  u_camera_eye;
-uniform float u_focal_px;
-uniform float u_min_pixel_radius;
-
-bool frustum(vec3 mn, vec3 mx) {
+    uint gid = gl_GlobalInvocationID.x;
+    if (gid >= u_count) return;
+    vec3 mn = entries[gid * 2u].xyz;
+    vec3 mx = entries[gid * 2u + 1u].xyz;
     for (int i = 0; i < 6; ++i) {
         vec3 pv = vec3(
             u_planes[i].x >= 0.0 ? mx.x : mn.x,
             u_planes[i].y >= 0.0 ? mx.y : mn.y,
             u_planes[i].z >= 0.0 ? mx.z : mn.z);
-        if (dot(u_planes[i].xyz, pv) + u_planes[i].w < 0.0) return false;
+        if (dot(u_planes[i].xyz, pv) + u_planes[i].w < 0.0) return;
     }
-    return true;
-}
-
-bool contribution(vec3 mn, vec3 mx) {
-    if (u_min_pixel_radius <= 0.0) return true;
-    // Camera inside the AABB -> always keep (matches CPU path).
-    if (all(greaterThanEqual(u_camera_eye, mn)) &&
-        all(lessThanEqual   (u_camera_eye, mx))) return true;
-    vec3  ctr    = 0.5 * (mx + mn);
-    vec3  ext    = 0.5 * (mx - mn);
-    float radius = length(ext);
-    float dist   = distance(ctr, u_camera_eye);
-    return u_focal_px * radius >= u_min_pixel_radius * dist;
-}
-
-void main() {
-    uint gid = gl_GlobalInvocationID.x;
-    if (gid >= u_count) return;
-    vec4 lo = entries[gid * 2u];
-    vec4 hi = entries[gid * 2u + 1u];
-    vec3 mn = lo.xyz;
-    vec3 mx = hi.xyz;
-    if (!frustum(mn, mx))      return;
-    if (!contribution(mn, mx)) return;
-    uint mesh_id = floatBitsToUint(lo.w);
-    uint local   = atomicAdd(ind[mesh_id * 5u + 1u], 1u);
-    visible[mesh_base[mesh_id] + local] = gid;
+    atomicAdd(counter, 1u);
 }
 )";
 
@@ -506,17 +456,14 @@ ViewportWindow::~ViewportWindow() {
                 if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
                 if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
                 if (m.aabb_ssbo) gl_->glDeleteBuffers(1, &m.aabb_ssbo);
-                if (m.gpu_indirect_buffer) gl_->glDeleteBuffers(1, &m.gpu_indirect_buffer);
-                if (m.gpu_visible_ssbo)    gl_->glDeleteBuffers(1, &m.gpu_visible_ssbo);
-                if (m.gpu_mesh_base_ssbo)  gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
             if (main_program_)  gl_->glDeleteProgram(main_program_);
             if (pick_program_)  gl_->glDeleteProgram(pick_program_);
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
-            if (cull_reset_program_)   gl_->glDeleteProgram(cull_reset_program_);
-            if (cull_compact_program_) gl_->glDeleteProgram(cull_compact_program_);
+            if (cull_program_)  gl_->glDeleteProgram(cull_program_);
+            if (gpu_cull_counter_ssbo_) gl_->glDeleteBuffers(1, &gpu_cull_counter_ssbo_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
@@ -606,8 +553,10 @@ void ViewportWindow::buildShaders() {
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, AXIS_FRAGMENT_SHADER);
         axis_program_ = linkProgram(gl_, vs, fs);
     }
-    cull_reset_program_   = linkComputeProgram(gl_, CULL_RESET_COMPUTE_SHADER);
-    cull_compact_program_ = linkComputeProgram(gl_, CULL_COMPACT_COMPUTE_SHADER);
+    cull_program_ = linkComputeProgram(gl_, CULL_COMPUTE_SHADER);
+    gl_->glCreateBuffers(1, &gpu_cull_counter_ssbo_);
+    gl_->glNamedBufferStorage(gpu_cull_counter_ssbo_, sizeof(uint32_t), nullptr,
+                              GL_DYNAMIC_STORAGE_BIT);
 }
 
 void ViewportWindow::buildAxisGizmo() {
@@ -911,82 +860,6 @@ void ViewportWindow::uploadInstanceAabbs(ModelGpuData& m) {
     gl_->glNamedBufferSubData(m.aabb_ssbo, 0, bytes, packed.data());
 }
 
-void ViewportWindow::uploadGpuCullStaticBuffers(ModelGpuData& m) {
-    const uint32_t M = static_cast<uint32_t>(m.meshes.size());
-    m.gpu_mesh_command_count = M;
-
-    // Prefix-sum instance_count to get per-mesh base offsets.  Also build a
-    // DrawElementsIndirectCommand template per mesh (count / firstIndex /
-    // baseVertex / baseInstance static; instanceCount starts at 0).
-    std::vector<uint32_t> mesh_base(M, 0);
-    std::vector<DrawElementsIndirectCommand> indir(M);
-    uint32_t running = 0;
-    for (uint32_t i = 0; i < M; ++i) {
-        const MeshInfo& mesh = m.meshes[i];
-        mesh_base[i] = running;
-        DrawElementsIndirectCommand& cmd = indir[i];
-        cmd.count         = mesh.index_count;
-        cmd.instanceCount = 0;
-        cmd.firstIndex    = mesh.ebo_byte_offset / sizeof(uint32_t);
-        cmd.baseVertex    = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
-        cmd.baseInstance  = running;
-        running += mesh.instance_count;
-    }
-    const uint32_t total_instances = running;
-
-    // Indirect buffer.
-    const size_t ind_bytes = std::max<size_t>(M * sizeof(DrawElementsIndirectCommand),
-                                              sizeof(DrawElementsIndirectCommand));
-    if (m.gpu_indirect_buffer && m.gpu_indirect_capacity < ind_bytes) {
-        gl_->glDeleteBuffers(1, &m.gpu_indirect_buffer);
-        m.gpu_indirect_buffer = 0;
-        m.gpu_indirect_capacity = 0;
-    }
-    if (!m.gpu_indirect_buffer) {
-        gl_->glCreateBuffers(1, &m.gpu_indirect_buffer);
-        gl_->glNamedBufferStorage(m.gpu_indirect_buffer, ind_bytes, nullptr,
-                                  GL_DYNAMIC_STORAGE_BIT);
-        m.gpu_indirect_capacity = ind_bytes;
-    }
-    if (M > 0) {
-        gl_->glNamedBufferSubData(m.gpu_indirect_buffer, 0,
-            M * sizeof(DrawElementsIndirectCommand), indir.data());
-    }
-
-    // Visible list — sized to worst case (every instance survives).
-    const size_t vis_bytes = std::max<size_t>(total_instances * sizeof(uint32_t),
-                                              sizeof(uint32_t));
-    if (m.gpu_visible_ssbo && m.gpu_visible_capacity < vis_bytes) {
-        gl_->glDeleteBuffers(1, &m.gpu_visible_ssbo);
-        m.gpu_visible_ssbo = 0;
-        m.gpu_visible_capacity = 0;
-    }
-    if (!m.gpu_visible_ssbo) {
-        gl_->glCreateBuffers(1, &m.gpu_visible_ssbo);
-        gl_->glNamedBufferStorage(m.gpu_visible_ssbo, vis_bytes, nullptr,
-                                  GL_DYNAMIC_STORAGE_BIT);
-        m.gpu_visible_capacity = vis_bytes;
-    }
-
-    // Mesh-base SSBO.
-    const size_t mb_bytes = std::max<size_t>(M * sizeof(uint32_t), sizeof(uint32_t));
-    if (m.gpu_mesh_base_ssbo && m.gpu_mesh_base_capacity < mb_bytes) {
-        gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
-        m.gpu_mesh_base_ssbo = 0;
-        m.gpu_mesh_base_capacity = 0;
-    }
-    if (!m.gpu_mesh_base_ssbo) {
-        gl_->glCreateBuffers(1, &m.gpu_mesh_base_ssbo);
-        gl_->glNamedBufferStorage(m.gpu_mesh_base_ssbo, mb_bytes, nullptr,
-                                  GL_DYNAMIC_STORAGE_BIT);
-        m.gpu_mesh_base_capacity = mb_bytes;
-    }
-    if (M > 0) {
-        gl_->glNamedBufferSubData(m.gpu_mesh_base_ssbo, 0,
-            M * sizeof(uint32_t), mesh_base.data());
-    }
-}
-
 void ViewportWindow::finalizeModel(uint32_t model_id) {
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
@@ -1007,7 +880,6 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
 
     buildBvhForModel(m, model_id);
     uploadInstanceAabbs(m);
-    uploadGpuCullStaticBuffers(m);
 
     m.finalized = true;
     have_cached_cull_ = false;
@@ -1061,9 +933,6 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         if (existing->second.visible_ssbo) gl_->glDeleteBuffers(1, &existing->second.visible_ssbo);
         if (existing->second.indirect_buffer) gl_->glDeleteBuffers(1, &existing->second.indirect_buffer);
         if (existing->second.aabb_ssbo) gl_->glDeleteBuffers(1, &existing->second.aabb_ssbo);
-        if (existing->second.gpu_indirect_buffer) gl_->glDeleteBuffers(1, &existing->second.gpu_indirect_buffer);
-        if (existing->second.gpu_visible_ssbo)    gl_->glDeleteBuffers(1, &existing->second.gpu_visible_ssbo);
-        if (existing->second.gpu_mesh_base_ssbo)  gl_->glDeleteBuffers(1, &existing->second.gpu_mesh_base_ssbo);
         models_gpu_.erase(existing);
     }
 
@@ -1147,7 +1016,6 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 
     buildBvhForModel(m, model_id);
     uploadInstanceAabbs(m);
-    uploadGpuCullStaticBuffers(m);
 
     m.finalized = true;
     models_gpu_.emplace(model_id, std::move(m));
@@ -1209,9 +1077,6 @@ void ViewportWindow::resetScene() {
         if (m.visible_ssbo) gl_->glDeleteBuffers(1, &m.visible_ssbo);
         if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
         if (m.aabb_ssbo) gl_->glDeleteBuffers(1, &m.aabb_ssbo);
-        if (m.gpu_indirect_buffer) gl_->glDeleteBuffers(1, &m.gpu_indirect_buffer);
-        if (m.gpu_visible_ssbo)    gl_->glDeleteBuffers(1, &m.gpu_visible_ssbo);
-        if (m.gpu_mesh_base_ssbo)  gl_->glDeleteBuffers(1, &m.gpu_mesh_base_ssbo);
     }
     models_gpu_.clear();
     selected_object_id_ = 0;
@@ -1250,9 +1115,6 @@ void ViewportWindow::removeModel(uint32_t model_id) {
         if (it->second.visible_ssbo) gl_->glDeleteBuffers(1, &it->second.visible_ssbo);
         if (it->second.indirect_buffer) gl_->glDeleteBuffers(1, &it->second.indirect_buffer);
         if (it->second.aabb_ssbo) gl_->glDeleteBuffers(1, &it->second.aabb_ssbo);
-        if (it->second.gpu_indirect_buffer) gl_->glDeleteBuffers(1, &it->second.gpu_indirect_buffer);
-        if (it->second.gpu_visible_ssbo)    gl_->glDeleteBuffers(1, &it->second.gpu_visible_ssbo);
-        if (it->second.gpu_mesh_base_ssbo)  gl_->glDeleteBuffers(1, &it->second.gpu_mesh_base_ssbo);
         models_gpu_.erase(it);
         have_cached_cull_ = false;
         requestUpdate();
@@ -1895,15 +1757,8 @@ void ViewportWindow::render() {
         const char* e = std::getenv("IFC_CULL_THREADS");
         return !(e && e[0] == '0');
     }();
-    // Phase 3E gate: when the GPU cull is driving rendering we skip the
-    // CPU cull entirely — its survivor list wouldn't be used.  Declared
-    // here so the block below can branch on it.
-    static const bool gpu_cull_enabled = []{
-        const char* e = std::getenv("IFC_GPU_CULL");
-        return e && e[0] == '1';
-    }();
     QElapsedTimer cull_wall_timer;
-    if (cull_this_frame && !gpu_cull_enabled) {
+    if (cull_this_frame) {
         cull_wall_timer.start();
         std::vector<ModelGpuData*> cull_targets;
         cull_targets.reserve(models_gpu_.size());
@@ -1930,14 +1785,21 @@ void ViewportWindow::render() {
         cull_wall_ns_ += cull_wall_timer.nsecsElapsed();
     }
 
-    // Phase 3E: the GPU-cull path.  When IFC_GPU_CULL=1 we dispatch two
-    // tiny compute shaders per model (reset + compact), then let the draw
-    // loop below issue MDI from gpu_indirect_buffer.  Single-bucket-per-
-    // mesh for now — LOD selection, reflection winding split, and HiZ
-    // still live only on the CPU path.  Reflected instances therefore
-    // render with wrong winding under this gate; that's the next commit.
-    if (gpu_cull_enabled && cull_this_frame && cull_compact_program_) {
+    // Phase 3E validation dispatch: frustum-only GPU cull, result compared
+    // against the CPU cull's visible_objects count.  Gated, no draw-path
+    // effect.  Synchronous readback is intentional — we want ground truth.
+    static const bool gpu_cull_enabled = []{
+        const char* e = std::getenv("IFC_GPU_CULL");
+        return e && e[0] == '1';
+    }();
+    if (gpu_cull_enabled && cull_this_frame && cull_program_) {
         QElapsedTimer t; t.start();
+        uint32_t zero = 0;
+        gl_->glNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(zero), &zero);
+
+        gl_->glUseProgram(cull_program_);
+        GLint u_planes = gl_->glGetUniformLocation(cull_program_, "u_planes");
+        GLint u_count  = gl_->glGetUniformLocation(cull_program_, "u_count");
         float planes_flat[24];
         for (int i = 0; i < 6; ++i) {
             planes_flat[i*4+0] = planes[i][0];
@@ -1945,93 +1807,29 @@ void ViewportWindow::render() {
             planes_flat[i*4+2] = planes[i][2];
             planes_flat[i*4+3] = planes[i][3];
         }
+        gl_->glUniform4fv(u_planes, 6, planes_flat);
+
         uint32_t total_in = 0;
-        for (auto& [mid, m] : models_gpu_) {
+        gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, gpu_cull_counter_ssbo_);
+        for (const auto& [mid, m] : models_gpu_) {
             if (m.hidden || !m.aabb_ssbo || m.instances.empty()) continue;
-            if (!m.gpu_indirect_buffer || !m.gpu_visible_ssbo ||
-                !m.gpu_mesh_base_ssbo) continue;
             const uint32_t n = static_cast<uint32_t>(m.instances.size());
             total_in += n;
-
-            // Reset — zero instanceCount on all M commands.
-            gl_->glUseProgram(cull_reset_program_);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.gpu_indirect_buffer);
-            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_reset_program_, "u_mesh_count"),
-                              m.gpu_mesh_command_count);
-            gl_->glDispatchCompute((m.gpu_mesh_command_count + 63u) / 64u, 1, 1);
-            gl_->glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-            // Compact — test + scatter.
-            gl_->glUseProgram(cull_compact_program_);
             gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.aabb_ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_indirect_buffer);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.gpu_visible_ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m.gpu_mesh_base_ssbo);
-            gl_->glUniform4fv(gl_->glGetUniformLocation(cull_compact_program_, "u_planes"),
-                              6, planes_flat);
-            gl_->glUniform1ui(gl_->glGetUniformLocation(cull_compact_program_, "u_count"), n);
-            gl_->glUniform3f (gl_->glGetUniformLocation(cull_compact_program_, "u_camera_eye"),
-                              camera_eye_.x(), camera_eye_.y(), camera_eye_.z());
-            gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_focal_px"),
-                              focal_px);
-            gl_->glUniform1f (gl_->glGetUniformLocation(cull_compact_program_, "u_min_pixel_radius"),
-                              min_pixel_radius);
+            gl_->glUniform1ui(u_count, n);
             gl_->glDispatchCompute((n + 63u) / 64u, 1, 1);
         }
-        gl_->glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
-        gpu_cull_last_input_ = total_in;
-        gpu_cull_ns_        += t.nsecsElapsed();
+        gl_->glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+        uint32_t survivors = 0;
+        gl_->glGetNamedBufferSubData(gpu_cull_counter_ssbo_, 0, sizeof(survivors), &survivors);
+        gpu_cull_last_survivors_ = survivors;
+        gpu_cull_last_input_     = total_in;
+        gpu_cull_ns_            += t.nsecsElapsed();
         gl_->glUseProgram(main_program_);
     }
 
-    // Perf diagnostics (confirmed 2026-04 on GTX 1650 @ 128M tris:
-    // draw-bound, not upload-bound — see README Phase 3):
-    //   IFC_SKIP_MDI=1         skip the actual MDI draws (keeps cull +
-    //                          upload + binds).  FPS jump == draw-bound.
-    //   IFC_MAX_SUBDRAWS=N     truncate drawcount to N per MDI.  Lets
-    //                          you distinguish per-subdraw command-
-    //                          processor overhead from raw tri work.
-    static const bool skip_mdi = []{
-        const char* e = std::getenv("IFC_SKIP_MDI");
-        return e && e[0] == '1';
-    }();
-    static const uint32_t max_subdraws = []{
-        const char* e = std::getenv("IFC_MAX_SUBDRAWS");
-        return (e && *e) ? static_cast<uint32_t>(std::atoi(e))
-                         : std::numeric_limits<uint32_t>::max();
-    }();
     for (auto& [model_id, m] : models_gpu_) {
         if (m.hidden || !m.ssbo || m.ssbo_instance_count == 0) continue;
-
-        if (gpu_cull_enabled) {
-            // GPU path: compact shader already wrote visible indices into
-            // gpu_visible_ssbo at [mesh_base[i], mesh_base[i]+count) and
-            // set each command's instanceCount.  One MDI per model, no
-            // fwd/rev split yet — reflected winding is wrong; step 3b.
-            if (!m.gpu_indirect_buffer || !m.gpu_visible_ssbo ||
-                m.gpu_mesh_command_count == 0) continue;
-
-            gl_->glBindVertexArray(m.vao);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m.ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m.gpu_visible_ssbo);
-            gl_->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m.mesh_info_ssbo);
-            gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m.gpu_indirect_buffer);
-
-            uint32_t count = m.gpu_mesh_command_count;
-            if (max_subdraws < count) count = max_subdraws;
-            if (count > 0 && !skip_mdi) {
-                gl_->glFrontFace(GL_CCW);
-                gl_->glMultiDrawElementsIndirect(
-                    GL_TRIANGLES, GL_UNSIGNED_INT, nullptr,
-                    static_cast<GLsizei>(count), 0);
-                ++gl_draw_calls_;
-            }
-            // Stats: we don't have visible_objects / visible_triangles
-            // from the GPU yet (would need a readback).  Report command
-            // count as a proxy for indirect_sub_draws_.
-            indirect_sub_draws_ += m.gpu_mesh_command_count;
-            continue;
-        }
 
         if (cull_this_frame) {
             uploadCullResults(m);
@@ -2046,6 +1844,22 @@ void ViewportWindow::render() {
 
         uint32_t fwd = m.indirect_forward_count;
         uint32_t rev = m.indirect_command_count - fwd;
+        // Perf diagnostics (confirmed 2026-04 on GTX 1650 @ 128M tris:
+        // draw-bound, not upload-bound — see README Phase 3):
+        //   IFC_SKIP_MDI=1         skip the actual MDI draws (keeps cull +
+        //                          upload + binds).  FPS jump == draw-bound.
+        //   IFC_MAX_SUBDRAWS=N     truncate drawcount to N per MDI.  Lets
+        //                          you distinguish per-subdraw command-
+        //                          processor overhead from raw tri work.
+        static const bool skip_mdi = []{
+            const char* e = std::getenv("IFC_SKIP_MDI");
+            return e && e[0] == '1';
+        }();
+        static const uint32_t max_subdraws = []{
+            const char* e = std::getenv("IFC_MAX_SUBDRAWS");
+            return (e && *e) ? static_cast<uint32_t>(std::atoi(e))
+                             : std::numeric_limits<uint32_t>::max();
+        }();
         if (max_subdraws < m.indirect_command_count) {
             // Keep the fwd/rev ratio so the workload mix is preserved.
             const uint32_t total = m.indirect_command_count;
@@ -2122,34 +1936,6 @@ void ViewportWindow::render() {
             total_vbo += mm.vbo_capacity;
             total_ebo += mm.ebo_capacity;
             total_ssbo += mm.ssbo_instance_count * sizeof(InstanceGpu);
-        }
-
-        // GPU-cull diagnostic readback: once per stats window, sum each
-        // model's indirect-buffer instanceCount fields so we can report
-        // survivors / visible objects / visible tris.  Synchronous — it
-        // stalls the pipe — but only ~1 Hz so negligible.
-        if (gpu_cull_enabled) {
-            uint32_t gpu_surv = 0;
-            uint32_t gpu_obj  = 0;
-            uint32_t gpu_tri  = 0;
-            std::vector<DrawElementsIndirectCommand> readback;
-            for (auto& [mid, mm] : models_gpu_) {
-                if (mm.hidden || !mm.gpu_indirect_buffer ||
-                    mm.gpu_mesh_command_count == 0) continue;
-                readback.resize(mm.gpu_mesh_command_count);
-                gl_->glGetNamedBufferSubData(mm.gpu_indirect_buffer, 0,
-                    mm.gpu_mesh_command_count * sizeof(DrawElementsIndirectCommand),
-                    readback.data());
-                for (uint32_t i = 0; i < mm.gpu_mesh_command_count; ++i) {
-                    const uint32_t ic = readback[i].instanceCount;
-                    gpu_surv += ic;
-                    gpu_obj  += ic;
-                    gpu_tri  += ic * (mm.meshes[i].index_count / 3u);
-                }
-            }
-            gpu_cull_last_survivors_ = gpu_surv;
-            visible_objects_         = gpu_obj;
-            visible_triangles_       = gpu_tri;
         }
 
         FrameStats stats;

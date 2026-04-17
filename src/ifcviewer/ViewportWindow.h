@@ -102,20 +102,6 @@ struct ModelGpuData {
     GLuint aabb_ssbo = 0;
     size_t aabb_ssbo_capacity = 0;  // bytes
 
-    // Phase 3E GPU-cull draw buffers.  Separate from the CPU path's
-    // visible_ssbo / indirect_buffer so the env-var gate can swap between
-    // them without reallocating.  Built once at finalize; each frame only
-    // the instanceCount field of gpu_indirect_buffer is rewritten by the
-    // cull shader (zeroed by the reset shader, atomically incremented as
-    // survivors are appended into gpu_visible_ssbo at mesh_base[i] + local).
-    GLuint   gpu_indirect_buffer     = 0;
-    size_t   gpu_indirect_capacity   = 0;
-    GLuint   gpu_visible_ssbo        = 0;
-    size_t   gpu_visible_capacity    = 0;
-    GLuint   gpu_mesh_base_ssbo      = 0;
-    size_t   gpu_mesh_base_capacity  = 0;
-    uint32_t gpu_mesh_command_count  = 0;
-
     // Dynamic visible-instance index buffer (std430, binding = 1).
     // Re-uploaded each frame from visible_flat_.
     GLuint  visible_ssbo = 0;
@@ -243,12 +229,6 @@ private:
     // compute cull (Phase 3E, in progress).
     void uploadInstanceAabbs(ModelGpuData& m);
 
-    // Build the static GPU-cull draw buffers (gpu_indirect_buffer,
-    // gpu_visible_ssbo, gpu_mesh_base_ssbo) from m.meshes + m.instances.
-    // Called after uploadInstanceAabbs at finalize / applyCachedModel once
-    // m.meshes[].instance_count has been populated.
-    void uploadGpuCullStaticBuffers(ModelGpuData& m);
-
     // Frustum-cull m's instances (BVH if available, else linear scan),
     // build the per-mesh DrawElementsIndirectCommand array + flat visible
     // list, and upload both to m.indirect_buffer / m.visible_ssbo.
@@ -287,16 +267,11 @@ private:
     GLuint pick_program_ = 0;
     GLuint axis_program_ = 0;
 
-    // Phase 3E compute cull.  When IFC_GPU_CULL=1, render() uses the GPU
-    // path exclusively: cull_reset_program_ zeros each mesh's instanceCount
-    // in gpu_indirect_buffer, then cull_compact_program_ runs frustum +
-    // contribution cull per instance and atomically appends survivors into
-    // gpu_visible_ssbo at mesh_base[mesh_id] + local_slot.  No LOD / HiZ /
-    // reflection bucketing yet — reflected instances render with wrong
-    // winding under the gate, which is why this stays gated until the
-    // fwd/rev split lands (step 3b).
-    GLuint cull_reset_program_   = 0;
-    GLuint cull_compact_program_ = 0;
+    // Phase 3E compute cull (frustum-only, validation).  Runs alongside the
+    // CPU cull when IFC_GPU_CULL=1; result is cross-checked against CPU's
+    // visible_objects count.  No draw-path side effects yet.
+    GLuint cull_program_ = 0;
+    GLuint gpu_cull_counter_ssbo_ = 0;
     uint32_t gpu_cull_last_survivors_ = 0;
     uint32_t gpu_cull_last_input_     = 0;
     uint64_t gpu_cull_ns_             = 0;  // per-window accumulator
