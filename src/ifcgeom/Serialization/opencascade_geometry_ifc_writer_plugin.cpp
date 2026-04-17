@@ -17,40 +17,41 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "kernel_plugin.h"
+#include "opencascade_geometry_ifc_writer_plugin.h"
 
-#include <stdexcept>
+#include <boost/algorithm/string/case_conv.hpp>
 
 namespace {
-	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
+	constexpr const char* opencascade_geometry_ifc_writer_plugin_prefix = "geometry.serialization.";
 }
 
-const char* ifcopenshell::geometry::kernels::kernel_plugin_registration_symbol() {
-	return "ifcopenshell_register_kernel_plugin_v1";
+const char* IfcGeom::opencascade_geometry_ifc_writer_plugin_registration_symbol() {
+	return "ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1";
 }
 
-ifcopenshell::plugin::metadata ifcopenshell::geometry::kernels::kernel_plugin_metadata(const std::string& plugin_name) {
-	plugin::metadata metadata;
-	metadata.kind_ = plugin::kind::kernel;
-	metadata.id = kernel_plugin_prefix + plugin_name;
+ifcopenshell::plugin::metadata IfcGeom::opencascade_geometry_ifc_writer_plugin_metadata(const std::string& schema_name) {
+	ifcopenshell::plugin::metadata metadata;
+	metadata.kind_ = ifcopenshell::plugin::kind::opencascade_geometry_ifc_writer;
+	metadata.id = opencascade_geometry_ifc_writer_plugin_prefix + boost::to_lower_copy(schema_name);
+	metadata.schema = boost::to_upper_copy(schema_name);
 	return metadata;
 }
 
-std::filesystem::path ifcopenshell::geometry::kernels::kernel_plugin_directory() {
-	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::kernels::load_kernel_plugins));
+std::filesystem::path IfcGeom::opencascade_geometry_ifc_writer_plugin_directory() {
+	return ifcopenshell::plugin::module_directory(reinterpret_cast<const void*>(&IfcGeom::load_opencascade_geometry_ifc_writer_plugins));
 }
 
-void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& registry) {
-	plugin::manager manager;
-	manager.add_search_path(kernel_plugin_directory());
+void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry) {
+	ifcopenshell::plugin::manager manager;
+	manager.add_search_path(opencascade_geometry_ifc_writer_plugin_directory());
 
-	for (const auto& path : manager.discover(kernel_plugin_prefix)) {
+	for (const auto& path : manager.discover(opencascade_geometry_ifc_writer_plugin_prefix)) {
 		auto module = manager.load(path);
-		if (module.meta().kind_ != plugin::kind::kernel) {
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::opencascade_geometry_ifc_writer) {
 			continue;
 		}
 
-		auto register_plugin = module.get_alias<register_kernel_plugin_fn>(kernel_plugin_registration_symbol());
+		auto register_plugin = module.get_alias<register_opencascade_geometry_ifc_writer_plugin_fn>(opencascade_geometry_ifc_writer_plugin_registration_symbol());
 		register_plugin(registry, module);
 	}
 }

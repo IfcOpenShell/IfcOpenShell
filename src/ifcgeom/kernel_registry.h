@@ -45,7 +45,7 @@ namespace ifcopenshell {
 			public:
 				typedef boost::function2<AbstractKernel*, ifcopenshell::file*, Settings&> create_fn;
 
-				void bind(const kernel_info& info, create_fn create, const plugin::module& module = plugin::module());
+				void bind(const kernel_info& info, create_fn create, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 				bool has(const std::string& backend_id) const;
 				std::unique_ptr<AbstractKernel> create(const std::string& backend_id, ifcopenshell::file* file, Settings& settings) const;
 				std::vector<kernel_info> kernels() const;
@@ -54,7 +54,7 @@ namespace ifcopenshell {
 				struct entry {
 					kernel_info info_;
 					create_fn create_;
-					plugin::module module_;
+					ifcopenshell::plugin::module module_;
 				};
 
 				std::map<std::string, entry> entries_;

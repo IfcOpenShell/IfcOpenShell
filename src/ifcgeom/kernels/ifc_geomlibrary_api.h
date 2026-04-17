@@ -20,7 +20,9 @@
 #ifndef IFC_GEOMLIBRARY_API_H
 #define IFC_GEOMLIBRARY_API_H
 
-#ifdef _WIN32
+#ifdef SWIG
+#define IFC_GEOMLIBRARY_API
+#elif defined(_WIN32)
 #ifdef IFC_GEOMLIBRARY_EXPORTS
 #define IFC_GEOMLIBRARY_API __declspec(dllexport)
 #else

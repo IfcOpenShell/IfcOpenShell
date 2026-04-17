@@ -1,8 +1,12 @@
+#ifndef XMLSERIALIZER_H
+#define XMLSERIALIZER_H
+
 #define SCHEMA_METHOD
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"
 #include "../ifcparse/file.h"
+#include "../plugin/plugin.h"
 
 #include <boost/function.hpp>
 
@@ -10,7 +14,7 @@
 
 class SERIALIZERS_API XmlSerializer : public Serializer {
 private:
-	XmlSerializer* implementation_;
+	XmlSerializer* implementation_ = nullptr;
 
 protected:
 	std::string xml_filename;
@@ -30,12 +34,22 @@ public:
 struct SERIALIZERS_API XmlSerializerFactory {
 	typedef boost::function2<XmlSerializer*, ifcopenshell::file*, std::string> fn;
 
-	class Factory : public std::map<std::string, fn> {
+	class SERIALIZERS_API Factory {
 	public:
 		Factory();
-		void bind(const std::string& schema_name, fn);
+		void bind(const std::string& schema_name, fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 		XmlSerializer* construct(const std::string& schema_name, ifcopenshell::file*, std::string);
+
+	private:
+		struct entry {
+			fn fn_;
+			ifcopenshell::plugin::module module_;
+		};
+
+		std::map<std::string, entry> entries_;
 	};
 
 	static Factory& implementations();
 };
+
+#endif

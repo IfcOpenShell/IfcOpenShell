@@ -1,34 +1,24 @@
 #include "XmlSerializer.h"
+#include "document_serializer_plugin.h"
 
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
-#define EXTERNAL_DEFS(r, data, elem) \
-	extern void BOOST_PP_CAT(init_XmlSerializer_Ifc, elem)(XmlSerializerFactory::Factory*);
-
-#define CALL_DEFS(r, data, elem) \
-	BOOST_PP_CAT(init_XmlSerializer_Ifc, elem)(this);
-
-BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
-
 XmlSerializerFactory::Factory::Factory() {
-	BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
+	ifcopenshell::serializers::load_document_serializer_plugins(*this, "xml");
 }
 
-void XmlSerializerFactory::Factory::bind(const std::string& schema_name, fn f) {
+void XmlSerializerFactory::Factory::bind(const std::string& schema_name, fn f, const ifcopenshell::plugin::module& module) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	this->insert(std::make_pair(schema_name_lower, f));
+	entries_[schema_name_lower] = { f, module };
 }
 
 XmlSerializer* XmlSerializerFactory::Factory::construct(const std::string& schema_name, ifcopenshell::file* file, std::string xml_filename) {
 	const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-	typename std::map<std::string, fn>::const_iterator it;
-	it = this->find(schema_name_lower);
-	if (it == this->end()) {
+	auto it = entries_.find(schema_name_lower);
+	if (it == entries_.end()) {
 		throw ifcopenshell::exception("No XML serializer registered for " + schema_name);
 	}
-	return it->second(file, xml_filename);
+	return it->second.fn_(file, xml_filename);
 }
 
 XmlSerializer::XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename) {

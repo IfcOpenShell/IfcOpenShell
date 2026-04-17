@@ -1,6 +1,7 @@
 #ifndef PROFILE_HELPER_H
 #define PROFILE_HELPER_H
 
+#include "ifc_geom_api.h"
 #include "taxonomy.h"
 
 namespace ifcopenshell {
@@ -27,15 +28,15 @@ namespace ifcopenshell {
 			taxonomy::edge::ptr previous, next;
 		};
 
-		taxonomy::loop::ptr polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external = true);
+		IFC_GEOM_API taxonomy::loop::ptr polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external = true);
 
-		taxonomy::loop::ptr profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points);
+		IFC_GEOM_API taxonomy::loop::ptr profile_helper(const taxonomy::matrix4::ptr& m4, const std::vector<profile_point>& points);
 
-		taxonomy::loop::ptr fillet_loop(taxonomy::loop::ptr lp, double radius);
+		IFC_GEOM_API taxonomy::loop::ptr fillet_loop(taxonomy::loop::ptr lp, double radius);
 
-		void remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol);
+		IFC_GEOM_API void remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol);
 
-		std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> remove_duplicate_points_from_loop(const std::vector<taxonomy::point3::ptr>& polygon, const std::vector<std::string>& tags);
+		IFC_GEOM_API std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> remove_duplicate_points_from_loop(const std::vector<taxonomy::point3::ptr>& polygon, const std::vector<std::string>& tags);
 	}
 
 }

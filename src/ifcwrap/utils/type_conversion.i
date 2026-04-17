@@ -29,6 +29,29 @@
 	template <> void* get_python_type<std::string>() { return &PyString_Type; }
 	#endif
 
+	template <typename T>
+	bool check_python_type(PyObject* element) {
+		return element->ob_type == get_python_type<T>();
+	}
+
+	inline bool convert_pyobject_to_base(PyObject* element, express::Base& value) {
+		void* arg = nullptr;
+		int result = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_express__Base, 0);
+		if (SWIG_IsOK(result) && arg) {
+			value = *static_cast<express::Base*>(arg);
+			return true;
+		}
+
+		value = express::Base{};
+		return false;
+	}
+
+	template <>
+	bool check_python_type<express::Base>(PyObject* element) {
+		express::Base value;
+		return convert_pyobject_to_base(element, value);
+	}
+
 	bool check_aggregate_of_type(PyObject* aggregate, void* type_obj) {
 		if (!PySequence_Check(aggregate)) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
@@ -51,6 +74,63 @@
 			bool b = check_aggregate_of_type(element, type_obj);
 			Py_DECREF(element);
 			if (!b) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <typename T>
+	bool check_aggregate_of_type(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_python_type<T>(element);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <>
+	bool check_aggregate_of_type<express::Base>(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			express::Base value;
+			bool valid = convert_pyobject_to_base(element, value);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <typename T>
+	bool check_aggregate_of_aggregate_of_type(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_aggregate_of_type<T>(element);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <>
+	bool check_aggregate_of_aggregate_of_type<express::Base>(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_aggregate_of_type<express::Base>(element);
+			Py_DECREF(element);
+			if (!valid) {
 				return false;
 			}
 		}
@@ -87,9 +167,8 @@
 
 	template <>
 	express::Base cast_pyobject(PyObject* element) {
-		void *arg = 0;
-		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_express__Base, 0);
-		return SWIG_IsOK(res) ? *reinterpret_cast<express::Base*>(arg) : express::Base{};
+		express::Base value;
+		return convert_pyobject_to_base(element, value) ? value : express::Base{};
 	}
 
 	template<typename T>
@@ -112,6 +191,7 @@
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			T t = cast_pyobject<T>(element);
 			add_to_container(result_vector, t);
+			Py_DECREF(element);
 		}
 		return result_vector;
 	}

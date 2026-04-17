@@ -20,7 +20,9 @@
 #ifndef IFC_GEOM_API_H
 #define IFC_GEOM_API_H
 
-#ifdef _WIN32
+#ifdef SWIG
+  #define IFC_GEOM_API
+#elif defined(_WIN32)
   #ifdef IFC_GEOM_EXPORTS
     #define IFC_GEOM_API __declspec(dllexport)
   #else

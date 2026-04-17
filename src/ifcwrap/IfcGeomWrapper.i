@@ -50,8 +50,6 @@
 	$result = PyBool_FromLong(static_cast<long>(*$1));
 }
 
-%ignore IfcGeom::impl::tree::selector;
-
 // Using RTTI return a more specialized type of Element
 // Note that these elements are not to be owned by SWIG/Python as they will be freed automatically upon the next iteration
 // except for the IfcGeom::Element instances which are returned by Iterator::getObject() calls
@@ -258,7 +256,6 @@ namespace {
 %shared_ptr(ifcopenshell::geometry::taxonomy::node);
 
 %include "../ifcgeom/ifc_geom_api.h"
-%include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
 %include "../ifcgeom/ConversionSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
@@ -435,15 +432,11 @@ assign_matrix_access(revolve);
 	}
 }
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-
 %template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
 
 %template(clashes) std::vector<IfcGeom::clash>;
 
-// A Template instantantation should be defined before it is used as a base class. 
-// But frankly I don't care as most methods are subtlely different anyway.
-%include "../ifcgeom/kernels/opencascade/IfcGeomTree.h"
+%include "../ifcgeom/tree.h"
 
 %extend IfcGeom::tree {
 
@@ -454,12 +447,23 @@ assign_matrix_access(revolve);
 		return cast_vector<express::Base>($self->select_box(e.as<express::Entity>(), completely_within, extend));
 	}
 
-	std::vector<express::Base> select_box(const gp_Pnt& p) const {
-		return cast_vector<express::Base>($self->select_box(p));
+	std::vector<express::Base> select_box(const std::vector<double>& p) const {
+		if (p.size() != 3) {
+			throw ifcopenshell::exception("Point should be a sequence of 3 floats");
+		}
+		IfcGeom::tree_point point = {{ p[0], p[1], p[2] }};
+		return cast_vector<express::Base>($self->select_box(point));
 	}
 
-	std::vector<express::Base> select_box(const Bnd_Box& b, bool completely_within = false) const {
-		return cast_vector<express::Base>($self->select_box(b, completely_within));
+	std::vector<express::Base> select_box(const std::vector<std::vector<double>>& b, bool completely_within = false) const {
+		if (b.size() != 2 || b[0].size() != 3 || b[1].size() != 3) {
+			throw ifcopenshell::exception("Bounding box should be a sequence of 2 x 3 floats");
+		}
+		IfcGeom::tree_box box = {{
+			{ b[0][0], b[0][1], b[0][2] },
+			{ b[1][0], b[1][1], b[1][2] }
+		}};
+		return cast_vector<express::Base>($self->select_box(box, completely_within));
 	}
 
 	std::vector<express::Base> select(const express::Base& e, bool completely_within = false, double extend = 0.0) const {
@@ -469,102 +473,28 @@ assign_matrix_access(revolve);
 		return cast_vector<express::Base>($self->select(e.as<express::Entity>(), completely_within, extend));
 	}
 
-	std::vector<express::Base> select(const gp_Pnt& p, double extend=0.0) const {
-		return cast_vector<express::Base>($self->select(p, extend));
+	std::vector<express::Base> select(const std::vector<double>& p, double extend=0.0) const {
+		if (p.size() != 3) {
+			throw ifcopenshell::exception("Point should be a sequence of 3 floats");
+		}
+		IfcGeom::tree_point point = {{ p[0], p[1], p[2] }};
+		return cast_vector<express::Base>($self->select(point, extend));
 	}
 
-	std::vector<express::Base> select(const std::string& shape_serialization, bool completely_within = false, double extend = -1.e-5) const {
-		std::stringstream stream(shape_serialization);
-		BRepTools_ShapeSet shapes;
-		shapes.Read(stream);
-		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
-
-		return cast_vector<express::Base>($self->select(shp, completely_within, extend));
-	}
-
-	std::vector<express::Base> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
+	std::vector<express::Base> select(const IfcGeom::Element* elem, bool completely_within = false, double extend = -1.e-5) const {
 		return cast_vector<express::Base>($self->select(elem, completely_within, extend));
 	}
 
-	/*
-    %typemap(in) const std::vector<express::Base>& (std::vector<express::Base> temp) {
-        if (!PyList_Check($input)) {
-            PyErr_SetString(PyExc_TypeError, "Expected a list.");
-            return NULL;
-        }
-        $1 = &temp;  // Set $1 to the address of temp, which SWIG will use as the argument in the wrapped function
-        temp.reserve(PyList_Size($input));  // Pre-allocate memory for efficiency
-        for (Py_ssize_t i = 0; i < PyList_Size($input); ++i) {
-            PyObject* pyObj = PyList_GetItem($input, i);
-            void* ptr = 0;
-            int res = SWIG_ConvertPtr(pyObj, &ptr, SWIGTYPE_p_express__Base, 0);
-            if (!SWIG_IsOK(res)) {
-                PyErr_SetString(PyExc_TypeError, "List item is not of type IfcBaseClass.");
-                return NULL;
-            }
-            temp.push_back(reinterpret_cast<express::Base>(ptr));
-        }
-    }
-	*/
-
-       std::vector<clash> clash_intersection_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double tolerance, bool check_all) const {
-        std::vector<express::Entity> set_a_entities;
-        std::vector<express::Entity> set_b_entities;
-        for (auto& e : set_a) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_a_entities.push_back(e.as<express::Entity>());
-        }
-        for (auto& e : set_b) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_b_entities.push_back(e.as<express::Entity>());
-        }
-               return $self->clash_intersection_many(set_a_entities, set_b_entities, tolerance, check_all);
-       }
-
-       std::vector<clash> clash_collision_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, bool allow_touching) const {
-        std::vector<express::Entity> set_a_entities;
-        std::vector<express::Entity> set_b_entities;
-        for (auto& e : set_a) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_a_entities.push_back(e.as<express::Entity>());
-        }
-        for (auto& e : set_b) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_b_entities.push_back(e.as<express::Entity>());
-        }
-               return $self->clash_collision_many(set_a_entities, set_b_entities, allow_touching);
-       }
-
-       std::vector<clash> clash_clearance_many(const std::vector<express::Base>& set_a, const std::vector<express::Base>& set_b, double clearance, bool check_all) const {
-        std::vector<express::Entity> set_a_entities;
-        std::vector<express::Entity> set_b_entities;
-        for (auto& e : set_a) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_a_entities.push_back(e.as<express::Entity>());
-        }
-        for (auto& e : set_b) {
-            if (!e.declaration().is("IfcProduct")) {
-                throw ifcopenshell::exception("All instances should be of type IfcProduct");
-            }
-            set_b_entities.push_back(e.as<express::Entity>());
-        }
-               return $self->clash_clearance_many(set_a_entities, set_b_entities, clearance, check_all);
-       }
-
+	std::vector<IfcGeom::ray_intersection_result> select_ray(const std::vector<double>& p0, const std::vector<double>& d, double length = 1000.) const {
+		if (p0.size() != 3 || d.size() != 3) {
+			throw ifcopenshell::exception("Origin and direction should be sequences of 3 floats");
+		}
+		IfcGeom::tree_point origin = {{ p0[0], p0[1], p0[2] }};
+		IfcGeom::tree_point direction = {{ d[0], d[1], d[2] }};
+		return $self->select_ray(origin, direction, length);
+	}
 
 }
-
-#endif
 
 // A visitor
 %{
@@ -862,89 +792,25 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return oss.str();
 	}
 
-	template <typename Schema>
 	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, const express::Base& instance, const express::Base& representation = express::Base()) {
 		ifcopenshell::file* file = instance.file();
-			
+
 		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
-			
-		if (auto product = instance.as<typename Schema::IfcProduct>()) {
-			if (representation) {
-				if (!representation.declaration().is(Schema::IfcRepresentation::Class())) {
-					throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
-				}
-			}
-		
-			if (!representation && !product.Representation()) {
-				throw ifcopenshell::exception("Representation is NULL");
-			}
-			
-			auto prodrep = product.Representation();
-			auto reps = prodrep.Representations();
-			auto ifc_representation = representation ? representation.as<typename Schema::IfcRepresentation>() : typename Schema::IfcRepresentation();
-			
-			if (!ifc_representation) {
-				// First, try to find a representation based on the settings
-				for (auto& rep : reps) {
-					if (!rep.RepresentationIdentifier()) {
-						continue;
-					}
-					if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
-						if (*rep.RepresentationIdentifier() == "Body" || *rep.RepresentationIdentifier() == "Facetation") {
-							ifc_representation = rep;
-							break;
-						}
-					} else {
-						if (*rep.RepresentationIdentifier() == "Plan" || *rep.RepresentationIdentifier() == "Axis") {
-							ifc_representation = rep;
-							break;
-						}
-					}
-				}
+		if (instance.declaration().is("IfcProduct")) {
+			if (representation && !representation.declaration().is("IfcRepresentation")) {
+				throw ifcopenshell::exception("Supplied representation not of type IfcRepresentation");
 			}
 
-			// Otherwise, find a representation within the 'Model' or 'Plan' context
-			if (!ifc_representation) {
-				for (auto& rep : reps) {
-					auto context = rep.ContextOfItems();
-					
-					// TODO: Remove redundancy with IfcGeomIterator.h
-					if (context.ContextType()) {
-						std::set<std::string> context_types;
-						if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
-							context_types.insert("model");
-							context_types.insert("design");
-							context_types.insert("model view");
-							context_types.insert("detail view");
-						} else {
-							context_types.insert("plan");
-						}			
-
-						std::string context_type_lc = *context.ContextType();
-						for (std::string::iterator c = context_type_lc.begin(); c != context_type_lc.end(); ++c) {
-							*c = tolower(*c);
-						}
-						if (context_types.find(context_type_lc) != context_types.end()) {
-							ifc_representation = rep;
-						}
-					}
-				}
+			auto selected_representation = representation ? representation : kernel.mapping()->representation_of(instance);
+			if (!selected_representation) {
+				throw ifcopenshell::exception("No suitable IfcRepresentation found");
 			}
 
-			if (!ifc_representation) {
-				if (reps.size()) {
-					// Return a random representation
-					ifc_representation = reps.front();
-				} else {
-					throw ifcopenshell::exception("No suitable IfcRepresentation found");
-				}
-			}
-
-			IfcGeom::BRepElement* brep = kernel.create_brep_for_representation_and_product(ifc_representation, product);
+			IfcGeom::BRepElement* brep = kernel.create_brep_for_representation_and_product(selected_representation, instance);
 			if (!brep) {
 				std::ostringstream oss_repr, oss_product;
-				ifc_representation.to_string(oss_repr);
-				product.to_string(oss_product);
+				selected_representation.to_string(oss_repr);
+				instance.to_string(oss_product);
 				throw ifcopenshell::exception("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
 			}
 			if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
@@ -958,7 +824,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			} else {
 				return brep;
 			}
-		} else if (instance.as<typename Schema::IfcPlacement>() || instance.as<typename Schema::IfcObjectPlacement>()) {
+		} else if (instance.declaration().is("IfcPlacement") || instance.declaration().is("IfcObjectPlacement")) {
 			auto item = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(kernel.mapping()->map(instance));
 			if (item == nullptr) {
 				throw ifcopenshell::exception("Failed to convert placement");
@@ -968,14 +834,14 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
                 // generic cartesian_base<Matrix4> so there's no time to apply the settings to the translation part.
                 item = ifcopenshell::geometry::taxonomy::matrix4::ptr(item->clone_());
                 item->components().col(3).head<3>() /= kernel.settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
-            }
+			}
 			return new IfcGeom::Transformation(kernel.settings(), item);
 		} else {
 			if (!representation) {
-				if (instance.declaration().is(Schema::IfcRepresentationItem::Class()) || 
-					instance.declaration().is(Schema::IfcRepresentation::Class()) ||
+				if (instance.declaration().is("IfcRepresentationItem") ||
+					instance.declaration().is("IfcRepresentation") ||
 					// https://github.com/IfcOpenShell/IfcOpenShell/issues/1649
-					instance.declaration().is(Schema::IfcProfileDef::Class())
+					instance.declaration().is("IfcProfileDef")
 				) {
 					IfcGeom::ConversionResults shapes;
 					try {
@@ -1041,70 +907,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 
 %inline %{
 	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const express::Base& representation, const char* const geometry_library="opencascade") {
-		const std::string& schema_name = instance.declaration().schema()->name();
-
-		#ifdef HAS_SCHEMA_2x3
-		if (schema_name == "IFC2X3") {
-			return helper_fn_create_shape<Ifc2x3>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4
-		if (schema_name == "IFC4") {
-			return helper_fn_create_shape<Ifc4>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x1
-		if (schema_name == "IFC4X1") {
-			return helper_fn_create_shape<Ifc4x1>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x2
-		if (schema_name == "IFC4X2") {
-			return helper_fn_create_shape<Ifc4x2>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3_rc1
-		if (schema_name == "IFC4X3_RC1") {
-			return helper_fn_create_shape<Ifc4x3_rc1>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3_rc2
-		if (schema_name == "IFC4X3_RC2") {
-			return helper_fn_create_shape<Ifc4x3_rc2>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3_rc3
-		if (schema_name == "IFC4X3_RC3") {
-			return helper_fn_create_shape<Ifc4x3_rc3>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3_rc4
-		if (schema_name == "IFC4X3_RC4") {
-			return helper_fn_create_shape<Ifc4x3_rc4>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3
-		if (schema_name == "IFC4X3") {
-			return helper_fn_create_shape<Ifc4x3>(geometry_library, settings, instance, representation);
-		}
-		#endif
-		#ifdef HAS_SCHEMA_4x3_tc1
-		if (schema_name == "IFC4X3_TC1") {
-			return helper_fn_create_shape<Ifc4x3_tc1>(geometry_library, settings, instance, representation);
-		}
-		#endif
-        #ifdef HAS_SCHEMA_4x3_add1
-		if (schema_name == "IFC4X3_ADD1") {
-			return helper_fn_create_shape<Ifc4x3_add1>(geometry_library, settings, instance, representation);
-		}
-		#endif
-        #ifdef HAS_SCHEMA_4x3_add2
-		if (schema_name == "IFC4X3_ADD2") {
-			return helper_fn_create_shape<Ifc4x3_add2>(geometry_library, settings, instance, representation);
-		}
-		#endif
-
-		throw ifcopenshell::exception("No geometry support for " + schema_name);
+		return helper_fn_create_shape(geometry_library, settings, instance, representation);
 	}
 
 	// Manual definition of overload without representation argument
@@ -1116,6 +919,8 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 %inline %{
+	#include <BRepTools_ShapeSet.hxx>
+
 	express::Base serialise(ifcopenshell::file& f, const std::string& shape_str, bool advanced=true) {
 		std::stringstream stream(shape_str);
 		BRepTools_ShapeSet shapes;
@@ -1137,6 +942,112 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 
 #endif
 
+%template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
+%template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
+
+%newobject create_epeck;
+
+%inline %{
+	IfcGeom::OpaqueNumber* create_epeck(int i) {
+		return new IfcGeom::NumberNativeDouble(i);
+	}
+	IfcGeom::OpaqueNumber* create_epeck(double d) {
+		return new IfcGeom::NumberNativeDouble(d);
+	}
+	IfcGeom::OpaqueNumber* create_epeck(const std::string& s) {
+		return new IfcGeom::NumberNativeDouble(std::stod(s));
+	}
+%}
+
+%inline %{
+	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
+		IfcGeom::ConversionResultShape* result = nullptr;
+		std::string backend_id;
+		auto identity = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
+			PyObject* element = PySequence_GetItem(sequence, i);
+			void* argp1 = nullptr;
+			auto res1 = SWIG_ConvertPtr(element, &argp1, SWIGTYPE_p_IfcGeom__ConversionResultShape, 0);
+			if (SWIG_IsOK(res1)) {
+				auto arg1 = reinterpret_cast<IfcGeom::ConversionResultShape*>(argp1);
+				auto element_backend_id = std::string(arg1->backend_id());
+				if (backend_id.empty()) {
+					backend_id = element_backend_id;
+					result = arg1->moved(identity);
+				} else {
+					if (element_backend_id != backend_id) {
+						delete result;
+						throw ifcopenshell::exception("nary_union requires shapes from the same geometry backend");
+					}
+					auto next = result->add(arg1);
+					if (!next) {
+						delete result;
+						throw ifcopenshell::exception("nary_union failed for backend " + backend_id);
+					}
+					delete result;
+					result = next;
+				}
+			}
+		}
+		if (!result) {
+			throw ifcopenshell::exception("nary_union requires at least one shape");
+		}
+		return result;
+	}
+%}
+
+%extend IfcGeom::ConversionResultShape {
+	std::string serialize_obj() {
+		ifcopenshell::geometry::Settings settings;
+		std::unique_ptr<IfcGeom::Representation::Triangulation> triangulation($self->Triangulate(settings));
+		std::ostringstream result;
+
+		for (auto it = triangulation->verts().begin(); it != triangulation->verts().end();) {
+			result << "v " << *(it++) << " " << *(it++) << " " << *(it++) << "\n";
+		}
+		for (auto it = triangulation->normals().begin(); it != triangulation->normals().end();) {
+			result << "vn " << *(it++) << " " << *(it++) << " " << *(it++) << "\n";
+		}
+
+		const bool has_normals = !triangulation->normals().empty();
+		for (auto it = triangulation->faces().begin(); it != triangulation->faces().end();) {
+			const auto v1 = *(it++) + 1;
+			const auto v2 = *(it++) + 1;
+			const auto v3 = *(it++) + 1;
+			if (has_normals) {
+				result << "f "
+					<< v1 << "//" << v1 << " "
+					<< v2 << "//" << v2 << " "
+					<< v3 << "//" << v3 << "\n";
+			} else {
+				result << "f " << v1 << " " << v2 << " " << v3 << "\n";
+			}
+		}
+
+		return result.str();
+	}
+
+	void convex_tag(bool b) {
+		(void)b;
+		throw ifcopenshell::exception("convex_tag is not available through the generic conversion result interface");
+	}
+
+	std::string serialize() {
+		std::string result;
+		ifcopenshell::geometry::taxonomy::matrix4 iden;
+		$self->Serialize(iden, result);
+		return result;
+	}
+
+	ConversionResultShape* solid_mt() {
+		IfcGeom::ConversionResultShape* r;
+		Py_BEGIN_ALLOW_THREADS;
+		r = $self->solid();
+		Py_END_ALLOW_THREADS;
+		return r;
+	}
+}
+
 #ifdef IFOPSH_WITH_CGAL
 
 %ignore hlr_writer;
@@ -1156,83 +1067,6 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %template(svg_groups_of_polygons) std::vector<std::vector<svgfill::polygon_2>>;
 %template(svg_loop) std::vector<std::array<double, 2>>;
 %template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
-
-%template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
-%template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
-
-%newobject create_epeck;
-
-%inline %{
-	IfcGeom::OpaqueNumber* create_epeck(int i) {
-		return new ifcopenshell::geometry::NumberEpeck(i);
-	}
-	IfcGeom::OpaqueNumber* create_epeck(double d) {
-		return new ifcopenshell::geometry::NumberEpeck(d);
-	}
-	IfcGeom::OpaqueNumber* create_epeck(const std::string& s) {
-		return new ifcopenshell::geometry::NumberEpeck(typename CGAL::Epeck::FT::ET(s));
-	}
-%}
-
-%inline %{
-	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
-		std::vector<const CGAL::Nef_polyhedron_3<CGAL::Epeck>*> nefs;
-		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
-			PyObject* element = PySequence_GetItem(sequence, i);
-			void* argp1 = nullptr;
-			auto res1 = SWIG_ConvertPtr(element, &argp1, SWIGTYPE_p_IfcGeom__ConversionResultShape, 0);
-			if (SWIG_IsOK(res1)) {
-				auto arg1 = reinterpret_cast<IfcGeom::ConversionResultShape*>(argp1);
-				auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(arg1);
-				if (cgs) {
-					nefs.push_back(&cgs->nef());
-				}
-			}
-		}
-		ifcopenshell::geometry::CgalShape* shp;
-		Py_BEGIN_ALLOW_THREADS;
-		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<CGAL::Epeck> > accum;
-		for (auto& n : nefs) {
-			accum.add_polyhedron(*n);
-		}
-		shp = new ifcopenshell::geometry::CgalShape(accum.get_union());
-		Py_END_ALLOW_THREADS;
-		return shp;
-	}
-%}
-
-%extend IfcGeom::ConversionResultShape {
-	std::string serialize_obj() {
-		std::ostringstream result;
-		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
-		if (cgs) {
-			write_to_obj(cgs->nef(), result, std::numeric_limits<size_t>::max());
-		}		
-		return result.str();
-	}
-
-	void convex_tag(bool b) {
-		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
-		if (cgs) {
-			cgs->convex_tag() = b;
-		}		
-	}
-
-	std::string serialize() {
-		std::string result;
-		ifcopenshell::geometry::taxonomy::matrix4 iden;
-		$self->Serialize(iden, result);
-		return result;
-	}
-
-	ConversionResultShape* solid_mt() {
-		IfcGeom::ConversionResultShape* r;
-		Py_BEGIN_ALLOW_THREADS;
-		r = $self->solid();
-		Py_END_ALLOW_THREADS;
-		return r;
-	}
-}
 
 %naturalvar svgfill::polygon_2::boundary;
 %naturalvar svgfill::polygon_2::inner_boundaries;

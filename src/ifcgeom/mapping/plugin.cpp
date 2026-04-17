@@ -17,26 +17,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#include "../mapping_plugin.h"
+#include "mapping.h"
 
-#include "../ifcgeom/kernel_registry.h"
-
-#include <filesystem>
+#include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
 	namespace geometry {
-		namespace kernels {
+		namespace impl {
+			namespace mapping_plugin {
 
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
+				namespace {
+					struct POSTFIX_SCHEMA(factory_t) {
+						abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings) const {
+							return new POSTFIX_SCHEMA(mapping)(file, settings);
+						}
+					};
+				}
 
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+				plugin::abi_info plugin_abi() {
+					return plugin::host_abi();
+				}
 
+				plugin::metadata plugin_metadata() {
+					return mapping_plugin_metadata(STRINGIFY(IfcSchema));
+				}
+
+				void register_plugin(mapping_registry& registry, const plugin::module& module) {
+					POSTFIX_SCHEMA(factory_t) factory;
+					registry.bind(STRINGIFY(IfcSchema), factory, module);
+				}
+
+			}
 		}
 	}
 }
 
-#endif
+BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::impl::mapping_plugin::register_plugin, ifcopenshell_register_mapping_plugin_v1)

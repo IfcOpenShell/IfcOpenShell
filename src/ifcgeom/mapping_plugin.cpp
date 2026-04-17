@@ -17,26 +17,41 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#include "mapping_plugin.h"
 
-#include "../ifcgeom/kernel_registry.h"
+#include <boost/algorithm/string/case_conv.hpp>
 
-#include <filesystem>
-
-namespace ifcopenshell {
-	namespace geometry {
-		namespace kernels {
-
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
-
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
-
-		}
-	}
+namespace {
+	constexpr const char* mapping_plugin_prefix = "geometry.mapping.";
 }
 
-#endif
+const char* ifcopenshell::geometry::impl::mapping_plugin_registration_symbol() {
+	return "ifcopenshell_register_mapping_plugin_v1";
+}
+
+ifcopenshell::plugin::metadata ifcopenshell::geometry::impl::mapping_plugin_metadata(const std::string& schema_name) {
+	plugin::metadata metadata;
+	metadata.kind_ = plugin::kind::mapping;
+	metadata.id = mapping_plugin_prefix + boost::to_lower_copy(schema_name);
+	metadata.schema = boost::to_upper_copy(schema_name);
+	return metadata;
+}
+
+std::filesystem::path ifcopenshell::geometry::impl::mapping_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::impl::load_mapping_plugins));
+}
+
+void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& registry) {
+	plugin::manager manager;
+	manager.add_search_path(mapping_plugin_directory());
+
+	for (const auto& path : manager.discover(mapping_plugin_prefix)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::mapping) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_mapping_plugin_fn>(mapping_plugin_registration_symbol());
+		register_plugin(registry, module);
+	}
+}

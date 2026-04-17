@@ -17,26 +17,46 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#include "../document_serializer_plugin.h"
+#include "XmlSerializer.h"
 
-#include "../ifcgeom/kernel_registry.h"
+#include "../../ifcparse/macros.h"
 
-#include <filesystem>
+#include <boost/dll/alias.hpp>
 
-namespace ifcopenshell {
-	namespace geometry {
-		namespace kernels {
+namespace {
 
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
-
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
-
-		}
+struct factory_t {
+	XmlSerializer* operator()(ifcopenshell::file* file, const std::string& xml_filename) const {
+		auto* serializer = new POSTFIX_SCHEMA(XmlSerializer)(file, xml_filename);
+		serializer->setFile(file);
+		return serializer;
 	}
+};
+
 }
 
-#endif
+namespace ifcopenshell {
+namespace serializers {
+namespace xml_document_serializer_plugin {
+
+plugin::abi_info plugin_abi() {
+	return plugin::host_abi();
+}
+
+plugin::metadata plugin_metadata() {
+	return document_serializer_plugin_metadata("xml", STRINGIFY(IfcSchema));
+}
+
+void register_plugin(XmlSerializerFactory::Factory& registry, const plugin::module& module) {
+	factory_t factory;
+	registry.bind(STRINGIFY(IfcSchema), factory, module);
+}
+
+}
+}
+}
+
+BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)

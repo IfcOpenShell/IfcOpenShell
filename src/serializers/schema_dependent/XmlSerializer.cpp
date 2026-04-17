@@ -32,24 +32,6 @@
 
 using boost::property_tree::ptree;
 
-#include "XmlSerializer.h"
-
-namespace {
-	struct POSTFIX_SCHEMA(factory_t) {
-		XmlSerializer* operator()(ifcopenshell::file* file, const std::string& xml_filename) const {
-			POSTFIX_SCHEMA(XmlSerializer)* s = new POSTFIX_SCHEMA(XmlSerializer)(file, xml_filename);
-			s->setFile(file);
-			return s;
-		}
-	};
-}
-
-void MAKE_INIT_FN(XmlSerializer)(XmlSerializerFactory::Factory* mapping) {
-	static const std::string schema_name = STRINGIFY(IfcSchema);
-	POSTFIX_SCHEMA(factory_t) factory;
-	mapping->bind(schema_name, factory);
-}
-
 namespace {
 
 // TODO: Make this a member of XmlSerializer?

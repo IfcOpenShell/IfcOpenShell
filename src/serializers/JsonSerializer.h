@@ -5,6 +5,7 @@
 
 #include "../ifcgeom/Serializer.h"
 #include "../ifcparse/file.h"
+#include "../plugin/plugin.h"
 #include "../serializers/serializers_api.h"
 
 #include <boost/function.hpp>
@@ -16,7 +17,7 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
         JSON_DIALECT_CREOOX
     };
   private:
-    JsonSerializer* implementation_;
+    JsonSerializer* implementation_ = nullptr;
 
   protected:
     std::string json_filename;
@@ -37,11 +38,19 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
 struct SERIALIZERS_API JsonSerializerFactory {
     typedef boost::function3<JsonSerializer*, ifcopenshell::file*, std::string, JsonSerializer::Dialect> fn;
 
-    class Factory : public std::map<std::string, fn> {
+    class SERIALIZERS_API Factory {
       public:
         Factory();
-        void bind(const std::string& schema_name, fn);
+        void bind(const std::string& schema_name, fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
         JsonSerializer* construct(const std::string& schema_name, ifcopenshell::file*, std::string, JsonSerializer::Dialect);
+
+      private:
+        struct entry {
+            fn fn_;
+            ifcopenshell::plugin::module module_;
+        };
+
+        std::map<std::string, entry> entries_;
     };
 
     static Factory& implementations();

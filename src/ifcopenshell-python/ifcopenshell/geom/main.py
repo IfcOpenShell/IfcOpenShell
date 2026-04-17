@@ -379,9 +379,7 @@ class tree(ifcopenshell_wrapper.tree):
 
     def select(
         self,
-        value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
-        ],
+        value: Union[entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float]],
         **kwargs,
     ) -> list[entity_instance]:
         def unwrap(value):
@@ -399,12 +397,6 @@ class tree(ifcopenshell_wrapper.tree):
         elif isinstance(value, (list, tuple)) and len(value) == 3 and set(map(type, value)) == {float}:
             if "extend" in kwargs:
                 args.append(kwargs["extend"])
-        elif has_occ:
-            if isinstance(value, TopoDS.TopoDS_Shape):
-                args[1] = utils.serialize_shape(value)
-                args.append(kwargs.get("completely_within", False))
-                if "extend" in kwargs:
-                    args.append(kwargs["extend"])
         return ifcopenshell_wrapper.tree.select(*args)
 
     def select_box(self, value, **kwargs) -> list[entity_instance]:

@@ -20,7 +20,9 @@
 #ifndef IFC_PARSE_API_H
 #define IFC_PARSE_API_H
 
-#ifdef _WIN32
+#ifdef SWIG
+#define IFC_PARSE_API
+#elif defined(_WIN32)
 #ifdef IFC_PARSE_EXPORTS
 #define IFC_PARSE_API __declspec(dllexport)
 #else

@@ -17,26 +17,39 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#include "../../tree_plugin.h"
+#include "tree_backends.h"
 
-#include "../ifcgeom/kernel_registry.h"
-
-#include <filesystem>
+#include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
 	namespace geometry {
-		namespace kernels {
+		namespace trees {
+			namespace opencascade_trianglebvh_tree_plugin {
 
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
+				plugin::abi_info plugin_abi() {
+					return plugin::host_abi();
+				}
 
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+				plugin::metadata plugin_metadata() {
+					return tree_plugin_metadata("opencascade.trianglebvh");
+				}
 
+				abstract_tree* create_tree() {
+					return new opencascade_tree_backends::trianglebvh_tree();
+				}
+
+				void register_plugin(tree_registry& registry, const plugin::module& module) {
+					tree_info info;
+					info.backend_id = "opencascade.trianglebvh";
+					registry.bind(info, create_tree, module);
+				}
+
+			}
 		}
 	}
 }
 
-#endif
+BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_trianglebvh_tree_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_trianglebvh_tree_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::geometry::trees::opencascade_trianglebvh_tree_plugin::register_plugin, ifcopenshell_register_tree_plugin_v1)

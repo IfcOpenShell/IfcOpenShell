@@ -20,35 +20,26 @@
 #ifdef WITH_GLTF
 
 #include "JsonSerializer.h"
+#include "document_serializer_plugin.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/stringize.hpp>
-
-#define EXTERNAL_DEFS(r, data, elem) \
-    extern void BOOST_PP_CAT(init_JsonSerializer_Ifc, elem)(JsonSerializerFactory::Factory*);
-
-#define CALL_DEFS(r, data, elem) \
-    BOOST_PP_CAT(init_JsonSerializer_Ifc, elem)(this);
-
-BOOST_PP_SEQ_FOR_EACH(EXTERNAL_DEFS, , SCHEMA_SEQ)
 
 JsonSerializerFactory::Factory::Factory() {
-    BOOST_PP_SEQ_FOR_EACH(CALL_DEFS, , SCHEMA_SEQ)
+    ifcopenshell::serializers::load_document_serializer_plugins(*this, "json");
 }
 
-void JsonSerializerFactory::Factory::bind(const std::string& schema_name, fn f) {
+void JsonSerializerFactory::Factory::bind(const std::string& schema_name, fn f, const ifcopenshell::plugin::module& module) {
     const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-    this->insert(std::make_pair(schema_name_lower, f));
+    entries_[schema_name_lower] = { f, module };
 }
 
 JsonSerializer* JsonSerializerFactory::Factory::construct(const std::string& schema_name, ifcopenshell::file* file, std::string json_filename, JsonSerializer::Dialect dialect) {
     const std::string schema_name_lower = boost::to_lower_copy(schema_name);
-    auto it = this->find(schema_name_lower);
-    if (it == this->end()) {
+    auto it = entries_.find(schema_name_lower);
+    if (it == entries_.end()) {
         throw ifcopenshell::exception("No Json serializer registered for " + schema_name);
     }
-    return it->second(file, json_filename, dialect);
+    return it->second.fn_(file, json_filename, dialect);
 }
 
 JsonSerializer::JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect) {

@@ -504,7 +504,7 @@ class IFC_PARSE_API schema_registry {
     typedef const schema_definition& (*get_schema_fn)();
     typedef void (*clear_schema_fn)();
 
-    void bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const plugin::module& module = plugin::module());
+    void bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
     void bind(schema_definition* schema);
     const schema_definition* get(const std::string& schema_name);
     std::vector<std::string> names() const;
@@ -515,7 +515,7 @@ class IFC_PARSE_API schema_registry {
         const schema_definition* schema_ = nullptr;
         get_schema_fn get_ = nullptr;
         clear_schema_fn clear_ = nullptr;
-        plugin::module module_;
+        ifcopenshell::plugin::module module_;
     };
 
     std::map<std::string, entry> entries_;

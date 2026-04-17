@@ -82,13 +82,13 @@ namespace geometry {
 
 		class IFC_GEOM_API mapping_registry {
 		public:
-			void bind(const std::string& schema_name, mapping_fn fn, const plugin::module& module = plugin::module());
+			void bind(const std::string& schema_name, mapping_fn fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
 			abstract_mapping* construct(ifcopenshell::file* file, Settings& settings);
 
 		private:
 			struct entry {
 				mapping_fn fn_;
-				plugin::module module_;
+				ifcopenshell::plugin::module module_;
 			};
 
 			std::map<std::string, entry> entries_;

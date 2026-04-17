@@ -58,6 +58,7 @@ struct EdgeKey {
 	}
 };
 
+#ifndef SWIG
 namespace std {
 	template <>
 	struct hash<EdgeKey> {
@@ -66,6 +67,7 @@ namespace std {
 		}
 	};
 }
+#endif
 
 namespace IfcGeom {	
 
@@ -73,6 +75,7 @@ namespace IfcGeom {
 		class IFC_GEOM_API Triangulation;
 	}
 
+#ifndef SWIG
 	template <typename T>
 	constexpr T add_(T a, T b) {
 		return a + b;
@@ -107,6 +110,7 @@ namespace IfcGeom {
 	constexpr T negate_(T a) {
 		return -a;
 	}
+#endif
 
 	class IFC_GEOM_API OpaqueNumber {
 	public:
@@ -126,6 +130,7 @@ namespace IfcGeom {
 	};
 
 	// @todo this can simply be a template class, to remove the need for the NumberEpeck in CGAL kernel.
+#ifndef SWIG
 	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
 	private:
 		double value_;
@@ -189,7 +194,24 @@ namespace IfcGeom {
 			return new NumberNativeDouble(value_);
 		}
 	};
+#else
+	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
+	public:
+		NumberNativeDouble(double v);
+		virtual double to_double() const;
+		virtual std::string to_string() const;
+		virtual OpaqueNumber* operator+(OpaqueNumber* other) const;
+		virtual OpaqueNumber* operator-(OpaqueNumber* other) const;
+		virtual OpaqueNumber* operator*(OpaqueNumber* other) const;
+		virtual OpaqueNumber* operator/(OpaqueNumber* other) const;
+		virtual bool operator==(OpaqueNumber* other) const;
+		virtual bool operator<(OpaqueNumber* other) const;
+		virtual OpaqueNumber* operator-() const;
+		virtual OpaqueNumber* clone() const;
+	};
+#endif
 
+#ifndef SWIG
 	template <size_t N>
 	struct IFC_GEOM_API OpaqueCoordinate {
 	private:
@@ -251,10 +273,25 @@ namespace IfcGeom {
 			}
 		}
 	};
+#else
+	template <size_t N>
+	struct IFC_GEOM_API OpaqueCoordinate {
+		OpaqueCoordinate();
+		OpaqueCoordinate(const OpaqueCoordinate& other);
+		OpaqueCoordinate& operator=(const OpaqueCoordinate& other);
+		~OpaqueCoordinate();
+		OpaqueNumber* get(size_t i) const;
+		void set(size_t i, OpaqueNumber* n);
+	};
+#endif
 
 	class IFC_GEOM_API ConversionResultShape {
 	public:
+#ifdef SWIG
+		virtual std::string backend_id() const = 0;
+#else
 		virtual std::string_view backend_id() const = 0;
+#endif
 		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id) const = 0;
 		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
@@ -346,7 +383,7 @@ namespace IfcGeom {
 
 	typedef std::vector<ConversionResult> ConversionResults;
 
-
+#ifndef SWIG
 	namespace util {
 		// @todo this is now moved to occt kernel, do we need something similar in cgal?
 		// bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol);
@@ -424,6 +461,7 @@ namespace IfcGeom {
 			return loops;
 		}
 	}
+#endif
 }
 
 #endif

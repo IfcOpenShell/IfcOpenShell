@@ -19,6 +19,12 @@
 
 #include "plugin.h"
 
+#ifndef _WIN32
+#include <dlfcn.h>
+#else
+#include <windows.h>
+#endif
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/dll/shared_library.hpp>
 
@@ -194,4 +200,31 @@ void ifcopenshell::plugin::validate_abi(const abi_info& abi) {
 	stream << " (plugin pointer size " << abi.pointer_size << ", host pointer size " << host.pointer_size << ")";
 	stream << " (plugin debug " << abi.debug_build << ", host debug " << host.debug_build << ")";
 	throw std::runtime_error(stream.str());
+}
+
+std::filesystem::path ifcopenshell::plugin::module_directory(const void* symbol) {
+#ifdef _WIN32
+	HMODULE module_handle = nullptr;
+	if (!GetModuleHandleExW(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		reinterpret_cast<LPCWSTR>(symbol),
+		&module_handle)) {
+		throw std::runtime_error("Unable to resolve module path");
+	}
+
+	wchar_t buffer[MAX_PATH];
+	const DWORD length = GetModuleFileNameW(module_handle, buffer, MAX_PATH);
+	if (length == 0) {
+		throw std::runtime_error("Unable to read module filename");
+	}
+
+	return std::filesystem::path(std::wstring(buffer, length)).parent_path();
+#else
+	Dl_info info;
+	if (dladdr(symbol, &info) == 0 || !info.dli_fname) {
+		throw std::runtime_error("Unable to resolve module path");
+	}
+
+	return std::filesystem::path(info.dli_fname).parent_path();
+#endif
 }

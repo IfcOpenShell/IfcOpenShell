@@ -17,26 +17,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#ifndef IFCOPENSHELL_OPENCASCADE_GEOMETRY_IFC_WRITER_PLUGIN_H
+#define IFCOPENSHELL_OPENCASCADE_GEOMETRY_IFC_WRITER_PLUGIN_H
 
-#include "../ifcgeom/kernel_registry.h"
+#include "Serialization.h"
 
 #include <filesystem>
 
-namespace ifcopenshell {
-	namespace geometry {
-		namespace kernels {
+namespace IfcGeom {
 
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
+typedef void register_opencascade_geometry_ifc_writer_plugin_fn(opencascade_geometry_ifc_writer_registry&, const ifcopenshell::plugin::module&);
 
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+IFC_GEOMSERIALIZATION_API const char* opencascade_geometry_ifc_writer_plugin_registration_symbol();
+IFC_GEOMSERIALIZATION_API ifcopenshell::plugin::metadata opencascade_geometry_ifc_writer_plugin_metadata(const std::string& schema_name);
+IFC_GEOMSERIALIZATION_API std::filesystem::path opencascade_geometry_ifc_writer_plugin_directory();
+IFC_GEOMSERIALIZATION_API void load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry);
 
-		}
-	}
 }
 
 #endif

@@ -20,7 +20,9 @@
 #ifndef PLUGIN_API_H
 #define PLUGIN_API_H
 
-#ifdef _WIN32
+#ifdef SWIG
+#define PLUGIN_API
+#elif defined(_WIN32)
 #ifdef PLUGIN_EXPORTS
 #define PLUGIN_API __declspec(dllexport)
 #else

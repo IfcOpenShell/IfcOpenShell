@@ -17,26 +17,38 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#include "tree_plugin.h"
 
-#include "../ifcgeom/kernel_registry.h"
-
-#include <filesystem>
-
-namespace ifcopenshell {
-	namespace geometry {
-		namespace kernels {
-
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
-
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
-
-		}
-	}
+namespace {
+	constexpr const char* tree_plugin_prefix = "geometry.tree.";
 }
 
-#endif
+const char* ifcopenshell::geometry::trees::tree_plugin_registration_symbol() {
+	return "ifcopenshell_register_tree_plugin_v1";
+}
+
+ifcopenshell::plugin::metadata ifcopenshell::geometry::trees::tree_plugin_metadata(const std::string& plugin_name) {
+	plugin::metadata metadata;
+	metadata.kind_ = plugin::kind::tree;
+	metadata.id = std::string(tree_plugin_prefix) + plugin_name;
+	return metadata;
+}
+
+std::filesystem::path ifcopenshell::geometry::trees::tree_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::geometry::trees::load_tree_plugins));
+}
+
+void ifcopenshell::geometry::trees::load_tree_plugins(tree_registry& registry) {
+	plugin::manager manager;
+	manager.add_search_path(tree_plugin_directory());
+
+	for (const auto& path : manager.discover(tree_plugin_prefix)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::tree) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_tree_plugin_fn>(tree_plugin_registration_symbol());
+		register_plugin(registry, module);
+	}
+}

@@ -20,7 +20,9 @@
 #ifndef IFC_SERIALIZERS_API_H
 #define IFC_SERIALIZERS_API_H
 
-#ifdef _WIN32
+#ifdef SWIG
+  #define SERIALIZERS_API
+#elif defined(_WIN32)
   #ifdef SERIALIZERS_EXPORTS
     #define SERIALIZERS_API __declspec(dllexport)
   #else

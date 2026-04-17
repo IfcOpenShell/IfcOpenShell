@@ -21,7 +21,9 @@
 #ifndef SVGFILL_H
 #define SVGFILL_H
 
-#ifdef _WIN32
+#ifdef SWIG
+#define SVGFILL_API
+#elif defined(_WIN32)
 #ifdef svgfill_EXPORTS
 #define SVGFILL_API __declspec(dllexport)
 #else

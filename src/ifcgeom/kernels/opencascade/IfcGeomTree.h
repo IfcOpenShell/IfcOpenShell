@@ -24,6 +24,7 @@
 
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/Iterator.h"
+#include "../../../ifcgeom/tree.h"
 #include "OpenCascadeConversionResult.h"
 #include "OpenCascadeKernel.h"
 #include "base_utils.h"
@@ -69,26 +70,6 @@
 
 
 namespace IfcGeom {
-
-	struct ray_intersection_result {
-		double distance;
-		int style_index;
-		express::Entity instance;
-		std::array<double, 3> position;
-		std::array<double, 3> normal;
-		double ray_distance;
-		double dot_product;
-	};
-
-	struct clash {
-        int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
-		express::Base a;
-        express::Base b;
-		double distance;
-		std::array<double, 3> p1;
-		std::array<double, 3> p2;
-	};
-
 	namespace {
 
 		// Approximates the distance `other` protrudes into `volume` by finding the
@@ -1481,20 +1462,20 @@ namespace IfcGeom {
 		};
 	}
 
-	class tree : public impl::tree<express::Entity> {
+	class opencascade_tree : public impl::tree<express::Entity> {
 	public:
 
-		tree() {};
+		opencascade_tree() {};
 
-		tree(ifcopenshell::file& f) {
+		opencascade_tree(ifcopenshell::file& f) {
 			add_file(f, ifcopenshell::geometry::Settings{});
 		}
 
-		tree(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
+		opencascade_tree(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
 			add_file(f, settings);
 		}
 
-		tree(IfcGeom::Iterator& it) {
+		opencascade_tree(IfcGeom::Iterator& it) {
 			add_file(it);
 		}		
 

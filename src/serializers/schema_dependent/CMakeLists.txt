@@ -1,19 +1,27 @@
-file(GLOB SERIALIZERS_S_H_FILES *.h)
-file(GLOB SERIALIZERS_S_CPP_FILES *.cpp)
-set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
+set(document_serializer_plugin_runtime_dir "${CMAKE_BINARY_DIR}/serializers/$<CONFIG>")
 
 foreach(schema ${SCHEMA_VERSIONS})
-    add_library(Serializers_ifc${schema} OBJECT ${SERIALIZERS_S_FILES})
-    set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} Serializers_ifc${schema})
-    set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DSERIALIZERS_EXPORTS -DIfcSchema=Ifc${schema}")
-    if(WASM_BUILD)
-        target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
-    else()
-        target_link_libraries(Serializers_ifc${schema} IfcGeom ${OpenCASCADE_LIBRARIES} ${HDF5_LIBRARIES})
-    endif()
+    add_library(document_serializer_xml_ifc${schema} SHARED XmlSerializer.cpp xml_plugin.cpp)
+    target_link_libraries(document_serializer_xml_ifc${schema} PRIVATE plugin Serializers IfcGeom IfcParse)
+    set_target_properties(document_serializer_xml_ifc${schema} PROPERTIES
+        COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
+        OUTPUT_NAME "document.xml.ifc${schema}"
+        RUNTIME_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
+        LIBRARY_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
+    )
+    list(APPEND document_serializer_libraries document_serializer_xml_ifc${schema})
 
-    install(TARGETS Serializers_ifc${schema})
+    if(WITH_GLTF)
+        add_library(document_serializer_json_ifc${schema} SHARED JsonSerializer.cpp json_plugin.cpp)
+        target_link_libraries(document_serializer_json_ifc${schema} PRIVATE plugin Serializers IfcGeom IfcParse)
+        set_target_properties(document_serializer_json_ifc${schema} PROPERTIES
+            COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
+            OUTPUT_NAME "document.json.ifc${schema}"
+            RUNTIME_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
+            LIBRARY_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
+        )
+        list(APPEND document_serializer_libraries document_serializer_json_ifc${schema})
+    endif()
 endforeach()
 
-
-set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)
+set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)

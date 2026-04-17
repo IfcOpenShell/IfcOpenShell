@@ -1,4 +1,5 @@
 add_subdirectory(mapping)
+set(mapping_libraries ${mapping_libraries} PARENT_SCOPE)
 
 # IfcGeom (schema agnostic)
 file(GLOB SCHEMA_AGNOSTIC_H_FILES *.h)
@@ -18,16 +19,18 @@ find_package(Eigen3 REQUIRED)
 
 add_subdirectory(kernels)
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
+set(tree_libraries ${tree_libraries} PARENT_SCOPE)
 
 if(WASM_BUILD)
-    target_link_libraries(IfcGeom plugin ${Boost_LIBRARIES} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
+    target_link_libraries(IfcGeom plugin ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
 else()
-    target_link_libraries(IfcGeom plugin IfcParse ${Boost_LIBRARIES} ${mapping_libraries} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
+    target_link_libraries(IfcGeom plugin IfcParse ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} "Eigen3::Eigen")
 endif()
 
 if((BUILD_CONVERT OR BUILD_IFCPYTHON) AND WITH_OPENCASCADE)
     add_subdirectory(Serialization)
     set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
+    set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)
 endif()
 
 install(FILES ${SCHEMA_AGNOSTIC_H_FILES}

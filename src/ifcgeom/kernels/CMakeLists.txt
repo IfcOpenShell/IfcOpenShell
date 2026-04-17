@@ -6,6 +6,12 @@ foreach(kernel ${GEOMETRY_KERNELS})
     string(TOUPPER ${kernel} KERNEL_UPPER)
     file(GLOB IFCGEOM_H_FILES ${kernel}/*.h)
     file(GLOB IFCGEOM_CPP_FILES ${kernel}/*.cpp)
+    if(${kernel} STREQUAL "opencascade")
+        list(REMOVE_ITEM IFCGEOM_CPP_FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/tree_brep_plugin.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/${kernel}/tree_trianglebvh_plugin.cpp
+        )
+    endif()
     set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
@@ -37,6 +43,23 @@ foreach(kernel ${GEOMETRY_KERNELS})
         install(TARGETS ${KERNEL_TARGET_SIMPLE})
     elseif(${kernel} STREQUAL "opencascade")
         target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
+
+        foreach(tree_backend brep trianglebvh)
+            set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
+            add_library(${TREE_TARGET} SHARED
+                ${kernel}/tree_${tree_backend}_plugin.cpp
+                ${kernel}/tree_backends.h
+            )
+            set_target_properties(${TREE_TARGET} PROPERTIES
+                COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
+                OUTPUT_NAME "geometry.tree.opencascade.${tree_backend}"
+                RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+                LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
+            )
+            list(APPEND tree_libraries ${TREE_TARGET})
+            target_link_libraries(${TREE_TARGET} PRIVATE plugin IfcGeom geometry_kernel_opencascade ${OpenCASCADE_LIBRARIES} Eigen3::Eigen)
+            install(TARGETS ${TREE_TARGET})
+        endforeach()
     endif()
 
     install(FILES ${IFCGEOM_H_FILES}
@@ -45,3 +68,4 @@ foreach(kernel ${GEOMETRY_KERNELS})
 endforeach()
 
 set(kernel_libraries ${kernel_libraries} PARENT_SCOPE)
+set(tree_libraries ${tree_libraries} PARENT_SCOPE)

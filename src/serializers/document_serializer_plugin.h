@@ -17,26 +17,35 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_KERNEL_PLUGIN_H
-#define IFCOPENSHELL_KERNEL_PLUGIN_H
+#ifndef IFCOPENSHELL_DOCUMENT_SERIALIZER_PLUGIN_H
+#define IFCOPENSHELL_DOCUMENT_SERIALIZER_PLUGIN_H
 
-#include "../ifcgeom/kernel_registry.h"
+#include "XmlSerializer.h"
+
+#ifdef WITH_GLTF
+#include "JsonSerializer.h"
+#endif
 
 #include <filesystem>
+#include <string>
 
 namespace ifcopenshell {
-	namespace geometry {
-		namespace kernels {
+namespace serializers {
 
-			typedef void register_kernel_plugin_fn(kernel_registry&, const ifcopenshell::plugin::module&);
+typedef void register_xml_document_serializer_plugin_fn(XmlSerializerFactory::Factory&, const ifcopenshell::plugin::module&);
 
-			IFC_GEOM_API const char* kernel_plugin_registration_symbol();
-			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
-			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
-			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+SERIALIZERS_API const char* document_serializer_plugin_registration_symbol();
+SERIALIZERS_API ifcopenshell::plugin::metadata document_serializer_plugin_metadata(const std::string& format, const std::string& schema_name);
+SERIALIZERS_API std::filesystem::path document_serializer_plugin_directory();
+SERIALIZERS_API void load_document_serializer_plugins(XmlSerializerFactory::Factory& registry, const std::string& format);
 
-		}
-	}
+#ifdef WITH_GLTF
+typedef void register_json_document_serializer_plugin_fn(JsonSerializerFactory::Factory&, const ifcopenshell::plugin::module&);
+
+SERIALIZERS_API void load_document_serializer_plugins(JsonSerializerFactory::Factory& registry, const std::string& format);
+#endif
+
+}
 }
 
 #endif

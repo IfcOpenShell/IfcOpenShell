@@ -1,15 +1,20 @@
+set(geometry_serialization_plugin_runtime_dir "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+
 add_subdirectory(schema)
 
-add_library(geometry_serializer Serialization.cpp)
+add_library(geometry_serializer Serialization.cpp opencascade_geometry_ifc_writer_plugin.cpp)
 add_library(opencascade_geometry_ifc_writer ALIAS geometry_serializer)
-set_target_properties(geometry_serializer PROPERTIES COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS")
-target_link_libraries(geometry_serializer plugin ${geometry_serializer_libraries} IfcGeom IfcParse)
+set_target_properties(geometry_serializer PROPERTIES
+    COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS"
+    RUNTIME_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
+    LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
+)
+target_link_libraries(geometry_serializer plugin IfcGeom IfcParse ${OpenCASCADE_LIBRARIES})
 target_link_libraries(geometry_serializer geometry_kernel_opencascade)
-set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} "geometry_serializer" ${geometry_serializer_libraries})
+set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} "geometry_serializer")
 set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} PARENT_SCOPE)
 
-file(GLOB IFCGEOM_SERIALIZATION_H_FILE *.h)
-install(FILES ${IFCGEOM_SERIALIZATION_H_FILE}
+install(FILES Serialization.h
     DESTINATION ${INCLUDEDIR}/ifcgeom/Serialization
 )
 

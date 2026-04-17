@@ -33,22 +33,6 @@
 using json = nlohmann::json;
 
 namespace {
-	struct POSTFIX_SCHEMA(factory_t) {
-		JsonSerializer* operator()(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect) const {
-            POSTFIX_SCHEMA(JsonSerializer)* s = new POSTFIX_SCHEMA(JsonSerializer)(file, json_filename, dialect);
-			s->setFile(file);
-			return s;
-		}
-	};
-}
-
-void MAKE_INIT_FN(JsonSerializer)(JsonSerializerFactory::Factory* mapping) {
-	static const std::string schema_name = STRINGIFY(IfcSchema);
-	POSTFIX_SCHEMA(factory_t) factory;
-	mapping->bind(schema_name, factory);
-}
-
-namespace {
 
 class format_value_visitor : public boost::static_visitor<std::string> {
   public:

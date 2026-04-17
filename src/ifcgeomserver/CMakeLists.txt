@@ -7,5 +7,8 @@ target_link_libraries(IfcGeomServer IfcGeom ${OpenCASCADE_LIBRARIES})
 if(WITH_OPENCASCADE)
     target_link_libraries(IfcGeomServer geometry_kernel_opencascade)
 endif()
+if(kernel_libraries OR mapping_libraries)
+    add_dependencies(IfcGeomServer ${kernel_libraries} ${mapping_libraries})
+endif()
 
 install(TARGETS IfcGeomServer)

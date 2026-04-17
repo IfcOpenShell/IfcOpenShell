@@ -37,6 +37,7 @@ enum class kind {
 	parse_schema,
 	mapping,
 	kernel,
+	tree,
 	document_serializer,
 	geometry_serializer,
 	opencascade_geometry_ifc_writer
@@ -101,6 +102,7 @@ private:
 
 PLUGIN_API abi_info host_abi();
 PLUGIN_API void validate_abi(const abi_info& abi);
+PLUGIN_API std::filesystem::path module_directory(const void* symbol);
 
 }
 }
