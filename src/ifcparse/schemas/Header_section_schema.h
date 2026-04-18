@@ -32,21 +32,19 @@ class file_description; class file_name; class file_schema; class schema_name; c
 
 class IFC_PARSE_API schema_name : public express::DeclaredType {
 public:
-    schema_name() {}
-    explicit schema_name (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
+    using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    void initialize(std::string v);
+    schema_name initialize(std::string v);
     operator std::string() const;
 };
 
 class IFC_PARSE_API time_stamp_text : public express::DeclaredType {
 public:
-    time_stamp_text() {}
-    explicit time_stamp_text (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
+    using express::DeclaredType::DeclaredType;
 
     static const ifcopenshell::type_declaration& Class();
-    void initialize(std::string v);
+    time_stamp_text initialize(std::string v);
     operator std::string() const;
 };
 
@@ -54,8 +52,7 @@ public:
 
 class IFC_PARSE_API file_description : public express::Entity {
 public:
-    file_description() {}
-    explicit file_description (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
+    using express::Entity::Entity;
 
     std::vector< std::string > /*[1:?]*/ description() const;
     void setdescription(const std::vector< std::string > /*[1:?]*/& v);
@@ -63,13 +60,12 @@ public:
     void setimplementation_level(const std::string& v);
     
     static const ifcopenshell::entity& Class();
-    void initialize(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
+    file_description initialize(std::vector< std::string > /*[1:?]*/ v1_description, std::string v2_implementation_level);
 };
 
 class IFC_PARSE_API file_name : public express::Entity {
 public:
-    file_name() {}
-    explicit file_name (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
+    using express::Entity::Entity;
 
     std::string name() const;
     void setname(const std::string& v);
@@ -87,19 +83,18 @@ public:
     void setauthorization(const std::string& v);
     
     static const ifcopenshell::entity& Class();
-    void initialize(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
+    file_name initialize(std::string v1_name, std::string v2_time_stamp, std::vector< std::string > /*[1:?]*/ v3_author, std::vector< std::string > /*[1:?]*/ v4_organization, std::string v5_preprocessor_version, std::string v6_originating_system, std::string v7_authorization);
 };
 
 class IFC_PARSE_API file_schema : public express::Entity {
 public:
-    file_schema() {}
-    explicit file_schema (const std::weak_ptr<instance_data>& data) : express::Entity(data) {}
+    using express::Entity::Entity;
 
     std::vector< std::string > /*[1:?]*/ schema_identifiers() const;
     void setschema_identifiers(const std::vector< std::string > /*[1:?]*/& v);
     
     static const ifcopenshell::entity& Class();
-    void initialize(std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
+    file_schema initialize(std::vector< std::string > /*[1:?]*/ v1_schema_identifiers);
 };
 
 };
