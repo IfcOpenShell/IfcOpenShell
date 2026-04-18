@@ -583,6 +583,11 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             ]
         )
 
+    if not any("BUILD_SHARED_LIBS" in f for f in cmake_args):
+        cmake_flags.append(
+            f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
+        )
+
     run(
         [
             *wasm,
@@ -591,7 +596,6 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             *cmake_flags,
             *cmake_args,
             f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
-            f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
             f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
         ],
         cwd=cwd,
