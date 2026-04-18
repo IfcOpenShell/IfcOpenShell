@@ -236,7 +236,13 @@ class Geometry(bonsai.core.tool.Geometry):
                 break
         mesh = obj.data
         assert isinstance(mesh, bpy.types.Mesh)
-        item = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(mesh).ifc_definition_id)
+        item_id = tool.Geometry.get_mesh_props(mesh).ifc_definition_id
+        try:
+            item = tool.Ifc.get().by_id(item_id)
+        except RuntimeError:
+            # Entity already deleted (e.g. removed as part of a sibling boolean collapse).
+            bpy.data.objects.remove(obj)
+            return
         rep_obj = props.representation_obj
         assert (rep_obj := props.representation_obj) and (rep_element := tool.Ifc.get_entity(rep_obj))
         cls.remove_representation_item(item, rep_element)
@@ -1135,11 +1141,16 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def get_representation_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         data = obj.data
-        if (
-            isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
-            and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
-            and ((item := tool.Ifc.get().by_id(ifc_id)).is_a("IfcRepresentationItem"))
-        ):
+        if not isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES):
+            return None
+        ifc_id = tool.Geometry.get_mesh_props(data).ifc_definition_id
+        if not ifc_id:
+            return None
+        try:
+            item = tool.Ifc.get().by_id(ifc_id)
+        except RuntimeError:
+            return None
+        if item.is_a("IfcRepresentationItem"):
             return item
         return None
 
@@ -1313,6 +1324,8 @@ class Geometry(bonsai.core.tool.Geometry):
         cls, representation: ifcopenshell.entity_instance
     ) -> ifcopenshell.entity_instance:
         if representation.RepresentationType == "MappedRepresentation":
+            if not representation.Items:
+                return representation
             return cls.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
         return representation
 
