@@ -11,4 +11,4 @@ if(kernel_libraries OR mapping_libraries)
     add_dependencies(IfcGeomServer ${kernel_libraries} ${mapping_libraries})
 endif()
 
-install(TARGETS IfcGeomServer)
+install(TARGETS IfcGeomServer EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

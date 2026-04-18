@@ -102,6 +102,8 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Shape shape;
 	if (!convert(solid, shape)) {
 		return false;
@@ -113,4 +115,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::
 		solid->surface_style
 	));
 	return true;
+
+	});
 }

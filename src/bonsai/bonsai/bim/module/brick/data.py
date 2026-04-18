@@ -17,11 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+
 import bonsai.tool as tool
 from bonsai.tool.brick import BrickStore
 
 try:
-    from rdflib import URIRef, BNode
+    from rdflib import BNode, URIRef
 except:
     # See #1860
     print("Warning: brickschema not available.")
@@ -62,8 +63,7 @@ class BrickschemaData:
         if namespace == "https://brickschema.org/schema/Brick":
             return []
         results = []
-        query = BrickStore.graph.query(
-            """
+        query = BrickStore.graph.query("""
             PREFIX brick: <https://brickschema.org/schema/Brick#>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -80,10 +80,7 @@ class BrickschemaData:
                 }
             }
             GROUP BY ?object
-        """.replace(
-                "{uri}", uri
-            )
-        )
+        """.replace("{uri}", uri))
         for row in query:
             predicate_uri = row.get("predicate")
             predicate_name = predicate_uri.toPython().split("#")[-1]

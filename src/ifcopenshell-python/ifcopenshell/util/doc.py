@@ -16,27 +16,30 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import json
 from pathlib import Path
-import copy
+from typing import Optional, TypedDict, Union
+
+from typing_extensions import NotRequired
+
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
-from typing import Optional, Literal, Any, Union, TypedDict
-from typing_extensions import NotRequired
 
 try:
     import glob
-    import warnings
-    import requests
-    import urllib.parse
-    from markdown import markdown
-    from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-    import zipfile
-    from lxml import etree
     import re
     import shutil
+    import urllib.parse
+    import warnings
+    import zipfile
+
+    import requests
+    from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+    from lxml import etree
+    from markdown import markdown
 except:
     pass  # Only necessary if you're using it to generate the docs database
 

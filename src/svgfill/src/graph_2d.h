@@ -2,7 +2,9 @@
 #define GRAPH_2D_H
 
 #ifdef SVGFILL_DEBUG
+#if 0
 #include <nlohmann/json.hpp>
+#endif
 #endif
 
 template <typename Kernel>
@@ -54,8 +56,8 @@ public:
         return adjacency_list.find(p);
     }
 
-    std::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
-        std::optional< CGAL::Segment_2<Kernel> > closest_segment;
+    boost::optional< CGAL::Segment_2<Kernel> > query(const Point_2& p, typename Kernel::FT eps) {
+        boost::optional< CGAL::Segment_2<Kernel> > closest_segment;
         typename Kernel::FT closest_distance = std::numeric_limits<double>::infinity();
         for (auto& p1 : adjacency_list) {
             for (auto& p2 : p1.second) {
@@ -332,6 +334,23 @@ public:
         }
 
         return Graph2D(input_adjacency_list);
+    }
+
+    template <typename T>
+    void to_arrangement(T& arr) {
+        for (auto it = edges_begin(); it != edges_end(); ++it) {
+            if (it->first == it->second) {
+                continue;
+            }
+            CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
+        }
+    }
+
+    template <typename T>
+    void from_arrangement(T& arr) {
+        for (auto it = arr.edges_begin(); it != arr.edges_end(); ++it) {
+            insert(it->source()->point(), it->target()->point());
+        }
     }
 
     void assert_symmetric() {

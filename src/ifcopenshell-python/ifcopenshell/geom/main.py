@@ -18,20 +18,17 @@
 
 
 from __future__ import annotations
-import os
-import sys
-import operator
 
-from .. import open, ifcopenshell_wrapper
-from ifcopenshell import file, entity_instance
+from collections.abc import Generator, Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
+from .. import ifcopenshell_wrapper, open
+from ..entity_instance import entity_instance
+from ..file import file
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Any, Literal, overload, TYPE_CHECKING, cast
-from collections.abc import Generator, Iterable
-
 if TYPE_CHECKING:
-    from OCC.Core import TopoDS
+    from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     IteratorOutput = Union["ShapeElementType", "utils.shape_tuple"]
 
@@ -50,9 +47,9 @@ if has_occ:
     from . import occ_utils as utils
 
     try:
-        from OCC.Core import TopoDS
+        from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
     except ImportError:
-        from OCC import TopoDS
+        from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
         if getattr(settings, "use_python_opencascade", False):
@@ -92,6 +89,7 @@ SETTING = Literal[
     "keep-bounding-boxes",
     "layerset-first",
     "length-unit",
+    "make-volume",
     "max-offset-deviation",
     "max-offset",
     "mesher-angular-deflection",
@@ -127,6 +125,7 @@ SERIALIZER_SETTING = Literal[
     "ecef",
     "digits",
     "wkt-use-section",
+    "separate-z-up-node",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example

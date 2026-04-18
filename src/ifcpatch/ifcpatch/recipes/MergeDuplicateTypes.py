@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.type
-import ifcopenshell.util.element
 from logging import Logger
 from typing import Any
+
+import ifcopenshell
+import ifcopenshell.api.type
+import ifcopenshell.util.element
 
 
 class Patcher:
@@ -97,5 +97,5 @@ class Patcher:
             relating_type=relating_type,
             related_objects=related_objects,
             should_map_representations=False,
-            should_run_listeners=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
         )

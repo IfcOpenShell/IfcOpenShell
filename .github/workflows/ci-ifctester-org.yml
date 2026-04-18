@@ -10,9 +10,9 @@ jobs:
   publish_website:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Checkout ifctester_org_static_html
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/ifctester_org_static_html
           token: ${{ secrets.IFCOPENBOT_TOKEN }}

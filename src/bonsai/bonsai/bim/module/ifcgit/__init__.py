@@ -16,8 +16,8 @@
 # Massimo Fabbro <maxfb87@yahoo.it>
 
 import bpy
-from . import ui, prop, operator
 
+from . import operator, prop, ui
 
 classes = (
     operator.AddFileToRepo,
@@ -34,8 +34,10 @@ classes = (
     operator.Fetch,
     operator.Merge,
     operator.ObjectLog,
+    operator.SelectConflictEntity,
     operator.Push,
     operator.RefreshGit,
+    operator.RenameBranch,
     operator.SwitchRevision,
     operator.InstallGit,
     operator.RunGitDiff,

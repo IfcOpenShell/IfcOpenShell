@@ -1,0 +1,10 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_NAME('','2025-12-24T14:25:45',(''),(''),'IfcOpenShell 0.8.0','IfcOpenShell 0.8.0','');
+FILE_SCHEMA(('IFC4X3_ADD2'));
+ENDSEC;
+DATA;
+#1=IFCPROPERTYLISTVALUE('Test',$,(IFCLABEL('test1'),IFCINTEGER(2)),$);
+ENDSEC;
+END-ISO-10303-21;

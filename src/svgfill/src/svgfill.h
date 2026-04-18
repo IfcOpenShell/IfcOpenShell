@@ -21,9 +21,8 @@
 #ifndef SVGFILL_H
 #define SVGFILL_H
 
-#ifdef SWIG
-#define SVGFILL_API
-#elif defined(_WIN32)
+#ifdef IFC_SHARED_BUILD
+#ifdef _WIN32
 #ifdef svgfill_EXPORTS
 #define SVGFILL_API __declspec(dllexport)
 #else
@@ -32,12 +31,14 @@
 #else // simply assume *nix + GCC-like compiler
 #define SVGFILL_API __attribute__((visibility("default")))
 #endif
+#else
+#define SVGFILL_API
+#endif
+
+#include <boost/optional.hpp>
 
 #include <array>
-#include <string>
 #include <vector>
-#include <optional>
-#include <functional>
 
 namespace svgfill {
 	typedef std::array<double, 2> point_2;
@@ -66,6 +67,7 @@ namespace svgfill {
 		virtual std::vector<int> get_face_pairs() = 0;
 		virtual size_t num_edges() = 0;
 		virtual size_t num_faces() = 0;
+        virtual size_t delete_same_facet_edge_pairs() = 0;
 	};
 
 	class SVGFILL_API context {
@@ -100,19 +102,38 @@ namespace svgfill {
 		void write(std::vector<std::vector<polygon_2>>&);
 		size_t num_edges() { return arr_->num_edges(); }
 		size_t num_faces() { return arr_->num_faces(); }
+        size_t delete_same_facet_edge_pairs() { return arr_->delete_same_facet_edge_pairs(); }
 
 		~context() {
 			delete arr_;
 		}
 	};
 
-	SVGFILL_API bool svg_to_line_segments(const std::string& data, const std::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments);
+	SVGFILL_API bool svg_to_line_segments(const std::string& data, const boost::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments);
 	SVGFILL_API bool line_segments_to_polygons(solver s, double eps, const std::vector<std::vector<line_segment_2>>& segments, std::vector<std::vector<polygon_2>>& polygons);
 	SVGFILL_API bool line_segments_to_polygons(solver s, double eps, const std::vector<std::vector<line_segment_2>>& segments, std::vector<std::vector<polygon_2>>& polygons, std::function<void(float)>& progress);
 	SVGFILL_API std::string polygons_to_svg(const std::vector<std::vector<polygon_2>>& polygons, bool random_color=false);
 	SVGFILL_API std::string polygons_to_svg(const std::vector<polygon_2>& polygons, bool random_color = false);
-	SVGFILL_API bool svg_to_polygons(const std::string& data, const std::optional<std::string>& class_name, std::vector<polygon_2>& polygons);
-	SVGFILL_API bool arrange_polygons(const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged);
-}
+	SVGFILL_API bool svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name, std::vector<polygon_2>& polygons);
+
+	struct SVGFILL_API arrange_polygon_settings {
+        bool debug_output = false;
+		// -1: compute from average edge length
+        double polygon_offset_distance = -1.;
+        // 0: use offset - union - negative offset to find the outer perimeter
+        // 1: radial walk along vertices; exact, but can only reuse vertices, not create new positions by means of intersections
+        int outer_perimiter_algo = 0;
+        // 0: outer perimiter and corridor center lines
+        // 1: input polygons, corridor center lines and segments connecting corridor center lines to input polygons
+        int topology_reconstruction_algo = 0;
+        // 0: join segment runs
+        // 1: local badness reduction
+        int line_cleaning_algo = 0;
+        bool perform_cleanup = true;
+        double subdivision_factor = 16.;
+    };
+
+	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged);
+    }
 
 #endif

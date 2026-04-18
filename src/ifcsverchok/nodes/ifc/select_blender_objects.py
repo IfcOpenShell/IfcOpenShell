@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
+import bonsai.tool as tool
 import bpy
 import ifcopenshell
-import ifcopenshell.util.selector
-import bonsai.tool as tool
+from bpy.props import StringProperty
+from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
 import ifcsverchok.helper
 import ifcsverchok.helper as helper
-from bpy.props import StringProperty
-from sverchok.node_tree import SverchCustomTreeNode
-from sverchok.data_structure import updateNode
 
 
 class SvIfcSelectBlenderObjectsRefresh(bpy.types.Operator):

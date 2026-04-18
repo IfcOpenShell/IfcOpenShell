@@ -21,10 +21,11 @@ This file should produce no warnings from type checker (currently pyright).
 Those tests are not automatically checked and just there to make sure overloads are making sense.
 """
 
+from typing import Union
+
+from typing_extensions import assert_type
 
 import ifcopenshell
-from typing import Union
-from typing_extensions import assert_type
 
 
 def ifcopenshell_open_test(str_: str, bool_: bool):

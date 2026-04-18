@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, get_args
+
 import bpy
-import bonsai.tool as tool
-import bonsai.core.owner as core
 import ifcopenshell.api.owner
 from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
-from typing import TYPE_CHECKING, get_args
+
+import bonsai.core.owner as core
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
@@ -31,7 +33,7 @@ class EnableEditingPerson(bpy.types.Operator):
     bl_idname = "bim.enable_editing_person"
     bl_label = "Enable Editing Person"
     bl_options = {"REGISTER", "UNDO"}
-    person: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    person: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         person: int
@@ -73,7 +75,7 @@ class RemovePerson(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_person"
     bl_label = "Remove Person"
     bl_options = {"REGISTER", "UNDO"}
-    person: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    person: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         person: int
@@ -86,7 +88,7 @@ class AddPersonAttribute(bpy.types.Operator):
     bl_idname = "bim.add_person_attribute"
     bl_label = "Add Person Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    name: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.EnumProperty(
         items=tuple((i, i, "") for i in get_args(tool.Owner.PersonAttributeType)),
     )
 
@@ -102,10 +104,10 @@ class RemovePersonAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_person_attribute"
     bl_label = "Remove Person Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    name: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.EnumProperty(
         items=tuple((i, i, "") for i in get_args(tool.Owner.PersonAttributeType)),
     )
-    id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         name: tool.Owner.PersonAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -120,7 +122,7 @@ class EnableEditingRole(bpy.types.Operator):
     bl_idname = "bim.enable_editing_role"
     bl_label = "Enable Editing Role"
     bl_options = {"REGISTER", "UNDO"}
-    role: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    role: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         role: int
@@ -144,7 +146,7 @@ class AddRole(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_role"
     bl_label = "Add Role"
     bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    parent: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         parent: int
@@ -166,7 +168,7 @@ class RemoveRole(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_role"
     bl_label = "Remove Role"
     bl_options = {"REGISTER", "UNDO"}
-    role: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    role: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         role: int
@@ -179,8 +181,8 @@ class AddAddress(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_address"
     bl_label = "Add Address"
     bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    ifc_class: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    parent: bpy.props.IntProperty()
+    ifc_class: bpy.props.EnumProperty(
         items=tuple((i, i, "") for i in get_args(ADDRESS_TYPE)),
     )
 
@@ -196,7 +198,7 @@ class AddAddressAttribute(bpy.types.Operator):
     bl_idname = "bim.add_address_attribute"
     bl_label = "Add Address Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    name: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.EnumProperty(
         items=tuple((i, i, "") for i in get_args(tool.Owner.AddressAttributeType)),
     )
 
@@ -212,10 +214,10 @@ class RemoveAddressAttribute(bpy.types.Operator):
     bl_idname = "bim.remove_address_attribute"
     bl_label = "Remove Address Attribute"
     bl_options = {"REGISTER", "UNDO"}
-    name: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.EnumProperty(
         items=tuple((i, i, "") for i in get_args(tool.Owner.AddressAttributeType)),
     )
-    id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         name: tool.Owner.AddressAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -230,7 +232,7 @@ class EnableEditingAddress(bpy.types.Operator):
     bl_idname = "bim.enable_editing_address"
     bl_label = "Enable Editing Address"
     bl_options = {"REGISTER", "UNDO"}
-    address: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    address: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         address: int
@@ -263,7 +265,7 @@ class RemoveAddress(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_address"
     bl_label = "Remove Address"
     bl_options = {"REGISTER", "UNDO"}
-    address: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    address: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         address: int
@@ -276,7 +278,7 @@ class EnableEditingOrganisation(bpy.types.Operator):
     bl_idname = "bim.enable_editing_organisation"
     bl_label = "Enable Editing Organisation"
     bl_options = {"REGISTER", "UNDO"}
-    organisation: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    organisation: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         organisation: int
@@ -318,7 +320,7 @@ class RemoveOrganisation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_organisation"
     bl_label = "Remove Organisation"
     bl_options = {"REGISTER", "UNDO"}
-    organisation: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    organisation: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         organisation: int
@@ -331,8 +333,8 @@ class AddPersonAndOrganisation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_person_and_organisation"
     bl_label = "Add Person And Organisation"
     bl_options = {"REGISTER", "UNDO"}
-    person: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    organisation: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    person: bpy.props.IntProperty()
+    organisation: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         person: int
@@ -348,7 +350,7 @@ class RemovePersonAndOrganisation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_person_and_organisation"
     bl_label = "Remove Person And Organisation"
     bl_options = {"REGISTER", "UNDO"}
-    person_and_organisation: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    person_and_organisation: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         person_and_organisation: int
@@ -363,7 +365,7 @@ class SetUser(bpy.types.Operator):
     bl_idname = "bim.set_user"
     bl_label = "Set User"
     bl_options = {"REGISTER", "UNDO"}
-    user: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    user: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         user: int
@@ -399,7 +401,7 @@ class EnableEditingActor(bpy.types.Operator):
     bl_idname = "bim.enable_editing_actor"
     bl_label = "Enable Editing Actor"
     bl_options = {"REGISTER", "UNDO"}
-    actor: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    actor: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         actor: int
@@ -432,7 +434,7 @@ class RemoveActor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_actor"
     bl_label = "Remove Actor"
     bl_options = {"REGISTER", "UNDO"}
-    actor: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    actor: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         actor: int
@@ -445,7 +447,7 @@ class AssignActor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_actor"
     bl_label = "Assign Actor"
     bl_options = {"REGISTER", "UNDO"}
-    actor: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    actor: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         actor: int
@@ -460,7 +462,7 @@ class UnassignActor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_actor"
     bl_label = "Unassign Actor"
     bl_options = {"REGISTER", "UNDO"}
-    actor: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    actor: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         actor: int
@@ -479,7 +481,7 @@ class RemoveApplication(bpy.types.Operator, tool.Ifc.Operator):
         "Remove provided IfcApplication."
         "\n\nFor safety will only work on applications without inverses (they are typically marked as '(unused)'."
     )
-    application_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    application_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         application_id: int
@@ -523,7 +525,7 @@ class EnableEditingApplication(bpy.types.Operator):
     bl_idname = "bim.enable_editing_application"
     bl_label = "Enable Editing Application"
     bl_options = {"REGISTER", "UNDO"}
-    application_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    application_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         application_id: int

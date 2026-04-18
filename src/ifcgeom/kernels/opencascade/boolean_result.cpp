@@ -84,6 +84,7 @@ namespace {
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
 	bool valid_result = false;
 	bool first = true;
 	const double tol = settings_.get<settings::Precision>().get();
@@ -196,4 +197,5 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	));
 
 	return true;
+    });
 }

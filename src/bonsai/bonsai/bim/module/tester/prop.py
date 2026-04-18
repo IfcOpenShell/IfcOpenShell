@@ -19,19 +19,17 @@
 from typing import TYPE_CHECKING
 
 import bpy
-from bonsai.bim.module.tester.data import TesterData
-from bonsai.bim.prop import StrProperty, MultipleFileSelect
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
+
+from bonsai.bim.module.tester.data import TesterData
+from bonsai.bim.prop import MultipleFileSelect
 
 
 def update_active_specification_index(self: "IfcTesterProperties", context: bpy.types.Context) -> None:

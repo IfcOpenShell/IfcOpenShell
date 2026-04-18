@@ -32,6 +32,7 @@ WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_fil
 	, obj_stream(obj_filename)
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)
+	, ncount_total(1)
 {
 	obj_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());
 	mtl_stream.stream << std::setprecision(settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get());

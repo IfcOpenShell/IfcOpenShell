@@ -17,11 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
@@ -111,6 +113,7 @@ def assign_material(
     material_type: Union[str, None],
     objects: list[bpy.types.Object],
     material: Optional[ifcopenshell.entity_instance] = None,
+    should_auto_assign_usage: bool = True,
 ) -> None:
     """Assign material to the provided objects.
 
@@ -119,12 +122,18 @@ def assign_material(
     """
     material_type = material_type or material_tool.get_object_ui_material_type()
     material = material or material_tool.get_object_ui_active_material()
+    can_be_usage = should_auto_assign_usage and material_type in ("IfcMaterialLayerSet", "IfcMaterialProfileSet")
     for obj in objects:
         element = ifc.get_entity(obj)
         if not element:
             continue
 
-        ifc.run("material.assign_material", products=[element], type=material_type, material=material)
+        if can_be_usage and not material_tool.is_type_product(element):
+            element_material_type = material_type + "Usage"
+        else:
+            element_material_type = material_type
+
+        ifc.run("material.assign_material", products=[element], type=element_material_type, material=material)
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
 
@@ -134,7 +143,9 @@ def assign_material(
             material_tool.add_material_to_set(material_set=material, material=default_material)
         elif material_tool.is_a_material_set(assigned_material):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)
-        material_tool.ensure_material_assigned(elements=[element], material_type=material_type, material=material)
+        material_tool.ensure_material_assigned(
+            elements=[element], material_type=element_material_type, material=material
+        )
 
 
 def unassign_material(ifc: type[tool.Ifc], material_tool: type[tool.Material], objects: list[bpy.types.Object]) -> None:

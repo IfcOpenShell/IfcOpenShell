@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import bpy
+import ifcopenshell.util.element
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import ifcopenshell.util.element
-from typing import Union
 
 
 class Collector(bonsai.core.tool.Collector):
@@ -156,7 +157,8 @@ class Collector(bonsai.core.tool.Collector):
             return
         collection = bpy.data.collections.new(obj.name)
         props.collection = collection
-        collection.BIMCollectionProperties.obj = obj
+        collection_props = tool.Blender.get_collection_props(collection)
+        collection_props.obj = obj
         return collection
 
     @classmethod

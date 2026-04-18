@@ -17,31 +17,25 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import TYPE_CHECKING
-import bpy
-from bpy.types import PropertyGroup
+
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
     IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
 
 
 class WebProperties(PropertyGroup):
-    webserver_port: IntProperty(  # pyright: ignore[reportRedeclaration]
+    webserver_port: IntProperty(
         name="Webserver Port",
         min=0,
         max=65535,
     )
-    is_running: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    is_running: BoolProperty(
         name="Webserver Running Status",
         default=False,
     )
-    is_connected: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    is_connected: BoolProperty(
         name="Connection Status",
         default=False,
     )

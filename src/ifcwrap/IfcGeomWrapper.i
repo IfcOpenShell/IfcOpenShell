@@ -1058,6 +1058,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %ignore svgfill::line_segments_to_polygons;
 %ignore svgfill::svg_to_polygons;
 %ignore svgfill::arrange_polygons;
+%ignore svgfill::abstract_arrangement;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
@@ -1102,9 +1103,9 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(const std::vector<svgfill::polygon_2>& polygons) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons) {
 		std::vector<svgfill::polygon_2> r;
-		if (svgfill::arrange_polygons(polygons, r)) {
+		if (svgfill::arrange_polygons(settings, polygons, r)) {
 			return r;
 		} else {
 			throw std::runtime_error("Failed to arrange polygons");

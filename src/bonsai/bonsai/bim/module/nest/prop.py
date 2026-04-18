@@ -16,23 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.spatial.data import SpatialData
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from bonsai.bim.module.nest.decorator import NestDecorator, NestModeDecorator
 from typing import TYPE_CHECKING, Union
+
+import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    PointerProperty,
+)
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.module.nest.decorator import NestDecorator, NestModeDecorator
 
 
 def update_relating_object(self: "BIMObjectNestProperties", context: bpy.types.Context) -> None:

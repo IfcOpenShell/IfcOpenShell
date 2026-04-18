@@ -17,14 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.AssignType,
     operator.AutoRenameOccurrences,
     operator.DisableEditingType,
+    operator.DisableEditingTypeAttributes,
     operator.DuplicateType,
+    operator.EditTypeAttributes,
     operator.EnableEditingType,
+    operator.EnableEditingTypeAttributes,
     operator.RemoveType,
     operator.RenameType,
     operator.SelectSimilarType,
@@ -33,6 +37,7 @@ classes = (
     operator.UnassignType,
     prop.BIMTypeProperties,
     ui.BIM_PT_type,
+    ui.BIM_PT_type_attributes,
 )
 
 

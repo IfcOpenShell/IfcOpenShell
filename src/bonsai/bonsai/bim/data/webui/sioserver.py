@@ -1,6 +1,5 @@
-import sys
 import os
-
+import sys
 
 bonsai_lib_path = os.environ.get("BONSAI_LIB_PATH")
 bonsai_version = os.environ.get("BONSAI_VERSION")
@@ -9,12 +8,13 @@ if bonsai_lib_path:
     sys.path.insert(0, bonsai_lib_path)
 
 import argparse
-from aiohttp import web
-import socketio
-import pystache
-import json
 import base64
+import json
 import xml.etree.ElementTree as ET
+
+import pystache
+import socketio
+from aiohttp import web
 
 sio_port = 8080  # default port
 

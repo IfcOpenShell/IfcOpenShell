@@ -19,9 +19,10 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_geometric_representation import _create_geometric_representation
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
+from ifcopenshell.api.alignment._create_geometric_representation import (
+    _create_geometric_representation,
+)
 
 
 def create_representation(

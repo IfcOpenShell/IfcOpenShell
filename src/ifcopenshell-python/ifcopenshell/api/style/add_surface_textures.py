@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
 import ifcopenshell
-import ifcopenshell.api
-from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
-    import bpy
+    import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
 
 def add_surface_textures(

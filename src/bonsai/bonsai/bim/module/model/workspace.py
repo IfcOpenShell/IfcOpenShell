@@ -17,20 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
+from functools import partial
+from typing import Optional, Union
+
 import bpy
 import bpy.utils.previews
-import bonsai.bim
-import bonsai.tool as tool
+from bpy.types import Menu, WorkSpaceTool
+
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
-from bonsai.bim.helper import prop_with_search, draw_attribute
-from bpy.types import WorkSpaceTool, Menu
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, prop_with_search
 from bonsai.bim.module.model.data import AuthoringData, ItemData
-from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union, Any
-from functools import partial
+from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
+from bonsai.bim.module.system.data import PortData
 
 
 def load_custom_icons():
@@ -943,7 +943,7 @@ class EditObjectUI:
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
-                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_to_underside.__doc__, ui_context
+                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_walls_to_underside.__doc__, ui_context
                 )
 
         if AuthoringData.data["is_flippable_element"]:

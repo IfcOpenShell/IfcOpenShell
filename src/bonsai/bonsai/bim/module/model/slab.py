@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
-import bmesh
+from math import cos, pi
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
@@ -28,18 +28,20 @@ import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
 import ifcopenshell.util.type
-import bonsai.core.type
+import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos, pi
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional
 
 
 class DumbSlabGenerator:
@@ -236,38 +238,6 @@ class DumbSlabPlaner:
                     for element in rel.RelatedObjects:
                         self.change_thickness(element, total_thickness)
 
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
-            return
-
-        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
-        layer_set_direction = None
-        if parametric:
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-        new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
-
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object, layer_set_direction, new_thickness)
-
-    def _regenerate_from_type(
-        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str], new_thickness: float
-    ) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-
-        material = ifcopenshell.util.element.get_material(related_object)
-        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
-            return
-        if layer_set_direction:
-            material.LayerSetDirection = layer_set_direction
-        if material.LayerSetDirection == "AXIS3":
-            self.change_thickness(related_object, new_thickness)
-
     def regenerate_from_occurence(self, element, material_set_usage):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_set = material_set_usage.ForLayerSet
@@ -277,6 +247,7 @@ class DumbSlabPlaner:
         self.change_thickness(element, total_thickness)
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
@@ -657,6 +628,8 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
 
+        # TODO: review #7537 properly, this is a quick fix but something doesn't seem right.
+        original_rotation_x = 0
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
@@ -706,6 +679,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         extrusion = tool.Model.get_extrusion(body)
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
+
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
@@ -976,10 +950,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
-
         self.handle_inserting_polyline(context, event)
-
-        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:

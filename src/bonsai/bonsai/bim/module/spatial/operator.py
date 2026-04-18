@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.spatial as core
+
 import bonsai.bim.handler
-from typing import TYPE_CHECKING
+import bonsai.core.spatial as core
+import bonsai.tool as tool
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -151,16 +153,10 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         "Assign the selected objects to the container selected in Spatial Manager.\n\n"
         "All elements-parts of an aggregate will be skipped.\n"
         "To assign a container, they should be unassigned from an aggregate first.\n\n"
-        "This will also move objects to the container collection in the outliner.\n"
-        "ALT + Click to ensure objects are only linked in the container collection"
+        "This will also move objects to the container collection in the outliner."
     )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
-    remove_from_other_containers: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
-
-    def invoke(self, context, event):
-        self.remove_from_other_containers = event.alt
-        return self.execute(context)
 
     def _execute(self, context):
         if self.container:
@@ -175,31 +171,9 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return
 
-        objs: list[bpy.types.Object] = []
-        # In IFC element can be either contained of aggregated,
-        # tehrefore we skip aggregated elements here to prevent confusion.
-        # Can't handle it in `poll` since user might just select bunch of elements
-        # and try to assign a container to them
-        # and excluding aggregates because of the `poll` failing might get awkward.
-        skipped_aggregates = 0
-        for obj in tool.Blender.get_selected_objects():
-            if not (element := tool.Ifc.get_entity(obj)):
-                continue
-            if ifcopenshell.util.element.get_aggregate(element):
-                skipped_aggregates += 1
-                continue
-            objs.append(obj)
-
-        for element_obj in objs:
-            if self.remove_from_other_containers:
-                for col in element_obj.users_collection[:]:
-                    col.objects.unlink(element_obj)
-            core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
-
-        aggregates_msg = ""
-        if skipped_aggregates:
-            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
-        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
+        core.assign_container(
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, objs=tool.Blender.get_selected_objects()
+        )
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -246,7 +220,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy to Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    container: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    container: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         container: int
@@ -505,6 +479,54 @@ class SetDefaultContainer(bpy.types.Operator):
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
         core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
+
+
+class SetContainerVisibility(bpy.types.Operator):
+    bl_idname = "bim.set_container_visibility"
+    bl_label = "Set Container Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+    should_include_children: bpy.props.BoolProperty(name="Should Include Children", default=True, options={"SKIP_SAVE"})
+    mode: bpy.props.StringProperty(name="Mode")
+
+    @classmethod
+    def description(cls, context, operator):
+        if operator.mode == "HIDE":
+            return "Hides the selected container and all children.\n" + "ALT+CLICK to ignore children"
+        elif operator.mode == "SHOW":
+            return "Shows the selected container and all children.\n" + "ALT+CLICK to ignore children"
+        return "Isolate the selected container and all children.\n" + "ALT+CLICK to ignore children"
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.should_include_children = False
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.mode == "ISOLATE":
+            if tool.Ifc.get_schema() == "IFC2X3":
+                containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+            elif tool.Ifc.get_schema() != "IFC2X3":
+                containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
+                containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
+            for container in containers:
+                if obj := tool.Ifc.get_object(container):
+                    if collection := tool.Blender.get_object_bim_props(obj).collection:
+                        collection.hide_viewport = True
+            should_hide = False
+        else:
+            should_hide = self.mode == "HIDE"
+
+        container = tool.Ifc.get().by_id(self.container)
+        queue = [container]
+        while queue:
+            container = queue.pop()
+            if obj := tool.Ifc.get_object(container):
+                if collection := tool.Blender.get_object_bim_props(obj).collection:
+                    collection.hide_viewport = should_hide
+            if self.should_include_children:
+                queue.extend(ifcopenshell.util.element.get_parts(container))
         return {"FINISHED"}
 
 

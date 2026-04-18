@@ -17,11 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-import test.bootstrap
-import ifcopenshell.api.root
+
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
+import ifcopenshell.api.root
 import ifcopenshell.util.geolocation
+import test.bootstrap
 
 
 class TestEditWCS(test.bootstrap.IFC4):

@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.cost
-import ifcopenshell.api.control
 from typing import Any
+
+import ifcopenshell.api.control
+import ifcopenshell.api.cost
 
 
 def assign_cost_item_quantity(

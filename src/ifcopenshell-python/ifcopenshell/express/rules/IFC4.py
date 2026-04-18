@@ -1,16 +1,19 @@
 import ifcopenshell
 
+def is_indeterminate(v):
+    return v is None or type(v).__name__ == 'indeterminate_type'
+
 def exists(v):
     if callable(v):
         try:
-            return exists(v())
+            return v() is not None
         except IndexError as e:
             return False
     else:
-        return v is not None and v is not INDETERMINATE
+        return not is_indeterminate(v)
 
 def nvl(v, default):
-    return v if v is not None else default
+    return v if not is_indeterminate(v) else default
 
 def is_entity(inst):
     if isinstance(inst, ifcopenshell.entity_instance):
@@ -22,13 +25,13 @@ def is_entity(inst):
 def express_len(v):
     if isinstance(v, ifcopenshell.entity_instance) and (not is_entity(v)):
         v = v[0]
-    elif v is None or v is INDETERMINATE:
+    elif is_indeterminate(v):
         return INDETERMINATE
     return len(v)
 old_range = range
 
 def range(*args):
-    if INDETERMINATE in args:
+    if any(map(is_indeterminate, args)):
         return
     yield from old_range(*args)
 sizeof = express_len
@@ -44,8 +47,8 @@ def usedin(inst, ref_name):
     (_, __, attr) = ref_name.split('.')
 
     def filter():
-        for (ref, attr_idx) in inst.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
-            if ref.get_attribute_names()[attr_idx].lower() == attr:
+        for (ref, attr_idx) in inst.wrapped_data.file.get_inverse(inst, allow_duplicate=True, with_attribute_indices=True):
+            if ref.wrapped_data.get_attribute_names()[attr_idx].lower() == attr:
                 yield ref
     return list(filter())
 
@@ -149,4173 +152,4172 @@ class enum_namespace:
     def __getattr__(self, k):
         return express_getattr(k, 'upper', INDETERMINATE)()
 IfcActionRequestTypeEnum = enum_namespace()
-email = express_getattr(IfcActionRequestTypeEnum, 'EMAIL', INDETERMINATE)
-fax = express_getattr(IfcActionRequestTypeEnum, 'FAX', INDETERMINATE)
-phone = express_getattr(IfcActionRequestTypeEnum, 'PHONE', INDETERMINATE)
-post = express_getattr(IfcActionRequestTypeEnum, 'POST', INDETERMINATE)
-verbal = express_getattr(IfcActionRequestTypeEnum, 'VERBAL', INDETERMINATE)
-userdefined = express_getattr(IfcActionRequestTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcActionRequestTypeEnum, 'NOTDEFINED', INDETERMINATE)
+email = IfcActionRequestTypeEnum.EMAIL
+fax = IfcActionRequestTypeEnum.FAX
+phone = IfcActionRequestTypeEnum.PHONE
+post = IfcActionRequestTypeEnum.POST
+verbal = IfcActionRequestTypeEnum.VERBAL
+userdefined = IfcActionRequestTypeEnum.USERDEFINED
+notdefined = IfcActionRequestTypeEnum.NOTDEFINED
 IfcActionSourceTypeEnum = enum_namespace()
-dead_load_g = express_getattr(IfcActionSourceTypeEnum, 'DEAD_LOAD_G', INDETERMINATE)
-completion_g1 = express_getattr(IfcActionSourceTypeEnum, 'COMPLETION_G1', INDETERMINATE)
-live_load_q = express_getattr(IfcActionSourceTypeEnum, 'LIVE_LOAD_Q', INDETERMINATE)
-snow_s = express_getattr(IfcActionSourceTypeEnum, 'SNOW_S', INDETERMINATE)
-wind_w = express_getattr(IfcActionSourceTypeEnum, 'WIND_W', INDETERMINATE)
-prestressing_p = express_getattr(IfcActionSourceTypeEnum, 'PRESTRESSING_P', INDETERMINATE)
-settlement_u = express_getattr(IfcActionSourceTypeEnum, 'SETTLEMENT_U', INDETERMINATE)
-temperature_t = express_getattr(IfcActionSourceTypeEnum, 'TEMPERATURE_T', INDETERMINATE)
-earthquake_e = express_getattr(IfcActionSourceTypeEnum, 'EARTHQUAKE_E', INDETERMINATE)
-fire = express_getattr(IfcActionSourceTypeEnum, 'FIRE', INDETERMINATE)
-impulse = express_getattr(IfcActionSourceTypeEnum, 'IMPULSE', INDETERMINATE)
-impact = express_getattr(IfcActionSourceTypeEnum, 'IMPACT', INDETERMINATE)
-transport = express_getattr(IfcActionSourceTypeEnum, 'TRANSPORT', INDETERMINATE)
-erection = express_getattr(IfcActionSourceTypeEnum, 'ERECTION', INDETERMINATE)
-propping = express_getattr(IfcActionSourceTypeEnum, 'PROPPING', INDETERMINATE)
-system_imperfection = express_getattr(IfcActionSourceTypeEnum, 'SYSTEM_IMPERFECTION', INDETERMINATE)
-shrinkage = express_getattr(IfcActionSourceTypeEnum, 'SHRINKAGE', INDETERMINATE)
-creep = express_getattr(IfcActionSourceTypeEnum, 'CREEP', INDETERMINATE)
-lack_of_fit = express_getattr(IfcActionSourceTypeEnum, 'LACK_OF_FIT', INDETERMINATE)
-buoyancy = express_getattr(IfcActionSourceTypeEnum, 'BUOYANCY', INDETERMINATE)
-ice = express_getattr(IfcActionSourceTypeEnum, 'ICE', INDETERMINATE)
-current = express_getattr(IfcActionSourceTypeEnum, 'CURRENT', INDETERMINATE)
-wave = express_getattr(IfcActionSourceTypeEnum, 'WAVE', INDETERMINATE)
-rain = express_getattr(IfcActionSourceTypeEnum, 'RAIN', INDETERMINATE)
-brakes = express_getattr(IfcActionSourceTypeEnum, 'BRAKES', INDETERMINATE)
-userdefined = express_getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcActionSourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dead_load_g = IfcActionSourceTypeEnum.DEAD_LOAD_G
+completion_g1 = IfcActionSourceTypeEnum.COMPLETION_G1
+live_load_q = IfcActionSourceTypeEnum.LIVE_LOAD_Q
+snow_s = IfcActionSourceTypeEnum.SNOW_S
+wind_w = IfcActionSourceTypeEnum.WIND_W
+prestressing_p = IfcActionSourceTypeEnum.PRESTRESSING_P
+settlement_u = IfcActionSourceTypeEnum.SETTLEMENT_U
+temperature_t = IfcActionSourceTypeEnum.TEMPERATURE_T
+earthquake_e = IfcActionSourceTypeEnum.EARTHQUAKE_E
+fire = IfcActionSourceTypeEnum.FIRE
+impulse = IfcActionSourceTypeEnum.IMPULSE
+impact = IfcActionSourceTypeEnum.IMPACT
+transport = IfcActionSourceTypeEnum.TRANSPORT
+erection = IfcActionSourceTypeEnum.ERECTION
+propping = IfcActionSourceTypeEnum.PROPPING
+system_imperfection = IfcActionSourceTypeEnum.SYSTEM_IMPERFECTION
+shrinkage = IfcActionSourceTypeEnum.SHRINKAGE
+creep = IfcActionSourceTypeEnum.CREEP
+lack_of_fit = IfcActionSourceTypeEnum.LACK_OF_FIT
+buoyancy = IfcActionSourceTypeEnum.BUOYANCY
+ice = IfcActionSourceTypeEnum.ICE
+current = IfcActionSourceTypeEnum.CURRENT
+wave = IfcActionSourceTypeEnum.WAVE
+rain = IfcActionSourceTypeEnum.RAIN
+brakes = IfcActionSourceTypeEnum.BRAKES
+userdefined = IfcActionSourceTypeEnum.USERDEFINED
+notdefined = IfcActionSourceTypeEnum.NOTDEFINED
 IfcActionTypeEnum = enum_namespace()
-permanent_g = express_getattr(IfcActionTypeEnum, 'PERMANENT_G', INDETERMINATE)
-variable_q = express_getattr(IfcActionTypeEnum, 'VARIABLE_Q', INDETERMINATE)
-extraordinary_a = express_getattr(IfcActionTypeEnum, 'EXTRAORDINARY_A', INDETERMINATE)
-userdefined = express_getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcActionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+permanent_g = IfcActionTypeEnum.PERMANENT_G
+variable_q = IfcActionTypeEnum.VARIABLE_Q
+extraordinary_a = IfcActionTypeEnum.EXTRAORDINARY_A
+userdefined = IfcActionTypeEnum.USERDEFINED
+notdefined = IfcActionTypeEnum.NOTDEFINED
 IfcActuatorTypeEnum = enum_namespace()
-electricactuator = express_getattr(IfcActuatorTypeEnum, 'ELECTRICACTUATOR', INDETERMINATE)
-handoperatedactuator = express_getattr(IfcActuatorTypeEnum, 'HANDOPERATEDACTUATOR', INDETERMINATE)
-hydraulicactuator = express_getattr(IfcActuatorTypeEnum, 'HYDRAULICACTUATOR', INDETERMINATE)
-pneumaticactuator = express_getattr(IfcActuatorTypeEnum, 'PNEUMATICACTUATOR', INDETERMINATE)
-thermostaticactuator = express_getattr(IfcActuatorTypeEnum, 'THERMOSTATICACTUATOR', INDETERMINATE)
-userdefined = express_getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcActuatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+electricactuator = IfcActuatorTypeEnum.ELECTRICACTUATOR
+handoperatedactuator = IfcActuatorTypeEnum.HANDOPERATEDACTUATOR
+hydraulicactuator = IfcActuatorTypeEnum.HYDRAULICACTUATOR
+pneumaticactuator = IfcActuatorTypeEnum.PNEUMATICACTUATOR
+thermostaticactuator = IfcActuatorTypeEnum.THERMOSTATICACTUATOR
+userdefined = IfcActuatorTypeEnum.USERDEFINED
+notdefined = IfcActuatorTypeEnum.NOTDEFINED
 IfcAddressTypeEnum = enum_namespace()
-office = express_getattr(IfcAddressTypeEnum, 'OFFICE', INDETERMINATE)
-site = express_getattr(IfcAddressTypeEnum, 'SITE', INDETERMINATE)
-home = express_getattr(IfcAddressTypeEnum, 'HOME', INDETERMINATE)
-distributionpoint = express_getattr(IfcAddressTypeEnum, 'DISTRIBUTIONPOINT', INDETERMINATE)
-userdefined = express_getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE)
+office = IfcAddressTypeEnum.OFFICE
+site = IfcAddressTypeEnum.SITE
+home = IfcAddressTypeEnum.HOME
+distributionpoint = IfcAddressTypeEnum.DISTRIBUTIONPOINT
+userdefined = IfcAddressTypeEnum.USERDEFINED
 IfcAirTerminalBoxTypeEnum = enum_namespace()
-constantflow = express_getattr(IfcAirTerminalBoxTypeEnum, 'CONSTANTFLOW', INDETERMINATE)
-variableflowpressuredependant = express_getattr(IfcAirTerminalBoxTypeEnum, 'VARIABLEFLOWPRESSUREDEPENDANT', INDETERMINATE)
-variableflowpressureindependant = express_getattr(IfcAirTerminalBoxTypeEnum, 'VARIABLEFLOWPRESSUREINDEPENDANT', INDETERMINATE)
-userdefined = express_getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAirTerminalBoxTypeEnum, 'NOTDEFINED', INDETERMINATE)
+constantflow = IfcAirTerminalBoxTypeEnum.CONSTANTFLOW
+variableflowpressuredependant = IfcAirTerminalBoxTypeEnum.VARIABLEFLOWPRESSUREDEPENDANT
+variableflowpressureindependant = IfcAirTerminalBoxTypeEnum.VARIABLEFLOWPRESSUREINDEPENDANT
+userdefined = IfcAirTerminalBoxTypeEnum.USERDEFINED
+notdefined = IfcAirTerminalBoxTypeEnum.NOTDEFINED
 IfcAirTerminalTypeEnum = enum_namespace()
-diffuser = express_getattr(IfcAirTerminalTypeEnum, 'DIFFUSER', INDETERMINATE)
-grille = express_getattr(IfcAirTerminalTypeEnum, 'GRILLE', INDETERMINATE)
-louvre = express_getattr(IfcAirTerminalTypeEnum, 'LOUVRE', INDETERMINATE)
-register = express_getattr(IfcAirTerminalTypeEnum, 'REGISTER', INDETERMINATE)
-userdefined = express_getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAirTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+diffuser = IfcAirTerminalTypeEnum.DIFFUSER
+grille = IfcAirTerminalTypeEnum.GRILLE
+louvre = IfcAirTerminalTypeEnum.LOUVRE
+register = IfcAirTerminalTypeEnum.REGISTER
+userdefined = IfcAirTerminalTypeEnum.USERDEFINED
+notdefined = IfcAirTerminalTypeEnum.NOTDEFINED
 IfcAirToAirHeatRecoveryTypeEnum = enum_namespace()
-fixedplatecounterflowexchanger = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECOUNTERFLOWEXCHANGER', INDETERMINATE)
-fixedplatecrossflowexchanger = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECROSSFLOWEXCHANGER', INDETERMINATE)
-fixedplateparallelflowexchanger = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATEPARALLELFLOWEXCHANGER', INDETERMINATE)
-rotarywheel = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'ROTARYWHEEL', INDETERMINATE)
-runaroundcoilloop = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'RUNAROUNDCOILLOOP', INDETERMINATE)
-heatpipe = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'HEATPIPE', INDETERMINATE)
-twintowerenthalpyrecoveryloops = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'TWINTOWERENTHALPYRECOVERYLOOPS', INDETERMINATE)
-thermosiphonsealedtubeheatexchangers = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONSEALEDTUBEHEATEXCHANGERS', INDETERMINATE)
-thermosiphoncoiltypeheatexchangers = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONCOILTYPEHEATEXCHANGERS', INDETERMINATE)
-userdefined = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+fixedplatecounterflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATECOUNTERFLOWEXCHANGER
+fixedplatecrossflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATECROSSFLOWEXCHANGER
+fixedplateparallelflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATEPARALLELFLOWEXCHANGER
+rotarywheel = IfcAirToAirHeatRecoveryTypeEnum.ROTARYWHEEL
+runaroundcoilloop = IfcAirToAirHeatRecoveryTypeEnum.RUNAROUNDCOILLOOP
+heatpipe = IfcAirToAirHeatRecoveryTypeEnum.HEATPIPE
+twintowerenthalpyrecoveryloops = IfcAirToAirHeatRecoveryTypeEnum.TWINTOWERENTHALPYRECOVERYLOOPS
+thermosiphonsealedtubeheatexchangers = IfcAirToAirHeatRecoveryTypeEnum.THERMOSIPHONSEALEDTUBEHEATEXCHANGERS
+thermosiphoncoiltypeheatexchangers = IfcAirToAirHeatRecoveryTypeEnum.THERMOSIPHONCOILTYPEHEATEXCHANGERS
+userdefined = IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED
+notdefined = IfcAirToAirHeatRecoveryTypeEnum.NOTDEFINED
 IfcAlarmTypeEnum = enum_namespace()
-bell = express_getattr(IfcAlarmTypeEnum, 'BELL', INDETERMINATE)
-breakglassbutton = express_getattr(IfcAlarmTypeEnum, 'BREAKGLASSBUTTON', INDETERMINATE)
-light = express_getattr(IfcAlarmTypeEnum, 'LIGHT', INDETERMINATE)
-manualpullbox = express_getattr(IfcAlarmTypeEnum, 'MANUALPULLBOX', INDETERMINATE)
-siren = express_getattr(IfcAlarmTypeEnum, 'SIREN', INDETERMINATE)
-whistle = express_getattr(IfcAlarmTypeEnum, 'WHISTLE', INDETERMINATE)
-userdefined = express_getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAlarmTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bell = IfcAlarmTypeEnum.BELL
+breakglassbutton = IfcAlarmTypeEnum.BREAKGLASSBUTTON
+light = IfcAlarmTypeEnum.LIGHT
+manualpullbox = IfcAlarmTypeEnum.MANUALPULLBOX
+siren = IfcAlarmTypeEnum.SIREN
+whistle = IfcAlarmTypeEnum.WHISTLE
+userdefined = IfcAlarmTypeEnum.USERDEFINED
+notdefined = IfcAlarmTypeEnum.NOTDEFINED
 IfcAnalysisModelTypeEnum = enum_namespace()
-in_plane_loading_2d = express_getattr(IfcAnalysisModelTypeEnum, 'IN_PLANE_LOADING_2D', INDETERMINATE)
-out_plane_loading_2d = express_getattr(IfcAnalysisModelTypeEnum, 'OUT_PLANE_LOADING_2D', INDETERMINATE)
-loading_3d = express_getattr(IfcAnalysisModelTypeEnum, 'LOADING_3D', INDETERMINATE)
-userdefined = express_getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAnalysisModelTypeEnum, 'NOTDEFINED', INDETERMINATE)
+in_plane_loading_2d = IfcAnalysisModelTypeEnum.IN_PLANE_LOADING_2D
+out_plane_loading_2d = IfcAnalysisModelTypeEnum.OUT_PLANE_LOADING_2D
+loading_3d = IfcAnalysisModelTypeEnum.LOADING_3D
+userdefined = IfcAnalysisModelTypeEnum.USERDEFINED
+notdefined = IfcAnalysisModelTypeEnum.NOTDEFINED
 IfcAnalysisTheoryTypeEnum = enum_namespace()
-first_order_theory = express_getattr(IfcAnalysisTheoryTypeEnum, 'FIRST_ORDER_THEORY', INDETERMINATE)
-second_order_theory = express_getattr(IfcAnalysisTheoryTypeEnum, 'SECOND_ORDER_THEORY', INDETERMINATE)
-third_order_theory = express_getattr(IfcAnalysisTheoryTypeEnum, 'THIRD_ORDER_THEORY', INDETERMINATE)
-full_nonlinear_theory = express_getattr(IfcAnalysisTheoryTypeEnum, 'FULL_NONLINEAR_THEORY', INDETERMINATE)
-userdefined = express_getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAnalysisTheoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+first_order_theory = IfcAnalysisTheoryTypeEnum.FIRST_ORDER_THEORY
+second_order_theory = IfcAnalysisTheoryTypeEnum.SECOND_ORDER_THEORY
+third_order_theory = IfcAnalysisTheoryTypeEnum.THIRD_ORDER_THEORY
+full_nonlinear_theory = IfcAnalysisTheoryTypeEnum.FULL_NONLINEAR_THEORY
+userdefined = IfcAnalysisTheoryTypeEnum.USERDEFINED
+notdefined = IfcAnalysisTheoryTypeEnum.NOTDEFINED
 IfcArithmeticOperatorEnum = enum_namespace()
-add = express_getattr(IfcArithmeticOperatorEnum, 'ADD', INDETERMINATE)
-divide = express_getattr(IfcArithmeticOperatorEnum, 'DIVIDE', INDETERMINATE)
-multiply = express_getattr(IfcArithmeticOperatorEnum, 'MULTIPLY', INDETERMINATE)
-subtract = express_getattr(IfcArithmeticOperatorEnum, 'SUBTRACT', INDETERMINATE)
+add = IfcArithmeticOperatorEnum.ADD
+divide = IfcArithmeticOperatorEnum.DIVIDE
+multiply = IfcArithmeticOperatorEnum.MULTIPLY
+subtract = IfcArithmeticOperatorEnum.SUBTRACT
 IfcAssemblyPlaceEnum = enum_namespace()
-site = express_getattr(IfcAssemblyPlaceEnum, 'SITE', INDETERMINATE)
-factory = express_getattr(IfcAssemblyPlaceEnum, 'FACTORY', INDETERMINATE)
-notdefined = express_getattr(IfcAssemblyPlaceEnum, 'NOTDEFINED', INDETERMINATE)
+site = IfcAssemblyPlaceEnum.SITE
+factory = IfcAssemblyPlaceEnum.FACTORY
+notdefined = IfcAssemblyPlaceEnum.NOTDEFINED
 IfcAudioVisualApplianceTypeEnum = enum_namespace()
-amplifier = express_getattr(IfcAudioVisualApplianceTypeEnum, 'AMPLIFIER', INDETERMINATE)
-camera = express_getattr(IfcAudioVisualApplianceTypeEnum, 'CAMERA', INDETERMINATE)
-display = express_getattr(IfcAudioVisualApplianceTypeEnum, 'DISPLAY', INDETERMINATE)
-microphone = express_getattr(IfcAudioVisualApplianceTypeEnum, 'MICROPHONE', INDETERMINATE)
-player = express_getattr(IfcAudioVisualApplianceTypeEnum, 'PLAYER', INDETERMINATE)
-projector = express_getattr(IfcAudioVisualApplianceTypeEnum, 'PROJECTOR', INDETERMINATE)
-receiver = express_getattr(IfcAudioVisualApplianceTypeEnum, 'RECEIVER', INDETERMINATE)
-speaker = express_getattr(IfcAudioVisualApplianceTypeEnum, 'SPEAKER', INDETERMINATE)
-switcher = express_getattr(IfcAudioVisualApplianceTypeEnum, 'SWITCHER', INDETERMINATE)
-telephone = express_getattr(IfcAudioVisualApplianceTypeEnum, 'TELEPHONE', INDETERMINATE)
-tuner = express_getattr(IfcAudioVisualApplianceTypeEnum, 'TUNER', INDETERMINATE)
-userdefined = express_getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcAudioVisualApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+amplifier = IfcAudioVisualApplianceTypeEnum.AMPLIFIER
+camera = IfcAudioVisualApplianceTypeEnum.CAMERA
+display = IfcAudioVisualApplianceTypeEnum.DISPLAY
+microphone = IfcAudioVisualApplianceTypeEnum.MICROPHONE
+player = IfcAudioVisualApplianceTypeEnum.PLAYER
+projector = IfcAudioVisualApplianceTypeEnum.PROJECTOR
+receiver = IfcAudioVisualApplianceTypeEnum.RECEIVER
+speaker = IfcAudioVisualApplianceTypeEnum.SPEAKER
+switcher = IfcAudioVisualApplianceTypeEnum.SWITCHER
+telephone = IfcAudioVisualApplianceTypeEnum.TELEPHONE
+tuner = IfcAudioVisualApplianceTypeEnum.TUNER
+userdefined = IfcAudioVisualApplianceTypeEnum.USERDEFINED
+notdefined = IfcAudioVisualApplianceTypeEnum.NOTDEFINED
 IfcBSplineCurveForm = enum_namespace()
-polyline_form = express_getattr(IfcBSplineCurveForm, 'POLYLINE_FORM', INDETERMINATE)
-circular_arc = express_getattr(IfcBSplineCurveForm, 'CIRCULAR_ARC', INDETERMINATE)
-elliptic_arc = express_getattr(IfcBSplineCurveForm, 'ELLIPTIC_ARC', INDETERMINATE)
-parabolic_arc = express_getattr(IfcBSplineCurveForm, 'PARABOLIC_ARC', INDETERMINATE)
-hyperbolic_arc = express_getattr(IfcBSplineCurveForm, 'HYPERBOLIC_ARC', INDETERMINATE)
-unspecified = express_getattr(IfcBSplineCurveForm, 'UNSPECIFIED', INDETERMINATE)
+polyline_form = IfcBSplineCurveForm.POLYLINE_FORM
+circular_arc = IfcBSplineCurveForm.CIRCULAR_ARC
+elliptic_arc = IfcBSplineCurveForm.ELLIPTIC_ARC
+parabolic_arc = IfcBSplineCurveForm.PARABOLIC_ARC
+hyperbolic_arc = IfcBSplineCurveForm.HYPERBOLIC_ARC
+unspecified = IfcBSplineCurveForm.UNSPECIFIED
 IfcBSplineSurfaceForm = enum_namespace()
-plane_surf = express_getattr(IfcBSplineSurfaceForm, 'PLANE_SURF', INDETERMINATE)
-cylindrical_surf = express_getattr(IfcBSplineSurfaceForm, 'CYLINDRICAL_SURF', INDETERMINATE)
-conical_surf = express_getattr(IfcBSplineSurfaceForm, 'CONICAL_SURF', INDETERMINATE)
-spherical_surf = express_getattr(IfcBSplineSurfaceForm, 'SPHERICAL_SURF', INDETERMINATE)
-toroidal_surf = express_getattr(IfcBSplineSurfaceForm, 'TOROIDAL_SURF', INDETERMINATE)
-surf_of_revolution = express_getattr(IfcBSplineSurfaceForm, 'SURF_OF_REVOLUTION', INDETERMINATE)
-ruled_surf = express_getattr(IfcBSplineSurfaceForm, 'RULED_SURF', INDETERMINATE)
-generalised_cone = express_getattr(IfcBSplineSurfaceForm, 'GENERALISED_CONE', INDETERMINATE)
-quadric_surf = express_getattr(IfcBSplineSurfaceForm, 'QUADRIC_SURF', INDETERMINATE)
-surf_of_linear_extrusion = express_getattr(IfcBSplineSurfaceForm, 'SURF_OF_LINEAR_EXTRUSION', INDETERMINATE)
-unspecified = express_getattr(IfcBSplineSurfaceForm, 'UNSPECIFIED', INDETERMINATE)
+plane_surf = IfcBSplineSurfaceForm.PLANE_SURF
+cylindrical_surf = IfcBSplineSurfaceForm.CYLINDRICAL_SURF
+conical_surf = IfcBSplineSurfaceForm.CONICAL_SURF
+spherical_surf = IfcBSplineSurfaceForm.SPHERICAL_SURF
+toroidal_surf = IfcBSplineSurfaceForm.TOROIDAL_SURF
+surf_of_revolution = IfcBSplineSurfaceForm.SURF_OF_REVOLUTION
+ruled_surf = IfcBSplineSurfaceForm.RULED_SURF
+generalised_cone = IfcBSplineSurfaceForm.GENERALISED_CONE
+quadric_surf = IfcBSplineSurfaceForm.QUADRIC_SURF
+surf_of_linear_extrusion = IfcBSplineSurfaceForm.SURF_OF_LINEAR_EXTRUSION
+unspecified = IfcBSplineSurfaceForm.UNSPECIFIED
 IfcBeamTypeEnum = enum_namespace()
-beam = express_getattr(IfcBeamTypeEnum, 'BEAM', INDETERMINATE)
-joist = express_getattr(IfcBeamTypeEnum, 'JOIST', INDETERMINATE)
-hollowcore = express_getattr(IfcBeamTypeEnum, 'HOLLOWCORE', INDETERMINATE)
-lintel = express_getattr(IfcBeamTypeEnum, 'LINTEL', INDETERMINATE)
-spandrel = express_getattr(IfcBeamTypeEnum, 'SPANDREL', INDETERMINATE)
-t_beam = express_getattr(IfcBeamTypeEnum, 'T_BEAM', INDETERMINATE)
-userdefined = express_getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beam = IfcBeamTypeEnum.BEAM
+joist = IfcBeamTypeEnum.JOIST
+hollowcore = IfcBeamTypeEnum.HOLLOWCORE
+lintel = IfcBeamTypeEnum.LINTEL
+spandrel = IfcBeamTypeEnum.SPANDREL
+t_beam = IfcBeamTypeEnum.T_BEAM
+userdefined = IfcBeamTypeEnum.USERDEFINED
+notdefined = IfcBeamTypeEnum.NOTDEFINED
 IfcBenchmarkEnum = enum_namespace()
-greaterthan = express_getattr(IfcBenchmarkEnum, 'GREATERTHAN', INDETERMINATE)
-greaterthanorequalto = express_getattr(IfcBenchmarkEnum, 'GREATERTHANOREQUALTO', INDETERMINATE)
-lessthan = express_getattr(IfcBenchmarkEnum, 'LESSTHAN', INDETERMINATE)
-lessthanorequalto = express_getattr(IfcBenchmarkEnum, 'LESSTHANOREQUALTO', INDETERMINATE)
-equalto = express_getattr(IfcBenchmarkEnum, 'EQUALTO', INDETERMINATE)
-notequalto = express_getattr(IfcBenchmarkEnum, 'NOTEQUALTO', INDETERMINATE)
-includes = express_getattr(IfcBenchmarkEnum, 'INCLUDES', INDETERMINATE)
-notincludes = express_getattr(IfcBenchmarkEnum, 'NOTINCLUDES', INDETERMINATE)
-includedin = express_getattr(IfcBenchmarkEnum, 'INCLUDEDIN', INDETERMINATE)
-notincludedin = express_getattr(IfcBenchmarkEnum, 'NOTINCLUDEDIN', INDETERMINATE)
+greaterthan = IfcBenchmarkEnum.GREATERTHAN
+greaterthanorequalto = IfcBenchmarkEnum.GREATERTHANOREQUALTO
+lessthan = IfcBenchmarkEnum.LESSTHAN
+lessthanorequalto = IfcBenchmarkEnum.LESSTHANOREQUALTO
+equalto = IfcBenchmarkEnum.EQUALTO
+notequalto = IfcBenchmarkEnum.NOTEQUALTO
+includes = IfcBenchmarkEnum.INCLUDES
+notincludes = IfcBenchmarkEnum.NOTINCLUDES
+includedin = IfcBenchmarkEnum.INCLUDEDIN
+notincludedin = IfcBenchmarkEnum.NOTINCLUDEDIN
 IfcBoilerTypeEnum = enum_namespace()
-water = express_getattr(IfcBoilerTypeEnum, 'WATER', INDETERMINATE)
-steam = express_getattr(IfcBoilerTypeEnum, 'STEAM', INDETERMINATE)
-userdefined = express_getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBoilerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+water = IfcBoilerTypeEnum.WATER
+steam = IfcBoilerTypeEnum.STEAM
+userdefined = IfcBoilerTypeEnum.USERDEFINED
+notdefined = IfcBoilerTypeEnum.NOTDEFINED
 IfcBooleanOperator = enum_namespace()
-union = express_getattr(IfcBooleanOperator, 'UNION', INDETERMINATE)
-intersection = express_getattr(IfcBooleanOperator, 'INTERSECTION', INDETERMINATE)
-difference = express_getattr(IfcBooleanOperator, 'DIFFERENCE', INDETERMINATE)
+union = IfcBooleanOperator.UNION
+intersection = IfcBooleanOperator.INTERSECTION
+difference = IfcBooleanOperator.DIFFERENCE
 IfcBuildingElementPartTypeEnum = enum_namespace()
-insulation = express_getattr(IfcBuildingElementPartTypeEnum, 'INSULATION', INDETERMINATE)
-precastpanel = express_getattr(IfcBuildingElementPartTypeEnum, 'PRECASTPANEL', INDETERMINATE)
-userdefined = express_getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBuildingElementPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+insulation = IfcBuildingElementPartTypeEnum.INSULATION
+precastpanel = IfcBuildingElementPartTypeEnum.PRECASTPANEL
+userdefined = IfcBuildingElementPartTypeEnum.USERDEFINED
+notdefined = IfcBuildingElementPartTypeEnum.NOTDEFINED
 IfcBuildingElementProxyTypeEnum = enum_namespace()
-complex = express_getattr(IfcBuildingElementProxyTypeEnum, 'COMPLEX', INDETERMINATE)
-element = express_getattr(IfcBuildingElementProxyTypeEnum, 'ELEMENT', INDETERMINATE)
-partial = express_getattr(IfcBuildingElementProxyTypeEnum, 'PARTIAL', INDETERMINATE)
-provisionforvoid = express_getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
-provisionforspace = express_getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORSPACE', INDETERMINATE)
-userdefined = express_getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBuildingElementProxyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+complex = IfcBuildingElementProxyTypeEnum.COMPLEX
+element = IfcBuildingElementProxyTypeEnum.ELEMENT
+partial = IfcBuildingElementProxyTypeEnum.PARTIAL
+provisionforvoid = IfcBuildingElementProxyTypeEnum.PROVISIONFORVOID
+provisionforspace = IfcBuildingElementProxyTypeEnum.PROVISIONFORSPACE
+userdefined = IfcBuildingElementProxyTypeEnum.USERDEFINED
+notdefined = IfcBuildingElementProxyTypeEnum.NOTDEFINED
 IfcBuildingSystemTypeEnum = enum_namespace()
-fenestration = express_getattr(IfcBuildingSystemTypeEnum, 'FENESTRATION', INDETERMINATE)
-foundation = express_getattr(IfcBuildingSystemTypeEnum, 'FOUNDATION', INDETERMINATE)
-loadbearing = express_getattr(IfcBuildingSystemTypeEnum, 'LOADBEARING', INDETERMINATE)
-outershell = express_getattr(IfcBuildingSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
-shading = express_getattr(IfcBuildingSystemTypeEnum, 'SHADING', INDETERMINATE)
-transport = express_getattr(IfcBuildingSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
-userdefined = express_getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBuildingSystemTypeEnum, 'NOTDEFINED', INDETERMINATE)
+fenestration = IfcBuildingSystemTypeEnum.FENESTRATION
+foundation = IfcBuildingSystemTypeEnum.FOUNDATION
+loadbearing = IfcBuildingSystemTypeEnum.LOADBEARING
+outershell = IfcBuildingSystemTypeEnum.OUTERSHELL
+shading = IfcBuildingSystemTypeEnum.SHADING
+transport = IfcBuildingSystemTypeEnum.TRANSPORT
+userdefined = IfcBuildingSystemTypeEnum.USERDEFINED
+notdefined = IfcBuildingSystemTypeEnum.NOTDEFINED
 IfcBurnerTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcBurnerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcBurnerTypeEnum.USERDEFINED
+notdefined = IfcBurnerTypeEnum.NOTDEFINED
 IfcCableCarrierFittingTypeEnum = enum_namespace()
-bend = express_getattr(IfcCableCarrierFittingTypeEnum, 'BEND', INDETERMINATE)
-cross = express_getattr(IfcCableCarrierFittingTypeEnum, 'CROSS', INDETERMINATE)
-reducer = express_getattr(IfcCableCarrierFittingTypeEnum, 'REDUCER', INDETERMINATE)
-tee = express_getattr(IfcCableCarrierFittingTypeEnum, 'TEE', INDETERMINATE)
-userdefined = express_getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCableCarrierFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcCableCarrierFittingTypeEnum.BEND
+cross = IfcCableCarrierFittingTypeEnum.CROSS
+reducer = IfcCableCarrierFittingTypeEnum.REDUCER
+tee = IfcCableCarrierFittingTypeEnum.TEE
+userdefined = IfcCableCarrierFittingTypeEnum.USERDEFINED
+notdefined = IfcCableCarrierFittingTypeEnum.NOTDEFINED
 IfcCableCarrierSegmentTypeEnum = enum_namespace()
-cableladdersegment = express_getattr(IfcCableCarrierSegmentTypeEnum, 'CABLELADDERSEGMENT', INDETERMINATE)
-cabletraysegment = express_getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRAYSEGMENT', INDETERMINATE)
-cabletrunkingsegment = express_getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRUNKINGSEGMENT', INDETERMINATE)
-conduitsegment = express_getattr(IfcCableCarrierSegmentTypeEnum, 'CONDUITSEGMENT', INDETERMINATE)
-userdefined = express_getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCableCarrierSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cableladdersegment = IfcCableCarrierSegmentTypeEnum.CABLELADDERSEGMENT
+cabletraysegment = IfcCableCarrierSegmentTypeEnum.CABLETRAYSEGMENT
+cabletrunkingsegment = IfcCableCarrierSegmentTypeEnum.CABLETRUNKINGSEGMENT
+conduitsegment = IfcCableCarrierSegmentTypeEnum.CONDUITSEGMENT
+userdefined = IfcCableCarrierSegmentTypeEnum.USERDEFINED
+notdefined = IfcCableCarrierSegmentTypeEnum.NOTDEFINED
 IfcCableFittingTypeEnum = enum_namespace()
-connector = express_getattr(IfcCableFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = express_getattr(IfcCableFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = express_getattr(IfcCableFittingTypeEnum, 'EXIT', INDETERMINATE)
-junction = express_getattr(IfcCableFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-transition = express_getattr(IfcCableFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = express_getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCableFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+connector = IfcCableFittingTypeEnum.CONNECTOR
+entry = IfcCableFittingTypeEnum.ENTRY
+exit = IfcCableFittingTypeEnum.EXIT
+junction = IfcCableFittingTypeEnum.JUNCTION
+transition = IfcCableFittingTypeEnum.TRANSITION
+userdefined = IfcCableFittingTypeEnum.USERDEFINED
+notdefined = IfcCableFittingTypeEnum.NOTDEFINED
 IfcCableSegmentTypeEnum = enum_namespace()
-busbarsegment = express_getattr(IfcCableSegmentTypeEnum, 'BUSBARSEGMENT', INDETERMINATE)
-cablesegment = express_getattr(IfcCableSegmentTypeEnum, 'CABLESEGMENT', INDETERMINATE)
-conductorsegment = express_getattr(IfcCableSegmentTypeEnum, 'CONDUCTORSEGMENT', INDETERMINATE)
-coresegment = express_getattr(IfcCableSegmentTypeEnum, 'CORESEGMENT', INDETERMINATE)
-userdefined = express_getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCableSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+busbarsegment = IfcCableSegmentTypeEnum.BUSBARSEGMENT
+cablesegment = IfcCableSegmentTypeEnum.CABLESEGMENT
+conductorsegment = IfcCableSegmentTypeEnum.CONDUCTORSEGMENT
+coresegment = IfcCableSegmentTypeEnum.CORESEGMENT
+userdefined = IfcCableSegmentTypeEnum.USERDEFINED
+notdefined = IfcCableSegmentTypeEnum.NOTDEFINED
 IfcChangeActionEnum = enum_namespace()
-nochange = express_getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)
-modified = express_getattr(IfcChangeActionEnum, 'MODIFIED', INDETERMINATE)
-added = express_getattr(IfcChangeActionEnum, 'ADDED', INDETERMINATE)
-deleted = express_getattr(IfcChangeActionEnum, 'DELETED', INDETERMINATE)
-notdefined = express_getattr(IfcChangeActionEnum, 'NOTDEFINED', INDETERMINATE)
+nochange = IfcChangeActionEnum.NOCHANGE
+modified = IfcChangeActionEnum.MODIFIED
+added = IfcChangeActionEnum.ADDED
+deleted = IfcChangeActionEnum.DELETED
+notdefined = IfcChangeActionEnum.NOTDEFINED
 IfcChillerTypeEnum = enum_namespace()
-aircooled = express_getattr(IfcChillerTypeEnum, 'AIRCOOLED', INDETERMINATE)
-watercooled = express_getattr(IfcChillerTypeEnum, 'WATERCOOLED', INDETERMINATE)
-heatrecovery = express_getattr(IfcChillerTypeEnum, 'HEATRECOVERY', INDETERMINATE)
-userdefined = express_getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcChillerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aircooled = IfcChillerTypeEnum.AIRCOOLED
+watercooled = IfcChillerTypeEnum.WATERCOOLED
+heatrecovery = IfcChillerTypeEnum.HEATRECOVERY
+userdefined = IfcChillerTypeEnum.USERDEFINED
+notdefined = IfcChillerTypeEnum.NOTDEFINED
 IfcChimneyTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcChimneyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcChimneyTypeEnum.USERDEFINED
+notdefined = IfcChimneyTypeEnum.NOTDEFINED
 IfcCoilTypeEnum = enum_namespace()
-dxcoolingcoil = express_getattr(IfcCoilTypeEnum, 'DXCOOLINGCOIL', INDETERMINATE)
-electricheatingcoil = express_getattr(IfcCoilTypeEnum, 'ELECTRICHEATINGCOIL', INDETERMINATE)
-gasheatingcoil = express_getattr(IfcCoilTypeEnum, 'GASHEATINGCOIL', INDETERMINATE)
-hydroniccoil = express_getattr(IfcCoilTypeEnum, 'HYDRONICCOIL', INDETERMINATE)
-steamheatingcoil = express_getattr(IfcCoilTypeEnum, 'STEAMHEATINGCOIL', INDETERMINATE)
-watercoolingcoil = express_getattr(IfcCoilTypeEnum, 'WATERCOOLINGCOIL', INDETERMINATE)
-waterheatingcoil = express_getattr(IfcCoilTypeEnum, 'WATERHEATINGCOIL', INDETERMINATE)
-userdefined = express_getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCoilTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dxcoolingcoil = IfcCoilTypeEnum.DXCOOLINGCOIL
+electricheatingcoil = IfcCoilTypeEnum.ELECTRICHEATINGCOIL
+gasheatingcoil = IfcCoilTypeEnum.GASHEATINGCOIL
+hydroniccoil = IfcCoilTypeEnum.HYDRONICCOIL
+steamheatingcoil = IfcCoilTypeEnum.STEAMHEATINGCOIL
+watercoolingcoil = IfcCoilTypeEnum.WATERCOOLINGCOIL
+waterheatingcoil = IfcCoilTypeEnum.WATERHEATINGCOIL
+userdefined = IfcCoilTypeEnum.USERDEFINED
+notdefined = IfcCoilTypeEnum.NOTDEFINED
 IfcColumnTypeEnum = enum_namespace()
-column = express_getattr(IfcColumnTypeEnum, 'COLUMN', INDETERMINATE)
-pilaster = express_getattr(IfcColumnTypeEnum, 'PILASTER', INDETERMINATE)
-userdefined = express_getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcColumnTypeEnum, 'NOTDEFINED', INDETERMINATE)
+column = IfcColumnTypeEnum.COLUMN
+pilaster = IfcColumnTypeEnum.PILASTER
+userdefined = IfcColumnTypeEnum.USERDEFINED
+notdefined = IfcColumnTypeEnum.NOTDEFINED
 IfcCommunicationsApplianceTypeEnum = enum_namespace()
-antenna = express_getattr(IfcCommunicationsApplianceTypeEnum, 'ANTENNA', INDETERMINATE)
-computer = express_getattr(IfcCommunicationsApplianceTypeEnum, 'COMPUTER', INDETERMINATE)
-fax = express_getattr(IfcCommunicationsApplianceTypeEnum, 'FAX', INDETERMINATE)
-gateway = express_getattr(IfcCommunicationsApplianceTypeEnum, 'GATEWAY', INDETERMINATE)
-modem = express_getattr(IfcCommunicationsApplianceTypeEnum, 'MODEM', INDETERMINATE)
-networkappliance = express_getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKAPPLIANCE', INDETERMINATE)
-networkbridge = express_getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKBRIDGE', INDETERMINATE)
-networkhub = express_getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKHUB', INDETERMINATE)
-printer = express_getattr(IfcCommunicationsApplianceTypeEnum, 'PRINTER', INDETERMINATE)
-repeater = express_getattr(IfcCommunicationsApplianceTypeEnum, 'REPEATER', INDETERMINATE)
-router = express_getattr(IfcCommunicationsApplianceTypeEnum, 'ROUTER', INDETERMINATE)
-scanner = express_getattr(IfcCommunicationsApplianceTypeEnum, 'SCANNER', INDETERMINATE)
-userdefined = express_getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCommunicationsApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+antenna = IfcCommunicationsApplianceTypeEnum.ANTENNA
+computer = IfcCommunicationsApplianceTypeEnum.COMPUTER
+fax = IfcCommunicationsApplianceTypeEnum.FAX
+gateway = IfcCommunicationsApplianceTypeEnum.GATEWAY
+modem = IfcCommunicationsApplianceTypeEnum.MODEM
+networkappliance = IfcCommunicationsApplianceTypeEnum.NETWORKAPPLIANCE
+networkbridge = IfcCommunicationsApplianceTypeEnum.NETWORKBRIDGE
+networkhub = IfcCommunicationsApplianceTypeEnum.NETWORKHUB
+printer = IfcCommunicationsApplianceTypeEnum.PRINTER
+repeater = IfcCommunicationsApplianceTypeEnum.REPEATER
+router = IfcCommunicationsApplianceTypeEnum.ROUTER
+scanner = IfcCommunicationsApplianceTypeEnum.SCANNER
+userdefined = IfcCommunicationsApplianceTypeEnum.USERDEFINED
+notdefined = IfcCommunicationsApplianceTypeEnum.NOTDEFINED
 IfcComplexPropertyTemplateTypeEnum = enum_namespace()
-p_complex = express_getattr(IfcComplexPropertyTemplateTypeEnum, 'P_COMPLEX', INDETERMINATE)
-q_complex = express_getattr(IfcComplexPropertyTemplateTypeEnum, 'Q_COMPLEX', INDETERMINATE)
+p_complex = IfcComplexPropertyTemplateTypeEnum.P_COMPLEX
+q_complex = IfcComplexPropertyTemplateTypeEnum.Q_COMPLEX
 IfcCompressorTypeEnum = enum_namespace()
-dynamic = express_getattr(IfcCompressorTypeEnum, 'DYNAMIC', INDETERMINATE)
-reciprocating = express_getattr(IfcCompressorTypeEnum, 'RECIPROCATING', INDETERMINATE)
-rotary = express_getattr(IfcCompressorTypeEnum, 'ROTARY', INDETERMINATE)
-scroll = express_getattr(IfcCompressorTypeEnum, 'SCROLL', INDETERMINATE)
-trochoidal = express_getattr(IfcCompressorTypeEnum, 'TROCHOIDAL', INDETERMINATE)
-singlestage = express_getattr(IfcCompressorTypeEnum, 'SINGLESTAGE', INDETERMINATE)
-booster = express_getattr(IfcCompressorTypeEnum, 'BOOSTER', INDETERMINATE)
-opentype = express_getattr(IfcCompressorTypeEnum, 'OPENTYPE', INDETERMINATE)
-hermetic = express_getattr(IfcCompressorTypeEnum, 'HERMETIC', INDETERMINATE)
-semihermetic = express_getattr(IfcCompressorTypeEnum, 'SEMIHERMETIC', INDETERMINATE)
-weldedshellhermetic = express_getattr(IfcCompressorTypeEnum, 'WELDEDSHELLHERMETIC', INDETERMINATE)
-rollingpiston = express_getattr(IfcCompressorTypeEnum, 'ROLLINGPISTON', INDETERMINATE)
-rotaryvane = express_getattr(IfcCompressorTypeEnum, 'ROTARYVANE', INDETERMINATE)
-singlescrew = express_getattr(IfcCompressorTypeEnum, 'SINGLESCREW', INDETERMINATE)
-twinscrew = express_getattr(IfcCompressorTypeEnum, 'TWINSCREW', INDETERMINATE)
-userdefined = express_getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCompressorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dynamic = IfcCompressorTypeEnum.DYNAMIC
+reciprocating = IfcCompressorTypeEnum.RECIPROCATING
+rotary = IfcCompressorTypeEnum.ROTARY
+scroll = IfcCompressorTypeEnum.SCROLL
+trochoidal = IfcCompressorTypeEnum.TROCHOIDAL
+singlestage = IfcCompressorTypeEnum.SINGLESTAGE
+booster = IfcCompressorTypeEnum.BOOSTER
+opentype = IfcCompressorTypeEnum.OPENTYPE
+hermetic = IfcCompressorTypeEnum.HERMETIC
+semihermetic = IfcCompressorTypeEnum.SEMIHERMETIC
+weldedshellhermetic = IfcCompressorTypeEnum.WELDEDSHELLHERMETIC
+rollingpiston = IfcCompressorTypeEnum.ROLLINGPISTON
+rotaryvane = IfcCompressorTypeEnum.ROTARYVANE
+singlescrew = IfcCompressorTypeEnum.SINGLESCREW
+twinscrew = IfcCompressorTypeEnum.TWINSCREW
+userdefined = IfcCompressorTypeEnum.USERDEFINED
+notdefined = IfcCompressorTypeEnum.NOTDEFINED
 IfcCondenserTypeEnum = enum_namespace()
-aircooled = express_getattr(IfcCondenserTypeEnum, 'AIRCOOLED', INDETERMINATE)
-evaporativecooled = express_getattr(IfcCondenserTypeEnum, 'EVAPORATIVECOOLED', INDETERMINATE)
-watercooled = express_getattr(IfcCondenserTypeEnum, 'WATERCOOLED', INDETERMINATE)
-watercooledbrazedplate = express_getattr(IfcCondenserTypeEnum, 'WATERCOOLEDBRAZEDPLATE', INDETERMINATE)
-watercooledshellcoil = express_getattr(IfcCondenserTypeEnum, 'WATERCOOLEDSHELLCOIL', INDETERMINATE)
-watercooledshelltube = express_getattr(IfcCondenserTypeEnum, 'WATERCOOLEDSHELLTUBE', INDETERMINATE)
-watercooledtubeintube = express_getattr(IfcCondenserTypeEnum, 'WATERCOOLEDTUBEINTUBE', INDETERMINATE)
-userdefined = express_getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCondenserTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aircooled = IfcCondenserTypeEnum.AIRCOOLED
+evaporativecooled = IfcCondenserTypeEnum.EVAPORATIVECOOLED
+watercooled = IfcCondenserTypeEnum.WATERCOOLED
+watercooledbrazedplate = IfcCondenserTypeEnum.WATERCOOLEDBRAZEDPLATE
+watercooledshellcoil = IfcCondenserTypeEnum.WATERCOOLEDSHELLCOIL
+watercooledshelltube = IfcCondenserTypeEnum.WATERCOOLEDSHELLTUBE
+watercooledtubeintube = IfcCondenserTypeEnum.WATERCOOLEDTUBEINTUBE
+userdefined = IfcCondenserTypeEnum.USERDEFINED
+notdefined = IfcCondenserTypeEnum.NOTDEFINED
 IfcConnectionTypeEnum = enum_namespace()
-atpath = express_getattr(IfcConnectionTypeEnum, 'ATPATH', INDETERMINATE)
-atstart = express_getattr(IfcConnectionTypeEnum, 'ATSTART', INDETERMINATE)
-atend = express_getattr(IfcConnectionTypeEnum, 'ATEND', INDETERMINATE)
-notdefined = express_getattr(IfcConnectionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+atpath = IfcConnectionTypeEnum.ATPATH
+atstart = IfcConnectionTypeEnum.ATSTART
+atend = IfcConnectionTypeEnum.ATEND
+notdefined = IfcConnectionTypeEnum.NOTDEFINED
 IfcConstraintEnum = enum_namespace()
-hard = express_getattr(IfcConstraintEnum, 'HARD', INDETERMINATE)
-soft = express_getattr(IfcConstraintEnum, 'SOFT', INDETERMINATE)
-advisory = express_getattr(IfcConstraintEnum, 'ADVISORY', INDETERMINATE)
-userdefined = express_getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcConstraintEnum, 'NOTDEFINED', INDETERMINATE)
+hard = IfcConstraintEnum.HARD
+soft = IfcConstraintEnum.SOFT
+advisory = IfcConstraintEnum.ADVISORY
+userdefined = IfcConstraintEnum.USERDEFINED
+notdefined = IfcConstraintEnum.NOTDEFINED
 IfcConstructionEquipmentResourceTypeEnum = enum_namespace()
-demolishing = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'DEMOLISHING', INDETERMINATE)
-earthmoving = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'EARTHMOVING', INDETERMINATE)
-erecting = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'ERECTING', INDETERMINATE)
-heating = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'HEATING', INDETERMINATE)
-lighting = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'LIGHTING', INDETERMINATE)
-paving = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'PAVING', INDETERMINATE)
-pumping = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'PUMPING', INDETERMINATE)
-transporting = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'TRANSPORTING', INDETERMINATE)
-userdefined = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+demolishing = IfcConstructionEquipmentResourceTypeEnum.DEMOLISHING
+earthmoving = IfcConstructionEquipmentResourceTypeEnum.EARTHMOVING
+erecting = IfcConstructionEquipmentResourceTypeEnum.ERECTING
+heating = IfcConstructionEquipmentResourceTypeEnum.HEATING
+lighting = IfcConstructionEquipmentResourceTypeEnum.LIGHTING
+paving = IfcConstructionEquipmentResourceTypeEnum.PAVING
+pumping = IfcConstructionEquipmentResourceTypeEnum.PUMPING
+transporting = IfcConstructionEquipmentResourceTypeEnum.TRANSPORTING
+userdefined = IfcConstructionEquipmentResourceTypeEnum.USERDEFINED
+notdefined = IfcConstructionEquipmentResourceTypeEnum.NOTDEFINED
 IfcConstructionMaterialResourceTypeEnum = enum_namespace()
-aggregates = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'AGGREGATES', INDETERMINATE)
-concrete = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'CONCRETE', INDETERMINATE)
-drywall = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'DRYWALL', INDETERMINATE)
-fuel = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'FUEL', INDETERMINATE)
-gypsum = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'GYPSUM', INDETERMINATE)
-masonry = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'MASONRY', INDETERMINATE)
-metal = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'METAL', INDETERMINATE)
-plastic = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'PLASTIC', INDETERMINATE)
-wood = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'WOOD', INDETERMINATE)
-notdefined = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
-userdefined = express_getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
+aggregates = IfcConstructionMaterialResourceTypeEnum.AGGREGATES
+concrete = IfcConstructionMaterialResourceTypeEnum.CONCRETE
+drywall = IfcConstructionMaterialResourceTypeEnum.DRYWALL
+fuel = IfcConstructionMaterialResourceTypeEnum.FUEL
+gypsum = IfcConstructionMaterialResourceTypeEnum.GYPSUM
+masonry = IfcConstructionMaterialResourceTypeEnum.MASONRY
+metal = IfcConstructionMaterialResourceTypeEnum.METAL
+plastic = IfcConstructionMaterialResourceTypeEnum.PLASTIC
+wood = IfcConstructionMaterialResourceTypeEnum.WOOD
+notdefined = IfcConstructionMaterialResourceTypeEnum.NOTDEFINED
+userdefined = IfcConstructionMaterialResourceTypeEnum.USERDEFINED
 IfcConstructionProductResourceTypeEnum = enum_namespace()
-assembly = express_getattr(IfcConstructionProductResourceTypeEnum, 'ASSEMBLY', INDETERMINATE)
-formwork = express_getattr(IfcConstructionProductResourceTypeEnum, 'FORMWORK', INDETERMINATE)
-userdefined = express_getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcConstructionProductResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assembly = IfcConstructionProductResourceTypeEnum.ASSEMBLY
+formwork = IfcConstructionProductResourceTypeEnum.FORMWORK
+userdefined = IfcConstructionProductResourceTypeEnum.USERDEFINED
+notdefined = IfcConstructionProductResourceTypeEnum.NOTDEFINED
 IfcControllerTypeEnum = enum_namespace()
-floating = express_getattr(IfcControllerTypeEnum, 'FLOATING', INDETERMINATE)
-programmable = express_getattr(IfcControllerTypeEnum, 'PROGRAMMABLE', INDETERMINATE)
-proportional = express_getattr(IfcControllerTypeEnum, 'PROPORTIONAL', INDETERMINATE)
-multiposition = express_getattr(IfcControllerTypeEnum, 'MULTIPOSITION', INDETERMINATE)
-twoposition = express_getattr(IfcControllerTypeEnum, 'TWOPOSITION', INDETERMINATE)
-userdefined = express_getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcControllerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+floating = IfcControllerTypeEnum.FLOATING
+programmable = IfcControllerTypeEnum.PROGRAMMABLE
+proportional = IfcControllerTypeEnum.PROPORTIONAL
+multiposition = IfcControllerTypeEnum.MULTIPOSITION
+twoposition = IfcControllerTypeEnum.TWOPOSITION
+userdefined = IfcControllerTypeEnum.USERDEFINED
+notdefined = IfcControllerTypeEnum.NOTDEFINED
 IfcCooledBeamTypeEnum = enum_namespace()
-active = express_getattr(IfcCooledBeamTypeEnum, 'ACTIVE', INDETERMINATE)
-passive = express_getattr(IfcCooledBeamTypeEnum, 'PASSIVE', INDETERMINATE)
-userdefined = express_getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCooledBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
+active = IfcCooledBeamTypeEnum.ACTIVE
+passive = IfcCooledBeamTypeEnum.PASSIVE
+userdefined = IfcCooledBeamTypeEnum.USERDEFINED
+notdefined = IfcCooledBeamTypeEnum.NOTDEFINED
 IfcCoolingTowerTypeEnum = enum_namespace()
-naturaldraft = express_getattr(IfcCoolingTowerTypeEnum, 'NATURALDRAFT', INDETERMINATE)
-mechanicalinduceddraft = express_getattr(IfcCoolingTowerTypeEnum, 'MECHANICALINDUCEDDRAFT', INDETERMINATE)
-mechanicalforceddraft = express_getattr(IfcCoolingTowerTypeEnum, 'MECHANICALFORCEDDRAFT', INDETERMINATE)
-userdefined = express_getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCoolingTowerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+naturaldraft = IfcCoolingTowerTypeEnum.NATURALDRAFT
+mechanicalinduceddraft = IfcCoolingTowerTypeEnum.MECHANICALINDUCEDDRAFT
+mechanicalforceddraft = IfcCoolingTowerTypeEnum.MECHANICALFORCEDDRAFT
+userdefined = IfcCoolingTowerTypeEnum.USERDEFINED
+notdefined = IfcCoolingTowerTypeEnum.NOTDEFINED
 IfcCostItemTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcCostItemTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCostItemTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcCostItemTypeEnum.USERDEFINED
+notdefined = IfcCostItemTypeEnum.NOTDEFINED
 IfcCostScheduleTypeEnum = enum_namespace()
-budget = express_getattr(IfcCostScheduleTypeEnum, 'BUDGET', INDETERMINATE)
-costplan = express_getattr(IfcCostScheduleTypeEnum, 'COSTPLAN', INDETERMINATE)
-estimate = express_getattr(IfcCostScheduleTypeEnum, 'ESTIMATE', INDETERMINATE)
-tender = express_getattr(IfcCostScheduleTypeEnum, 'TENDER', INDETERMINATE)
-pricedbillofquantities = express_getattr(IfcCostScheduleTypeEnum, 'PRICEDBILLOFQUANTITIES', INDETERMINATE)
-unpricedbillofquantities = express_getattr(IfcCostScheduleTypeEnum, 'UNPRICEDBILLOFQUANTITIES', INDETERMINATE)
-scheduleofrates = express_getattr(IfcCostScheduleTypeEnum, 'SCHEDULEOFRATES', INDETERMINATE)
-userdefined = express_getattr(IfcCostScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCostScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+budget = IfcCostScheduleTypeEnum.BUDGET
+costplan = IfcCostScheduleTypeEnum.COSTPLAN
+estimate = IfcCostScheduleTypeEnum.ESTIMATE
+tender = IfcCostScheduleTypeEnum.TENDER
+pricedbillofquantities = IfcCostScheduleTypeEnum.PRICEDBILLOFQUANTITIES
+unpricedbillofquantities = IfcCostScheduleTypeEnum.UNPRICEDBILLOFQUANTITIES
+scheduleofrates = IfcCostScheduleTypeEnum.SCHEDULEOFRATES
+userdefined = IfcCostScheduleTypeEnum.USERDEFINED
+notdefined = IfcCostScheduleTypeEnum.NOTDEFINED
 IfcCoveringTypeEnum = enum_namespace()
-ceiling = express_getattr(IfcCoveringTypeEnum, 'CEILING', INDETERMINATE)
-flooring = express_getattr(IfcCoveringTypeEnum, 'FLOORING', INDETERMINATE)
-cladding = express_getattr(IfcCoveringTypeEnum, 'CLADDING', INDETERMINATE)
-roofing = express_getattr(IfcCoveringTypeEnum, 'ROOFING', INDETERMINATE)
-molding = express_getattr(IfcCoveringTypeEnum, 'MOLDING', INDETERMINATE)
-skirtingboard = express_getattr(IfcCoveringTypeEnum, 'SKIRTINGBOARD', INDETERMINATE)
-insulation = express_getattr(IfcCoveringTypeEnum, 'INSULATION', INDETERMINATE)
-membrane = express_getattr(IfcCoveringTypeEnum, 'MEMBRANE', INDETERMINATE)
-sleeving = express_getattr(IfcCoveringTypeEnum, 'SLEEVING', INDETERMINATE)
-wrapping = express_getattr(IfcCoveringTypeEnum, 'WRAPPING', INDETERMINATE)
-userdefined = express_getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCoveringTypeEnum, 'NOTDEFINED', INDETERMINATE)
+ceiling = IfcCoveringTypeEnum.CEILING
+flooring = IfcCoveringTypeEnum.FLOORING
+cladding = IfcCoveringTypeEnum.CLADDING
+roofing = IfcCoveringTypeEnum.ROOFING
+molding = IfcCoveringTypeEnum.MOLDING
+skirtingboard = IfcCoveringTypeEnum.SKIRTINGBOARD
+insulation = IfcCoveringTypeEnum.INSULATION
+membrane = IfcCoveringTypeEnum.MEMBRANE
+sleeving = IfcCoveringTypeEnum.SLEEVING
+wrapping = IfcCoveringTypeEnum.WRAPPING
+userdefined = IfcCoveringTypeEnum.USERDEFINED
+notdefined = IfcCoveringTypeEnum.NOTDEFINED
 IfcCrewResourceTypeEnum = enum_namespace()
-office = express_getattr(IfcCrewResourceTypeEnum, 'OFFICE', INDETERMINATE)
-site = express_getattr(IfcCrewResourceTypeEnum, 'SITE', INDETERMINATE)
-userdefined = express_getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCrewResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+office = IfcCrewResourceTypeEnum.OFFICE
+site = IfcCrewResourceTypeEnum.SITE
+userdefined = IfcCrewResourceTypeEnum.USERDEFINED
+notdefined = IfcCrewResourceTypeEnum.NOTDEFINED
 IfcCurtainWallTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcCurtainWallTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcCurtainWallTypeEnum.USERDEFINED
+notdefined = IfcCurtainWallTypeEnum.NOTDEFINED
 IfcCurveInterpolationEnum = enum_namespace()
-linear = express_getattr(IfcCurveInterpolationEnum, 'LINEAR', INDETERMINATE)
-log_linear = express_getattr(IfcCurveInterpolationEnum, 'LOG_LINEAR', INDETERMINATE)
-log_log = express_getattr(IfcCurveInterpolationEnum, 'LOG_LOG', INDETERMINATE)
-notdefined = express_getattr(IfcCurveInterpolationEnum, 'NOTDEFINED', INDETERMINATE)
+linear = IfcCurveInterpolationEnum.LINEAR
+log_linear = IfcCurveInterpolationEnum.LOG_LINEAR
+log_log = IfcCurveInterpolationEnum.LOG_LOG
+notdefined = IfcCurveInterpolationEnum.NOTDEFINED
 IfcDamperTypeEnum = enum_namespace()
-backdraftdamper = express_getattr(IfcDamperTypeEnum, 'BACKDRAFTDAMPER', INDETERMINATE)
-balancingdamper = express_getattr(IfcDamperTypeEnum, 'BALANCINGDAMPER', INDETERMINATE)
-blastdamper = express_getattr(IfcDamperTypeEnum, 'BLASTDAMPER', INDETERMINATE)
-controldamper = express_getattr(IfcDamperTypeEnum, 'CONTROLDAMPER', INDETERMINATE)
-firedamper = express_getattr(IfcDamperTypeEnum, 'FIREDAMPER', INDETERMINATE)
-firesmokedamper = express_getattr(IfcDamperTypeEnum, 'FIRESMOKEDAMPER', INDETERMINATE)
-fumehoodexhaust = express_getattr(IfcDamperTypeEnum, 'FUMEHOODEXHAUST', INDETERMINATE)
-gravitydamper = express_getattr(IfcDamperTypeEnum, 'GRAVITYDAMPER', INDETERMINATE)
-gravityreliefdamper = express_getattr(IfcDamperTypeEnum, 'GRAVITYRELIEFDAMPER', INDETERMINATE)
-reliefdamper = express_getattr(IfcDamperTypeEnum, 'RELIEFDAMPER', INDETERMINATE)
-smokedamper = express_getattr(IfcDamperTypeEnum, 'SMOKEDAMPER', INDETERMINATE)
-userdefined = express_getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDamperTypeEnum, 'NOTDEFINED', INDETERMINATE)
+backdraftdamper = IfcDamperTypeEnum.BACKDRAFTDAMPER
+balancingdamper = IfcDamperTypeEnum.BALANCINGDAMPER
+blastdamper = IfcDamperTypeEnum.BLASTDAMPER
+controldamper = IfcDamperTypeEnum.CONTROLDAMPER
+firedamper = IfcDamperTypeEnum.FIREDAMPER
+firesmokedamper = IfcDamperTypeEnum.FIRESMOKEDAMPER
+fumehoodexhaust = IfcDamperTypeEnum.FUMEHOODEXHAUST
+gravitydamper = IfcDamperTypeEnum.GRAVITYDAMPER
+gravityreliefdamper = IfcDamperTypeEnum.GRAVITYRELIEFDAMPER
+reliefdamper = IfcDamperTypeEnum.RELIEFDAMPER
+smokedamper = IfcDamperTypeEnum.SMOKEDAMPER
+userdefined = IfcDamperTypeEnum.USERDEFINED
+notdefined = IfcDamperTypeEnum.NOTDEFINED
 IfcDataOriginEnum = enum_namespace()
-measured = express_getattr(IfcDataOriginEnum, 'MEASURED', INDETERMINATE)
-predicted = express_getattr(IfcDataOriginEnum, 'PREDICTED', INDETERMINATE)
-simulated = express_getattr(IfcDataOriginEnum, 'SIMULATED', INDETERMINATE)
-userdefined = express_getattr(IfcDataOriginEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDataOriginEnum, 'NOTDEFINED', INDETERMINATE)
+measured = IfcDataOriginEnum.MEASURED
+predicted = IfcDataOriginEnum.PREDICTED
+simulated = IfcDataOriginEnum.SIMULATED
+userdefined = IfcDataOriginEnum.USERDEFINED
+notdefined = IfcDataOriginEnum.NOTDEFINED
 IfcDerivedUnitEnum = enum_namespace()
-angularvelocityunit = express_getattr(IfcDerivedUnitEnum, 'ANGULARVELOCITYUNIT', INDETERMINATE)
-areadensityunit = express_getattr(IfcDerivedUnitEnum, 'AREADENSITYUNIT', INDETERMINATE)
-compoundplaneangleunit = express_getattr(IfcDerivedUnitEnum, 'COMPOUNDPLANEANGLEUNIT', INDETERMINATE)
-dynamicviscosityunit = express_getattr(IfcDerivedUnitEnum, 'DYNAMICVISCOSITYUNIT', INDETERMINATE)
-heatfluxdensityunit = express_getattr(IfcDerivedUnitEnum, 'HEATFLUXDENSITYUNIT', INDETERMINATE)
-integercountrateunit = express_getattr(IfcDerivedUnitEnum, 'INTEGERCOUNTRATEUNIT', INDETERMINATE)
-isothermalmoisturecapacityunit = express_getattr(IfcDerivedUnitEnum, 'ISOTHERMALMOISTURECAPACITYUNIT', INDETERMINATE)
-kinematicviscosityunit = express_getattr(IfcDerivedUnitEnum, 'KINEMATICVISCOSITYUNIT', INDETERMINATE)
-linearvelocityunit = express_getattr(IfcDerivedUnitEnum, 'LINEARVELOCITYUNIT', INDETERMINATE)
-massdensityunit = express_getattr(IfcDerivedUnitEnum, 'MASSDENSITYUNIT', INDETERMINATE)
-massflowrateunit = express_getattr(IfcDerivedUnitEnum, 'MASSFLOWRATEUNIT', INDETERMINATE)
-moisturediffusivityunit = express_getattr(IfcDerivedUnitEnum, 'MOISTUREDIFFUSIVITYUNIT', INDETERMINATE)
-molecularweightunit = express_getattr(IfcDerivedUnitEnum, 'MOLECULARWEIGHTUNIT', INDETERMINATE)
-specificheatcapacityunit = express_getattr(IfcDerivedUnitEnum, 'SPECIFICHEATCAPACITYUNIT', INDETERMINATE)
-thermaladmittanceunit = express_getattr(IfcDerivedUnitEnum, 'THERMALADMITTANCEUNIT', INDETERMINATE)
-thermalconductanceunit = express_getattr(IfcDerivedUnitEnum, 'THERMALCONDUCTANCEUNIT', INDETERMINATE)
-thermalresistanceunit = express_getattr(IfcDerivedUnitEnum, 'THERMALRESISTANCEUNIT', INDETERMINATE)
-thermaltransmittanceunit = express_getattr(IfcDerivedUnitEnum, 'THERMALTRANSMITTANCEUNIT', INDETERMINATE)
-vaporpermeabilityunit = express_getattr(IfcDerivedUnitEnum, 'VAPORPERMEABILITYUNIT', INDETERMINATE)
-volumetricflowrateunit = express_getattr(IfcDerivedUnitEnum, 'VOLUMETRICFLOWRATEUNIT', INDETERMINATE)
-rotationalfrequencyunit = express_getattr(IfcDerivedUnitEnum, 'ROTATIONALFREQUENCYUNIT', INDETERMINATE)
-torqueunit = express_getattr(IfcDerivedUnitEnum, 'TORQUEUNIT', INDETERMINATE)
-momentofinertiaunit = express_getattr(IfcDerivedUnitEnum, 'MOMENTOFINERTIAUNIT', INDETERMINATE)
-linearmomentunit = express_getattr(IfcDerivedUnitEnum, 'LINEARMOMENTUNIT', INDETERMINATE)
-linearforceunit = express_getattr(IfcDerivedUnitEnum, 'LINEARFORCEUNIT', INDETERMINATE)
-planarforceunit = express_getattr(IfcDerivedUnitEnum, 'PLANARFORCEUNIT', INDETERMINATE)
-modulusofelasticityunit = express_getattr(IfcDerivedUnitEnum, 'MODULUSOFELASTICITYUNIT', INDETERMINATE)
-shearmodulusunit = express_getattr(IfcDerivedUnitEnum, 'SHEARMODULUSUNIT', INDETERMINATE)
-linearstiffnessunit = express_getattr(IfcDerivedUnitEnum, 'LINEARSTIFFNESSUNIT', INDETERMINATE)
-rotationalstiffnessunit = express_getattr(IfcDerivedUnitEnum, 'ROTATIONALSTIFFNESSUNIT', INDETERMINATE)
-modulusofsubgradereactionunit = express_getattr(IfcDerivedUnitEnum, 'MODULUSOFSUBGRADEREACTIONUNIT', INDETERMINATE)
-accelerationunit = express_getattr(IfcDerivedUnitEnum, 'ACCELERATIONUNIT', INDETERMINATE)
-curvatureunit = express_getattr(IfcDerivedUnitEnum, 'CURVATUREUNIT', INDETERMINATE)
-heatingvalueunit = express_getattr(IfcDerivedUnitEnum, 'HEATINGVALUEUNIT', INDETERMINATE)
-ionconcentrationunit = express_getattr(IfcDerivedUnitEnum, 'IONCONCENTRATIONUNIT', INDETERMINATE)
-luminousintensitydistributionunit = express_getattr(IfcDerivedUnitEnum, 'LUMINOUSINTENSITYDISTRIBUTIONUNIT', INDETERMINATE)
-massperlengthunit = express_getattr(IfcDerivedUnitEnum, 'MASSPERLENGTHUNIT', INDETERMINATE)
-modulusoflinearsubgradereactionunit = express_getattr(IfcDerivedUnitEnum, 'MODULUSOFLINEARSUBGRADEREACTIONUNIT', INDETERMINATE)
-modulusofrotationalsubgradereactionunit = express_getattr(IfcDerivedUnitEnum, 'MODULUSOFROTATIONALSUBGRADEREACTIONUNIT', INDETERMINATE)
-phunit = express_getattr(IfcDerivedUnitEnum, 'PHUNIT', INDETERMINATE)
-rotationalmassunit = express_getattr(IfcDerivedUnitEnum, 'ROTATIONALMASSUNIT', INDETERMINATE)
-sectionareaintegralunit = express_getattr(IfcDerivedUnitEnum, 'SECTIONAREAINTEGRALUNIT', INDETERMINATE)
-sectionmodulusunit = express_getattr(IfcDerivedUnitEnum, 'SECTIONMODULUSUNIT', INDETERMINATE)
-soundpowerlevelunit = express_getattr(IfcDerivedUnitEnum, 'SOUNDPOWERLEVELUNIT', INDETERMINATE)
-soundpowerunit = express_getattr(IfcDerivedUnitEnum, 'SOUNDPOWERUNIT', INDETERMINATE)
-soundpressurelevelunit = express_getattr(IfcDerivedUnitEnum, 'SOUNDPRESSURELEVELUNIT', INDETERMINATE)
-soundpressureunit = express_getattr(IfcDerivedUnitEnum, 'SOUNDPRESSUREUNIT', INDETERMINATE)
-temperaturegradientunit = express_getattr(IfcDerivedUnitEnum, 'TEMPERATUREGRADIENTUNIT', INDETERMINATE)
-temperaturerateofchangeunit = express_getattr(IfcDerivedUnitEnum, 'TEMPERATURERATEOFCHANGEUNIT', INDETERMINATE)
-thermalexpansioncoefficientunit = express_getattr(IfcDerivedUnitEnum, 'THERMALEXPANSIONCOEFFICIENTUNIT', INDETERMINATE)
-warpingconstantunit = express_getattr(IfcDerivedUnitEnum, 'WARPINGCONSTANTUNIT', INDETERMINATE)
-warpingmomentunit = express_getattr(IfcDerivedUnitEnum, 'WARPINGMOMENTUNIT', INDETERMINATE)
-userdefined = express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)
+angularvelocityunit = IfcDerivedUnitEnum.ANGULARVELOCITYUNIT
+areadensityunit = IfcDerivedUnitEnum.AREADENSITYUNIT
+compoundplaneangleunit = IfcDerivedUnitEnum.COMPOUNDPLANEANGLEUNIT
+dynamicviscosityunit = IfcDerivedUnitEnum.DYNAMICVISCOSITYUNIT
+heatfluxdensityunit = IfcDerivedUnitEnum.HEATFLUXDENSITYUNIT
+integercountrateunit = IfcDerivedUnitEnum.INTEGERCOUNTRATEUNIT
+isothermalmoisturecapacityunit = IfcDerivedUnitEnum.ISOTHERMALMOISTURECAPACITYUNIT
+kinematicviscosityunit = IfcDerivedUnitEnum.KINEMATICVISCOSITYUNIT
+linearvelocityunit = IfcDerivedUnitEnum.LINEARVELOCITYUNIT
+massdensityunit = IfcDerivedUnitEnum.MASSDENSITYUNIT
+massflowrateunit = IfcDerivedUnitEnum.MASSFLOWRATEUNIT
+moisturediffusivityunit = IfcDerivedUnitEnum.MOISTUREDIFFUSIVITYUNIT
+molecularweightunit = IfcDerivedUnitEnum.MOLECULARWEIGHTUNIT
+specificheatcapacityunit = IfcDerivedUnitEnum.SPECIFICHEATCAPACITYUNIT
+thermaladmittanceunit = IfcDerivedUnitEnum.THERMALADMITTANCEUNIT
+thermalconductanceunit = IfcDerivedUnitEnum.THERMALCONDUCTANCEUNIT
+thermalresistanceunit = IfcDerivedUnitEnum.THERMALRESISTANCEUNIT
+thermaltransmittanceunit = IfcDerivedUnitEnum.THERMALTRANSMITTANCEUNIT
+vaporpermeabilityunit = IfcDerivedUnitEnum.VAPORPERMEABILITYUNIT
+volumetricflowrateunit = IfcDerivedUnitEnum.VOLUMETRICFLOWRATEUNIT
+rotationalfrequencyunit = IfcDerivedUnitEnum.ROTATIONALFREQUENCYUNIT
+torqueunit = IfcDerivedUnitEnum.TORQUEUNIT
+momentofinertiaunit = IfcDerivedUnitEnum.MOMENTOFINERTIAUNIT
+linearmomentunit = IfcDerivedUnitEnum.LINEARMOMENTUNIT
+linearforceunit = IfcDerivedUnitEnum.LINEARFORCEUNIT
+planarforceunit = IfcDerivedUnitEnum.PLANARFORCEUNIT
+modulusofelasticityunit = IfcDerivedUnitEnum.MODULUSOFELASTICITYUNIT
+shearmodulusunit = IfcDerivedUnitEnum.SHEARMODULUSUNIT
+linearstiffnessunit = IfcDerivedUnitEnum.LINEARSTIFFNESSUNIT
+rotationalstiffnessunit = IfcDerivedUnitEnum.ROTATIONALSTIFFNESSUNIT
+modulusofsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFSUBGRADEREACTIONUNIT
+accelerationunit = IfcDerivedUnitEnum.ACCELERATIONUNIT
+curvatureunit = IfcDerivedUnitEnum.CURVATUREUNIT
+heatingvalueunit = IfcDerivedUnitEnum.HEATINGVALUEUNIT
+ionconcentrationunit = IfcDerivedUnitEnum.IONCONCENTRATIONUNIT
+luminousintensitydistributionunit = IfcDerivedUnitEnum.LUMINOUSINTENSITYDISTRIBUTIONUNIT
+massperlengthunit = IfcDerivedUnitEnum.MASSPERLENGTHUNIT
+modulusoflinearsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFLINEARSUBGRADEREACTIONUNIT
+modulusofrotationalsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFROTATIONALSUBGRADEREACTIONUNIT
+phunit = IfcDerivedUnitEnum.PHUNIT
+rotationalmassunit = IfcDerivedUnitEnum.ROTATIONALMASSUNIT
+sectionareaintegralunit = IfcDerivedUnitEnum.SECTIONAREAINTEGRALUNIT
+sectionmodulusunit = IfcDerivedUnitEnum.SECTIONMODULUSUNIT
+soundpowerlevelunit = IfcDerivedUnitEnum.SOUNDPOWERLEVELUNIT
+soundpowerunit = IfcDerivedUnitEnum.SOUNDPOWERUNIT
+soundpressurelevelunit = IfcDerivedUnitEnum.SOUNDPRESSURELEVELUNIT
+soundpressureunit = IfcDerivedUnitEnum.SOUNDPRESSUREUNIT
+temperaturegradientunit = IfcDerivedUnitEnum.TEMPERATUREGRADIENTUNIT
+temperaturerateofchangeunit = IfcDerivedUnitEnum.TEMPERATURERATEOFCHANGEUNIT
+thermalexpansioncoefficientunit = IfcDerivedUnitEnum.THERMALEXPANSIONCOEFFICIENTUNIT
+warpingconstantunit = IfcDerivedUnitEnum.WARPINGCONSTANTUNIT
+warpingmomentunit = IfcDerivedUnitEnum.WARPINGMOMENTUNIT
+userdefined = IfcDerivedUnitEnum.USERDEFINED
 IfcDirectionSenseEnum = enum_namespace()
-positive = express_getattr(IfcDirectionSenseEnum, 'POSITIVE', INDETERMINATE)
-negative = express_getattr(IfcDirectionSenseEnum, 'NEGATIVE', INDETERMINATE)
+positive = IfcDirectionSenseEnum.POSITIVE
+negative = IfcDirectionSenseEnum.NEGATIVE
 IfcDiscreteAccessoryTypeEnum = enum_namespace()
-anchorplate = express_getattr(IfcDiscreteAccessoryTypeEnum, 'ANCHORPLATE', INDETERMINATE)
-bracket = express_getattr(IfcDiscreteAccessoryTypeEnum, 'BRACKET', INDETERMINATE)
-shoe = express_getattr(IfcDiscreteAccessoryTypeEnum, 'SHOE', INDETERMINATE)
-userdefined = express_getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDiscreteAccessoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchorplate = IfcDiscreteAccessoryTypeEnum.ANCHORPLATE
+bracket = IfcDiscreteAccessoryTypeEnum.BRACKET
+shoe = IfcDiscreteAccessoryTypeEnum.SHOE
+userdefined = IfcDiscreteAccessoryTypeEnum.USERDEFINED
+notdefined = IfcDiscreteAccessoryTypeEnum.NOTDEFINED
 IfcDistributionChamberElementTypeEnum = enum_namespace()
-formedduct = express_getattr(IfcDistributionChamberElementTypeEnum, 'FORMEDDUCT', INDETERMINATE)
-inspectionchamber = express_getattr(IfcDistributionChamberElementTypeEnum, 'INSPECTIONCHAMBER', INDETERMINATE)
-inspectionpit = express_getattr(IfcDistributionChamberElementTypeEnum, 'INSPECTIONPIT', INDETERMINATE)
-manhole = express_getattr(IfcDistributionChamberElementTypeEnum, 'MANHOLE', INDETERMINATE)
-meterchamber = express_getattr(IfcDistributionChamberElementTypeEnum, 'METERCHAMBER', INDETERMINATE)
-sump = express_getattr(IfcDistributionChamberElementTypeEnum, 'SUMP', INDETERMINATE)
-trench = express_getattr(IfcDistributionChamberElementTypeEnum, 'TRENCH', INDETERMINATE)
-valvechamber = express_getattr(IfcDistributionChamberElementTypeEnum, 'VALVECHAMBER', INDETERMINATE)
-userdefined = express_getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDistributionChamberElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+formedduct = IfcDistributionChamberElementTypeEnum.FORMEDDUCT
+inspectionchamber = IfcDistributionChamberElementTypeEnum.INSPECTIONCHAMBER
+inspectionpit = IfcDistributionChamberElementTypeEnum.INSPECTIONPIT
+manhole = IfcDistributionChamberElementTypeEnum.MANHOLE
+meterchamber = IfcDistributionChamberElementTypeEnum.METERCHAMBER
+sump = IfcDistributionChamberElementTypeEnum.SUMP
+trench = IfcDistributionChamberElementTypeEnum.TRENCH
+valvechamber = IfcDistributionChamberElementTypeEnum.VALVECHAMBER
+userdefined = IfcDistributionChamberElementTypeEnum.USERDEFINED
+notdefined = IfcDistributionChamberElementTypeEnum.NOTDEFINED
 IfcDistributionPortTypeEnum = enum_namespace()
-cable = express_getattr(IfcDistributionPortTypeEnum, 'CABLE', INDETERMINATE)
-cablecarrier = express_getattr(IfcDistributionPortTypeEnum, 'CABLECARRIER', INDETERMINATE)
-duct = express_getattr(IfcDistributionPortTypeEnum, 'DUCT', INDETERMINATE)
-pipe = express_getattr(IfcDistributionPortTypeEnum, 'PIPE', INDETERMINATE)
-userdefined = express_getattr(IfcDistributionPortTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDistributionPortTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cable = IfcDistributionPortTypeEnum.CABLE
+cablecarrier = IfcDistributionPortTypeEnum.CABLECARRIER
+duct = IfcDistributionPortTypeEnum.DUCT
+pipe = IfcDistributionPortTypeEnum.PIPE
+userdefined = IfcDistributionPortTypeEnum.USERDEFINED
+notdefined = IfcDistributionPortTypeEnum.NOTDEFINED
 IfcDistributionSystemEnum = enum_namespace()
-airconditioning = express_getattr(IfcDistributionSystemEnum, 'AIRCONDITIONING', INDETERMINATE)
-audiovisual = express_getattr(IfcDistributionSystemEnum, 'AUDIOVISUAL', INDETERMINATE)
-chemical = express_getattr(IfcDistributionSystemEnum, 'CHEMICAL', INDETERMINATE)
-chilledwater = express_getattr(IfcDistributionSystemEnum, 'CHILLEDWATER', INDETERMINATE)
-communication = express_getattr(IfcDistributionSystemEnum, 'COMMUNICATION', INDETERMINATE)
-compressedair = express_getattr(IfcDistributionSystemEnum, 'COMPRESSEDAIR', INDETERMINATE)
-condenserwater = express_getattr(IfcDistributionSystemEnum, 'CONDENSERWATER', INDETERMINATE)
-control = express_getattr(IfcDistributionSystemEnum, 'CONTROL', INDETERMINATE)
-conveying = express_getattr(IfcDistributionSystemEnum, 'CONVEYING', INDETERMINATE)
-data = express_getattr(IfcDistributionSystemEnum, 'DATA', INDETERMINATE)
-disposal = express_getattr(IfcDistributionSystemEnum, 'DISPOSAL', INDETERMINATE)
-domesticcoldwater = express_getattr(IfcDistributionSystemEnum, 'DOMESTICCOLDWATER', INDETERMINATE)
-domestichotwater = express_getattr(IfcDistributionSystemEnum, 'DOMESTICHOTWATER', INDETERMINATE)
-drainage = express_getattr(IfcDistributionSystemEnum, 'DRAINAGE', INDETERMINATE)
-earthing = express_getattr(IfcDistributionSystemEnum, 'EARTHING', INDETERMINATE)
-electrical = express_getattr(IfcDistributionSystemEnum, 'ELECTRICAL', INDETERMINATE)
-electroacoustic = express_getattr(IfcDistributionSystemEnum, 'ELECTROACOUSTIC', INDETERMINATE)
-exhaust = express_getattr(IfcDistributionSystemEnum, 'EXHAUST', INDETERMINATE)
-fireprotection = express_getattr(IfcDistributionSystemEnum, 'FIREPROTECTION', INDETERMINATE)
-fuel = express_getattr(IfcDistributionSystemEnum, 'FUEL', INDETERMINATE)
-gas = express_getattr(IfcDistributionSystemEnum, 'GAS', INDETERMINATE)
-hazardous = express_getattr(IfcDistributionSystemEnum, 'HAZARDOUS', INDETERMINATE)
-heating = express_getattr(IfcDistributionSystemEnum, 'HEATING', INDETERMINATE)
-lighting = express_getattr(IfcDistributionSystemEnum, 'LIGHTING', INDETERMINATE)
-lightningprotection = express_getattr(IfcDistributionSystemEnum, 'LIGHTNINGPROTECTION', INDETERMINATE)
-municipalsolidwaste = express_getattr(IfcDistributionSystemEnum, 'MUNICIPALSOLIDWASTE', INDETERMINATE)
-oil = express_getattr(IfcDistributionSystemEnum, 'OIL', INDETERMINATE)
-operational = express_getattr(IfcDistributionSystemEnum, 'OPERATIONAL', INDETERMINATE)
-powergeneration = express_getattr(IfcDistributionSystemEnum, 'POWERGENERATION', INDETERMINATE)
-rainwater = express_getattr(IfcDistributionSystemEnum, 'RAINWATER', INDETERMINATE)
-refrigeration = express_getattr(IfcDistributionSystemEnum, 'REFRIGERATION', INDETERMINATE)
-security = express_getattr(IfcDistributionSystemEnum, 'SECURITY', INDETERMINATE)
-sewage = express_getattr(IfcDistributionSystemEnum, 'SEWAGE', INDETERMINATE)
-signal = express_getattr(IfcDistributionSystemEnum, 'SIGNAL', INDETERMINATE)
-stormwater = express_getattr(IfcDistributionSystemEnum, 'STORMWATER', INDETERMINATE)
-telephone = express_getattr(IfcDistributionSystemEnum, 'TELEPHONE', INDETERMINATE)
-tv = express_getattr(IfcDistributionSystemEnum, 'TV', INDETERMINATE)
-vacuum = express_getattr(IfcDistributionSystemEnum, 'VACUUM', INDETERMINATE)
-vent = express_getattr(IfcDistributionSystemEnum, 'VENT', INDETERMINATE)
-ventilation = express_getattr(IfcDistributionSystemEnum, 'VENTILATION', INDETERMINATE)
-wastewater = express_getattr(IfcDistributionSystemEnum, 'WASTEWATER', INDETERMINATE)
-watersupply = express_getattr(IfcDistributionSystemEnum, 'WATERSUPPLY', INDETERMINATE)
-userdefined = express_getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDistributionSystemEnum, 'NOTDEFINED', INDETERMINATE)
+airconditioning = IfcDistributionSystemEnum.AIRCONDITIONING
+audiovisual = IfcDistributionSystemEnum.AUDIOVISUAL
+chemical = IfcDistributionSystemEnum.CHEMICAL
+chilledwater = IfcDistributionSystemEnum.CHILLEDWATER
+communication = IfcDistributionSystemEnum.COMMUNICATION
+compressedair = IfcDistributionSystemEnum.COMPRESSEDAIR
+condenserwater = IfcDistributionSystemEnum.CONDENSERWATER
+control = IfcDistributionSystemEnum.CONTROL
+conveying = IfcDistributionSystemEnum.CONVEYING
+data = IfcDistributionSystemEnum.DATA
+disposal = IfcDistributionSystemEnum.DISPOSAL
+domesticcoldwater = IfcDistributionSystemEnum.DOMESTICCOLDWATER
+domestichotwater = IfcDistributionSystemEnum.DOMESTICHOTWATER
+drainage = IfcDistributionSystemEnum.DRAINAGE
+earthing = IfcDistributionSystemEnum.EARTHING
+electrical = IfcDistributionSystemEnum.ELECTRICAL
+electroacoustic = IfcDistributionSystemEnum.ELECTROACOUSTIC
+exhaust = IfcDistributionSystemEnum.EXHAUST
+fireprotection = IfcDistributionSystemEnum.FIREPROTECTION
+fuel = IfcDistributionSystemEnum.FUEL
+gas = IfcDistributionSystemEnum.GAS
+hazardous = IfcDistributionSystemEnum.HAZARDOUS
+heating = IfcDistributionSystemEnum.HEATING
+lighting = IfcDistributionSystemEnum.LIGHTING
+lightningprotection = IfcDistributionSystemEnum.LIGHTNINGPROTECTION
+municipalsolidwaste = IfcDistributionSystemEnum.MUNICIPALSOLIDWASTE
+oil = IfcDistributionSystemEnum.OIL
+operational = IfcDistributionSystemEnum.OPERATIONAL
+powergeneration = IfcDistributionSystemEnum.POWERGENERATION
+rainwater = IfcDistributionSystemEnum.RAINWATER
+refrigeration = IfcDistributionSystemEnum.REFRIGERATION
+security = IfcDistributionSystemEnum.SECURITY
+sewage = IfcDistributionSystemEnum.SEWAGE
+signal = IfcDistributionSystemEnum.SIGNAL
+stormwater = IfcDistributionSystemEnum.STORMWATER
+telephone = IfcDistributionSystemEnum.TELEPHONE
+tv = IfcDistributionSystemEnum.TV
+vacuum = IfcDistributionSystemEnum.VACUUM
+vent = IfcDistributionSystemEnum.VENT
+ventilation = IfcDistributionSystemEnum.VENTILATION
+wastewater = IfcDistributionSystemEnum.WASTEWATER
+watersupply = IfcDistributionSystemEnum.WATERSUPPLY
+userdefined = IfcDistributionSystemEnum.USERDEFINED
+notdefined = IfcDistributionSystemEnum.NOTDEFINED
 IfcDocumentConfidentialityEnum = enum_namespace()
-public = express_getattr(IfcDocumentConfidentialityEnum, 'PUBLIC', INDETERMINATE)
-restricted = express_getattr(IfcDocumentConfidentialityEnum, 'RESTRICTED', INDETERMINATE)
-confidential = express_getattr(IfcDocumentConfidentialityEnum, 'CONFIDENTIAL', INDETERMINATE)
-personal = express_getattr(IfcDocumentConfidentialityEnum, 'PERSONAL', INDETERMINATE)
-userdefined = express_getattr(IfcDocumentConfidentialityEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDocumentConfidentialityEnum, 'NOTDEFINED', INDETERMINATE)
+public = IfcDocumentConfidentialityEnum.PUBLIC
+restricted = IfcDocumentConfidentialityEnum.RESTRICTED
+confidential = IfcDocumentConfidentialityEnum.CONFIDENTIAL
+personal = IfcDocumentConfidentialityEnum.PERSONAL
+userdefined = IfcDocumentConfidentialityEnum.USERDEFINED
+notdefined = IfcDocumentConfidentialityEnum.NOTDEFINED
 IfcDocumentStatusEnum = enum_namespace()
-draft = express_getattr(IfcDocumentStatusEnum, 'DRAFT', INDETERMINATE)
-finaldraft = express_getattr(IfcDocumentStatusEnum, 'FINALDRAFT', INDETERMINATE)
-final = express_getattr(IfcDocumentStatusEnum, 'FINAL', INDETERMINATE)
-revision = express_getattr(IfcDocumentStatusEnum, 'REVISION', INDETERMINATE)
-notdefined = express_getattr(IfcDocumentStatusEnum, 'NOTDEFINED', INDETERMINATE)
+draft = IfcDocumentStatusEnum.DRAFT
+finaldraft = IfcDocumentStatusEnum.FINALDRAFT
+final = IfcDocumentStatusEnum.FINAL
+revision = IfcDocumentStatusEnum.REVISION
+notdefined = IfcDocumentStatusEnum.NOTDEFINED
 IfcDoorPanelOperationEnum = enum_namespace()
-swinging = express_getattr(IfcDoorPanelOperationEnum, 'SWINGING', INDETERMINATE)
-double_acting = express_getattr(IfcDoorPanelOperationEnum, 'DOUBLE_ACTING', INDETERMINATE)
-sliding = express_getattr(IfcDoorPanelOperationEnum, 'SLIDING', INDETERMINATE)
-folding = express_getattr(IfcDoorPanelOperationEnum, 'FOLDING', INDETERMINATE)
-revolving = express_getattr(IfcDoorPanelOperationEnum, 'REVOLVING', INDETERMINATE)
-rollingup = express_getattr(IfcDoorPanelOperationEnum, 'ROLLINGUP', INDETERMINATE)
-fixedpanel = express_getattr(IfcDoorPanelOperationEnum, 'FIXEDPANEL', INDETERMINATE)
-userdefined = express_getattr(IfcDoorPanelOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDoorPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
+swinging = IfcDoorPanelOperationEnum.SWINGING
+double_acting = IfcDoorPanelOperationEnum.DOUBLE_ACTING
+sliding = IfcDoorPanelOperationEnum.SLIDING
+folding = IfcDoorPanelOperationEnum.FOLDING
+revolving = IfcDoorPanelOperationEnum.REVOLVING
+rollingup = IfcDoorPanelOperationEnum.ROLLINGUP
+fixedpanel = IfcDoorPanelOperationEnum.FIXEDPANEL
+userdefined = IfcDoorPanelOperationEnum.USERDEFINED
+notdefined = IfcDoorPanelOperationEnum.NOTDEFINED
 IfcDoorPanelPositionEnum = enum_namespace()
-left = express_getattr(IfcDoorPanelPositionEnum, 'LEFT', INDETERMINATE)
-middle = express_getattr(IfcDoorPanelPositionEnum, 'MIDDLE', INDETERMINATE)
-right = express_getattr(IfcDoorPanelPositionEnum, 'RIGHT', INDETERMINATE)
-notdefined = express_getattr(IfcDoorPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
+left = IfcDoorPanelPositionEnum.LEFT
+middle = IfcDoorPanelPositionEnum.MIDDLE
+right = IfcDoorPanelPositionEnum.RIGHT
+notdefined = IfcDoorPanelPositionEnum.NOTDEFINED
 IfcDoorStyleConstructionEnum = enum_namespace()
-aluminium = express_getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM', INDETERMINATE)
-high_grade_steel = express_getattr(IfcDoorStyleConstructionEnum, 'HIGH_GRADE_STEEL', INDETERMINATE)
-steel = express_getattr(IfcDoorStyleConstructionEnum, 'STEEL', INDETERMINATE)
-wood = express_getattr(IfcDoorStyleConstructionEnum, 'WOOD', INDETERMINATE)
-aluminium_wood = express_getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM_WOOD', INDETERMINATE)
-aluminium_plastic = express_getattr(IfcDoorStyleConstructionEnum, 'ALUMINIUM_PLASTIC', INDETERMINATE)
-plastic = express_getattr(IfcDoorStyleConstructionEnum, 'PLASTIC', INDETERMINATE)
-userdefined = express_getattr(IfcDoorStyleConstructionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDoorStyleConstructionEnum, 'NOTDEFINED', INDETERMINATE)
+aluminium = IfcDoorStyleConstructionEnum.ALUMINIUM
+high_grade_steel = IfcDoorStyleConstructionEnum.HIGH_GRADE_STEEL
+steel = IfcDoorStyleConstructionEnum.STEEL
+wood = IfcDoorStyleConstructionEnum.WOOD
+aluminium_wood = IfcDoorStyleConstructionEnum.ALUMINIUM_WOOD
+aluminium_plastic = IfcDoorStyleConstructionEnum.ALUMINIUM_PLASTIC
+plastic = IfcDoorStyleConstructionEnum.PLASTIC
+userdefined = IfcDoorStyleConstructionEnum.USERDEFINED
+notdefined = IfcDoorStyleConstructionEnum.NOTDEFINED
 IfcDoorStyleOperationEnum = enum_namespace()
-single_swing_left = express_getattr(IfcDoorStyleOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
-single_swing_right = express_getattr(IfcDoorStyleOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
-double_door_single_swing = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING', INDETERMINATE)
-double_door_single_swing_opposite_left = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
-double_door_single_swing_opposite_right = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
-double_swing_left = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_SWING_LEFT', INDETERMINATE)
-double_swing_right = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_SWING_RIGHT', INDETERMINATE)
-double_door_double_swing = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_DOUBLE_SWING', INDETERMINATE)
-sliding_to_left = express_getattr(IfcDoorStyleOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
-sliding_to_right = express_getattr(IfcDoorStyleOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
-double_door_sliding = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_SLIDING', INDETERMINATE)
-folding_to_left = express_getattr(IfcDoorStyleOperationEnum, 'FOLDING_TO_LEFT', INDETERMINATE)
-folding_to_right = express_getattr(IfcDoorStyleOperationEnum, 'FOLDING_TO_RIGHT', INDETERMINATE)
-double_door_folding = express_getattr(IfcDoorStyleOperationEnum, 'DOUBLE_DOOR_FOLDING', INDETERMINATE)
-revolving = express_getattr(IfcDoorStyleOperationEnum, 'REVOLVING', INDETERMINATE)
-rollingup = express_getattr(IfcDoorStyleOperationEnum, 'ROLLINGUP', INDETERMINATE)
-userdefined = express_getattr(IfcDoorStyleOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDoorStyleOperationEnum, 'NOTDEFINED', INDETERMINATE)
+single_swing_left = IfcDoorStyleOperationEnum.SINGLE_SWING_LEFT
+single_swing_right = IfcDoorStyleOperationEnum.SINGLE_SWING_RIGHT
+double_door_single_swing = IfcDoorStyleOperationEnum.DOUBLE_DOOR_SINGLE_SWING
+double_door_single_swing_opposite_left = IfcDoorStyleOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT
+double_door_single_swing_opposite_right = IfcDoorStyleOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT
+double_swing_left = IfcDoorStyleOperationEnum.DOUBLE_SWING_LEFT
+double_swing_right = IfcDoorStyleOperationEnum.DOUBLE_SWING_RIGHT
+double_door_double_swing = IfcDoorStyleOperationEnum.DOUBLE_DOOR_DOUBLE_SWING
+sliding_to_left = IfcDoorStyleOperationEnum.SLIDING_TO_LEFT
+sliding_to_right = IfcDoorStyleOperationEnum.SLIDING_TO_RIGHT
+double_door_sliding = IfcDoorStyleOperationEnum.DOUBLE_DOOR_SLIDING
+folding_to_left = IfcDoorStyleOperationEnum.FOLDING_TO_LEFT
+folding_to_right = IfcDoorStyleOperationEnum.FOLDING_TO_RIGHT
+double_door_folding = IfcDoorStyleOperationEnum.DOUBLE_DOOR_FOLDING
+revolving = IfcDoorStyleOperationEnum.REVOLVING
+rollingup = IfcDoorStyleOperationEnum.ROLLINGUP
+userdefined = IfcDoorStyleOperationEnum.USERDEFINED
+notdefined = IfcDoorStyleOperationEnum.NOTDEFINED
 IfcDoorTypeEnum = enum_namespace()
-door = express_getattr(IfcDoorTypeEnum, 'DOOR', INDETERMINATE)
-gate = express_getattr(IfcDoorTypeEnum, 'GATE', INDETERMINATE)
-trapdoor = express_getattr(IfcDoorTypeEnum, 'TRAPDOOR', INDETERMINATE)
-userdefined = express_getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDoorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+door = IfcDoorTypeEnum.DOOR
+gate = IfcDoorTypeEnum.GATE
+trapdoor = IfcDoorTypeEnum.TRAPDOOR
+userdefined = IfcDoorTypeEnum.USERDEFINED
+notdefined = IfcDoorTypeEnum.NOTDEFINED
 IfcDoorTypeOperationEnum = enum_namespace()
-single_swing_left = express_getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
-single_swing_right = express_getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
-double_door_single_swing = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING', INDETERMINATE)
-double_door_single_swing_opposite_left = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
-double_door_single_swing_opposite_right = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
-double_swing_left = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_LEFT', INDETERMINATE)
-double_swing_right = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_RIGHT', INDETERMINATE)
-double_door_double_swing = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_DOUBLE_SWING', INDETERMINATE)
-sliding_to_left = express_getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
-sliding_to_right = express_getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
-double_door_sliding = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SLIDING', INDETERMINATE)
-folding_to_left = express_getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_LEFT', INDETERMINATE)
-folding_to_right = express_getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_RIGHT', INDETERMINATE)
-double_door_folding = express_getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_FOLDING', INDETERMINATE)
-revolving = express_getattr(IfcDoorTypeOperationEnum, 'REVOLVING', INDETERMINATE)
-rollingup = express_getattr(IfcDoorTypeOperationEnum, 'ROLLINGUP', INDETERMINATE)
-swing_fixed_left = express_getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_LEFT', INDETERMINATE)
-swing_fixed_right = express_getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_RIGHT', INDETERMINATE)
-userdefined = express_getattr(IfcDoorTypeOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDoorTypeOperationEnum, 'NOTDEFINED', INDETERMINATE)
+single_swing_left = IfcDoorTypeOperationEnum.SINGLE_SWING_LEFT
+single_swing_right = IfcDoorTypeOperationEnum.SINGLE_SWING_RIGHT
+double_door_single_swing = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING
+double_door_single_swing_opposite_left = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT
+double_door_single_swing_opposite_right = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT
+double_swing_left = IfcDoorTypeOperationEnum.DOUBLE_SWING_LEFT
+double_swing_right = IfcDoorTypeOperationEnum.DOUBLE_SWING_RIGHT
+double_door_double_swing = IfcDoorTypeOperationEnum.DOUBLE_DOOR_DOUBLE_SWING
+sliding_to_left = IfcDoorTypeOperationEnum.SLIDING_TO_LEFT
+sliding_to_right = IfcDoorTypeOperationEnum.SLIDING_TO_RIGHT
+double_door_sliding = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SLIDING
+folding_to_left = IfcDoorTypeOperationEnum.FOLDING_TO_LEFT
+folding_to_right = IfcDoorTypeOperationEnum.FOLDING_TO_RIGHT
+double_door_folding = IfcDoorTypeOperationEnum.DOUBLE_DOOR_FOLDING
+revolving = IfcDoorTypeOperationEnum.REVOLVING
+rollingup = IfcDoorTypeOperationEnum.ROLLINGUP
+swing_fixed_left = IfcDoorTypeOperationEnum.SWING_FIXED_LEFT
+swing_fixed_right = IfcDoorTypeOperationEnum.SWING_FIXED_RIGHT
+userdefined = IfcDoorTypeOperationEnum.USERDEFINED
+notdefined = IfcDoorTypeOperationEnum.NOTDEFINED
 IfcDuctFittingTypeEnum = enum_namespace()
-bend = express_getattr(IfcDuctFittingTypeEnum, 'BEND', INDETERMINATE)
-connector = express_getattr(IfcDuctFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = express_getattr(IfcDuctFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = express_getattr(IfcDuctFittingTypeEnum, 'EXIT', INDETERMINATE)
-junction = express_getattr(IfcDuctFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-obstruction = express_getattr(IfcDuctFittingTypeEnum, 'OBSTRUCTION', INDETERMINATE)
-transition = express_getattr(IfcDuctFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = express_getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDuctFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcDuctFittingTypeEnum.BEND
+connector = IfcDuctFittingTypeEnum.CONNECTOR
+entry = IfcDuctFittingTypeEnum.ENTRY
+exit = IfcDuctFittingTypeEnum.EXIT
+junction = IfcDuctFittingTypeEnum.JUNCTION
+obstruction = IfcDuctFittingTypeEnum.OBSTRUCTION
+transition = IfcDuctFittingTypeEnum.TRANSITION
+userdefined = IfcDuctFittingTypeEnum.USERDEFINED
+notdefined = IfcDuctFittingTypeEnum.NOTDEFINED
 IfcDuctSegmentTypeEnum = enum_namespace()
-rigidsegment = express_getattr(IfcDuctSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
-flexiblesegment = express_getattr(IfcDuctSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
-userdefined = express_getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDuctSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+rigidsegment = IfcDuctSegmentTypeEnum.RIGIDSEGMENT
+flexiblesegment = IfcDuctSegmentTypeEnum.FLEXIBLESEGMENT
+userdefined = IfcDuctSegmentTypeEnum.USERDEFINED
+notdefined = IfcDuctSegmentTypeEnum.NOTDEFINED
 IfcDuctSilencerTypeEnum = enum_namespace()
-flatoval = express_getattr(IfcDuctSilencerTypeEnum, 'FLATOVAL', INDETERMINATE)
-rectangular = express_getattr(IfcDuctSilencerTypeEnum, 'RECTANGULAR', INDETERMINATE)
-round = express_getattr(IfcDuctSilencerTypeEnum, 'ROUND', INDETERMINATE)
-userdefined = express_getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcDuctSilencerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+flatoval = IfcDuctSilencerTypeEnum.FLATOVAL
+rectangular = IfcDuctSilencerTypeEnum.RECTANGULAR
+round = IfcDuctSilencerTypeEnum.ROUND
+userdefined = IfcDuctSilencerTypeEnum.USERDEFINED
+notdefined = IfcDuctSilencerTypeEnum.NOTDEFINED
 IfcElectricApplianceTypeEnum = enum_namespace()
-dishwasher = express_getattr(IfcElectricApplianceTypeEnum, 'DISHWASHER', INDETERMINATE)
-electriccooker = express_getattr(IfcElectricApplianceTypeEnum, 'ELECTRICCOOKER', INDETERMINATE)
-freestandingelectricheater = express_getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGELECTRICHEATER', INDETERMINATE)
-freestandingfan = express_getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGFAN', INDETERMINATE)
-freestandingwaterheater = express_getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERHEATER', INDETERMINATE)
-freestandingwatercooler = express_getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERCOOLER', INDETERMINATE)
-freezer = express_getattr(IfcElectricApplianceTypeEnum, 'FREEZER', INDETERMINATE)
-fridge_freezer = express_getattr(IfcElectricApplianceTypeEnum, 'FRIDGE_FREEZER', INDETERMINATE)
-handdryer = express_getattr(IfcElectricApplianceTypeEnum, 'HANDDRYER', INDETERMINATE)
-kitchenmachine = express_getattr(IfcElectricApplianceTypeEnum, 'KITCHENMACHINE', INDETERMINATE)
-microwave = express_getattr(IfcElectricApplianceTypeEnum, 'MICROWAVE', INDETERMINATE)
-photocopier = express_getattr(IfcElectricApplianceTypeEnum, 'PHOTOCOPIER', INDETERMINATE)
-refrigerator = express_getattr(IfcElectricApplianceTypeEnum, 'REFRIGERATOR', INDETERMINATE)
-tumbledryer = express_getattr(IfcElectricApplianceTypeEnum, 'TUMBLEDRYER', INDETERMINATE)
-vendingmachine = express_getattr(IfcElectricApplianceTypeEnum, 'VENDINGMACHINE', INDETERMINATE)
-washingmachine = express_getattr(IfcElectricApplianceTypeEnum, 'WASHINGMACHINE', INDETERMINATE)
-userdefined = express_getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dishwasher = IfcElectricApplianceTypeEnum.DISHWASHER
+electriccooker = IfcElectricApplianceTypeEnum.ELECTRICCOOKER
+freestandingelectricheater = IfcElectricApplianceTypeEnum.FREESTANDINGELECTRICHEATER
+freestandingfan = IfcElectricApplianceTypeEnum.FREESTANDINGFAN
+freestandingwaterheater = IfcElectricApplianceTypeEnum.FREESTANDINGWATERHEATER
+freestandingwatercooler = IfcElectricApplianceTypeEnum.FREESTANDINGWATERCOOLER
+freezer = IfcElectricApplianceTypeEnum.FREEZER
+fridge_freezer = IfcElectricApplianceTypeEnum.FRIDGE_FREEZER
+handdryer = IfcElectricApplianceTypeEnum.HANDDRYER
+kitchenmachine = IfcElectricApplianceTypeEnum.KITCHENMACHINE
+microwave = IfcElectricApplianceTypeEnum.MICROWAVE
+photocopier = IfcElectricApplianceTypeEnum.PHOTOCOPIER
+refrigerator = IfcElectricApplianceTypeEnum.REFRIGERATOR
+tumbledryer = IfcElectricApplianceTypeEnum.TUMBLEDRYER
+vendingmachine = IfcElectricApplianceTypeEnum.VENDINGMACHINE
+washingmachine = IfcElectricApplianceTypeEnum.WASHINGMACHINE
+userdefined = IfcElectricApplianceTypeEnum.USERDEFINED
+notdefined = IfcElectricApplianceTypeEnum.NOTDEFINED
 IfcElectricDistributionBoardTypeEnum = enum_namespace()
-consumerunit = express_getattr(IfcElectricDistributionBoardTypeEnum, 'CONSUMERUNIT', INDETERMINATE)
-distributionboard = express_getattr(IfcElectricDistributionBoardTypeEnum, 'DISTRIBUTIONBOARD', INDETERMINATE)
-motorcontrolcentre = express_getattr(IfcElectricDistributionBoardTypeEnum, 'MOTORCONTROLCENTRE', INDETERMINATE)
-switchboard = express_getattr(IfcElectricDistributionBoardTypeEnum, 'SWITCHBOARD', INDETERMINATE)
-userdefined = express_getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricDistributionBoardTypeEnum, 'NOTDEFINED', INDETERMINATE)
+consumerunit = IfcElectricDistributionBoardTypeEnum.CONSUMERUNIT
+distributionboard = IfcElectricDistributionBoardTypeEnum.DISTRIBUTIONBOARD
+motorcontrolcentre = IfcElectricDistributionBoardTypeEnum.MOTORCONTROLCENTRE
+switchboard = IfcElectricDistributionBoardTypeEnum.SWITCHBOARD
+userdefined = IfcElectricDistributionBoardTypeEnum.USERDEFINED
+notdefined = IfcElectricDistributionBoardTypeEnum.NOTDEFINED
 IfcElectricFlowStorageDeviceTypeEnum = enum_namespace()
-battery = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'BATTERY', INDETERMINATE)
-capacitorbank = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITORBANK', INDETERMINATE)
-harmonicfilter = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'HARMONICFILTER', INDETERMINATE)
-inductorbank = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTORBANK', INDETERMINATE)
-ups = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'UPS', INDETERMINATE)
-userdefined = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+battery = IfcElectricFlowStorageDeviceTypeEnum.BATTERY
+capacitorbank = IfcElectricFlowStorageDeviceTypeEnum.CAPACITORBANK
+harmonicfilter = IfcElectricFlowStorageDeviceTypeEnum.HARMONICFILTER
+inductorbank = IfcElectricFlowStorageDeviceTypeEnum.INDUCTORBANK
+ups = IfcElectricFlowStorageDeviceTypeEnum.UPS
+userdefined = IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED
+notdefined = IfcElectricFlowStorageDeviceTypeEnum.NOTDEFINED
 IfcElectricGeneratorTypeEnum = enum_namespace()
-chp = express_getattr(IfcElectricGeneratorTypeEnum, 'CHP', INDETERMINATE)
-enginegenerator = express_getattr(IfcElectricGeneratorTypeEnum, 'ENGINEGENERATOR', INDETERMINATE)
-standalone = express_getattr(IfcElectricGeneratorTypeEnum, 'STANDALONE', INDETERMINATE)
-userdefined = express_getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricGeneratorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+chp = IfcElectricGeneratorTypeEnum.CHP
+enginegenerator = IfcElectricGeneratorTypeEnum.ENGINEGENERATOR
+standalone = IfcElectricGeneratorTypeEnum.STANDALONE
+userdefined = IfcElectricGeneratorTypeEnum.USERDEFINED
+notdefined = IfcElectricGeneratorTypeEnum.NOTDEFINED
 IfcElectricMotorTypeEnum = enum_namespace()
-dc = express_getattr(IfcElectricMotorTypeEnum, 'DC', INDETERMINATE)
-induction = express_getattr(IfcElectricMotorTypeEnum, 'INDUCTION', INDETERMINATE)
-polyphase = express_getattr(IfcElectricMotorTypeEnum, 'POLYPHASE', INDETERMINATE)
-reluctancesynchronous = express_getattr(IfcElectricMotorTypeEnum, 'RELUCTANCESYNCHRONOUS', INDETERMINATE)
-synchronous = express_getattr(IfcElectricMotorTypeEnum, 'SYNCHRONOUS', INDETERMINATE)
-userdefined = express_getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricMotorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dc = IfcElectricMotorTypeEnum.DC
+induction = IfcElectricMotorTypeEnum.INDUCTION
+polyphase = IfcElectricMotorTypeEnum.POLYPHASE
+reluctancesynchronous = IfcElectricMotorTypeEnum.RELUCTANCESYNCHRONOUS
+synchronous = IfcElectricMotorTypeEnum.SYNCHRONOUS
+userdefined = IfcElectricMotorTypeEnum.USERDEFINED
+notdefined = IfcElectricMotorTypeEnum.NOTDEFINED
 IfcElectricTimeControlTypeEnum = enum_namespace()
-timeclock = express_getattr(IfcElectricTimeControlTypeEnum, 'TIMECLOCK', INDETERMINATE)
-timedelay = express_getattr(IfcElectricTimeControlTypeEnum, 'TIMEDELAY', INDETERMINATE)
-relay = express_getattr(IfcElectricTimeControlTypeEnum, 'RELAY', INDETERMINATE)
-userdefined = express_getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElectricTimeControlTypeEnum, 'NOTDEFINED', INDETERMINATE)
+timeclock = IfcElectricTimeControlTypeEnum.TIMECLOCK
+timedelay = IfcElectricTimeControlTypeEnum.TIMEDELAY
+relay = IfcElectricTimeControlTypeEnum.RELAY
+userdefined = IfcElectricTimeControlTypeEnum.USERDEFINED
+notdefined = IfcElectricTimeControlTypeEnum.NOTDEFINED
 IfcElementAssemblyTypeEnum = enum_namespace()
-accessory_assembly = express_getattr(IfcElementAssemblyTypeEnum, 'ACCESSORY_ASSEMBLY', INDETERMINATE)
-arch = express_getattr(IfcElementAssemblyTypeEnum, 'ARCH', INDETERMINATE)
-beam_grid = express_getattr(IfcElementAssemblyTypeEnum, 'BEAM_GRID', INDETERMINATE)
-braced_frame = express_getattr(IfcElementAssemblyTypeEnum, 'BRACED_FRAME', INDETERMINATE)
-girder = express_getattr(IfcElementAssemblyTypeEnum, 'GIRDER', INDETERMINATE)
-reinforcement_unit = express_getattr(IfcElementAssemblyTypeEnum, 'REINFORCEMENT_UNIT', INDETERMINATE)
-rigid_frame = express_getattr(IfcElementAssemblyTypeEnum, 'RIGID_FRAME', INDETERMINATE)
-slab_field = express_getattr(IfcElementAssemblyTypeEnum, 'SLAB_FIELD', INDETERMINATE)
-truss = express_getattr(IfcElementAssemblyTypeEnum, 'TRUSS', INDETERMINATE)
-userdefined = express_getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcElementAssemblyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+accessory_assembly = IfcElementAssemblyTypeEnum.ACCESSORY_ASSEMBLY
+arch = IfcElementAssemblyTypeEnum.ARCH
+beam_grid = IfcElementAssemblyTypeEnum.BEAM_GRID
+braced_frame = IfcElementAssemblyTypeEnum.BRACED_FRAME
+girder = IfcElementAssemblyTypeEnum.GIRDER
+reinforcement_unit = IfcElementAssemblyTypeEnum.REINFORCEMENT_UNIT
+rigid_frame = IfcElementAssemblyTypeEnum.RIGID_FRAME
+slab_field = IfcElementAssemblyTypeEnum.SLAB_FIELD
+truss = IfcElementAssemblyTypeEnum.TRUSS
+userdefined = IfcElementAssemblyTypeEnum.USERDEFINED
+notdefined = IfcElementAssemblyTypeEnum.NOTDEFINED
 IfcElementCompositionEnum = enum_namespace()
-complex = express_getattr(IfcElementCompositionEnum, 'COMPLEX', INDETERMINATE)
-element = express_getattr(IfcElementCompositionEnum, 'ELEMENT', INDETERMINATE)
-partial = express_getattr(IfcElementCompositionEnum, 'PARTIAL', INDETERMINATE)
+complex = IfcElementCompositionEnum.COMPLEX
+element = IfcElementCompositionEnum.ELEMENT
+partial = IfcElementCompositionEnum.PARTIAL
 IfcEngineTypeEnum = enum_namespace()
-externalcombustion = express_getattr(IfcEngineTypeEnum, 'EXTERNALCOMBUSTION', INDETERMINATE)
-internalcombustion = express_getattr(IfcEngineTypeEnum, 'INTERNALCOMBUSTION', INDETERMINATE)
-userdefined = express_getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcEngineTypeEnum, 'NOTDEFINED', INDETERMINATE)
+externalcombustion = IfcEngineTypeEnum.EXTERNALCOMBUSTION
+internalcombustion = IfcEngineTypeEnum.INTERNALCOMBUSTION
+userdefined = IfcEngineTypeEnum.USERDEFINED
+notdefined = IfcEngineTypeEnum.NOTDEFINED
 IfcEvaporativeCoolerTypeEnum = enum_namespace()
-directevaporativerandommediaaircooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER', INDETERMINATE)
-directevaporativerigidmediaaircooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER', INDETERMINATE)
-directevaporativeslingerspackagedaircooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER', INDETERMINATE)
-directevaporativepackagedrotaryaircooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER', INDETERMINATE)
-directevaporativeairwasher = express_getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEAIRWASHER', INDETERMINATE)
-indirectevaporativepackageaircooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEPACKAGEAIRCOOLER', INDETERMINATE)
-indirectevaporativewetcoil = express_getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEWETCOIL', INDETERMINATE)
-indirectevaporativecoolingtowerorcoilcooler = express_getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER', INDETERMINATE)
-indirectdirectcombination = express_getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTDIRECTCOMBINATION', INDETERMINATE)
-userdefined = express_getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcEvaporativeCoolerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+directevaporativerandommediaaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER
+directevaporativerigidmediaaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER
+directevaporativeslingerspackagedaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER
+directevaporativepackagedrotaryaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER
+directevaporativeairwasher = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVEAIRWASHER
+indirectevaporativepackageaircooler = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVEPACKAGEAIRCOOLER
+indirectevaporativewetcoil = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVEWETCOIL
+indirectevaporativecoolingtowerorcoilcooler = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER
+indirectdirectcombination = IfcEvaporativeCoolerTypeEnum.INDIRECTDIRECTCOMBINATION
+userdefined = IfcEvaporativeCoolerTypeEnum.USERDEFINED
+notdefined = IfcEvaporativeCoolerTypeEnum.NOTDEFINED
 IfcEvaporatorTypeEnum = enum_namespace()
-directexpansion = express_getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSION', INDETERMINATE)
-directexpansionshellandtube = express_getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONSHELLANDTUBE', INDETERMINATE)
-directexpansiontubeintube = express_getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONTUBEINTUBE', INDETERMINATE)
-directexpansionbrazedplate = express_getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONBRAZEDPLATE', INDETERMINATE)
-floodedshellandtube = express_getattr(IfcEvaporatorTypeEnum, 'FLOODEDSHELLANDTUBE', INDETERMINATE)
-shellandcoil = express_getattr(IfcEvaporatorTypeEnum, 'SHELLANDCOIL', INDETERMINATE)
-userdefined = express_getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcEvaporatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+directexpansion = IfcEvaporatorTypeEnum.DIRECTEXPANSION
+directexpansionshellandtube = IfcEvaporatorTypeEnum.DIRECTEXPANSIONSHELLANDTUBE
+directexpansiontubeintube = IfcEvaporatorTypeEnum.DIRECTEXPANSIONTUBEINTUBE
+directexpansionbrazedplate = IfcEvaporatorTypeEnum.DIRECTEXPANSIONBRAZEDPLATE
+floodedshellandtube = IfcEvaporatorTypeEnum.FLOODEDSHELLANDTUBE
+shellandcoil = IfcEvaporatorTypeEnum.SHELLANDCOIL
+userdefined = IfcEvaporatorTypeEnum.USERDEFINED
+notdefined = IfcEvaporatorTypeEnum.NOTDEFINED
 IfcEventTriggerTypeEnum = enum_namespace()
-eventrule = express_getattr(IfcEventTriggerTypeEnum, 'EVENTRULE', INDETERMINATE)
-eventmessage = express_getattr(IfcEventTriggerTypeEnum, 'EVENTMESSAGE', INDETERMINATE)
-eventtime = express_getattr(IfcEventTriggerTypeEnum, 'EVENTTIME', INDETERMINATE)
-eventcomplex = express_getattr(IfcEventTriggerTypeEnum, 'EVENTCOMPLEX', INDETERMINATE)
-userdefined = express_getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcEventTriggerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+eventrule = IfcEventTriggerTypeEnum.EVENTRULE
+eventmessage = IfcEventTriggerTypeEnum.EVENTMESSAGE
+eventtime = IfcEventTriggerTypeEnum.EVENTTIME
+eventcomplex = IfcEventTriggerTypeEnum.EVENTCOMPLEX
+userdefined = IfcEventTriggerTypeEnum.USERDEFINED
+notdefined = IfcEventTriggerTypeEnum.NOTDEFINED
 IfcEventTypeEnum = enum_namespace()
-startevent = express_getattr(IfcEventTypeEnum, 'STARTEVENT', INDETERMINATE)
-endevent = express_getattr(IfcEventTypeEnum, 'ENDEVENT', INDETERMINATE)
-intermediateevent = express_getattr(IfcEventTypeEnum, 'INTERMEDIATEEVENT', INDETERMINATE)
-userdefined = express_getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcEventTypeEnum, 'NOTDEFINED', INDETERMINATE)
+startevent = IfcEventTypeEnum.STARTEVENT
+endevent = IfcEventTypeEnum.ENDEVENT
+intermediateevent = IfcEventTypeEnum.INTERMEDIATEEVENT
+userdefined = IfcEventTypeEnum.USERDEFINED
+notdefined = IfcEventTypeEnum.NOTDEFINED
 IfcExternalSpatialElementTypeEnum = enum_namespace()
-external = express_getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL', INDETERMINATE)
-external_earth = express_getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_water = express_getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_WATER', INDETERMINATE)
-external_fire = express_getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_FIRE', INDETERMINATE)
-userdefined = express_getattr(IfcExternalSpatialElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcExternalSpatialElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+external = IfcExternalSpatialElementTypeEnum.EXTERNAL
+external_earth = IfcExternalSpatialElementTypeEnum.EXTERNAL_EARTH
+external_water = IfcExternalSpatialElementTypeEnum.EXTERNAL_WATER
+external_fire = IfcExternalSpatialElementTypeEnum.EXTERNAL_FIRE
+userdefined = IfcExternalSpatialElementTypeEnum.USERDEFINED
+notdefined = IfcExternalSpatialElementTypeEnum.NOTDEFINED
 IfcFanTypeEnum = enum_namespace()
-centrifugalforwardcurved = express_getattr(IfcFanTypeEnum, 'CENTRIFUGALFORWARDCURVED', INDETERMINATE)
-centrifugalradial = express_getattr(IfcFanTypeEnum, 'CENTRIFUGALRADIAL', INDETERMINATE)
-centrifugalbackwardinclinedcurved = express_getattr(IfcFanTypeEnum, 'CENTRIFUGALBACKWARDINCLINEDCURVED', INDETERMINATE)
-centrifugalairfoil = express_getattr(IfcFanTypeEnum, 'CENTRIFUGALAIRFOIL', INDETERMINATE)
-tubeaxial = express_getattr(IfcFanTypeEnum, 'TUBEAXIAL', INDETERMINATE)
-vaneaxial = express_getattr(IfcFanTypeEnum, 'VANEAXIAL', INDETERMINATE)
-propelloraxial = express_getattr(IfcFanTypeEnum, 'PROPELLORAXIAL', INDETERMINATE)
-userdefined = express_getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFanTypeEnum, 'NOTDEFINED', INDETERMINATE)
+centrifugalforwardcurved = IfcFanTypeEnum.CENTRIFUGALFORWARDCURVED
+centrifugalradial = IfcFanTypeEnum.CENTRIFUGALRADIAL
+centrifugalbackwardinclinedcurved = IfcFanTypeEnum.CENTRIFUGALBACKWARDINCLINEDCURVED
+centrifugalairfoil = IfcFanTypeEnum.CENTRIFUGALAIRFOIL
+tubeaxial = IfcFanTypeEnum.TUBEAXIAL
+vaneaxial = IfcFanTypeEnum.VANEAXIAL
+propelloraxial = IfcFanTypeEnum.PROPELLORAXIAL
+userdefined = IfcFanTypeEnum.USERDEFINED
+notdefined = IfcFanTypeEnum.NOTDEFINED
 IfcFastenerTypeEnum = enum_namespace()
-glue = express_getattr(IfcFastenerTypeEnum, 'GLUE', INDETERMINATE)
-mortar = express_getattr(IfcFastenerTypeEnum, 'MORTAR', INDETERMINATE)
-weld = express_getattr(IfcFastenerTypeEnum, 'WELD', INDETERMINATE)
-userdefined = express_getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFastenerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+glue = IfcFastenerTypeEnum.GLUE
+mortar = IfcFastenerTypeEnum.MORTAR
+weld = IfcFastenerTypeEnum.WELD
+userdefined = IfcFastenerTypeEnum.USERDEFINED
+notdefined = IfcFastenerTypeEnum.NOTDEFINED
 IfcFilterTypeEnum = enum_namespace()
-airparticlefilter = express_getattr(IfcFilterTypeEnum, 'AIRPARTICLEFILTER', INDETERMINATE)
-compressedairfilter = express_getattr(IfcFilterTypeEnum, 'COMPRESSEDAIRFILTER', INDETERMINATE)
-odorfilter = express_getattr(IfcFilterTypeEnum, 'ODORFILTER', INDETERMINATE)
-oilfilter = express_getattr(IfcFilterTypeEnum, 'OILFILTER', INDETERMINATE)
-strainer = express_getattr(IfcFilterTypeEnum, 'STRAINER', INDETERMINATE)
-waterfilter = express_getattr(IfcFilterTypeEnum, 'WATERFILTER', INDETERMINATE)
-userdefined = express_getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFilterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airparticlefilter = IfcFilterTypeEnum.AIRPARTICLEFILTER
+compressedairfilter = IfcFilterTypeEnum.COMPRESSEDAIRFILTER
+odorfilter = IfcFilterTypeEnum.ODORFILTER
+oilfilter = IfcFilterTypeEnum.OILFILTER
+strainer = IfcFilterTypeEnum.STRAINER
+waterfilter = IfcFilterTypeEnum.WATERFILTER
+userdefined = IfcFilterTypeEnum.USERDEFINED
+notdefined = IfcFilterTypeEnum.NOTDEFINED
 IfcFireSuppressionTerminalTypeEnum = enum_namespace()
-breechinginlet = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'BREECHINGINLET', INDETERMINATE)
-firehydrant = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREHYDRANT', INDETERMINATE)
-hosereel = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'HOSEREEL', INDETERMINATE)
-sprinkler = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLER', INDETERMINATE)
-sprinklerdeflector = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLERDEFLECTOR', INDETERMINATE)
-userdefined = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFireSuppressionTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+breechinginlet = IfcFireSuppressionTerminalTypeEnum.BREECHINGINLET
+firehydrant = IfcFireSuppressionTerminalTypeEnum.FIREHYDRANT
+hosereel = IfcFireSuppressionTerminalTypeEnum.HOSEREEL
+sprinkler = IfcFireSuppressionTerminalTypeEnum.SPRINKLER
+sprinklerdeflector = IfcFireSuppressionTerminalTypeEnum.SPRINKLERDEFLECTOR
+userdefined = IfcFireSuppressionTerminalTypeEnum.USERDEFINED
+notdefined = IfcFireSuppressionTerminalTypeEnum.NOTDEFINED
 IfcFlowDirectionEnum = enum_namespace()
-source = express_getattr(IfcFlowDirectionEnum, 'SOURCE', INDETERMINATE)
-sink = express_getattr(IfcFlowDirectionEnum, 'SINK', INDETERMINATE)
-sourceandsink = express_getattr(IfcFlowDirectionEnum, 'SOURCEANDSINK', INDETERMINATE)
-notdefined = express_getattr(IfcFlowDirectionEnum, 'NOTDEFINED', INDETERMINATE)
+source = IfcFlowDirectionEnum.SOURCE
+sink = IfcFlowDirectionEnum.SINK
+sourceandsink = IfcFlowDirectionEnum.SOURCEANDSINK
+notdefined = IfcFlowDirectionEnum.NOTDEFINED
 IfcFlowInstrumentTypeEnum = enum_namespace()
-pressuregauge = express_getattr(IfcFlowInstrumentTypeEnum, 'PRESSUREGAUGE', INDETERMINATE)
-thermometer = express_getattr(IfcFlowInstrumentTypeEnum, 'THERMOMETER', INDETERMINATE)
-ammeter = express_getattr(IfcFlowInstrumentTypeEnum, 'AMMETER', INDETERMINATE)
-frequencymeter = express_getattr(IfcFlowInstrumentTypeEnum, 'FREQUENCYMETER', INDETERMINATE)
-powerfactormeter = express_getattr(IfcFlowInstrumentTypeEnum, 'POWERFACTORMETER', INDETERMINATE)
-phaseanglemeter = express_getattr(IfcFlowInstrumentTypeEnum, 'PHASEANGLEMETER', INDETERMINATE)
-voltmeter_peak = express_getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_PEAK', INDETERMINATE)
-voltmeter_rms = express_getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_RMS', INDETERMINATE)
-userdefined = express_getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFlowInstrumentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+pressuregauge = IfcFlowInstrumentTypeEnum.PRESSUREGAUGE
+thermometer = IfcFlowInstrumentTypeEnum.THERMOMETER
+ammeter = IfcFlowInstrumentTypeEnum.AMMETER
+frequencymeter = IfcFlowInstrumentTypeEnum.FREQUENCYMETER
+powerfactormeter = IfcFlowInstrumentTypeEnum.POWERFACTORMETER
+phaseanglemeter = IfcFlowInstrumentTypeEnum.PHASEANGLEMETER
+voltmeter_peak = IfcFlowInstrumentTypeEnum.VOLTMETER_PEAK
+voltmeter_rms = IfcFlowInstrumentTypeEnum.VOLTMETER_RMS
+userdefined = IfcFlowInstrumentTypeEnum.USERDEFINED
+notdefined = IfcFlowInstrumentTypeEnum.NOTDEFINED
 IfcFlowMeterTypeEnum = enum_namespace()
-energymeter = express_getattr(IfcFlowMeterTypeEnum, 'ENERGYMETER', INDETERMINATE)
-gasmeter = express_getattr(IfcFlowMeterTypeEnum, 'GASMETER', INDETERMINATE)
-oilmeter = express_getattr(IfcFlowMeterTypeEnum, 'OILMETER', INDETERMINATE)
-watermeter = express_getattr(IfcFlowMeterTypeEnum, 'WATERMETER', INDETERMINATE)
-userdefined = express_getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFlowMeterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+energymeter = IfcFlowMeterTypeEnum.ENERGYMETER
+gasmeter = IfcFlowMeterTypeEnum.GASMETER
+oilmeter = IfcFlowMeterTypeEnum.OILMETER
+watermeter = IfcFlowMeterTypeEnum.WATERMETER
+userdefined = IfcFlowMeterTypeEnum.USERDEFINED
+notdefined = IfcFlowMeterTypeEnum.NOTDEFINED
 IfcFootingTypeEnum = enum_namespace()
-caisson_foundation = express_getattr(IfcFootingTypeEnum, 'CAISSON_FOUNDATION', INDETERMINATE)
-footing_beam = express_getattr(IfcFootingTypeEnum, 'FOOTING_BEAM', INDETERMINATE)
-pad_footing = express_getattr(IfcFootingTypeEnum, 'PAD_FOOTING', INDETERMINATE)
-pile_cap = express_getattr(IfcFootingTypeEnum, 'PILE_CAP', INDETERMINATE)
-strip_footing = express_getattr(IfcFootingTypeEnum, 'STRIP_FOOTING', INDETERMINATE)
-userdefined = express_getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFootingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+caisson_foundation = IfcFootingTypeEnum.CAISSON_FOUNDATION
+footing_beam = IfcFootingTypeEnum.FOOTING_BEAM
+pad_footing = IfcFootingTypeEnum.PAD_FOOTING
+pile_cap = IfcFootingTypeEnum.PILE_CAP
+strip_footing = IfcFootingTypeEnum.STRIP_FOOTING
+userdefined = IfcFootingTypeEnum.USERDEFINED
+notdefined = IfcFootingTypeEnum.NOTDEFINED
 IfcFurnitureTypeEnum = enum_namespace()
-chair = express_getattr(IfcFurnitureTypeEnum, 'CHAIR', INDETERMINATE)
-table = express_getattr(IfcFurnitureTypeEnum, 'TABLE', INDETERMINATE)
-desk = express_getattr(IfcFurnitureTypeEnum, 'DESK', INDETERMINATE)
-bed = express_getattr(IfcFurnitureTypeEnum, 'BED', INDETERMINATE)
-filecabinet = express_getattr(IfcFurnitureTypeEnum, 'FILECABINET', INDETERMINATE)
-shelf = express_getattr(IfcFurnitureTypeEnum, 'SHELF', INDETERMINATE)
-sofa = express_getattr(IfcFurnitureTypeEnum, 'SOFA', INDETERMINATE)
-userdefined = express_getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcFurnitureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+chair = IfcFurnitureTypeEnum.CHAIR
+table = IfcFurnitureTypeEnum.TABLE
+desk = IfcFurnitureTypeEnum.DESK
+bed = IfcFurnitureTypeEnum.BED
+filecabinet = IfcFurnitureTypeEnum.FILECABINET
+shelf = IfcFurnitureTypeEnum.SHELF
+sofa = IfcFurnitureTypeEnum.SOFA
+userdefined = IfcFurnitureTypeEnum.USERDEFINED
+notdefined = IfcFurnitureTypeEnum.NOTDEFINED
 IfcGeographicElementTypeEnum = enum_namespace()
-terrain = express_getattr(IfcGeographicElementTypeEnum, 'TERRAIN', INDETERMINATE)
-userdefined = express_getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcGeographicElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+terrain = IfcGeographicElementTypeEnum.TERRAIN
+userdefined = IfcGeographicElementTypeEnum.USERDEFINED
+notdefined = IfcGeographicElementTypeEnum.NOTDEFINED
 IfcGeometricProjectionEnum = enum_namespace()
-graph_view = express_getattr(IfcGeometricProjectionEnum, 'GRAPH_VIEW', INDETERMINATE)
-sketch_view = express_getattr(IfcGeometricProjectionEnum, 'SKETCH_VIEW', INDETERMINATE)
-model_view = express_getattr(IfcGeometricProjectionEnum, 'MODEL_VIEW', INDETERMINATE)
-plan_view = express_getattr(IfcGeometricProjectionEnum, 'PLAN_VIEW', INDETERMINATE)
-reflected_plan_view = express_getattr(IfcGeometricProjectionEnum, 'REFLECTED_PLAN_VIEW', INDETERMINATE)
-section_view = express_getattr(IfcGeometricProjectionEnum, 'SECTION_VIEW', INDETERMINATE)
-elevation_view = express_getattr(IfcGeometricProjectionEnum, 'ELEVATION_VIEW', INDETERMINATE)
-userdefined = express_getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcGeometricProjectionEnum, 'NOTDEFINED', INDETERMINATE)
+graph_view = IfcGeometricProjectionEnum.GRAPH_VIEW
+sketch_view = IfcGeometricProjectionEnum.SKETCH_VIEW
+model_view = IfcGeometricProjectionEnum.MODEL_VIEW
+plan_view = IfcGeometricProjectionEnum.PLAN_VIEW
+reflected_plan_view = IfcGeometricProjectionEnum.REFLECTED_PLAN_VIEW
+section_view = IfcGeometricProjectionEnum.SECTION_VIEW
+elevation_view = IfcGeometricProjectionEnum.ELEVATION_VIEW
+userdefined = IfcGeometricProjectionEnum.USERDEFINED
+notdefined = IfcGeometricProjectionEnum.NOTDEFINED
 IfcGlobalOrLocalEnum = enum_namespace()
-global_coords = express_getattr(IfcGlobalOrLocalEnum, 'GLOBAL_COORDS', INDETERMINATE)
-local_coords = express_getattr(IfcGlobalOrLocalEnum, 'LOCAL_COORDS', INDETERMINATE)
+global_coords = IfcGlobalOrLocalEnum.GLOBAL_COORDS
+local_coords = IfcGlobalOrLocalEnum.LOCAL_COORDS
 IfcGridTypeEnum = enum_namespace()
-rectangular = express_getattr(IfcGridTypeEnum, 'RECTANGULAR', INDETERMINATE)
-radial = express_getattr(IfcGridTypeEnum, 'RADIAL', INDETERMINATE)
-triangular = express_getattr(IfcGridTypeEnum, 'TRIANGULAR', INDETERMINATE)
-irregular = express_getattr(IfcGridTypeEnum, 'IRREGULAR', INDETERMINATE)
-userdefined = express_getattr(IfcGridTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcGridTypeEnum, 'NOTDEFINED', INDETERMINATE)
+rectangular = IfcGridTypeEnum.RECTANGULAR
+radial = IfcGridTypeEnum.RADIAL
+triangular = IfcGridTypeEnum.TRIANGULAR
+irregular = IfcGridTypeEnum.IRREGULAR
+userdefined = IfcGridTypeEnum.USERDEFINED
+notdefined = IfcGridTypeEnum.NOTDEFINED
 IfcHeatExchangerTypeEnum = enum_namespace()
-plate = express_getattr(IfcHeatExchangerTypeEnum, 'PLATE', INDETERMINATE)
-shellandtube = express_getattr(IfcHeatExchangerTypeEnum, 'SHELLANDTUBE', INDETERMINATE)
-userdefined = express_getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcHeatExchangerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+plate = IfcHeatExchangerTypeEnum.PLATE
+shellandtube = IfcHeatExchangerTypeEnum.SHELLANDTUBE
+userdefined = IfcHeatExchangerTypeEnum.USERDEFINED
+notdefined = IfcHeatExchangerTypeEnum.NOTDEFINED
 IfcHumidifierTypeEnum = enum_namespace()
-steaminjection = express_getattr(IfcHumidifierTypeEnum, 'STEAMINJECTION', INDETERMINATE)
-adiabaticairwasher = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICAIRWASHER', INDETERMINATE)
-adiabaticpan = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICPAN', INDETERMINATE)
-adiabaticwettedelement = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICWETTEDELEMENT', INDETERMINATE)
-adiabaticatomizing = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICATOMIZING', INDETERMINATE)
-adiabaticultrasonic = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICULTRASONIC', INDETERMINATE)
-adiabaticrigidmedia = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICRIGIDMEDIA', INDETERMINATE)
-adiabaticcompressedairnozzle = express_getattr(IfcHumidifierTypeEnum, 'ADIABATICCOMPRESSEDAIRNOZZLE', INDETERMINATE)
-assistedelectric = express_getattr(IfcHumidifierTypeEnum, 'ASSISTEDELECTRIC', INDETERMINATE)
-assistednaturalgas = express_getattr(IfcHumidifierTypeEnum, 'ASSISTEDNATURALGAS', INDETERMINATE)
-assistedpropane = express_getattr(IfcHumidifierTypeEnum, 'ASSISTEDPROPANE', INDETERMINATE)
-assistedbutane = express_getattr(IfcHumidifierTypeEnum, 'ASSISTEDBUTANE', INDETERMINATE)
-assistedsteam = express_getattr(IfcHumidifierTypeEnum, 'ASSISTEDSTEAM', INDETERMINATE)
-userdefined = express_getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcHumidifierTypeEnum, 'NOTDEFINED', INDETERMINATE)
+steaminjection = IfcHumidifierTypeEnum.STEAMINJECTION
+adiabaticairwasher = IfcHumidifierTypeEnum.ADIABATICAIRWASHER
+adiabaticpan = IfcHumidifierTypeEnum.ADIABATICPAN
+adiabaticwettedelement = IfcHumidifierTypeEnum.ADIABATICWETTEDELEMENT
+adiabaticatomizing = IfcHumidifierTypeEnum.ADIABATICATOMIZING
+adiabaticultrasonic = IfcHumidifierTypeEnum.ADIABATICULTRASONIC
+adiabaticrigidmedia = IfcHumidifierTypeEnum.ADIABATICRIGIDMEDIA
+adiabaticcompressedairnozzle = IfcHumidifierTypeEnum.ADIABATICCOMPRESSEDAIRNOZZLE
+assistedelectric = IfcHumidifierTypeEnum.ASSISTEDELECTRIC
+assistednaturalgas = IfcHumidifierTypeEnum.ASSISTEDNATURALGAS
+assistedpropane = IfcHumidifierTypeEnum.ASSISTEDPROPANE
+assistedbutane = IfcHumidifierTypeEnum.ASSISTEDBUTANE
+assistedsteam = IfcHumidifierTypeEnum.ASSISTEDSTEAM
+userdefined = IfcHumidifierTypeEnum.USERDEFINED
+notdefined = IfcHumidifierTypeEnum.NOTDEFINED
 IfcInterceptorTypeEnum = enum_namespace()
-cyclonic = express_getattr(IfcInterceptorTypeEnum, 'CYCLONIC', INDETERMINATE)
-grease = express_getattr(IfcInterceptorTypeEnum, 'GREASE', INDETERMINATE)
-oil = express_getattr(IfcInterceptorTypeEnum, 'OIL', INDETERMINATE)
-petrol = express_getattr(IfcInterceptorTypeEnum, 'PETROL', INDETERMINATE)
-userdefined = express_getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcInterceptorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cyclonic = IfcInterceptorTypeEnum.CYCLONIC
+grease = IfcInterceptorTypeEnum.GREASE
+oil = IfcInterceptorTypeEnum.OIL
+petrol = IfcInterceptorTypeEnum.PETROL
+userdefined = IfcInterceptorTypeEnum.USERDEFINED
+notdefined = IfcInterceptorTypeEnum.NOTDEFINED
 IfcInternalOrExternalEnum = enum_namespace()
-internal = express_getattr(IfcInternalOrExternalEnum, 'INTERNAL', INDETERMINATE)
-external = express_getattr(IfcInternalOrExternalEnum, 'EXTERNAL', INDETERMINATE)
-external_earth = express_getattr(IfcInternalOrExternalEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_water = express_getattr(IfcInternalOrExternalEnum, 'EXTERNAL_WATER', INDETERMINATE)
-external_fire = express_getattr(IfcInternalOrExternalEnum, 'EXTERNAL_FIRE', INDETERMINATE)
-notdefined = express_getattr(IfcInternalOrExternalEnum, 'NOTDEFINED', INDETERMINATE)
+internal = IfcInternalOrExternalEnum.INTERNAL
+external = IfcInternalOrExternalEnum.EXTERNAL
+external_earth = IfcInternalOrExternalEnum.EXTERNAL_EARTH
+external_water = IfcInternalOrExternalEnum.EXTERNAL_WATER
+external_fire = IfcInternalOrExternalEnum.EXTERNAL_FIRE
+notdefined = IfcInternalOrExternalEnum.NOTDEFINED
 IfcInventoryTypeEnum = enum_namespace()
-assetinventory = express_getattr(IfcInventoryTypeEnum, 'ASSETINVENTORY', INDETERMINATE)
-spaceinventory = express_getattr(IfcInventoryTypeEnum, 'SPACEINVENTORY', INDETERMINATE)
-furnitureinventory = express_getattr(IfcInventoryTypeEnum, 'FURNITUREINVENTORY', INDETERMINATE)
-userdefined = express_getattr(IfcInventoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcInventoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assetinventory = IfcInventoryTypeEnum.ASSETINVENTORY
+spaceinventory = IfcInventoryTypeEnum.SPACEINVENTORY
+furnitureinventory = IfcInventoryTypeEnum.FURNITUREINVENTORY
+userdefined = IfcInventoryTypeEnum.USERDEFINED
+notdefined = IfcInventoryTypeEnum.NOTDEFINED
 IfcJunctionBoxTypeEnum = enum_namespace()
-data = express_getattr(IfcJunctionBoxTypeEnum, 'DATA', INDETERMINATE)
-power = express_getattr(IfcJunctionBoxTypeEnum, 'POWER', INDETERMINATE)
-userdefined = express_getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcJunctionBoxTypeEnum, 'NOTDEFINED', INDETERMINATE)
+data = IfcJunctionBoxTypeEnum.DATA
+power = IfcJunctionBoxTypeEnum.POWER
+userdefined = IfcJunctionBoxTypeEnum.USERDEFINED
+notdefined = IfcJunctionBoxTypeEnum.NOTDEFINED
 IfcKnotType = enum_namespace()
-uniform_knots = express_getattr(IfcKnotType, 'UNIFORM_KNOTS', INDETERMINATE)
-quasi_uniform_knots = express_getattr(IfcKnotType, 'QUASI_UNIFORM_KNOTS', INDETERMINATE)
-piecewise_bezier_knots = express_getattr(IfcKnotType, 'PIECEWISE_BEZIER_KNOTS', INDETERMINATE)
-unspecified = express_getattr(IfcKnotType, 'UNSPECIFIED', INDETERMINATE)
+uniform_knots = IfcKnotType.UNIFORM_KNOTS
+quasi_uniform_knots = IfcKnotType.QUASI_UNIFORM_KNOTS
+piecewise_bezier_knots = IfcKnotType.PIECEWISE_BEZIER_KNOTS
+unspecified = IfcKnotType.UNSPECIFIED
 IfcLaborResourceTypeEnum = enum_namespace()
-administration = express_getattr(IfcLaborResourceTypeEnum, 'ADMINISTRATION', INDETERMINATE)
-carpentry = express_getattr(IfcLaborResourceTypeEnum, 'CARPENTRY', INDETERMINATE)
-cleaning = express_getattr(IfcLaborResourceTypeEnum, 'CLEANING', INDETERMINATE)
-concrete = express_getattr(IfcLaborResourceTypeEnum, 'CONCRETE', INDETERMINATE)
-drywall = express_getattr(IfcLaborResourceTypeEnum, 'DRYWALL', INDETERMINATE)
-electric = express_getattr(IfcLaborResourceTypeEnum, 'ELECTRIC', INDETERMINATE)
-finishing = express_getattr(IfcLaborResourceTypeEnum, 'FINISHING', INDETERMINATE)
-flooring = express_getattr(IfcLaborResourceTypeEnum, 'FLOORING', INDETERMINATE)
-general = express_getattr(IfcLaborResourceTypeEnum, 'GENERAL', INDETERMINATE)
-hvac = express_getattr(IfcLaborResourceTypeEnum, 'HVAC', INDETERMINATE)
-landscaping = express_getattr(IfcLaborResourceTypeEnum, 'LANDSCAPING', INDETERMINATE)
-masonry = express_getattr(IfcLaborResourceTypeEnum, 'MASONRY', INDETERMINATE)
-painting = express_getattr(IfcLaborResourceTypeEnum, 'PAINTING', INDETERMINATE)
-paving = express_getattr(IfcLaborResourceTypeEnum, 'PAVING', INDETERMINATE)
-plumbing = express_getattr(IfcLaborResourceTypeEnum, 'PLUMBING', INDETERMINATE)
-roofing = express_getattr(IfcLaborResourceTypeEnum, 'ROOFING', INDETERMINATE)
-sitegrading = express_getattr(IfcLaborResourceTypeEnum, 'SITEGRADING', INDETERMINATE)
-steelwork = express_getattr(IfcLaborResourceTypeEnum, 'STEELWORK', INDETERMINATE)
-surveying = express_getattr(IfcLaborResourceTypeEnum, 'SURVEYING', INDETERMINATE)
-userdefined = express_getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcLaborResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+administration = IfcLaborResourceTypeEnum.ADMINISTRATION
+carpentry = IfcLaborResourceTypeEnum.CARPENTRY
+cleaning = IfcLaborResourceTypeEnum.CLEANING
+concrete = IfcLaborResourceTypeEnum.CONCRETE
+drywall = IfcLaborResourceTypeEnum.DRYWALL
+electric = IfcLaborResourceTypeEnum.ELECTRIC
+finishing = IfcLaborResourceTypeEnum.FINISHING
+flooring = IfcLaborResourceTypeEnum.FLOORING
+general = IfcLaborResourceTypeEnum.GENERAL
+hvac = IfcLaborResourceTypeEnum.HVAC
+landscaping = IfcLaborResourceTypeEnum.LANDSCAPING
+masonry = IfcLaborResourceTypeEnum.MASONRY
+painting = IfcLaborResourceTypeEnum.PAINTING
+paving = IfcLaborResourceTypeEnum.PAVING
+plumbing = IfcLaborResourceTypeEnum.PLUMBING
+roofing = IfcLaborResourceTypeEnum.ROOFING
+sitegrading = IfcLaborResourceTypeEnum.SITEGRADING
+steelwork = IfcLaborResourceTypeEnum.STEELWORK
+surveying = IfcLaborResourceTypeEnum.SURVEYING
+userdefined = IfcLaborResourceTypeEnum.USERDEFINED
+notdefined = IfcLaborResourceTypeEnum.NOTDEFINED
 IfcLampTypeEnum = enum_namespace()
-compactfluorescent = express_getattr(IfcLampTypeEnum, 'COMPACTFLUORESCENT', INDETERMINATE)
-fluorescent = express_getattr(IfcLampTypeEnum, 'FLUORESCENT', INDETERMINATE)
-halogen = express_getattr(IfcLampTypeEnum, 'HALOGEN', INDETERMINATE)
-highpressuremercury = express_getattr(IfcLampTypeEnum, 'HIGHPRESSUREMERCURY', INDETERMINATE)
-highpressuresodium = express_getattr(IfcLampTypeEnum, 'HIGHPRESSURESODIUM', INDETERMINATE)
-led = express_getattr(IfcLampTypeEnum, 'LED', INDETERMINATE)
-metalhalide = express_getattr(IfcLampTypeEnum, 'METALHALIDE', INDETERMINATE)
-oled = express_getattr(IfcLampTypeEnum, 'OLED', INDETERMINATE)
-tungstenfilament = express_getattr(IfcLampTypeEnum, 'TUNGSTENFILAMENT', INDETERMINATE)
-userdefined = express_getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcLampTypeEnum, 'NOTDEFINED', INDETERMINATE)
+compactfluorescent = IfcLampTypeEnum.COMPACTFLUORESCENT
+fluorescent = IfcLampTypeEnum.FLUORESCENT
+halogen = IfcLampTypeEnum.HALOGEN
+highpressuremercury = IfcLampTypeEnum.HIGHPRESSUREMERCURY
+highpressuresodium = IfcLampTypeEnum.HIGHPRESSURESODIUM
+led = IfcLampTypeEnum.LED
+metalhalide = IfcLampTypeEnum.METALHALIDE
+oled = IfcLampTypeEnum.OLED
+tungstenfilament = IfcLampTypeEnum.TUNGSTENFILAMENT
+userdefined = IfcLampTypeEnum.USERDEFINED
+notdefined = IfcLampTypeEnum.NOTDEFINED
 IfcLayerSetDirectionEnum = enum_namespace()
-axis1 = express_getattr(IfcLayerSetDirectionEnum, 'AXIS1', INDETERMINATE)
-axis2 = express_getattr(IfcLayerSetDirectionEnum, 'AXIS2', INDETERMINATE)
-axis3 = express_getattr(IfcLayerSetDirectionEnum, 'AXIS3', INDETERMINATE)
+axis1 = IfcLayerSetDirectionEnum.AXIS1
+axis2 = IfcLayerSetDirectionEnum.AXIS2
+axis3 = IfcLayerSetDirectionEnum.AXIS3
 IfcLightDistributionCurveEnum = enum_namespace()
-type_a = express_getattr(IfcLightDistributionCurveEnum, 'TYPE_A', INDETERMINATE)
-type_b = express_getattr(IfcLightDistributionCurveEnum, 'TYPE_B', INDETERMINATE)
-type_c = express_getattr(IfcLightDistributionCurveEnum, 'TYPE_C', INDETERMINATE)
-notdefined = express_getattr(IfcLightDistributionCurveEnum, 'NOTDEFINED', INDETERMINATE)
+type_a = IfcLightDistributionCurveEnum.TYPE_A
+type_b = IfcLightDistributionCurveEnum.TYPE_B
+type_c = IfcLightDistributionCurveEnum.TYPE_C
+notdefined = IfcLightDistributionCurveEnum.NOTDEFINED
 IfcLightEmissionSourceEnum = enum_namespace()
-compactfluorescent = express_getattr(IfcLightEmissionSourceEnum, 'COMPACTFLUORESCENT', INDETERMINATE)
-fluorescent = express_getattr(IfcLightEmissionSourceEnum, 'FLUORESCENT', INDETERMINATE)
-highpressuremercury = express_getattr(IfcLightEmissionSourceEnum, 'HIGHPRESSUREMERCURY', INDETERMINATE)
-highpressuresodium = express_getattr(IfcLightEmissionSourceEnum, 'HIGHPRESSURESODIUM', INDETERMINATE)
-lightemittingdiode = express_getattr(IfcLightEmissionSourceEnum, 'LIGHTEMITTINGDIODE', INDETERMINATE)
-lowpressuresodium = express_getattr(IfcLightEmissionSourceEnum, 'LOWPRESSURESODIUM', INDETERMINATE)
-lowvoltagehalogen = express_getattr(IfcLightEmissionSourceEnum, 'LOWVOLTAGEHALOGEN', INDETERMINATE)
-mainvoltagehalogen = express_getattr(IfcLightEmissionSourceEnum, 'MAINVOLTAGEHALOGEN', INDETERMINATE)
-metalhalide = express_getattr(IfcLightEmissionSourceEnum, 'METALHALIDE', INDETERMINATE)
-tungstenfilament = express_getattr(IfcLightEmissionSourceEnum, 'TUNGSTENFILAMENT', INDETERMINATE)
-notdefined = express_getattr(IfcLightEmissionSourceEnum, 'NOTDEFINED', INDETERMINATE)
+compactfluorescent = IfcLightEmissionSourceEnum.COMPACTFLUORESCENT
+fluorescent = IfcLightEmissionSourceEnum.FLUORESCENT
+highpressuremercury = IfcLightEmissionSourceEnum.HIGHPRESSUREMERCURY
+highpressuresodium = IfcLightEmissionSourceEnum.HIGHPRESSURESODIUM
+lightemittingdiode = IfcLightEmissionSourceEnum.LIGHTEMITTINGDIODE
+lowpressuresodium = IfcLightEmissionSourceEnum.LOWPRESSURESODIUM
+lowvoltagehalogen = IfcLightEmissionSourceEnum.LOWVOLTAGEHALOGEN
+mainvoltagehalogen = IfcLightEmissionSourceEnum.MAINVOLTAGEHALOGEN
+metalhalide = IfcLightEmissionSourceEnum.METALHALIDE
+tungstenfilament = IfcLightEmissionSourceEnum.TUNGSTENFILAMENT
+notdefined = IfcLightEmissionSourceEnum.NOTDEFINED
 IfcLightFixtureTypeEnum = enum_namespace()
-pointsource = express_getattr(IfcLightFixtureTypeEnum, 'POINTSOURCE', INDETERMINATE)
-directionsource = express_getattr(IfcLightFixtureTypeEnum, 'DIRECTIONSOURCE', INDETERMINATE)
-securitylighting = express_getattr(IfcLightFixtureTypeEnum, 'SECURITYLIGHTING', INDETERMINATE)
-userdefined = express_getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcLightFixtureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+pointsource = IfcLightFixtureTypeEnum.POINTSOURCE
+directionsource = IfcLightFixtureTypeEnum.DIRECTIONSOURCE
+securitylighting = IfcLightFixtureTypeEnum.SECURITYLIGHTING
+userdefined = IfcLightFixtureTypeEnum.USERDEFINED
+notdefined = IfcLightFixtureTypeEnum.NOTDEFINED
 IfcLoadGroupTypeEnum = enum_namespace()
-load_group = express_getattr(IfcLoadGroupTypeEnum, 'LOAD_GROUP', INDETERMINATE)
-load_case = express_getattr(IfcLoadGroupTypeEnum, 'LOAD_CASE', INDETERMINATE)
-load_combination = express_getattr(IfcLoadGroupTypeEnum, 'LOAD_COMBINATION', INDETERMINATE)
-userdefined = express_getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcLoadGroupTypeEnum, 'NOTDEFINED', INDETERMINATE)
+load_group = IfcLoadGroupTypeEnum.LOAD_GROUP
+load_case = IfcLoadGroupTypeEnum.LOAD_CASE
+load_combination = IfcLoadGroupTypeEnum.LOAD_COMBINATION
+userdefined = IfcLoadGroupTypeEnum.USERDEFINED
+notdefined = IfcLoadGroupTypeEnum.NOTDEFINED
 IfcLogicalOperatorEnum = enum_namespace()
-logicaland = express_getattr(IfcLogicalOperatorEnum, 'LOGICALAND', INDETERMINATE)
-logicalor = express_getattr(IfcLogicalOperatorEnum, 'LOGICALOR', INDETERMINATE)
-logicalxor = express_getattr(IfcLogicalOperatorEnum, 'LOGICALXOR', INDETERMINATE)
-logicalnotand = express_getattr(IfcLogicalOperatorEnum, 'LOGICALNOTAND', INDETERMINATE)
-logicalnotor = express_getattr(IfcLogicalOperatorEnum, 'LOGICALNOTOR', INDETERMINATE)
+logicaland = IfcLogicalOperatorEnum.LOGICALAND
+logicalor = IfcLogicalOperatorEnum.LOGICALOR
+logicalxor = IfcLogicalOperatorEnum.LOGICALXOR
+logicalnotand = IfcLogicalOperatorEnum.LOGICALNOTAND
+logicalnotor = IfcLogicalOperatorEnum.LOGICALNOTOR
 IfcMechanicalFastenerTypeEnum = enum_namespace()
-anchorbolt = express_getattr(IfcMechanicalFastenerTypeEnum, 'ANCHORBOLT', INDETERMINATE)
-bolt = express_getattr(IfcMechanicalFastenerTypeEnum, 'BOLT', INDETERMINATE)
-dowel = express_getattr(IfcMechanicalFastenerTypeEnum, 'DOWEL', INDETERMINATE)
-nail = express_getattr(IfcMechanicalFastenerTypeEnum, 'NAIL', INDETERMINATE)
-nailplate = express_getattr(IfcMechanicalFastenerTypeEnum, 'NAILPLATE', INDETERMINATE)
-rivet = express_getattr(IfcMechanicalFastenerTypeEnum, 'RIVET', INDETERMINATE)
-screw = express_getattr(IfcMechanicalFastenerTypeEnum, 'SCREW', INDETERMINATE)
-shearconnector = express_getattr(IfcMechanicalFastenerTypeEnum, 'SHEARCONNECTOR', INDETERMINATE)
-staple = express_getattr(IfcMechanicalFastenerTypeEnum, 'STAPLE', INDETERMINATE)
-studshearconnector = express_getattr(IfcMechanicalFastenerTypeEnum, 'STUDSHEARCONNECTOR', INDETERMINATE)
-userdefined = express_getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcMechanicalFastenerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchorbolt = IfcMechanicalFastenerTypeEnum.ANCHORBOLT
+bolt = IfcMechanicalFastenerTypeEnum.BOLT
+dowel = IfcMechanicalFastenerTypeEnum.DOWEL
+nail = IfcMechanicalFastenerTypeEnum.NAIL
+nailplate = IfcMechanicalFastenerTypeEnum.NAILPLATE
+rivet = IfcMechanicalFastenerTypeEnum.RIVET
+screw = IfcMechanicalFastenerTypeEnum.SCREW
+shearconnector = IfcMechanicalFastenerTypeEnum.SHEARCONNECTOR
+staple = IfcMechanicalFastenerTypeEnum.STAPLE
+studshearconnector = IfcMechanicalFastenerTypeEnum.STUDSHEARCONNECTOR
+userdefined = IfcMechanicalFastenerTypeEnum.USERDEFINED
+notdefined = IfcMechanicalFastenerTypeEnum.NOTDEFINED
 IfcMedicalDeviceTypeEnum = enum_namespace()
-airstation = express_getattr(IfcMedicalDeviceTypeEnum, 'AIRSTATION', INDETERMINATE)
-feedairunit = express_getattr(IfcMedicalDeviceTypeEnum, 'FEEDAIRUNIT', INDETERMINATE)
-oxygengenerator = express_getattr(IfcMedicalDeviceTypeEnum, 'OXYGENGENERATOR', INDETERMINATE)
-oxygenplant = express_getattr(IfcMedicalDeviceTypeEnum, 'OXYGENPLANT', INDETERMINATE)
-vacuumstation = express_getattr(IfcMedicalDeviceTypeEnum, 'VACUUMSTATION', INDETERMINATE)
-userdefined = express_getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcMedicalDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airstation = IfcMedicalDeviceTypeEnum.AIRSTATION
+feedairunit = IfcMedicalDeviceTypeEnum.FEEDAIRUNIT
+oxygengenerator = IfcMedicalDeviceTypeEnum.OXYGENGENERATOR
+oxygenplant = IfcMedicalDeviceTypeEnum.OXYGENPLANT
+vacuumstation = IfcMedicalDeviceTypeEnum.VACUUMSTATION
+userdefined = IfcMedicalDeviceTypeEnum.USERDEFINED
+notdefined = IfcMedicalDeviceTypeEnum.NOTDEFINED
 IfcMemberTypeEnum = enum_namespace()
-brace = express_getattr(IfcMemberTypeEnum, 'BRACE', INDETERMINATE)
-chord = express_getattr(IfcMemberTypeEnum, 'CHORD', INDETERMINATE)
-collar = express_getattr(IfcMemberTypeEnum, 'COLLAR', INDETERMINATE)
-member = express_getattr(IfcMemberTypeEnum, 'MEMBER', INDETERMINATE)
-mullion = express_getattr(IfcMemberTypeEnum, 'MULLION', INDETERMINATE)
-plate = express_getattr(IfcMemberTypeEnum, 'PLATE', INDETERMINATE)
-post = express_getattr(IfcMemberTypeEnum, 'POST', INDETERMINATE)
-purlin = express_getattr(IfcMemberTypeEnum, 'PURLIN', INDETERMINATE)
-rafter = express_getattr(IfcMemberTypeEnum, 'RAFTER', INDETERMINATE)
-stringer = express_getattr(IfcMemberTypeEnum, 'STRINGER', INDETERMINATE)
-strut = express_getattr(IfcMemberTypeEnum, 'STRUT', INDETERMINATE)
-stud = express_getattr(IfcMemberTypeEnum, 'STUD', INDETERMINATE)
-userdefined = express_getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+brace = IfcMemberTypeEnum.BRACE
+chord = IfcMemberTypeEnum.CHORD
+collar = IfcMemberTypeEnum.COLLAR
+member = IfcMemberTypeEnum.MEMBER
+mullion = IfcMemberTypeEnum.MULLION
+plate = IfcMemberTypeEnum.PLATE
+post = IfcMemberTypeEnum.POST
+purlin = IfcMemberTypeEnum.PURLIN
+rafter = IfcMemberTypeEnum.RAFTER
+stringer = IfcMemberTypeEnum.STRINGER
+strut = IfcMemberTypeEnum.STRUT
+stud = IfcMemberTypeEnum.STUD
+userdefined = IfcMemberTypeEnum.USERDEFINED
+notdefined = IfcMemberTypeEnum.NOTDEFINED
 IfcMotorConnectionTypeEnum = enum_namespace()
-beltdrive = express_getattr(IfcMotorConnectionTypeEnum, 'BELTDRIVE', INDETERMINATE)
-coupling = express_getattr(IfcMotorConnectionTypeEnum, 'COUPLING', INDETERMINATE)
-directdrive = express_getattr(IfcMotorConnectionTypeEnum, 'DIRECTDRIVE', INDETERMINATE)
-userdefined = express_getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcMotorConnectionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beltdrive = IfcMotorConnectionTypeEnum.BELTDRIVE
+coupling = IfcMotorConnectionTypeEnum.COUPLING
+directdrive = IfcMotorConnectionTypeEnum.DIRECTDRIVE
+userdefined = IfcMotorConnectionTypeEnum.USERDEFINED
+notdefined = IfcMotorConnectionTypeEnum.NOTDEFINED
 IfcNullStyle = enum_namespace()
-null = express_getattr(IfcNullStyle, 'NULL', INDETERMINATE)
+null = IfcNullStyle.NULL
 IfcObjectTypeEnum = enum_namespace()
-product = express_getattr(IfcObjectTypeEnum, 'PRODUCT', INDETERMINATE)
-process = express_getattr(IfcObjectTypeEnum, 'PROCESS', INDETERMINATE)
-control = express_getattr(IfcObjectTypeEnum, 'CONTROL', INDETERMINATE)
-resource = express_getattr(IfcObjectTypeEnum, 'RESOURCE', INDETERMINATE)
-actor = express_getattr(IfcObjectTypeEnum, 'ACTOR', INDETERMINATE)
-group = express_getattr(IfcObjectTypeEnum, 'GROUP', INDETERMINATE)
-project = express_getattr(IfcObjectTypeEnum, 'PROJECT', INDETERMINATE)
-notdefined = express_getattr(IfcObjectTypeEnum, 'NOTDEFINED', INDETERMINATE)
+product = IfcObjectTypeEnum.PRODUCT
+process = IfcObjectTypeEnum.PROCESS
+control = IfcObjectTypeEnum.CONTROL
+resource = IfcObjectTypeEnum.RESOURCE
+actor = IfcObjectTypeEnum.ACTOR
+group = IfcObjectTypeEnum.GROUP
+project = IfcObjectTypeEnum.PROJECT
+notdefined = IfcObjectTypeEnum.NOTDEFINED
 IfcObjectiveEnum = enum_namespace()
-codecompliance = express_getattr(IfcObjectiveEnum, 'CODECOMPLIANCE', INDETERMINATE)
-codewaiver = express_getattr(IfcObjectiveEnum, 'CODEWAIVER', INDETERMINATE)
-designintent = express_getattr(IfcObjectiveEnum, 'DESIGNINTENT', INDETERMINATE)
-external = express_getattr(IfcObjectiveEnum, 'EXTERNAL', INDETERMINATE)
-healthandsafety = express_getattr(IfcObjectiveEnum, 'HEALTHANDSAFETY', INDETERMINATE)
-mergeconflict = express_getattr(IfcObjectiveEnum, 'MERGECONFLICT', INDETERMINATE)
-modelview = express_getattr(IfcObjectiveEnum, 'MODELVIEW', INDETERMINATE)
-parameter = express_getattr(IfcObjectiveEnum, 'PARAMETER', INDETERMINATE)
-requirement = express_getattr(IfcObjectiveEnum, 'REQUIREMENT', INDETERMINATE)
-specification = express_getattr(IfcObjectiveEnum, 'SPECIFICATION', INDETERMINATE)
-triggercondition = express_getattr(IfcObjectiveEnum, 'TRIGGERCONDITION', INDETERMINATE)
-userdefined = express_getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcObjectiveEnum, 'NOTDEFINED', INDETERMINATE)
+codecompliance = IfcObjectiveEnum.CODECOMPLIANCE
+codewaiver = IfcObjectiveEnum.CODEWAIVER
+designintent = IfcObjectiveEnum.DESIGNINTENT
+external = IfcObjectiveEnum.EXTERNAL
+healthandsafety = IfcObjectiveEnum.HEALTHANDSAFETY
+mergeconflict = IfcObjectiveEnum.MERGECONFLICT
+modelview = IfcObjectiveEnum.MODELVIEW
+parameter = IfcObjectiveEnum.PARAMETER
+requirement = IfcObjectiveEnum.REQUIREMENT
+specification = IfcObjectiveEnum.SPECIFICATION
+triggercondition = IfcObjectiveEnum.TRIGGERCONDITION
+userdefined = IfcObjectiveEnum.USERDEFINED
+notdefined = IfcObjectiveEnum.NOTDEFINED
 IfcOccupantTypeEnum = enum_namespace()
-assignee = express_getattr(IfcOccupantTypeEnum, 'ASSIGNEE', INDETERMINATE)
-assignor = express_getattr(IfcOccupantTypeEnum, 'ASSIGNOR', INDETERMINATE)
-lessee = express_getattr(IfcOccupantTypeEnum, 'LESSEE', INDETERMINATE)
-lessor = express_getattr(IfcOccupantTypeEnum, 'LESSOR', INDETERMINATE)
-lettingagent = express_getattr(IfcOccupantTypeEnum, 'LETTINGAGENT', INDETERMINATE)
-owner = express_getattr(IfcOccupantTypeEnum, 'OWNER', INDETERMINATE)
-tenant = express_getattr(IfcOccupantTypeEnum, 'TENANT', INDETERMINATE)
-userdefined = express_getattr(IfcOccupantTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcOccupantTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assignee = IfcOccupantTypeEnum.ASSIGNEE
+assignor = IfcOccupantTypeEnum.ASSIGNOR
+lessee = IfcOccupantTypeEnum.LESSEE
+lessor = IfcOccupantTypeEnum.LESSOR
+lettingagent = IfcOccupantTypeEnum.LETTINGAGENT
+owner = IfcOccupantTypeEnum.OWNER
+tenant = IfcOccupantTypeEnum.TENANT
+userdefined = IfcOccupantTypeEnum.USERDEFINED
+notdefined = IfcOccupantTypeEnum.NOTDEFINED
 IfcOpeningElementTypeEnum = enum_namespace()
-opening = express_getattr(IfcOpeningElementTypeEnum, 'OPENING', INDETERMINATE)
-recess = express_getattr(IfcOpeningElementTypeEnum, 'RECESS', INDETERMINATE)
-userdefined = express_getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcOpeningElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+opening = IfcOpeningElementTypeEnum.OPENING
+recess = IfcOpeningElementTypeEnum.RECESS
+userdefined = IfcOpeningElementTypeEnum.USERDEFINED
+notdefined = IfcOpeningElementTypeEnum.NOTDEFINED
 IfcOutletTypeEnum = enum_namespace()
-audiovisualoutlet = express_getattr(IfcOutletTypeEnum, 'AUDIOVISUALOUTLET', INDETERMINATE)
-communicationsoutlet = express_getattr(IfcOutletTypeEnum, 'COMMUNICATIONSOUTLET', INDETERMINATE)
-poweroutlet = express_getattr(IfcOutletTypeEnum, 'POWEROUTLET', INDETERMINATE)
-dataoutlet = express_getattr(IfcOutletTypeEnum, 'DATAOUTLET', INDETERMINATE)
-telephoneoutlet = express_getattr(IfcOutletTypeEnum, 'TELEPHONEOUTLET', INDETERMINATE)
-userdefined = express_getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcOutletTypeEnum, 'NOTDEFINED', INDETERMINATE)
+audiovisualoutlet = IfcOutletTypeEnum.AUDIOVISUALOUTLET
+communicationsoutlet = IfcOutletTypeEnum.COMMUNICATIONSOUTLET
+poweroutlet = IfcOutletTypeEnum.POWEROUTLET
+dataoutlet = IfcOutletTypeEnum.DATAOUTLET
+telephoneoutlet = IfcOutletTypeEnum.TELEPHONEOUTLET
+userdefined = IfcOutletTypeEnum.USERDEFINED
+notdefined = IfcOutletTypeEnum.NOTDEFINED
 IfcPerformanceHistoryTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcPerformanceHistoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPerformanceHistoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcPerformanceHistoryTypeEnum.USERDEFINED
+notdefined = IfcPerformanceHistoryTypeEnum.NOTDEFINED
 IfcPermeableCoveringOperationEnum = enum_namespace()
-grill = express_getattr(IfcPermeableCoveringOperationEnum, 'GRILL', INDETERMINATE)
-louver = express_getattr(IfcPermeableCoveringOperationEnum, 'LOUVER', INDETERMINATE)
-screen = express_getattr(IfcPermeableCoveringOperationEnum, 'SCREEN', INDETERMINATE)
-userdefined = express_getattr(IfcPermeableCoveringOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPermeableCoveringOperationEnum, 'NOTDEFINED', INDETERMINATE)
+grill = IfcPermeableCoveringOperationEnum.GRILL
+louver = IfcPermeableCoveringOperationEnum.LOUVER
+screen = IfcPermeableCoveringOperationEnum.SCREEN
+userdefined = IfcPermeableCoveringOperationEnum.USERDEFINED
+notdefined = IfcPermeableCoveringOperationEnum.NOTDEFINED
 IfcPermitTypeEnum = enum_namespace()
-access = express_getattr(IfcPermitTypeEnum, 'ACCESS', INDETERMINATE)
-building = express_getattr(IfcPermitTypeEnum, 'BUILDING', INDETERMINATE)
-work = express_getattr(IfcPermitTypeEnum, 'WORK', INDETERMINATE)
-userdefined = express_getattr(IfcPermitTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPermitTypeEnum, 'NOTDEFINED', INDETERMINATE)
+access = IfcPermitTypeEnum.ACCESS
+building = IfcPermitTypeEnum.BUILDING
+work = IfcPermitTypeEnum.WORK
+userdefined = IfcPermitTypeEnum.USERDEFINED
+notdefined = IfcPermitTypeEnum.NOTDEFINED
 IfcPhysicalOrVirtualEnum = enum_namespace()
-physical = express_getattr(IfcPhysicalOrVirtualEnum, 'PHYSICAL', INDETERMINATE)
-virtual = express_getattr(IfcPhysicalOrVirtualEnum, 'VIRTUAL', INDETERMINATE)
-notdefined = express_getattr(IfcPhysicalOrVirtualEnum, 'NOTDEFINED', INDETERMINATE)
+physical = IfcPhysicalOrVirtualEnum.PHYSICAL
+virtual = IfcPhysicalOrVirtualEnum.VIRTUAL
+notdefined = IfcPhysicalOrVirtualEnum.NOTDEFINED
 IfcPileConstructionEnum = enum_namespace()
-cast_in_place = express_getattr(IfcPileConstructionEnum, 'CAST_IN_PLACE', INDETERMINATE)
-composite = express_getattr(IfcPileConstructionEnum, 'COMPOSITE', INDETERMINATE)
-precast_concrete = express_getattr(IfcPileConstructionEnum, 'PRECAST_CONCRETE', INDETERMINATE)
-prefab_steel = express_getattr(IfcPileConstructionEnum, 'PREFAB_STEEL', INDETERMINATE)
-userdefined = express_getattr(IfcPileConstructionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPileConstructionEnum, 'NOTDEFINED', INDETERMINATE)
+cast_in_place = IfcPileConstructionEnum.CAST_IN_PLACE
+composite = IfcPileConstructionEnum.COMPOSITE
+precast_concrete = IfcPileConstructionEnum.PRECAST_CONCRETE
+prefab_steel = IfcPileConstructionEnum.PREFAB_STEEL
+userdefined = IfcPileConstructionEnum.USERDEFINED
+notdefined = IfcPileConstructionEnum.NOTDEFINED
 IfcPileTypeEnum = enum_namespace()
-bored = express_getattr(IfcPileTypeEnum, 'BORED', INDETERMINATE)
-driven = express_getattr(IfcPileTypeEnum, 'DRIVEN', INDETERMINATE)
-jetgrouting = express_getattr(IfcPileTypeEnum, 'JETGROUTING', INDETERMINATE)
-cohesion = express_getattr(IfcPileTypeEnum, 'COHESION', INDETERMINATE)
-friction = express_getattr(IfcPileTypeEnum, 'FRICTION', INDETERMINATE)
-support = express_getattr(IfcPileTypeEnum, 'SUPPORT', INDETERMINATE)
-userdefined = express_getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPileTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bored = IfcPileTypeEnum.BORED
+driven = IfcPileTypeEnum.DRIVEN
+jetgrouting = IfcPileTypeEnum.JETGROUTING
+cohesion = IfcPileTypeEnum.COHESION
+friction = IfcPileTypeEnum.FRICTION
+support = IfcPileTypeEnum.SUPPORT
+userdefined = IfcPileTypeEnum.USERDEFINED
+notdefined = IfcPileTypeEnum.NOTDEFINED
 IfcPipeFittingTypeEnum = enum_namespace()
-bend = express_getattr(IfcPipeFittingTypeEnum, 'BEND', INDETERMINATE)
-connector = express_getattr(IfcPipeFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = express_getattr(IfcPipeFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = express_getattr(IfcPipeFittingTypeEnum, 'EXIT', INDETERMINATE)
-junction = express_getattr(IfcPipeFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-obstruction = express_getattr(IfcPipeFittingTypeEnum, 'OBSTRUCTION', INDETERMINATE)
-transition = express_getattr(IfcPipeFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = express_getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPipeFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcPipeFittingTypeEnum.BEND
+connector = IfcPipeFittingTypeEnum.CONNECTOR
+entry = IfcPipeFittingTypeEnum.ENTRY
+exit = IfcPipeFittingTypeEnum.EXIT
+junction = IfcPipeFittingTypeEnum.JUNCTION
+obstruction = IfcPipeFittingTypeEnum.OBSTRUCTION
+transition = IfcPipeFittingTypeEnum.TRANSITION
+userdefined = IfcPipeFittingTypeEnum.USERDEFINED
+notdefined = IfcPipeFittingTypeEnum.NOTDEFINED
 IfcPipeSegmentTypeEnum = enum_namespace()
-culvert = express_getattr(IfcPipeSegmentTypeEnum, 'CULVERT', INDETERMINATE)
-flexiblesegment = express_getattr(IfcPipeSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
-rigidsegment = express_getattr(IfcPipeSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
-gutter = express_getattr(IfcPipeSegmentTypeEnum, 'GUTTER', INDETERMINATE)
-spool = express_getattr(IfcPipeSegmentTypeEnum, 'SPOOL', INDETERMINATE)
-userdefined = express_getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPipeSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+culvert = IfcPipeSegmentTypeEnum.CULVERT
+flexiblesegment = IfcPipeSegmentTypeEnum.FLEXIBLESEGMENT
+rigidsegment = IfcPipeSegmentTypeEnum.RIGIDSEGMENT
+gutter = IfcPipeSegmentTypeEnum.GUTTER
+spool = IfcPipeSegmentTypeEnum.SPOOL
+userdefined = IfcPipeSegmentTypeEnum.USERDEFINED
+notdefined = IfcPipeSegmentTypeEnum.NOTDEFINED
 IfcPlateTypeEnum = enum_namespace()
-curtain_panel = express_getattr(IfcPlateTypeEnum, 'CURTAIN_PANEL', INDETERMINATE)
-sheet = express_getattr(IfcPlateTypeEnum, 'SHEET', INDETERMINATE)
-userdefined = express_getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPlateTypeEnum, 'NOTDEFINED', INDETERMINATE)
+curtain_panel = IfcPlateTypeEnum.CURTAIN_PANEL
+sheet = IfcPlateTypeEnum.SHEET
+userdefined = IfcPlateTypeEnum.USERDEFINED
+notdefined = IfcPlateTypeEnum.NOTDEFINED
 IfcPreferredSurfaceCurveRepresentation = enum_namespace()
-curve3d = express_getattr(IfcPreferredSurfaceCurveRepresentation, 'CURVE3D', INDETERMINATE)
-pcurve_s1 = express_getattr(IfcPreferredSurfaceCurveRepresentation, 'PCURVE_S1', INDETERMINATE)
-pcurve_s2 = express_getattr(IfcPreferredSurfaceCurveRepresentation, 'PCURVE_S2', INDETERMINATE)
+curve3d = IfcPreferredSurfaceCurveRepresentation.CURVE3D
+pcurve_s1 = IfcPreferredSurfaceCurveRepresentation.PCURVE_S1
+pcurve_s2 = IfcPreferredSurfaceCurveRepresentation.PCURVE_S2
 IfcProcedureTypeEnum = enum_namespace()
-advice_caution = express_getattr(IfcProcedureTypeEnum, 'ADVICE_CAUTION', INDETERMINATE)
-advice_note = express_getattr(IfcProcedureTypeEnum, 'ADVICE_NOTE', INDETERMINATE)
-advice_warning = express_getattr(IfcProcedureTypeEnum, 'ADVICE_WARNING', INDETERMINATE)
-calibration = express_getattr(IfcProcedureTypeEnum, 'CALIBRATION', INDETERMINATE)
-diagnostic = express_getattr(IfcProcedureTypeEnum, 'DIAGNOSTIC', INDETERMINATE)
-shutdown = express_getattr(IfcProcedureTypeEnum, 'SHUTDOWN', INDETERMINATE)
-startup = express_getattr(IfcProcedureTypeEnum, 'STARTUP', INDETERMINATE)
-userdefined = express_getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcProcedureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+advice_caution = IfcProcedureTypeEnum.ADVICE_CAUTION
+advice_note = IfcProcedureTypeEnum.ADVICE_NOTE
+advice_warning = IfcProcedureTypeEnum.ADVICE_WARNING
+calibration = IfcProcedureTypeEnum.CALIBRATION
+diagnostic = IfcProcedureTypeEnum.DIAGNOSTIC
+shutdown = IfcProcedureTypeEnum.SHUTDOWN
+startup = IfcProcedureTypeEnum.STARTUP
+userdefined = IfcProcedureTypeEnum.USERDEFINED
+notdefined = IfcProcedureTypeEnum.NOTDEFINED
 IfcProfileTypeEnum = enum_namespace()
-curve = express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)
-area = express_getattr(IfcProfileTypeEnum, 'AREA', INDETERMINATE)
+curve = IfcProfileTypeEnum.CURVE
+area = IfcProfileTypeEnum.AREA
 IfcProjectOrderTypeEnum = enum_namespace()
-changeorder = express_getattr(IfcProjectOrderTypeEnum, 'CHANGEORDER', INDETERMINATE)
-maintenanceworkorder = express_getattr(IfcProjectOrderTypeEnum, 'MAINTENANCEWORKORDER', INDETERMINATE)
-moveorder = express_getattr(IfcProjectOrderTypeEnum, 'MOVEORDER', INDETERMINATE)
-purchaseorder = express_getattr(IfcProjectOrderTypeEnum, 'PURCHASEORDER', INDETERMINATE)
-workorder = express_getattr(IfcProjectOrderTypeEnum, 'WORKORDER', INDETERMINATE)
-userdefined = express_getattr(IfcProjectOrderTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcProjectOrderTypeEnum, 'NOTDEFINED', INDETERMINATE)
+changeorder = IfcProjectOrderTypeEnum.CHANGEORDER
+maintenanceworkorder = IfcProjectOrderTypeEnum.MAINTENANCEWORKORDER
+moveorder = IfcProjectOrderTypeEnum.MOVEORDER
+purchaseorder = IfcProjectOrderTypeEnum.PURCHASEORDER
+workorder = IfcProjectOrderTypeEnum.WORKORDER
+userdefined = IfcProjectOrderTypeEnum.USERDEFINED
+notdefined = IfcProjectOrderTypeEnum.NOTDEFINED
 IfcProjectedOrTrueLengthEnum = enum_namespace()
-projected_length = express_getattr(IfcProjectedOrTrueLengthEnum, 'PROJECTED_LENGTH', INDETERMINATE)
-true_length = express_getattr(IfcProjectedOrTrueLengthEnum, 'TRUE_LENGTH', INDETERMINATE)
+projected_length = IfcProjectedOrTrueLengthEnum.PROJECTED_LENGTH
+true_length = IfcProjectedOrTrueLengthEnum.TRUE_LENGTH
 IfcProjectionElementTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcProjectionElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcProjectionElementTypeEnum.USERDEFINED
+notdefined = IfcProjectionElementTypeEnum.NOTDEFINED
 IfcPropertySetTemplateTypeEnum = enum_namespace()
-pset_typedrivenonly = express_getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENONLY', INDETERMINATE)
-pset_typedrivenoverride = express_getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENOVERRIDE', INDETERMINATE)
-pset_occurrencedriven = express_getattr(IfcPropertySetTemplateTypeEnum, 'PSET_OCCURRENCEDRIVEN', INDETERMINATE)
-pset_performancedriven = express_getattr(IfcPropertySetTemplateTypeEnum, 'PSET_PERFORMANCEDRIVEN', INDETERMINATE)
-qto_typedrivenonly = express_getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENONLY', INDETERMINATE)
-qto_typedrivenoverride = express_getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENOVERRIDE', INDETERMINATE)
-qto_occurrencedriven = express_getattr(IfcPropertySetTemplateTypeEnum, 'QTO_OCCURRENCEDRIVEN', INDETERMINATE)
-notdefined = express_getattr(IfcPropertySetTemplateTypeEnum, 'NOTDEFINED', INDETERMINATE)
+pset_typedrivenonly = IfcPropertySetTemplateTypeEnum.PSET_TYPEDRIVENONLY
+pset_typedrivenoverride = IfcPropertySetTemplateTypeEnum.PSET_TYPEDRIVENOVERRIDE
+pset_occurrencedriven = IfcPropertySetTemplateTypeEnum.PSET_OCCURRENCEDRIVEN
+pset_performancedriven = IfcPropertySetTemplateTypeEnum.PSET_PERFORMANCEDRIVEN
+qto_typedrivenonly = IfcPropertySetTemplateTypeEnum.QTO_TYPEDRIVENONLY
+qto_typedrivenoverride = IfcPropertySetTemplateTypeEnum.QTO_TYPEDRIVENOVERRIDE
+qto_occurrencedriven = IfcPropertySetTemplateTypeEnum.QTO_OCCURRENCEDRIVEN
+notdefined = IfcPropertySetTemplateTypeEnum.NOTDEFINED
 IfcProtectiveDeviceTrippingUnitTypeEnum = enum_namespace()
-electronic = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTRONIC', INDETERMINATE)
-electromagnetic = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTROMAGNETIC', INDETERMINATE)
-residualcurrent = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'RESIDUALCURRENT', INDETERMINATE)
-thermal = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'THERMAL', INDETERMINATE)
-userdefined = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'NOTDEFINED', INDETERMINATE)
+electronic = IfcProtectiveDeviceTrippingUnitTypeEnum.ELECTRONIC
+electromagnetic = IfcProtectiveDeviceTrippingUnitTypeEnum.ELECTROMAGNETIC
+residualcurrent = IfcProtectiveDeviceTrippingUnitTypeEnum.RESIDUALCURRENT
+thermal = IfcProtectiveDeviceTrippingUnitTypeEnum.THERMAL
+userdefined = IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED
+notdefined = IfcProtectiveDeviceTrippingUnitTypeEnum.NOTDEFINED
 IfcProtectiveDeviceTypeEnum = enum_namespace()
-circuitbreaker = express_getattr(IfcProtectiveDeviceTypeEnum, 'CIRCUITBREAKER', INDETERMINATE)
-earthleakagecircuitbreaker = express_getattr(IfcProtectiveDeviceTypeEnum, 'EARTHLEAKAGECIRCUITBREAKER', INDETERMINATE)
-earthingswitch = express_getattr(IfcProtectiveDeviceTypeEnum, 'EARTHINGSWITCH', INDETERMINATE)
-fusedisconnector = express_getattr(IfcProtectiveDeviceTypeEnum, 'FUSEDISCONNECTOR', INDETERMINATE)
-residualcurrentcircuitbreaker = express_getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTCIRCUITBREAKER', INDETERMINATE)
-residualcurrentswitch = express_getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTSWITCH', INDETERMINATE)
-varistor = express_getattr(IfcProtectiveDeviceTypeEnum, 'VARISTOR', INDETERMINATE)
-userdefined = express_getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcProtectiveDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+circuitbreaker = IfcProtectiveDeviceTypeEnum.CIRCUITBREAKER
+earthleakagecircuitbreaker = IfcProtectiveDeviceTypeEnum.EARTHLEAKAGECIRCUITBREAKER
+earthingswitch = IfcProtectiveDeviceTypeEnum.EARTHINGSWITCH
+fusedisconnector = IfcProtectiveDeviceTypeEnum.FUSEDISCONNECTOR
+residualcurrentcircuitbreaker = IfcProtectiveDeviceTypeEnum.RESIDUALCURRENTCIRCUITBREAKER
+residualcurrentswitch = IfcProtectiveDeviceTypeEnum.RESIDUALCURRENTSWITCH
+varistor = IfcProtectiveDeviceTypeEnum.VARISTOR
+userdefined = IfcProtectiveDeviceTypeEnum.USERDEFINED
+notdefined = IfcProtectiveDeviceTypeEnum.NOTDEFINED
 IfcPumpTypeEnum = enum_namespace()
-circulator = express_getattr(IfcPumpTypeEnum, 'CIRCULATOR', INDETERMINATE)
-endsuction = express_getattr(IfcPumpTypeEnum, 'ENDSUCTION', INDETERMINATE)
-splitcase = express_getattr(IfcPumpTypeEnum, 'SPLITCASE', INDETERMINATE)
-submersiblepump = express_getattr(IfcPumpTypeEnum, 'SUBMERSIBLEPUMP', INDETERMINATE)
-sumppump = express_getattr(IfcPumpTypeEnum, 'SUMPPUMP', INDETERMINATE)
-verticalinline = express_getattr(IfcPumpTypeEnum, 'VERTICALINLINE', INDETERMINATE)
-verticalturbine = express_getattr(IfcPumpTypeEnum, 'VERTICALTURBINE', INDETERMINATE)
-userdefined = express_getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcPumpTypeEnum, 'NOTDEFINED', INDETERMINATE)
+circulator = IfcPumpTypeEnum.CIRCULATOR
+endsuction = IfcPumpTypeEnum.ENDSUCTION
+splitcase = IfcPumpTypeEnum.SPLITCASE
+submersiblepump = IfcPumpTypeEnum.SUBMERSIBLEPUMP
+sumppump = IfcPumpTypeEnum.SUMPPUMP
+verticalinline = IfcPumpTypeEnum.VERTICALINLINE
+verticalturbine = IfcPumpTypeEnum.VERTICALTURBINE
+userdefined = IfcPumpTypeEnum.USERDEFINED
+notdefined = IfcPumpTypeEnum.NOTDEFINED
 IfcRailingTypeEnum = enum_namespace()
-handrail = express_getattr(IfcRailingTypeEnum, 'HANDRAIL', INDETERMINATE)
-guardrail = express_getattr(IfcRailingTypeEnum, 'GUARDRAIL', INDETERMINATE)
-balustrade = express_getattr(IfcRailingTypeEnum, 'BALUSTRADE', INDETERMINATE)
-userdefined = express_getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcRailingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+handrail = IfcRailingTypeEnum.HANDRAIL
+guardrail = IfcRailingTypeEnum.GUARDRAIL
+balustrade = IfcRailingTypeEnum.BALUSTRADE
+userdefined = IfcRailingTypeEnum.USERDEFINED
+notdefined = IfcRailingTypeEnum.NOTDEFINED
 IfcRampFlightTypeEnum = enum_namespace()
-straight = express_getattr(IfcRampFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
-spiral = express_getattr(IfcRampFlightTypeEnum, 'SPIRAL', INDETERMINATE)
-userdefined = express_getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcRampFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
+straight = IfcRampFlightTypeEnum.STRAIGHT
+spiral = IfcRampFlightTypeEnum.SPIRAL
+userdefined = IfcRampFlightTypeEnum.USERDEFINED
+notdefined = IfcRampFlightTypeEnum.NOTDEFINED
 IfcRampTypeEnum = enum_namespace()
-straight_run_ramp = express_getattr(IfcRampTypeEnum, 'STRAIGHT_RUN_RAMP', INDETERMINATE)
-two_straight_run_ramp = express_getattr(IfcRampTypeEnum, 'TWO_STRAIGHT_RUN_RAMP', INDETERMINATE)
-quarter_turn_ramp = express_getattr(IfcRampTypeEnum, 'QUARTER_TURN_RAMP', INDETERMINATE)
-two_quarter_turn_ramp = express_getattr(IfcRampTypeEnum, 'TWO_QUARTER_TURN_RAMP', INDETERMINATE)
-half_turn_ramp = express_getattr(IfcRampTypeEnum, 'HALF_TURN_RAMP', INDETERMINATE)
-spiral_ramp = express_getattr(IfcRampTypeEnum, 'SPIRAL_RAMP', INDETERMINATE)
-userdefined = express_getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcRampTypeEnum, 'NOTDEFINED', INDETERMINATE)
+straight_run_ramp = IfcRampTypeEnum.STRAIGHT_RUN_RAMP
+two_straight_run_ramp = IfcRampTypeEnum.TWO_STRAIGHT_RUN_RAMP
+quarter_turn_ramp = IfcRampTypeEnum.QUARTER_TURN_RAMP
+two_quarter_turn_ramp = IfcRampTypeEnum.TWO_QUARTER_TURN_RAMP
+half_turn_ramp = IfcRampTypeEnum.HALF_TURN_RAMP
+spiral_ramp = IfcRampTypeEnum.SPIRAL_RAMP
+userdefined = IfcRampTypeEnum.USERDEFINED
+notdefined = IfcRampTypeEnum.NOTDEFINED
 IfcRecurrenceTypeEnum = enum_namespace()
-daily = express_getattr(IfcRecurrenceTypeEnum, 'DAILY', INDETERMINATE)
-weekly = express_getattr(IfcRecurrenceTypeEnum, 'WEEKLY', INDETERMINATE)
-monthly_by_day_of_month = express_getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_DAY_OF_MONTH', INDETERMINATE)
-monthly_by_position = express_getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_POSITION', INDETERMINATE)
-by_day_count = express_getattr(IfcRecurrenceTypeEnum, 'BY_DAY_COUNT', INDETERMINATE)
-by_weekday_count = express_getattr(IfcRecurrenceTypeEnum, 'BY_WEEKDAY_COUNT', INDETERMINATE)
-yearly_by_day_of_month = express_getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_DAY_OF_MONTH', INDETERMINATE)
-yearly_by_position = express_getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_POSITION', INDETERMINATE)
+daily = IfcRecurrenceTypeEnum.DAILY
+weekly = IfcRecurrenceTypeEnum.WEEKLY
+monthly_by_day_of_month = IfcRecurrenceTypeEnum.MONTHLY_BY_DAY_OF_MONTH
+monthly_by_position = IfcRecurrenceTypeEnum.MONTHLY_BY_POSITION
+by_day_count = IfcRecurrenceTypeEnum.BY_DAY_COUNT
+by_weekday_count = IfcRecurrenceTypeEnum.BY_WEEKDAY_COUNT
+yearly_by_day_of_month = IfcRecurrenceTypeEnum.YEARLY_BY_DAY_OF_MONTH
+yearly_by_position = IfcRecurrenceTypeEnum.YEARLY_BY_POSITION
 IfcReflectanceMethodEnum = enum_namespace()
-blinn = express_getattr(IfcReflectanceMethodEnum, 'BLINN', INDETERMINATE)
-flat = express_getattr(IfcReflectanceMethodEnum, 'FLAT', INDETERMINATE)
-glass = express_getattr(IfcReflectanceMethodEnum, 'GLASS', INDETERMINATE)
-matt = express_getattr(IfcReflectanceMethodEnum, 'MATT', INDETERMINATE)
-metal = express_getattr(IfcReflectanceMethodEnum, 'METAL', INDETERMINATE)
-mirror = express_getattr(IfcReflectanceMethodEnum, 'MIRROR', INDETERMINATE)
-phong = express_getattr(IfcReflectanceMethodEnum, 'PHONG', INDETERMINATE)
-plastic = express_getattr(IfcReflectanceMethodEnum, 'PLASTIC', INDETERMINATE)
-strauss = express_getattr(IfcReflectanceMethodEnum, 'STRAUSS', INDETERMINATE)
-notdefined = express_getattr(IfcReflectanceMethodEnum, 'NOTDEFINED', INDETERMINATE)
+blinn = IfcReflectanceMethodEnum.BLINN
+flat = IfcReflectanceMethodEnum.FLAT
+glass = IfcReflectanceMethodEnum.GLASS
+matt = IfcReflectanceMethodEnum.MATT
+metal = IfcReflectanceMethodEnum.METAL
+mirror = IfcReflectanceMethodEnum.MIRROR
+phong = IfcReflectanceMethodEnum.PHONG
+plastic = IfcReflectanceMethodEnum.PLASTIC
+strauss = IfcReflectanceMethodEnum.STRAUSS
+notdefined = IfcReflectanceMethodEnum.NOTDEFINED
 IfcReinforcingBarRoleEnum = enum_namespace()
-main = express_getattr(IfcReinforcingBarRoleEnum, 'MAIN', INDETERMINATE)
-shear = express_getattr(IfcReinforcingBarRoleEnum, 'SHEAR', INDETERMINATE)
-ligature = express_getattr(IfcReinforcingBarRoleEnum, 'LIGATURE', INDETERMINATE)
-stud = express_getattr(IfcReinforcingBarRoleEnum, 'STUD', INDETERMINATE)
-punching = express_getattr(IfcReinforcingBarRoleEnum, 'PUNCHING', INDETERMINATE)
-edge = express_getattr(IfcReinforcingBarRoleEnum, 'EDGE', INDETERMINATE)
-ring = express_getattr(IfcReinforcingBarRoleEnum, 'RING', INDETERMINATE)
-anchoring = express_getattr(IfcReinforcingBarRoleEnum, 'ANCHORING', INDETERMINATE)
-userdefined = express_getattr(IfcReinforcingBarRoleEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcReinforcingBarRoleEnum, 'NOTDEFINED', INDETERMINATE)
+main = IfcReinforcingBarRoleEnum.MAIN
+shear = IfcReinforcingBarRoleEnum.SHEAR
+ligature = IfcReinforcingBarRoleEnum.LIGATURE
+stud = IfcReinforcingBarRoleEnum.STUD
+punching = IfcReinforcingBarRoleEnum.PUNCHING
+edge = IfcReinforcingBarRoleEnum.EDGE
+ring = IfcReinforcingBarRoleEnum.RING
+anchoring = IfcReinforcingBarRoleEnum.ANCHORING
+userdefined = IfcReinforcingBarRoleEnum.USERDEFINED
+notdefined = IfcReinforcingBarRoleEnum.NOTDEFINED
 IfcReinforcingBarSurfaceEnum = enum_namespace()
-plain = express_getattr(IfcReinforcingBarSurfaceEnum, 'PLAIN', INDETERMINATE)
-textured = express_getattr(IfcReinforcingBarSurfaceEnum, 'TEXTURED', INDETERMINATE)
+plain = IfcReinforcingBarSurfaceEnum.PLAIN
+textured = IfcReinforcingBarSurfaceEnum.TEXTURED
 IfcReinforcingBarTypeEnum = enum_namespace()
-anchoring = express_getattr(IfcReinforcingBarTypeEnum, 'ANCHORING', INDETERMINATE)
-edge = express_getattr(IfcReinforcingBarTypeEnum, 'EDGE', INDETERMINATE)
-ligature = express_getattr(IfcReinforcingBarTypeEnum, 'LIGATURE', INDETERMINATE)
-main = express_getattr(IfcReinforcingBarTypeEnum, 'MAIN', INDETERMINATE)
-punching = express_getattr(IfcReinforcingBarTypeEnum, 'PUNCHING', INDETERMINATE)
-ring = express_getattr(IfcReinforcingBarTypeEnum, 'RING', INDETERMINATE)
-shear = express_getattr(IfcReinforcingBarTypeEnum, 'SHEAR', INDETERMINATE)
-stud = express_getattr(IfcReinforcingBarTypeEnum, 'STUD', INDETERMINATE)
-userdefined = express_getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcReinforcingBarTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchoring = IfcReinforcingBarTypeEnum.ANCHORING
+edge = IfcReinforcingBarTypeEnum.EDGE
+ligature = IfcReinforcingBarTypeEnum.LIGATURE
+main = IfcReinforcingBarTypeEnum.MAIN
+punching = IfcReinforcingBarTypeEnum.PUNCHING
+ring = IfcReinforcingBarTypeEnum.RING
+shear = IfcReinforcingBarTypeEnum.SHEAR
+stud = IfcReinforcingBarTypeEnum.STUD
+userdefined = IfcReinforcingBarTypeEnum.USERDEFINED
+notdefined = IfcReinforcingBarTypeEnum.NOTDEFINED
 IfcReinforcingMeshTypeEnum = enum_namespace()
-userdefined = express_getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcReinforcingMeshTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcReinforcingMeshTypeEnum.USERDEFINED
+notdefined = IfcReinforcingMeshTypeEnum.NOTDEFINED
 IfcRoleEnum = enum_namespace()
-supplier = express_getattr(IfcRoleEnum, 'SUPPLIER', INDETERMINATE)
-manufacturer = express_getattr(IfcRoleEnum, 'MANUFACTURER', INDETERMINATE)
-contractor = express_getattr(IfcRoleEnum, 'CONTRACTOR', INDETERMINATE)
-subcontractor = express_getattr(IfcRoleEnum, 'SUBCONTRACTOR', INDETERMINATE)
-architect = express_getattr(IfcRoleEnum, 'ARCHITECT', INDETERMINATE)
-structuralengineer = express_getattr(IfcRoleEnum, 'STRUCTURALENGINEER', INDETERMINATE)
-costengineer = express_getattr(IfcRoleEnum, 'COSTENGINEER', INDETERMINATE)
-client = express_getattr(IfcRoleEnum, 'CLIENT', INDETERMINATE)
-buildingowner = express_getattr(IfcRoleEnum, 'BUILDINGOWNER', INDETERMINATE)
-buildingoperator = express_getattr(IfcRoleEnum, 'BUILDINGOPERATOR', INDETERMINATE)
-mechanicalengineer = express_getattr(IfcRoleEnum, 'MECHANICALENGINEER', INDETERMINATE)
-electricalengineer = express_getattr(IfcRoleEnum, 'ELECTRICALENGINEER', INDETERMINATE)
-projectmanager = express_getattr(IfcRoleEnum, 'PROJECTMANAGER', INDETERMINATE)
-facilitiesmanager = express_getattr(IfcRoleEnum, 'FACILITIESMANAGER', INDETERMINATE)
-civilengineer = express_getattr(IfcRoleEnum, 'CIVILENGINEER', INDETERMINATE)
-commissioningengineer = express_getattr(IfcRoleEnum, 'COMMISSIONINGENGINEER', INDETERMINATE)
-engineer = express_getattr(IfcRoleEnum, 'ENGINEER', INDETERMINATE)
-owner = express_getattr(IfcRoleEnum, 'OWNER', INDETERMINATE)
-consultant = express_getattr(IfcRoleEnum, 'CONSULTANT', INDETERMINATE)
-constructionmanager = express_getattr(IfcRoleEnum, 'CONSTRUCTIONMANAGER', INDETERMINATE)
-fieldconstructionmanager = express_getattr(IfcRoleEnum, 'FIELDCONSTRUCTIONMANAGER', INDETERMINATE)
-reseller = express_getattr(IfcRoleEnum, 'RESELLER', INDETERMINATE)
-userdefined = express_getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE)
+supplier = IfcRoleEnum.SUPPLIER
+manufacturer = IfcRoleEnum.MANUFACTURER
+contractor = IfcRoleEnum.CONTRACTOR
+subcontractor = IfcRoleEnum.SUBCONTRACTOR
+architect = IfcRoleEnum.ARCHITECT
+structuralengineer = IfcRoleEnum.STRUCTURALENGINEER
+costengineer = IfcRoleEnum.COSTENGINEER
+client = IfcRoleEnum.CLIENT
+buildingowner = IfcRoleEnum.BUILDINGOWNER
+buildingoperator = IfcRoleEnum.BUILDINGOPERATOR
+mechanicalengineer = IfcRoleEnum.MECHANICALENGINEER
+electricalengineer = IfcRoleEnum.ELECTRICALENGINEER
+projectmanager = IfcRoleEnum.PROJECTMANAGER
+facilitiesmanager = IfcRoleEnum.FACILITIESMANAGER
+civilengineer = IfcRoleEnum.CIVILENGINEER
+commissioningengineer = IfcRoleEnum.COMMISSIONINGENGINEER
+engineer = IfcRoleEnum.ENGINEER
+owner = IfcRoleEnum.OWNER
+consultant = IfcRoleEnum.CONSULTANT
+constructionmanager = IfcRoleEnum.CONSTRUCTIONMANAGER
+fieldconstructionmanager = IfcRoleEnum.FIELDCONSTRUCTIONMANAGER
+reseller = IfcRoleEnum.RESELLER
+userdefined = IfcRoleEnum.USERDEFINED
 IfcRoofTypeEnum = enum_namespace()
-flat_roof = express_getattr(IfcRoofTypeEnum, 'FLAT_ROOF', INDETERMINATE)
-shed_roof = express_getattr(IfcRoofTypeEnum, 'SHED_ROOF', INDETERMINATE)
-gable_roof = express_getattr(IfcRoofTypeEnum, 'GABLE_ROOF', INDETERMINATE)
-hip_roof = express_getattr(IfcRoofTypeEnum, 'HIP_ROOF', INDETERMINATE)
-hipped_gable_roof = express_getattr(IfcRoofTypeEnum, 'HIPPED_GABLE_ROOF', INDETERMINATE)
-gambrel_roof = express_getattr(IfcRoofTypeEnum, 'GAMBREL_ROOF', INDETERMINATE)
-mansard_roof = express_getattr(IfcRoofTypeEnum, 'MANSARD_ROOF', INDETERMINATE)
-barrel_roof = express_getattr(IfcRoofTypeEnum, 'BARREL_ROOF', INDETERMINATE)
-rainbow_roof = express_getattr(IfcRoofTypeEnum, 'RAINBOW_ROOF', INDETERMINATE)
-butterfly_roof = express_getattr(IfcRoofTypeEnum, 'BUTTERFLY_ROOF', INDETERMINATE)
-pavilion_roof = express_getattr(IfcRoofTypeEnum, 'PAVILION_ROOF', INDETERMINATE)
-dome_roof = express_getattr(IfcRoofTypeEnum, 'DOME_ROOF', INDETERMINATE)
-freeform = express_getattr(IfcRoofTypeEnum, 'FREEFORM', INDETERMINATE)
-userdefined = express_getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcRoofTypeEnum, 'NOTDEFINED', INDETERMINATE)
+flat_roof = IfcRoofTypeEnum.FLAT_ROOF
+shed_roof = IfcRoofTypeEnum.SHED_ROOF
+gable_roof = IfcRoofTypeEnum.GABLE_ROOF
+hip_roof = IfcRoofTypeEnum.HIP_ROOF
+hipped_gable_roof = IfcRoofTypeEnum.HIPPED_GABLE_ROOF
+gambrel_roof = IfcRoofTypeEnum.GAMBREL_ROOF
+mansard_roof = IfcRoofTypeEnum.MANSARD_ROOF
+barrel_roof = IfcRoofTypeEnum.BARREL_ROOF
+rainbow_roof = IfcRoofTypeEnum.RAINBOW_ROOF
+butterfly_roof = IfcRoofTypeEnum.BUTTERFLY_ROOF
+pavilion_roof = IfcRoofTypeEnum.PAVILION_ROOF
+dome_roof = IfcRoofTypeEnum.DOME_ROOF
+freeform = IfcRoofTypeEnum.FREEFORM
+userdefined = IfcRoofTypeEnum.USERDEFINED
+notdefined = IfcRoofTypeEnum.NOTDEFINED
 IfcSIPrefix = enum_namespace()
-exa = express_getattr(IfcSIPrefix, 'EXA', INDETERMINATE)
-peta = express_getattr(IfcSIPrefix, 'PETA', INDETERMINATE)
-tera = express_getattr(IfcSIPrefix, 'TERA', INDETERMINATE)
-giga = express_getattr(IfcSIPrefix, 'GIGA', INDETERMINATE)
-mega = express_getattr(IfcSIPrefix, 'MEGA', INDETERMINATE)
-kilo = express_getattr(IfcSIPrefix, 'KILO', INDETERMINATE)
-hecto = express_getattr(IfcSIPrefix, 'HECTO', INDETERMINATE)
-deca = express_getattr(IfcSIPrefix, 'DECA', INDETERMINATE)
-deci = express_getattr(IfcSIPrefix, 'DECI', INDETERMINATE)
-centi = express_getattr(IfcSIPrefix, 'CENTI', INDETERMINATE)
-milli = express_getattr(IfcSIPrefix, 'MILLI', INDETERMINATE)
-micro = express_getattr(IfcSIPrefix, 'MICRO', INDETERMINATE)
-nano = express_getattr(IfcSIPrefix, 'NANO', INDETERMINATE)
-pico = express_getattr(IfcSIPrefix, 'PICO', INDETERMINATE)
-femto = express_getattr(IfcSIPrefix, 'FEMTO', INDETERMINATE)
-atto = express_getattr(IfcSIPrefix, 'ATTO', INDETERMINATE)
+exa = IfcSIPrefix.EXA
+peta = IfcSIPrefix.PETA
+tera = IfcSIPrefix.TERA
+giga = IfcSIPrefix.GIGA
+mega = IfcSIPrefix.MEGA
+kilo = IfcSIPrefix.KILO
+hecto = IfcSIPrefix.HECTO
+deca = IfcSIPrefix.DECA
+deci = IfcSIPrefix.DECI
+centi = IfcSIPrefix.CENTI
+milli = IfcSIPrefix.MILLI
+micro = IfcSIPrefix.MICRO
+nano = IfcSIPrefix.NANO
+pico = IfcSIPrefix.PICO
+femto = IfcSIPrefix.FEMTO
+atto = IfcSIPrefix.ATTO
 IfcSIUnitName = enum_namespace()
-ampere = express_getattr(IfcSIUnitName, 'AMPERE', INDETERMINATE)
-becquerel = express_getattr(IfcSIUnitName, 'BECQUEREL', INDETERMINATE)
-candela = express_getattr(IfcSIUnitName, 'CANDELA', INDETERMINATE)
-coulomb = express_getattr(IfcSIUnitName, 'COULOMB', INDETERMINATE)
-cubic_metre = express_getattr(IfcSIUnitName, 'CUBIC_METRE', INDETERMINATE)
-degree_celsius = express_getattr(IfcSIUnitName, 'DEGREE_CELSIUS', INDETERMINATE)
-farad = express_getattr(IfcSIUnitName, 'FARAD', INDETERMINATE)
-gram = express_getattr(IfcSIUnitName, 'GRAM', INDETERMINATE)
-gray = express_getattr(IfcSIUnitName, 'GRAY', INDETERMINATE)
-henry = express_getattr(IfcSIUnitName, 'HENRY', INDETERMINATE)
-hertz = express_getattr(IfcSIUnitName, 'HERTZ', INDETERMINATE)
-joule = express_getattr(IfcSIUnitName, 'JOULE', INDETERMINATE)
-kelvin = express_getattr(IfcSIUnitName, 'KELVIN', INDETERMINATE)
-lumen = express_getattr(IfcSIUnitName, 'LUMEN', INDETERMINATE)
-lux = express_getattr(IfcSIUnitName, 'LUX', INDETERMINATE)
-metre = express_getattr(IfcSIUnitName, 'METRE', INDETERMINATE)
-mole = express_getattr(IfcSIUnitName, 'MOLE', INDETERMINATE)
-newton = express_getattr(IfcSIUnitName, 'NEWTON', INDETERMINATE)
-ohm = express_getattr(IfcSIUnitName, 'OHM', INDETERMINATE)
-pascal = express_getattr(IfcSIUnitName, 'PASCAL', INDETERMINATE)
-radian = express_getattr(IfcSIUnitName, 'RADIAN', INDETERMINATE)
-second = express_getattr(IfcSIUnitName, 'SECOND', INDETERMINATE)
-siemens = express_getattr(IfcSIUnitName, 'SIEMENS', INDETERMINATE)
-sievert = express_getattr(IfcSIUnitName, 'SIEVERT', INDETERMINATE)
-square_metre = express_getattr(IfcSIUnitName, 'SQUARE_METRE', INDETERMINATE)
-steradian = express_getattr(IfcSIUnitName, 'STERADIAN', INDETERMINATE)
-tesla = express_getattr(IfcSIUnitName, 'TESLA', INDETERMINATE)
-volt = express_getattr(IfcSIUnitName, 'VOLT', INDETERMINATE)
-watt = express_getattr(IfcSIUnitName, 'WATT', INDETERMINATE)
-weber = express_getattr(IfcSIUnitName, 'WEBER', INDETERMINATE)
+ampere = IfcSIUnitName.AMPERE
+becquerel = IfcSIUnitName.BECQUEREL
+candela = IfcSIUnitName.CANDELA
+coulomb = IfcSIUnitName.COULOMB
+cubic_metre = IfcSIUnitName.CUBIC_METRE
+degree_celsius = IfcSIUnitName.DEGREE_CELSIUS
+farad = IfcSIUnitName.FARAD
+gram = IfcSIUnitName.GRAM
+gray = IfcSIUnitName.GRAY
+henry = IfcSIUnitName.HENRY
+hertz = IfcSIUnitName.HERTZ
+joule = IfcSIUnitName.JOULE
+kelvin = IfcSIUnitName.KELVIN
+lumen = IfcSIUnitName.LUMEN
+lux = IfcSIUnitName.LUX
+metre = IfcSIUnitName.METRE
+mole = IfcSIUnitName.MOLE
+newton = IfcSIUnitName.NEWTON
+ohm = IfcSIUnitName.OHM
+pascal = IfcSIUnitName.PASCAL
+radian = IfcSIUnitName.RADIAN
+second = IfcSIUnitName.SECOND
+siemens = IfcSIUnitName.SIEMENS
+sievert = IfcSIUnitName.SIEVERT
+square_metre = IfcSIUnitName.SQUARE_METRE
+steradian = IfcSIUnitName.STERADIAN
+tesla = IfcSIUnitName.TESLA
+volt = IfcSIUnitName.VOLT
+watt = IfcSIUnitName.WATT
+weber = IfcSIUnitName.WEBER
 IfcSanitaryTerminalTypeEnum = enum_namespace()
-bath = express_getattr(IfcSanitaryTerminalTypeEnum, 'BATH', INDETERMINATE)
-bidet = express_getattr(IfcSanitaryTerminalTypeEnum, 'BIDET', INDETERMINATE)
-cistern = express_getattr(IfcSanitaryTerminalTypeEnum, 'CISTERN', INDETERMINATE)
-shower = express_getattr(IfcSanitaryTerminalTypeEnum, 'SHOWER', INDETERMINATE)
-sink = express_getattr(IfcSanitaryTerminalTypeEnum, 'SINK', INDETERMINATE)
-sanitaryfountain = express_getattr(IfcSanitaryTerminalTypeEnum, 'SANITARYFOUNTAIN', INDETERMINATE)
-toiletpan = express_getattr(IfcSanitaryTerminalTypeEnum, 'TOILETPAN', INDETERMINATE)
-urinal = express_getattr(IfcSanitaryTerminalTypeEnum, 'URINAL', INDETERMINATE)
-washhandbasin = express_getattr(IfcSanitaryTerminalTypeEnum, 'WASHHANDBASIN', INDETERMINATE)
-wcseat = express_getattr(IfcSanitaryTerminalTypeEnum, 'WCSEAT', INDETERMINATE)
-userdefined = express_getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSanitaryTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bath = IfcSanitaryTerminalTypeEnum.BATH
+bidet = IfcSanitaryTerminalTypeEnum.BIDET
+cistern = IfcSanitaryTerminalTypeEnum.CISTERN
+shower = IfcSanitaryTerminalTypeEnum.SHOWER
+sink = IfcSanitaryTerminalTypeEnum.SINK
+sanitaryfountain = IfcSanitaryTerminalTypeEnum.SANITARYFOUNTAIN
+toiletpan = IfcSanitaryTerminalTypeEnum.TOILETPAN
+urinal = IfcSanitaryTerminalTypeEnum.URINAL
+washhandbasin = IfcSanitaryTerminalTypeEnum.WASHHANDBASIN
+wcseat = IfcSanitaryTerminalTypeEnum.WCSEAT
+userdefined = IfcSanitaryTerminalTypeEnum.USERDEFINED
+notdefined = IfcSanitaryTerminalTypeEnum.NOTDEFINED
 IfcSectionTypeEnum = enum_namespace()
-uniform = express_getattr(IfcSectionTypeEnum, 'UNIFORM', INDETERMINATE)
-tapered = express_getattr(IfcSectionTypeEnum, 'TAPERED', INDETERMINATE)
+uniform = IfcSectionTypeEnum.UNIFORM
+tapered = IfcSectionTypeEnum.TAPERED
 IfcSensorTypeEnum = enum_namespace()
-cosensor = express_getattr(IfcSensorTypeEnum, 'COSENSOR', INDETERMINATE)
-co2sensor = express_getattr(IfcSensorTypeEnum, 'CO2SENSOR', INDETERMINATE)
-conductancesensor = express_getattr(IfcSensorTypeEnum, 'CONDUCTANCESENSOR', INDETERMINATE)
-contactsensor = express_getattr(IfcSensorTypeEnum, 'CONTACTSENSOR', INDETERMINATE)
-firesensor = express_getattr(IfcSensorTypeEnum, 'FIRESENSOR', INDETERMINATE)
-flowsensor = express_getattr(IfcSensorTypeEnum, 'FLOWSENSOR', INDETERMINATE)
-frostsensor = express_getattr(IfcSensorTypeEnum, 'FROSTSENSOR', INDETERMINATE)
-gassensor = express_getattr(IfcSensorTypeEnum, 'GASSENSOR', INDETERMINATE)
-heatsensor = express_getattr(IfcSensorTypeEnum, 'HEATSENSOR', INDETERMINATE)
-humiditysensor = express_getattr(IfcSensorTypeEnum, 'HUMIDITYSENSOR', INDETERMINATE)
-identifiersensor = express_getattr(IfcSensorTypeEnum, 'IDENTIFIERSENSOR', INDETERMINATE)
-ionconcentrationsensor = express_getattr(IfcSensorTypeEnum, 'IONCONCENTRATIONSENSOR', INDETERMINATE)
-levelsensor = express_getattr(IfcSensorTypeEnum, 'LEVELSENSOR', INDETERMINATE)
-lightsensor = express_getattr(IfcSensorTypeEnum, 'LIGHTSENSOR', INDETERMINATE)
-moisturesensor = express_getattr(IfcSensorTypeEnum, 'MOISTURESENSOR', INDETERMINATE)
-movementsensor = express_getattr(IfcSensorTypeEnum, 'MOVEMENTSENSOR', INDETERMINATE)
-phsensor = express_getattr(IfcSensorTypeEnum, 'PHSENSOR', INDETERMINATE)
-pressuresensor = express_getattr(IfcSensorTypeEnum, 'PRESSURESENSOR', INDETERMINATE)
-radiationsensor = express_getattr(IfcSensorTypeEnum, 'RADIATIONSENSOR', INDETERMINATE)
-radioactivitysensor = express_getattr(IfcSensorTypeEnum, 'RADIOACTIVITYSENSOR', INDETERMINATE)
-smokesensor = express_getattr(IfcSensorTypeEnum, 'SMOKESENSOR', INDETERMINATE)
-soundsensor = express_getattr(IfcSensorTypeEnum, 'SOUNDSENSOR', INDETERMINATE)
-temperaturesensor = express_getattr(IfcSensorTypeEnum, 'TEMPERATURESENSOR', INDETERMINATE)
-windsensor = express_getattr(IfcSensorTypeEnum, 'WINDSENSOR', INDETERMINATE)
-userdefined = express_getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSensorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cosensor = IfcSensorTypeEnum.COSENSOR
+co2sensor = IfcSensorTypeEnum.CO2SENSOR
+conductancesensor = IfcSensorTypeEnum.CONDUCTANCESENSOR
+contactsensor = IfcSensorTypeEnum.CONTACTSENSOR
+firesensor = IfcSensorTypeEnum.FIRESENSOR
+flowsensor = IfcSensorTypeEnum.FLOWSENSOR
+frostsensor = IfcSensorTypeEnum.FROSTSENSOR
+gassensor = IfcSensorTypeEnum.GASSENSOR
+heatsensor = IfcSensorTypeEnum.HEATSENSOR
+humiditysensor = IfcSensorTypeEnum.HUMIDITYSENSOR
+identifiersensor = IfcSensorTypeEnum.IDENTIFIERSENSOR
+ionconcentrationsensor = IfcSensorTypeEnum.IONCONCENTRATIONSENSOR
+levelsensor = IfcSensorTypeEnum.LEVELSENSOR
+lightsensor = IfcSensorTypeEnum.LIGHTSENSOR
+moisturesensor = IfcSensorTypeEnum.MOISTURESENSOR
+movementsensor = IfcSensorTypeEnum.MOVEMENTSENSOR
+phsensor = IfcSensorTypeEnum.PHSENSOR
+pressuresensor = IfcSensorTypeEnum.PRESSURESENSOR
+radiationsensor = IfcSensorTypeEnum.RADIATIONSENSOR
+radioactivitysensor = IfcSensorTypeEnum.RADIOACTIVITYSENSOR
+smokesensor = IfcSensorTypeEnum.SMOKESENSOR
+soundsensor = IfcSensorTypeEnum.SOUNDSENSOR
+temperaturesensor = IfcSensorTypeEnum.TEMPERATURESENSOR
+windsensor = IfcSensorTypeEnum.WINDSENSOR
+userdefined = IfcSensorTypeEnum.USERDEFINED
+notdefined = IfcSensorTypeEnum.NOTDEFINED
 IfcSequenceEnum = enum_namespace()
-start_start = express_getattr(IfcSequenceEnum, 'START_START', INDETERMINATE)
-start_finish = express_getattr(IfcSequenceEnum, 'START_FINISH', INDETERMINATE)
-finish_start = express_getattr(IfcSequenceEnum, 'FINISH_START', INDETERMINATE)
-finish_finish = express_getattr(IfcSequenceEnum, 'FINISH_FINISH', INDETERMINATE)
-userdefined = express_getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSequenceEnum, 'NOTDEFINED', INDETERMINATE)
+start_start = IfcSequenceEnum.START_START
+start_finish = IfcSequenceEnum.START_FINISH
+finish_start = IfcSequenceEnum.FINISH_START
+finish_finish = IfcSequenceEnum.FINISH_FINISH
+userdefined = IfcSequenceEnum.USERDEFINED
+notdefined = IfcSequenceEnum.NOTDEFINED
 IfcShadingDeviceTypeEnum = enum_namespace()
-jalousie = express_getattr(IfcShadingDeviceTypeEnum, 'JALOUSIE', INDETERMINATE)
-shutter = express_getattr(IfcShadingDeviceTypeEnum, 'SHUTTER', INDETERMINATE)
-awning = express_getattr(IfcShadingDeviceTypeEnum, 'AWNING', INDETERMINATE)
-userdefined = express_getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcShadingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+jalousie = IfcShadingDeviceTypeEnum.JALOUSIE
+shutter = IfcShadingDeviceTypeEnum.SHUTTER
+awning = IfcShadingDeviceTypeEnum.AWNING
+userdefined = IfcShadingDeviceTypeEnum.USERDEFINED
+notdefined = IfcShadingDeviceTypeEnum.NOTDEFINED
 IfcSimplePropertyTemplateTypeEnum = enum_namespace()
-p_singlevalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_SINGLEVALUE', INDETERMINATE)
-p_enumeratedvalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_ENUMERATEDVALUE', INDETERMINATE)
-p_boundedvalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_BOUNDEDVALUE', INDETERMINATE)
-p_listvalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_LISTVALUE', INDETERMINATE)
-p_tablevalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_TABLEVALUE', INDETERMINATE)
-p_referencevalue = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'P_REFERENCEVALUE', INDETERMINATE)
-q_length = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_LENGTH', INDETERMINATE)
-q_area = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_AREA', INDETERMINATE)
-q_volume = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_VOLUME', INDETERMINATE)
-q_count = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_COUNT', INDETERMINATE)
-q_weight = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_WEIGHT', INDETERMINATE)
-q_time = express_getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_TIME', INDETERMINATE)
+p_singlevalue = IfcSimplePropertyTemplateTypeEnum.P_SINGLEVALUE
+p_enumeratedvalue = IfcSimplePropertyTemplateTypeEnum.P_ENUMERATEDVALUE
+p_boundedvalue = IfcSimplePropertyTemplateTypeEnum.P_BOUNDEDVALUE
+p_listvalue = IfcSimplePropertyTemplateTypeEnum.P_LISTVALUE
+p_tablevalue = IfcSimplePropertyTemplateTypeEnum.P_TABLEVALUE
+p_referencevalue = IfcSimplePropertyTemplateTypeEnum.P_REFERENCEVALUE
+q_length = IfcSimplePropertyTemplateTypeEnum.Q_LENGTH
+q_area = IfcSimplePropertyTemplateTypeEnum.Q_AREA
+q_volume = IfcSimplePropertyTemplateTypeEnum.Q_VOLUME
+q_count = IfcSimplePropertyTemplateTypeEnum.Q_COUNT
+q_weight = IfcSimplePropertyTemplateTypeEnum.Q_WEIGHT
+q_time = IfcSimplePropertyTemplateTypeEnum.Q_TIME
 IfcSlabTypeEnum = enum_namespace()
-floor = express_getattr(IfcSlabTypeEnum, 'FLOOR', INDETERMINATE)
-roof = express_getattr(IfcSlabTypeEnum, 'ROOF', INDETERMINATE)
-landing = express_getattr(IfcSlabTypeEnum, 'LANDING', INDETERMINATE)
-baseslab = express_getattr(IfcSlabTypeEnum, 'BASESLAB', INDETERMINATE)
-userdefined = express_getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSlabTypeEnum, 'NOTDEFINED', INDETERMINATE)
+floor = IfcSlabTypeEnum.FLOOR
+roof = IfcSlabTypeEnum.ROOF
+landing = IfcSlabTypeEnum.LANDING
+baseslab = IfcSlabTypeEnum.BASESLAB
+userdefined = IfcSlabTypeEnum.USERDEFINED
+notdefined = IfcSlabTypeEnum.NOTDEFINED
 IfcSolarDeviceTypeEnum = enum_namespace()
-solarcollector = express_getattr(IfcSolarDeviceTypeEnum, 'SOLARCOLLECTOR', INDETERMINATE)
-solarpanel = express_getattr(IfcSolarDeviceTypeEnum, 'SOLARPANEL', INDETERMINATE)
-userdefined = express_getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSolarDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+solarcollector = IfcSolarDeviceTypeEnum.SOLARCOLLECTOR
+solarpanel = IfcSolarDeviceTypeEnum.SOLARPANEL
+userdefined = IfcSolarDeviceTypeEnum.USERDEFINED
+notdefined = IfcSolarDeviceTypeEnum.NOTDEFINED
 IfcSpaceHeaterTypeEnum = enum_namespace()
-convector = express_getattr(IfcSpaceHeaterTypeEnum, 'CONVECTOR', INDETERMINATE)
-radiator = express_getattr(IfcSpaceHeaterTypeEnum, 'RADIATOR', INDETERMINATE)
-userdefined = express_getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSpaceHeaterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+convector = IfcSpaceHeaterTypeEnum.CONVECTOR
+radiator = IfcSpaceHeaterTypeEnum.RADIATOR
+userdefined = IfcSpaceHeaterTypeEnum.USERDEFINED
+notdefined = IfcSpaceHeaterTypeEnum.NOTDEFINED
 IfcSpaceTypeEnum = enum_namespace()
-space = express_getattr(IfcSpaceTypeEnum, 'SPACE', INDETERMINATE)
-parking = express_getattr(IfcSpaceTypeEnum, 'PARKING', INDETERMINATE)
-gfa = express_getattr(IfcSpaceTypeEnum, 'GFA', INDETERMINATE)
-internal = express_getattr(IfcSpaceTypeEnum, 'INTERNAL', INDETERMINATE)
-external = express_getattr(IfcSpaceTypeEnum, 'EXTERNAL', INDETERMINATE)
-userdefined = express_getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSpaceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+space = IfcSpaceTypeEnum.SPACE
+parking = IfcSpaceTypeEnum.PARKING
+gfa = IfcSpaceTypeEnum.GFA
+internal = IfcSpaceTypeEnum.INTERNAL
+external = IfcSpaceTypeEnum.EXTERNAL
+userdefined = IfcSpaceTypeEnum.USERDEFINED
+notdefined = IfcSpaceTypeEnum.NOTDEFINED
 IfcSpatialZoneTypeEnum = enum_namespace()
-construction = express_getattr(IfcSpatialZoneTypeEnum, 'CONSTRUCTION', INDETERMINATE)
-firesafety = express_getattr(IfcSpatialZoneTypeEnum, 'FIRESAFETY', INDETERMINATE)
-lighting = express_getattr(IfcSpatialZoneTypeEnum, 'LIGHTING', INDETERMINATE)
-occupancy = express_getattr(IfcSpatialZoneTypeEnum, 'OCCUPANCY', INDETERMINATE)
-security = express_getattr(IfcSpatialZoneTypeEnum, 'SECURITY', INDETERMINATE)
-thermal = express_getattr(IfcSpatialZoneTypeEnum, 'THERMAL', INDETERMINATE)
-transport = express_getattr(IfcSpatialZoneTypeEnum, 'TRANSPORT', INDETERMINATE)
-ventilation = express_getattr(IfcSpatialZoneTypeEnum, 'VENTILATION', INDETERMINATE)
-userdefined = express_getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSpatialZoneTypeEnum, 'NOTDEFINED', INDETERMINATE)
+construction = IfcSpatialZoneTypeEnum.CONSTRUCTION
+firesafety = IfcSpatialZoneTypeEnum.FIRESAFETY
+lighting = IfcSpatialZoneTypeEnum.LIGHTING
+occupancy = IfcSpatialZoneTypeEnum.OCCUPANCY
+security = IfcSpatialZoneTypeEnum.SECURITY
+thermal = IfcSpatialZoneTypeEnum.THERMAL
+transport = IfcSpatialZoneTypeEnum.TRANSPORT
+ventilation = IfcSpatialZoneTypeEnum.VENTILATION
+userdefined = IfcSpatialZoneTypeEnum.USERDEFINED
+notdefined = IfcSpatialZoneTypeEnum.NOTDEFINED
 IfcStackTerminalTypeEnum = enum_namespace()
-birdcage = express_getattr(IfcStackTerminalTypeEnum, 'BIRDCAGE', INDETERMINATE)
-cowl = express_getattr(IfcStackTerminalTypeEnum, 'COWL', INDETERMINATE)
-rainwaterhopper = express_getattr(IfcStackTerminalTypeEnum, 'RAINWATERHOPPER', INDETERMINATE)
-userdefined = express_getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStackTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+birdcage = IfcStackTerminalTypeEnum.BIRDCAGE
+cowl = IfcStackTerminalTypeEnum.COWL
+rainwaterhopper = IfcStackTerminalTypeEnum.RAINWATERHOPPER
+userdefined = IfcStackTerminalTypeEnum.USERDEFINED
+notdefined = IfcStackTerminalTypeEnum.NOTDEFINED
 IfcStairFlightTypeEnum = enum_namespace()
-straight = express_getattr(IfcStairFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
-winder = express_getattr(IfcStairFlightTypeEnum, 'WINDER', INDETERMINATE)
-spiral = express_getattr(IfcStairFlightTypeEnum, 'SPIRAL', INDETERMINATE)
-curved = express_getattr(IfcStairFlightTypeEnum, 'CURVED', INDETERMINATE)
-freeform = express_getattr(IfcStairFlightTypeEnum, 'FREEFORM', INDETERMINATE)
-userdefined = express_getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStairFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
+straight = IfcStairFlightTypeEnum.STRAIGHT
+winder = IfcStairFlightTypeEnum.WINDER
+spiral = IfcStairFlightTypeEnum.SPIRAL
+curved = IfcStairFlightTypeEnum.CURVED
+freeform = IfcStairFlightTypeEnum.FREEFORM
+userdefined = IfcStairFlightTypeEnum.USERDEFINED
+notdefined = IfcStairFlightTypeEnum.NOTDEFINED
 IfcStairTypeEnum = enum_namespace()
-straight_run_stair = express_getattr(IfcStairTypeEnum, 'STRAIGHT_RUN_STAIR', INDETERMINATE)
-two_straight_run_stair = express_getattr(IfcStairTypeEnum, 'TWO_STRAIGHT_RUN_STAIR', INDETERMINATE)
-quarter_winding_stair = express_getattr(IfcStairTypeEnum, 'QUARTER_WINDING_STAIR', INDETERMINATE)
-quarter_turn_stair = express_getattr(IfcStairTypeEnum, 'QUARTER_TURN_STAIR', INDETERMINATE)
-half_winding_stair = express_getattr(IfcStairTypeEnum, 'HALF_WINDING_STAIR', INDETERMINATE)
-half_turn_stair = express_getattr(IfcStairTypeEnum, 'HALF_TURN_STAIR', INDETERMINATE)
-two_quarter_winding_stair = express_getattr(IfcStairTypeEnum, 'TWO_QUARTER_WINDING_STAIR', INDETERMINATE)
-two_quarter_turn_stair = express_getattr(IfcStairTypeEnum, 'TWO_QUARTER_TURN_STAIR', INDETERMINATE)
-three_quarter_winding_stair = express_getattr(IfcStairTypeEnum, 'THREE_QUARTER_WINDING_STAIR', INDETERMINATE)
-three_quarter_turn_stair = express_getattr(IfcStairTypeEnum, 'THREE_QUARTER_TURN_STAIR', INDETERMINATE)
-spiral_stair = express_getattr(IfcStairTypeEnum, 'SPIRAL_STAIR', INDETERMINATE)
-double_return_stair = express_getattr(IfcStairTypeEnum, 'DOUBLE_RETURN_STAIR', INDETERMINATE)
-curved_run_stair = express_getattr(IfcStairTypeEnum, 'CURVED_RUN_STAIR', INDETERMINATE)
-two_curved_run_stair = express_getattr(IfcStairTypeEnum, 'TWO_CURVED_RUN_STAIR', INDETERMINATE)
-userdefined = express_getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStairTypeEnum, 'NOTDEFINED', INDETERMINATE)
+straight_run_stair = IfcStairTypeEnum.STRAIGHT_RUN_STAIR
+two_straight_run_stair = IfcStairTypeEnum.TWO_STRAIGHT_RUN_STAIR
+quarter_winding_stair = IfcStairTypeEnum.QUARTER_WINDING_STAIR
+quarter_turn_stair = IfcStairTypeEnum.QUARTER_TURN_STAIR
+half_winding_stair = IfcStairTypeEnum.HALF_WINDING_STAIR
+half_turn_stair = IfcStairTypeEnum.HALF_TURN_STAIR
+two_quarter_winding_stair = IfcStairTypeEnum.TWO_QUARTER_WINDING_STAIR
+two_quarter_turn_stair = IfcStairTypeEnum.TWO_QUARTER_TURN_STAIR
+three_quarter_winding_stair = IfcStairTypeEnum.THREE_QUARTER_WINDING_STAIR
+three_quarter_turn_stair = IfcStairTypeEnum.THREE_QUARTER_TURN_STAIR
+spiral_stair = IfcStairTypeEnum.SPIRAL_STAIR
+double_return_stair = IfcStairTypeEnum.DOUBLE_RETURN_STAIR
+curved_run_stair = IfcStairTypeEnum.CURVED_RUN_STAIR
+two_curved_run_stair = IfcStairTypeEnum.TWO_CURVED_RUN_STAIR
+userdefined = IfcStairTypeEnum.USERDEFINED
+notdefined = IfcStairTypeEnum.NOTDEFINED
 IfcStateEnum = enum_namespace()
-readwrite = express_getattr(IfcStateEnum, 'READWRITE', INDETERMINATE)
-readonly = express_getattr(IfcStateEnum, 'READONLY', INDETERMINATE)
-locked = express_getattr(IfcStateEnum, 'LOCKED', INDETERMINATE)
-readwritelocked = express_getattr(IfcStateEnum, 'READWRITELOCKED', INDETERMINATE)
-readonlylocked = express_getattr(IfcStateEnum, 'READONLYLOCKED', INDETERMINATE)
+readwrite = IfcStateEnum.READWRITE
+readonly = IfcStateEnum.READONLY
+locked = IfcStateEnum.LOCKED
+readwritelocked = IfcStateEnum.READWRITELOCKED
+readonlylocked = IfcStateEnum.READONLYLOCKED
 IfcStructuralCurveActivityTypeEnum = enum_namespace()
-const = express_getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)
-linear = express_getattr(IfcStructuralCurveActivityTypeEnum, 'LINEAR', INDETERMINATE)
-polygonal = express_getattr(IfcStructuralCurveActivityTypeEnum, 'POLYGONAL', INDETERMINATE)
-equidistant = express_getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)
-sinus = express_getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE)
-parabola = express_getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)
-discrete = express_getattr(IfcStructuralCurveActivityTypeEnum, 'DISCRETE', INDETERMINATE)
-userdefined = express_getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStructuralCurveActivityTypeEnum, 'NOTDEFINED', INDETERMINATE)
+const = IfcStructuralCurveActivityTypeEnum.CONST
+linear = IfcStructuralCurveActivityTypeEnum.LINEAR
+polygonal = IfcStructuralCurveActivityTypeEnum.POLYGONAL
+equidistant = IfcStructuralCurveActivityTypeEnum.EQUIDISTANT
+sinus = IfcStructuralCurveActivityTypeEnum.SINUS
+parabola = IfcStructuralCurveActivityTypeEnum.PARABOLA
+discrete = IfcStructuralCurveActivityTypeEnum.DISCRETE
+userdefined = IfcStructuralCurveActivityTypeEnum.USERDEFINED
+notdefined = IfcStructuralCurveActivityTypeEnum.NOTDEFINED
 IfcStructuralCurveMemberTypeEnum = enum_namespace()
-rigid_joined_member = express_getattr(IfcStructuralCurveMemberTypeEnum, 'RIGID_JOINED_MEMBER', INDETERMINATE)
-pin_joined_member = express_getattr(IfcStructuralCurveMemberTypeEnum, 'PIN_JOINED_MEMBER', INDETERMINATE)
-cable = express_getattr(IfcStructuralCurveMemberTypeEnum, 'CABLE', INDETERMINATE)
-tension_member = express_getattr(IfcStructuralCurveMemberTypeEnum, 'TENSION_MEMBER', INDETERMINATE)
-compression_member = express_getattr(IfcStructuralCurveMemberTypeEnum, 'COMPRESSION_MEMBER', INDETERMINATE)
-userdefined = express_getattr(IfcStructuralCurveMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStructuralCurveMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+rigid_joined_member = IfcStructuralCurveMemberTypeEnum.RIGID_JOINED_MEMBER
+pin_joined_member = IfcStructuralCurveMemberTypeEnum.PIN_JOINED_MEMBER
+cable = IfcStructuralCurveMemberTypeEnum.CABLE
+tension_member = IfcStructuralCurveMemberTypeEnum.TENSION_MEMBER
+compression_member = IfcStructuralCurveMemberTypeEnum.COMPRESSION_MEMBER
+userdefined = IfcStructuralCurveMemberTypeEnum.USERDEFINED
+notdefined = IfcStructuralCurveMemberTypeEnum.NOTDEFINED
 IfcStructuralSurfaceActivityTypeEnum = enum_namespace()
-const = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)
-bilinear = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'BILINEAR', INDETERMINATE)
-discrete = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'DISCRETE', INDETERMINATE)
-isocontour = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'ISOCONTOUR', INDETERMINATE)
-userdefined = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'NOTDEFINED', INDETERMINATE)
+const = IfcStructuralSurfaceActivityTypeEnum.CONST
+bilinear = IfcStructuralSurfaceActivityTypeEnum.BILINEAR
+discrete = IfcStructuralSurfaceActivityTypeEnum.DISCRETE
+isocontour = IfcStructuralSurfaceActivityTypeEnum.ISOCONTOUR
+userdefined = IfcStructuralSurfaceActivityTypeEnum.USERDEFINED
+notdefined = IfcStructuralSurfaceActivityTypeEnum.NOTDEFINED
 IfcStructuralSurfaceMemberTypeEnum = enum_namespace()
-bending_element = express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'BENDING_ELEMENT', INDETERMINATE)
-membrane_element = express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'MEMBRANE_ELEMENT', INDETERMINATE)
-shell = express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'SHELL', INDETERMINATE)
-userdefined = express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bending_element = IfcStructuralSurfaceMemberTypeEnum.BENDING_ELEMENT
+membrane_element = IfcStructuralSurfaceMemberTypeEnum.MEMBRANE_ELEMENT
+shell = IfcStructuralSurfaceMemberTypeEnum.SHELL
+userdefined = IfcStructuralSurfaceMemberTypeEnum.USERDEFINED
+notdefined = IfcStructuralSurfaceMemberTypeEnum.NOTDEFINED
 IfcSubContractResourceTypeEnum = enum_namespace()
-purchase = express_getattr(IfcSubContractResourceTypeEnum, 'PURCHASE', INDETERMINATE)
-work = express_getattr(IfcSubContractResourceTypeEnum, 'WORK', INDETERMINATE)
-userdefined = express_getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSubContractResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+purchase = IfcSubContractResourceTypeEnum.PURCHASE
+work = IfcSubContractResourceTypeEnum.WORK
+userdefined = IfcSubContractResourceTypeEnum.USERDEFINED
+notdefined = IfcSubContractResourceTypeEnum.NOTDEFINED
 IfcSurfaceFeatureTypeEnum = enum_namespace()
-mark = express_getattr(IfcSurfaceFeatureTypeEnum, 'MARK', INDETERMINATE)
-tag = express_getattr(IfcSurfaceFeatureTypeEnum, 'TAG', INDETERMINATE)
-treatment = express_getattr(IfcSurfaceFeatureTypeEnum, 'TREATMENT', INDETERMINATE)
-userdefined = express_getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSurfaceFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+mark = IfcSurfaceFeatureTypeEnum.MARK
+tag = IfcSurfaceFeatureTypeEnum.TAG
+treatment = IfcSurfaceFeatureTypeEnum.TREATMENT
+userdefined = IfcSurfaceFeatureTypeEnum.USERDEFINED
+notdefined = IfcSurfaceFeatureTypeEnum.NOTDEFINED
 IfcSurfaceSide = enum_namespace()
-positive = express_getattr(IfcSurfaceSide, 'POSITIVE', INDETERMINATE)
-negative = express_getattr(IfcSurfaceSide, 'NEGATIVE', INDETERMINATE)
-both = express_getattr(IfcSurfaceSide, 'BOTH', INDETERMINATE)
+positive = IfcSurfaceSide.POSITIVE
+negative = IfcSurfaceSide.NEGATIVE
+both = IfcSurfaceSide.BOTH
 IfcSwitchingDeviceTypeEnum = enum_namespace()
-contactor = express_getattr(IfcSwitchingDeviceTypeEnum, 'CONTACTOR', INDETERMINATE)
-dimmerswitch = express_getattr(IfcSwitchingDeviceTypeEnum, 'DIMMERSWITCH', INDETERMINATE)
-emergencystop = express_getattr(IfcSwitchingDeviceTypeEnum, 'EMERGENCYSTOP', INDETERMINATE)
-keypad = express_getattr(IfcSwitchingDeviceTypeEnum, 'KEYPAD', INDETERMINATE)
-momentaryswitch = express_getattr(IfcSwitchingDeviceTypeEnum, 'MOMENTARYSWITCH', INDETERMINATE)
-selectorswitch = express_getattr(IfcSwitchingDeviceTypeEnum, 'SELECTORSWITCH', INDETERMINATE)
-starter = express_getattr(IfcSwitchingDeviceTypeEnum, 'STARTER', INDETERMINATE)
-switchdisconnector = express_getattr(IfcSwitchingDeviceTypeEnum, 'SWITCHDISCONNECTOR', INDETERMINATE)
-toggleswitch = express_getattr(IfcSwitchingDeviceTypeEnum, 'TOGGLESWITCH', INDETERMINATE)
-userdefined = express_getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSwitchingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+contactor = IfcSwitchingDeviceTypeEnum.CONTACTOR
+dimmerswitch = IfcSwitchingDeviceTypeEnum.DIMMERSWITCH
+emergencystop = IfcSwitchingDeviceTypeEnum.EMERGENCYSTOP
+keypad = IfcSwitchingDeviceTypeEnum.KEYPAD
+momentaryswitch = IfcSwitchingDeviceTypeEnum.MOMENTARYSWITCH
+selectorswitch = IfcSwitchingDeviceTypeEnum.SELECTORSWITCH
+starter = IfcSwitchingDeviceTypeEnum.STARTER
+switchdisconnector = IfcSwitchingDeviceTypeEnum.SWITCHDISCONNECTOR
+toggleswitch = IfcSwitchingDeviceTypeEnum.TOGGLESWITCH
+userdefined = IfcSwitchingDeviceTypeEnum.USERDEFINED
+notdefined = IfcSwitchingDeviceTypeEnum.NOTDEFINED
 IfcSystemFurnitureElementTypeEnum = enum_namespace()
-panel = express_getattr(IfcSystemFurnitureElementTypeEnum, 'PANEL', INDETERMINATE)
-worksurface = express_getattr(IfcSystemFurnitureElementTypeEnum, 'WORKSURFACE', INDETERMINATE)
-userdefined = express_getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcSystemFurnitureElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+panel = IfcSystemFurnitureElementTypeEnum.PANEL
+worksurface = IfcSystemFurnitureElementTypeEnum.WORKSURFACE
+userdefined = IfcSystemFurnitureElementTypeEnum.USERDEFINED
+notdefined = IfcSystemFurnitureElementTypeEnum.NOTDEFINED
 IfcTankTypeEnum = enum_namespace()
-basin = express_getattr(IfcTankTypeEnum, 'BASIN', INDETERMINATE)
-breakpressure = express_getattr(IfcTankTypeEnum, 'BREAKPRESSURE', INDETERMINATE)
-expansion = express_getattr(IfcTankTypeEnum, 'EXPANSION', INDETERMINATE)
-feedandexpansion = express_getattr(IfcTankTypeEnum, 'FEEDANDEXPANSION', INDETERMINATE)
-pressurevessel = express_getattr(IfcTankTypeEnum, 'PRESSUREVESSEL', INDETERMINATE)
-storage = express_getattr(IfcTankTypeEnum, 'STORAGE', INDETERMINATE)
-vessel = express_getattr(IfcTankTypeEnum, 'VESSEL', INDETERMINATE)
-userdefined = express_getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTankTypeEnum, 'NOTDEFINED', INDETERMINATE)
+basin = IfcTankTypeEnum.BASIN
+breakpressure = IfcTankTypeEnum.BREAKPRESSURE
+expansion = IfcTankTypeEnum.EXPANSION
+feedandexpansion = IfcTankTypeEnum.FEEDANDEXPANSION
+pressurevessel = IfcTankTypeEnum.PRESSUREVESSEL
+storage = IfcTankTypeEnum.STORAGE
+vessel = IfcTankTypeEnum.VESSEL
+userdefined = IfcTankTypeEnum.USERDEFINED
+notdefined = IfcTankTypeEnum.NOTDEFINED
 IfcTaskDurationEnum = enum_namespace()
-elapsedtime = express_getattr(IfcTaskDurationEnum, 'ELAPSEDTIME', INDETERMINATE)
-worktime = express_getattr(IfcTaskDurationEnum, 'WORKTIME', INDETERMINATE)
-notdefined = express_getattr(IfcTaskDurationEnum, 'NOTDEFINED', INDETERMINATE)
+elapsedtime = IfcTaskDurationEnum.ELAPSEDTIME
+worktime = IfcTaskDurationEnum.WORKTIME
+notdefined = IfcTaskDurationEnum.NOTDEFINED
 IfcTaskTypeEnum = enum_namespace()
-attendance = express_getattr(IfcTaskTypeEnum, 'ATTENDANCE', INDETERMINATE)
-construction = express_getattr(IfcTaskTypeEnum, 'CONSTRUCTION', INDETERMINATE)
-demolition = express_getattr(IfcTaskTypeEnum, 'DEMOLITION', INDETERMINATE)
-dismantle = express_getattr(IfcTaskTypeEnum, 'DISMANTLE', INDETERMINATE)
-disposal = express_getattr(IfcTaskTypeEnum, 'DISPOSAL', INDETERMINATE)
-installation = express_getattr(IfcTaskTypeEnum, 'INSTALLATION', INDETERMINATE)
-logistic = express_getattr(IfcTaskTypeEnum, 'LOGISTIC', INDETERMINATE)
-maintenance = express_getattr(IfcTaskTypeEnum, 'MAINTENANCE', INDETERMINATE)
-move = express_getattr(IfcTaskTypeEnum, 'MOVE', INDETERMINATE)
-operation = express_getattr(IfcTaskTypeEnum, 'OPERATION', INDETERMINATE)
-removal = express_getattr(IfcTaskTypeEnum, 'REMOVAL', INDETERMINATE)
-renovation = express_getattr(IfcTaskTypeEnum, 'RENOVATION', INDETERMINATE)
-userdefined = express_getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTaskTypeEnum, 'NOTDEFINED', INDETERMINATE)
+attendance = IfcTaskTypeEnum.ATTENDANCE
+construction = IfcTaskTypeEnum.CONSTRUCTION
+demolition = IfcTaskTypeEnum.DEMOLITION
+dismantle = IfcTaskTypeEnum.DISMANTLE
+disposal = IfcTaskTypeEnum.DISPOSAL
+installation = IfcTaskTypeEnum.INSTALLATION
+logistic = IfcTaskTypeEnum.LOGISTIC
+maintenance = IfcTaskTypeEnum.MAINTENANCE
+move = IfcTaskTypeEnum.MOVE
+operation = IfcTaskTypeEnum.OPERATION
+removal = IfcTaskTypeEnum.REMOVAL
+renovation = IfcTaskTypeEnum.RENOVATION
+userdefined = IfcTaskTypeEnum.USERDEFINED
+notdefined = IfcTaskTypeEnum.NOTDEFINED
 IfcTendonAnchorTypeEnum = enum_namespace()
-coupler = express_getattr(IfcTendonAnchorTypeEnum, 'COUPLER', INDETERMINATE)
-fixed_end = express_getattr(IfcTendonAnchorTypeEnum, 'FIXED_END', INDETERMINATE)
-tensioning_end = express_getattr(IfcTendonAnchorTypeEnum, 'TENSIONING_END', INDETERMINATE)
-userdefined = express_getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTendonAnchorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+coupler = IfcTendonAnchorTypeEnum.COUPLER
+fixed_end = IfcTendonAnchorTypeEnum.FIXED_END
+tensioning_end = IfcTendonAnchorTypeEnum.TENSIONING_END
+userdefined = IfcTendonAnchorTypeEnum.USERDEFINED
+notdefined = IfcTendonAnchorTypeEnum.NOTDEFINED
 IfcTendonTypeEnum = enum_namespace()
-bar = express_getattr(IfcTendonTypeEnum, 'BAR', INDETERMINATE)
-coated = express_getattr(IfcTendonTypeEnum, 'COATED', INDETERMINATE)
-strand = express_getattr(IfcTendonTypeEnum, 'STRAND', INDETERMINATE)
-wire = express_getattr(IfcTendonTypeEnum, 'WIRE', INDETERMINATE)
-userdefined = express_getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTendonTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bar = IfcTendonTypeEnum.BAR
+coated = IfcTendonTypeEnum.COATED
+strand = IfcTendonTypeEnum.STRAND
+wire = IfcTendonTypeEnum.WIRE
+userdefined = IfcTendonTypeEnum.USERDEFINED
+notdefined = IfcTendonTypeEnum.NOTDEFINED
 IfcTextPath = enum_namespace()
-left = express_getattr(IfcTextPath, 'LEFT', INDETERMINATE)
-right = express_getattr(IfcTextPath, 'RIGHT', INDETERMINATE)
-up = express_getattr(IfcTextPath, 'UP', INDETERMINATE)
-down = express_getattr(IfcTextPath, 'DOWN', INDETERMINATE)
+left = IfcTextPath.LEFT
+right = IfcTextPath.RIGHT
+up = IfcTextPath.UP
+down = IfcTextPath.DOWN
 IfcTimeSeriesDataTypeEnum = enum_namespace()
-continuous = express_getattr(IfcTimeSeriesDataTypeEnum, 'CONTINUOUS', INDETERMINATE)
-discrete = express_getattr(IfcTimeSeriesDataTypeEnum, 'DISCRETE', INDETERMINATE)
-discretebinary = express_getattr(IfcTimeSeriesDataTypeEnum, 'DISCRETEBINARY', INDETERMINATE)
-piecewisebinary = express_getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISEBINARY', INDETERMINATE)
-piecewiseconstant = express_getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONSTANT', INDETERMINATE)
-piecewisecontinuous = express_getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONTINUOUS', INDETERMINATE)
-notdefined = express_getattr(IfcTimeSeriesDataTypeEnum, 'NOTDEFINED', INDETERMINATE)
+continuous = IfcTimeSeriesDataTypeEnum.CONTINUOUS
+discrete = IfcTimeSeriesDataTypeEnum.DISCRETE
+discretebinary = IfcTimeSeriesDataTypeEnum.DISCRETEBINARY
+piecewisebinary = IfcTimeSeriesDataTypeEnum.PIECEWISEBINARY
+piecewiseconstant = IfcTimeSeriesDataTypeEnum.PIECEWISECONSTANT
+piecewisecontinuous = IfcTimeSeriesDataTypeEnum.PIECEWISECONTINUOUS
+notdefined = IfcTimeSeriesDataTypeEnum.NOTDEFINED
 IfcTransformerTypeEnum = enum_namespace()
-current = express_getattr(IfcTransformerTypeEnum, 'CURRENT', INDETERMINATE)
-frequency = express_getattr(IfcTransformerTypeEnum, 'FREQUENCY', INDETERMINATE)
-inverter = express_getattr(IfcTransformerTypeEnum, 'INVERTER', INDETERMINATE)
-rectifier = express_getattr(IfcTransformerTypeEnum, 'RECTIFIER', INDETERMINATE)
-voltage = express_getattr(IfcTransformerTypeEnum, 'VOLTAGE', INDETERMINATE)
-userdefined = express_getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTransformerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+current = IfcTransformerTypeEnum.CURRENT
+frequency = IfcTransformerTypeEnum.FREQUENCY
+inverter = IfcTransformerTypeEnum.INVERTER
+rectifier = IfcTransformerTypeEnum.RECTIFIER
+voltage = IfcTransformerTypeEnum.VOLTAGE
+userdefined = IfcTransformerTypeEnum.USERDEFINED
+notdefined = IfcTransformerTypeEnum.NOTDEFINED
 IfcTransitionCode = enum_namespace()
-discontinuous = express_getattr(IfcTransitionCode, 'DISCONTINUOUS', INDETERMINATE)
-continuous = express_getattr(IfcTransitionCode, 'CONTINUOUS', INDETERMINATE)
-contsamegradient = express_getattr(IfcTransitionCode, 'CONTSAMEGRADIENT', INDETERMINATE)
-contsamegradientsamecurvature = express_getattr(IfcTransitionCode, 'CONTSAMEGRADIENTSAMECURVATURE', INDETERMINATE)
+discontinuous = IfcTransitionCode.DISCONTINUOUS
+continuous = IfcTransitionCode.CONTINUOUS
+contsamegradient = IfcTransitionCode.CONTSAMEGRADIENT
+contsamegradientsamecurvature = IfcTransitionCode.CONTSAMEGRADIENTSAMECURVATURE
 IfcTransportElementTypeEnum = enum_namespace()
-elevator = express_getattr(IfcTransportElementTypeEnum, 'ELEVATOR', INDETERMINATE)
-escalator = express_getattr(IfcTransportElementTypeEnum, 'ESCALATOR', INDETERMINATE)
-movingwalkway = express_getattr(IfcTransportElementTypeEnum, 'MOVINGWALKWAY', INDETERMINATE)
-craneway = express_getattr(IfcTransportElementTypeEnum, 'CRANEWAY', INDETERMINATE)
-liftinggear = express_getattr(IfcTransportElementTypeEnum, 'LIFTINGGEAR', INDETERMINATE)
-userdefined = express_getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTransportElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+elevator = IfcTransportElementTypeEnum.ELEVATOR
+escalator = IfcTransportElementTypeEnum.ESCALATOR
+movingwalkway = IfcTransportElementTypeEnum.MOVINGWALKWAY
+craneway = IfcTransportElementTypeEnum.CRANEWAY
+liftinggear = IfcTransportElementTypeEnum.LIFTINGGEAR
+userdefined = IfcTransportElementTypeEnum.USERDEFINED
+notdefined = IfcTransportElementTypeEnum.NOTDEFINED
 IfcTrimmingPreference = enum_namespace()
-cartesian = express_getattr(IfcTrimmingPreference, 'CARTESIAN', INDETERMINATE)
-parameter = express_getattr(IfcTrimmingPreference, 'PARAMETER', INDETERMINATE)
-unspecified = express_getattr(IfcTrimmingPreference, 'UNSPECIFIED', INDETERMINATE)
+cartesian = IfcTrimmingPreference.CARTESIAN
+parameter = IfcTrimmingPreference.PARAMETER
+unspecified = IfcTrimmingPreference.UNSPECIFIED
 IfcTubeBundleTypeEnum = enum_namespace()
-finned = express_getattr(IfcTubeBundleTypeEnum, 'FINNED', INDETERMINATE)
-userdefined = express_getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcTubeBundleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+finned = IfcTubeBundleTypeEnum.FINNED
+userdefined = IfcTubeBundleTypeEnum.USERDEFINED
+notdefined = IfcTubeBundleTypeEnum.NOTDEFINED
 IfcUnitEnum = enum_namespace()
-absorbeddoseunit = express_getattr(IfcUnitEnum, 'ABSORBEDDOSEUNIT', INDETERMINATE)
-amountofsubstanceunit = express_getattr(IfcUnitEnum, 'AMOUNTOFSUBSTANCEUNIT', INDETERMINATE)
-areaunit = express_getattr(IfcUnitEnum, 'AREAUNIT', INDETERMINATE)
-doseequivalentunit = express_getattr(IfcUnitEnum, 'DOSEEQUIVALENTUNIT', INDETERMINATE)
-electriccapacitanceunit = express_getattr(IfcUnitEnum, 'ELECTRICCAPACITANCEUNIT', INDETERMINATE)
-electricchargeunit = express_getattr(IfcUnitEnum, 'ELECTRICCHARGEUNIT', INDETERMINATE)
-electricconductanceunit = express_getattr(IfcUnitEnum, 'ELECTRICCONDUCTANCEUNIT', INDETERMINATE)
-electriccurrentunit = express_getattr(IfcUnitEnum, 'ELECTRICCURRENTUNIT', INDETERMINATE)
-electricresistanceunit = express_getattr(IfcUnitEnum, 'ELECTRICRESISTANCEUNIT', INDETERMINATE)
-electricvoltageunit = express_getattr(IfcUnitEnum, 'ELECTRICVOLTAGEUNIT', INDETERMINATE)
-energyunit = express_getattr(IfcUnitEnum, 'ENERGYUNIT', INDETERMINATE)
-forceunit = express_getattr(IfcUnitEnum, 'FORCEUNIT', INDETERMINATE)
-frequencyunit = express_getattr(IfcUnitEnum, 'FREQUENCYUNIT', INDETERMINATE)
-illuminanceunit = express_getattr(IfcUnitEnum, 'ILLUMINANCEUNIT', INDETERMINATE)
-inductanceunit = express_getattr(IfcUnitEnum, 'INDUCTANCEUNIT', INDETERMINATE)
-lengthunit = express_getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)
-luminousfluxunit = express_getattr(IfcUnitEnum, 'LUMINOUSFLUXUNIT', INDETERMINATE)
-luminousintensityunit = express_getattr(IfcUnitEnum, 'LUMINOUSINTENSITYUNIT', INDETERMINATE)
-magneticfluxdensityunit = express_getattr(IfcUnitEnum, 'MAGNETICFLUXDENSITYUNIT', INDETERMINATE)
-magneticfluxunit = express_getattr(IfcUnitEnum, 'MAGNETICFLUXUNIT', INDETERMINATE)
-massunit = express_getattr(IfcUnitEnum, 'MASSUNIT', INDETERMINATE)
-planeangleunit = express_getattr(IfcUnitEnum, 'PLANEANGLEUNIT', INDETERMINATE)
-powerunit = express_getattr(IfcUnitEnum, 'POWERUNIT', INDETERMINATE)
-pressureunit = express_getattr(IfcUnitEnum, 'PRESSUREUNIT', INDETERMINATE)
-radioactivityunit = express_getattr(IfcUnitEnum, 'RADIOACTIVITYUNIT', INDETERMINATE)
-solidangleunit = express_getattr(IfcUnitEnum, 'SOLIDANGLEUNIT', INDETERMINATE)
-thermodynamictemperatureunit = express_getattr(IfcUnitEnum, 'THERMODYNAMICTEMPERATUREUNIT', INDETERMINATE)
-timeunit = express_getattr(IfcUnitEnum, 'TIMEUNIT', INDETERMINATE)
-volumeunit = express_getattr(IfcUnitEnum, 'VOLUMEUNIT', INDETERMINATE)
-userdefined = express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)
+absorbeddoseunit = IfcUnitEnum.ABSORBEDDOSEUNIT
+amountofsubstanceunit = IfcUnitEnum.AMOUNTOFSUBSTANCEUNIT
+areaunit = IfcUnitEnum.AREAUNIT
+doseequivalentunit = IfcUnitEnum.DOSEEQUIVALENTUNIT
+electriccapacitanceunit = IfcUnitEnum.ELECTRICCAPACITANCEUNIT
+electricchargeunit = IfcUnitEnum.ELECTRICCHARGEUNIT
+electricconductanceunit = IfcUnitEnum.ELECTRICCONDUCTANCEUNIT
+electriccurrentunit = IfcUnitEnum.ELECTRICCURRENTUNIT
+electricresistanceunit = IfcUnitEnum.ELECTRICRESISTANCEUNIT
+electricvoltageunit = IfcUnitEnum.ELECTRICVOLTAGEUNIT
+energyunit = IfcUnitEnum.ENERGYUNIT
+forceunit = IfcUnitEnum.FORCEUNIT
+frequencyunit = IfcUnitEnum.FREQUENCYUNIT
+illuminanceunit = IfcUnitEnum.ILLUMINANCEUNIT
+inductanceunit = IfcUnitEnum.INDUCTANCEUNIT
+lengthunit = IfcUnitEnum.LENGTHUNIT
+luminousfluxunit = IfcUnitEnum.LUMINOUSFLUXUNIT
+luminousintensityunit = IfcUnitEnum.LUMINOUSINTENSITYUNIT
+magneticfluxdensityunit = IfcUnitEnum.MAGNETICFLUXDENSITYUNIT
+magneticfluxunit = IfcUnitEnum.MAGNETICFLUXUNIT
+massunit = IfcUnitEnum.MASSUNIT
+planeangleunit = IfcUnitEnum.PLANEANGLEUNIT
+powerunit = IfcUnitEnum.POWERUNIT
+pressureunit = IfcUnitEnum.PRESSUREUNIT
+radioactivityunit = IfcUnitEnum.RADIOACTIVITYUNIT
+solidangleunit = IfcUnitEnum.SOLIDANGLEUNIT
+thermodynamictemperatureunit = IfcUnitEnum.THERMODYNAMICTEMPERATUREUNIT
+timeunit = IfcUnitEnum.TIMEUNIT
+volumeunit = IfcUnitEnum.VOLUMEUNIT
+userdefined = IfcUnitEnum.USERDEFINED
 IfcUnitaryControlElementTypeEnum = enum_namespace()
-alarmpanel = express_getattr(IfcUnitaryControlElementTypeEnum, 'ALARMPANEL', INDETERMINATE)
-controlpanel = express_getattr(IfcUnitaryControlElementTypeEnum, 'CONTROLPANEL', INDETERMINATE)
-gasdetectionpanel = express_getattr(IfcUnitaryControlElementTypeEnum, 'GASDETECTIONPANEL', INDETERMINATE)
-indicatorpanel = express_getattr(IfcUnitaryControlElementTypeEnum, 'INDICATORPANEL', INDETERMINATE)
-mimicpanel = express_getattr(IfcUnitaryControlElementTypeEnum, 'MIMICPANEL', INDETERMINATE)
-humidistat = express_getattr(IfcUnitaryControlElementTypeEnum, 'HUMIDISTAT', INDETERMINATE)
-thermostat = express_getattr(IfcUnitaryControlElementTypeEnum, 'THERMOSTAT', INDETERMINATE)
-weatherstation = express_getattr(IfcUnitaryControlElementTypeEnum, 'WEATHERSTATION', INDETERMINATE)
-userdefined = express_getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcUnitaryControlElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+alarmpanel = IfcUnitaryControlElementTypeEnum.ALARMPANEL
+controlpanel = IfcUnitaryControlElementTypeEnum.CONTROLPANEL
+gasdetectionpanel = IfcUnitaryControlElementTypeEnum.GASDETECTIONPANEL
+indicatorpanel = IfcUnitaryControlElementTypeEnum.INDICATORPANEL
+mimicpanel = IfcUnitaryControlElementTypeEnum.MIMICPANEL
+humidistat = IfcUnitaryControlElementTypeEnum.HUMIDISTAT
+thermostat = IfcUnitaryControlElementTypeEnum.THERMOSTAT
+weatherstation = IfcUnitaryControlElementTypeEnum.WEATHERSTATION
+userdefined = IfcUnitaryControlElementTypeEnum.USERDEFINED
+notdefined = IfcUnitaryControlElementTypeEnum.NOTDEFINED
 IfcUnitaryEquipmentTypeEnum = enum_namespace()
-airhandler = express_getattr(IfcUnitaryEquipmentTypeEnum, 'AIRHANDLER', INDETERMINATE)
-airconditioningunit = express_getattr(IfcUnitaryEquipmentTypeEnum, 'AIRCONDITIONINGUNIT', INDETERMINATE)
-dehumidifier = express_getattr(IfcUnitaryEquipmentTypeEnum, 'DEHUMIDIFIER', INDETERMINATE)
-splitsystem = express_getattr(IfcUnitaryEquipmentTypeEnum, 'SPLITSYSTEM', INDETERMINATE)
-rooftopunit = express_getattr(IfcUnitaryEquipmentTypeEnum, 'ROOFTOPUNIT', INDETERMINATE)
-userdefined = express_getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcUnitaryEquipmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airhandler = IfcUnitaryEquipmentTypeEnum.AIRHANDLER
+airconditioningunit = IfcUnitaryEquipmentTypeEnum.AIRCONDITIONINGUNIT
+dehumidifier = IfcUnitaryEquipmentTypeEnum.DEHUMIDIFIER
+splitsystem = IfcUnitaryEquipmentTypeEnum.SPLITSYSTEM
+rooftopunit = IfcUnitaryEquipmentTypeEnum.ROOFTOPUNIT
+userdefined = IfcUnitaryEquipmentTypeEnum.USERDEFINED
+notdefined = IfcUnitaryEquipmentTypeEnum.NOTDEFINED
 IfcValveTypeEnum = enum_namespace()
-airrelease = express_getattr(IfcValveTypeEnum, 'AIRRELEASE', INDETERMINATE)
-antivacuum = express_getattr(IfcValveTypeEnum, 'ANTIVACUUM', INDETERMINATE)
-changeover = express_getattr(IfcValveTypeEnum, 'CHANGEOVER', INDETERMINATE)
-check = express_getattr(IfcValveTypeEnum, 'CHECK', INDETERMINATE)
-commissioning = express_getattr(IfcValveTypeEnum, 'COMMISSIONING', INDETERMINATE)
-diverting = express_getattr(IfcValveTypeEnum, 'DIVERTING', INDETERMINATE)
-drawoffcock = express_getattr(IfcValveTypeEnum, 'DRAWOFFCOCK', INDETERMINATE)
-doublecheck = express_getattr(IfcValveTypeEnum, 'DOUBLECHECK', INDETERMINATE)
-doubleregulating = express_getattr(IfcValveTypeEnum, 'DOUBLEREGULATING', INDETERMINATE)
-faucet = express_getattr(IfcValveTypeEnum, 'FAUCET', INDETERMINATE)
-flushing = express_getattr(IfcValveTypeEnum, 'FLUSHING', INDETERMINATE)
-gascock = express_getattr(IfcValveTypeEnum, 'GASCOCK', INDETERMINATE)
-gastap = express_getattr(IfcValveTypeEnum, 'GASTAP', INDETERMINATE)
-isolating = express_getattr(IfcValveTypeEnum, 'ISOLATING', INDETERMINATE)
-mixing = express_getattr(IfcValveTypeEnum, 'MIXING', INDETERMINATE)
-pressurereducing = express_getattr(IfcValveTypeEnum, 'PRESSUREREDUCING', INDETERMINATE)
-pressurerelief = express_getattr(IfcValveTypeEnum, 'PRESSURERELIEF', INDETERMINATE)
-regulating = express_getattr(IfcValveTypeEnum, 'REGULATING', INDETERMINATE)
-safetycutoff = express_getattr(IfcValveTypeEnum, 'SAFETYCUTOFF', INDETERMINATE)
-steamtrap = express_getattr(IfcValveTypeEnum, 'STEAMTRAP', INDETERMINATE)
-stopcock = express_getattr(IfcValveTypeEnum, 'STOPCOCK', INDETERMINATE)
-userdefined = express_getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcValveTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airrelease = IfcValveTypeEnum.AIRRELEASE
+antivacuum = IfcValveTypeEnum.ANTIVACUUM
+changeover = IfcValveTypeEnum.CHANGEOVER
+check = IfcValveTypeEnum.CHECK
+commissioning = IfcValveTypeEnum.COMMISSIONING
+diverting = IfcValveTypeEnum.DIVERTING
+drawoffcock = IfcValveTypeEnum.DRAWOFFCOCK
+doublecheck = IfcValveTypeEnum.DOUBLECHECK
+doubleregulating = IfcValveTypeEnum.DOUBLEREGULATING
+faucet = IfcValveTypeEnum.FAUCET
+flushing = IfcValveTypeEnum.FLUSHING
+gascock = IfcValveTypeEnum.GASCOCK
+gastap = IfcValveTypeEnum.GASTAP
+isolating = IfcValveTypeEnum.ISOLATING
+mixing = IfcValveTypeEnum.MIXING
+pressurereducing = IfcValveTypeEnum.PRESSUREREDUCING
+pressurerelief = IfcValveTypeEnum.PRESSURERELIEF
+regulating = IfcValveTypeEnum.REGULATING
+safetycutoff = IfcValveTypeEnum.SAFETYCUTOFF
+steamtrap = IfcValveTypeEnum.STEAMTRAP
+stopcock = IfcValveTypeEnum.STOPCOCK
+userdefined = IfcValveTypeEnum.USERDEFINED
+notdefined = IfcValveTypeEnum.NOTDEFINED
 IfcVibrationIsolatorTypeEnum = enum_namespace()
-compression = express_getattr(IfcVibrationIsolatorTypeEnum, 'COMPRESSION', INDETERMINATE)
-spring = express_getattr(IfcVibrationIsolatorTypeEnum, 'SPRING', INDETERMINATE)
-userdefined = express_getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcVibrationIsolatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+compression = IfcVibrationIsolatorTypeEnum.COMPRESSION
+spring = IfcVibrationIsolatorTypeEnum.SPRING
+userdefined = IfcVibrationIsolatorTypeEnum.USERDEFINED
+notdefined = IfcVibrationIsolatorTypeEnum.NOTDEFINED
 IfcVoidingFeatureTypeEnum = enum_namespace()
-cutout = express_getattr(IfcVoidingFeatureTypeEnum, 'CUTOUT', INDETERMINATE)
-notch = express_getattr(IfcVoidingFeatureTypeEnum, 'NOTCH', INDETERMINATE)
-hole = express_getattr(IfcVoidingFeatureTypeEnum, 'HOLE', INDETERMINATE)
-miter = express_getattr(IfcVoidingFeatureTypeEnum, 'MITER', INDETERMINATE)
-chamfer = express_getattr(IfcVoidingFeatureTypeEnum, 'CHAMFER', INDETERMINATE)
-edge = express_getattr(IfcVoidingFeatureTypeEnum, 'EDGE', INDETERMINATE)
-userdefined = express_getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcVoidingFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cutout = IfcVoidingFeatureTypeEnum.CUTOUT
+notch = IfcVoidingFeatureTypeEnum.NOTCH
+hole = IfcVoidingFeatureTypeEnum.HOLE
+miter = IfcVoidingFeatureTypeEnum.MITER
+chamfer = IfcVoidingFeatureTypeEnum.CHAMFER
+edge = IfcVoidingFeatureTypeEnum.EDGE
+userdefined = IfcVoidingFeatureTypeEnum.USERDEFINED
+notdefined = IfcVoidingFeatureTypeEnum.NOTDEFINED
 IfcWallTypeEnum = enum_namespace()
-movable = express_getattr(IfcWallTypeEnum, 'MOVABLE', INDETERMINATE)
-parapet = express_getattr(IfcWallTypeEnum, 'PARAPET', INDETERMINATE)
-partitioning = express_getattr(IfcWallTypeEnum, 'PARTITIONING', INDETERMINATE)
-plumbingwall = express_getattr(IfcWallTypeEnum, 'PLUMBINGWALL', INDETERMINATE)
-shear = express_getattr(IfcWallTypeEnum, 'SHEAR', INDETERMINATE)
-solidwall = express_getattr(IfcWallTypeEnum, 'SOLIDWALL', INDETERMINATE)
-standard = express_getattr(IfcWallTypeEnum, 'STANDARD', INDETERMINATE)
-polygonal = express_getattr(IfcWallTypeEnum, 'POLYGONAL', INDETERMINATE)
-elementedwall = express_getattr(IfcWallTypeEnum, 'ELEMENTEDWALL', INDETERMINATE)
-userdefined = express_getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWallTypeEnum, 'NOTDEFINED', INDETERMINATE)
+movable = IfcWallTypeEnum.MOVABLE
+parapet = IfcWallTypeEnum.PARAPET
+partitioning = IfcWallTypeEnum.PARTITIONING
+plumbingwall = IfcWallTypeEnum.PLUMBINGWALL
+shear = IfcWallTypeEnum.SHEAR
+solidwall = IfcWallTypeEnum.SOLIDWALL
+standard = IfcWallTypeEnum.STANDARD
+polygonal = IfcWallTypeEnum.POLYGONAL
+elementedwall = IfcWallTypeEnum.ELEMENTEDWALL
+userdefined = IfcWallTypeEnum.USERDEFINED
+notdefined = IfcWallTypeEnum.NOTDEFINED
 IfcWasteTerminalTypeEnum = enum_namespace()
-floortrap = express_getattr(IfcWasteTerminalTypeEnum, 'FLOORTRAP', INDETERMINATE)
-floorwaste = express_getattr(IfcWasteTerminalTypeEnum, 'FLOORWASTE', INDETERMINATE)
-gullysump = express_getattr(IfcWasteTerminalTypeEnum, 'GULLYSUMP', INDETERMINATE)
-gullytrap = express_getattr(IfcWasteTerminalTypeEnum, 'GULLYTRAP', INDETERMINATE)
-roofdrain = express_getattr(IfcWasteTerminalTypeEnum, 'ROOFDRAIN', INDETERMINATE)
-wastedisposalunit = express_getattr(IfcWasteTerminalTypeEnum, 'WASTEDISPOSALUNIT', INDETERMINATE)
-wastetrap = express_getattr(IfcWasteTerminalTypeEnum, 'WASTETRAP', INDETERMINATE)
-userdefined = express_getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWasteTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+floortrap = IfcWasteTerminalTypeEnum.FLOORTRAP
+floorwaste = IfcWasteTerminalTypeEnum.FLOORWASTE
+gullysump = IfcWasteTerminalTypeEnum.GULLYSUMP
+gullytrap = IfcWasteTerminalTypeEnum.GULLYTRAP
+roofdrain = IfcWasteTerminalTypeEnum.ROOFDRAIN
+wastedisposalunit = IfcWasteTerminalTypeEnum.WASTEDISPOSALUNIT
+wastetrap = IfcWasteTerminalTypeEnum.WASTETRAP
+userdefined = IfcWasteTerminalTypeEnum.USERDEFINED
+notdefined = IfcWasteTerminalTypeEnum.NOTDEFINED
 IfcWindowPanelOperationEnum = enum_namespace()
-sidehungrighthand = express_getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGRIGHTHAND', INDETERMINATE)
-sidehunglefthand = express_getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGLEFTHAND', INDETERMINATE)
-tiltandturnrighthand = express_getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNRIGHTHAND', INDETERMINATE)
-tiltandturnlefthand = express_getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNLEFTHAND', INDETERMINATE)
-tophung = express_getattr(IfcWindowPanelOperationEnum, 'TOPHUNG', INDETERMINATE)
-bottomhung = express_getattr(IfcWindowPanelOperationEnum, 'BOTTOMHUNG', INDETERMINATE)
-pivothorizontal = express_getattr(IfcWindowPanelOperationEnum, 'PIVOTHORIZONTAL', INDETERMINATE)
-pivotvertical = express_getattr(IfcWindowPanelOperationEnum, 'PIVOTVERTICAL', INDETERMINATE)
-slidinghorizontal = express_getattr(IfcWindowPanelOperationEnum, 'SLIDINGHORIZONTAL', INDETERMINATE)
-slidingvertical = express_getattr(IfcWindowPanelOperationEnum, 'SLIDINGVERTICAL', INDETERMINATE)
-removablecasement = express_getattr(IfcWindowPanelOperationEnum, 'REMOVABLECASEMENT', INDETERMINATE)
-fixedcasement = express_getattr(IfcWindowPanelOperationEnum, 'FIXEDCASEMENT', INDETERMINATE)
-otheroperation = express_getattr(IfcWindowPanelOperationEnum, 'OTHEROPERATION', INDETERMINATE)
-notdefined = express_getattr(IfcWindowPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
+sidehungrighthand = IfcWindowPanelOperationEnum.SIDEHUNGRIGHTHAND
+sidehunglefthand = IfcWindowPanelOperationEnum.SIDEHUNGLEFTHAND
+tiltandturnrighthand = IfcWindowPanelOperationEnum.TILTANDTURNRIGHTHAND
+tiltandturnlefthand = IfcWindowPanelOperationEnum.TILTANDTURNLEFTHAND
+tophung = IfcWindowPanelOperationEnum.TOPHUNG
+bottomhung = IfcWindowPanelOperationEnum.BOTTOMHUNG
+pivothorizontal = IfcWindowPanelOperationEnum.PIVOTHORIZONTAL
+pivotvertical = IfcWindowPanelOperationEnum.PIVOTVERTICAL
+slidinghorizontal = IfcWindowPanelOperationEnum.SLIDINGHORIZONTAL
+slidingvertical = IfcWindowPanelOperationEnum.SLIDINGVERTICAL
+removablecasement = IfcWindowPanelOperationEnum.REMOVABLECASEMENT
+fixedcasement = IfcWindowPanelOperationEnum.FIXEDCASEMENT
+otheroperation = IfcWindowPanelOperationEnum.OTHEROPERATION
+notdefined = IfcWindowPanelOperationEnum.NOTDEFINED
 IfcWindowPanelPositionEnum = enum_namespace()
-left = express_getattr(IfcWindowPanelPositionEnum, 'LEFT', INDETERMINATE)
-middle = express_getattr(IfcWindowPanelPositionEnum, 'MIDDLE', INDETERMINATE)
-right = express_getattr(IfcWindowPanelPositionEnum, 'RIGHT', INDETERMINATE)
-bottom = express_getattr(IfcWindowPanelPositionEnum, 'BOTTOM', INDETERMINATE)
-top = express_getattr(IfcWindowPanelPositionEnum, 'TOP', INDETERMINATE)
-notdefined = express_getattr(IfcWindowPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
+left = IfcWindowPanelPositionEnum.LEFT
+middle = IfcWindowPanelPositionEnum.MIDDLE
+right = IfcWindowPanelPositionEnum.RIGHT
+bottom = IfcWindowPanelPositionEnum.BOTTOM
+top = IfcWindowPanelPositionEnum.TOP
+notdefined = IfcWindowPanelPositionEnum.NOTDEFINED
 IfcWindowStyleConstructionEnum = enum_namespace()
-aluminium = express_getattr(IfcWindowStyleConstructionEnum, 'ALUMINIUM', INDETERMINATE)
-high_grade_steel = express_getattr(IfcWindowStyleConstructionEnum, 'HIGH_GRADE_STEEL', INDETERMINATE)
-steel = express_getattr(IfcWindowStyleConstructionEnum, 'STEEL', INDETERMINATE)
-wood = express_getattr(IfcWindowStyleConstructionEnum, 'WOOD', INDETERMINATE)
-aluminium_wood = express_getattr(IfcWindowStyleConstructionEnum, 'ALUMINIUM_WOOD', INDETERMINATE)
-plastic = express_getattr(IfcWindowStyleConstructionEnum, 'PLASTIC', INDETERMINATE)
-other_construction = express_getattr(IfcWindowStyleConstructionEnum, 'OTHER_CONSTRUCTION', INDETERMINATE)
-notdefined = express_getattr(IfcWindowStyleConstructionEnum, 'NOTDEFINED', INDETERMINATE)
+aluminium = IfcWindowStyleConstructionEnum.ALUMINIUM
+high_grade_steel = IfcWindowStyleConstructionEnum.HIGH_GRADE_STEEL
+steel = IfcWindowStyleConstructionEnum.STEEL
+wood = IfcWindowStyleConstructionEnum.WOOD
+aluminium_wood = IfcWindowStyleConstructionEnum.ALUMINIUM_WOOD
+plastic = IfcWindowStyleConstructionEnum.PLASTIC
+other_construction = IfcWindowStyleConstructionEnum.OTHER_CONSTRUCTION
+notdefined = IfcWindowStyleConstructionEnum.NOTDEFINED
 IfcWindowStyleOperationEnum = enum_namespace()
-single_panel = express_getattr(IfcWindowStyleOperationEnum, 'SINGLE_PANEL', INDETERMINATE)
-double_panel_vertical = express_getattr(IfcWindowStyleOperationEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
-double_panel_horizontal = express_getattr(IfcWindowStyleOperationEnum, 'DOUBLE_PANEL_HORIZONTAL', INDETERMINATE)
-triple_panel_vertical = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
-triple_panel_bottom = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_BOTTOM', INDETERMINATE)
-triple_panel_top = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
-triple_panel_left = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_LEFT', INDETERMINATE)
-triple_panel_right = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_RIGHT', INDETERMINATE)
-triple_panel_horizontal = express_getattr(IfcWindowStyleOperationEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
-userdefined = express_getattr(IfcWindowStyleOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWindowStyleOperationEnum, 'NOTDEFINED', INDETERMINATE)
+single_panel = IfcWindowStyleOperationEnum.SINGLE_PANEL
+double_panel_vertical = IfcWindowStyleOperationEnum.DOUBLE_PANEL_VERTICAL
+double_panel_horizontal = IfcWindowStyleOperationEnum.DOUBLE_PANEL_HORIZONTAL
+triple_panel_vertical = IfcWindowStyleOperationEnum.TRIPLE_PANEL_VERTICAL
+triple_panel_bottom = IfcWindowStyleOperationEnum.TRIPLE_PANEL_BOTTOM
+triple_panel_top = IfcWindowStyleOperationEnum.TRIPLE_PANEL_TOP
+triple_panel_left = IfcWindowStyleOperationEnum.TRIPLE_PANEL_LEFT
+triple_panel_right = IfcWindowStyleOperationEnum.TRIPLE_PANEL_RIGHT
+triple_panel_horizontal = IfcWindowStyleOperationEnum.TRIPLE_PANEL_HORIZONTAL
+userdefined = IfcWindowStyleOperationEnum.USERDEFINED
+notdefined = IfcWindowStyleOperationEnum.NOTDEFINED
 IfcWindowTypeEnum = enum_namespace()
-window = express_getattr(IfcWindowTypeEnum, 'WINDOW', INDETERMINATE)
-skylight = express_getattr(IfcWindowTypeEnum, 'SKYLIGHT', INDETERMINATE)
-lightdome = express_getattr(IfcWindowTypeEnum, 'LIGHTDOME', INDETERMINATE)
-userdefined = express_getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWindowTypeEnum, 'NOTDEFINED', INDETERMINATE)
+window = IfcWindowTypeEnum.WINDOW
+skylight = IfcWindowTypeEnum.SKYLIGHT
+lightdome = IfcWindowTypeEnum.LIGHTDOME
+userdefined = IfcWindowTypeEnum.USERDEFINED
+notdefined = IfcWindowTypeEnum.NOTDEFINED
 IfcWindowTypePartitioningEnum = enum_namespace()
-single_panel = express_getattr(IfcWindowTypePartitioningEnum, 'SINGLE_PANEL', INDETERMINATE)
-double_panel_vertical = express_getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
-double_panel_horizontal = express_getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_HORIZONTAL', INDETERMINATE)
-triple_panel_vertical = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
-triple_panel_bottom = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_BOTTOM', INDETERMINATE)
-triple_panel_top = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
-triple_panel_left = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_LEFT', INDETERMINATE)
-triple_panel_right = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_RIGHT', INDETERMINATE)
-triple_panel_horizontal = express_getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
-userdefined = express_getattr(IfcWindowTypePartitioningEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWindowTypePartitioningEnum, 'NOTDEFINED', INDETERMINATE)
+single_panel = IfcWindowTypePartitioningEnum.SINGLE_PANEL
+double_panel_vertical = IfcWindowTypePartitioningEnum.DOUBLE_PANEL_VERTICAL
+double_panel_horizontal = IfcWindowTypePartitioningEnum.DOUBLE_PANEL_HORIZONTAL
+triple_panel_vertical = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_VERTICAL
+triple_panel_bottom = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_BOTTOM
+triple_panel_top = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_TOP
+triple_panel_left = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_LEFT
+triple_panel_right = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_RIGHT
+triple_panel_horizontal = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_HORIZONTAL
+userdefined = IfcWindowTypePartitioningEnum.USERDEFINED
+notdefined = IfcWindowTypePartitioningEnum.NOTDEFINED
 IfcWorkCalendarTypeEnum = enum_namespace()
-firstshift = express_getattr(IfcWorkCalendarTypeEnum, 'FIRSTSHIFT', INDETERMINATE)
-secondshift = express_getattr(IfcWorkCalendarTypeEnum, 'SECONDSHIFT', INDETERMINATE)
-thirdshift = express_getattr(IfcWorkCalendarTypeEnum, 'THIRDSHIFT', INDETERMINATE)
-userdefined = express_getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWorkCalendarTypeEnum, 'NOTDEFINED', INDETERMINATE)
+firstshift = IfcWorkCalendarTypeEnum.FIRSTSHIFT
+secondshift = IfcWorkCalendarTypeEnum.SECONDSHIFT
+thirdshift = IfcWorkCalendarTypeEnum.THIRDSHIFT
+userdefined = IfcWorkCalendarTypeEnum.USERDEFINED
+notdefined = IfcWorkCalendarTypeEnum.NOTDEFINED
 IfcWorkPlanTypeEnum = enum_namespace()
-actual = express_getattr(IfcWorkPlanTypeEnum, 'ACTUAL', INDETERMINATE)
-baseline = express_getattr(IfcWorkPlanTypeEnum, 'BASELINE', INDETERMINATE)
-planned = express_getattr(IfcWorkPlanTypeEnum, 'PLANNED', INDETERMINATE)
-userdefined = express_getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWorkPlanTypeEnum, 'NOTDEFINED', INDETERMINATE)
+actual = IfcWorkPlanTypeEnum.ACTUAL
+baseline = IfcWorkPlanTypeEnum.BASELINE
+planned = IfcWorkPlanTypeEnum.PLANNED
+userdefined = IfcWorkPlanTypeEnum.USERDEFINED
+notdefined = IfcWorkPlanTypeEnum.NOTDEFINED
 IfcWorkScheduleTypeEnum = enum_namespace()
-actual = express_getattr(IfcWorkScheduleTypeEnum, 'ACTUAL', INDETERMINATE)
-baseline = express_getattr(IfcWorkScheduleTypeEnum, 'BASELINE', INDETERMINATE)
-planned = express_getattr(IfcWorkScheduleTypeEnum, 'PLANNED', INDETERMINATE)
-userdefined = express_getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = express_getattr(IfcWorkScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
-temp_file = express_getattr(ifcopenshell, 'file', INDETERMINATE)(schema_identifier='IFC4')
+actual = IfcWorkScheduleTypeEnum.ACTUAL
+baseline = IfcWorkScheduleTypeEnum.BASELINE
+planned = IfcWorkScheduleTypeEnum.PLANNED
+userdefined = IfcWorkScheduleTypeEnum.USERDEFINED
+notdefined = IfcWorkScheduleTypeEnum.NOTDEFINED
 
 def IfcActionRequest(*args, **kwargs):
-    return temp_file.create_entity('IfcActionRequest', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActionRequest', 'IFC4', *args, **kwargs)
 
 def IfcActor(*args, **kwargs):
-    return temp_file.create_entity('IfcActor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActor', 'IFC4', *args, **kwargs)
 
 def IfcActorRole(*args, **kwargs):
-    return temp_file.create_entity('IfcActorRole', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActorRole', 'IFC4', *args, **kwargs)
 
 def IfcActuator(*args, **kwargs):
-    return temp_file.create_entity('IfcActuator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActuator', 'IFC4', *args, **kwargs)
 
 def IfcActuatorType(*args, **kwargs):
-    return temp_file.create_entity('IfcActuatorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcActuatorType', 'IFC4', *args, **kwargs)
 
 def IfcAddress(*args, **kwargs):
-    return temp_file.create_entity('IfcAddress', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAddress', 'IFC4', *args, **kwargs)
 
 def IfcAdvancedBrep(*args, **kwargs):
-    return temp_file.create_entity('IfcAdvancedBrep', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedBrep', 'IFC4', *args, **kwargs)
 
 def IfcAdvancedBrepWithVoids(*args, **kwargs):
-    return temp_file.create_entity('IfcAdvancedBrepWithVoids', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedBrepWithVoids', 'IFC4', *args, **kwargs)
 
 def IfcAdvancedFace(*args, **kwargs):
-    return temp_file.create_entity('IfcAdvancedFace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAdvancedFace', 'IFC4', *args, **kwargs)
 
 def IfcAirTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcAirTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminal', 'IFC4', *args, **kwargs)
 
 def IfcAirTerminalBox(*args, **kwargs):
-    return temp_file.create_entity('IfcAirTerminalBox', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalBox', 'IFC4', *args, **kwargs)
 
 def IfcAirTerminalBoxType(*args, **kwargs):
-    return temp_file.create_entity('IfcAirTerminalBoxType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalBoxType', 'IFC4', *args, **kwargs)
 
 def IfcAirTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcAirTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcAirToAirHeatRecovery(*args, **kwargs):
-    return temp_file.create_entity('IfcAirToAirHeatRecovery', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirToAirHeatRecovery', 'IFC4', *args, **kwargs)
 
 def IfcAirToAirHeatRecoveryType(*args, **kwargs):
-    return temp_file.create_entity('IfcAirToAirHeatRecoveryType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAirToAirHeatRecoveryType', 'IFC4', *args, **kwargs)
 
 def IfcAlarm(*args, **kwargs):
-    return temp_file.create_entity('IfcAlarm', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlarm', 'IFC4', *args, **kwargs)
 
 def IfcAlarmType(*args, **kwargs):
-    return temp_file.create_entity('IfcAlarmType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAlarmType', 'IFC4', *args, **kwargs)
 
 def IfcAnnotation(*args, **kwargs):
-    return temp_file.create_entity('IfcAnnotation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAnnotation', 'IFC4', *args, **kwargs)
 
 def IfcAnnotationFillArea(*args, **kwargs):
-    return temp_file.create_entity('IfcAnnotationFillArea', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAnnotationFillArea', 'IFC4', *args, **kwargs)
 
 def IfcApplication(*args, **kwargs):
-    return temp_file.create_entity('IfcApplication', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApplication', 'IFC4', *args, **kwargs)
 
 def IfcAppliedValue(*args, **kwargs):
-    return temp_file.create_entity('IfcAppliedValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAppliedValue', 'IFC4', *args, **kwargs)
 
 def IfcApproval(*args, **kwargs):
-    return temp_file.create_entity('IfcApproval', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApproval', 'IFC4', *args, **kwargs)
 
 def IfcApprovalRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcApprovalRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcApprovalRelationship', 'IFC4', *args, **kwargs)
 
 def IfcArbitraryClosedProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcArbitraryClosedProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryClosedProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcArbitraryOpenProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcArbitraryOpenProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryOpenProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcArbitraryProfileDefWithVoids(*args, **kwargs):
-    return temp_file.create_entity('IfcArbitraryProfileDefWithVoids', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcArbitraryProfileDefWithVoids', 'IFC4', *args, **kwargs)
 
 def IfcAsset(*args, **kwargs):
-    return temp_file.create_entity('IfcAsset', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAsset', 'IFC4', *args, **kwargs)
 
 def IfcAsymmetricIShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcAsymmetricIShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAsymmetricIShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcAudioVisualAppliance(*args, **kwargs):
-    return temp_file.create_entity('IfcAudioVisualAppliance', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAudioVisualAppliance', 'IFC4', *args, **kwargs)
 
 def IfcAudioVisualApplianceType(*args, **kwargs):
-    return temp_file.create_entity('IfcAudioVisualApplianceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAudioVisualApplianceType', 'IFC4', *args, **kwargs)
 
 def IfcAxis1Placement(*args, **kwargs):
-    return temp_file.create_entity('IfcAxis1Placement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis1Placement', 'IFC4', *args, **kwargs)
 
 def IfcAxis2Placement2D(*args, **kwargs):
-    return temp_file.create_entity('IfcAxis2Placement2D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis2Placement2D', 'IFC4', *args, **kwargs)
 
 def IfcAxis2Placement3D(*args, **kwargs):
-    return temp_file.create_entity('IfcAxis2Placement3D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcAxis2Placement3D', 'IFC4', *args, **kwargs)
 
 def IfcBSplineCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcBSplineCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineCurve', 'IFC4', *args, **kwargs)
 
 def IfcBSplineCurveWithKnots(*args, **kwargs):
-    return temp_file.create_entity('IfcBSplineCurveWithKnots', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineCurveWithKnots', 'IFC4', *args, **kwargs)
 
 def IfcBSplineSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcBSplineSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineSurface', 'IFC4', *args, **kwargs)
 
 def IfcBSplineSurfaceWithKnots(*args, **kwargs):
-    return temp_file.create_entity('IfcBSplineSurfaceWithKnots', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBSplineSurfaceWithKnots', 'IFC4', *args, **kwargs)
 
 def IfcBeam(*args, **kwargs):
-    return temp_file.create_entity('IfcBeam', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBeam', 'IFC4', *args, **kwargs)
 
 def IfcBeamStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcBeamStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBeamStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcBeamType(*args, **kwargs):
-    return temp_file.create_entity('IfcBeamType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBeamType', 'IFC4', *args, **kwargs)
 
 def IfcBlobTexture(*args, **kwargs):
-    return temp_file.create_entity('IfcBlobTexture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBlobTexture', 'IFC4', *args, **kwargs)
 
 def IfcBlock(*args, **kwargs):
-    return temp_file.create_entity('IfcBlock', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBlock', 'IFC4', *args, **kwargs)
 
 def IfcBoiler(*args, **kwargs):
-    return temp_file.create_entity('IfcBoiler', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoiler', 'IFC4', *args, **kwargs)
 
 def IfcBoilerType(*args, **kwargs):
-    return temp_file.create_entity('IfcBoilerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoilerType', 'IFC4', *args, **kwargs)
 
 def IfcBooleanClippingResult(*args, **kwargs):
-    return temp_file.create_entity('IfcBooleanClippingResult', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBooleanClippingResult', 'IFC4', *args, **kwargs)
 
 def IfcBooleanResult(*args, **kwargs):
-    return temp_file.create_entity('IfcBooleanResult', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBooleanResult', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryCondition', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryCurve', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryEdgeCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryEdgeCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryEdgeCondition', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryFaceCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryFaceCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryFaceCondition', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryNodeCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryNodeCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryNodeCondition', 'IFC4', *args, **kwargs)
 
 def IfcBoundaryNodeConditionWarping(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundaryNodeConditionWarping', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundaryNodeConditionWarping', 'IFC4', *args, **kwargs)
 
 def IfcBoundedCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundedCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundedCurve', 'IFC4', *args, **kwargs)
 
 def IfcBoundedSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundedSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundedSurface', 'IFC4', *args, **kwargs)
 
 def IfcBoundingBox(*args, **kwargs):
-    return temp_file.create_entity('IfcBoundingBox', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoundingBox', 'IFC4', *args, **kwargs)
 
 def IfcBoxedHalfSpace(*args, **kwargs):
-    return temp_file.create_entity('IfcBoxedHalfSpace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBoxedHalfSpace', 'IFC4', *args, **kwargs)
 
 def IfcBuilding(*args, **kwargs):
-    return temp_file.create_entity('IfcBuilding', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuilding', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElement(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElement', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElementPart(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElementPart', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementPart', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElementPartType(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElementPartType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementPartType', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElementProxy(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElementProxy', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementProxy', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElementProxyType(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElementProxyType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementProxyType', 'IFC4', *args, **kwargs)
 
 def IfcBuildingElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingElementType', 'IFC4', *args, **kwargs)
 
 def IfcBuildingStorey(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingStorey', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingStorey', 'IFC4', *args, **kwargs)
 
 def IfcBuildingSystem(*args, **kwargs):
-    return temp_file.create_entity('IfcBuildingSystem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBuildingSystem', 'IFC4', *args, **kwargs)
 
 def IfcBurner(*args, **kwargs):
-    return temp_file.create_entity('IfcBurner', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBurner', 'IFC4', *args, **kwargs)
 
 def IfcBurnerType(*args, **kwargs):
-    return temp_file.create_entity('IfcBurnerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcBurnerType', 'IFC4', *args, **kwargs)
 
 def IfcCShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcCShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcCableCarrierFitting(*args, **kwargs):
-    return temp_file.create_entity('IfcCableCarrierFitting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierFitting', 'IFC4', *args, **kwargs)
 
 def IfcCableCarrierFittingType(*args, **kwargs):
-    return temp_file.create_entity('IfcCableCarrierFittingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierFittingType', 'IFC4', *args, **kwargs)
 
 def IfcCableCarrierSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcCableCarrierSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierSegment', 'IFC4', *args, **kwargs)
 
 def IfcCableCarrierSegmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcCableCarrierSegmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableCarrierSegmentType', 'IFC4', *args, **kwargs)
 
 def IfcCableFitting(*args, **kwargs):
-    return temp_file.create_entity('IfcCableFitting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableFitting', 'IFC4', *args, **kwargs)
 
 def IfcCableFittingType(*args, **kwargs):
-    return temp_file.create_entity('IfcCableFittingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableFittingType', 'IFC4', *args, **kwargs)
 
 def IfcCableSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcCableSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableSegment', 'IFC4', *args, **kwargs)
 
 def IfcCableSegmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcCableSegmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCableSegmentType', 'IFC4', *args, **kwargs)
 
 def IfcCartesianPoint(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianPoint', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPoint', 'IFC4', *args, **kwargs)
 
 def IfcCartesianPointList(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianPointList', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList', 'IFC4', *args, **kwargs)
 
 def IfcCartesianPointList2D(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianPointList2D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList2D', 'IFC4', *args, **kwargs)
 
 def IfcCartesianPointList3D(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianPointList3D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianPointList3D', 'IFC4', *args, **kwargs)
 
 def IfcCartesianTransformationOperator(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianTransformationOperator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator', 'IFC4', *args, **kwargs)
 
 def IfcCartesianTransformationOperator2D(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianTransformationOperator2D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2D', 'IFC4', *args, **kwargs)
 
 def IfcCartesianTransformationOperator2DnonUniform(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianTransformationOperator2DnonUniform', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator2DnonUniform', 'IFC4', *args, **kwargs)
 
 def IfcCartesianTransformationOperator3D(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianTransformationOperator3D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3D', 'IFC4', *args, **kwargs)
 
 def IfcCartesianTransformationOperator3DnonUniform(*args, **kwargs):
-    return temp_file.create_entity('IfcCartesianTransformationOperator3DnonUniform', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCartesianTransformationOperator3DnonUniform', 'IFC4', *args, **kwargs)
 
 def IfcCenterLineProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcCenterLineProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCenterLineProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcChiller(*args, **kwargs):
-    return temp_file.create_entity('IfcChiller', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChiller', 'IFC4', *args, **kwargs)
 
 def IfcChillerType(*args, **kwargs):
-    return temp_file.create_entity('IfcChillerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChillerType', 'IFC4', *args, **kwargs)
 
 def IfcChimney(*args, **kwargs):
-    return temp_file.create_entity('IfcChimney', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChimney', 'IFC4', *args, **kwargs)
 
 def IfcChimneyType(*args, **kwargs):
-    return temp_file.create_entity('IfcChimneyType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcChimneyType', 'IFC4', *args, **kwargs)
 
 def IfcCircle(*args, **kwargs):
-    return temp_file.create_entity('IfcCircle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircle', 'IFC4', *args, **kwargs)
 
 def IfcCircleHollowProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcCircleHollowProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircleHollowProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcCircleProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcCircleProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCircleProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcCivilElement(*args, **kwargs):
-    return temp_file.create_entity('IfcCivilElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCivilElement', 'IFC4', *args, **kwargs)
 
 def IfcCivilElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcCivilElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCivilElementType', 'IFC4', *args, **kwargs)
 
 def IfcClassification(*args, **kwargs):
-    return temp_file.create_entity('IfcClassification', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClassification', 'IFC4', *args, **kwargs)
 
 def IfcClassificationReference(*args, **kwargs):
-    return temp_file.create_entity('IfcClassificationReference', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClassificationReference', 'IFC4', *args, **kwargs)
 
 def IfcClosedShell(*args, **kwargs):
-    return temp_file.create_entity('IfcClosedShell', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcClosedShell', 'IFC4', *args, **kwargs)
 
 def IfcCoil(*args, **kwargs):
-    return temp_file.create_entity('IfcCoil', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoil', 'IFC4', *args, **kwargs)
 
 def IfcCoilType(*args, **kwargs):
-    return temp_file.create_entity('IfcCoilType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoilType', 'IFC4', *args, **kwargs)
 
 def IfcColourRgb(*args, **kwargs):
-    return temp_file.create_entity('IfcColourRgb', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourRgb', 'IFC4', *args, **kwargs)
 
 def IfcColourRgbList(*args, **kwargs):
-    return temp_file.create_entity('IfcColourRgbList', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourRgbList', 'IFC4', *args, **kwargs)
 
 def IfcColourSpecification(*args, **kwargs):
-    return temp_file.create_entity('IfcColourSpecification', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColourSpecification', 'IFC4', *args, **kwargs)
 
 def IfcColumn(*args, **kwargs):
-    return temp_file.create_entity('IfcColumn', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColumn', 'IFC4', *args, **kwargs)
 
 def IfcColumnStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcColumnStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColumnStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcColumnType(*args, **kwargs):
-    return temp_file.create_entity('IfcColumnType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcColumnType', 'IFC4', *args, **kwargs)
 
 def IfcCommunicationsAppliance(*args, **kwargs):
-    return temp_file.create_entity('IfcCommunicationsAppliance', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCommunicationsAppliance', 'IFC4', *args, **kwargs)
 
 def IfcCommunicationsApplianceType(*args, **kwargs):
-    return temp_file.create_entity('IfcCommunicationsApplianceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCommunicationsApplianceType', 'IFC4', *args, **kwargs)
 
 def IfcComplexProperty(*args, **kwargs):
-    return temp_file.create_entity('IfcComplexProperty', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcComplexProperty', 'IFC4', *args, **kwargs)
 
 def IfcComplexPropertyTemplate(*args, **kwargs):
-    return temp_file.create_entity('IfcComplexPropertyTemplate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcComplexPropertyTemplate', 'IFC4', *args, **kwargs)
 
 def IfcCompositeCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcCompositeCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurve', 'IFC4', *args, **kwargs)
 
 def IfcCompositeCurveOnSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcCompositeCurveOnSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurveOnSurface', 'IFC4', *args, **kwargs)
 
 def IfcCompositeCurveSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcCompositeCurveSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeCurveSegment', 'IFC4', *args, **kwargs)
 
 def IfcCompositeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcCompositeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompositeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcCompressor(*args, **kwargs):
-    return temp_file.create_entity('IfcCompressor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompressor', 'IFC4', *args, **kwargs)
 
 def IfcCompressorType(*args, **kwargs):
-    return temp_file.create_entity('IfcCompressorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCompressorType', 'IFC4', *args, **kwargs)
 
 def IfcCondenser(*args, **kwargs):
-    return temp_file.create_entity('IfcCondenser', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCondenser', 'IFC4', *args, **kwargs)
 
 def IfcCondenserType(*args, **kwargs):
-    return temp_file.create_entity('IfcCondenserType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCondenserType', 'IFC4', *args, **kwargs)
 
 def IfcConic(*args, **kwargs):
-    return temp_file.create_entity('IfcConic', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConic', 'IFC4', *args, **kwargs)
 
 def IfcConnectedFaceSet(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectedFaceSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectedFaceSet', 'IFC4', *args, **kwargs)
 
 def IfcConnectionCurveGeometry(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionCurveGeometry', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionCurveGeometry', 'IFC4', *args, **kwargs)
 
 def IfcConnectionGeometry(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionGeometry', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionGeometry', 'IFC4', *args, **kwargs)
 
 def IfcConnectionPointEccentricity(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionPointEccentricity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionPointEccentricity', 'IFC4', *args, **kwargs)
 
 def IfcConnectionPointGeometry(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionPointGeometry', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionPointGeometry', 'IFC4', *args, **kwargs)
 
 def IfcConnectionSurfaceGeometry(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionSurfaceGeometry', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionSurfaceGeometry', 'IFC4', *args, **kwargs)
 
 def IfcConnectionVolumeGeometry(*args, **kwargs):
-    return temp_file.create_entity('IfcConnectionVolumeGeometry', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConnectionVolumeGeometry', 'IFC4', *args, **kwargs)
 
 def IfcConstraint(*args, **kwargs):
-    return temp_file.create_entity('IfcConstraint', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstraint', 'IFC4', *args, **kwargs)
 
 def IfcConstructionEquipmentResource(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionEquipmentResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionEquipmentResource', 'IFC4', *args, **kwargs)
 
 def IfcConstructionEquipmentResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionEquipmentResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionEquipmentResourceType', 'IFC4', *args, **kwargs)
 
 def IfcConstructionMaterialResource(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionMaterialResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionMaterialResource', 'IFC4', *args, **kwargs)
 
 def IfcConstructionMaterialResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionMaterialResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionMaterialResourceType', 'IFC4', *args, **kwargs)
 
 def IfcConstructionProductResource(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionProductResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionProductResource', 'IFC4', *args, **kwargs)
 
 def IfcConstructionProductResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionProductResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionProductResourceType', 'IFC4', *args, **kwargs)
 
 def IfcConstructionResource(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionResource', 'IFC4', *args, **kwargs)
 
 def IfcConstructionResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcConstructionResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConstructionResourceType', 'IFC4', *args, **kwargs)
 
 def IfcContext(*args, **kwargs):
-    return temp_file.create_entity('IfcContext', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcContext', 'IFC4', *args, **kwargs)
 
 def IfcContextDependentUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcContextDependentUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcContextDependentUnit', 'IFC4', *args, **kwargs)
 
 def IfcControl(*args, **kwargs):
-    return temp_file.create_entity('IfcControl', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcControl', 'IFC4', *args, **kwargs)
 
 def IfcController(*args, **kwargs):
-    return temp_file.create_entity('IfcController', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcController', 'IFC4', *args, **kwargs)
 
 def IfcControllerType(*args, **kwargs):
-    return temp_file.create_entity('IfcControllerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcControllerType', 'IFC4', *args, **kwargs)
 
 def IfcConversionBasedUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcConversionBasedUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConversionBasedUnit', 'IFC4', *args, **kwargs)
 
 def IfcConversionBasedUnitWithOffset(*args, **kwargs):
-    return temp_file.create_entity('IfcConversionBasedUnitWithOffset', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcConversionBasedUnitWithOffset', 'IFC4', *args, **kwargs)
 
 def IfcCooledBeam(*args, **kwargs):
-    return temp_file.create_entity('IfcCooledBeam', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCooledBeam', 'IFC4', *args, **kwargs)
 
 def IfcCooledBeamType(*args, **kwargs):
-    return temp_file.create_entity('IfcCooledBeamType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCooledBeamType', 'IFC4', *args, **kwargs)
 
 def IfcCoolingTower(*args, **kwargs):
-    return temp_file.create_entity('IfcCoolingTower', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoolingTower', 'IFC4', *args, **kwargs)
 
 def IfcCoolingTowerType(*args, **kwargs):
-    return temp_file.create_entity('IfcCoolingTowerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoolingTowerType', 'IFC4', *args, **kwargs)
 
 def IfcCoordinateOperation(*args, **kwargs):
-    return temp_file.create_entity('IfcCoordinateOperation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoordinateOperation', 'IFC4', *args, **kwargs)
 
 def IfcCoordinateReferenceSystem(*args, **kwargs):
-    return temp_file.create_entity('IfcCoordinateReferenceSystem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoordinateReferenceSystem', 'IFC4', *args, **kwargs)
 
 def IfcCostItem(*args, **kwargs):
-    return temp_file.create_entity('IfcCostItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostItem', 'IFC4', *args, **kwargs)
 
 def IfcCostSchedule(*args, **kwargs):
-    return temp_file.create_entity('IfcCostSchedule', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostSchedule', 'IFC4', *args, **kwargs)
 
 def IfcCostValue(*args, **kwargs):
-    return temp_file.create_entity('IfcCostValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCostValue', 'IFC4', *args, **kwargs)
 
 def IfcCovering(*args, **kwargs):
-    return temp_file.create_entity('IfcCovering', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCovering', 'IFC4', *args, **kwargs)
 
 def IfcCoveringType(*args, **kwargs):
-    return temp_file.create_entity('IfcCoveringType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCoveringType', 'IFC4', *args, **kwargs)
 
 def IfcCrewResource(*args, **kwargs):
-    return temp_file.create_entity('IfcCrewResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCrewResource', 'IFC4', *args, **kwargs)
 
 def IfcCrewResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcCrewResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCrewResourceType', 'IFC4', *args, **kwargs)
 
 def IfcCsgPrimitive3D(*args, **kwargs):
-    return temp_file.create_entity('IfcCsgPrimitive3D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCsgPrimitive3D', 'IFC4', *args, **kwargs)
 
 def IfcCsgSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcCsgSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCsgSolid', 'IFC4', *args, **kwargs)
 
 def IfcCurrencyRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcCurrencyRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurrencyRelationship', 'IFC4', *args, **kwargs)
 
 def IfcCurtainWall(*args, **kwargs):
-    return temp_file.create_entity('IfcCurtainWall', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurtainWall', 'IFC4', *args, **kwargs)
 
 def IfcCurtainWallType(*args, **kwargs):
-    return temp_file.create_entity('IfcCurtainWallType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurtainWallType', 'IFC4', *args, **kwargs)
 
 def IfcCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurve', 'IFC4', *args, **kwargs)
 
 def IfcCurveBoundedPlane(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveBoundedPlane', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveBoundedPlane', 'IFC4', *args, **kwargs)
 
 def IfcCurveBoundedSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveBoundedSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveBoundedSurface', 'IFC4', *args, **kwargs)
 
 def IfcCurveStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyle', 'IFC4', *args, **kwargs)
 
 def IfcCurveStyleFont(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveStyleFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFont', 'IFC4', *args, **kwargs)
 
 def IfcCurveStyleFontAndScaling(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveStyleFontAndScaling', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFontAndScaling', 'IFC4', *args, **kwargs)
 
 def IfcCurveStyleFontPattern(*args, **kwargs):
-    return temp_file.create_entity('IfcCurveStyleFontPattern', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCurveStyleFontPattern', 'IFC4', *args, **kwargs)
 
 def IfcCylindricalSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcCylindricalSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcCylindricalSurface', 'IFC4', *args, **kwargs)
 
 def IfcDamper(*args, **kwargs):
-    return temp_file.create_entity('IfcDamper', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDamper', 'IFC4', *args, **kwargs)
 
 def IfcDamperType(*args, **kwargs):
-    return temp_file.create_entity('IfcDamperType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDamperType', 'IFC4', *args, **kwargs)
 
 def IfcDerivedProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcDerivedProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcDerivedUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcDerivedUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedUnit', 'IFC4', *args, **kwargs)
 
 def IfcDerivedUnitElement(*args, **kwargs):
-    return temp_file.create_entity('IfcDerivedUnitElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDerivedUnitElement', 'IFC4', *args, **kwargs)
 
 def IfcDimensionalExponents(*args, **kwargs):
-    return temp_file.create_entity('IfcDimensionalExponents', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDimensionalExponents', 'IFC4', *args, **kwargs)
 
 def IfcDirection(*args, **kwargs):
-    return temp_file.create_entity('IfcDirection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDirection', 'IFC4', *args, **kwargs)
 
 def IfcDiscreteAccessory(*args, **kwargs):
-    return temp_file.create_entity('IfcDiscreteAccessory', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDiscreteAccessory', 'IFC4', *args, **kwargs)
 
 def IfcDiscreteAccessoryType(*args, **kwargs):
-    return temp_file.create_entity('IfcDiscreteAccessoryType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDiscreteAccessoryType', 'IFC4', *args, **kwargs)
 
 def IfcDistributionChamberElement(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionChamberElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionChamberElement', 'IFC4', *args, **kwargs)
 
 def IfcDistributionChamberElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionChamberElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionChamberElementType', 'IFC4', *args, **kwargs)
 
 def IfcDistributionCircuit(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionCircuit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionCircuit', 'IFC4', *args, **kwargs)
 
 def IfcDistributionControlElement(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionControlElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionControlElement', 'IFC4', *args, **kwargs)
 
 def IfcDistributionControlElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionControlElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionControlElementType', 'IFC4', *args, **kwargs)
 
 def IfcDistributionElement(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionElement', 'IFC4', *args, **kwargs)
 
 def IfcDistributionElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionElementType', 'IFC4', *args, **kwargs)
 
 def IfcDistributionFlowElement(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionFlowElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionFlowElement', 'IFC4', *args, **kwargs)
 
 def IfcDistributionFlowElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionFlowElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionFlowElementType', 'IFC4', *args, **kwargs)
 
 def IfcDistributionPort(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionPort', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionPort', 'IFC4', *args, **kwargs)
 
 def IfcDistributionSystem(*args, **kwargs):
-    return temp_file.create_entity('IfcDistributionSystem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDistributionSystem', 'IFC4', *args, **kwargs)
 
 def IfcDocumentInformation(*args, **kwargs):
-    return temp_file.create_entity('IfcDocumentInformation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentInformation', 'IFC4', *args, **kwargs)
 
 def IfcDocumentInformationRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcDocumentInformationRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentInformationRelationship', 'IFC4', *args, **kwargs)
 
 def IfcDocumentReference(*args, **kwargs):
-    return temp_file.create_entity('IfcDocumentReference', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDocumentReference', 'IFC4', *args, **kwargs)
 
 def IfcDoor(*args, **kwargs):
-    return temp_file.create_entity('IfcDoor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoor', 'IFC4', *args, **kwargs)
 
 def IfcDoorLiningProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcDoorLiningProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorLiningProperties', 'IFC4', *args, **kwargs)
 
 def IfcDoorPanelProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcDoorPanelProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorPanelProperties', 'IFC4', *args, **kwargs)
 
 def IfcDoorStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcDoorStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcDoorStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcDoorStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorStyle', 'IFC4', *args, **kwargs)
 
 def IfcDoorType(*args, **kwargs):
-    return temp_file.create_entity('IfcDoorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDoorType', 'IFC4', *args, **kwargs)
 
 def IfcDraughtingPreDefinedColour(*args, **kwargs):
-    return temp_file.create_entity('IfcDraughtingPreDefinedColour', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDraughtingPreDefinedColour', 'IFC4', *args, **kwargs)
 
 def IfcDraughtingPreDefinedCurveFont(*args, **kwargs):
-    return temp_file.create_entity('IfcDraughtingPreDefinedCurveFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDraughtingPreDefinedCurveFont', 'IFC4', *args, **kwargs)
 
 def IfcDuctFitting(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctFitting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctFitting', 'IFC4', *args, **kwargs)
 
 def IfcDuctFittingType(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctFittingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctFittingType', 'IFC4', *args, **kwargs)
 
 def IfcDuctSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSegment', 'IFC4', *args, **kwargs)
 
 def IfcDuctSegmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctSegmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSegmentType', 'IFC4', *args, **kwargs)
 
 def IfcDuctSilencer(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctSilencer', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSilencer', 'IFC4', *args, **kwargs)
 
 def IfcDuctSilencerType(*args, **kwargs):
-    return temp_file.create_entity('IfcDuctSilencerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcDuctSilencerType', 'IFC4', *args, **kwargs)
 
 def IfcEdge(*args, **kwargs):
-    return temp_file.create_entity('IfcEdge', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdge', 'IFC4', *args, **kwargs)
 
 def IfcEdgeCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcEdgeCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdgeCurve', 'IFC4', *args, **kwargs)
 
 def IfcEdgeLoop(*args, **kwargs):
-    return temp_file.create_entity('IfcEdgeLoop', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEdgeLoop', 'IFC4', *args, **kwargs)
 
 def IfcElectricAppliance(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricAppliance', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricAppliance', 'IFC4', *args, **kwargs)
 
 def IfcElectricApplianceType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricApplianceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricApplianceType', 'IFC4', *args, **kwargs)
 
 def IfcElectricDistributionBoard(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricDistributionBoard', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricDistributionBoard', 'IFC4', *args, **kwargs)
 
 def IfcElectricDistributionBoardType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricDistributionBoardType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricDistributionBoardType', 'IFC4', *args, **kwargs)
 
 def IfcElectricFlowStorageDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricFlowStorageDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowStorageDevice', 'IFC4', *args, **kwargs)
 
 def IfcElectricFlowStorageDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricFlowStorageDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricFlowStorageDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcElectricGenerator(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricGenerator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricGenerator', 'IFC4', *args, **kwargs)
 
 def IfcElectricGeneratorType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricGeneratorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricGeneratorType', 'IFC4', *args, **kwargs)
 
 def IfcElectricMotor(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricMotor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricMotor', 'IFC4', *args, **kwargs)
 
 def IfcElectricMotorType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricMotorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricMotorType', 'IFC4', *args, **kwargs)
 
 def IfcElectricTimeControl(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricTimeControl', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricTimeControl', 'IFC4', *args, **kwargs)
 
 def IfcElectricTimeControlType(*args, **kwargs):
-    return temp_file.create_entity('IfcElectricTimeControlType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElectricTimeControlType', 'IFC4', *args, **kwargs)
 
 def IfcElement(*args, **kwargs):
-    return temp_file.create_entity('IfcElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElement', 'IFC4', *args, **kwargs)
 
 def IfcElementAssembly(*args, **kwargs):
-    return temp_file.create_entity('IfcElementAssembly', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementAssembly', 'IFC4', *args, **kwargs)
 
 def IfcElementAssemblyType(*args, **kwargs):
-    return temp_file.create_entity('IfcElementAssemblyType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementAssemblyType', 'IFC4', *args, **kwargs)
 
 def IfcElementComponent(*args, **kwargs):
-    return temp_file.create_entity('IfcElementComponent', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementComponent', 'IFC4', *args, **kwargs)
 
 def IfcElementComponentType(*args, **kwargs):
-    return temp_file.create_entity('IfcElementComponentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementComponentType', 'IFC4', *args, **kwargs)
 
 def IfcElementQuantity(*args, **kwargs):
-    return temp_file.create_entity('IfcElementQuantity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementQuantity', 'IFC4', *args, **kwargs)
 
 def IfcElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementType', 'IFC4', *args, **kwargs)
 
 def IfcElementarySurface(*args, **kwargs):
-    return temp_file.create_entity('IfcElementarySurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcElementarySurface', 'IFC4', *args, **kwargs)
 
 def IfcEllipse(*args, **kwargs):
-    return temp_file.create_entity('IfcEllipse', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEllipse', 'IFC4', *args, **kwargs)
 
 def IfcEllipseProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcEllipseProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEllipseProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcEnergyConversionDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcEnergyConversionDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEnergyConversionDevice', 'IFC4', *args, **kwargs)
 
 def IfcEnergyConversionDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcEnergyConversionDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEnergyConversionDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcEngine(*args, **kwargs):
-    return temp_file.create_entity('IfcEngine', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEngine', 'IFC4', *args, **kwargs)
 
 def IfcEngineType(*args, **kwargs):
-    return temp_file.create_entity('IfcEngineType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEngineType', 'IFC4', *args, **kwargs)
 
 def IfcEvaporativeCooler(*args, **kwargs):
-    return temp_file.create_entity('IfcEvaporativeCooler', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporativeCooler', 'IFC4', *args, **kwargs)
 
 def IfcEvaporativeCoolerType(*args, **kwargs):
-    return temp_file.create_entity('IfcEvaporativeCoolerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporativeCoolerType', 'IFC4', *args, **kwargs)
 
 def IfcEvaporator(*args, **kwargs):
-    return temp_file.create_entity('IfcEvaporator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporator', 'IFC4', *args, **kwargs)
 
 def IfcEvaporatorType(*args, **kwargs):
-    return temp_file.create_entity('IfcEvaporatorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvaporatorType', 'IFC4', *args, **kwargs)
 
 def IfcEvent(*args, **kwargs):
-    return temp_file.create_entity('IfcEvent', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEvent', 'IFC4', *args, **kwargs)
 
 def IfcEventTime(*args, **kwargs):
-    return temp_file.create_entity('IfcEventTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEventTime', 'IFC4', *args, **kwargs)
 
 def IfcEventType(*args, **kwargs):
-    return temp_file.create_entity('IfcEventType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcEventType', 'IFC4', *args, **kwargs)
 
 def IfcExtendedProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcExtendedProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtendedProperties', 'IFC4', *args, **kwargs)
 
 def IfcExternalInformation(*args, **kwargs):
-    return temp_file.create_entity('IfcExternalInformation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalInformation', 'IFC4', *args, **kwargs)
 
 def IfcExternalReference(*args, **kwargs):
-    return temp_file.create_entity('IfcExternalReference', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalReference', 'IFC4', *args, **kwargs)
 
 def IfcExternalReferenceRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcExternalReferenceRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalReferenceRelationship', 'IFC4', *args, **kwargs)
 
 def IfcExternalSpatialElement(*args, **kwargs):
-    return temp_file.create_entity('IfcExternalSpatialElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalSpatialElement', 'IFC4', *args, **kwargs)
 
 def IfcExternalSpatialStructureElement(*args, **kwargs):
-    return temp_file.create_entity('IfcExternalSpatialStructureElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternalSpatialStructureElement', 'IFC4', *args, **kwargs)
 
 def IfcExternallyDefinedHatchStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcExternallyDefinedHatchStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedHatchStyle', 'IFC4', *args, **kwargs)
 
 def IfcExternallyDefinedSurfaceStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcExternallyDefinedSurfaceStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedSurfaceStyle', 'IFC4', *args, **kwargs)
 
 def IfcExternallyDefinedTextFont(*args, **kwargs):
-    return temp_file.create_entity('IfcExternallyDefinedTextFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExternallyDefinedTextFont', 'IFC4', *args, **kwargs)
 
 def IfcExtrudedAreaSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcExtrudedAreaSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtrudedAreaSolid', 'IFC4', *args, **kwargs)
 
 def IfcExtrudedAreaSolidTapered(*args, **kwargs):
-    return temp_file.create_entity('IfcExtrudedAreaSolidTapered', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcExtrudedAreaSolidTapered', 'IFC4', *args, **kwargs)
 
 def IfcFace(*args, **kwargs):
-    return temp_file.create_entity('IfcFace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFace', 'IFC4', *args, **kwargs)
 
 def IfcFaceBasedSurfaceModel(*args, **kwargs):
-    return temp_file.create_entity('IfcFaceBasedSurfaceModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceBasedSurfaceModel', 'IFC4', *args, **kwargs)
 
 def IfcFaceBound(*args, **kwargs):
-    return temp_file.create_entity('IfcFaceBound', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceBound', 'IFC4', *args, **kwargs)
 
 def IfcFaceOuterBound(*args, **kwargs):
-    return temp_file.create_entity('IfcFaceOuterBound', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceOuterBound', 'IFC4', *args, **kwargs)
 
 def IfcFaceSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcFaceSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFaceSurface', 'IFC4', *args, **kwargs)
 
 def IfcFacetedBrep(*args, **kwargs):
-    return temp_file.create_entity('IfcFacetedBrep', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacetedBrep', 'IFC4', *args, **kwargs)
 
 def IfcFacetedBrepWithVoids(*args, **kwargs):
-    return temp_file.create_entity('IfcFacetedBrepWithVoids', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFacetedBrepWithVoids', 'IFC4', *args, **kwargs)
 
 def IfcFailureConnectionCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcFailureConnectionCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFailureConnectionCondition', 'IFC4', *args, **kwargs)
 
 def IfcFan(*args, **kwargs):
-    return temp_file.create_entity('IfcFan', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFan', 'IFC4', *args, **kwargs)
 
 def IfcFanType(*args, **kwargs):
-    return temp_file.create_entity('IfcFanType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFanType', 'IFC4', *args, **kwargs)
 
 def IfcFastener(*args, **kwargs):
-    return temp_file.create_entity('IfcFastener', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFastener', 'IFC4', *args, **kwargs)
 
 def IfcFastenerType(*args, **kwargs):
-    return temp_file.create_entity('IfcFastenerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFastenerType', 'IFC4', *args, **kwargs)
 
 def IfcFeatureElement(*args, **kwargs):
-    return temp_file.create_entity('IfcFeatureElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElement', 'IFC4', *args, **kwargs)
 
 def IfcFeatureElementAddition(*args, **kwargs):
-    return temp_file.create_entity('IfcFeatureElementAddition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElementAddition', 'IFC4', *args, **kwargs)
 
 def IfcFeatureElementSubtraction(*args, **kwargs):
-    return temp_file.create_entity('IfcFeatureElementSubtraction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFeatureElementSubtraction', 'IFC4', *args, **kwargs)
 
 def IfcFillAreaStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcFillAreaStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyle', 'IFC4', *args, **kwargs)
 
 def IfcFillAreaStyleHatching(*args, **kwargs):
-    return temp_file.create_entity('IfcFillAreaStyleHatching', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyleHatching', 'IFC4', *args, **kwargs)
 
 def IfcFillAreaStyleTiles(*args, **kwargs):
-    return temp_file.create_entity('IfcFillAreaStyleTiles', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFillAreaStyleTiles', 'IFC4', *args, **kwargs)
 
 def IfcFilter(*args, **kwargs):
-    return temp_file.create_entity('IfcFilter', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFilter', 'IFC4', *args, **kwargs)
 
 def IfcFilterType(*args, **kwargs):
-    return temp_file.create_entity('IfcFilterType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFilterType', 'IFC4', *args, **kwargs)
 
 def IfcFireSuppressionTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcFireSuppressionTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFireSuppressionTerminal', 'IFC4', *args, **kwargs)
 
 def IfcFireSuppressionTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcFireSuppressionTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFireSuppressionTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcFixedReferenceSweptAreaSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcFixedReferenceSweptAreaSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFixedReferenceSweptAreaSolid', 'IFC4', *args, **kwargs)
 
 def IfcFlowController(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowController', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowController', 'IFC4', *args, **kwargs)
 
 def IfcFlowControllerType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowControllerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowControllerType', 'IFC4', *args, **kwargs)
 
 def IfcFlowFitting(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowFitting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowFitting', 'IFC4', *args, **kwargs)
 
 def IfcFlowFittingType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowFittingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowFittingType', 'IFC4', *args, **kwargs)
 
 def IfcFlowInstrument(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowInstrument', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowInstrument', 'IFC4', *args, **kwargs)
 
 def IfcFlowInstrumentType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowInstrumentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowInstrumentType', 'IFC4', *args, **kwargs)
 
 def IfcFlowMeter(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowMeter', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMeter', 'IFC4', *args, **kwargs)
 
 def IfcFlowMeterType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowMeterType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMeterType', 'IFC4', *args, **kwargs)
 
 def IfcFlowMovingDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowMovingDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMovingDevice', 'IFC4', *args, **kwargs)
 
 def IfcFlowMovingDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowMovingDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowMovingDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcFlowSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowSegment', 'IFC4', *args, **kwargs)
 
 def IfcFlowSegmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowSegmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowSegmentType', 'IFC4', *args, **kwargs)
 
 def IfcFlowStorageDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowStorageDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowStorageDevice', 'IFC4', *args, **kwargs)
 
 def IfcFlowStorageDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowStorageDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowStorageDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcFlowTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTerminal', 'IFC4', *args, **kwargs)
 
 def IfcFlowTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcFlowTreatmentDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowTreatmentDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTreatmentDevice', 'IFC4', *args, **kwargs)
 
 def IfcFlowTreatmentDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcFlowTreatmentDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFlowTreatmentDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcFooting(*args, **kwargs):
-    return temp_file.create_entity('IfcFooting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFooting', 'IFC4', *args, **kwargs)
 
 def IfcFootingType(*args, **kwargs):
-    return temp_file.create_entity('IfcFootingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFootingType', 'IFC4', *args, **kwargs)
 
 def IfcFurnishingElement(*args, **kwargs):
-    return temp_file.create_entity('IfcFurnishingElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnishingElement', 'IFC4', *args, **kwargs)
 
 def IfcFurnishingElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcFurnishingElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnishingElementType', 'IFC4', *args, **kwargs)
 
 def IfcFurniture(*args, **kwargs):
-    return temp_file.create_entity('IfcFurniture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurniture', 'IFC4', *args, **kwargs)
 
 def IfcFurnitureType(*args, **kwargs):
-    return temp_file.create_entity('IfcFurnitureType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcFurnitureType', 'IFC4', *args, **kwargs)
 
 def IfcGeographicElement(*args, **kwargs):
-    return temp_file.create_entity('IfcGeographicElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeographicElement', 'IFC4', *args, **kwargs)
 
 def IfcGeographicElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcGeographicElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeographicElementType', 'IFC4', *args, **kwargs)
 
 def IfcGeometricCurveSet(*args, **kwargs):
-    return temp_file.create_entity('IfcGeometricCurveSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricCurveSet', 'IFC4', *args, **kwargs)
 
 def IfcGeometricRepresentationContext(*args, **kwargs):
-    return temp_file.create_entity('IfcGeometricRepresentationContext', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationContext', 'IFC4', *args, **kwargs)
 
 def IfcGeometricRepresentationItem(*args, **kwargs):
-    return temp_file.create_entity('IfcGeometricRepresentationItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationItem', 'IFC4', *args, **kwargs)
 
 def IfcGeometricRepresentationSubContext(*args, **kwargs):
-    return temp_file.create_entity('IfcGeometricRepresentationSubContext', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricRepresentationSubContext', 'IFC4', *args, **kwargs)
 
 def IfcGeometricSet(*args, **kwargs):
-    return temp_file.create_entity('IfcGeometricSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGeometricSet', 'IFC4', *args, **kwargs)
 
 def IfcGrid(*args, **kwargs):
-    return temp_file.create_entity('IfcGrid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGrid', 'IFC4', *args, **kwargs)
 
 def IfcGridAxis(*args, **kwargs):
-    return temp_file.create_entity('IfcGridAxis', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGridAxis', 'IFC4', *args, **kwargs)
 
 def IfcGridPlacement(*args, **kwargs):
-    return temp_file.create_entity('IfcGridPlacement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGridPlacement', 'IFC4', *args, **kwargs)
 
 def IfcGroup(*args, **kwargs):
-    return temp_file.create_entity('IfcGroup', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcGroup', 'IFC4', *args, **kwargs)
 
 def IfcHalfSpaceSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcHalfSpaceSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHalfSpaceSolid', 'IFC4', *args, **kwargs)
 
 def IfcHeatExchanger(*args, **kwargs):
-    return temp_file.create_entity('IfcHeatExchanger', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHeatExchanger', 'IFC4', *args, **kwargs)
 
 def IfcHeatExchangerType(*args, **kwargs):
-    return temp_file.create_entity('IfcHeatExchangerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHeatExchangerType', 'IFC4', *args, **kwargs)
 
 def IfcHumidifier(*args, **kwargs):
-    return temp_file.create_entity('IfcHumidifier', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHumidifier', 'IFC4', *args, **kwargs)
 
 def IfcHumidifierType(*args, **kwargs):
-    return temp_file.create_entity('IfcHumidifierType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcHumidifierType', 'IFC4', *args, **kwargs)
 
 def IfcIShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcIShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcImageTexture(*args, **kwargs):
-    return temp_file.create_entity('IfcImageTexture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcImageTexture', 'IFC4', *args, **kwargs)
 
 def IfcIndexedColourMap(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedColourMap', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedColourMap', 'IFC4', *args, **kwargs)
 
 def IfcIndexedPolyCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedPolyCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolyCurve', 'IFC4', *args, **kwargs)
 
 def IfcIndexedPolygonalFace(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedPolygonalFace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolygonalFace', 'IFC4', *args, **kwargs)
 
 def IfcIndexedPolygonalFaceWithVoids(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedPolygonalFaceWithVoids', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedPolygonalFaceWithVoids', 'IFC4', *args, **kwargs)
 
 def IfcIndexedTextureMap(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedTextureMap', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedTextureMap', 'IFC4', *args, **kwargs)
 
 def IfcIndexedTriangleTextureMap(*args, **kwargs):
-    return temp_file.create_entity('IfcIndexedTriangleTextureMap', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIndexedTriangleTextureMap', 'IFC4', *args, **kwargs)
 
 def IfcInterceptor(*args, **kwargs):
-    return temp_file.create_entity('IfcInterceptor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInterceptor', 'IFC4', *args, **kwargs)
 
 def IfcInterceptorType(*args, **kwargs):
-    return temp_file.create_entity('IfcInterceptorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInterceptorType', 'IFC4', *args, **kwargs)
 
 def IfcIntersectionCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcIntersectionCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIntersectionCurve', 'IFC4', *args, **kwargs)
 
 def IfcInventory(*args, **kwargs):
-    return temp_file.create_entity('IfcInventory', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcInventory', 'IFC4', *args, **kwargs)
 
 def IfcIrregularTimeSeries(*args, **kwargs):
-    return temp_file.create_entity('IfcIrregularTimeSeries', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIrregularTimeSeries', 'IFC4', *args, **kwargs)
 
 def IfcIrregularTimeSeriesValue(*args, **kwargs):
-    return temp_file.create_entity('IfcIrregularTimeSeriesValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcIrregularTimeSeriesValue', 'IFC4', *args, **kwargs)
 
 def IfcJunctionBox(*args, **kwargs):
-    return temp_file.create_entity('IfcJunctionBox', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcJunctionBox', 'IFC4', *args, **kwargs)
 
 def IfcJunctionBoxType(*args, **kwargs):
-    return temp_file.create_entity('IfcJunctionBoxType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcJunctionBoxType', 'IFC4', *args, **kwargs)
 
 def IfcLShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcLShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcLaborResource(*args, **kwargs):
-    return temp_file.create_entity('IfcLaborResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLaborResource', 'IFC4', *args, **kwargs)
 
 def IfcLaborResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcLaborResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLaborResourceType', 'IFC4', *args, **kwargs)
 
 def IfcLagTime(*args, **kwargs):
-    return temp_file.create_entity('IfcLagTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLagTime', 'IFC4', *args, **kwargs)
 
 def IfcLamp(*args, **kwargs):
-    return temp_file.create_entity('IfcLamp', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLamp', 'IFC4', *args, **kwargs)
 
 def IfcLampType(*args, **kwargs):
-    return temp_file.create_entity('IfcLampType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLampType', 'IFC4', *args, **kwargs)
 
 def IfcLibraryInformation(*args, **kwargs):
-    return temp_file.create_entity('IfcLibraryInformation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLibraryInformation', 'IFC4', *args, **kwargs)
 
 def IfcLibraryReference(*args, **kwargs):
-    return temp_file.create_entity('IfcLibraryReference', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLibraryReference', 'IFC4', *args, **kwargs)
 
 def IfcLightDistributionData(*args, **kwargs):
-    return temp_file.create_entity('IfcLightDistributionData', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightDistributionData', 'IFC4', *args, **kwargs)
 
 def IfcLightFixture(*args, **kwargs):
-    return temp_file.create_entity('IfcLightFixture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightFixture', 'IFC4', *args, **kwargs)
 
 def IfcLightFixtureType(*args, **kwargs):
-    return temp_file.create_entity('IfcLightFixtureType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightFixtureType', 'IFC4', *args, **kwargs)
 
 def IfcLightIntensityDistribution(*args, **kwargs):
-    return temp_file.create_entity('IfcLightIntensityDistribution', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightIntensityDistribution', 'IFC4', *args, **kwargs)
 
 def IfcLightSource(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSource', 'IFC4', *args, **kwargs)
 
 def IfcLightSourceAmbient(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSourceAmbient', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceAmbient', 'IFC4', *args, **kwargs)
 
 def IfcLightSourceDirectional(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSourceDirectional', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceDirectional', 'IFC4', *args, **kwargs)
 
 def IfcLightSourceGoniometric(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSourceGoniometric', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceGoniometric', 'IFC4', *args, **kwargs)
 
 def IfcLightSourcePositional(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSourcePositional', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourcePositional', 'IFC4', *args, **kwargs)
 
 def IfcLightSourceSpot(*args, **kwargs):
-    return temp_file.create_entity('IfcLightSourceSpot', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLightSourceSpot', 'IFC4', *args, **kwargs)
 
 def IfcLine(*args, **kwargs):
-    return temp_file.create_entity('IfcLine', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLine', 'IFC4', *args, **kwargs)
 
 def IfcLocalPlacement(*args, **kwargs):
-    return temp_file.create_entity('IfcLocalPlacement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLocalPlacement', 'IFC4', *args, **kwargs)
 
 def IfcLoop(*args, **kwargs):
-    return temp_file.create_entity('IfcLoop', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcLoop', 'IFC4', *args, **kwargs)
 
 def IfcManifoldSolidBrep(*args, **kwargs):
-    return temp_file.create_entity('IfcManifoldSolidBrep', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcManifoldSolidBrep', 'IFC4', *args, **kwargs)
 
 def IfcMapConversion(*args, **kwargs):
-    return temp_file.create_entity('IfcMapConversion', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMapConversion', 'IFC4', *args, **kwargs)
 
 def IfcMappedItem(*args, **kwargs):
-    return temp_file.create_entity('IfcMappedItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMappedItem', 'IFC4', *args, **kwargs)
 
 def IfcMaterial(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterial', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterial', 'IFC4', *args, **kwargs)
 
 def IfcMaterialClassificationRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialClassificationRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialClassificationRelationship', 'IFC4', *args, **kwargs)
 
 def IfcMaterialConstituent(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialConstituent', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialConstituent', 'IFC4', *args, **kwargs)
 
 def IfcMaterialConstituentSet(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialConstituentSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialConstituentSet', 'IFC4', *args, **kwargs)
 
 def IfcMaterialDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialDefinition', 'IFC4', *args, **kwargs)
 
 def IfcMaterialDefinitionRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialDefinitionRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialDefinitionRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcMaterialLayer(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialLayer', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayer', 'IFC4', *args, **kwargs)
 
 def IfcMaterialLayerSet(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialLayerSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerSet', 'IFC4', *args, **kwargs)
 
 def IfcMaterialLayerSetUsage(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialLayerSetUsage', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerSetUsage', 'IFC4', *args, **kwargs)
 
 def IfcMaterialLayerWithOffsets(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialLayerWithOffsets', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialLayerWithOffsets', 'IFC4', *args, **kwargs)
 
 def IfcMaterialList(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialList', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialList', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProfile(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProfile', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfile', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProfileSet(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProfileSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSet', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProfileSetUsage(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProfileSetUsage', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSetUsage', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProfileSetUsageTapering(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProfileSetUsageTapering', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileSetUsageTapering', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProfileWithOffsets(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProfileWithOffsets', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProfileWithOffsets', 'IFC4', *args, **kwargs)
 
 def IfcMaterialProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialProperties', 'IFC4', *args, **kwargs)
 
 def IfcMaterialRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialRelationship', 'IFC4', *args, **kwargs)
 
 def IfcMaterialUsageDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcMaterialUsageDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMaterialUsageDefinition', 'IFC4', *args, **kwargs)
 
 def IfcMeasureWithUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcMeasureWithUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMeasureWithUnit', 'IFC4', *args, **kwargs)
 
 def IfcMechanicalFastener(*args, **kwargs):
-    return temp_file.create_entity('IfcMechanicalFastener', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMechanicalFastener', 'IFC4', *args, **kwargs)
 
 def IfcMechanicalFastenerType(*args, **kwargs):
-    return temp_file.create_entity('IfcMechanicalFastenerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMechanicalFastenerType', 'IFC4', *args, **kwargs)
 
 def IfcMedicalDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcMedicalDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMedicalDevice', 'IFC4', *args, **kwargs)
 
 def IfcMedicalDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcMedicalDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMedicalDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcMember(*args, **kwargs):
-    return temp_file.create_entity('IfcMember', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMember', 'IFC4', *args, **kwargs)
 
 def IfcMemberStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcMemberStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMemberStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcMemberType(*args, **kwargs):
-    return temp_file.create_entity('IfcMemberType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMemberType', 'IFC4', *args, **kwargs)
 
 def IfcMetric(*args, **kwargs):
-    return temp_file.create_entity('IfcMetric', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMetric', 'IFC4', *args, **kwargs)
 
 def IfcMirroredProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcMirroredProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMirroredProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcMonetaryUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcMonetaryUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMonetaryUnit', 'IFC4', *args, **kwargs)
 
 def IfcMotorConnection(*args, **kwargs):
-    return temp_file.create_entity('IfcMotorConnection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMotorConnection', 'IFC4', *args, **kwargs)
 
 def IfcMotorConnectionType(*args, **kwargs):
-    return temp_file.create_entity('IfcMotorConnectionType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcMotorConnectionType', 'IFC4', *args, **kwargs)
 
 def IfcNamedUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcNamedUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcNamedUnit', 'IFC4', *args, **kwargs)
 
 def IfcObject(*args, **kwargs):
-    return temp_file.create_entity('IfcObject', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObject', 'IFC4', *args, **kwargs)
 
 def IfcObjectDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcObjectDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjectDefinition', 'IFC4', *args, **kwargs)
 
 def IfcObjectPlacement(*args, **kwargs):
-    return temp_file.create_entity('IfcObjectPlacement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjectPlacement', 'IFC4', *args, **kwargs)
 
 def IfcObjective(*args, **kwargs):
-    return temp_file.create_entity('IfcObjective', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcObjective', 'IFC4', *args, **kwargs)
 
 def IfcOccupant(*args, **kwargs):
-    return temp_file.create_entity('IfcOccupant', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOccupant', 'IFC4', *args, **kwargs)
 
 def IfcOffsetCurve2D(*args, **kwargs):
-    return temp_file.create_entity('IfcOffsetCurve2D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurve2D', 'IFC4', *args, **kwargs)
 
 def IfcOffsetCurve3D(*args, **kwargs):
-    return temp_file.create_entity('IfcOffsetCurve3D', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOffsetCurve3D', 'IFC4', *args, **kwargs)
 
 def IfcOpenShell(*args, **kwargs):
-    return temp_file.create_entity('IfcOpenShell', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpenShell', 'IFC4', *args, **kwargs)
 
 def IfcOpeningElement(*args, **kwargs):
-    return temp_file.create_entity('IfcOpeningElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpeningElement', 'IFC4', *args, **kwargs)
 
 def IfcOpeningStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcOpeningStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOpeningStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcOrganization(*args, **kwargs):
-    return temp_file.create_entity('IfcOrganization', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrganization', 'IFC4', *args, **kwargs)
 
 def IfcOrganizationRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcOrganizationRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrganizationRelationship', 'IFC4', *args, **kwargs)
 
 def IfcOrientedEdge(*args, **kwargs):
-    return temp_file.create_entity('IfcOrientedEdge', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOrientedEdge', 'IFC4', *args, **kwargs)
 
 def IfcOuterBoundaryCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcOuterBoundaryCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOuterBoundaryCurve', 'IFC4', *args, **kwargs)
 
 def IfcOutlet(*args, **kwargs):
-    return temp_file.create_entity('IfcOutlet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOutlet', 'IFC4', *args, **kwargs)
 
 def IfcOutletType(*args, **kwargs):
-    return temp_file.create_entity('IfcOutletType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOutletType', 'IFC4', *args, **kwargs)
 
 def IfcOwnerHistory(*args, **kwargs):
-    return temp_file.create_entity('IfcOwnerHistory', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcOwnerHistory', 'IFC4', *args, **kwargs)
 
 def IfcParameterizedProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcParameterizedProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcParameterizedProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcPath(*args, **kwargs):
-    return temp_file.create_entity('IfcPath', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPath', 'IFC4', *args, **kwargs)
 
 def IfcPcurve(*args, **kwargs):
-    return temp_file.create_entity('IfcPcurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPcurve', 'IFC4', *args, **kwargs)
 
 def IfcPerformanceHistory(*args, **kwargs):
-    return temp_file.create_entity('IfcPerformanceHistory', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPerformanceHistory', 'IFC4', *args, **kwargs)
 
 def IfcPermeableCoveringProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcPermeableCoveringProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPermeableCoveringProperties', 'IFC4', *args, **kwargs)
 
 def IfcPermit(*args, **kwargs):
-    return temp_file.create_entity('IfcPermit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPermit', 'IFC4', *args, **kwargs)
 
 def IfcPerson(*args, **kwargs):
-    return temp_file.create_entity('IfcPerson', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPerson', 'IFC4', *args, **kwargs)
 
 def IfcPersonAndOrganization(*args, **kwargs):
-    return temp_file.create_entity('IfcPersonAndOrganization', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPersonAndOrganization', 'IFC4', *args, **kwargs)
 
 def IfcPhysicalComplexQuantity(*args, **kwargs):
-    return temp_file.create_entity('IfcPhysicalComplexQuantity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalComplexQuantity', 'IFC4', *args, **kwargs)
 
 def IfcPhysicalQuantity(*args, **kwargs):
-    return temp_file.create_entity('IfcPhysicalQuantity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalQuantity', 'IFC4', *args, **kwargs)
 
 def IfcPhysicalSimpleQuantity(*args, **kwargs):
-    return temp_file.create_entity('IfcPhysicalSimpleQuantity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPhysicalSimpleQuantity', 'IFC4', *args, **kwargs)
 
 def IfcPile(*args, **kwargs):
-    return temp_file.create_entity('IfcPile', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPile', 'IFC4', *args, **kwargs)
 
 def IfcPileType(*args, **kwargs):
-    return temp_file.create_entity('IfcPileType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPileType', 'IFC4', *args, **kwargs)
 
 def IfcPipeFitting(*args, **kwargs):
-    return temp_file.create_entity('IfcPipeFitting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeFitting', 'IFC4', *args, **kwargs)
 
 def IfcPipeFittingType(*args, **kwargs):
-    return temp_file.create_entity('IfcPipeFittingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeFittingType', 'IFC4', *args, **kwargs)
 
 def IfcPipeSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcPipeSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeSegment', 'IFC4', *args, **kwargs)
 
 def IfcPipeSegmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcPipeSegmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPipeSegmentType', 'IFC4', *args, **kwargs)
 
 def IfcPixelTexture(*args, **kwargs):
-    return temp_file.create_entity('IfcPixelTexture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPixelTexture', 'IFC4', *args, **kwargs)
 
 def IfcPlacement(*args, **kwargs):
-    return temp_file.create_entity('IfcPlacement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlacement', 'IFC4', *args, **kwargs)
 
 def IfcPlanarBox(*args, **kwargs):
-    return temp_file.create_entity('IfcPlanarBox', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlanarBox', 'IFC4', *args, **kwargs)
 
 def IfcPlanarExtent(*args, **kwargs):
-    return temp_file.create_entity('IfcPlanarExtent', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlanarExtent', 'IFC4', *args, **kwargs)
 
 def IfcPlane(*args, **kwargs):
-    return temp_file.create_entity('IfcPlane', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlane', 'IFC4', *args, **kwargs)
 
 def IfcPlate(*args, **kwargs):
-    return temp_file.create_entity('IfcPlate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlate', 'IFC4', *args, **kwargs)
 
 def IfcPlateStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcPlateStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlateStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcPlateType(*args, **kwargs):
-    return temp_file.create_entity('IfcPlateType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPlateType', 'IFC4', *args, **kwargs)
 
 def IfcPoint(*args, **kwargs):
-    return temp_file.create_entity('IfcPoint', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPoint', 'IFC4', *args, **kwargs)
 
 def IfcPointOnCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcPointOnCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPointOnCurve', 'IFC4', *args, **kwargs)
 
 def IfcPointOnSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcPointOnSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPointOnSurface', 'IFC4', *args, **kwargs)
 
 def IfcPolyLoop(*args, **kwargs):
-    return temp_file.create_entity('IfcPolyLoop', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolyLoop', 'IFC4', *args, **kwargs)
 
 def IfcPolygonalBoundedHalfSpace(*args, **kwargs):
-    return temp_file.create_entity('IfcPolygonalBoundedHalfSpace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolygonalBoundedHalfSpace', 'IFC4', *args, **kwargs)
 
 def IfcPolygonalFaceSet(*args, **kwargs):
-    return temp_file.create_entity('IfcPolygonalFaceSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolygonalFaceSet', 'IFC4', *args, **kwargs)
 
 def IfcPolyline(*args, **kwargs):
-    return temp_file.create_entity('IfcPolyline', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPolyline', 'IFC4', *args, **kwargs)
 
 def IfcPort(*args, **kwargs):
-    return temp_file.create_entity('IfcPort', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPort', 'IFC4', *args, **kwargs)
 
 def IfcPostalAddress(*args, **kwargs):
-    return temp_file.create_entity('IfcPostalAddress', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPostalAddress', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedColour(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedColour', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedColour', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedCurveFont(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedCurveFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedCurveFont', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedItem(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedItem', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedProperties', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedPropertySet(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedPropertySet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedPropertySet', 'IFC4', *args, **kwargs)
 
 def IfcPreDefinedTextFont(*args, **kwargs):
-    return temp_file.create_entity('IfcPreDefinedTextFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPreDefinedTextFont', 'IFC4', *args, **kwargs)
 
 def IfcPresentationItem(*args, **kwargs):
-    return temp_file.create_entity('IfcPresentationItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationItem', 'IFC4', *args, **kwargs)
 
 def IfcPresentationLayerAssignment(*args, **kwargs):
-    return temp_file.create_entity('IfcPresentationLayerAssignment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationLayerAssignment', 'IFC4', *args, **kwargs)
 
 def IfcPresentationLayerWithStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcPresentationLayerWithStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationLayerWithStyle', 'IFC4', *args, **kwargs)
 
 def IfcPresentationStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcPresentationStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationStyle', 'IFC4', *args, **kwargs)
 
 def IfcPresentationStyleAssignment(*args, **kwargs):
-    return temp_file.create_entity('IfcPresentationStyleAssignment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPresentationStyleAssignment', 'IFC4', *args, **kwargs)
 
 def IfcProcedure(*args, **kwargs):
-    return temp_file.create_entity('IfcProcedure', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcedure', 'IFC4', *args, **kwargs)
 
 def IfcProcedureType(*args, **kwargs):
-    return temp_file.create_entity('IfcProcedureType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcedureType', 'IFC4', *args, **kwargs)
 
 def IfcProcess(*args, **kwargs):
-    return temp_file.create_entity('IfcProcess', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProcess', 'IFC4', *args, **kwargs)
 
 def IfcProduct(*args, **kwargs):
-    return temp_file.create_entity('IfcProduct', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProduct', 'IFC4', *args, **kwargs)
 
 def IfcProductDefinitionShape(*args, **kwargs):
-    return temp_file.create_entity('IfcProductDefinitionShape', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProductDefinitionShape', 'IFC4', *args, **kwargs)
 
 def IfcProductRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcProductRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProductRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcProfileProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcProfileProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProfileProperties', 'IFC4', *args, **kwargs)
 
 def IfcProject(*args, **kwargs):
-    return temp_file.create_entity('IfcProject', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProject', 'IFC4', *args, **kwargs)
 
 def IfcProjectLibrary(*args, **kwargs):
-    return temp_file.create_entity('IfcProjectLibrary', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectLibrary', 'IFC4', *args, **kwargs)
 
 def IfcProjectOrder(*args, **kwargs):
-    return temp_file.create_entity('IfcProjectOrder', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectOrder', 'IFC4', *args, **kwargs)
 
 def IfcProjectedCRS(*args, **kwargs):
-    return temp_file.create_entity('IfcProjectedCRS', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectedCRS', 'IFC4', *args, **kwargs)
 
 def IfcProjectionElement(*args, **kwargs):
-    return temp_file.create_entity('IfcProjectionElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProjectionElement', 'IFC4', *args, **kwargs)
 
 def IfcProperty(*args, **kwargs):
-    return temp_file.create_entity('IfcProperty', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProperty', 'IFC4', *args, **kwargs)
 
 def IfcPropertyAbstraction(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyAbstraction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyAbstraction', 'IFC4', *args, **kwargs)
 
 def IfcPropertyBoundedValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyBoundedValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyBoundedValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertyDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyDefinition', 'IFC4', *args, **kwargs)
 
 def IfcPropertyDependencyRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyDependencyRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyDependencyRelationship', 'IFC4', *args, **kwargs)
 
 def IfcPropertyEnumeratedValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyEnumeratedValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyEnumeratedValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertyEnumeration(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyEnumeration', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyEnumeration', 'IFC4', *args, **kwargs)
 
 def IfcPropertyListValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyListValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyListValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertyReferenceValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyReferenceValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyReferenceValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertySet(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertySet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySet', 'IFC4', *args, **kwargs)
 
 def IfcPropertySetDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertySetDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySetDefinition', 'IFC4', *args, **kwargs)
 
 def IfcPropertySetTemplate(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertySetTemplate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySetTemplate', 'IFC4', *args, **kwargs)
 
 def IfcPropertySingleValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertySingleValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertySingleValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertyTableValue(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyTableValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTableValue', 'IFC4', *args, **kwargs)
 
 def IfcPropertyTemplate(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyTemplate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTemplate', 'IFC4', *args, **kwargs)
 
 def IfcPropertyTemplateDefinition(*args, **kwargs):
-    return temp_file.create_entity('IfcPropertyTemplateDefinition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPropertyTemplateDefinition', 'IFC4', *args, **kwargs)
 
 def IfcProtectiveDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcProtectiveDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDevice', 'IFC4', *args, **kwargs)
 
 def IfcProtectiveDeviceTrippingUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcProtectiveDeviceTrippingUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnit', 'IFC4', *args, **kwargs)
 
 def IfcProtectiveDeviceTrippingUnitType(*args, **kwargs):
-    return temp_file.create_entity('IfcProtectiveDeviceTrippingUnitType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceTrippingUnitType', 'IFC4', *args, **kwargs)
 
 def IfcProtectiveDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcProtectiveDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProtectiveDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcProxy(*args, **kwargs):
-    return temp_file.create_entity('IfcProxy', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcProxy', 'IFC4', *args, **kwargs)
 
 def IfcPump(*args, **kwargs):
-    return temp_file.create_entity('IfcPump', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPump', 'IFC4', *args, **kwargs)
 
 def IfcPumpType(*args, **kwargs):
-    return temp_file.create_entity('IfcPumpType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcPumpType', 'IFC4', *args, **kwargs)
 
 def IfcQuantityArea(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityArea', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityArea', 'IFC4', *args, **kwargs)
 
 def IfcQuantityCount(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityCount', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityCount', 'IFC4', *args, **kwargs)
 
 def IfcQuantityLength(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityLength', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityLength', 'IFC4', *args, **kwargs)
 
 def IfcQuantitySet(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantitySet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantitySet', 'IFC4', *args, **kwargs)
 
 def IfcQuantityTime(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityTime', 'IFC4', *args, **kwargs)
 
 def IfcQuantityVolume(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityVolume', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityVolume', 'IFC4', *args, **kwargs)
 
 def IfcQuantityWeight(*args, **kwargs):
-    return temp_file.create_entity('IfcQuantityWeight', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcQuantityWeight', 'IFC4', *args, **kwargs)
 
 def IfcRailing(*args, **kwargs):
-    return temp_file.create_entity('IfcRailing', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailing', 'IFC4', *args, **kwargs)
 
 def IfcRailingType(*args, **kwargs):
-    return temp_file.create_entity('IfcRailingType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRailingType', 'IFC4', *args, **kwargs)
 
 def IfcRamp(*args, **kwargs):
-    return temp_file.create_entity('IfcRamp', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRamp', 'IFC4', *args, **kwargs)
 
 def IfcRampFlight(*args, **kwargs):
-    return temp_file.create_entity('IfcRampFlight', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampFlight', 'IFC4', *args, **kwargs)
 
 def IfcRampFlightType(*args, **kwargs):
-    return temp_file.create_entity('IfcRampFlightType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampFlightType', 'IFC4', *args, **kwargs)
 
 def IfcRampType(*args, **kwargs):
-    return temp_file.create_entity('IfcRampType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRampType', 'IFC4', *args, **kwargs)
 
 def IfcRationalBSplineCurveWithKnots(*args, **kwargs):
-    return temp_file.create_entity('IfcRationalBSplineCurveWithKnots', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRationalBSplineCurveWithKnots', 'IFC4', *args, **kwargs)
 
 def IfcRationalBSplineSurfaceWithKnots(*args, **kwargs):
-    return temp_file.create_entity('IfcRationalBSplineSurfaceWithKnots', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRationalBSplineSurfaceWithKnots', 'IFC4', *args, **kwargs)
 
 def IfcRectangleHollowProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcRectangleHollowProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangleHollowProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcRectangleProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcRectangleProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangleProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcRectangularPyramid(*args, **kwargs):
-    return temp_file.create_entity('IfcRectangularPyramid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangularPyramid', 'IFC4', *args, **kwargs)
 
 def IfcRectangularTrimmedSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcRectangularTrimmedSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRectangularTrimmedSurface', 'IFC4', *args, **kwargs)
 
 def IfcRecurrencePattern(*args, **kwargs):
-    return temp_file.create_entity('IfcRecurrencePattern', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRecurrencePattern', 'IFC4', *args, **kwargs)
 
 def IfcReference(*args, **kwargs):
-    return temp_file.create_entity('IfcReference', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReference', 'IFC4', *args, **kwargs)
 
 def IfcRegularTimeSeries(*args, **kwargs):
-    return temp_file.create_entity('IfcRegularTimeSeries', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRegularTimeSeries', 'IFC4', *args, **kwargs)
 
 def IfcReinforcementBarProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcementBarProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcementBarProperties', 'IFC4', *args, **kwargs)
 
 def IfcReinforcementDefinitionProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcementDefinitionProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcementDefinitionProperties', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingBar(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingBar', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingBar', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingBarType(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingBarType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingBarType', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingElement(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingElement', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingElementType', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingMesh(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingMesh', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingMesh', 'IFC4', *args, **kwargs)
 
 def IfcReinforcingMeshType(*args, **kwargs):
-    return temp_file.create_entity('IfcReinforcingMeshType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReinforcingMeshType', 'IFC4', *args, **kwargs)
 
 def IfcRelAggregates(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAggregates', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAggregates', 'IFC4', *args, **kwargs)
 
 def IfcRelAssigns(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssigns', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssigns', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToActor(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToActor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToActor', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToControl(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToControl', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToControl', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToGroup(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToGroup', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToGroup', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToGroupByFactor(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToGroupByFactor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToGroupByFactor', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToProcess(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToProcess', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToProcess', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToProduct(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToProduct', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToProduct', 'IFC4', *args, **kwargs)
 
 def IfcRelAssignsToResource(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssignsToResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssignsToResource', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociates(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociates', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociates', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesApproval(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesApproval', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesApproval', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesClassification(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesClassification', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesClassification', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesConstraint(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesConstraint', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesConstraint', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesDocument(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesDocument', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesDocument', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesLibrary(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesLibrary', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesLibrary', 'IFC4', *args, **kwargs)
 
 def IfcRelAssociatesMaterial(*args, **kwargs):
-    return temp_file.create_entity('IfcRelAssociatesMaterial', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelAssociatesMaterial', 'IFC4', *args, **kwargs)
 
 def IfcRelConnects(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnects', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnects', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsElements', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsPathElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsPathElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPathElements', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsPortToElement(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsPortToElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPortToElement', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsPorts(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsPorts', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsPorts', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsStructuralActivity(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsStructuralActivity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsStructuralActivity', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsStructuralMember(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsStructuralMember', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsStructuralMember', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsWithEccentricity(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsWithEccentricity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsWithEccentricity', 'IFC4', *args, **kwargs)
 
 def IfcRelConnectsWithRealizingElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelConnectsWithRealizingElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelConnectsWithRealizingElements', 'IFC4', *args, **kwargs)
 
 def IfcRelContainedInSpatialStructure(*args, **kwargs):
-    return temp_file.create_entity('IfcRelContainedInSpatialStructure', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelContainedInSpatialStructure', 'IFC4', *args, **kwargs)
 
 def IfcRelCoversBldgElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelCoversBldgElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelCoversBldgElements', 'IFC4', *args, **kwargs)
 
 def IfcRelCoversSpaces(*args, **kwargs):
-    return temp_file.create_entity('IfcRelCoversSpaces', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelCoversSpaces', 'IFC4', *args, **kwargs)
 
 def IfcRelDeclares(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDeclares', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDeclares', 'IFC4', *args, **kwargs)
 
 def IfcRelDecomposes(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDecomposes', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDecomposes', 'IFC4', *args, **kwargs)
 
 def IfcRelDefines(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDefines', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefines', 'IFC4', *args, **kwargs)
 
 def IfcRelDefinesByObject(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDefinesByObject', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByObject', 'IFC4', *args, **kwargs)
 
 def IfcRelDefinesByProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDefinesByProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByProperties', 'IFC4', *args, **kwargs)
 
 def IfcRelDefinesByTemplate(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDefinesByTemplate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByTemplate', 'IFC4', *args, **kwargs)
 
 def IfcRelDefinesByType(*args, **kwargs):
-    return temp_file.create_entity('IfcRelDefinesByType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelDefinesByType', 'IFC4', *args, **kwargs)
 
 def IfcRelFillsElement(*args, **kwargs):
-    return temp_file.create_entity('IfcRelFillsElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelFillsElement', 'IFC4', *args, **kwargs)
 
 def IfcRelFlowControlElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelFlowControlElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelFlowControlElements', 'IFC4', *args, **kwargs)
 
 def IfcRelInterferesElements(*args, **kwargs):
-    return temp_file.create_entity('IfcRelInterferesElements', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelInterferesElements', 'IFC4', *args, **kwargs)
 
 def IfcRelNests(*args, **kwargs):
-    return temp_file.create_entity('IfcRelNests', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelNests', 'IFC4', *args, **kwargs)
 
 def IfcRelProjectsElement(*args, **kwargs):
-    return temp_file.create_entity('IfcRelProjectsElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelProjectsElement', 'IFC4', *args, **kwargs)
 
 def IfcRelReferencedInSpatialStructure(*args, **kwargs):
-    return temp_file.create_entity('IfcRelReferencedInSpatialStructure', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelReferencedInSpatialStructure', 'IFC4', *args, **kwargs)
 
 def IfcRelSequence(*args, **kwargs):
-    return temp_file.create_entity('IfcRelSequence', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSequence', 'IFC4', *args, **kwargs)
 
 def IfcRelServicesBuildings(*args, **kwargs):
-    return temp_file.create_entity('IfcRelServicesBuildings', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelServicesBuildings', 'IFC4', *args, **kwargs)
 
 def IfcRelSpaceBoundary(*args, **kwargs):
-    return temp_file.create_entity('IfcRelSpaceBoundary', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary', 'IFC4', *args, **kwargs)
 
 def IfcRelSpaceBoundary1stLevel(*args, **kwargs):
-    return temp_file.create_entity('IfcRelSpaceBoundary1stLevel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary1stLevel', 'IFC4', *args, **kwargs)
 
 def IfcRelSpaceBoundary2ndLevel(*args, **kwargs):
-    return temp_file.create_entity('IfcRelSpaceBoundary2ndLevel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelSpaceBoundary2ndLevel', 'IFC4', *args, **kwargs)
 
 def IfcRelVoidsElement(*args, **kwargs):
-    return temp_file.create_entity('IfcRelVoidsElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelVoidsElement', 'IFC4', *args, **kwargs)
 
 def IfcRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRelationship', 'IFC4', *args, **kwargs)
 
 def IfcReparametrisedCompositeCurveSegment(*args, **kwargs):
-    return temp_file.create_entity('IfcReparametrisedCompositeCurveSegment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcReparametrisedCompositeCurveSegment', 'IFC4', *args, **kwargs)
 
 def IfcRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcRepresentationContext(*args, **kwargs):
-    return temp_file.create_entity('IfcRepresentationContext', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationContext', 'IFC4', *args, **kwargs)
 
 def IfcRepresentationItem(*args, **kwargs):
-    return temp_file.create_entity('IfcRepresentationItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationItem', 'IFC4', *args, **kwargs)
 
 def IfcRepresentationMap(*args, **kwargs):
-    return temp_file.create_entity('IfcRepresentationMap', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRepresentationMap', 'IFC4', *args, **kwargs)
 
 def IfcResource(*args, **kwargs):
-    return temp_file.create_entity('IfcResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResource', 'IFC4', *args, **kwargs)
 
 def IfcResourceApprovalRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcResourceApprovalRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceApprovalRelationship', 'IFC4', *args, **kwargs)
 
 def IfcResourceConstraintRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcResourceConstraintRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceConstraintRelationship', 'IFC4', *args, **kwargs)
 
 def IfcResourceLevelRelationship(*args, **kwargs):
-    return temp_file.create_entity('IfcResourceLevelRelationship', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceLevelRelationship', 'IFC4', *args, **kwargs)
 
 def IfcResourceTime(*args, **kwargs):
-    return temp_file.create_entity('IfcResourceTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcResourceTime', 'IFC4', *args, **kwargs)
 
 def IfcRevolvedAreaSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcRevolvedAreaSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRevolvedAreaSolid', 'IFC4', *args, **kwargs)
 
 def IfcRevolvedAreaSolidTapered(*args, **kwargs):
-    return temp_file.create_entity('IfcRevolvedAreaSolidTapered', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRevolvedAreaSolidTapered', 'IFC4', *args, **kwargs)
 
 def IfcRightCircularCone(*args, **kwargs):
-    return temp_file.create_entity('IfcRightCircularCone', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRightCircularCone', 'IFC4', *args, **kwargs)
 
 def IfcRightCircularCylinder(*args, **kwargs):
-    return temp_file.create_entity('IfcRightCircularCylinder', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRightCircularCylinder', 'IFC4', *args, **kwargs)
 
 def IfcRoof(*args, **kwargs):
-    return temp_file.create_entity('IfcRoof', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoof', 'IFC4', *args, **kwargs)
 
 def IfcRoofType(*args, **kwargs):
-    return temp_file.create_entity('IfcRoofType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoofType', 'IFC4', *args, **kwargs)
 
 def IfcRoot(*args, **kwargs):
-    return temp_file.create_entity('IfcRoot', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoot', 'IFC4', *args, **kwargs)
 
 def IfcRoundedRectangleProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcRoundedRectangleProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcRoundedRectangleProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcSIUnit(*args, **kwargs):
-    return temp_file.create_entity('IfcSIUnit', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSIUnit', 'IFC4', *args, **kwargs)
 
 def IfcSanitaryTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcSanitaryTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSanitaryTerminal', 'IFC4', *args, **kwargs)
 
 def IfcSanitaryTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcSanitaryTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSanitaryTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcSchedulingTime(*args, **kwargs):
-    return temp_file.create_entity('IfcSchedulingTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSchedulingTime', 'IFC4', *args, **kwargs)
 
 def IfcSeamCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcSeamCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSeamCurve', 'IFC4', *args, **kwargs)
 
 def IfcSectionProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcSectionProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionProperties', 'IFC4', *args, **kwargs)
 
 def IfcSectionReinforcementProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcSectionReinforcementProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionReinforcementProperties', 'IFC4', *args, **kwargs)
 
 def IfcSectionedSpine(*args, **kwargs):
-    return temp_file.create_entity('IfcSectionedSpine', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSectionedSpine', 'IFC4', *args, **kwargs)
 
 def IfcSensor(*args, **kwargs):
-    return temp_file.create_entity('IfcSensor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSensor', 'IFC4', *args, **kwargs)
 
 def IfcSensorType(*args, **kwargs):
-    return temp_file.create_entity('IfcSensorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSensorType', 'IFC4', *args, **kwargs)
 
 def IfcShadingDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcShadingDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShadingDevice', 'IFC4', *args, **kwargs)
 
 def IfcShadingDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcShadingDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShadingDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcShapeAspect(*args, **kwargs):
-    return temp_file.create_entity('IfcShapeAspect', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeAspect', 'IFC4', *args, **kwargs)
 
 def IfcShapeModel(*args, **kwargs):
-    return temp_file.create_entity('IfcShapeModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeModel', 'IFC4', *args, **kwargs)
 
 def IfcShapeRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcShapeRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShapeRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcShellBasedSurfaceModel(*args, **kwargs):
-    return temp_file.create_entity('IfcShellBasedSurfaceModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcShellBasedSurfaceModel', 'IFC4', *args, **kwargs)
 
 def IfcSimpleProperty(*args, **kwargs):
-    return temp_file.create_entity('IfcSimpleProperty', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSimpleProperty', 'IFC4', *args, **kwargs)
 
 def IfcSimplePropertyTemplate(*args, **kwargs):
-    return temp_file.create_entity('IfcSimplePropertyTemplate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSimplePropertyTemplate', 'IFC4', *args, **kwargs)
 
 def IfcSite(*args, **kwargs):
-    return temp_file.create_entity('IfcSite', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSite', 'IFC4', *args, **kwargs)
 
 def IfcSlab(*args, **kwargs):
-    return temp_file.create_entity('IfcSlab', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlab', 'IFC4', *args, **kwargs)
 
 def IfcSlabElementedCase(*args, **kwargs):
-    return temp_file.create_entity('IfcSlabElementedCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlabElementedCase', 'IFC4', *args, **kwargs)
 
 def IfcSlabStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcSlabStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlabStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcSlabType(*args, **kwargs):
-    return temp_file.create_entity('IfcSlabType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlabType', 'IFC4', *args, **kwargs)
 
 def IfcSlippageConnectionCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcSlippageConnectionCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSlippageConnectionCondition', 'IFC4', *args, **kwargs)
 
 def IfcSolarDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcSolarDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolarDevice', 'IFC4', *args, **kwargs)
 
 def IfcSolarDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcSolarDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolarDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcSolidModel(*args, **kwargs):
-    return temp_file.create_entity('IfcSolidModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSolidModel', 'IFC4', *args, **kwargs)
 
 def IfcSpace(*args, **kwargs):
-    return temp_file.create_entity('IfcSpace', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpace', 'IFC4', *args, **kwargs)
 
 def IfcSpaceHeater(*args, **kwargs):
-    return temp_file.create_entity('IfcSpaceHeater', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceHeater', 'IFC4', *args, **kwargs)
 
 def IfcSpaceHeaterType(*args, **kwargs):
-    return temp_file.create_entity('IfcSpaceHeaterType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceHeaterType', 'IFC4', *args, **kwargs)
 
 def IfcSpaceType(*args, **kwargs):
-    return temp_file.create_entity('IfcSpaceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpaceType', 'IFC4', *args, **kwargs)
 
 def IfcSpatialElement(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialElement', 'IFC4', *args, **kwargs)
 
 def IfcSpatialElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialElementType', 'IFC4', *args, **kwargs)
 
 def IfcSpatialStructureElement(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialStructureElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialStructureElement', 'IFC4', *args, **kwargs)
 
 def IfcSpatialStructureElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialStructureElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialStructureElementType', 'IFC4', *args, **kwargs)
 
 def IfcSpatialZone(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialZone', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialZone', 'IFC4', *args, **kwargs)
 
 def IfcSpatialZoneType(*args, **kwargs):
-    return temp_file.create_entity('IfcSpatialZoneType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSpatialZoneType', 'IFC4', *args, **kwargs)
 
 def IfcSphere(*args, **kwargs):
-    return temp_file.create_entity('IfcSphere', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSphere', 'IFC4', *args, **kwargs)
 
 def IfcSphericalSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcSphericalSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSphericalSurface', 'IFC4', *args, **kwargs)
 
 def IfcStackTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcStackTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStackTerminal', 'IFC4', *args, **kwargs)
 
 def IfcStackTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcStackTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStackTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcStair(*args, **kwargs):
-    return temp_file.create_entity('IfcStair', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStair', 'IFC4', *args, **kwargs)
 
 def IfcStairFlight(*args, **kwargs):
-    return temp_file.create_entity('IfcStairFlight', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairFlight', 'IFC4', *args, **kwargs)
 
 def IfcStairFlightType(*args, **kwargs):
-    return temp_file.create_entity('IfcStairFlightType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairFlightType', 'IFC4', *args, **kwargs)
 
 def IfcStairType(*args, **kwargs):
-    return temp_file.create_entity('IfcStairType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStairType', 'IFC4', *args, **kwargs)
 
 def IfcStructuralAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralActivity(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralActivity', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralActivity', 'IFC4', *args, **kwargs)
 
 def IfcStructuralAnalysisModel(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralAnalysisModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralAnalysisModel', 'IFC4', *args, **kwargs)
 
 def IfcStructuralConnection(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralConnection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralConnection', 'IFC4', *args, **kwargs)
 
 def IfcStructuralConnectionCondition(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralConnectionCondition', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralConnectionCondition', 'IFC4', *args, **kwargs)
 
 def IfcStructuralCurveAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralCurveAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralCurveConnection(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralCurveConnection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveConnection', 'IFC4', *args, **kwargs)
 
 def IfcStructuralCurveMember(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralCurveMember', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveMember', 'IFC4', *args, **kwargs)
 
 def IfcStructuralCurveMemberVarying(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralCurveMemberVarying', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveMemberVarying', 'IFC4', *args, **kwargs)
 
 def IfcStructuralCurveReaction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralCurveReaction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralCurveReaction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralItem(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralItem', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLinearAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLinearAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLinearAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoad(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoad', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoad', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadCase(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadCase', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadConfiguration(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadConfiguration', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadConfiguration', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadGroup(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadGroup', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadGroup', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadLinearForce(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadLinearForce', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadLinearForce', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadOrResult(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadOrResult', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadOrResult', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadPlanarForce(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadPlanarForce', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadPlanarForce', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadSingleDisplacement(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadSingleDisplacement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacement', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadSingleDisplacementDistortion(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadSingleDisplacementDistortion', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleDisplacementDistortion', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadSingleForce(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadSingleForce', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleForce', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadSingleForceWarping(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadSingleForceWarping', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadSingleForceWarping', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadStatic(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadStatic', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadStatic', 'IFC4', *args, **kwargs)
 
 def IfcStructuralLoadTemperature(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralLoadTemperature', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralLoadTemperature', 'IFC4', *args, **kwargs)
 
 def IfcStructuralMember(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralMember', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralMember', 'IFC4', *args, **kwargs)
 
 def IfcStructuralPlanarAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralPlanarAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPlanarAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralPointAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralPointAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralPointConnection(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralPointConnection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointConnection', 'IFC4', *args, **kwargs)
 
 def IfcStructuralPointReaction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralPointReaction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralPointReaction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralReaction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralReaction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralReaction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralResultGroup(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralResultGroup', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralResultGroup', 'IFC4', *args, **kwargs)
 
 def IfcStructuralSurfaceAction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralSurfaceAction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceAction', 'IFC4', *args, **kwargs)
 
 def IfcStructuralSurfaceConnection(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralSurfaceConnection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceConnection', 'IFC4', *args, **kwargs)
 
 def IfcStructuralSurfaceMember(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralSurfaceMember', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceMember', 'IFC4', *args, **kwargs)
 
 def IfcStructuralSurfaceMemberVarying(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralSurfaceMemberVarying', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceMemberVarying', 'IFC4', *args, **kwargs)
 
 def IfcStructuralSurfaceReaction(*args, **kwargs):
-    return temp_file.create_entity('IfcStructuralSurfaceReaction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStructuralSurfaceReaction', 'IFC4', *args, **kwargs)
 
 def IfcStyleModel(*args, **kwargs):
-    return temp_file.create_entity('IfcStyleModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyleModel', 'IFC4', *args, **kwargs)
 
 def IfcStyledItem(*args, **kwargs):
-    return temp_file.create_entity('IfcStyledItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyledItem', 'IFC4', *args, **kwargs)
 
 def IfcStyledRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcStyledRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcStyledRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcSubContractResource(*args, **kwargs):
-    return temp_file.create_entity('IfcSubContractResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubContractResource', 'IFC4', *args, **kwargs)
 
 def IfcSubContractResourceType(*args, **kwargs):
-    return temp_file.create_entity('IfcSubContractResourceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubContractResourceType', 'IFC4', *args, **kwargs)
 
 def IfcSubedge(*args, **kwargs):
-    return temp_file.create_entity('IfcSubedge', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSubedge', 'IFC4', *args, **kwargs)
 
 def IfcSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurface', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceCurve', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceCurveSweptAreaSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceCurveSweptAreaSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceCurveSweptAreaSolid', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceFeature(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceFeature', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceFeature', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceOfLinearExtrusion(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceOfLinearExtrusion', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceOfLinearExtrusion', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceOfRevolution(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceOfRevolution', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceOfRevolution', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceReinforcementArea(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceReinforcementArea', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceReinforcementArea', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyle', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyleLighting(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyleLighting', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleLighting', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyleRefraction(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyleRefraction', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleRefraction', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyleRendering(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyleRendering', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleRendering', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyleShading(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyleShading', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleShading', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceStyleWithTextures(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceStyleWithTextures', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceStyleWithTextures', 'IFC4', *args, **kwargs)
 
 def IfcSurfaceTexture(*args, **kwargs):
-    return temp_file.create_entity('IfcSurfaceTexture', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSurfaceTexture', 'IFC4', *args, **kwargs)
 
 def IfcSweptAreaSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcSweptAreaSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptAreaSolid', 'IFC4', *args, **kwargs)
 
 def IfcSweptDiskSolid(*args, **kwargs):
-    return temp_file.create_entity('IfcSweptDiskSolid', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptDiskSolid', 'IFC4', *args, **kwargs)
 
 def IfcSweptDiskSolidPolygonal(*args, **kwargs):
-    return temp_file.create_entity('IfcSweptDiskSolidPolygonal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptDiskSolidPolygonal', 'IFC4', *args, **kwargs)
 
 def IfcSweptSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcSweptSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSweptSurface', 'IFC4', *args, **kwargs)
 
 def IfcSwitchingDevice(*args, **kwargs):
-    return temp_file.create_entity('IfcSwitchingDevice', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSwitchingDevice', 'IFC4', *args, **kwargs)
 
 def IfcSwitchingDeviceType(*args, **kwargs):
-    return temp_file.create_entity('IfcSwitchingDeviceType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSwitchingDeviceType', 'IFC4', *args, **kwargs)
 
 def IfcSystem(*args, **kwargs):
-    return temp_file.create_entity('IfcSystem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystem', 'IFC4', *args, **kwargs)
 
 def IfcSystemFurnitureElement(*args, **kwargs):
-    return temp_file.create_entity('IfcSystemFurnitureElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystemFurnitureElement', 'IFC4', *args, **kwargs)
 
 def IfcSystemFurnitureElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcSystemFurnitureElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcSystemFurnitureElementType', 'IFC4', *args, **kwargs)
 
 def IfcTShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcTShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcTable(*args, **kwargs):
-    return temp_file.create_entity('IfcTable', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTable', 'IFC4', *args, **kwargs)
 
 def IfcTableColumn(*args, **kwargs):
-    return temp_file.create_entity('IfcTableColumn', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTableColumn', 'IFC4', *args, **kwargs)
 
 def IfcTableRow(*args, **kwargs):
-    return temp_file.create_entity('IfcTableRow', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTableRow', 'IFC4', *args, **kwargs)
 
 def IfcTank(*args, **kwargs):
-    return temp_file.create_entity('IfcTank', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTank', 'IFC4', *args, **kwargs)
 
 def IfcTankType(*args, **kwargs):
-    return temp_file.create_entity('IfcTankType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTankType', 'IFC4', *args, **kwargs)
 
 def IfcTask(*args, **kwargs):
-    return temp_file.create_entity('IfcTask', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTask', 'IFC4', *args, **kwargs)
 
 def IfcTaskTime(*args, **kwargs):
-    return temp_file.create_entity('IfcTaskTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskTime', 'IFC4', *args, **kwargs)
 
 def IfcTaskTimeRecurring(*args, **kwargs):
-    return temp_file.create_entity('IfcTaskTimeRecurring', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskTimeRecurring', 'IFC4', *args, **kwargs)
 
 def IfcTaskType(*args, **kwargs):
-    return temp_file.create_entity('IfcTaskType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTaskType', 'IFC4', *args, **kwargs)
 
 def IfcTelecomAddress(*args, **kwargs):
-    return temp_file.create_entity('IfcTelecomAddress', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTelecomAddress', 'IFC4', *args, **kwargs)
 
 def IfcTendon(*args, **kwargs):
-    return temp_file.create_entity('IfcTendon', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendon', 'IFC4', *args, **kwargs)
 
 def IfcTendonAnchor(*args, **kwargs):
-    return temp_file.create_entity('IfcTendonAnchor', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonAnchor', 'IFC4', *args, **kwargs)
 
 def IfcTendonAnchorType(*args, **kwargs):
-    return temp_file.create_entity('IfcTendonAnchorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonAnchorType', 'IFC4', *args, **kwargs)
 
 def IfcTendonType(*args, **kwargs):
-    return temp_file.create_entity('IfcTendonType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTendonType', 'IFC4', *args, **kwargs)
 
 def IfcTessellatedFaceSet(*args, **kwargs):
-    return temp_file.create_entity('IfcTessellatedFaceSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTessellatedFaceSet', 'IFC4', *args, **kwargs)
 
 def IfcTessellatedItem(*args, **kwargs):
-    return temp_file.create_entity('IfcTessellatedItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTessellatedItem', 'IFC4', *args, **kwargs)
 
 def IfcTextLiteral(*args, **kwargs):
-    return temp_file.create_entity('IfcTextLiteral', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextLiteral', 'IFC4', *args, **kwargs)
 
 def IfcTextLiteralWithExtent(*args, **kwargs):
-    return temp_file.create_entity('IfcTextLiteralWithExtent', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextLiteralWithExtent', 'IFC4', *args, **kwargs)
 
 def IfcTextStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcTextStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyle', 'IFC4', *args, **kwargs)
 
 def IfcTextStyleFontModel(*args, **kwargs):
-    return temp_file.create_entity('IfcTextStyleFontModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleFontModel', 'IFC4', *args, **kwargs)
 
 def IfcTextStyleForDefinedFont(*args, **kwargs):
-    return temp_file.create_entity('IfcTextStyleForDefinedFont', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleForDefinedFont', 'IFC4', *args, **kwargs)
 
 def IfcTextStyleTextModel(*args, **kwargs):
-    return temp_file.create_entity('IfcTextStyleTextModel', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextStyleTextModel', 'IFC4', *args, **kwargs)
 
 def IfcTextureCoordinate(*args, **kwargs):
-    return temp_file.create_entity('IfcTextureCoordinate', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureCoordinate', 'IFC4', *args, **kwargs)
 
 def IfcTextureCoordinateGenerator(*args, **kwargs):
-    return temp_file.create_entity('IfcTextureCoordinateGenerator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureCoordinateGenerator', 'IFC4', *args, **kwargs)
 
 def IfcTextureMap(*args, **kwargs):
-    return temp_file.create_entity('IfcTextureMap', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureMap', 'IFC4', *args, **kwargs)
 
 def IfcTextureVertex(*args, **kwargs):
-    return temp_file.create_entity('IfcTextureVertex', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureVertex', 'IFC4', *args, **kwargs)
 
 def IfcTextureVertexList(*args, **kwargs):
-    return temp_file.create_entity('IfcTextureVertexList', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTextureVertexList', 'IFC4', *args, **kwargs)
 
 def IfcTimePeriod(*args, **kwargs):
-    return temp_file.create_entity('IfcTimePeriod', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimePeriod', 'IFC4', *args, **kwargs)
 
 def IfcTimeSeries(*args, **kwargs):
-    return temp_file.create_entity('IfcTimeSeries', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimeSeries', 'IFC4', *args, **kwargs)
 
 def IfcTimeSeriesValue(*args, **kwargs):
-    return temp_file.create_entity('IfcTimeSeriesValue', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTimeSeriesValue', 'IFC4', *args, **kwargs)
 
 def IfcTopologicalRepresentationItem(*args, **kwargs):
-    return temp_file.create_entity('IfcTopologicalRepresentationItem', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTopologicalRepresentationItem', 'IFC4', *args, **kwargs)
 
 def IfcTopologyRepresentation(*args, **kwargs):
-    return temp_file.create_entity('IfcTopologyRepresentation', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTopologyRepresentation', 'IFC4', *args, **kwargs)
 
 def IfcToroidalSurface(*args, **kwargs):
-    return temp_file.create_entity('IfcToroidalSurface', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcToroidalSurface', 'IFC4', *args, **kwargs)
 
 def IfcTransformer(*args, **kwargs):
-    return temp_file.create_entity('IfcTransformer', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransformer', 'IFC4', *args, **kwargs)
 
 def IfcTransformerType(*args, **kwargs):
-    return temp_file.create_entity('IfcTransformerType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransformerType', 'IFC4', *args, **kwargs)
 
 def IfcTransportElement(*args, **kwargs):
-    return temp_file.create_entity('IfcTransportElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransportElement', 'IFC4', *args, **kwargs)
 
 def IfcTransportElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcTransportElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTransportElementType', 'IFC4', *args, **kwargs)
 
 def IfcTrapeziumProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcTrapeziumProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrapeziumProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcTriangulatedFaceSet(*args, **kwargs):
-    return temp_file.create_entity('IfcTriangulatedFaceSet', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTriangulatedFaceSet', 'IFC4', *args, **kwargs)
 
 def IfcTrimmedCurve(*args, **kwargs):
-    return temp_file.create_entity('IfcTrimmedCurve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTrimmedCurve', 'IFC4', *args, **kwargs)
 
 def IfcTubeBundle(*args, **kwargs):
-    return temp_file.create_entity('IfcTubeBundle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTubeBundle', 'IFC4', *args, **kwargs)
 
 def IfcTubeBundleType(*args, **kwargs):
-    return temp_file.create_entity('IfcTubeBundleType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTubeBundleType', 'IFC4', *args, **kwargs)
 
 def IfcTypeObject(*args, **kwargs):
-    return temp_file.create_entity('IfcTypeObject', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeObject', 'IFC4', *args, **kwargs)
 
 def IfcTypeProcess(*args, **kwargs):
-    return temp_file.create_entity('IfcTypeProcess', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeProcess', 'IFC4', *args, **kwargs)
 
 def IfcTypeProduct(*args, **kwargs):
-    return temp_file.create_entity('IfcTypeProduct', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeProduct', 'IFC4', *args, **kwargs)
 
 def IfcTypeResource(*args, **kwargs):
-    return temp_file.create_entity('IfcTypeResource', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcTypeResource', 'IFC4', *args, **kwargs)
 
 def IfcUShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcUShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcUnitAssignment(*args, **kwargs):
-    return temp_file.create_entity('IfcUnitAssignment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitAssignment', 'IFC4', *args, **kwargs)
 
 def IfcUnitaryControlElement(*args, **kwargs):
-    return temp_file.create_entity('IfcUnitaryControlElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryControlElement', 'IFC4', *args, **kwargs)
 
 def IfcUnitaryControlElementType(*args, **kwargs):
-    return temp_file.create_entity('IfcUnitaryControlElementType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryControlElementType', 'IFC4', *args, **kwargs)
 
 def IfcUnitaryEquipment(*args, **kwargs):
-    return temp_file.create_entity('IfcUnitaryEquipment', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryEquipment', 'IFC4', *args, **kwargs)
 
 def IfcUnitaryEquipmentType(*args, **kwargs):
-    return temp_file.create_entity('IfcUnitaryEquipmentType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcUnitaryEquipmentType', 'IFC4', *args, **kwargs)
 
 def IfcValve(*args, **kwargs):
-    return temp_file.create_entity('IfcValve', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcValve', 'IFC4', *args, **kwargs)
 
 def IfcValveType(*args, **kwargs):
-    return temp_file.create_entity('IfcValveType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcValveType', 'IFC4', *args, **kwargs)
 
 def IfcVector(*args, **kwargs):
-    return temp_file.create_entity('IfcVector', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVector', 'IFC4', *args, **kwargs)
 
 def IfcVertex(*args, **kwargs):
-    return temp_file.create_entity('IfcVertex', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertex', 'IFC4', *args, **kwargs)
 
 def IfcVertexLoop(*args, **kwargs):
-    return temp_file.create_entity('IfcVertexLoop', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertexLoop', 'IFC4', *args, **kwargs)
 
 def IfcVertexPoint(*args, **kwargs):
-    return temp_file.create_entity('IfcVertexPoint', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVertexPoint', 'IFC4', *args, **kwargs)
 
 def IfcVibrationIsolator(*args, **kwargs):
-    return temp_file.create_entity('IfcVibrationIsolator', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationIsolator', 'IFC4', *args, **kwargs)
 
 def IfcVibrationIsolatorType(*args, **kwargs):
-    return temp_file.create_entity('IfcVibrationIsolatorType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVibrationIsolatorType', 'IFC4', *args, **kwargs)
 
 def IfcVirtualElement(*args, **kwargs):
-    return temp_file.create_entity('IfcVirtualElement', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVirtualElement', 'IFC4', *args, **kwargs)
 
 def IfcVirtualGridIntersection(*args, **kwargs):
-    return temp_file.create_entity('IfcVirtualGridIntersection', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVirtualGridIntersection', 'IFC4', *args, **kwargs)
 
 def IfcVoidingFeature(*args, **kwargs):
-    return temp_file.create_entity('IfcVoidingFeature', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcVoidingFeature', 'IFC4', *args, **kwargs)
 
 def IfcWall(*args, **kwargs):
-    return temp_file.create_entity('IfcWall', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWall', 'IFC4', *args, **kwargs)
 
 def IfcWallElementedCase(*args, **kwargs):
-    return temp_file.create_entity('IfcWallElementedCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWallElementedCase', 'IFC4', *args, **kwargs)
 
 def IfcWallStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcWallStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWallStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcWallType(*args, **kwargs):
-    return temp_file.create_entity('IfcWallType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWallType', 'IFC4', *args, **kwargs)
 
 def IfcWasteTerminal(*args, **kwargs):
-    return temp_file.create_entity('IfcWasteTerminal', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWasteTerminal', 'IFC4', *args, **kwargs)
 
 def IfcWasteTerminalType(*args, **kwargs):
-    return temp_file.create_entity('IfcWasteTerminalType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWasteTerminalType', 'IFC4', *args, **kwargs)
 
 def IfcWindow(*args, **kwargs):
-    return temp_file.create_entity('IfcWindow', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindow', 'IFC4', *args, **kwargs)
 
 def IfcWindowLiningProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcWindowLiningProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowLiningProperties', 'IFC4', *args, **kwargs)
 
 def IfcWindowPanelProperties(*args, **kwargs):
-    return temp_file.create_entity('IfcWindowPanelProperties', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowPanelProperties', 'IFC4', *args, **kwargs)
 
 def IfcWindowStandardCase(*args, **kwargs):
-    return temp_file.create_entity('IfcWindowStandardCase', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowStandardCase', 'IFC4', *args, **kwargs)
 
 def IfcWindowStyle(*args, **kwargs):
-    return temp_file.create_entity('IfcWindowStyle', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowStyle', 'IFC4', *args, **kwargs)
 
 def IfcWindowType(*args, **kwargs):
-    return temp_file.create_entity('IfcWindowType', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWindowType', 'IFC4', *args, **kwargs)
 
 def IfcWorkCalendar(*args, **kwargs):
-    return temp_file.create_entity('IfcWorkCalendar', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkCalendar', 'IFC4', *args, **kwargs)
 
 def IfcWorkControl(*args, **kwargs):
-    return temp_file.create_entity('IfcWorkControl', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkControl', 'IFC4', *args, **kwargs)
 
 def IfcWorkPlan(*args, **kwargs):
-    return temp_file.create_entity('IfcWorkPlan', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkPlan', 'IFC4', *args, **kwargs)
 
 def IfcWorkSchedule(*args, **kwargs):
-    return temp_file.create_entity('IfcWorkSchedule', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkSchedule', 'IFC4', *args, **kwargs)
 
 def IfcWorkTime(*args, **kwargs):
-    return temp_file.create_entity('IfcWorkTime', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcWorkTime', 'IFC4', *args, **kwargs)
 
 def IfcZShapeProfileDef(*args, **kwargs):
-    return temp_file.create_entity('IfcZShapeProfileDef', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcZShapeProfileDef', 'IFC4', *args, **kwargs)
 
 def IfcZone(*args, **kwargs):
-    return temp_file.create_entity('IfcZone', *args, **kwargs)
+    return ifcopenshell.create_entity('IfcZone', 'IFC4', *args, **kwargs)
 
 class IfcBoxAlignment_WR1:
     SCOPE = 'type'
@@ -8625,7 +8627,7 @@ class IfcPropertyEnumeratedValue_WR21:
     @staticmethod
     def __call__(self):
         enumerationvalues = express_getattr(self, 'EnumerationValues', INDETERMINATE)
-        enumerationreference = express_getattr(self, 'enumeration_reference', INDETERMINATE)
+        enumerationreference = express_getattr(self, 'EnumerationReference', INDETERMINATE)
         assert (not exists(enumerationreference) or not exists(enumerationvalues) or sizeof([temp for temp in enumerationvalues if temp in express_getattr(enumerationreference, 'EnumerationValues', INDETERMINATE)]) == sizeof(enumerationvalues)) is not False
 
 class IfcPropertyEnumeration_WR01:

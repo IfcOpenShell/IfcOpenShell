@@ -16,26 +16,36 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
 import bpy
-import ifcopenshell
 import isodate
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.sequence.data import (
+    AnimationColorSchemeData,
+    SequenceData,
+    StatusData,
+    TaskICOMData,
     WorkPlansData,
     WorkScheduleData,
-    SequenceData,
-    TaskICOMData,
-    AnimationColorSchemeData,
-    StatusData,
 )
-from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.sequence.prop import (
+        BIMTaskTreeProperties,
+        BIMTaskTypeColor,
+        BIMWorkScheduleProperties,
+        Task,
+        TaskProduct,
+        TaskResource,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.sequence.prop import BIMWorkScheduleProperties, BIMTaskTreeProperties, Task
 
 
 class BIM_PT_status(Panel):
@@ -794,23 +804,24 @@ class BIM_UL_task_columns(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMWorkScheduleProperties",
-        item: "Attribute",
+        data: BIMWorkScheduleProperties,
+        item: Attribute,
         icon,
         active_data,
         active_propname,
     ):
-        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            if props.sort_column == item.name:
+            if data.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
 
 class BIM_UL_task_inputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
@@ -820,7 +831,9 @@ class BIM_UL_task_inputs(UIList):
 
 
 class BIM_UL_task_resources(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskResource, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
@@ -829,7 +842,9 @@ class BIM_UL_task_resources(UIList):
 
 
 class BIM_UL_animation_colors(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: BIMTaskTypeColor, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row()
             row.prop(item, "color", text="")
@@ -837,7 +852,9 @@ class BIM_UL_animation_colors(UIList):
 
 
 class BIM_UL_task_outputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
@@ -846,7 +863,9 @@ class BIM_UL_task_outputs(UIList):
 
 
 class BIM_UL_product_input_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
@@ -856,7 +875,9 @@ class BIM_UL_product_input_tasks(UIList):
 
 
 class BIM_UL_product_output_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
@@ -881,8 +902,8 @@ class BIM_UL_tasks(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMTaskTreeProperties",
-        item: "Task",
+        data: BIMTaskTreeProperties,
+        item: Task,
         icon,
         active_data,
         active_propname,

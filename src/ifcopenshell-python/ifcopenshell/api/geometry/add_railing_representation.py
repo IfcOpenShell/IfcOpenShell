@@ -16,24 +16,26 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import cos, pi, radians, sin, tan
+from typing import Any, Literal, Optional
+
 import numpy as np
+from typing_extensions import assert_never
+
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import (
+    SequenceOfVectors,
     ShapeBuilder,
     V,
-    SequenceOfVectors,
     is_x,
     np_angle,
     np_angle_signed,
-    np_normalized,
-    np_to_3d,
-    np_normal,
     np_intersect_line_line,
     np_lerp,
+    np_normal,
+    np_normalized,
+    np_to_3d,
 )
-from math import pi, cos, sin, tan, radians
-from typing import Literal, Optional, Any
-from typing_extensions import assert_never
 
 
 def mm(x: float) -> float:

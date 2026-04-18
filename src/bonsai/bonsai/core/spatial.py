@@ -17,11 +17,13 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, assert_never
+
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
@@ -50,15 +52,22 @@ def assign_container(
     collector: type[tool.Collector],
     spatial: type[tool.Spatial],
     container: ifcopenshell.entity_instance,
-    element_obj: Optional[bpy.types.Object] = None,
+    objs: Optional[bpy.types.Object] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
-    if not spatial.can_contain(container, element_obj):
-        return
-    assert element_obj  # Type checker.
-    rel = ifc.run("spatial.assign_container", products=[ifc.get_entity(element_obj)], relating_structure=container)
-    spatial.disable_editing(element_obj)
-    collector.assign(element_obj)
-    return rel
+    root_elements = set()
+    all_elements = set()
+    for obj in objs:
+        if not (element := ifc.get_entity(obj)):
+            continue
+        root_element = spatial.get_root_element(element)
+        root_elements.add(root_element)
+        spatial.disable_editing(obj)
+        all_elements.add(root_element)
+        all_elements.update(spatial.get_decomposition(root_element))
+    if products := [e for e in root_elements if spatial.can_contain(container, root_element)]:
+        ifc.run("spatial.assign_container", products=products, relating_structure=container)
+    for element in all_elements:
+        collector.assign(ifc.get_object(element))
 
 
 def enable_editing_container(spatial: type[tool.Spatial], obj: bpy.types.Object) -> None:
@@ -96,7 +105,7 @@ def copy_to_container(
         copied_obj = spatial.duplicate_object_and_data(obj)
         spatial.set_relative_object_matrix(copied_obj, to_container_obj, matrix)
         result_objs.append(spatial.run_root_copy_class(obj=copied_obj))
-        spatial.run_spatial_assign_container(container=to_container, element_obj=copied_obj)
+        spatial.run_spatial_assign_container(container=to_container, objs=[copied_obj])
     spatial.disable_editing(obj)
     return result_objs
 
@@ -210,13 +219,8 @@ def generate_space(
         else:
             assert space_polygon
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h, polygon_is_si=True)
-
-    mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
-
     if element and element.is_a("IfcSpace"):
-        mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
-        spatial.edit_active_space_obj_from_mesh(mesh)
+        spatial.set_space_representation_from_polygon(active_obj, element, space_polygon, h, polygon_is_si=True)
         spatial.translate_obj_to_z_location(active_obj, z)
     else:
         if relating_type:
@@ -224,12 +228,13 @@ def generate_space(
         else:
             name = "Space"
 
-        obj = spatial.get_named_obj_from_mesh(name, mesh)
+        obj = spatial.create_object(name)
         spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
         spatial.translate_obj_to_z_location(obj, z)
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
+        spatial.set_space_representation_from_polygon(obj, element, space_polygon, h, polygon_is_si=True)
 
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
@@ -248,15 +253,15 @@ def generate_spaces_from_walls(
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)
 
-        bm = spatial.get_bmesh_from_polygon(poly, h, polygon_is_si=False)
-
         name = "Space" + str(i)
 
-        obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
-
-        spatial.set_obj_origin_to_bboxcenter_and_zero_elevation(obj)
+        obj = spatial.create_object(name)
+        spatial.set_obj_origin_to_polygon_center(obj, poly, polygon_is_si=False)
         spatial.translate_obj_to_z_location(obj, z)
         spatial.assign_ifcspace_class_to_obj(obj)
+
+        element = ifc.get_entity(obj)
+        spatial.set_space_representation_from_polygon(obj, element, poly, h, polygon_is_si=False)
 
 
 def toggle_space_visibility(ifc: type[tool.Ifc], spatial: type[tool.Spatial]) -> None:

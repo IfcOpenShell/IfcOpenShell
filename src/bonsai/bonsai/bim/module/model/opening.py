@@ -16,38 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
+from math import radians
+from typing import Any, Optional, Union
+
+import bmesh
 import bpy
 import gpu
-import json
-import bmesh
-import shapely
-import logging
-import numpy as np
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.geometry
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.geom
-import ifcopenshell.util.shape
 import ifcopenshell.util.element
-import ifcopenshell.util.shape_builder
-import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.geometry
-import bonsai.bim.import_ifc as import_ifc
-from collections import defaultdict
-from math import pi, radians
-from mathutils import Vector, Matrix, Euler
-from bpy.types import Operator
-from bpy.types import SpaceView3D
-from bpy.props import FloatProperty
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
+import numpy as np
+import shapely
+from bpy.types import Operator, SpaceView3D
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any, cast
-from collections.abc import Sequence
+from mathutils import Matrix, Vector
+
+import bonsai.core.geometry
+import bonsai.tool as tool
 from bonsai.bim.module.drawing.decoration import DecoratorData
 
 
@@ -133,6 +126,7 @@ class FilledOpeningGenerator:
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
+        # CREATE THE OPENING FIRST
         opening = ifcopenshell.api.root.create_entity(
             tool.Ifc.get(),
             ifc_class="IfcOpeningElement",
@@ -146,6 +140,12 @@ class FilledOpeningGenerator:
             is_si=True,
         )
 
+        # NOW HANDLE REPRESENTATION
+        # Variables to track if we should reuse a mapped representation
+        reuse_mapped_representation = False
+        existing_mapping_source = None
+        representation = None
+
         if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
@@ -157,9 +157,34 @@ class FilledOpeningGenerator:
                 filling, filling_obj, opening_thickness_si=opening_thickness_si
             )
 
-        mapped_representation = ifcopenshell.api.geometry.map_representation(
-            tool.Ifc.get(), representation=representation
-        )
+        # Create mapped representation
+        if reuse_mapped_representation:
+            # Reuse the existing RepresentationMap - don't create a new one!
+            context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+            new_mapped_item = tool.Ifc.get().create_entity(
+                "IfcMappedItem",
+                MappingSource=existing_mapping_source,
+                MappingTarget=tool.Ifc.get().create_entity(
+                    "IfcCartesianTransformationOperator3D",
+                    Axis1=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                    Axis2=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 1.0, 0.0)),
+                    LocalOrigin=tool.Ifc.get().create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+                    Scale=1.0,
+                    Axis3=tool.Ifc.get().create_entity("IfcDirection", DirectionRatios=(0.0, 0.0, 1.0)),
+                ),
+            )
+            mapped_representation = tool.Ifc.get().create_entity(
+                "IfcShapeRepresentation",
+                ContextOfItems=context,
+                RepresentationIdentifier="Body",
+                RepresentationType="MappedRepresentation",
+                Items=[new_mapped_item],
+            )
+        else:
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
+            )
+
         ifcopenshell.api.geometry.assign_representation(
             tool.Ifc.get(), product=opening, representation=mapped_representation
         )
@@ -515,6 +540,16 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        if booleans:
+            # Users typically select two top-level items and expect the
+            # operand to be absorbed into the boolean, not remain as a
+            # standalone item alongside it.
+            representation = tool.Geometry.get_active_representation(rep_obj)
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            second_items_set = set(second_items)
+            new_items = [i for i in representation.Items if i not in second_items_set]
+            if new_items:
+                representation.Items = new_items
         rep_element = tool.Ifc.get_entity(rep_obj)
         tool.Model.mark_manual_booleans(rep_element, booleans)
         tool.Geometry.reload_representation(rep_obj)

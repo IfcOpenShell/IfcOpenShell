@@ -17,12 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-import test.bootstrap
+
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import ifcopenshell.api.geometry
 import ifcopenshell.util.placement
+import test.bootstrap
 
 
 class TestAddFeature(test.bootstrap.IFC4X3):

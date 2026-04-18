@@ -16,29 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from typing import TYPE_CHECKING
+
 import bmesh
+import bpy
 import idprop
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
-import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import bonsai.bim.handler
-import bonsai.core.root as core
-import bonsai.core.geometry
-import bonsai.tool as tool
-import bonsai.bim.module.root.prop as root_prop
-from bonsai.bim.ifc import IfcStore
-from bonsai.bim.helper import get_enum_items, prop_with_search
 from mathutils import Vector
-from typing import TYPE_CHECKING
+
+import bonsai.bim.module.root.prop as root_prop
+import bonsai.core.geometry
+import bonsai.core.root as core
+import bonsai.tool as tool
+from bonsai.bim.helper import get_enum_items, prop_with_search
+from bonsai.bim.ifc import IfcStore
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -307,7 +307,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     with context.temp_override(selected_editable_objects=[obj]):
                         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                     # object.transform_apply is losing normals.
-                    if is_negative:
+                    if is_negative and bpy.app.version >= (5, 1, 0):
                         for polygon in obj.data.polygons:
                             polygon.flip()
 
@@ -695,6 +695,26 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         XDim=default_x_dim / unit_scale,
                         YDim=default_y_dim / unit_scale,
                     )
+                elif representation_template == "FLOW_SEGMENT_RECTANGULAR_HOLLOW":
+                    default_x_dim = 0.4
+                    default_y_dim = 0.2
+                    default_thickness = 0.005
+                    default_inner_fillet_radius = 0.005
+                    default_outer_fillet_radius = 0.005
+                    profile_name = (
+                        f"{props.ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}x{default_thickness*1000}"
+                    )
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcRectangleHollowProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        XDim=default_x_dim / unit_scale,
+                        YDim=default_y_dim / unit_scale,
+                        WallThickness=default_thickness / unit_scale,
+                        InnerFilletRadius=default_inner_fillet_radius / unit_scale,
+                        OuterFilletRadius=default_outer_fillet_radius / unit_scale,
+                    )
+
                 elif representation_template == "FLOW_SEGMENT_CIRCULAR":
                     default_diameter = 0.1
                     profile_name = f"{props.ifc_class}-{default_diameter*1000}"
@@ -714,6 +734,21 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         ProfileType="AREA",
                         Radius=(default_diameter / 2) / unit_scale,
                         WallThickness=default_thickness,
+                    )
+                elif representation_template == "FLOW_SEGMENT_U_SHAPE":
+                    default_depth = 0.4
+                    default_flange_width = 0.2
+                    default_web_thickness = 0.005
+                    default_flange_thickness = 0.005
+                    profile_name = f"{props.ifc_class}-{default_depth*1000}x{default_flange_width*1000}x{default_web_thickness*1000}x{default_flange_thickness*1000}"
+                    profile = tool.Ifc.get().create_entity(
+                        "IfcUShapeProfileDef",
+                        ProfileName=profile_name,
+                        ProfileType="AREA",
+                        Depth=default_depth / unit_scale,
+                        FlangeWidth=default_flange_width / unit_scale,
+                        WebThickness=default_web_thickness / unit_scale,
+                        FlangeThickness=default_flange_thickness / unit_scale,
                     )
 
             rel = ifcopenshell.api.material.assign_material(

@@ -19,11 +19,13 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.nest
 import ifcopenshell.api.spatial
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.nest import Nest as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -49,6 +51,42 @@ class TestCanNest(NewFile):
         element_obj = bpy.data.objects.new("Object", None)
         subelement_obj = bpy.data.objects.new("Object", None)
         assert subject.can_nest(element_obj, subelement_obj) is False
+
+    def test_element_cannot_nest_to_itself(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcWall()
+        element_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, element_obj)
+        assert subject.can_nest(element_obj, element_obj) is False
+
+    def test_cyclic_nesting_is_prevented(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall_a = ifc.createIfcWall()
+        wall_a_obj = bpy.data.objects.new("WallA", None)
+        tool.Ifc.link(wall_a, wall_a_obj)
+        wall_b = ifc.createIfcWall()
+        wall_b_obj = bpy.data.objects.new("WallB", None)
+        tool.Ifc.link(wall_b, wall_b_obj)
+        ifcopenshell.api.nest.assign_object(ifc, related_objects=[wall_b], relating_object=wall_a)
+        assert subject.can_nest(wall_b_obj, wall_a_obj) is False
+
+    def test_deep_cyclic_nesting_is_prevented(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall_a = ifc.createIfcWall()
+        wall_a_obj = bpy.data.objects.new("WallA", None)
+        tool.Ifc.link(wall_a, wall_a_obj)
+        wall_b = ifc.createIfcWall()
+        wall_b_obj = bpy.data.objects.new("WallB", None)
+        tool.Ifc.link(wall_b, wall_b_obj)
+        wall_c = ifc.createIfcWall()
+        wall_c_obj = bpy.data.objects.new("WallC", None)
+        tool.Ifc.link(wall_c, wall_c_obj)
+        ifcopenshell.api.nest.assign_object(ifc, related_objects=[wall_b], relating_object=wall_a)
+        ifcopenshell.api.nest.assign_object(ifc, related_objects=[wall_c], relating_object=wall_b)
+        assert subject.can_nest(wall_c_obj, wall_a_obj) is False
 
 
 class TestDisableEditing(NewFile):

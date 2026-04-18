@@ -17,8 +17,9 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import numpy as np
 import typing
+
+import numpy as np
 
 
 class Patcher:

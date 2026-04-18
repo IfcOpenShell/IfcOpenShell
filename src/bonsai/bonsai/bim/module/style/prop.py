@@ -16,25 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import gettext
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.style.data import StylesData
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatVectorProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
 
-import gettext
-from typing import Literal, Union, TYPE_CHECKING, get_args
-
+import bonsai.tool as tool
+from bonsai.bim.module.style.data import StylesData
+from bonsai.bim.prop import Attribute, StrProperty
 
 _ = gettext.gettext
 
@@ -103,7 +102,10 @@ def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Contex
 
 
 def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
-    props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
+    if isinstance(self, Texture):
+        props = tool.Style.get_style_props()
+    else:
+        props = self
 
     if not props.update_graph:
         return

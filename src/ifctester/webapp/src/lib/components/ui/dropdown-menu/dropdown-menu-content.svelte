@@ -1,6 +1,13 @@
-<script>
-	import { cn } from "$lib/utils.js";
+<script lang="ts">
+	import { cn } from "$lib/utils";
 	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
+
+	type Props = {
+		ref?: HTMLElement | null;
+		sideOffset?: number;
+		portalProps?: Record<string, unknown>;
+		class?: string;
+	} & Record<string, unknown>;
 
 	let {
 		ref = $bindable(null),
@@ -8,7 +15,7 @@
 		portalProps,
 		class: className,
 		...restProps
-	} = $props();
+	} : Props = $props();
 </script>
 
 <DropdownMenuPrimitive.Portal {...portalProps}>

@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import tempfile
+from pathlib import Path
+
 import bpy
 import ifcopenshell
-import test.bim.bootstrap
+import pytest
+
 import bonsai.core.tool
 import bonsai.tool as tool
-import pytest
-import tempfile
-import os
-from pathlib import Path
+import test.bim.bootstrap
 from bonsai.tool.ifc import Ifc as subject
 
 

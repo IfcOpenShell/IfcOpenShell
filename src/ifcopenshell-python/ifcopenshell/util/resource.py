@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.cost
-import ifcopenshell.util.element
-import ifcopenshell.util.date
-from typing import Union, Any
+from typing import Any, Union
 
+import ifcopenshell.util.cost
+import ifcopenshell.util.date
+import ifcopenshell.util.element
 
 PRODUCTIVITY_PSET_DATA = Union[dict[str, Any], None]
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H

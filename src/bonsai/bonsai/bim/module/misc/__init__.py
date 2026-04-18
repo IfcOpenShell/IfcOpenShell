@@ -17,17 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
+    operator.ImportQuickFavorites,
+    operator.RemoveQuickFavoritesItem,
+    operator.MoveQuickFavoritesItem,
+    operator.AddQuickFavoritesItem,
+    operator.ConfirmQuickFavoriteOperator,
     operator.DrawSystemArrows,
     operator.GetConnectedSystemElements,
+    operator.IfcSverchokUseBonsaiFile,
     operator.ResizeToStorey,
     operator.SetOverrideColour,
     operator.SnapSpacesTogether,
     operator.SplitAlongEdge,
+    prop.QuickFavoriteEnumItem,
+    prop.QuickFavoriteProperty,
+    prop.QuickFavoritesItem,
     prop.BIMMiscProperties,
     ui.BIM_PT_misc_utilities,
+    ui.BIM_PT_quick_favorites_manager,
 )
 
 

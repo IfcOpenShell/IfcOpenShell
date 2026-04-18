@@ -16,39 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import contextlib
-import bpy
-import bmesh
-import time
 import logging
-import textwrap
-import shutil
+import os
 import platform
+import shutil
 import subprocess
 import tempfile
+import textwrap
+import time
 import webbrowser
-import ifcopenshell
-import bonsai.bim
-import bonsai.tool as tool
-import bonsai.bim.handler
+from collections import namedtuple
+from collections.abc import Iterable
 from enum import Enum
-from bpy_extras.io_utils import ImportHelper
-from bonsai.bim import import_ifc
-from bonsai.bim.prop import StrProperty
-from bonsai.bim.ui import IFCFileSelector
-from bonsai.bim.helper import get_enum_items
-from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
-from collections import namedtuple
-from typing import Union, TYPE_CHECKING, Literal, get_args
-from collections.abc import Iterable
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
+import bmesh
+import bpy
+import ifcopenshell
+from bpy_extras.io_utils import ImportHelper
+from mathutils import Euler, Vector
 from natsort import natsorted
 
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.tool as tool
+from bonsai.bim import import_ifc
+from bonsai.bim.helper import get_enum_items
+from bonsai.bim.prop import StrProperty
+from bonsai.bim.ui import IFCFileSelector
+
 if TYPE_CHECKING:
-    from bonsai.bim.prop import MultipleFileSelect, Attribute
     from bpy.stub_internal import rna_enums
+
+    from bonsai.bim.prop import Attribute, MultipleFileSelect
 
 
 class SetTab(bpy.types.Operator):
@@ -67,7 +70,7 @@ class SetTab(bpy.types.Operator):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
         tool.Blender.setup_tabs()
-        aprops = tool.Blender.get_area_props(context)
+        aprops = tool.Blender.get_active_area_props(context)
         aprops.tab = self.tab
         return {"FINISHED"}
 
@@ -82,7 +85,7 @@ class SwitchTab(bpy.types.Operator):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
         tool.Blender.setup_tabs()
-        aprops = tool.Blender.get_area_props(context)
+        aprops = tool.Blender.get_active_area_props(context)
         aprops.tab = aprops.alt_tab
         return {"FINISHED"}
 
@@ -156,9 +159,9 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    attribute_data_path: bpy.props.StringProperty(name="Data Path")  # pyright: ignore[reportRedeclaration]
+    attribute_data_path: bpy.props.StringProperty(name="Data Path")
     """Full data path to `Attribute`/string property."""
-    use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path",
         default=False,
     )
@@ -234,6 +237,107 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         if res is not None:
             return res
         return ImportHelper.invoke(self, context, event)
+
+
+class SaveBlendMetadataFile(bpy.types.Operator):
+    bl_idname = "bim.save_blend_metadata_file"
+    bl_label = "Save Blend Metadata File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        """
+        Save the current blend file as a metadata-only file (no geometry), preserving settings, window arrangement, geometry nodes, etc.
+        """
+        props = tool.Blender.get_bim_props()
+        ifc_file = getattr(props, "ifc_file", None)
+        if not ifc_file:
+            self.report({"WARNING"}, "No IFC file path set.")
+            return {"CANCELLED"}
+
+        suffix = tool.Blender.get_addon_preferences().metadata_blend_file_suffix
+        if ifc_file.lower().endswith(".ifc"):
+            blendmetadata_path = ifc_file[:-4] + suffix
+        else:
+            blendmetadata_path = ifc_file + suffix
+
+        ifc_dir = os.path.dirname(ifc_file)
+        temp_path = os.path.join(ifc_dir, "__temp_blendmetadata.blend")
+        bpy.ops.wm.save_as_mainfile(filepath=temp_path, copy=True)
+
+        cleanup_script = f"""
+import bpy
+
+# Ensure all styles are loaded before attempting to remove them
+bpy.ops.bim.load_styles()
+
+# 1. Collect all IfcStyle material names
+ifcstyle_material_names = []
+styles_props = getattr(bpy.context.scene, "BIMStylesProperties", None)
+if styles_props is None and bpy.data.scenes:
+    styles_props = getattr(bpy.data.scenes[0], "BIMStylesProperties", None)
+if styles_props:
+    for style in list(styles_props.styles):
+        material = getattr(style, "blender_material", None)
+        if material and material.name:
+            ifcstyle_material_names.append(material.name)
+
+# 2. Purge IfcStore
+from bonsai.bim.ifc import IfcStore
+IfcStore.purge()
+
+# 3. Remove all collections named IfcProject*
+for collection in list(bpy.data.collections):
+    if collection.name.startswith('IfcProject'):
+        bpy.data.collections.remove(collection, do_unlink=True)
+
+# 4.1 Remove all collections from linked libraries (they will be recreated by bonsai)
+for collection in list(bpy.data.collections):
+    if collection.library:
+        bpy.data.collections.remove(collection, do_unlink=True)
+
+# 4.2. Remove all empty objects that are collection instances for linked models
+for obj in list(bpy.data.objects):
+    if obj.type == 'EMPTY' and obj.instance_type == 'COLLECTION' and obj.name.startswith('IfcProject/'):
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+# 5. Purge orphaned data blocks after removing IfcProject collections
+bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+
+# 6. Remove all materials corresponding to the IfcStyles we collected
+for mat_name in ifcstyle_material_names:
+    if mat_name in bpy.data.materials:
+        bpy.data.materials.remove(bpy.data.materials[mat_name], do_unlink=True)
+
+bpy.ops.wm.save_as_mainfile(filepath=r'{blendmetadata_path}')
+"""
+        import tempfile
+
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as script_file:
+            script_file.write(cleanup_script)
+            script_path = script_file.name
+
+        blender_exe = bpy.app.binary_path
+        import subprocess
+
+        result = subprocess.run(
+            [blender_exe, temp_path, "--background", "--python", script_path], capture_output=True, text=True
+        )
+
+        # Print the output from the background process (includes debug info)
+        if result.stdout:
+            print("\n=== Background Blender Output ===")
+            print(result.stdout)
+        if result.stderr:
+            print("\n=== Background Blender Errors ===")
+            print(result.stderr)
+
+        try:
+            os.remove(temp_path)
+            os.remove(script_path)
+        except Exception:
+            pass
+
+        return {"FINISHED"}
 
 
 # TODO: Unused operator.
@@ -497,7 +601,7 @@ class CreateMacBonsaiApp(bpy.types.Operator):
         "ALT+click to uninstall Bonsai app if it was installed previously."
     )
 
-    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         uninstall: bool
@@ -1563,7 +1667,7 @@ class BIM_OT_attribute_add_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    data_path: bpy.props.StringProperty()
     """Full data path."""
 
     if TYPE_CHECKING:
@@ -1587,9 +1691,9 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    data_path: bpy.props.StringProperty()
     """Full data path."""
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         data_path: str
@@ -1604,4 +1708,49 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
         if attr.is_optional and not col:
             attr.is_null = True
 
+        return {"FINISHED"}
+
+
+class BIM_OT_manage_tab_visibility(bpy.types.Operator):
+    """Manage Tab Visibility"""
+
+    bl_idname = "bim.manage_tab_visibility"
+    bl_label = "Manage Tab Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        from bonsai.bim.prop import get_tab
+
+        bprops = tool.Blender.get_bim_props()
+        bprops.tab_visibilities.clear()
+        bprops.panel_visibilities.clear()
+        tabs = [item[0] for item in get_tab(None, None) if item and item[0] != "BLENDER"]
+        for tab in tabs:
+            new = bprops.tab_visibilities.add()
+            new.name = tab
+
+        for attr_name in dir(bpy.types):
+            if attr_name.startswith("BIM_PT_tab_"):
+                panel_class = getattr(bpy.types, attr_name)
+                if not hasattr(panel_class, "bl_idname"):
+                    assert False, panel_class
+                new = bprops.panel_visibilities.add()
+                new.name = panel_class.bl_idname
+                new.label = panel_class.bl_label
+                new.tab_name = panel_class.bim_tab_name
+        return {"FINISHED"}
+
+
+class BIM_OT_reset_ui_layout(bpy.types.Operator):
+    """Reset UI Layout to Default"""
+
+    bl_idname = "bim.reset_ui_layout"
+    bl_label = "Reset UI Layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bprops = tool.Blender.get_bim_props()
+        bprops.tab_visibilities.clear()
+        bprops.panel_visibilities.clear()
+        bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}

@@ -17,14 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.classification import Classification as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -40,6 +42,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 
@@ -64,6 +67,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 
@@ -108,6 +112,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
         bpy.ops.bim.assign_class(ifc_class="IfcSpace", predefined_type="SPACE", userdefined_type="")
+        tool.Blender.set_active_object(obj)
         element = tool.Ifc.get_entity(obj)
         assert element
 

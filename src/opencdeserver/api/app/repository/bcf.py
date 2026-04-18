@@ -1,13 +1,10 @@
 import base64
 import os
-import jsonpickle
-
-from fastapi import UploadFile, HTTPException
-
 from uuid import UUID, uuid4
 
+import jsonpickle
 from database.neo4j import MyDB, driver
-
+from fastapi import HTTPException, UploadFile
 from models.bcf_request import *
 from models.bcf_response import *
 from models.request import *
@@ -697,8 +694,7 @@ class BCFDB(MyDB):
                 snapshot_type = ""
                 snapshot = False
                 set_snapshot = ""
-            cypher_viewpoint = (
-                """
+            cypher_viewpoint = """
                  MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)
                  WHERE u.username = $username
                  AND r1.createViewpoint = True
@@ -716,9 +712,7 @@ class BCFDB(MyDB):
                      v.spaces_visible = $spaces_visible,
                      v.space_boundaries_visible = $space_boundaries_visible,
                      v.openings_visible = $openings_visible
-                 """
-                % set_snapshot
-            )
+                 """ % set_snapshot
             if viewpoint.guid is None:
                 viewpoint.guid = uuid4()
             if viewpoint.orthogonal_camera is None:
@@ -1453,8 +1447,7 @@ class BCFDB(MyDB):
             else:
                 document_url = ""
                 document_reference.url = ""
-            cypher = (
-                """
+            cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)
                 WHERE u.username = $username
                 AND r1.updateDocumentReferences = True
@@ -1464,9 +1457,7 @@ class BCFDB(MyDB):
                 SET r3.guid: $document_reference_id,
                     %s
                     d.description = $description
-            """
-                % document_url
-            )
+            """ % document_url
             result = tx.run(
                 cypher,
                 username=current_user.username,

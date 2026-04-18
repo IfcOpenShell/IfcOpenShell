@@ -1,11 +1,8 @@
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-
-@dataclass(**DATACLASS_KWARGS)
+@dataclass(slots=True, kw_only=True)
 class Version:
     detailed_version: Optional[str] = field(
         default=None,

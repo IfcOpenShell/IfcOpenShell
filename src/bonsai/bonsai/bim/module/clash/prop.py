@@ -16,32 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute, BIMFilterGroup
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    StringProperty,
 )
-from ifcopenshell.geom.main import ClashType, CLASH_TYPE_ITEMS
+from bpy.types import PropertyGroup
+from ifcopenshell.geom.main import CLASH_TYPE_ITEMS, ClashType
 from mathutils import Vector
-from typing import TYPE_CHECKING, Literal, Union
+
+import bonsai.tool as tool
+from bonsai.bim.prop import BIMFilterGroup, StrProperty
 
 
 class ClashSource(PropertyGroup):
-    name: StringProperty(  # pyright: ignore[reportRedeclaration]
+    name: StringProperty(
         name="File",
         description="Absolute filepath to existing .ifc file to use as a clash source.",
     )
-    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")  # pyright: ignore[reportRedeclaration]
-    mode: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
+    mode: EnumProperty(
         items=[
             ("a", "All Elements", "All elements will be used for clashing"),
             ("i", "Include", "Only the selected elements are included for clashing"),
@@ -61,7 +62,7 @@ class Clash(PropertyGroup):
     b_global_id: StringProperty(name="B")
     a_name: StringProperty(name="A Name")
     b_name: StringProperty(name="B Name")
-    clash_type: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    clash_type: EnumProperty(
         name="Clash Type",
         items=tuple((i, i, "") for i in CLASH_TYPE_ITEMS),
     )

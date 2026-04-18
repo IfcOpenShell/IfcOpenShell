@@ -16,38 +16,40 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import copy
-import bmesh
-import mathutils.geometry
+from math import atan2, degrees, pi, radians
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.pset
 import ifcopenshell.api.type
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.core.type
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
+import mathutils.geometry
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, degrees, atan2
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    PolylineDecorator,
+    ProductDecorator,
+    ProfileDecorator,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, Any, Optional, Literal
-
 
 ProfileFrom2PointsReturn = Union[dict[str, Any], None]
 
 
 class DumbProfileGenerator:
-    def __init__(self, relating_type):
+    def __init__(self, relating_type: ifcopenshell.entity_instance):
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -190,8 +192,8 @@ class DumbProfileGenerator:
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
-            # Round to nearest 5 degrees
-            nearest_degree = (pi / 180) * 5
+            angle_snap = tool.Snap.get_angle_snap_value(bpy.context)
+            nearest_degree = radians(angle_snap)
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()
@@ -199,7 +201,7 @@ class DumbProfileGenerator:
 
 
 class DumbProfileRegenerator:
-    def regenerate_from_profile_def(self, profile):
+    def regenerate_from_profile_def(self, profile: ifcopenshell.entity_instance) -> None:
         self.file = tool.Ifc.get()
         objs = []
         if not profile:
@@ -219,7 +221,7 @@ class DumbProfileRegenerator:
         for element in self.get_element_types_using_profile(profile):
             tool.Model.mark_thumbnail_for_update(element)
 
-    def regenerate_from_profile(self, usecase_path, ifc_file, settings):
+    def regenerate_from_profile(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         self.file = ifc_file
         objs = []
         profile = settings["profile"].Profile
@@ -231,7 +233,7 @@ class DumbProfileRegenerator:
                 objs.append(obj)
         DumbProfileRecalculator().recalculate(objs)
 
-    def get_elements_using_profile(self, profile):
+    def get_elements_using_profile(self, profile: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
         profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
@@ -250,7 +252,9 @@ class DumbProfileRegenerator:
                         results.extend(rel.RelatedObjects)
         return results
 
-    def get_element_types_using_profile(self, profile):
+    def get_element_types_using_profile(
+        self, profile: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         results = []
         profile_sets = [
             mp.ToMaterialProfileSet[0] for mp in self.file.get_inverse(profile) if mp.is_a("IfcMaterialProfile")
@@ -262,33 +266,23 @@ class DumbProfileRegenerator:
                 results.extend(inverse.RelatedObjects)
         return results
 
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
-            return
-
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
-
-    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-        DumbProfileRecalculator().recalculate([obj])
-
 
 class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_profile"
     bl_label = "Extend Profile"
     bl_options = {"REGISTER", "UNDO"}
-    join_type: bpy.props.StringProperty()
+    join_type: bpy.props.EnumProperty(
+        items=[("-", "Unjoin", ""), ("L", "L", ""), ("V", "V", ""), ("T", "T", "")],
+        default="-",
+    )
+
+    if TYPE_CHECKING:
+        join_type: Literal["-", "L", "V", "T"]
 
     def _execute(self, context):
         selected_objs = context.selected_objects
         joiner = DumbProfileJoiner()
-        if not self.join_type:
+        if self.join_type == "-":
             for obj in selected_objs:
                 joiner.unjoin(obj)
             return {"FINISHED"}
@@ -640,11 +634,15 @@ class DumbProfileJoiner:
             if connection1 == "ATEND":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[1] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
 
@@ -687,11 +685,15 @@ class DumbProfileJoiner:
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[0] = intersect
                 else:
                     plane = self.get_profile_plane(profile2, furthest_plane, z_inwards=False)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
 
@@ -735,7 +737,9 @@ class DumbProfileJoiner:
             if connection1 == "ATEND":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[1] = intersect
                 else:
                     plane = self.get_profile_plane(
@@ -743,7 +747,9 @@ class DumbProfileJoiner:
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
                     )
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[1] = intersect + profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
                     self.clippings.append(
@@ -756,7 +762,9 @@ class DumbProfileJoiner:
             elif connection1 == "ATSTART":
                 if tool.Cad.is_x(abs(xy_angle), (0, 90, 180), tolerance=0.001) and is_orthogonal:
                     plane = self.get_profile_plane(profile2, furthest_plane if is_relating else closest_plane)
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     self.body[0] = intersect
                 else:
                     plane = self.get_profile_plane(
@@ -764,7 +772,9 @@ class DumbProfileJoiner:
                         furthest_plane if is_relating else closest_plane,
                         z_inwards=False if is_relating else True,
                     )
-                    intersect = mathutils.geometry.intersect_line_plane(*axis1, plane.translation, plane.col[2].to_3d())
+                    intersect = mathutils.geometry.intersect_line_plane(
+                        axis1[0], axis1[1], plane.translation, plane.col[2].to_3d()
+                    )
                     max_dim = self.get_max_bound_box_dimension(profile1)
                     self.body[0] = intersect - profile1.matrix_world.to_quaternion() @ Vector((0, 0, max_dim))
                     self.clippings.append(
@@ -1142,8 +1152,13 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
                         MEPGenerator().setup_ports(profile1["obj"])
                 else:
+                    connect_IfcFlowSegments = tool.Ifc.get_entity(profiles[0]["obj"]).is_a("IfcFlowSegment")
                     for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
                         DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                        if connect_IfcFlowSegments:
+                            bpy.ops.bim.mep_connect_elements(
+                                obj1_name=profile1["obj"].name, obj2_name=profile2["obj"].name
+                            )
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
@@ -1189,10 +1204,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
-
         self.handle_inserting_polyline(context, event)
-
-        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:

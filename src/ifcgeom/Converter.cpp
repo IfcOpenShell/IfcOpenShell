@@ -12,11 +12,8 @@ ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geome
 	settings_ = mapping_->settings();
 }
 
-ifcopenshell::geometry::Converter::~Converter()
-{
-	if (mapping_ != nullptr) {
-		delete mapping_;
-	}
+ifcopenshell::geometry::Converter::~Converter() {
+    delete mapping_;
 }
 
 namespace {

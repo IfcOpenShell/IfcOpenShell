@@ -17,7 +17,9 @@
 # along with ifccityjson.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+
 from cjio import cityjson
+
 from .cityjson2ifc import Cityjson2ifc
 
 

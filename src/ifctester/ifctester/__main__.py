@@ -18,12 +18,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 import argparse
-import ifcopenshell
-from . import ids
-from . import reporter
+import time
 from pathlib import Path
+
+import ifcopenshell
+
+from . import ids, reporter
 
 parser = argparse.ArgumentParser(description="Uses an IDS to audit an IFC")
 parser.add_argument("ids", type=str, help="Path to an IDS")

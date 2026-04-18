@@ -56,6 +56,21 @@
 #include "../../../ifcgeom/taxonomy.h"
 #include "../../../ifcgeom/ConversionSettings.h"
 
+namespace {
+template <typename Fn>
+bool handle_occt_exception(Fn&& fn) {
+    try {
+        return std::forward<Fn>(fn)();
+    } catch (const Standard_Failure& e) {
+        if (e.GetMessageString() && strlen(e.GetMessageString())) {
+            throw std::runtime_error(e.GetMessageString());
+		} else {
+            throw std::runtime_error("Unknown error creating geometry");
+		}
+    }
+}
+}
+
 namespace IfcGeom {
 
 class IFC_GEOMLIBRARY_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {

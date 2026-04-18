@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel
+
+import bonsai.tool as tool
 
 
 class BIM_PT_debug(Panel):

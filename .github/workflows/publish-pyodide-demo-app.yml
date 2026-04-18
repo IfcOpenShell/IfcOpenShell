@@ -1,4 +1,4 @@
-name: Deploy Pyodide Demo App to GitHub Pages
+name: Deploy Pyodide Demo App to static page repo
 
 permissions:
   id-token: write
@@ -11,6 +11,7 @@ on:
       - '.github/workflows/publish-pyodide-demo-app.yml'
     branches:
       - v0.8.0
+  workflow_dispatch:
 
 jobs:
   activate:
@@ -26,25 +27,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (recursive)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload static files as artifact
-        id: deployment
-        uses: actions/upload-pages-artifact@v4
+      - name: Checkout intermediate Pages repo
+        uses: actions/checkout@v6
         with:
-          path: src/pyodide/demo-app/
+          repository: IfcOpenShell/wasm_ifcopenshell_org_static_html
+          ref: gh-pages
+          path: output
+          token: ${{ secrets.WEBSITE_PUBLISH }}
+      - name: Sync demo app into target subfolder
+        run: |
+          rsync -av --delete --exclude='.git/' src/pyodide/demo-app/ output/
+      - name: Commit and push if changed
+        working-directory: output
+        run: |
+          git config --global user.name 'IfcOpenBot'
+          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "$(git log --oneline -1)"
+          git push origin gh-pages

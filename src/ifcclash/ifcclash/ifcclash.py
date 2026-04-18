@@ -20,15 +20,17 @@
 
 
 from __future__ import annotations
+
 import json
-import time
-import numpy as np
 import multiprocessing
+import time
+from logging import Logger
+from typing import Literal, TypedDict, Union
+
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
-from logging import Logger
-from typing import Literal, TypedDict, Union
+import numpy as np
 from typing_extensions import NotRequired, assert_never
 
 
@@ -256,8 +258,9 @@ class Clasher:
             json.dump(clash_sets, clashes_file, indent=4)
 
     def smart_group_clashes(self, clash_sets: list[ClashSet], max_clustering_distance: float):
-        from sklearn.cluster import OPTICS
         from collections import defaultdict
+
+        from sklearn.cluster import OPTICS
 
         count_of_input_clashes = 0
         count_of_clash_sets = 0

@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-from os.path import dirname
-from os.path import realpath
+from os.path import dirname, realpath
 
 __version__ = version = "0.0.0"
 

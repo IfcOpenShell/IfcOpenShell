@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-import ifcopenshell
 from typing import Optional
+
+import ifcopenshell
 
 
 def edit_attributes(
@@ -26,11 +27,10 @@ def edit_attributes(
     related_building_element: ifcopenshell.entity_instance,
     parent_boundary: Optional[ifcopenshell.entity_instance] = None,
     corresponding_boundary: Optional[ifcopenshell.entity_instance] = None,
+    physical_or_virtual: str = "NOTDEFINED",
+    internal_or_external: str = "NOTDEFINED",
 ) -> None:
     """Modify the relationships of a space boundary relationship
-
-    Currently this function is quite minimal and offers no advantage to
-    manual assignment of the space boundary attributes.
 
     :param entity: The IfcRelSpaceBoundary to modify
     :param relating_space: The IfcSpace or IfcExternalSpatialElement that
@@ -43,17 +43,18 @@ def edit_attributes(
     :param corresponding_boundary: The other IfcRelSpaceBoundary on the
         other side of the related element. The pair together represents a
         thermal boundary. This only applies to 2nd level boundaries.
+    :param physical_or_virtual: IfcPhysicalOrVirtualEnum value: "PHYSICAL",
+        "VIRTUAL", or "NOTDEFINED".
+    :param internal_or_external: IfcInternalOrExternalEnum value:
+        "INTERNAL", "EXTERNAL", "EXTERNAL_EARTH", "EXTERNAL_WATER",
+        "EXTERNAL_FIRE", or "NOTDEFINED".
     :return: None
     """
-    entity = entity
-    relating_space = relating_space
-    related_building_element = related_building_element
-    parent_boundary = parent_boundary
-    corresponding_boundary = corresponding_boundary
-
     entity.RelatingSpace = relating_space
     entity.RelatedBuildingElement = related_building_element
     if hasattr(entity, "ParentBoundary"):
         entity.ParentBoundary = parent_boundary
     if hasattr(entity, "CorrespondingBoundary"):
         entity.CorrespondingBoundary = corresponding_boundary
+    entity.PhysicalOrVirtualBoundary = physical_or_virtual
+    entity.InternalOrExternalBoundary = internal_or_external

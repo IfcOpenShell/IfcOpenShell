@@ -16,18 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
-import bpy
+from collections.abc import Sequence
+from time import time
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    NamedTuple,
+    Union,
+    assert_never,
+    get_args,
+)
+
 import bmesh
-import numpy as np
-import numpy.typing as npt
+import bpy
 import ifcopenshell
+import ifcopenshell.api.boundary
 import ifcopenshell.api.drawing
-import ifcopenshell.api.group
-import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.element
@@ -35,26 +45,21 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-import ifcopenshell.api
-import ifcopenshell.api.boundary
-import ifcopenshell.api.grid
+import numpy as np
+import numpy.typing as npt
+from ifcopenshell.util.shape_builder import ShapeBuilder
+from mathutils import Matrix, Quaternion, Vector
+
+import bonsai.bim.handler
+import bonsai.core.aggregate
+import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.geometry as core
-import bonsai.core.aggregate
 import bonsai.core.nest
-import bonsai.core.spatial
-import bonsai.core.style
 import bonsai.core.root
-import bonsai.core.drawing
+import bonsai.core.spatial
 import bonsai.tool as tool
-import bonsai.bim.handler
-from bonsai.bim.module.model.data import AuthoringData
-from mathutils import Vector, Matrix, Quaternion
-from time import time
 from bonsai.bim.ifc import IfcStore
-from ifcopenshell.util.shape_builder import ShapeBuilder
-from collections.abc import Sequence
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -80,7 +85,7 @@ class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
-    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    blender_op = bpy.ops.mesh.separate.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = blender_op.description + ".\nAlso makes sure changes are in sync with IFC."
     bl_options = {"REGISTER", "UNDO"}
     blender_type_prop = blender_op.properties["type"]
@@ -241,7 +246,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
 class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_origin_set"
-    blender_op = bpy.ops.object.origin_set.get_rna_type()
+    blender_op = bpy.ops.object.origin_set.get_rna_type()  # ty: ignore[missing-argument]
     bl_label = "IFC Origin Set"
     bl_description = (
         blender_op.description + ".\nAlso makes sure changes are in sync with IFC (operator works only on IFC objects)"
@@ -796,7 +801,7 @@ def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
-    blender_op = bpy.ops.object.delete.get_rna_type()
+    blender_op = bpy.ops.object.delete.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes in sync with IFC."
@@ -816,7 +821,7 @@ class OverrideDelete(bpy.types.Operator):
     def poll(cls, context):
         # Match `object.delete` poll for consistency.
         # `object.delete` poll just checks for OBJECT mode.
-        poll = bpy.ops.object.delete.poll()
+        poll = bpy.ops.object.delete.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available in OBJECT mode")
@@ -892,6 +897,7 @@ class OverrideDelete(bpy.types.Operator):
 
             if not is_valid_data_block:
                 continue
+
             element = tool.Ifc.get_entity(obj)
             if element:
                 if tool.Geometry.is_locked(element):
@@ -901,6 +907,9 @@ class OverrideDelete(bpy.types.Operator):
                     continue
                 if ifcopenshell.util.element.get_pset(element, "BBIM_Array"):
                     self.report({"INFO"}, "Elements that are part of an array cannot be deleted.")
+                    continue
+                if element.is_a("IfcDocumentReference"):
+                    self.report({"INFO"}, "Linked models cannot be deleted.")
                     continue
                 if element.is_a("IfcGridAxis"):
                     # Deleting the last W axis is OK
@@ -1036,7 +1045,7 @@ class SelectedIdsData(NamedTuple):
 class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_outliner_delete"
     bl_label = "IFC Delete"
-    blender_op = bpy.ops.outliner.delete.get_rna_type()
+    blender_op = bpy.ops.outliner.delete.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes in sync with IFC."
@@ -1051,13 +1060,13 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context) -> bool:
         # Match `outliner.delete` poll for consistency.
         # `outliner.delete` just checks `area.type` == `OUTLINER`.
-        poll = bpy.ops.outliner.delete.poll()
+        poll = bpy.ops.outliner.delete.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available from Outliner.")
         return False
 
-    def execute(self, context):
+    def execute(self, context):  # ty:ignore[override-of-final-method]
         if len(getattr(context, "selected_ids", [])) == 0:
             return {"FINISHED"}
 
@@ -1155,7 +1164,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
     def poll(cls, context) -> bool:
         # Match `object.duplicate_move` poll for consistency.
         # `object.duplicate_move` poll checks for OBJECT mode.
-        poll = bpy.ops.object.duplicate_move.poll()
+        poll = bpy.ops.object.duplicate_move.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available in OBJECT mode")
@@ -1198,6 +1207,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 operator.report({"ERROR"}, f"Drawing '{obj.name}' not duplicated.")
                 continue
 
+            if element.is_a("IfcDocumentReference"):
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, f"Linked model '{obj.name}' not duplicated.")
+                continue
+
             if tool.Geometry.is_locked(element):
                 objects_to_remove.add(obj)
                 operator.report({"ERROR"}, lock_error_message(obj.name))
@@ -1205,13 +1219,84 @@ class OverrideDuplicateMove(bpy.types.Operator):
         for obj in objects_to_remove:
             tool.Blender.deselect_object(obj)
 
+        # Expand selection to include all parts of selected aggregates
+        objects_to_duplicate = set(context.selected_objects) - objects_to_remove
+        expanded_objects = set(objects_to_duplicate)
+
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcElementAssembly"):
+                parts = tool.Aggregate.get_parts_recursively(element)
+                for part in parts:
+                    part_obj = tool.Ifc.get_object(part)
+                    if part_obj:
+                        expanded_objects.add(part_obj)
+
+        # Store parent aggregate relationships
+        parent_aggregates = {}
+
+        for obj in expanded_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcElementAssembly"):
+                parent_aggregate = ifcopenshell.util.element.get_aggregate(element)
+                if parent_aggregate:
+                    parent_aggregates[element] = parent_aggregate
+
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
-            set(context.selected_objects) - objects_to_remove,
+            expanded_objects,
             linked=linked,
             active_object=context.active_object,
         )
+
+        # Restore parent aggregate relationships, but only for parents that were NOT duplicated
+        for old_elem, new_elems in old_to_new.items():
+            if old_elem in parent_aggregates:
+                old_parent = parent_aggregates[old_elem]
+
+                # Check if the parent was also duplicated
+                if old_parent in old_to_new:
+                    # The duplication already created the correct nested relationship
+                    continue
+
+                # Parent was NOT duplicated, so we need to assign to the original parent
+                for new_elem in new_elems:
+                    new_obj = tool.Ifc.get_object(new_elem)
+                    parent_obj = tool.Ifc.get_object(old_parent)
+                    if new_obj and parent_obj:
+                        bonsai.core.aggregate.assign_object(
+                            tool.Ifc,
+                            tool.Aggregate,
+                            tool.Collector,
+                            relating_obj=parent_obj,
+                            related_obj=new_obj,
+                        )
+
+        # Select all duplicated objects and their parts
+        all_objects_to_select = set()
+        for old_elem, new_elems in old_to_new.items():
+            for new_elem in new_elems:
+                new_obj = tool.Ifc.get_object(new_elem)
+                if new_obj:
+                    all_objects_to_select.add(new_obj)
+
+                    # If it's an aggregate, also select all its parts
+                    if new_elem.is_a("IfcElementAssembly"):
+                        parts = tool.Aggregate.get_parts_recursively(new_elem)
+                        for part in parts:
+                            part_obj = tool.Ifc.get_object(part)
+                            if part_obj:
+                                all_objects_to_select.add(part_obj)
+
+        # Deselect everything first
+        bpy.ops.object.select_all(action="DESELECT")
+
+        # Select all the duplicated objects
+        for obj in all_objects_to_select:
+            obj.select_set(True)
+
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
+
         return old_to_new
 
 
@@ -1491,6 +1576,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         old_to_new = {}
         original_data: dict[int, dict[int, dict[str, Any]]] = {}
 
+        # Define all nested functions FIRST
         def delete_objects(element: ifcopenshell.entity_instance) -> None:
             """Remove IfcElementAssembly and it's parts."""
             parts = ifcopenshell.util.element.get_parts(element)
@@ -1542,7 +1628,10 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
             ).id()
-            original_data[group] = {}
+
+            # Initialize if not exists
+            if group not in original_data:
+                original_data[group] = {}
 
             pset: dict[str, Any] = ifcopenshell.util.element.get_pset(element, self.pset_name)
             index: int = pset["Index"]
@@ -1559,8 +1648,13 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             if parts:
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
-                        # TODO: unused expression.
-                        original_data | get_original_data(part)
+                        # Recursively collect data from nested assemblies
+                        nested_data = get_original_data(part)
+                        # Merge nested data into original_data
+                        for nested_group_id, nested_group_data in nested_data.items():
+                            if nested_group_id not in original_data:
+                                original_data[nested_group_id] = {}
+                            original_data[nested_group_id].update(nested_group_data)
                     else:
                         try:
                             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
@@ -1584,49 +1678,101 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             ):  # if element has parts it means it is the base of and aggregate or sub-aggregate
                 aggregate = element
 
-            group = next(
-                r.RelatingGroup
-                for r in getattr(aggregate, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-                if self.group_name in r.RelatingGroup.Name
-            ).id()
-            if not group:
+            # Get the new group
+            new_group_entity = next(
+                (
+                    r.RelatingGroup
+                    for r in getattr(aggregate, "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if self.group_name in r.RelatingGroup.Name
+                ),
+                None,
+            )
+
+            if not new_group_entity:
                 return
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
+            if not pset:
+                return
+
             index = pset["Index"]
 
+            # Find the matching old group by looking for the same aggregate name
+            matching_group_id = None
             if index == 0:
-                obj.name = pset["Name"] + "_" + str(original_data[group][index]["Aggregate_Index"])
+                # This is a root assembly - find by Name
+                aggregate_name = pset.get("Name")
+                for group_id, group_data in original_data.items():
+                    if 0 in group_data and group_data[0].get("Name") == aggregate_name:
+                        matching_group_id = group_id
+                        break
+            else:
+                # This is a part - find the group that has this index
+                for group_id, group_data in original_data.items():
+                    if index in group_data:
+                        matching_group_id = group_id
+                        break
+
+            if matching_group_id is None:
+                return
+
+            if index == 0:
+                obj.name = pset["Name"] + "_" + str(original_data[matching_group_id][index]["Aggregate_Index"])
                 ifc_file = tool.Ifc.get()
                 ifcopenshell.api.pset.edit_pset(
                     ifc_file,
                     ifc_file.by_id(pset["id"]),
-                    properties={"Aggregate_Index": int(original_data[group][index]["Aggregate_Index"])},
+                    properties={"Aggregate_Index": int(original_data[matching_group_id][index]["Aggregate_Index"])},
                 )
-                bonsai.core.spatial.assign_container(
-                    tool.Ifc,
-                    tool.Collector,
-                    tool.Spatial,
-                    container=original_data[group][index]["Container"],
-                    element_obj=obj,
-                )
-                for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
-                    tool.Collector.assign(tool.Ifc.get_object(part))
-                assignments = original_data[group][index]["Assignment"]
+
+                # Only assign container if element is not already aggregated under another element
+                # Aggregated elements should not be in the spatial structure
+                if not ifcopenshell.util.element.get_aggregate(element):
+                    bonsai.core.spatial.assign_container(
+                        tool.Ifc,
+                        tool.Collector,
+                        tool.Spatial,
+                        container=original_data[matching_group_id][index]["Container"],
+                        objs=[obj],
+                    )
+                    for part in ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)):
+                        tool.Collector.assign(tool.Ifc.get_object(part))
+
+                assignments = original_data[matching_group_id][index]["Assignment"]
                 if assignments:
                     assign_to_annotations(obj, assignments)
             else:
                 try:
-                    obj.name = original_data[group][index]["Name"]
+                    obj.name = original_data[matching_group_id][index]["Name"]
                 except:
                     pass
                 try:
-                    assignments = original_data[group][index]["Assignment"]
+                    assignments = original_data[matching_group_id][index]["Assignment"]
                 except:
                     assignments = []
                 if assignments:
                     assign_to_annotations(obj, assignments)
+
+        def get_original_matrix(
+            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
+        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
+            selected_obj = tool.Ifc.get_object(base_instance)
+            selected_matrix = selected_obj.matrix_world
+            object_duplicate = tool.Ifc.get_object(element)
+            duplicate_matrix = object_duplicate.matrix_world.decompose()
+
+            return selected_matrix, duplicate_matrix
+
+        def set_new_matrix(
+            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
+        ) -> None:
+            for old, new in old_to_new.items():
+                new_obj = tool.Ifc.get_object(new[0])
+                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
+                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
+                new_obj_matrix = new_base_matrix @ matrix_diff
+                new_obj.matrix_world = new_obj_matrix
 
         def get_element_assembly(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
             if element.is_a("IfcElementAssembly"):
@@ -1671,26 +1817,6 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        def get_original_matrix(
-            element: ifcopenshell.entity_instance, base_instance: ifcopenshell.entity_instance
-        ) -> tuple[Matrix, tuple[Vector, Quaternion, Vector]]:
-            selected_obj = tool.Ifc.get_object(base_instance)
-            selected_matrix = selected_obj.matrix_world
-            object_duplicate = tool.Ifc.get_object(element)
-            duplicate_matrix = object_duplicate.matrix_world.decompose()
-
-            return selected_matrix, duplicate_matrix
-
-        def set_new_matrix(
-            selected_matrix: Matrix, duplicate_matrix: tuple[Vector, Quaternion, Vector], old_to_new: dict
-        ) -> None:
-            for old, new in old_to_new.items():
-                new_obj = tool.Ifc.get_object(new[0])
-                new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
-                new_obj_matrix = new_base_matrix @ matrix_diff
-                new_obj.matrix_world = new_obj_matrix
-
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
@@ -1727,6 +1853,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             base_pset = ifcopenshell.util.element.get_pset(base_instance, self.pset_name)
             base_obj = tool.Ifc.get_object(base_instance)
             base_obj.name = base_pset["Name"] + "_" + str(base_pset["Aggregate_Index"])
+
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue
@@ -1735,7 +1862,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 
                 selected_matrix, duplicate_matrix = get_original_matrix(element, base_instance)
 
-                original_data = get_original_data(element)
+                # Merge data instead of overwriting
+                element_original_data = get_original_data(element)
+                for group_id, group_data in element_original_data.items():
+                    if group_id not in original_data:
+                        original_data[group_id] = {}
+                    original_data[group_id].update(group_data)
 
                 delete_objects(element)
 
@@ -1749,7 +1881,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
                 set_new_matrix(selected_matrix, duplicate_matrix, old_to_new)
 
                 for old, new in old_to_new.items():
-                    if element_aggregate and new[0].is_a("IfcElementAssembly"):
+                    if element_aggregate and new[0].is_a("IfcElementAssembly") and old == base_instance:
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
 
                         if not new_aggregate:
@@ -1776,7 +1908,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
-    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    blender_op = bpy.ops.mesh.separate.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes are in sync with IFC."
@@ -1794,7 +1926,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not bpy.ops.object.join.poll():
+        if not bpy.ops.object.join.poll():  # ty: ignore[missing-argument]
             cls.poll_message_set("Active object is not EDITable.")
             return False
         if not context.selected_editable_objects:
@@ -1914,6 +2046,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 return position
 
             items = list(representation.Items)
+            skipped_objects = []
             for obj in context.selected_editable_objects:
                 if obj == self.target:
                     continue
@@ -1933,12 +2066,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 assert obj_rep
                 if obj_rep.RepresentationType != representation_type:
                     obj.select_set(False)
-                    self.report(
-                        {"ERROR"},
-                        f"IFC join failed - object '{obj.name}' has a different representation type "
-                        f"({obj_rep.RepresentationType})\nthan target '{self.target.name}' ({representation_type}).",
-                    )
-                    return
+                    skipped_objects.append((obj.name, obj_rep.RepresentationType))
+                    continue
 
                 placement = np.array(obj.matrix_world)
                 placement[M_TRANSLATION] /= si_conversion
@@ -2018,6 +2147,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
                     items.append(copied_item)
                 ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            if skipped_objects:
+                skipped_info = ", ".join(f"'{name}' ({rep_type})" for name, rep_type in skipped_objects)
+                self.report({"INFO"}, f"Skipped incompatible objects: {skipped_info}")
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(
@@ -2157,7 +2289,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif obj in pprops.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
-            if not obj.data:
+            if not obj.data or obj.type not in ("MESH", "CURVE"):
                 self.report({"INFO"}, "No geometry to edit")
             elif tool.Geometry.is_locked(element):
                 self.report({"ERROR"}, lock_error_message(obj.name))
@@ -2655,45 +2787,130 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         return bpy.ops.bim.override_mode_set_object()
 
     def exit_item_edit_mode(self, context, obj):
-        """Exit from SweptAreaSolid item editing."""
+        """Exit from representation item editing."""
         try:
+            # Make absolutely sure we're in object mode before proceeding
+            if context.mode != "OBJECT":
+                bpy.ops.object.mode_set(mode="OBJECT", toggle=False)
+
             item = tool.Geometry.get_active_representation(obj)
-            if not item or not item.is_a("IfcSweptAreaSolid"):
+            if not item:
                 return bpy.ops.bim.override_mode_set_object()
 
-            # Use the standard save workflow for items
-            from bonsai.bim.module.model.decorator import ProfileDecorator
-
-            ProfileDecorator.uninstall()
-            tool.Blender.toggle_edit_mode(context)
-
-            profile = tool.Model.export_profile(obj)
-            if not profile:
-
-                def msg(self, context):
-                    self.layout.label(text="INVALID PROFILE")
-
-                context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                tool.Blender.toggle_edit_mode(context)
-                ProfileDecorator.install(context)
-                return {"CANCELLED"}
-
-            old_profile = item.SweptArea
-            profile.ProfileName = old_profile.ProfileName
-
-            ifc_file = tool.Ifc.get()
-            for inverse in ifc_file.get_inverse(old_profile):
-                ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
-
-            tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
-            ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
-
+            # Fix vertex order for annotation items
             props = tool.Geometry.get_geometry_props()
-            if props.representation_obj:
+            rep_obj = props.representation_obj
+            if rep_obj:
+                element = tool.Ifc.get_entity(rep_obj)
+                if element and OverrideModeSetObject._is_annotation_object(self, element):
+                    tool.Geometry.ensure_annotation_vertex_order(obj)
+
+            # Handle SweptAreaSolid
+            if item.is_a("IfcSweptAreaSolid"):
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+
+                ProfileDecorator.uninstall()
+
+                profile = tool.Model.export_profile(obj)
+                if not profile:
+
+                    def msg(self, context):
+                        self.layout.label(text="INVALID PROFILE")
+
+                    context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    tool.Blender.toggle_edit_mode(context)
+                    ProfileDecorator.install(context)
+                    return {"CANCELLED"}
+
+                old_profile = item.SweptArea
+                profile.ProfileName = old_profile.ProfileName
+
+                ifc_file = tool.Ifc.get()
+                for inverse in ifc_file.get_inverse(old_profile):
+                    ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+
+                tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
+                ifcopenshell.util.element.remove_deep2(ifc_file, old_profile)
+
+                if props.representation_obj:
+                    tool.Geometry.reload_representation(props.representation_obj)
+                    tool.Geometry.disable_item_mode()
+
+                return {"FINISHED"}
+
+            # Handle curvelike items (annotations)
+            elif tool.Geometry.is_curvelike_item(item):
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+
+                ProfileDecorator.uninstall()
+
+                new = tool.Model.export_curves(obj)
+
+                if not new:
+
+                    def msg(self, context):
+                        self.layout.label(text="INVALID PROFILE")
+
+                    context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+                    tool.Blender.toggle_edit_mode(context)
+                    ProfileDecorator.install(context)
+                    return {"CANCELLED"}
+
+                additional_curves = []
+                if len(new) > 1:
+                    additional_curves = new[1:]
+                new = new[0]
+
+                ifc_file = tool.Ifc.get()
+                for inverse in ifc_file.get_inverse(item):
+                    ifcopenshell.util.element.replace_attribute(inverse, item, new)
+                ifcopenshell.util.element.remove_deep2(ifc_file, item)
+
+                tool.Ifc.link(new, obj.data)
+                tool.Geometry.import_item(obj)
+
+                for curve_item in additional_curves:
+                    representation = tool.Geometry.get_active_representation(props.representation_obj)
+                    representation = ifcopenshell.util.representation.resolve_representation(representation)
+                    representation.Items = list(representation.Items) + [curve_item]
+
+                    mesh = bpy.data.meshes.new("temp")
+                    new_obj = bpy.data.objects.new("temp", mesh)
+                    tool.Geometry.name_item_object(new_obj, curve_item)
+                    tool.Ifc.link(curve_item, mesh)
+                    bpy.context.collection.objects.link(new_obj)
+                    props.add_item_object(new_obj, curve_item)
+                    new_obj.matrix_world = obj.matrix_world
+                    tool.Geometry.import_item(new_obj)
+
+                if additional_curves:
+                    tool.Root.reload_item_decorator()
+
+                # Reload representation and exit item mode
                 tool.Geometry.reload_representation(props.representation_obj)
                 tool.Geometry.disable_item_mode()
 
-            return {"FINISHED"}
+                return {"FINISHED"}
+
+            # Handle meshlike items
+            elif tool.Geometry.is_meshlike_item(item):
+                if tool.Geometry.is_geometric_data(obj.data) and (
+                    item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
+                ):
+                    tool.Geometry.edit_meshlike_item(obj)
+                else:
+                    tool.Geometry.import_item(obj)
+                tool.Root.reload_item_decorator()
+
+                # Exit item mode to return to object mode
+                tool.Geometry.disable_item_mode()
+
+                return {"FINISHED"}
+
+            # Fallback
+            else:
+                return bpy.ops.bim.override_mode_set_object()
+
         except Exception as e:
             self.report({"ERROR"}, f"Failed to save item changes: {str(e)}")
             return {"CANCELLED"}
@@ -2781,48 +2998,61 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
         return self.enter_item_edit_mode(context, obj)
 
     def enter_item_edit_mode(self, context, obj):
-        """Enter item mode for SweptAreaSolid editing."""
+        """Enter item mode for representation item editing."""
         try:
             props = tool.Geometry.get_geometry_props()
             if not props.representation_obj:
                 bpy.ops.bim.import_representation_items()
                 props = tool.Geometry.get_geometry_props()
 
-            # Find the SweptAreaSolid item
+            # Find an editable item - prioritize SweptAreaSolid but allow others
+            editable_item_obj = None
             swept_solid_obj = None
+
             for item_obj_data in props.item_objs:
                 item_obj = item_obj_data.obj
                 if not item_obj:
                     continue
                 try:
                     item = tool.Geometry.get_active_representation(item_obj)
-                    if item and item.is_a("IfcSweptAreaSolid"):
+                    if not item:
+                        continue
+
+                    # Prioritize SweptAreaSolid
+                    if item.is_a("IfcSweptAreaSolid"):
                         swept_solid_obj = item_obj
+                        editable_item_obj = item_obj
                         break
+
+                    # But accept other editable types as fallback
+                    if not editable_item_obj:
+                        editable_item_obj = item_obj
                 except:
                     continue
 
-            if not swept_solid_obj:
-                self.report({"INFO"}, "No editable SweptAreaSolid item found")
+            if not editable_item_obj:
+                self.report({"INFO"}, "No editable representation item found")
                 tool.Geometry.disable_item_mode()
                 return {"CANCELLED"}
 
-            # Select and activate the swept solid object
+            # Select and activate the editable object
             bpy.ops.object.select_all(action="DESELECT")
-            swept_solid_obj.select_set(True)
-            context.view_layer.objects.active = swept_solid_obj
+            editable_item_obj.select_set(True)
+            context.view_layer.objects.active = editable_item_obj
 
-            # Import the profile to prepare for editing
-            item = tool.Geometry.get_active_representation(swept_solid_obj)
-            if item and item.is_a("IfcSweptAreaSolid"):
+            # Get the item to determine how to edit it
+            item = tool.Geometry.get_active_representation(editable_item_obj)
+
+            # Handle SweptAreaSolid with profile import
+            if item.is_a("IfcSweptAreaSolid"):
                 profile = item.SweptArea
-                res = tool.Model.import_profile(profile, obj=swept_solid_obj)
+                res = tool.Model.import_profile(profile, obj=editable_item_obj)
                 if res is None:
                     self.report({"ERROR"}, "Couldn't import profile for editing")
                     tool.Geometry.disable_item_mode()
                     return {"CANCELLED"}
 
-                tool.Ifc.link(item, swept_solid_obj.data)
+                tool.Ifc.link(item, editable_item_obj.data)
                 tool.Blender.toggle_edit_mode(context)
 
                 from bonsai.bim.module.model.decorator import ProfileDecorator
@@ -2833,6 +3063,37 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Blender.set_viewport_tool("bim.cad_tool")
 
                 return {"FINISHED"}
+
+            # Handle other item types (annotations, curves, etc.)
+            elif tool.Geometry.is_curvelike_item(item):
+                tool.Model.import_curve(item, obj=editable_item_obj)
+                tool.Ifc.link(item, editable_item_obj.data)
+                tool.Blender.toggle_edit_mode(context)
+
+                from bonsai.bim.module.model.decorator import ProfileDecorator
+
+                ProfileDecorator.install(context)
+
+                if not bpy.app.background:
+                    tool.Blender.set_viewport_tool("bim.cad_tool")
+
+                return {"FINISHED"}
+
+            # Handle meshlike items
+            elif tool.Geometry.is_meshlike_item(item):
+                tool.Geometry.dissolve_triangulated_edges(editable_item_obj)
+                tool.Blender.select_and_activate_single_object(context, editable_item_obj)
+                assert isinstance(mesh := editable_item_obj.data, bpy.types.Mesh)
+                props = tool.Geometry.get_mesh_props(mesh)
+                props.mesh_checksum = tool.Geometry.get_mesh_checksum(mesh)
+                tool.Blender.toggle_edit_mode(context)
+                return {"FINISHED"}
+
+            else:
+                self.report({"INFO"}, f"Editing {item.is_a()} geometry is not yet supported")
+                tool.Geometry.disable_item_mode()
+                return {"CANCELLED"}
+
         except Exception as e:
             self.report({"ERROR"}, f"Failed to enter item edit mode: {str(e)}")
             try:
@@ -2840,8 +3101,6 @@ class DirectProfileEdit(bpy.types.Operator, tool.Ifc.Operator):
             except:
                 pass
             return {"CANCELLED"}
-
-        return {"CANCELLED"}
 
 
 class FlipObject(bpy.types.Operator):

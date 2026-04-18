@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
 from typing import Any
+
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 
 def edit_cost_value(
@@ -58,6 +59,6 @@ def edit_cost_value(
                     value["ValueComponent"],
                 )
                 value = file.create_entity("IfcMeasureWithUnit", value_component, value["UnitComponent"])
-            if old_unit_basis and file.get_total_inverses(old_unit_basis) == 0:
-                ifcopenshell.util.element.remove_deep(file, old_unit_basis)
+            if old_unit_basis:
+                ifcopenshell.util.element.remove_deep2(file, old_unit_basis)
         setattr(cost_value, name, value)

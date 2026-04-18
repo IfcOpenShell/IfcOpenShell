@@ -18,12 +18,17 @@
 
 """2D drawing generation and serialisation"""
 
-from functools import reduce
 import itertools
-import math
 import json
+import math
 import operator
 import warnings
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field, fields
+from functools import reduce
+from xml.dom.minidom import parseString
+
+import numpy
 import shapely
 
 import ifcopenshell
@@ -31,18 +36,13 @@ import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 
-from xml.dom.minidom import parseString
-from dataclasses import dataclass, fields, field
-from collections.abc import Callable, Sequence
-
-import numpy
-
 W = ifcopenshell.ifcopenshell_wrapper
 
 WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
 
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, 'arrange_polygon_settings') else None
 
 @dataclass
 class draw_settings:
@@ -537,7 +537,7 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
-            arranged = W.arrange_polygons(polies)
+            arranged = W.arrange_polygons(*filter(None, (ARRANGE_POLYGON_SETTINGS,)), polies)
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)
             svg3 = dom3.childNodes[0]
@@ -670,9 +670,8 @@ def main(
 
 
 if __name__ == "__main__":
-    import sys
-    import time
     import argparse
+    import time
 
     times = []
 

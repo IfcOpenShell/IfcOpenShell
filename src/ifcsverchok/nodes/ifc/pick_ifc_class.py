@@ -18,11 +18,12 @@
 
 import bpy
 import ifcopenshell
-import ifcsverchok.helper
 from bpy.props import EnumProperty
-from ifcsverchok.ifcstore import SvIfcStore
-from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from sverchok.node_tree import SverchCustomTreeNode
+
+import ifcsverchok.helper
+from ifcsverchok.ifcstore import SvIfcStore
 
 
 def get_ifc_products(self, context):

@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import json
+import os
 import time
+from typing import Any, Literal, Union
+
 import ifcopenshell
-import ifcopenshell.util.attribute
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-from typing import Union, Any, Literal
+import ifcopenshell.util.attribute
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 

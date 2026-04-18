@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
 from bpy.types import Panel
+
+import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
 

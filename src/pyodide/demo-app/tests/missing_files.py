@@ -1,6 +1,6 @@
 async def test_pset():
-    import ifcopenshell.api.pset
     import ifcopenshell.api.material
+    import ifcopenshell.api.pset
 
     errors = []
     try:

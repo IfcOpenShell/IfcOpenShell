@@ -16,21 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
-import ifcopenshell.api
-import ifcopenshell.api.pset
-import ifcopenshell.util.element
-import bonsai.bim.schema
-import bonsai.tool as tool
-import bonsai.core.pset as core
-import bonsai.bim.module.pset.data
-from bonsai.bim.ifc import IfcStore
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+import bpy
+import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
+
+import bonsai.bim.module.pset.data
+import bonsai.bim.schema
+import bonsai.core.pset as core
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
+
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import RenamePropertyEntry, AddEditPropertyEntry
+    from bonsai.bim.module.pset.prop import AddEditPropertyEntry
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
@@ -238,7 +240,7 @@ class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy Property To Selection"
     bl_options = {"REGISTER", "UNDO"}
 
-    name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    name: bpy.props.StringProperty()
 
     if TYPE_CHECKING:
         name: str
@@ -278,10 +280,10 @@ class BIM_OT_add_property_to_edit(bpy.types.Operator):
     bl_label = "Add Property to Edit"
     bl_idname = "bim.add_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
-    index: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty(default=-1)
 
     if TYPE_CHECKING:
         option: tool.Pset.BulkOperationType
@@ -305,9 +307,9 @@ class BIM_OT_remove_property_to_edit(bpy.types.Operator):
     bl_label = "Remove Property from Editing"
     bl_idname = "bim.remove_property_to_edit"
     bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    index2: bpy.props.IntProperty(default=-1)  # pyright: ignore[reportRedeclaration]
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
+    index2: bpy.props.IntProperty(default=-1)
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
 
@@ -334,7 +336,7 @@ class BIM_OT_bulk_edit_clear_list(bpy.types.Operator):
     bl_label = "Clear List of Properties"
     bl_idname = "bim.pset_bulk_edit_clear_list"
     bl_options = {"REGISTER", "UNDO"}
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(t, t, "") for t in tool.Pset.BULK_OPERATION_TYPES],
     )
 
@@ -569,7 +571,7 @@ class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
         template_file = IfcStore.pset_template_file
         assert template_file
 
-        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+        tool.PsetTemplate.add_pset_as_template(pset.Name, template_file)
 
         template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()

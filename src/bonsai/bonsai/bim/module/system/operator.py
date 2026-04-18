@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
+
 import bpy
-import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.api.system
 import ifcopenshell.util.system
-import bonsai.tool as tool
-import bonsai.core.system as core
+
 import bonsai.bim.helper
+import bonsai.core.system as core
+import bonsai.tool as tool
 from bonsai.bim.module.system.data import PortData, SystemData
-from typing import TYPE_CHECKING
 
 
 class LoadSystems(bpy.types.Operator):
@@ -52,7 +54,7 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add System"
     bl_options = {"REGISTER", "UNDO"}
 
-    parent_system_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    parent_system_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         parent_system_id: int
@@ -198,7 +200,16 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         # Ifc.Operator - as operator will sync object's position with IFC.
-        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
+        element = tool.Ifc.get_entity(context.active_object)
+        core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=element)
+
+        for port in tool.System.get_ports(element):
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port:
+                connected_port_obj = tool.Ifc.get_object(connected_port)
+                if not connected_port_obj:
+                    parent_element = tool.System.get_port_relating_element(connected_port)
+                    core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=parent_element)
 
 
 class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
@@ -217,7 +228,7 @@ class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_port"
-    bl_description = "Add port at current cursor position"
+    bl_description = "Add USERDEFINED port at current cursor position"
     bl_label = "Add Port"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -246,7 +257,41 @@ class ConnectPort(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj1 = context.active_object
         obj2 = context.selected_objects[0] if context.selected_objects[1] == obj1 else context.selected_objects[1]
-        core.connect_port(tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2))
+        direction = tool.Ifc.get_entity(obj1).FlowDirection or "NOTDEFINED"
+        core.connect_port(
+            tool.Ifc, port1=tool.Ifc.get_entity(obj1), port2=tool.Ifc.get_entity(obj2), direction=direction
+        )
+
+
+class AddRelatedPortConnection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_related_port_connection"
+    bl_label = "Connect Port"
+    bl_options = {"REGISTER", "UNDO"}
+
+    relating_port_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        props = tool.System.get_system_props()
+        self.layout.prop(props, "related_port", text="Select Port")
+
+    def _execute(self, context):
+        props = tool.System.get_system_props()
+
+        if not props.related_port or props.related_port == "NONE":
+            return {"CANCELLED"}
+
+        port_obj = bpy.data.objects.get(props.related_port)
+        related_port = tool.Ifc.get_entity(port_obj)
+        relating_port = tool.Ifc.get().by_id(self.relating_port_id)
+
+        direction = relating_port.FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, port1=relating_port, port2=related_port, direction=direction)
+        PortData.is_loaded = False
+
+        return {"FINISHED"}
 
 
 class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
@@ -255,6 +300,9 @@ class DisconnectPort(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     element_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
 
     def _execute(self, context):
         if self.element_id != 0:
@@ -269,17 +317,19 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Connect MEP Elements"
     bl_description = "Connects two selected elements by their closest located ports and adjusts them"
     bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not len(context.selected_objects) == 2:
-            cls.poll_message_set("Need to select 2 objects.")
-            return False
-        return True
+    obj1_name: bpy.props.StringProperty(name="Object 1")
+    obj2_name: bpy.props.StringProperty(name="Object 2")
 
     def _execute(self, context):
-        obj1 = context.active_object
-        obj2 = next(o for o in context.selected_objects if o != obj1)
+        if self.obj1_name and self.obj2_name:
+            obj1 = bpy.data.objects.get(self.obj1_name)
+            obj2 = bpy.data.objects.get(self.obj2_name)
+        else:
+            if not context.selected_objects or len(context.selected_objects) != 2:
+                self.report({"ERROR"}, "Need to select 2 objects.")
+                return {"CANCELLED"}
+            obj1 = context.active_object
+            obj2 = next(o for o in context.selected_objects if o != obj1)
 
         tool.Model.sync_object_ifc_position(obj1)
         tool.Model.sync_object_ifc_position(obj2)
@@ -310,7 +360,8 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
                 ports_distance[(port1, port2)] = distance
 
         closest_ports = min(ports_distance, key=lambda x: ports_distance[x])
-        core.connect_port(tool.Ifc, *closest_ports)
+        direction = closest_ports[0].FlowDirection or "NOTDEFINED"
+        core.connect_port(tool.Ifc, *closest_ports, direction=direction)
         bpy.ops.bim.regenerate_distribution_element()
         return {"FINISHED"}
 
@@ -377,6 +428,105 @@ class SetFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"ERROR"}, "Selected elements are not connected to set the flow direction")
         return {"CANCELLED"}
+
+
+class CycleFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.cycle_flow_direction"
+    bl_label = "Cycle Flow Direction"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        port = tool.Ifc.get().by_id(operator.port_id)
+        if port and port.is_a("IfcDistributionPort"):
+            current_direction = port.FlowDirection or "NOTDEFINED"
+            return f"Current flow direction: {current_direction}. Click to cycle: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED"
+        return "Cycle through flow directions: SOURCE → SINK → SOURCEANDSINK → NOTDEFINED → SOURCE..."
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        port = tool.Ifc.get().by_id(self.port_id)
+        if not port or not port.is_a("IfcDistributionPort"):
+            return {"CANCELLED"}
+
+        current_direction = port.FlowDirection or "NOTDEFINED"
+
+        flow_cycle_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCEANDSINK",
+            "SOURCEANDSINK": "NOTDEFINED",
+            "NOTDEFINED": "SOURCE",
+        }
+        next_direction = flow_cycle_map.get(current_direction, "SOURCE")
+
+        ifcopenshell.api.attribute.edit_attributes(ifc_file, product=port, attributes={"FlowDirection": next_direction})
+
+        connected_port = tool.System.get_connected_port(port)
+        if connected_port:
+            connected_direction_map = {
+                "SOURCE": "SINK",
+                "SINK": "SOURCE",
+                "SOURCEANDSINK": "SOURCEANDSINK",
+                "NOTDEFINED": "NOTDEFINED",
+            }
+            connected_direction = connected_direction_map.get(next_direction, "NOTDEFINED")
+            ifcopenshell.api.attribute.edit_attributes(
+                ifc_file, product=connected_port, attributes={"FlowDirection": connected_direction}
+            )
+
+        PortData.is_loaded = False
+
+        return {"FINISHED"}
+
+
+class EstablishPathDirection(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.establish_path_direction"
+    bl_label = "Establish Path Direction"
+    bl_description = "Propagates flow direction through connected flow segments with two ports"
+    bl_options = {"REGISTER", "UNDO"}
+    port_id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        connected_port = tool.Ifc.get().by_id(self.port_id)
+
+        if not connected_port or not connected_port.is_a("IfcDistributionPort"):
+            self.report({"ERROR"}, "Invalid port specified.")
+            return {"CANCELLED"}
+
+        direction_map = {
+            "SOURCE": "SINK",
+            "SINK": "SOURCE",
+            "SOURCEANDSINK": "SOURCEANDSINK",
+            "NOTDEFINED": "NOTDEFINED",
+        }
+        next_element = tool.System.get_port_relating_element(connected_port)
+        ports = tool.System.get_ports(next_element)
+        segments_processed = 0
+        while len(ports) == 2:
+            if ports[0].id() == connected_port.id():
+                other_port = ports[1]
+            else:
+                other_port = ports[0]
+
+            new_direction = direction_map.get(connected_port.FlowDirection, "NOTDEFINED")
+            other_port.FlowDirection = new_direction
+            segments_processed += 1
+
+            connected_port = tool.System.get_connected_port(other_port)
+            if not connected_port:
+                break
+            connected_port.FlowDirection = direction_map.get(other_port.FlowDirection, "NOTDEFINED")
+            next_element = tool.System.get_port_relating_element(connected_port)
+
+            if not next_element.is_a("IfcFlowSegment"):
+                print(f"DEBUG: next_element is not IfcFlowSegment, stopping")
+                break
+
+            ports = tool.System.get_ports(next_element)
+
+        self.report({"INFO"}, f"Established path direction through {segments_processed} flow segment(s).")
+        return {"FINISHED"}
 
 
 class LoadZones(bpy.types.Operator):

@@ -17,28 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.type as subject
-from test.core.bootstrap import ifc, type, geometry
+from test.core.bootstrap import geometry, ifc, model, type
 
 
 class TestAssignType:
-    def test_assigning_and_switching_to_an_existing_type_data(self, ifc, type):
+    def test_assigning_and_switching_to_an_existing_type_data(self, ifc, model, type):
+        type.record_material_usage_attributes("element").should_be_called().will_return(None)
         ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
-        type.has_material_usage("element").should_be_called().will_return(False)
+        model.get_usage_type("type").should_be_called(2).will_return(None)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return("type_obj_data")
         type.change_object_data("obj", "type_obj_data", is_global=False).should_be_called()
         ifc.get_object("element").should_be_called().will_return("obj")
         type.disable_editing("obj").should_be_called()
-        subject.assign_type(ifc, type, element="element", type="type")
+        subject.assign_type(ifc, model, type, element="element", type="type")
 
-    def test_assigning_and_not_changing_data_if_the_type_has_no_data(self, ifc, type):
+    def test_assigning_and_not_changing_data_if_the_type_has_no_data(self, ifc, model, type):
+        type.record_material_usage_attributes("element").should_be_called().will_return(None)
         ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
-        type.has_material_usage("element").should_be_called().will_return(False)
+        model.get_usage_type("type").should_be_called(2).will_return(None)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return(None)
         ifc.get_object("element").should_be_called().will_return("obj")
         type.disable_editing("obj").should_be_called()
-        subject.assign_type(ifc, type, element="element", type="type")
+        subject.assign_type(ifc, model, type, element="element", type="type")
 
 
 class TestPurgeUnusedTypes:

@@ -17,16 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import bpy
+from bpy.types import Panel, UIList
+
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 import bonsai.tool as tool
-from bpy.types import Panel, UIList
-from bonsai.bim.module.cost.data import CostSchedulesData
-from typing import Any, TYPE_CHECKING
+from bonsai.bim.module.cost.data import CostItem, CostSchedulesData
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
+    from bonsai.bim.prop import StrProperty
 
 
 class BIM_PT_cost_schedules(Panel):
@@ -395,8 +399,8 @@ class BIM_PT_cost_item_types(Panel):
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
 
-        rtprops = context.scene.BIMResourceTreeProperties
         rprops = tool.Resource.get_resource_props()
+        rtprops = rprops.tree
         if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
             if has_quantity_names:
                 op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
@@ -658,9 +662,18 @@ class BIM_UL_cost_items_trait:
         split2.alignment = "LEFT"
         split2.label(text="Rate")
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMCostProperties,
+        item: CostProp.CostItem,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
-            self.props = tool.Cost.get_cost_props()
+            self.props = data
             cost_item = CostSchedulesData.data["cost_items"][item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -691,7 +704,7 @@ class BIM_UL_cost_items_trait:
 
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
 
-    def draw_parent_operator(self, row, cost_item_id):
+    def draw_parent_operator(self, row: bpy.types.UILayout, cost_item_id: int) -> None:
         if self.props.active_cost_item_id:
             if self.props.active_cost_item_id != cost_item_id:
                 op = row.operator("bim.change_parent_cost_item", text="", icon="LINKED", emboss=False).new_parent = (
@@ -700,7 +713,7 @@ class BIM_UL_cost_items_trait:
             else:
                 row.label(text="", icon="BLANK1")
 
-    def draw_hierarchy(self, row, item):
+    def draw_hierarchy(self, row: bpy.types.UILayout, item: CostProp.CostItem) -> None:
         for i in range(0, item.level_index):
             row.label(text="", icon="BLANK1")
         if item.has_children:
@@ -746,7 +759,7 @@ class BIM_UL_cost_items_trait:
         else:
             row.label(text="-")
 
-    def draw_value_column(self, layout, cost_item):
+    def draw_value_column(self, layout: bpy.types.UILayout, cost_item: CostItem) -> None:
         if cost_item["TotalAppliedValue"]:
             text = "{0:,.2f}".format(cost_item["TotalAppliedValue"]).replace(",", " ")
             if cost_item["UnitBasisValueComponent"] not in [None, 1]:
@@ -757,13 +770,13 @@ class BIM_UL_cost_items_trait:
         else:
             layout.label(text="-")
 
-    def draw_total_cost_column(self, layout, cost_item):
+    def draw_total_cost_column(self, layout: bpy.types.UILayout, cost_item: CostItem) -> None:
         format_numbers = "{0:,.2f}".format(cost_item["TotalCost"]).replace(",", " ")
         currency = CostSchedulesData.data["currency"]
         text = "{} {}".format(format_numbers, currency["name"]) if currency else format_numbers
         layout.label(text=text)
 
-    def draw_order_operator(self, row, ifc_definition_id, cost_item):
+    def draw_order_operator(self, row: bpy.types.UILayout, ifc_definition_id: int, cost_item: CostItem) -> None:
         if cost_item["NestingIndex"] is not None:
             if cost_item["NestingIndex"] == 0:
                 op = row.operator("bim.reorder_cost_item_nesting", icon="TRIA_DOWN", text="")
@@ -790,12 +803,14 @@ class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
     def draw_quantity_column(self, layout, cost_item):
         self.draw_uom_column(layout, cost_item)
 
-    def draw_total_cost_column(self, layout, cost_item):
+    def draw_total_cost_column(self, layout: bpy.types.UILayout, cost_item: CostItem) -> None:
         pass  # No such thing as a total cost in a schedule of rates
 
 
 class BIM_UL_cost_columns(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: StrProperty, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -803,9 +818,17 @@ class BIM_UL_cost_columns(UIList):
 
 
 class BIM_UL_cost_item_types(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = tool.Cost.get_cost_props()
-        cost_item = props.cost_items[props.active_cost_item_index]
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMCostProperties,
+        item: CostProp.CostItemType,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
+        cost_item = data.cost_items[data.active_cost_item_index]
 
         if item:
             row = layout.row(align=True)
@@ -841,7 +864,16 @@ class BIM_UL_cost_item_quantities(UIList):
 
 
 class BIM_UL_product_cost_items(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data,
+        item: CostItemQuantity,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.highlight_product_cost_item", text="", icon="STYLUS_PRESSURE")

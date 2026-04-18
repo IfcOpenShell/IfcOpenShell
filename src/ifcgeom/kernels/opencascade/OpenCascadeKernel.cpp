@@ -28,6 +28,7 @@
 #include "boolean_utils.h"
 #include "base_utils.h"
 
+#include <BOPAlgo_MakerVolume.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 
 namespace {
@@ -136,7 +137,20 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 			bool is_manifold = util::is_manifold(entity_part);
 
 			if (!is_manifold) {
-				logger::warning("Non-manifold first operand");
+				if (settings_.get<settings::MakeVolume>().get()) {
+					BOPAlgo_MakerVolume mv;
+					mv.AddArgument(entity_part);
+					mv.Perform();
+					if (mv.HasErrors()) {
+						logger::warning("Non-manifold first operand, --make-volume failed");
+					} else {
+						entity_part = mv.Shape();
+						is_manifold = util::is_manifold(entity_part);
+					}
+				}
+				if (!is_manifold) {
+					logger::warning("Non-manifold first operand, use --make-volume to try and make manifold");
+				}
 			}
 
 			TopoDS_Shape entity_part_result;

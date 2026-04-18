@@ -30,7 +30,7 @@ would be with the use of templates as shown below.
     #include "ifcparse/Ifc4.h"
     #include "ifcparse/Ifc4x3_add2.h"
 
-    #define IFC_SCHEMA_SEQ (4x3_rc2)(4)(2x3) // TODO: Enumerate through all IFC schemas you want to be able to process
+    #define IFC_SCHEMA_SEQ (4x3_add2)(4)(2x3) // TODO: Enumerate through all IFC schemas you want to be able to process
     #define EXPAND_AND_CONCATENATE(elem) Ifc##elem
     #define PROCESS_FOR_SCHEMA(r, data, elem) if (schema_version == BOOST_PP_STRINGIZE(elem)) { parseIfc<EXPAND_AND_CONCATENATE(elem)>(file); } else
 

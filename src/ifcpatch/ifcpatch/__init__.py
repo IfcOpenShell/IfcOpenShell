@@ -18,22 +18,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import shutil
-import sys
-import ifcopenshell
-import logging
-import typing
-import inspect
-import collections
 import importlib
 import importlib.util
+import inspect
+import logging
+import os
 import re
-from pathlib import Path
-from typing import Union, Optional, Any, TypedDict
-from typing_extensions import NotRequired
+import shutil
+import sys
+import typing
 from collections.abc import Sequence
+from pathlib import Path
+from typing import Any, Optional, TypedDict, Union
 
+import ifcopenshell
+from typing_extensions import NotRequired
 
 __version__ = version = "0.0.0"
 
@@ -216,11 +215,11 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
 
         input_data = inputs[input_name]
         # E.g. list[str].
-        if isinstance(type_hint, typing.GenericAlias):
+        if isinstance(type_hint, typing.GenericAlias):  # pyright: ignore[reportAttributeAccessIssue]
             input_data["generic_type"] = type_hint.__name__
             type_hint = typing.get_args(type_hint)[0]
 
-        if isinstance(type_hint, typing._UnionGenericAlias):
+        if isinstance(type_hint, typing._UnionGenericAlias):  # pyright: ignore[reportAttributeAccessIssue]
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
         elif type_hint.__name__ == "Literal":
             inputs[input_name]["type"] = "Literal"

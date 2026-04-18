@@ -1,18 +1,15 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, UploadFile, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-
-from security.secure import get_current_active_user
-
 from models.bcf_request import *
 from models.bcf_response import *
-from models.request import *
 from models.other import *
-
+from models.request import *
 from repository.bcf import bcf_db
+from security.secure import get_current_active_user
 
 from api.logging import LoggingRoute
-
 
 router = APIRouter(route_class=LoggingRoute)
 

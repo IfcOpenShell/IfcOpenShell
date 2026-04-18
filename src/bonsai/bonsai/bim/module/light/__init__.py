@@ -16,16 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from . import ui, prop, operator, list
-
+import importlib.util
 import stat
 from pathlib import Path
 
-import importlib
-import importlib.util
-import traceback
+import bpy
 import pyradiance
+
+from . import list, operator, prop, ui
 
 
 def get_pyradiance_path():

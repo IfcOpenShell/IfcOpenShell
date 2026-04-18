@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from gpu_extras.batch import batch_for_shader
 import gpu
+from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
-
 
 # NOTES:
 # Since Metal doesn't support geometry shaders we stick to builtin shaders
@@ -336,12 +335,9 @@ class BaseLinesShader(BaseShader):
 
     TYPE = "LINES"
 
-    DEF_GLSL = (
-        BaseShader.DEF_GLSL
-        + """
+    DEF_GLSL = BaseShader.DEF_GLSL + """
     #define GAP_SIZE {gap_size}
     """
-    )
 
     GEOM_GLSL = """
     layout(lines) in;
@@ -369,9 +365,6 @@ class BaseLinesShader(BaseShader):
         emitSegment(W2C(p0_), W2C(p1_));
     }
     """
-
-    def __init__(self, gap_size=16):
-        super().__init__(gap_size=gap_size)
 
     def glenable(self):
         super().glenable()
@@ -402,13 +395,10 @@ class DotsGizmoShader(GizmoShader):
 
     TYPE = "POINTS"
 
-    DEF_GLSL = (
-        BaseShader.DEF_GLSL
-        + """
+    DEF_GLSL = BaseShader.DEF_GLSL + """
     #define CIRCLE_SEGMENTS 12
     #define CIRCLE_RADIUS 8
     """
-    )
 
     GEOM_GLSL = """
     layout(points) in;

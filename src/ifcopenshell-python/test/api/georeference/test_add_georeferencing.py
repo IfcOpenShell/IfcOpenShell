@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.root
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
+import ifcopenshell.api.root
 import ifcopenshell.util.element
+import test.bootstrap
 
 
 class TestAddGeoreferencing(test.bootstrap.IFC4):
@@ -47,6 +47,38 @@ class TestAddGeoreferencing(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.context.add_context(self.file, "Model")
         ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        assert len(self.file.by_type("IfcMapConversion")) == 1
+        assert len(self.file.by_type("IfcProjectedCRS")) == 1
+
+    def test_recovering_from_orphan_projected_crs(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234")
+        assert len(self.file.by_type("IfcProjectedCRS")) == 1
+        assert len(self.file.by_type("IfcCoordinateOperation")) == 0
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        assert len(self.file.by_type("IfcMapConversion")) == 1
+        assert len(self.file.by_type("IfcProjectedCRS")) == 1
+
+    def test_recovering_from_orphan_coordinate_operation(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, "Model")
+        self.file.create_entity(
+            "IfcMapConversion",
+            SourceCRS=context,
+            TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"),
+        )
+        ifcopenshell.api.georeference.remove_georeferencing(self.file)
+        # Simulate orphan by re-adding just a conversion without CRS
+        self.file.create_entity(
+            "IfcMapConversion",
+            SourceCRS=context,
+            TargetCRS=self.file.create_entity("IfcProjectedCRS", Name="EPSG:1234"),
+        )
+        self.file.remove(self.file.by_type("IfcProjectedCRS")[0])
+        assert len(self.file.by_type("IfcProjectedCRS")) == 0
+        assert len(self.file.by_type("IfcCoordinateOperation")) == 1
         ifcopenshell.api.georeference.add_georeferencing(self.file)
         assert len(self.file.by_type("IfcMapConversion")) == 1
         assert len(self.file.by_type("IfcProjectedCRS")) == 1

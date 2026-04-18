@@ -6,13 +6,13 @@ on:
 jobs:
   build_ifcopenshell:
     runs-on: ubuntu-22.04
-    container: rockylinux:8
+    container: rockylinux:9
 
     steps:
       - name: Install Dependencies
         run: |
-          yum update -y
-          yum install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3  \
+          dnf update -y
+          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
@@ -29,29 +29,28 @@ jobs:
           aws --version
 
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
-          ref: rockylinux8-x64
+          ref: rockylinux9-x64
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
       - name: Unpack Dependencies
         run: |
-          install_root=$(find ./build -maxdepth 4 -type d -name install 2>/dev/null | head -n 1 || true)
-          [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \; || true
+          cd build
+          python3 ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        # TODO: Use tag after 1.2.20 releases.
-        uses: hendrikmuhs/ccache-action@5ebbd400eff9e74630f759d94ddd7b6c26299639
+        uses: hendrikmuhs/ccache-action@v1.2.22
         with:
-          key: ubuntu-22.04-${{ runner.arch }}-rockylinux8
+          key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
 
       - name: Run Build Script
         shell: bash
@@ -61,7 +60,7 @@ jobs:
 
       - name: Upload Build Logs
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: build-logs-rocky
           path: |
@@ -72,9 +71,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd build
-          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
-            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
-          done
+          python3 ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |
@@ -140,7 +137,7 @@ jobs:
           mv "$install_root"/bin/*.zip ~/output
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}

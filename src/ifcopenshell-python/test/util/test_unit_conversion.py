@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import pathlib
-import pytest
-import ifcopenshell.util.unit
+
 import numpy as np
+import pytest
+
+import ifcopenshell.util.unit
 
 UNITS_FIXTURE_DIR = pathlib.Path(__file__).parent.parent / "fixtures" / "units"
 

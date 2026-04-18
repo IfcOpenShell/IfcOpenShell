@@ -16,23 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from ifcopenshell.util.doc import get_entity_doc
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute
-from bonsai.bim.module.constraint.data import ConstraintsData
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
 from typing import TYPE_CHECKING, Literal
+
+import bpy
+from bpy.props import (
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
+from bonsai.bim.module.constraint.data import ConstraintsData
+from bonsai.bim.prop import Attribute
 
 
 def get_available_constraint_types(self, context):

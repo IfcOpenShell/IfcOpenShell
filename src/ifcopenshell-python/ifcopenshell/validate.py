@@ -44,27 +44,23 @@ Can be used to run validation on IFC file from the command line:
 """
 
 from __future__ import annotations
+
+import argparse
+import functools
+import itertools
+import json
 import os
 import sys
-import json
-import functools
 import types
-import argparse
-
 from collections import namedtuple
-from typing import Union, Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator
-from logging import Logger, Handler
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
+from logging import Handler, Logger
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import ifcopenshell
-import ifcopenshell.ifcopenshell_wrapper
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
+import ifcopenshell.ifcopenshell_wrapper
 
 if TYPE_CHECKING:
     import ifcopenshell.simple_spf
@@ -315,8 +311,8 @@ def assert_valid(
 def log_internal_cpp_errors(
     f: Optional[ifcopenshell.file], filename: str, logger: Union[Logger, json_logger], log_content: Optional[str] = None
 ) -> None:
-    import re
     import bisect
+    import re
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
     for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
@@ -336,7 +332,7 @@ def log_internal_cpp_errors(
         lines = list(open(filename, "rb"))
         lengths = list(map(len, lines))
         cumsum = 0
-        cs = [cumsum := cumsum + x for x in lengths]
+        cs = list(itertools.accumulate(lengths))
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:
@@ -709,10 +705,10 @@ def validate_ifc_header(
             log_error(header_entity, name, index, STRING_TYPE, type(value).__name__)
 
     # Ignore header.file_schema as file won't load to IfcOpenShell with invalid file_schema.
-    file_description: W.FileDescription = header.file_description
+    file_description = header.file_description
     validate_attribute(file_description, "description", 0, aggregate=True)
     validate_attribute(file_description, "implementation_level", 1)
-    file_name: W.FileName = header.file_name
+    file_name = header.file_name
     validate_attribute(file_name, "name", 0)
     validate_attribute(file_name, "time_stamp", 1)
     validate_attribute(file_name, "author", 2, aggregate=True)
@@ -779,8 +775,8 @@ class LogDetectionHandler(Handler):
 
 
 if __name__ == "__main__":
-    import sys
     import logging
+    import sys
 
     def handle_exception(exc_type, exc_value, exc_traceback):
         import traceback
@@ -798,6 +794,12 @@ if __name__ == "__main__":
     parser.add_argument("--rules", action="store_true", help="Run express rules.")
     parser.add_argument("--json", action="store_true", help="Output in JSON format.")
     parser.add_argument(
+        "--recursion-limit",
+        type=int,
+        default=-1,
+        help="Override sys.getrecursionlimit to process express rules on deeply nested structures (e.g 10000)",
+    )
+    parser.add_argument(
         "--fields",
         action="store_true",
         help="Output more detailed information about failed entities (only with --json).",
@@ -807,6 +809,9 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+
+    if args.recursion_limit > 0:
+        sys.setrecursionlimit(args.recursion_limit)
 
     for fn in filenames:
         handler = None

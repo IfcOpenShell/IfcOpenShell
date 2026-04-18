@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import lark
-import ifcopenshell
-from typing import Optional, Union, Literal, Any
 from collections.abc import Generator
+from typing import Any, Literal, Optional, Union
+
+import lark
+
+import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
@@ -350,8 +352,7 @@ def get_cost_rate(
 
 class CostValueUnserialiser:
     def parse(self, formula: str):
-        l = lark.Lark(
-            """start: formula
+        l = lark.Lark("""start: formula
                     formula: operand (operator operand)*
                     operand: value | category "(" formula ")"
                     value: NUMBER?
@@ -388,8 +389,7 @@ class CostValueUnserialiser:
                     NEWLINE: (CR? LF)+
 
                     %ignore WS // Disregard spaces in text
-                 """
-        )
+                 """)
         start = l.parse(formula)
         return self.get_formula(start.children[0])
 

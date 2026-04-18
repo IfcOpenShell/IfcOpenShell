@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import ifcopenshell.api.style
+import test.bootstrap
 
 
 class TestAddSurfaceStyle(test.bootstrap.IFC4):

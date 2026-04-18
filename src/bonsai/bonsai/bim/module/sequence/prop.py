@@ -16,32 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, get_args
+
 import bpy
-import isodate
-import ifcopenshell.api
 import ifcopenshell.api.sequence
-import ifcopenshell.util.attribute
 import ifcopenshell.util.date
-import bonsai.tool as tool
-import bonsai.core.sequence as core
-from bonsai.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
-import bonsai.bim.module.resource.data
-import bonsai.bim.module.pset.data
-from mathutils import Color
-from bonsai.bim.prop import Attribute, ISODuration
-from dateutil import parser
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from bpy.types import PropertyGroup
+from dateutil import parser
+from mathutils import Color
+
+import bonsai.bim.module.pset.data
+import bonsai.bim.module.resource.data
+import bonsai.core.sequence as core
+import bonsai.tool as tool
+from bonsai.bim.module.sequence.data import AnimationColorSchemeData, SequenceData
+from bonsai.bim.module.sequence.data import refresh as refresh_sequence_data
+from bonsai.bim.prop import Attribute, ISODuration
 
 
 def getTaskColumns(self, context):
@@ -413,7 +412,7 @@ WorkPlanEditingType = Literal["-", "ATTRIBUTES", "SCHEDULES", "WORK_SCHEDULE", "
 
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
-    editing_type: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    editing_type: EnumProperty(
         items=[(i, i, "") for i in get_args(WorkPlanEditingType)],
     )
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
@@ -431,8 +430,8 @@ class BIMWorkPlanProperties(PropertyGroup):
 
 
 class IFCStatus(PropertyGroup):
-    name: StringProperty()  # pyright: ignore[reportRedeclaration]
-    is_visible: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    name: StringProperty()
+    is_visible: BoolProperty(
         name="Is Visible", default=True, update=lambda x, y: (None, bpy.ops.bim.activate_status_filters())[0]
     )
 

@@ -18,8 +18,9 @@
 #
 #
 
-import ifcopenshell
 from typing import Union
+
+import ifcopenshell
 
 
 def get_constraints(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:

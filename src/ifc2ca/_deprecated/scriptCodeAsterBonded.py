@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
-import numpy as np
 import itertools
+import json
 from pathlib import Path
+
+import numpy as np
 
 flatten = itertools.chain.from_iterable
 
@@ -88,27 +89,22 @@ class COMMANDFILE:
 
         f.write("# Linear Static Analysis With Self-Weight\n")
 
-        f.write(
-            """
+        f.write("""
 # STEP: INITIALIZE STUDY
 DEBUT(
     PAR_LOT = 'NON'
 )
-"""
-        )
+""")
 
-        f.write(
-            """
+        f.write("""
 # STEP: READ MED FILE
 mesh = LIRE_MAILLAGE(
     FORMAT = 'MED',
     UNITE = 20
 )
-"""
-        )
+""")
 
-        f.write(
-            """
+        f.write("""
 # STEP: DEFINE MODEL
 model = AFFE_MODELE(
     MAILLAGE = mesh,
@@ -117,8 +113,7 @@ model = AFFE_MODELE(
             TOUT = 'OUI',
             PHENOMENE = 'MECANIQUE',
             MODELISATION = '3D'
-        ),"""
-        )
+        ),""")
 
         if faceGroupNames:
             template = """
@@ -156,12 +151,10 @@ model = AFFE_MODELE(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
+        f.write("""
     )
 )\n
-"""
-        )
+""")
 
         f.write("# STEP: DEFINE MATERIALS")
 
@@ -194,12 +187,10 @@ model = AFFE_MODELE(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
+        f.write("""
 material = AFFE_MATERIAU(
     MAILLAGE = mesh,
-    AFFE = ("""
-        )
+    AFFE = (""")
 
         for i, material in enumerate(materials):
             template = """
@@ -226,20 +217,16 @@ material = AFFE_MATERIAU(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
+        f.write("""
     )
 )
-"""
-        )
+""")
 
-        f.write(
-            """
+        f.write("""
 # STEP: DEFINE ELEMENTS
 element = AFFE_CARA_ELEM(
     MODELE = model,
-    POUTRE = ("""
-        )
+    POUTRE = (""")
 
         for profile in profiles:
             if profile["profileShape"] == "rectangular" and profile["profileType"] == "AREA":
@@ -295,11 +282,9 @@ element = AFFE_CARA_ELEM(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
+        f.write("""
     ),
-    COQUE = ("""
-        )
+    COQUE = (""")
 
         for el in [el for el in elements if el["geometryType"] == "surface"]:
 
@@ -318,15 +303,11 @@ element = AFFE_CARA_ELEM(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
-    ),"""
-        )
+        f.write("""
+    ),""")
 
-        f.write(
-            """
-    ORIENTATION = ("""
-        )
+        f.write("""
+    ORIENTATION = (""")
 
         for el in [el for el in elements if el["geometryType"] == "line"]:
 
@@ -344,21 +325,16 @@ element = AFFE_CARA_ELEM(
 
             f.write(template.format(**context))
 
-        f.write(
-            """
-    ),"""
-        )
+        f.write("""
+    ),""")
 
-        f.write(
-            """
+        f.write("""
 )\n
-"""
-        )
+""")
 
         f.write("# STEP: DEFINE SUPPORTS AND CONSTRAINTS")
 
-        f.write(
-            """
+        f.write("""
 liaisons = AFFE_CHAR_MECA(
     MODELE = model,
     DDL_IMPO = (
@@ -371,14 +347,11 @@ liaisons = AFFE_CHAR_MECA(
             DRY = 0.0,
             DRZ = 0.0
         )
-    ),"""
-        )
+    ),""")
 
         if rigidLinkGroupNames:
-            f.write(
-                """
-    LIAISON_SOLIDE = ("""
-            )
+            f.write("""
+    LIAISON_SOLIDE = (""")
 
             for groupName in rigidLinkGroupNames:
                 template = """
@@ -390,16 +363,12 @@ liaisons = AFFE_CHAR_MECA(
 
                 f.write(template.format(**context))
 
-            f.write(
-                """
-    ),"""
-            )
+            f.write("""
+    ),""")
 
-        f.write(
-            """
+        f.write("""
 )
-"""
-        )
+""")
 
         template = """
 # STEP: DEFINE LOAD
@@ -417,8 +386,7 @@ gravLoad = AFFE_CHAR_MECA(
 
         f.write(template.format(**context))
 
-        f.write(
-            """
+        f.write("""
 # STEP: RUN ANALYSIS
 res_Bld = MECA_STATIQUE(
     MODELE = model,
@@ -433,8 +401,7 @@ res_Bld = MECA_STATIQUE(
         )
     )
 )
-"""
-        )
+""")
 
         #         f.write(
         # '''
@@ -514,8 +481,7 @@ res_Bld = MECA_STATIQUE(
         # '''
         #         )
         #
-        f.write(
-            """
+        f.write("""
 # STEP: DEFORMED SHAPE EXTRACTION
 IMPR_RESU(
     FORMAT = 'MED',
@@ -526,15 +492,12 @@ IMPR_RESU(
  		NOM_CHAM_MED = ('Bld_DISP',), #  'Bld_REAC', 'Bld_FORC'
     )
 )
-"""
-        )
+""")
 
-        f.write(
-            """
+        f.write("""
 # STEP: CONCLUDE STUDY
 FIN()
-"""
-        )
+""")
 
         f.close()
 

@@ -17,15 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
-import math
-import bmesh
-import bonsai.tool as tool
-import ifcopenshell.util.element
-from pathlib import Path
-from mathutils import Vector, Matrix
+
 from typing import Optional
+
+import bmesh
+import bpy
+import ifcopenshell.util.element
+from mathutils import Vector
+
+import bonsai.tool as tool
 
 
 class Annotator:

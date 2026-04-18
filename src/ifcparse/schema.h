@@ -356,6 +356,7 @@ class IFC_PARSE_API entity : public declaration {
 
     const std::vector<const entity*>& subtypes() const { return subtypes_; }
     const std::vector<const attribute*>& attributes() const { return attributes_; }
+    const std::vector<const inverse_attribute*>& inverse_attributes() const { return inverse_attributes_; }
     const std::vector<bool>& derived() const { return derived_; }
 
     const std::vector<const attribute*>& all_attributes() const {

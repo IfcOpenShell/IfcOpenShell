@@ -1,10 +1,8 @@
 import ifcopenshell
-import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.pset
-import ifcopenshell.util.schema
-import xml.etree.ElementTree as ET
 from xmlschema.validators.exceptions import XMLSchemaValidationError
+
 from ifctester.ids import Ids, IdsXmlValidationError, get_schema
 
 # https://github.com/buildingSMART/IDS/blob/9914d568c7ac037acd97e58a0d16e9f93c3e3416/Schema/ids.xsd#L232

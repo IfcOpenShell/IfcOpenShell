@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Optional
 
 
 def connect_path(
@@ -30,6 +31,7 @@ def connect_path(
     relating_connection: str = "NOTDEFINED",
     related_connection: str = "NOTDEFINED",
     description: Optional[str] = None,
+    connection_geometry: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     incompatible_connections: list[ifcopenshell.entity_instance] = []
     for rel in relating_element.ConnectedTo:
@@ -72,6 +74,7 @@ def connect_path(
         ifcopenshell.guid.new(),
         OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
         Description=description,
+        ConnectionGeometry=connection_geometry,
         RelatingElement=relating_element,
         RelatedElement=related_element,
         RelatingConnectionType=relating_connection,

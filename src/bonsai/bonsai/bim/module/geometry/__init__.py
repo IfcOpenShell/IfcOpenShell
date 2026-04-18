@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
-from bpy.app.handlers import persistent
 import ifcopenshell.util.element
-import math
+from bpy.app.handlers import persistent
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddCurvelikeItem,

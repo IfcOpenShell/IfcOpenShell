@@ -107,6 +107,7 @@
 %ignore FloatingPointDigits;
 %ignore BaseUri;
 %ignore WktUseSection;
+%ignore SeparateZUpNode;
 // ConversionSettings.h
 %ignore MesherLinearDeflection;
 %ignore MesherAngularDeflection;
@@ -157,11 +158,11 @@
 %ignore CgalEmitOriginalEdges;
 %ignore OcctNoCleanTriangulation;
 %ignore CacheShapes;
+%ignore MakeVolume;
 %ignore DeferProcessingFirstElement;
 %ignore MaxOffset;
 %ignore MaxOffsetDeviation;
 %ignore ApplyOffset;
-%ignore SeparateZUpNode;
 
 // Triangulated representation helper struct
 %ignore EdgeKey;

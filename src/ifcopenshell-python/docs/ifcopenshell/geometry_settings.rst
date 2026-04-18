@@ -111,6 +111,32 @@ In Python, this is set when the iterator is constructed:
     import multiprocessing
     iterator = ifcopenshell.geom.iterator(settings, ifc_file, num_threads=multiprocessing.cpu_count())
 
+geometry_library
+^^^^^^^^^^^^^^^^
+
++--------+-------------------+-------------+
+| Type   | IfcConvert Option | Default     |
++========+===================+=============+
+| STRING | ``--kernel``      | opencascade |
++--------+-------------------+-------------+
+
+IfcOpenShell supports multiple geometry kernels to process geometry. Choosing the geometry kernel has trade-offs on geometric support, speed, and maturity. It is possible and recommended to chose a hybrid geometry kernel by providing the name ``hybrid-kernelX-kernelY``, where ``kernelX`` is the name of the first kernel to try, and ``kernelY`` is the name of the fallback kernel, for example ``hybrid-cgal-simple-opencascade``.
+
+.. csv-table::
+   :header: "Comparison", "cgal-simple", "cgal", "opencascade"
+
+   "Speed", "Very fast", "Fast", "Slow"
+   "Curves in extrusion footprints", "Only circle and ellipse arcs are converted to polylines", "Only circle and ellipse arcs are converted to polylines", "Full support including beziers and nurbs"
+   "Advanced (curved) breps", "No", "No", "Full support"
+   "Boolean operations", "No", "Full support", "Full support"
+   "Boolean operations with tolerance / fuzziness handling", "No", "Only manifold inputs", "Full support, including non-manifold inputs"
+   "Sweeps along alignment curves", "Partial", "Partial", "Full support"
+
+.. code-block:: python
+
+    iterator = ifcopenshell.geom.iterator(settings, ifc_file, geometry_library="hybrid-cgal-simple-opencascade")
+    ifcopenshell.geom.create_shape(settings, element, geometry_library="opencascade")
+
 Iterator settings
 -----------------
 

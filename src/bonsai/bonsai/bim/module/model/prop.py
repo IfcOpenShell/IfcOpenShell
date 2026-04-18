@@ -16,22 +16,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifcopenshell
-import ifcopenshell.util.element
-import bonsai.tool as tool
 import math
-from bonsai.bim.prop import ObjProperty
-from bonsai.bim.module.model.data import AuthoringData
-from bpy.types import PropertyGroup, NodeTree
+from collections.abc import Callable
 from math import pi, radians
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
+
+import bpy
+import ifcopenshell.util.element
+from bpy.types import NodeTree, PropertyGroup
+from mathutils import Vector
+
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.decoration import CutDecorator
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.decorator import (
+    BoundingBoxDecorator,
+    SlabDirectionDecorator,
+    WallAxisDecorator,
+)
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from bonsai.bim.module.drawing.decoration import CutDecorator
-from typing import TYPE_CHECKING, Literal, get_args, Union, Any, Optional
-from collections.abc import Callable
-from mathutils import Vector
+from bonsai.bim.prop import ObjProperty
+
+if TYPE_CHECKING:
+    import sverchok.node_tree
 
 
 def get_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -377,11 +385,6 @@ class BIMArrayProperties(PropertyGroup):
         items=(("OFFSET", "Offset", ""), ("DISTRIBUTE", "Distribute", "")),
         name="Method",
         default="OFFSET",
-    )
-    sync_children: bpy.props.BoolProperty(
-        name="Sync Children",
-        description="Regenerate all children based on the parent object",
-        default=False,
     )
     relating_array_object: bpy.props.PointerProperty(
         type=bpy.types.Object,
@@ -729,6 +732,9 @@ class BIMStairProperties(PropertyGroup):
 
 class BIMSverchokProperties(PropertyGroup):
     node_group: bpy.props.PointerProperty(name="Node Group", type=NodeTree)
+
+    if TYPE_CHECKING:
+        node_group: bpy.types.NodeTree | None
 
 
 def window_type_prop_update(self, context):
@@ -1694,27 +1700,20 @@ class ProductPreviewItem(PropertyGroup):
         value_2d: tuple[float, float]
 
 
-class BIMProductPreviewProperties(PropertyGroup):
-    verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
-    tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
-
-    if TYPE_CHECKING:
-        verts: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        edges: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-        tris: bpy.types.bpy_prop_collection_idprop[ProductPreviewItem]
-
-
 def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_editing:
         return
 
+    assert isinstance(self.id_data, bpy.types.Object)
     tool.Model.clean_up_parametric_geometry(self.id_data)
-    del self["is_editing"]
-    del self["geo_nodes"]
+    self.property_unset("is_editing")
+    self.property_unset("geo_nodes")
+    self.property_unset("sverchok_nodes")
 
 
 def update_geo_nodes(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
+    assert isinstance(self.id_data, bpy.types.Object)
+
     if self.geo_nodes:
         tool.Model.setup_parametric_geometry(self.id_data)
         return
@@ -1725,12 +1724,23 @@ def update_geo_nodes(self: "BIMExternalParametricGeometryProperties", context: b
     del self["geo_nodes"]
 
 
+def poll_sverchok_nodes(self: "BIMExternalParametricGeometryProperties", node_tree: bpy.types.NodeTree) -> bool:
+    return node_tree.bl_idname == "SverchCustomTreeType"
+
+
 class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
     is_editing: bpy.props.BoolProperty(
         name="Is Editing Paramteric Geometry",
         description="Toggle editing parametric geometry.",
         default=False,
         update=update_is_editing,
+    )
+    geometry_source: bpy.props.EnumProperty(
+        name="Geometry Source",
+        items=[
+            ("GEONODES", "Geometry Nodes", ""),
+            ("IFCSVERCHOK", "IFC Sverchok", ""),
+        ],
     )
     geo_nodes: bpy.props.PointerProperty(
         name="Geometry Nodes",
@@ -1740,6 +1750,15 @@ class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
         poll=lambda self, node_tree: not node_tree.name.startswith("BBIM_EPG"),
     )
 
+    sverchok_nodes: bpy.props.PointerProperty(
+        name="Sverchok Nodes",
+        description="Sverchok node tree to use as a source for representation.",
+        type=bpy.types.NodeTree,
+        poll=poll_sverchok_nodes,
+    )
+
     if TYPE_CHECKING:
         is_editing: bool
+        geometry_source: Literal["GEONODES", "IFCSVERCHOK"]
         geo_nodes: Union[bpy.types.GeometryNodeTree, None]
+        sverchok_nodes: Union[sverchok.node_tree.SverchCustomTree, None]

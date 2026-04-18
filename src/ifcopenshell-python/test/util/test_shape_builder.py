@@ -16,32 +16,32 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.geom
-import ifcopenshell.util
-import ifcopenshell.util.shape
-import pytest
-import test.bootstrap
-import ifcopenshell.api
-import numpy as np
-from ifcopenshell.util.shape_builder import (
-    ShapeBuilder,
-    is_x,
-    np_rotation_matrix,
-    np_to_3d,
-    np_angle,
-    V,
-    np_angle_signed,
-    np_normal,
-    np_intersect_line_line,
-    np_matrix_to_euler,
-)
 from math import degrees, radians
 from typing import Any, Union
+
+import numpy as np
+import pytest
+
+import ifcopenshell.geom
+import ifcopenshell.util.shape
+import test.bootstrap
+from ifcopenshell.util.shape_builder import (
+    ShapeBuilder,
+    V,
+    is_x,
+    np_angle,
+    np_angle_signed,
+    np_intersect_line_line,
+    np_matrix_to_euler,
+    np_normal,
+    np_rotation_matrix,
+    np_to_3d,
+)
 
 
 class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
     def test_np_rotation_matrix(self):
-        from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports]
+        from mathutils import Matrix, Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         # 2D.
         assert np.allclose(Matrix.Rotation(radians(45), 2), np_rotation_matrix(radians(45), 2))
@@ -62,7 +62,7 @@ class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
         assert np.allclose(Matrix.Rotation(*rotation_vector_args), np_rotation_matrix(*rotation_vector_args))
 
     def test_np_matrix_to_euler(self):
-        from mathutils import Euler  # pyright: ignore[reportMissingImports]
+        from mathutils import Euler  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         # Test 3x3.
         rot = Euler((0.5, 0.5, 0.5)).to_matrix()
@@ -77,7 +77,7 @@ class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
         assert np.allclose(rot.to_euler(), np_matrix_to_euler(V(rot)))
 
     def test_np_angle(self):
-        from mathutils import Vector  # pyright: ignore[reportMissingImports]
+        from mathutils import Vector  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         v1, v2 = (1, 0, 0), (0, 1, 0)
         angle = np_angle(v1, v2)
@@ -100,7 +100,7 @@ class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
         assert is_x(angle, radians(90))
 
     def test_np_normal(self):
-        import mathutils.geometry  # pyright: ignore[reportMissingImports]
+        import mathutils.geometry  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         vectors = (0, 0, 0), (1, 0, 0), (0, 1, 0)
         n = mathutils.geometry.normal(vectors)
@@ -113,7 +113,7 @@ class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):
         assert np.allclose(n, (0, 0, -1))
 
     def test_np_intersect_line_line(self):
-        import mathutils.geometry  # pyright: ignore[reportMissingImports]
+        import mathutils.geometry  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         p1, p2 = [0, 0, 0], [1, 1, 1]
         q1, q2 = [0, 1, 0], [1, 0, 1]

@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import numpy as np
 import numpy.typing as npt
+
 import ifcopenshell.api.owner
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, Any
 
 NPArrayOfFloats = npt.NDArray[np.float64]
 
@@ -50,10 +52,11 @@ def edit_object_placement(
     :param is_si: If True, the matrix is given in SI units. If false, in
         project units.
     :param should_transform_children: A child element is a nested element,
-        opening, filling, etc. If true, child elements will move along with the
-        parent. If false, child elements will stay where they are. Because most
-        placements in IFC are relative, this means that if a child moves, we
-        actually don't change their placement.
+        opening, filling, etc. If True, child elements move along with the
+        parent; pass True when moving an assembly (roof, furniture group, etc.)
+        and you want all children to follow. If False (default), child elements
+        keep their current world positions; their local placements are rewritten
+        to compensate for the parent move.
     :return: The new or updated IfcLocalPlacement entity
     """
     usecase = Usecase()

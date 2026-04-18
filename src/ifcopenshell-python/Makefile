@@ -27,28 +27,14 @@ SED:=sed -i '' -e
 endif
 endif
 
-# TODO: we should simplify this at some point...
-ifeq ($(PYVERSION), py39)
-PYNUMBER:=39
+SUPPORTED_PYVERSIONS := py310 py311 py312 py313 py314
+
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
-ifeq ($(PYVERSION), py310)
-PYNUMBER:=310
-endif
-ifeq ($(PYVERSION), py311)
-PYNUMBER:=311
-endif
-ifeq ($(PYVERSION), py312)
-PYNUMBER:=312
-endif
-ifeq ($(PYVERSION), py313)
-PYNUMBER:=313
-endif
-ifeq ($(PYVERSION), py314)
-PYNUMBER:=314
-endif
-ifndef PYNUMBER
-$(error Unsupported PYVERSION '$(PYVERSION)')
-endif
+
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYNUMBER:=3$(PYMINOR)
 
 # We actually do support glibc 2.28-2.30 (see #5636)
 # but those are old and there's no demand for it.
@@ -68,14 +54,15 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-BINARY_VERSION:=0.8.4
-BUILD_COMMIT:=e8eb5e4
+BINARY_VERSION:=0.8.5
+BUILD_COMMIT:=1c5b825
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v$(BINARY_VERSION)-$(BUILD_COMMIT)-$(PLATFORM).zip
 
 .PHONY: build-urls
 build-urls:
 	@echo "You can provide one of the 4 platforms (linux64, macos64, macosm164, win64) using 'PLATFORM=xxx'."
+	@echo "And Python version using 'PYNUMBER=xx' (e.g. 'PYNUMBER=311')."
 	@echo ${IOS_URL}
 	@echo ${IFCCONVERT_URL}
 
@@ -92,10 +79,6 @@ test-parallel:
 test-mathutils:
 	pytest -p no:pytest-blender test/util/test_shape_builder.py
 
-.PHONY: build-ids-docs
-build-ids-docs:
-	mkdir -p test/build
-	cd test && python ids_doc_generator.py
 
 .PHONY: qa
 qa:

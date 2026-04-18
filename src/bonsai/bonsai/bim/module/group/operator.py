@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, get_args
+
 import bpy
-import ifcopenshell.api
 import ifcopenshell.api.group
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, Literal, get_args
 
 
 class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
@@ -42,11 +43,11 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Toggle Group"
     bl_options = {"REGISTER", "UNDO"}
 
-    ifc_definition_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
-    group_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    ifc_definition_id: bpy.props.IntProperty()
+    group_type: bpy.props.EnumProperty(
         items=[(i, i, "") for i in get_args(tool.Group.GroupType)],
     )
-    option: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    option: bpy.props.EnumProperty(
         items=[(i, i, "") for i in get_args(tool.Group.ToggleOption)],
     )
 

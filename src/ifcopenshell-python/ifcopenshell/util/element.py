@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import namedtuple
+from collections.abc import Callable, Generator, Sequence
+from typing import Any, Literal, Optional, Union, overload
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload
-from collections.abc import Generator, Sequence
-from collections import deque, namedtuple
-
 
 MATERIAL_TYPE = Literal[
     "IfcMaterial",
@@ -469,7 +469,7 @@ def get_properties(
             del data["HasProperties"]
             results[prop_name] = data
             if verbose:
-                results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
+                results[prop_name] = {"id": data["id"], "class": data["type"], "value": results[prop_name]}
     return results
 
 
@@ -1234,7 +1234,9 @@ def get_controls(element: ifcopenshell.entity_instance) -> Generator[ifcopenshel
             yield rel.RelatingControl
 
 
-def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+def get_parent(
+    element: ifcopenshell.entity_instance, ifc_class: Optional[str] = None
+) -> Union[ifcopenshell.entity_instance, None]:
     """Get the parent in the spatial heirarchy
 
     IFC features a spatial hierarchy tree of all objects. Each spatial element
@@ -1251,6 +1253,8 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
     - Voiding: the opening voids another physical element, such as a hole in a wall
 
     :param element: Any physical or spatial element in the tree
+    :param ifc_class: Optionally filter the type of parent you're after. For
+        example, you may be after the storey, not a space.
     :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
 
     Example:
@@ -1260,13 +1264,23 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
         element = file.by_type("IfcWall")[0]
         parent = ifcopenshell.util.element.get_parent(element)
     """
-    return (
+    parent = (
         get_container(element, should_get_direct=True)
         or get_aggregate(element)
         or get_nest(element)
         or get_filled_void(element)
         or get_voided_element(element)
     )
+
+    if not ifc_class:
+        return parent
+
+    while parent:
+        if parent.is_a(ifc_class):
+            return parent
+        parent = get_parent(parent)
+
+    return None
 
 
 def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

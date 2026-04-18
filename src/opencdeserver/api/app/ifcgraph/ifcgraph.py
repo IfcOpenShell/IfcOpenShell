@@ -18,11 +18,12 @@
 # Some modifications have been made to the code.
 #
 
-from py2neo.data import Node, Relationship
 from uuid import uuid4
+
 import ifcopenshell
 import ifcopenshell.util.schema
 from py2neo import Graph
+from py2neo.data import Node, Relationship
 
 
 # Create the basic node with literal attributes and the class hierarchy

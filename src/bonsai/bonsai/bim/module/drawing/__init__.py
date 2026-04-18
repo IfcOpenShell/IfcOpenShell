@@ -17,11 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, handler, gizmos, workspace
+
+import bonsai.tool as tool
+
+from . import gizmos, handler, operator, prop, ui, workspace
 
 classes = (
     operator.ActivateDrawing,
     operator.ActivateDrawingFromSheet,
+    operator.ActivateDrawingByAnnotation,
     operator.ActivateDrawingStyle,
     operator.ActivateModel,
     operator.AddAnnotation,
@@ -41,6 +45,7 @@ classes = (
     operator.CleanWireframes,
     operator.ContractSheet,
     operator.ConvertSVGToDXF,
+    operator.CopyTextToSelection,
     operator.CreateDrawing,
     operator.CreateSheets,
     operator.DisableAddAnnotationType,
@@ -63,6 +68,17 @@ classes = (
     operator.EnableEditingText,
     operator.ExcludeAnnotation,
     operator.ExpandSheet,
+    operator.ToggleElementValuesPanel,
+    operator.ToggleElementValuesCategory,
+    operator.SelectElementValues,
+    operator.InsertFormattedLiteralPopup,
+    operator.AddElementValueRow,
+    operator.RemoveElementValueRow,
+    operator.ElementValueSuggestionsPopup,
+    operator.FormatElementValueRow,
+    operator.ApplyElementValueRowsToLiteral,
+    operator.ShowCategoryHelp,
+    operator.ShowElementValuesInstructions,
     operator.LoadDrawings,
     operator.LoadReferences,
     operator.LoadSchedules,
@@ -87,8 +103,10 @@ classes = (
     operator.SelectAllDrawings,
     operator.SelectAllSheets,
     operator.SelectAssignedProduct,
+    operator.SelectSimilarTextLiteralValue,
     operator.ToggleTargetView,
     operator.OpenDocumentationWebUi,
+    operator.FilterSelectedObjectsIfIntersectedByCamera,
     prop.Variable,
     prop.Drawing,
     prop.Document,
@@ -96,6 +114,7 @@ classes = (
     prop.Sheet,
     prop.DocProperties,
     prop.BIMCameraProperties,
+    prop.ElementValueRow,
     prop.LiteralProps,
     prop.BIMTextProperties,
     prop.BIMAssignedProductProperties,
@@ -134,6 +153,14 @@ classes = (
 )
 
 
+def menu_func(self, context):
+    active_obj = context.active_object
+    if active_obj:
+        element = tool.Ifc.get_entity(active_obj)
+        if element and element.is_a("IfcAnnotation") and element.ObjectType in ["SECTION", "ELEVATION"]:
+            self.layout.operator("bim.activate_drawing_by_annotation", text="Go to Drawing")
+
+
 def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
@@ -146,6 +173,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
+    bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
 
 
 def unregister():
@@ -160,3 +188,4 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)
+    bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)

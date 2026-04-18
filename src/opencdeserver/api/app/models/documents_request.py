@@ -1,9 +1,9 @@
-from pydantic import BaseModel, Field, constr
-from typing import Optional
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field, constr
 
 from models.documents_common import CallbackLink
-
 
 # This file contains models used in requests during upload and download of documents.
 

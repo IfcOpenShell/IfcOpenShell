@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import glob
+import os
 import tempfile
-import time
 
 import pytest
 

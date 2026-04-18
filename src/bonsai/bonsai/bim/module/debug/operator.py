@@ -16,34 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
-import bpy
-import time
-import random
 import logging
-import subprocess
+import os
 import platform
+import random
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.bim.handler
+import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.debug as core
 import bonsai.core.profile
 import bonsai.core.type
-import bonsai.bim.handler
-import bonsai.bim.import_ifc as import_ifc
-from collections import defaultdict
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from bonsai import get_debug_info, format_debug_info
+import bonsai.tool as tool
+from bonsai import format_debug_info, get_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
@@ -259,14 +260,14 @@ class CreateAllShapes(bpy.types.Operator):
     )
     bl_options = {"REGISTER"}
 
-    geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    geometry_library: bpy.props.EnumProperty(
         name="Geometry Library",
         description="Geometry library to use for testing shape creation.",
         items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
         # By default use the same library as used for importing ifc project.
         default="hybrid-cgal-simple-opencascade",
     )
-    custom_geometry_library: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+    custom_geometry_library: bpy.props.StringProperty(
         name="Custom Geometry Library",
         description="Provide a custom geometry library name, will override the 'geometry library' property.",
     )
@@ -780,7 +781,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
@@ -826,7 +827,7 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
@@ -1072,7 +1073,7 @@ class ChangeLogLevel(bpy.types.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Change general log level across all Python code in Blender"
 
-    log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    log_level: bpy.props.EnumProperty(
         name="Log Level",
         items=[(i, i, "") for i in get_args(LogLevelType)],
         default="WARNING",

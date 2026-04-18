@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.classification
@@ -24,8 +26,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.fm
 import ifcopenshell.util.placement
 import ifcopenshell.util.system
-from typing import Any, Union, Optional
-
 
 # The original BIMServer plugin has a function called ifcToCOBie:
 # https://github.com/opensourceBIM/COBie-plugins/blob/master/COBieShared/src/org/bimserver/cobie/shared/serialization/COBieTabSerializer.java#L54
@@ -953,7 +953,7 @@ def get_unit_type_name(ifc_file: ifcopenshell.file, unit_type: str) -> Union[str
             return val(unit.Currency)
 
 
-def get_unit_name(ifc_file: ifcopenshell.entity_instance, unit: ifcopenshell.entity_instance) -> Union[str, None]:
+def get_unit_name(unit: ifcopenshell.entity_instance) -> Union[str, None]:
     if unit.is_a("IfcNamedUnit"):
         return val(unit.Name)
 

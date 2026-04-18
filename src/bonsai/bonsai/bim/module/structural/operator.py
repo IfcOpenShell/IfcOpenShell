@@ -16,20 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from math import degrees
+from typing import TYPE_CHECKING, Literal
+
 import bpy
-import json
-import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
+from mathutils import Matrix, Vector
+
 import bonsai.bim.helper
 import bonsai.core.structural as core
 import bonsai.tool as tool
-from math import degrees
-from mathutils import Vector, Matrix
 from bonsai.bim.module.structural.decorator import LoadsDecorator
-from typing import Literal, Any, TYPE_CHECKING
 
 
 class ShowLoads(bpy.types.Operator):
@@ -43,14 +42,10 @@ class ShowLoads(bpy.types.Operator):
         assert context.screen
         if event.type == "F5":
             LoadsDecorator.update()
-            for area in context.screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
+            tool.Blender.update_all_viewports(context)
         if event.type == "ESC":
             LoadsDecorator.uninstall()
-            for area in context.screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
+            tool.Blender.update_all_viewports(context)
             return {"FINISHED"}
         return {"PASS_THROUGH"}
 
@@ -70,9 +65,7 @@ class ShowLoads(bpy.types.Operator):
             raise exc
         context.window.cursor_modal_restore()
         context.window_manager.modal_handler_add(self)
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
 
         return {"RUNNING_MODAL"}
 
@@ -174,7 +167,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_boundary_condition"
     bl_label = "Enable Editing Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    boundary_condition: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         boundary_condition: int
@@ -193,7 +186,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_boundary_condition"
     bl_label = "Edit Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    connection: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    connection: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         connection: int
@@ -924,7 +917,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_boundary_condition"
     bl_label = "Enable Editing Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    boundary_condition: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         boundary_condition: int

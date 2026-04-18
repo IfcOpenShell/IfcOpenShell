@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
 import logging
+
+import bpy
 import ifcdiff
 import ifcopenshell
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.ifc import IfcStore
 
 
@@ -96,8 +98,8 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0.0, 1.0, 0.0, 1.0)
             elif global_id in diff["changed"]:
                 obj.color = (0.0, 0.0, 1.0, 1.0)
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].shading.color_type = "OBJECT"
+        assert (space := tool.Blender.get_view3d_space())
+        space.shading.color_type = "OBJECT"
         return {"FINISHED"}
 
 

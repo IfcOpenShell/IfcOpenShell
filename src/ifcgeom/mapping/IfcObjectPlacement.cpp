@@ -89,7 +89,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
-        if (mapped_fallback != result) {
+        if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
             logger::warning("Computed placement differs from fallback", inst);
         }
     }
