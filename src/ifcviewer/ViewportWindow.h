@@ -332,6 +332,8 @@ private:
     // (hiz_vp_ + hiz_vp_valid_) so next frame's cull can test AABBs
     // against a slightly-stale depth.  Skipped for the pick pass and when
     // IFC_NO_HIZ=1.
+    GLuint hiz_downsample_program_ = 0;
+    GLuint hiz_downsample_vao_ = 0;
     GLuint hiz_fbo_ = 0;
     GLuint hiz_depth_tex_ = 0;
     GLuint hiz_resolve_fbo_ = 0;         // full-size single-sample resolve

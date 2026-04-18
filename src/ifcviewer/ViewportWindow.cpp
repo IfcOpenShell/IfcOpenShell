@@ -256,6 +256,25 @@ static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const ch
 // counter at binding 1; shared survivor-index output at binding 2.  Each
 // survivor is written as (u_model_tag | local_instance_index) so the CPU can
 // unpack model + local index from one uint.
+static const char* HIZ_DOWNSAMPLE_VS = R"(
+#version 450 core
+void main() {
+    vec2 pos = vec2((gl_VertexID & 1) * 4.0 - 1.0,
+                    (gl_VertexID & 2) * 2.0 - 1.0);
+    gl_Position = vec4(pos, 0.0, 1.0);
+}
+)";
+
+static const char* HIZ_DOWNSAMPLE_FS = R"(
+#version 450 core
+uniform sampler2D u_depth;
+uniform vec2 u_inv_dest_size;
+void main() {
+    vec2 uv = gl_FragCoord.xy * u_inv_dest_size;
+    gl_FragDepth = texture(u_depth, uv).r;
+}
+)";
+
 static const char* CULL_COMPUTE_SHADER = R"(
 #version 450 core
 layout(local_size_x = 64) in;
@@ -502,6 +521,8 @@ ViewportWindow::~ViewportWindow() {
             if (hiz_depth_tex_)   gl_->glDeleteTextures(1, &hiz_depth_tex_);
             if (hiz_resolve_fbo_) gl_->glDeleteFramebuffers(1, &hiz_resolve_fbo_);
             if (hiz_resolve_depth_tex_) gl_->glDeleteTextures(1, &hiz_resolve_depth_tex_);
+            if (hiz_downsample_program_) gl_->glDeleteProgram(hiz_downsample_program_);
+            if (hiz_downsample_vao_) gl_->glDeleteVertexArrays(1, &hiz_downsample_vao_);
         }
         context_->doneCurrent();
     }
@@ -583,6 +604,12 @@ void ViewportWindow::buildShaders() {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, AXIS_VERTEX_SHADER);
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, AXIS_FRAGMENT_SHADER);
         axis_program_ = linkProgram(gl_, vs, fs);
+    }
+    {
+        GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, HIZ_DOWNSAMPLE_VS);
+        GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, HIZ_DOWNSAMPLE_FS);
+        hiz_downsample_program_ = linkProgram(gl_, vs, fs);
+        gl_->glCreateVertexArrays(1, &hiz_downsample_vao_);
     }
     cull_program_ = linkComputeProgram(gl_, CULL_COMPUTE_SHADER);
     gl_->glCreateBuffers(1, &gpu_cull_counter_ssbo_);
@@ -1209,22 +1236,16 @@ void ViewportWindow::buildHizPyramid() {
     const int base_w = hizBaseWidth();
     const int base_h = std::max(1, (base_w * win_h) / win_w);
 
-    // Depth format must match the default FBO's depth format for the blit
-    // to succeed — GL spec requires identical internal formats for depth
-    // blits.  Qt's default surface uses 24-bit depth (setDepthBufferSize(24)
-    // in initGL), so we match with DEPTH_COMPONENT24 on both textures.
-    //
-    // Resolve target (full window size, single sample).  Needed because
-    // GL also forbids scale-blitting from an MSAA source: resolve at 1:1
-    // first, then down-blit.
+    // Resolve target (full window size, single sample, D24S8 to match Qt's
+    // default FBO which uses depth+stencil even when only depth is requested).
     if (win_w != hiz_resolve_w_ || win_h != hiz_resolve_h_) {
         if (hiz_resolve_fbo_)        gl_->glDeleteFramebuffers(1, &hiz_resolve_fbo_);
         if (hiz_resolve_depth_tex_)  gl_->glDeleteTextures(1, &hiz_resolve_depth_tex_);
         gl_->glCreateTextures(GL_TEXTURE_2D, 1, &hiz_resolve_depth_tex_);
         gl_->glTextureStorage2D(hiz_resolve_depth_tex_, 1,
-                                GL_DEPTH_COMPONENT24, win_w, win_h);
+                                GL_DEPTH24_STENCIL8, win_w, win_h);
         gl_->glCreateFramebuffers(1, &hiz_resolve_fbo_);
-        gl_->glNamedFramebufferTexture(hiz_resolve_fbo_, GL_DEPTH_ATTACHMENT,
+        gl_->glNamedFramebufferTexture(hiz_resolve_fbo_, GL_DEPTH_STENCIL_ATTACHMENT,
                                        hiz_resolve_depth_tex_, 0);
         hiz_resolve_w_ = win_w;
         hiz_resolve_h_ = win_h;
@@ -1239,6 +1260,8 @@ void ViewportWindow::buildHizPyramid() {
         gl_->glCreateFramebuffers(1, &hiz_fbo_);
         gl_->glNamedFramebufferTexture(hiz_fbo_, GL_DEPTH_ATTACHMENT,
                                        hiz_depth_tex_, 0);
+        gl_->glNamedFramebufferDrawBuffer(hiz_fbo_, GL_NONE);
+        gl_->glNamedFramebufferReadBuffer(hiz_fbo_, GL_NONE);
 
         hiz_base_w_ = base_w;
         hiz_base_h_ = base_h;
@@ -1262,34 +1285,39 @@ void ViewportWindow::buildHizPyramid() {
         hiz_pyramid_.assign(off, 1.0f);
     }
 
-    // Two-step: MSAA default-fb → full-size SS resolve, then SS → down-scaled.
-    // GL forbids scaling a blit whose source is multisampled, and also
-    // requires matching depth internal formats — hence this dance.
+    // Step 1: MSAA default-fb → full-size single-sample resolve (same-size).
+    while (gl_->glGetError() != GL_NO_ERROR) {}
     gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hiz_resolve_fbo_);
     gl_->glBlitFramebuffer(0, 0, win_w, win_h,
                            0, 0, win_w, win_h,
-                           GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+                           GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 
-    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, hiz_resolve_fbo_);
-    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hiz_fbo_);
-    gl_->glBlitFramebuffer(0, 0, win_w, win_h,
-                           0, 0, hiz_base_w_, hiz_base_h_,
-                           GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    // One-shot diagnostic so blit failures aren't silent.  We only warn
-    // the first handful of times — GL errors can pile up and spam.
-    static int err_warn_budget = 3;
-    if (err_warn_budget > 0) {
-        GLenum e = gl_->glGetError();
-        if (e != GL_NO_ERROR) {
-            qWarning("HiZ blit/readback GL error 0x%04x (win %dx%d → %dx%d → %dx%d)",
-                     e, win_w, win_h, win_w, win_h, hiz_base_w_, hiz_base_h_);
-            --err_warn_budget;
-        }
-    }
+    // Step 2: downsample resolved depth to HiZ base via fullscreen-triangle.
+    // glBlitFramebuffer with depth + scaling produces GL_INVALID_VALUE on
+    // some drivers, so we sample the resolve texture and write gl_FragDepth.
+    gl_->glBindFramebuffer(GL_FRAMEBUFFER, hiz_fbo_);
+    gl_->glViewport(0, 0, hiz_base_w_, hiz_base_h_);
+    gl_->glEnable(GL_DEPTH_TEST);
+    gl_->glDepthFunc(GL_ALWAYS);
+    gl_->glDepthMask(GL_TRUE);
+    gl_->glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    gl_->glUseProgram(hiz_downsample_program_);
+    gl_->glTextureParameteri(hiz_resolve_depth_tex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    gl_->glTextureParameteri(hiz_resolve_depth_tex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gl_->glTextureParameteri(hiz_resolve_depth_tex_, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    gl_->glBindTextureUnit(0, hiz_resolve_depth_tex_);
+    gl_->glUniform1i(gl_->glGetUniformLocation(hiz_downsample_program_, "u_depth"), 0);
+    gl_->glUniform2f(gl_->glGetUniformLocation(hiz_downsample_program_, "u_inv_dest_size"),
+                     1.0f / static_cast<float>(hiz_base_w_),
+                     1.0f / static_cast<float>(hiz_base_h_));
+    gl_->glBindVertexArray(hiz_downsample_vao_);
+    gl_->glDrawArrays(GL_TRIANGLES, 0, 3);
+    gl_->glBindVertexArray(0);
+    gl_->glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    gl_->glDepthFunc(GL_LESS);
+    gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    gl_->glViewport(0, 0, win_w, win_h);
 
     // Synchronous readback into level 0 of the pyramid.  At 256x128 this
     // is ~128 KB and the driver copy is fast enough not to matter in
@@ -1374,16 +1402,10 @@ bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) con
     const float v_max = 0.5f * (sy_max + 1.0f);
     const float aabb_near_depth = 0.5f * (sz_min + 1.0f);
 
-    // Pick mip level where the projected rect covers at most 2 texels on
-    // each axis; sample the max over the covered texels there.
-    const float px_w = (u_max - u_min) * static_cast<float>(hiz_base_w_);
-    const float px_h = (v_max - v_min) * static_cast<float>(hiz_base_h_);
-    int mip = 0;
-    while ((int)hiz_mip_offset_.size() - 1 > mip &&
-           ((px_w / (1 << mip)) > 2.0f || (px_h / (1 << mip)) > 2.0f)) {
-        ++mip;
-    }
-
+    // Sample at a fine mip and reject ONLY if every texel agrees the AABB
+    // is behind it.  One non-occluding texel → visible, early-out.  Cap
+    // iteration to avoid slow queries on large projected rects.
+    const int mip = std::min(1, (int)hiz_mip_offset_.size() - 1);
     const uint32_t mw = hiz_mip_w_[mip];
     const uint32_t mh = hiz_mip_h_[mip];
     int x0 = static_cast<int>(std::floor(u_min * mw));
@@ -1396,18 +1418,17 @@ bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) con
     if (y1 > (int)mh) y1 = mh;
     if (x1 <= x0 || y1 <= y0) return false;
 
+    static constexpr int MAX_HIZ_SAMPLES = 64;
+    if ((x1 - x0) * (y1 - y0) > MAX_HIZ_SAMPLES) return false;
+
     const float* level = hiz_pyramid_.data() + hiz_mip_offset_[mip];
-    float hiz_max = 0.0f;
     for (int y = y0; y < y1; ++y) {
         const float* row = level + static_cast<size_t>(y) * mw;
         for (int x = x0; x < x1; ++x) {
-            if (row[x] > hiz_max) hiz_max = row[x];
+            if (aabb_near_depth <= row[x]) return false;
         }
     }
-
-    // AABB's closest point must be strictly farther than everything drawn
-    // in the region for it to be fully occluded.
-    return aabb_near_depth > hiz_max;
+    return true;
 }
 
 uint32_t ViewportWindow::pickObjectAt(int x, int y) {
@@ -1559,7 +1580,12 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     // the buffer — a self-reinforcing feedback loop).  On static views HiZ
     // kicks in after a single frame of lag.
     const QMatrix4x4 current_vp = proj_matrix_ * view_matrix_;
-    const bool hiz_vp_matches = hiz_vp_valid_ && hiz_vp_ == current_vp;
+    static const bool hiz_force_motion = []{
+        const char* e = std::getenv("IFC_HIZ_MOTION");
+        return e && *e && std::atoi(e) != 0;
+    }();
+    const bool hiz_vp_matches = hiz_vp_valid_
+        && (hiz_force_motion || hiz_vp_ == current_vp);
     const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_matches;
 
     // Hot path: read the AABB from the compact bvh_items array (28 B stride)
@@ -1732,7 +1758,12 @@ void ViewportWindow::emitFromGpuSurvivors(
     };
 
     const QMatrix4x4 current_vp = proj_matrix_ * view_matrix_;
-    const bool hiz_vp_matches = hiz_vp_valid_ && hiz_vp_ == current_vp;
+    static const bool hiz_force_motion = []{
+        const char* e = std::getenv("IFC_HIZ_MOTION");
+        return e && *e && std::atoi(e) != 0;
+    }();
+    const bool hiz_vp_matches = hiz_vp_valid_
+        && (hiz_force_motion || hiz_vp_ == current_vp);
     const bool hiz_on = hizEnabled() && min_pixel_radius > 0.0f && hiz_vp_matches;
 
     thread_local std::vector<bool> mesh_seen;
