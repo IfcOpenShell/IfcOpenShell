@@ -319,6 +319,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         """Return first found IfcExtrudedAreaSolid"""
+        if not representation.Items:
+            return None
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
@@ -839,11 +841,23 @@ class Model(bonsai.core.tool.Model):
         manual_booleans = cls.get_manual_booleans(wall)
         if not manual_booleans:
             return
-        mesh_operands = [
-            b.SecondOperand for b in manual_booleans if b.SecondOperand.is_a("IfcTessellatedFaceSet")
-        ]
-        for mesh in mesh_operands:
-            tool.Geometry.remove_representation_item(mesh, wall)
+        ifc_file = tool.Ifc.get()
+        for b in manual_booleans:
+            sec = b.SecondOperand
+            if sec is None:
+                # The IfcPolygonalFaceSet was already deleted externally.  Splice the
+                # orphaned IfcBooleanResult out of the chain so the representation stays valid.
+                parents = list(ifc_file.get_inverse(b))
+                for parent in parents:
+                    if parent.is_a("IfcBooleanResult") and parent.FirstOperand == b:
+                        parent.FirstOperand = b.FirstOperand
+                    elif parent.is_a("IfcShapeRepresentation"):
+                        new_items = tuple((set(parent.Items) - {b}) | {b.FirstOperand})
+                        parent.Items = new_items
+                cls.unmark_manual_booleans(wall, [b.id()])
+                ifc_file.remove(b)
+            elif sec.is_a("IfcTessellatedFaceSet"):
+                tool.Geometry.remove_representation_item(sec, wall)
 
     @classmethod
     def get_manual_booleans(
@@ -857,7 +871,8 @@ class Model(bonsai.core.tool.Model):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
-        booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
+        all_chain_booleans = cls.get_booleans(element, representation)
+        booleans = [b for b in all_chain_booleans if b.id() in boolean_ids]
         return booleans
 
     @classmethod
@@ -2420,6 +2435,7 @@ class Model(bonsai.core.tool.Model):
         clipping_bm = bmesh.new()
         vertex_map = {}
 
+        kept = 0
         for face in bm.faces:
             face.normal_update()
             normal = face.normal.to_4d()
@@ -2427,6 +2443,7 @@ class Model(bonsai.core.tool.Model):
             world_normal_z = (obj.matrix_world @ normal).z
             if world_normal_z >= -0.5:
                 continue
+            kept += 1
             new_verts = []
             for vert in face.verts:
                 if not (new_vert := vertex_map.get(vert.index, None)):
@@ -2517,6 +2534,7 @@ class Model(bonsai.core.tool.Model):
             extrusion.Depth = max_z / direction[2]
 
             if operands:
+                body_repr = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
                 booleans = ifcopenshell.api.geometry.add_boolean(
                     ifc_file, first_item=extrusion, second_items=operands
                 )

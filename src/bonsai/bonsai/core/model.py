@@ -158,6 +158,9 @@ def regenerate_wall_to_underside(
             continue
         if ifc.is_moved(obj):
             geometry.run_edit_object_placement(obj=obj)
+        # Sync each slab's Blender mesh to its current IFC representation before
+        # reading face geometry, so a changed profile is picked up correctly.
+        model.reload_body_representation(slab_objs)
         model.remove_wall_to_underside_booleans(wall)
         for slab_obj in slab_objs:
             clip = model.get_slab_clipping_bmesh(slab_obj)
@@ -175,6 +178,13 @@ def extend_wall_to_slab(
     slab_objs: list[bpy.types.Object],
     wall_objs: list[bpy.types.Object],
 ) -> None:
+    # If any wall is currently in item mode, exit it before modifying the
+    # representation. Leaving stale item objects around causes delete_ifc_item
+    # to later remove the extrusion (or other pre-boolean items) from inside
+    # the boolean chain, corrupting the IFC model.
+    geom_props = geometry.get_geometry_props()
+    if geom_props.representation_obj in wall_objs:
+        geometry.disable_item_mode()
     clipped_walls = []
     for obj in wall_objs:
         if ifc.is_moved(obj):

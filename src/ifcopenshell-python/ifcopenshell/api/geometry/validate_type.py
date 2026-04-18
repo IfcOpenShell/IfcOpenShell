@@ -81,6 +81,13 @@ def validate_type(
         if not preferred_item and remaining_items:
             preferred_item = remaining_items[0]
 
+    # preferred_item must not appear in remaining_items — if it was selected from
+    # that list, leaving it in causes add_boolean to union it with itself, and the
+    # subsequent Items filter then removes ALL items (including preferred_item),
+    # leaving Items=[] which guess_type maps to "MappedRepresentation".
+    if preferred_item in remaining_items:
+        remaining_items = [i for i in remaining_items if i != preferred_item]
+
     if remaining_items:
         ifcopenshell.api.geometry.add_boolean(file, preferred_item, remaining_items, "UNION")
         representation.Items = [i for i in representation.Items if i not in remaining_items]
