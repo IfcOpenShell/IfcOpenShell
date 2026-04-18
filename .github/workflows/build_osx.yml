@@ -110,7 +110,21 @@ jobs:
         run: |
           VERSION=v`cat VERSION`
           cd ./build/`uname`/*/10.15/install/ifcopenshell
-          mkdir ~/output
+          mkdir -p ~/output
+          install_root="$PWD"
+
+          stage_runtime_payload() {
+              dest="$1"
+              mkdir -p "$dest"
+              while IFS= read -r runtime_file; do
+                  cp -L "$runtime_file" "$dest/"
+              done < <(
+                  for runtime_dir in "$install_root/bin" "$install_root/lib"; do
+                      [ -d "$runtime_dir" ] || continue
+                      find "$runtime_dir" -type f \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
+                  done
+              )
+          }
 
           ls -d python-* | while read py_version; do
               postfix=`echo ${py_version: -1} | sed s/[0-9]//`
@@ -125,18 +139,26 @@ jobs:
               fi
               [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
               find ifcopenshell -name "*.pyc" -delete
-              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip ifcopenshell/*
+              stage_runtime_payload ifcopenshell
+              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip ifcopenshell
               mv *.zip ~/output
               popd > /dev/null
           done
 
-          cd bin
-          rm *.zip || true
-          ls | while read exe; do
-              zip -qq -r ${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip $exe
+          rm -f "$install_root"/bin/*.zip
+          find "$install_root/bin" -maxdepth 1 -type f -perm /111 ! -name "*.zip" ! -name "*.so" ! -name "*.so.*" ! -name "*.dylib" ! -name "*.dll" | while read exe_path; do
+              exe=`basename "$exe_path"`
+              package_dir="$install_root/.package-${exe}"
+              rm -rf "$package_dir"
+              mkdir -p "$package_dir"
+              cp "$exe_path" "$package_dir/"
+              stage_runtime_payload "$package_dir"
+              pushd "$package_dir" > /dev/null
+              zip -qq -r "$install_root/bin/${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip" .
+              popd > /dev/null
+              rm -rf "$package_dir"
           done
-          mv *.zip ~/output
-          cd ..
+          mv "$install_root"/bin/*.zip ~/output
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v5

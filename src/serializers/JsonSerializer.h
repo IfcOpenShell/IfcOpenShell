@@ -7,53 +7,51 @@
 #include "../ifcparse/file.h"
 #include "../plugin/plugin.h"
 #include "../serializers/serializers_api.h"
+#include "../serializers/document_serializer_plugin.h"
 
-#include <boost/function.hpp>
-#include <map>
+#include <boost/shared_ptr.hpp>
 
-class SERIALIZERS_API JsonSerializer : public Serializer {
+class JsonSerializer : public Serializer {
   public:
     enum Dialect {
         JSON_DIALECT_CREOOX
     };
   private:
-    JsonSerializer* implementation_ = nullptr;
+    boost::shared_ptr<Serializer> implementation_;
 
   protected:
     std::string json_filename;
     Dialect dialect_;
 
   public:
-    JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX);
+    JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX)
+        : json_filename(json_filename)
+        , dialect_(dialect)
+    {
+        if (!file) {
+            return;
+        }
+
+        ifcopenshell::serializers::document_serializer_context context;
+        context.file = file;
+        context.output_filename = json_filename;
+        context.schema_name = file->schema()->name();
+        context.dialect = static_cast<int>(dialect);
+        implementation_ = ifcopenshell::serializers::document_serializer_registry_instance().create("json", context);
+    }
 
     virtual ~JsonSerializer() {}
 
     bool ready() { return true; }
     void writeHeader() {}
 
-    void finalize() { implementation_->finalize(); }
+    void finalize() {
+        if (!implementation_) {
+            throw ifcopenshell::exception("No JSON serializer implementation constructed");
+        }
+        implementation_->finalize();
+    }
     void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
-};
-
-struct SERIALIZERS_API JsonSerializerFactory {
-    typedef boost::function3<JsonSerializer*, ifcopenshell::file*, std::string, JsonSerializer::Dialect> fn;
-
-    class SERIALIZERS_API Factory {
-      public:
-        Factory();
-        void bind(const std::string& schema_name, fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
-        JsonSerializer* construct(const std::string& schema_name, ifcopenshell::file*, std::string, JsonSerializer::Dialect);
-
-      private:
-        struct entry {
-            fn fn_;
-            ifcopenshell::plugin::module module_;
-        };
-
-        std::map<std::string, entry> entries_;
-    };
-
-    static Factory& implementations();
 };
 
 #endif

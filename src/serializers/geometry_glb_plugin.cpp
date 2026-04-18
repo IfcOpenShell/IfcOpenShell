@@ -17,45 +17,45 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../document_serializer_plugin.h"
-#include "XmlSerializer.h"
+#ifdef WITH_GLTF
 
-#include "../../ifcparse/macros.h"
+#include "geometry_serializer_plugin.h"
+#include "GltfSerializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>
 
-namespace {
-
-boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(XmlSerializer)>(context.file, context.output_filename);
-}
-
-}
-
 namespace ifcopenshell {
 namespace serializers {
-namespace xml_document_serializer_plugin {
+namespace geometry_glb_plugin {
 
 plugin::abi_info plugin_abi() {
 	return plugin::host_abi();
 }
 
 plugin::metadata plugin_metadata() {
-	return document_serializer_plugin_metadata("xml", STRINGIFY(IfcSchema));
+	return geometry_serializer_plugin_metadata("glb");
 }
 
-void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
-	document_serializer_info info;
-	info.format = "xml";
-	info.schema_name = STRINGIFY(IfcSchema);
-	registry.bind(info, create_serializer, module);
+boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+	return boost::make_shared<GltfSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
+}
+
+void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
+	geometry_serializer_info info;
+	info.format = "glb";
+	info.extensions = { ".glb" };
+	info.supports_triangulation = true;
+	info.supports_user_element_hierarchy = true;
+	registry.bind(info, create_serializer, geometry_serializer_registry::configure_fn(), module);
 }
 
 }
 }
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_glb_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_glb_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_glb_plugin::register_plugin, ifcopenshell_register_geometry_serializer_plugin_v1)
+
+#endif

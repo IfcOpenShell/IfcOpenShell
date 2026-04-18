@@ -86,15 +86,130 @@
 
 #include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 
 #include "SvgSerializer.h"
 
+namespace {
+
 const double PI2 = M_PI * 2.;
+
+std::pair<double, double> parse_svg_bounds(const std::string& value) {
+	unsigned int width = 0;
+	unsigned int height = 0;
+	if (std::sscanf(value.c_str(), "%ux%u", &width, &height) == 2 && width > 0 && height > 0) {
+		return { static_cast<double>(width), static_cast<double>(height) };
+	}
+	throw std::runtime_error("Invalid use of --bounds");
+}
+
+std::pair<double, double> parse_svg_center(const std::string& value) {
+	double center_x = 0.;
+	double center_y = 0.;
+	if (std::sscanf(value.c_str(), "%lfx%lf", &center_x, &center_y) == 2 &&
+		center_x >= 0. && center_y >= 0. &&
+		center_x <= 1. && center_y <= 1.) {
+		return { center_x, center_y };
+	}
+	throw std::runtime_error("Invalid use of --center");
+}
+
+double parse_svg_scale(const std::string& value) {
+	unsigned int numerator = 0;
+	unsigned int denominator = 0;
+	if (std::sscanf(value.c_str(), "%u:%u", &numerator, &denominator) == 2 &&
+		numerator > 0 && denominator > 0) {
+		return static_cast<double>(numerator) / denominator;
+	}
+	throw std::runtime_error("Invalid use of --scale");
+}
+
+SvgSerializer::storey_height_display_types parse_storey_height_display(const std::string& value) {
+	const auto display = boost::to_lower_copy(value);
+	if (display == "none") {
+		return SvgSerializer::SH_NONE;
+	}
+	if (display == "full") {
+		return SvgSerializer::SH_FULL;
+	}
+	if (display == "left") {
+		return SvgSerializer::SH_LEFT;
+	}
+	throw std::runtime_error("Invalid use of --draw-storey-heights, expected none|full|left");
+}
+
+}
 
 bool SvgSerializer::ready() {
 	return true;
+}
+
+void SvgSerializer::apply_settings() {
+	using namespace ifcopenshell::geometry::settings;
+
+	if (settings().get<SvgBounds>().has()) {
+		const auto bounds = parse_svg_bounds(settings().get<SvgBounds>().get());
+		setBoundingRectangle(bounds.first, bounds.second);
+	}
+
+	if (settings().get<SvgScale>().has()) {
+		setScale(parse_svg_scale(settings().get<SvgScale>().get()));
+	}
+
+	if (settings().get<SvgCenter>().has()) {
+		const auto center = parse_svg_center(settings().get<SvgCenter>().get());
+		setDrawingCenter(center.first, center.second);
+	}
+
+	if (settings().get<SvgSectionHeightFromStoreys>().get()) {
+		if (settings().get<SvgSectionHeight>().has()) {
+			setSectionHeightsFromStoreys(settings().get<SvgSectionHeight>().get());
+		} else {
+			setSectionHeightsFromStoreys();
+		}
+	} else if (settings().get<SvgSectionHeight>().has()) {
+		setSectionHeight(settings().get<SvgSectionHeight>().get());
+	}
+
+	setPrintSpaceNames(settings().get<SvgPrintSpaceNames>().get());
+	setPrintSpaceAreas(settings().get<SvgPrintSpaceAreas>().get());
+	setDrawDoorArcs(settings().get<SvgDoorArcs>().get());
+	setAutoSection(settings().get<SvgAutoSection>().get());
+	setAutoElevation(settings().get<SvgAutoElevation>().get());
+	setUseNamespace(settings().get<SvgUseNamespace>().get());
+	setUseHlrPoly(settings().get<SvgUseHlrPoly>().get());
+	setUsePrefiltering(settings().get<SvgUsePrefiltering>().get());
+	setSegmentProjection(settings().get<SvgSegmentProjection>().get());
+	setPolygonal(settings().get<SvgPolygonal>().get());
+	setAlwaysProject(settings().get<SvgAlwaysProject>().get());
+	setWithoutStoreys(settings().get<SvgWithoutStoreys>().get());
+	setNoCSS(settings().get<SvgNoCss>().get());
+
+	if (settings().get<SvgDrawStoreyHeights>().has()) {
+		setDrawStoreyHeights(parse_storey_height_display(settings().get<SvgDrawStoreyHeights>().get()));
+	}
+
+	if (settings().get<SvgStoreyHeightLineLength>().has()) {
+		setStoreyHeightLineLength(settings().get<SvgStoreyHeightLineLength>().get());
+	}
+
+	if (settings().get<SvgSpaceNameTransform>().has()) {
+		setSpaceNameTransform(settings().get<SvgSpaceNameTransform>().get());
+	}
+
+	if (settings().get<SvgSectionRef>().has()) {
+		setSectionRef(settings().get<SvgSectionRef>().get());
+	}
+
+	if (settings().get<SvgElevationRef>().has()) {
+		setElevationRef(settings().get<SvgElevationRef>().get());
+	}
+
+	if (settings().get<SvgElevationRefGuid>().has()) {
+		setElevationRefGuid(settings().get<SvgElevationRefGuid>().get());
+	}
 }
 
 void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std::optional<std::vector<double>> dash_array) {

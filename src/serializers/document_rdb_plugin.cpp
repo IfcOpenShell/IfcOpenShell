@@ -17,10 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../document_serializer_plugin.h"
-#include "XmlSerializer.h"
+#include "document_serializer_plugin.h"
+#include "RocksDbSerializer.h"
 
-#include "../../ifcparse/macros.h"
+#ifdef IFOPSH_WITH_ROCKSDB
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>
@@ -28,27 +28,32 @@
 namespace {
 
 boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(XmlSerializer)>(context.file, context.output_filename);
+	if (!context.stream || context.input_filename.empty()) {
+		throw ifcopenshell::exception("RocksDB document serializer requires --stream input");
+	}
+	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename, true);
 }
 
 }
 
 namespace ifcopenshell {
 namespace serializers {
-namespace xml_document_serializer_plugin {
+namespace rdb_document_serializer_plugin {
 
 plugin::abi_info plugin_abi() {
 	return plugin::host_abi();
 }
 
 plugin::metadata plugin_metadata() {
-	return document_serializer_plugin_metadata("xml", STRINGIFY(IfcSchema));
+	return document_serializer_plugin_metadata("rdb");
 }
 
 void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
 	document_serializer_info info;
-	info.format = "xml";
-	info.schema_name = STRINGIFY(IfcSchema);
+	info.format = "rdb";
+	info.supports_ifc_file = false;
+	info.supports_input_filename = true;
+	info.writes_final_output = true;
 	registry.bind(info, create_serializer, module);
 }
 
@@ -56,6 +61,8 @@ void register_plugin(document_serializer_registry& registry, const plugin::modul
 }
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::rdb_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::rdb_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::rdb_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+
+#endif

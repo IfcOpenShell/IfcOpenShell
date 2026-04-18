@@ -589,6 +589,7 @@ protected:
 	Bnd_Box bnd_;
 
 	void draw_hlr(const gp_Pln& pln, const drawing_key& drawing_name);
+	void apply_settings();
 
 	subtract_before_project subtraction_settings_;
 
@@ -627,7 +628,9 @@ public:
 		, hlr(nullptr)
 		, namespace_prefix_("data-")
 		, subtraction_settings_(ON_SLABS_AT_FLOORPLANS)
-	{}
+	{
+		apply_settings();
+	}
     void addXCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { xcoords.push_back(fi); }
     void addYCoordinate(const boost::shared_ptr<util::string_buffer::float_item>& fi) { ycoords.push_back(fi); }
     void addSizeComponent(const boost::shared_ptr<util::string_buffer::float_item>& fi) { radii.push_back(fi); }

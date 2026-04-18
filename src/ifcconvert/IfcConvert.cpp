@@ -30,18 +30,8 @@
 // error C2589: '(': illegal token on right side of '::'
 #define NOMINMAX
 
-#include "../serializers/ColladaSerializer.h"
-#include "../serializers/GltfSerializer.h"
-#include "../serializers/HdfSerializer.h"
-#include "../serializers/IgesSerializer.h"
-#include "../serializers/StepSerializer.h"
-#include "../serializers/WavefrontObjSerializer.h"
-#include "../serializers/XmlSerializer.h"
-#include "../serializers/SvgSerializer.h"
-#include "../serializers/USDSerializer.h"
-#include "../serializers/TtlWktSerializer.h"
-#include "../serializers/RocksDbSerializer.h"
-#include "../serializers/JsonSerializer.h"
+#include "../serializers/document_serializer_plugin.h"
+#include "../serializers/geometry_serializer_plugin.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -53,10 +43,6 @@
 #ifdef IFOPSH_WITH_OPENCASCADE
 
 #include <Standard_Version.hxx>
-
-#if OCC_VERSION_HEX < 0x60900
-#include <IGESControl_Controller.hxx>
-#endif
 
 #endif
 
@@ -352,14 +338,6 @@ int main(int argc, char** argv) {
     std::string unicode_mode;
 #endif
     short precision;
-	double section_height;
-	std::string svg_scale, svg_center;
-	std::string section_ref, elevation_ref, elevation_ref_guid;
-	// "none", "full" or "left"
-	std::string storey_height_display;
-#ifdef IFOPSH_WITH_OPENCASCADE
-	SvgSerializer::storey_height_display_types svg_storey_height_display = SvgSerializer::SH_NONE;
-#endif
 
 	ifcopenshell::geometry::SerializerSettings serializer_settings;
 
@@ -370,52 +348,6 @@ int main(int argc, char** argv) {
             "Specifies the Unicode handling behavior when parsing the IFC file. "
             "Accepted values 'utf8' (the default) and 'escape'.")
 #endif
-        ("bounds", po::value<std::string>(&bounds),
-            "Specifies the bounding rectangle, for example 512x512, to which the "
-            "output will be scaled. Only used when converting to SVG.")
-		("scale", po::value<std::string>(&svg_scale),
-			"Interprets SVG bounds in mm, centers layout and draw elements to scale. "
-			"Only used when converting to SVG. Example 1:100.")
-		("center", po::value<std::string>(&svg_center),
-			"When using --scale, specifies the location in the range [0 1]x[0 1] around which"
-			"to center the drawings. Example 0.5x0.5 (default).")
-		("section-ref", po::value<std::string>(&section_ref),
-			"Element at which cross sections should be created")
-		("elevation-ref", po::value<std::string>(&elevation_ref),
-			"Element at which drawings should be created")
-		("elevation-ref-guid", po::value<std::string>(&elevation_ref_guid),
-			"Element guids at which drawings should be created")
-		("auto-section",
-			"Creates SVG cross section drawings automatically based on model extents")
-		("auto-elevation",
-			"Creates SVG elevation drawings automatically based on model extents")
-		("draw-storey-heights",
-			po::value<std::string>(&storey_height_display)->default_value("none")->implicit_value("full"),
-			"Draws a horizontal line at the height of building storeys in vertical drawings")
-		("storey-height-line-length", po::value<double>(), 
-			"Length of the line when --draw-storey-heights=left")
-		("svg-xmlns",
-			"Stores name and guid in a separate namespace as opposed to data-name, data-guid")
-		("svg-poly",
-			"Uses the polygonal algorithm for hidden line rendering")
-		("svg-prefilter",
-			"Prefilter faces and shapes before feeding to HLR algorithm")
-		("svg-segment-projection",
-			"Segment result of projection wrt original products")
-		("svg-write-poly",
-			"Approximate every curve as polygonal in SVG output")
-		("svg-project",
-			"Always enable hidden line rendering instead of only on elevations")
-		("svg-without-storeys", "Don't emit drawings for building storeys")
-		("svg-no-css", "Don't emit CSS style declarations")
-		("door-arcs", "Draw door openings arcs for IfcDoor elements")
-		("section-height", po::value<double>(&section_height),
-		    "Specifies the cut section height for SVG 2D geometry.")
-		("section-height-from-storeys", "Derives section height from storey elevation. Use --section-height to override default offset of 1.2")
-		("print-space-names", "Prints IfcSpace LongName and Name in the geometry output. Applicable for SVG output")
-		("print-space-areas", "Prints calculated IfcSpace areas in square meters. Applicable for SVG output")
-		("space-name-transform", po::value<std::string>(),
-			"Additional transform to the space labels in SVG")
 		;
 
 	serializer_settings.define_options(serializer_options);
@@ -476,24 +408,6 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-	if (vmap.count("draw-storey-heights")) {
-		boost::to_lower(storey_height_display);
-
-		if (storey_height_display == "none") {
-			svg_storey_height_display = SvgSerializer::SH_NONE;
-		} else if (storey_height_display == "full") {
-			svg_storey_height_display = SvgSerializer::SH_FULL;
-		} else if (storey_height_display == "left") {
-			svg_storey_height_display = SvgSerializer::SH_LEFT;
-		} else {
-			cerr_ << "[error] --draw-storey-heights should be none|full|left" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		}
-	}
-#endif
-
 	if (num_threads <= 0) {
 		num_threads = std::thread::hardware_concurrency();
 		logger::notice("Using " + std::to_string(num_threads) + " threads");
@@ -545,32 +459,6 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
     }
-
-	boost::optional<double> bounding_width, bounding_height, relative_center_x, relative_center_y;
-
-	if (vmap.count("bounds") == 1) {
-		int w, h;
-		if (sscanf(bounds.c_str(), "%ux%u", &w, &h) == 2 && w > 0 && h > 0) {
-			bounding_width = w;
-			bounding_height = h;
-		} else {
-			cerr_ << "[error] Invalid use of --bounds" << std::endl;
-            print_options(serializer_options);
-			return EXIT_FAILURE;
-		}
-	}
-
-	if (vmap.count("center") == 1) {
-		double cx, cy;
-		if (sscanf(svg_center.c_str(), "%lfx%lf", &cx, &cy) == 2 && cx >= 0. && cy >= 0. && cx <= 1. && cy <= 1.) {
-			relative_center_x = cx;
-			relative_center_y = cy;
-		} else {
-			cerr_ << "[error] Invalid use of --bounds" << std::endl;
-			print_options(serializer_options);
-			return EXIT_FAILURE;
-		}
-	}
 
 	const path_t input_filename = vmap["input-file"].as<path_t>();
     /*
@@ -640,53 +528,58 @@ int main(int argc, char** argv) {
 	path_t output_extension = dot + ext;
 
 	boost::to_lower(output_extension);
+	const auto output_extension_utf8 = ifcopenshell::path::to_utf8(output_extension);
 
 	ifcopenshell::file* ifc_file = 0;
 
 	boost::optional<std::list<IfcGeom::Element*>> elems_from_adaptor;
     
-    const path_t OBJ = ifcopenshell::path::from_utf8(".obj"),
-		MTL = ifcopenshell::path::from_utf8(".mtl"),
-		DAE = ifcopenshell::path::from_utf8(".dae"),
-		GLB = ifcopenshell::path::from_utf8(".glb"),
-		STP = ifcopenshell::path::from_utf8(".stp"),
-		IGS = ifcopenshell::path::from_utf8(".igs"),
-		SVG = ifcopenshell::path::from_utf8(".svg"),
-		CACHE = ifcopenshell::path::from_utf8(".cache"),
+    const path_t CACHE = ifcopenshell::path::from_utf8(".cache"),
 		HDF = ifcopenshell::path::from_utf8(".h5"),
-		XML = ifcopenshell::path::from_utf8(".xml"),
-        JSON = ifcopenshell::path::from_utf8(".json"),
-        // @todo this is just temporary as it doesn't make sense to require an extension for a DB
-		RDB = ifcopenshell::path::from_utf8(".rdb"),
-		IFC = ifcopenshell::path::from_utf8(".ifc"),
-		USD = ifcopenshell::path::from_utf8(".usd"),
-		USDA = ifcopenshell::path::from_utf8(".usda"),
-		USDC = ifcopenshell::path::from_utf8(".usdc"),
-		TTL = ifcopenshell::path::from_utf8(".ttl");
+		IFC = ifcopenshell::path::from_utf8(".ifc");
 
-	// @todo clean up serializer selection
-	// @todo detect program options that conflict with the chosen serializer
-	if (output_extension == XML || output_extension == JSON) {
+	auto& document_serializer_registry = ifcopenshell::serializers::document_serializer_registry_instance();
+	const auto* document_serializer_info = document_serializer_registry.find(output_extension_utf8);
+	if (document_serializer_info) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			const bool use_input_filename = vmap.count("stream") && document_serializer_info->supports_input_filename;
+			if (!use_input_filename && !document_serializer_info->supports_ifc_file) {
+				throw ifcopenshell::exception("Selected document serializer requires --stream");
+			}
+
+			if (use_input_filename || init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+				if (!use_input_filename) {
+					document_serializer_info = document_serializer_registry.find(output_extension_utf8, ifc_file->schema()->name());
+					if (!document_serializer_info) {
+						throw ifcopenshell::exception("No document serializer registered for " + output_extension_utf8 + " and schema " + ifc_file->schema()->name());
+					}
+				}
+
 				time_t start, end;
 				time(&start);
-                if (output_extension == XML) {
-                    XmlSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_temp_filename));
-                    logger::status("Writing XML output...");
-                    s.finalize();
-                } else {
-#ifdef WITH_GLTF
-                    JsonSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
-                    logger::status("Writing JSON output...");
-                    s.finalize();
-#endif
-                }
+
+				ifcopenshell::serializers::document_serializer_context context;
+				context.file = ifc_file;
+				context.input_filename = ifcopenshell::path::to_utf8(input_filename);
+				context.output_filename = ifcopenshell::path::to_utf8(document_serializer_info->writes_final_output ? output_filename : output_temp_filename);
+				context.schema_name = ifc_file ? ifc_file->schema()->name() : document_serializer_info->schema_name;
+				context.stream = use_input_filename;
+
+				boost::shared_ptr<Serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
+				logger::status("Writing " + boost::to_upper_copy(document_serializer_info->format) + " output...");
+				serializer->finalize();
+				serializer.reset();
+
 				time(&end);
 				logger::status("Done! Conversion took " +  format_duration(start, end));
 
-				ifcopenshell::path::rename_file(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(output_filename));
+				if (!document_serializer_info->writes_final_output &&
+					!ifcopenshell::path::rename_file(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(output_filename))) {
+					throw ifcopenshell::exception(
+						"Unable to write output file '" + ifcopenshell::path::to_utf8(output_filename) +
+						"', see '" + ifcopenshell::path::to_utf8(output_temp_filename) + "' for the conversion result");
+				}
 				exit_code = EXIT_SUCCESS;
 			}
 		} catch (const std::exception& e) {
@@ -719,38 +612,15 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
-#ifdef WITH_ROCKSDB
-	else if (output_extension == RDB) {
-		int exit_code = EXIT_FAILURE;
-		try {
-			if (vmap.count("stream")) {
-				time_t start, end;
-				time(&start);
-				RocksDbSerializer s(ifcopenshell::path::to_utf8(input_filename), ifcopenshell::path::to_utf8(output_filename), true);
-				logger::status("Populating RocksDB Key-Value store...");
-				s.finalize();
-				time(&end);
-				logger::status("Done! Conversion took " + format_duration(start, end));
-				exit_code = EXIT_SUCCESS;
-			} else {
-				if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
-					time_t start, end;
-					time(&start);
-					RocksDbSerializer s(ifc_file, ifcopenshell::path::to_utf8(output_filename));
-					logger::status("Populating RocksDB Key-Value store...");
-					s.finalize();
-					time(&end);
-					logger::status("Done! Conversion took " + format_duration(start, end));
-					exit_code = EXIT_SUCCESS;
-				}
-			}			
-		} catch (const std::exception& e) {
-			logger::error(e);
-		}
+
+	auto& geometry_serializer_registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
+	const auto* geometry_serializer_info = geometry_serializer_registry.find(output_extension_utf8);
+	if (!geometry_serializer_info) {
+		cerr_ << "[error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
-		return exit_code;
+		print_usage();
+		return EXIT_FAILURE;
 	}
-#endif
 
     /// @todo Clean up this filter code further.
     std::vector<geom_filter> used_filters;
@@ -769,11 +639,7 @@ int main(int argc, char** argv) {
     if (!layer_filter.values.empty()) { layer_filter.update_description(); logger::notice(layer_filter.description); }
 	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); logger::notice(attribute_filter.description); }
 
-#ifdef _MSC_VER
-	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
-#else
-	if (output_extension == DAE) {
-#endif
+	if (geometry_serializer_info && geometry_serializer_info->requires_ascii_temp_file) {
 		// These serializers do not support opening unicode paths. Therefore
 		// a random temp file is generated using only ASCII characters instead.
 		std::random_device rng;
@@ -798,15 +664,6 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC && output_extension != GLB) {
-		cerr_ << "[error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
-		/// @todo Lots of duplicate error-and-exit code.
-		write_log(!quiet);
-		print_usage();
-		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
-		return EXIT_FAILURE;
-	}
-
 	if (vmap[ifcopenshell::geometry::settings::WeldVertices::name].defaulted()) {
 		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
 	}
@@ -815,60 +672,31 @@ int main(int argc, char** argv) {
 		IfcGeom::update_default_style("IfcSpace")->transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
 	}
 
-	if (output_extension == OBJ || output_extension == STP || output_extension == IGS) {
-		geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
-	}
-
-	if (output_extension == TTL) {
-		geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::TriangulationMethod::POLYHEDRON_WITH_HOLES;
-	}
-
-	if (output_extension == SVG) {
-		// SVG serialiazation depends on element hierarchy now to look up the parent
-		geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().value = true;
-	}
-
-	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
-	if (output_extension == OBJ) {
-        // Do not use temp file for MTL as it's such a small file.
-        const path_t mtl_filename = change_extension(output_filename, MTL);
-		serializer = boost::make_shared<WaveFrontOBJSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), ifcopenshell::path::to_utf8(mtl_filename), geometry_settings, serializer_settings);
-#ifdef WITH_OPENCOLLADA
-	} else if (output_extension == DAE) {
-		serializer = boost::make_shared<ColladaSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-#endif
-#ifdef WITH_GLTF
-	} else if (output_extension == GLB) {
-		serializer = boost::make_shared<GltfSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-#endif
-#ifdef WITH_USD
-	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
-		serializer = boost::make_shared<USDSerializer>(ifcopenshell::path::to_utf8(output_filename), geometry_settings, serializer_settings);
-#endif
-#ifdef IFOPSH_WITH_OPENCASCADE
-	} else if (output_extension == STP) {
-		serializer = boost::make_shared<StepSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-	} else if (output_extension == IGS) {
-#if OCC_VERSION_HEX < 0x60900
-		// According to https://tracker.dev.opencascade.org/view.php?id=25689 something has been fixed in 6.9.0
-		IGESControl_Controller::Init(); // work around Open Cascade bug
-#endif
-		serializer = boost::make_shared<IgesSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-	} else if (output_extension == SVG) {
-		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<SvgSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-#ifdef WITH_HDF5
-	} else if (output_extension == HDF) {
-		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		serializer = boost::make_shared<HdfSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-#endif
-#endif	
-	} else if (output_extension == TTL) {
-		serializer = boost::make_shared<TtlWktSerializer>(ifcopenshell::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
-	} else {
-        cerr_ << "[error] Unknown output filename extension '" << output_extension << "'\n";
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() &&
+		!geometry_serializer_info->supports_user_element_hierarchy) {
+		cerr_ << "[error] --use-element-hierarchy is not supported by the selected geometry serializer.\n";
 		write_log(!quiet);
 		print_usage();
+		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
+		return EXIT_FAILURE;
+	}
+
+	ifcopenshell::serializers::geometry_serializer_context serializer_context{
+		ifcopenshell::path::to_utf8(output_filename),
+		ifcopenshell::path::to_utf8(output_temp_filename),
+		geometry_settings,
+		serializer_settings
+	};
+
+	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
+	try {
+		geometry_serializer_registry.configure(output_extension_utf8, serializer_context);
+		serializer = geometry_serializer_registry.create(output_extension_utf8, serializer_context);
+	} catch (const std::exception& e) {
+		cerr_ << "[error] " << e.what() << std::endl;
+		write_log(!quiet);
+		print_options(serializer_options);
+		ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
 		return EXIT_FAILURE;
 	}
 
@@ -897,9 +725,9 @@ int main(int argc, char** argv) {
 	time(&start);
 	
 	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
-    // XML, RocksDB, IFC are already special-cased above
+    // Document serializers and IFC are already special-cased above
     // SVG requires properties for IfcAnnotation/DRAWING properties
-    if (!init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, output_extension != SVG)) {
+    if (!init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, geometry_serializer_info->bypass_properties)) {
         write_log(!quiet);
 		serializer.reset();
         ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
@@ -1003,12 +831,37 @@ int main(int argc, char** argv) {
 	}	
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
-	std::unique_ptr<HdfSerializer> cache;
-	if (context_iterator && vmap.count("cache-file") || vmap.count("cache")) {
+	boost::shared_ptr<GeometrySerializer> cache;
+	const bool use_cache = context_iterator && (vmap.count("cache-file") || vmap.count("cache"));
+	if (use_cache) {
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
-		cache.reset(new HdfSerializer(ifcopenshell::path::to_utf8(cache_file), geometry_settings, serializer_settings));
+
+		try {
+			ifcopenshell::serializers::geometry_serializer_context cache_context{
+				ifcopenshell::path::to_utf8(cache_file),
+				ifcopenshell::path::to_utf8(cache_file),
+				geometry_settings,
+				serializer_settings
+			};
+			cache = geometry_serializer_registry.create(".h5", cache_context);
+		} catch (const std::exception& e) {
+			cerr_ << "[error] Unable to initialize geometry cache: " << e.what() << std::endl;
+			serializer.reset();
+			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
+			write_log(!quiet);
+			return EXIT_FAILURE;
+		}
+
+		if (!cache || !cache->ready()) {
+			cerr_ << "[error] Unable to initialize geometry cache serializer\n";
+			serializer.reset();
+			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
+			write_log(!quiet);
+			return EXIT_FAILURE;
+		}
+
 		context_iterator->set_cache(cache.get());
 	}
 #endif
@@ -1026,83 +879,6 @@ int main(int argc, char** argv) {
     }
 
 	serializer->setFile(ifc_file);
-
-#ifdef IFOPSH_WITH_OPENCASCADE
-	if (output_extension == SVG) {
-		// @todo turn these all into proper settings
-		if (vmap.count("section-height-from-storeys") != 0) {
-			if (vmap.count("section-height")) {
-				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);
-			} else {
-				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys();
-			}
-		} else if (vmap.count("section-height") != 0) {
-			logger::notice("Overriding section height");
-			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
-		}
-		if (vmap.count("print-space-names") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceNames(true);
-		}
-		if (vmap.count("print-space-areas") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setPrintSpaceAreas(true);
-		}
-		if (vmap.count("draw-storey-heights") != 0) {
-			static_cast<SvgSerializer*>(serializer.get())->setDrawStoreyHeights(svg_storey_height_display);
-		}		
-		if (bounding_width.is_initialized() && bounding_height.is_initialized()) {
-			static_cast<SvgSerializer*>(serializer.get())->setBoundingRectangle(bounding_width.get(), bounding_height.get());
-		}
-		if (vmap.count("door-arcs")) {
-			static_cast<SvgSerializer*>(serializer.get())->setDrawDoorArcs(true);
-		}
-		if (vmap.count("scale")) {
-			int s0, s1;
-			if (sscanf(svg_scale.c_str(), "%u:%u", &s0, &s1) == 2 && s0 > 0 && s1 > 0) {
-				static_cast<SvgSerializer*>(serializer.get())->setScale((double)s0 / s1);
-			} else {
-				cerr_ << "[error] Invalid use of --scale" << std::endl;
-				print_options(serializer_options);
-				return EXIT_FAILURE;
-			}
-		}
-		if (vmap.count("section-ref")) {
-			static_cast<SvgSerializer*>(serializer.get())->setSectionRef(section_ref);
-		}
-		if (vmap.count("elevation-ref")) {
-			static_cast<SvgSerializer*>(serializer.get())->setElevationRef(elevation_ref);
-		}
-		if (vmap.count("elevation-ref-guid")) {
-			static_cast<SvgSerializer*>(serializer.get())->setElevationRefGuid(elevation_ref_guid);
-		}
-		if (vmap.count("auto-section")) {
-			static_cast<SvgSerializer*>(serializer.get())->setAutoSection(true);
-		}
-		if (vmap.count("auto-elevation")) {
-			static_cast<SvgSerializer*>(serializer.get())->setAutoElevation(true);
-		}
-		static_cast<SvgSerializer*>(serializer.get())->setUseNamespace(vmap.count("svg-xmlns") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setUseHlrPoly(vmap.count("svg-poly") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setUsePrefiltering(vmap.count("svg-prefilter") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setSegmentProjection(vmap.count("svg-segment-projection") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setPolygonal(vmap.count("svg-write-poly") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setAlwaysProject(vmap.count("svg-project") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setWithoutStoreys(vmap.count("svg-without-storeys") > 0);
-		static_cast<SvgSerializer*>(serializer.get())->setNoCSS(vmap.count("svg-no-css") > 0);
-		if (relative_center_x && relative_center_y) {
-			static_cast<SvgSerializer*>(serializer.get())->setDrawingCenter(*relative_center_x, *relative_center_y);
-		}
-		if (vmap.count("storey-height-line-length")) {
-			static_cast<SvgSerializer*>(serializer.get())->setStoreyHeightLineLength(
-				vmap["storey-height-line-length"].as<double>()
-			);
-		}
-		if (vmap.count("space-name-transform")) {
-			static_cast<SvgSerializer*>(serializer.get())->setSpaceNameTransform(
-				vmap["space-name-transform"].as<std::string>()
-			);
-		}		
-	}
-#endif
 
     if (context_iterator && geometry_settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
 		serializer->setUnitNameAndMagnitude(context_iterator->unit_name(), static_cast<float>(context_iterator->unit_magnitude()));
@@ -1203,7 +979,7 @@ int main(int argc, char** argv) {
 	logger::message(logger::LOG_PERF, "done file geometry conversion");
 
 	bool successful;
-	if(output_extension == USD || output_extension == USDC || output_extension == USDA) {
+	if (geometry_serializer_info->writes_final_output) {
 		// No need to rename the file
 		successful = true;
 	}

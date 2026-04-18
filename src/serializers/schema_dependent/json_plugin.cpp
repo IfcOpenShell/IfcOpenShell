@@ -25,16 +25,16 @@
 #include "../../ifcparse/macros.h"
 
 #include <boost/dll/alias.hpp>
+#include <boost/make_shared.hpp>
 
 namespace {
 
-struct factory_t {
-	JsonSerializer* operator()(ifcopenshell::file* file, const std::string& json_filename, JsonSerializer::Dialect dialect) const {
-		auto* serializer = new POSTFIX_SCHEMA(JsonSerializer)(file, json_filename, dialect);
-		serializer->setFile(file);
-		return serializer;
-	}
-};
+boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
+	return boost::make_shared<POSTFIX_SCHEMA(JsonSerializer)>(
+		context.file,
+		context.output_filename,
+		static_cast<JsonSerializer::Dialect>(context.dialect));
+}
 
 }
 
@@ -50,9 +50,11 @@ plugin::metadata plugin_metadata() {
 	return document_serializer_plugin_metadata("json", STRINGIFY(IfcSchema));
 }
 
-void register_plugin(JsonSerializerFactory::Factory& registry, const plugin::module& module) {
-	factory_t factory;
-	registry.bind(STRINGIFY(IfcSchema), factory, module);
+void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
+	document_serializer_info info;
+	info.format = "json";
+	info.schema_name = STRINGIFY(IfcSchema);
+	registry.bind(info, create_serializer, module);
 }
 
 }

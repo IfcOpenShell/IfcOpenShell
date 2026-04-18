@@ -17,45 +17,60 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../document_serializer_plugin.h"
-#include "XmlSerializer.h"
+#ifdef IFOPSH_WITH_OPENCASCADE
 
-#include "../../ifcparse/macros.h"
+#include "geometry_serializer_plugin.h"
+#include "IgesSerializer.h"
 
 #include <boost/dll/alias.hpp>
 #include <boost/make_shared.hpp>
 
-namespace {
+#include <Standard_Version.hxx>
 
-boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	return boost::make_shared<POSTFIX_SCHEMA(XmlSerializer)>(context.file, context.output_filename);
-}
-
-}
+#if OCC_VERSION_HEX < 0x60900
+#include <IGESControl_Controller.hxx>
+#endif
 
 namespace ifcopenshell {
 namespace serializers {
-namespace xml_document_serializer_plugin {
+namespace geometry_igs_plugin {
 
 plugin::abi_info plugin_abi() {
 	return plugin::host_abi();
 }
 
 plugin::metadata plugin_metadata() {
-	return document_serializer_plugin_metadata("xml", STRINGIFY(IfcSchema));
+	return geometry_serializer_plugin_metadata("igs");
 }
 
-void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
-	document_serializer_info info;
-	info.format = "xml";
-	info.schema_name = STRINGIFY(IfcSchema);
-	registry.bind(info, create_serializer, module);
+boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+#if OCC_VERSION_HEX < 0x60900
+	IGESControl_Controller::Init();
+#endif
+	return boost::make_shared<IgesSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
+}
+
+void configure_serializer(geometry_serializer_context& context) {
+	context.geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
+	context.geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
+}
+
+void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
+	geometry_serializer_info info;
+	info.format = "igs";
+	info.extensions = { ".igs" };
+	info.kernel_ids = { "opencascade" };
+	info.supports_brep = true;
+	info.requires_ascii_temp_file = true;
+	registry.bind(info, create_serializer, configure_serializer, module);
 }
 
 }
 }
 }
 
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
-BOOST_DLL_ALIAS(ifcopenshell::serializers::xml_document_serializer_plugin::register_plugin, ifcopenshell_register_document_serializer_plugin_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_igs_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_igs_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::serializers::geometry_igs_plugin::register_plugin, ifcopenshell_register_geometry_serializer_plugin_v1)
+
+#endif

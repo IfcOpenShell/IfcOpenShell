@@ -4,12 +4,16 @@ set(mapping_libraries ${mapping_libraries} PARENT_SCOPE)
 # IfcGeom (schema agnostic)
 file(GLOB SCHEMA_AGNOSTIC_H_FILES *.h)
 file(GLOB SCHEMA_AGNOSTIC_CPP_FILES *.cpp)
-set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
+set(SERIALIZER_RUNTIME_CPP_FILES
+    ../serializers/document_serializer_plugin.cpp
+    ../serializers/geometry_serializer_plugin.cpp
+)
+set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES} ${SERIALIZER_RUNTIME_CPP_FILES})
 
 add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
 add_library(geometry ALIAS IfcGeom)
 set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
-target_compile_definitions(IfcGeom PRIVATE BOOST_DLL_USE_STD_FS)
+target_compile_definitions(IfcGeom PRIVATE BOOST_DLL_USE_STD_FS SERIALIZERS_EXPORTS)
 
 if(UNIX)
     find_package(Threads)
