@@ -70,6 +70,7 @@ class IFC_PARSE_API Base {
     }
 
     Base() {};
+    Base(std::nullopt_t) noexcept : Base() {}
     Base(const std::weak_ptr<instance_data>& data) : data_(data) {}
 
     // @todo try and make this private over time too
@@ -132,8 +133,7 @@ class IFC_PARSE_API Base {
 
 class IFC_PARSE_API Entity : public Base {
   public:
-    Entity() {}
-    Entity(const std::weak_ptr<instance_data>& data) : Base(data) {}
+    using Base::Base;
 
     attribute_value get(const std::string& attribute_name) const;
 
@@ -149,7 +149,8 @@ class IFC_PARSE_API Entity : public Base {
 class IFC_PARSE_API Select : public Base {
   public:
     Select() {}
-    // Select are constructed from Base as cast functions, not from data directly
+    Select(std::nullopt_t) noexcept : Base() {}
+    Select(const std::weak_ptr<instance_data>& data) : Base(data) {}
     Select(const Base& base) : Base(base.data_weak()) {}
 
     Base concrete() const {
@@ -163,8 +164,7 @@ class IFC_PARSE_API Select : public Base {
 //       Entity and DeclaredType
 class IFC_PARSE_API DeclaredType : public Base {
   public:
-    DeclaredType() {}
-    DeclaredType(const std::weak_ptr<instance_data>& data) : Base(data) {}
+    using Base::Base;
 };
 
 } // namespace express

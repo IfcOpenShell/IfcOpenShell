@@ -29,7 +29,6 @@
 #include <fstream>
 
 #include "../ifcparse/schemas/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
 #include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
