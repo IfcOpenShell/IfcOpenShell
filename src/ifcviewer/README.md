@@ -740,17 +740,226 @@ The stats line now reports `cull[wall X | work: clr Y trv Z emt W upl U]`:
 where CPU cycles went. `IFC_CULL_THREADS=0` forces single-threaded mode
 for comparison.
 
-#### 3E. GPU-side culling via compute (longer-term)
+#### 3E. GPU compute culling — experiments, results, and current state
 
-Push the cull loop to a compute shader reading the per-instance SSBO +
-frustum planes + HiZ pyramid, emitting the visible list and indirect
-commands with atomic counters. Three compute dispatches per model: (1)
-count survivors per `(mesh, winding, LOD)` bucket, (2) prefix-sum the
-counts into `baseInstance` offsets and write the indirect command buffer,
-(3) re-test and compact survivors into the dense visible list. HiZ moves
-to a GPU depth texture sampled directly in the shader, eliminating the
-Phase 3C readback. Lets culling scale to millions of instances and
-single-model scenes where Phase 3D can't parallelise.
+##### What we tried
+
+**Attempt 1: Full GPU-driven rendering (reverted).** Five commits
+(`4fe32b54`..`d5b7b87b`) moved the entire cull-to-draw pipeline onto
+the GPU: a compute shader performed frustum + contribution + HiZ
+culling, selected LOD0/LOD1, handled fwd/rev winding bucketing, wrote
+indirect draw commands via `glMultiDrawElementsIndirectCount`, and
+drove rendering without CPU readback.  This was architecturally clean
+but complex — the GPU built per-model indirect command buffers with
+atomic counters, prefix sums, and per-bucket compaction.  It worked
+correctly but introduced code smells (extension loaders for
+`glMultiDrawElementsIndirectCount` not exposed by Qt6's
+`QOpenGLFunctions_4_5_Core`, ad-hoc GPU readbacks for validation).
+All five commits were reverted as a single block to keep the codebase
+clean while preserving the AABB SSBO upload (`b2044737`) and the
+frustum-only validation shader (`b17860fc`).
+
+**Attempt 2: GPU frustum-only validation shader.** A minimal compute
+shader (64 threads/workgroup) testing each instance's AABB against 6
+frustum planes.  Used as a measurement baseline — no contribution,
+HiZ, LOD, or winding.  Results on a 1.06 M-instance / 111-model scene
+(GTX 1650):
+
+| Metric | GPU frustum-only | CPU BVH (parallel) |
+|--------|------------------|--------------------|
+| Cull time | **0.82 ms** (GPU timestamp) | 9.6–15.2 ms wall |
+| Survivors | 279 k (frustum only) | 130 k (frustum + contribution + HiZ) |
+
+The GPU brute-force scan of 1.06 M instances in 0.82 ms was 12–18×
+faster than the CPU BVH walk despite testing every instance.
+
+**Attempt 3: Hybrid GPU cull with synchronous readback.** Added
+contribution culling to the GPU shader (bounding-sphere screen-space
+radius test), then read back the compact survivor list to the CPU with
+`glGetNamedBufferSubData`.  CPU retains HiZ, LOD selection, winding
+bucketing, indirect command building, and all GL draw calls.
+
+| Phase | Time |
+|-------|------|
+| GPU dispatch (frustum + contribution) | 0.92 ms |
+| Synchronous readback (`glGetNamedBufferSubData`) | **4.2–7.4 ms** |
+| CPU consume (HiZ + LOD + winding + emit) | 6.4–9.8 ms |
+| **Total wall** | **~15 ms** |
+
+The synchronous readback pipeline-stalled the GPU, adding 4–7 ms of
+idle wait.  Total wall time was roughly equal to the CPU-only path,
+negating the GPU cull's speed advantage.
+
+**Attempt 4: Async one-frame-late readback (committed, `30e43ffe`).**
+Replaced synchronous readback with a persistent-mapped buffer
+(`GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT`) and a `glFenceSync` /
+`glClientWaitSync` fence.  The GPU writes survivors this frame; the
+CPU reads them next frame.  One frame of latency, but zero stalls.
+
+| Phase | Time |
+|-------|------|
+| GPU dispatch | 0.69–0.78 ms |
+| Async readback (fence poll) | **0.00 ms** |
+| CPU consume | 5.0–6.2 ms |
+| **Total wall** | **~5.5 ms** |
+
+vs the CPU-only path at 5.2–6.4 ms wall on the same scene.  The GPU
+cull + async readback matches or slightly beats the parallel CPU BVH
+path, with headroom for scenes where the CPU path can't parallelise
+(single large model).
+
+**Attempt 5: Dirty-mesh tracking (committed, `01dd8d57`).** Profiling
+the CPU consume phase revealed that `clr` (clearing per-mesh visibility
+buckets) and `emit` (building indirect commands) were O(total_meshes)
+= O(462 k), not O(survivors).  Added a dirty-mesh list so only mesh
+buckets that received survivors are cleared and iterated.
+
+Consume sub-phase breakdown (summed across parallel threads,
+~128 k survivors):
+
+| Sub-phase | Before | After | Scales with |
+|-----------|--------|-------|-------------|
+| bin (model binning) | 0.11 ms | 0.18 ms | O(survivors) |
+| clr (bucket clear) | 2.0 ms | **1.6 ms** | O(dirty meshes) |
+| class (HiZ + LOD + winding) | 5.1 ms | 5.3 ms | O(survivors) |
+| emit (indirect cmd build) | 4.2 ms | **2.2 ms** | O(dirty meshes) |
+
+Emit improved ~48%, clr ~20%.  The dominant cost shifted to `class`
+(per-survivor HiZ + LOD + winding classification).
+
+##### What we learned
+
+1. **GPU brute-force beats CPU BVH for frustum + contribution.**
+   0.82 ms for 1.06 M instances vs 10–15 ms for the CPU BVH walk.
+   The BVH's hierarchical skip advantage is overwhelmed by the GPU's
+   raw parallelism — 1 M independent AABB-vs-frustum tests is a
+   perfect compute workload.
+
+2. **Synchronous readback kills the advantage.** The 4–7 ms stall from
+   `glGetNamedBufferSubData` on ~1 MB of data negated all GPU savings.
+   A pipeline stall is worse than just doing the work on the CPU.
+
+3. **Async one-frame-late readback works well.** Persistent mapping +
+   fence polling adds zero measurable overhead.  The one-frame latency
+   is imperceptible for culling — worst case, a few objects at the
+   frustum edge pop in one frame late during fast camera motion.
+
+4. **CPU consume is now the bottleneck.**  With GPU dispatch at <1 ms
+   and readback at 0 ms, the 5–6 ms consume phase (HiZ test, LOD
+   selection, winding classification, indirect command building)
+   dominates.  The `class` sub-phase alone is 5+ ms, scaling linearly
+   with survivor count.
+
+5. **Dirty-mesh tracking helps but doesn't transform performance.**
+   The 462 k total meshes → ~104 k active meshes reduction cut emit
+   in half, but the per-survivor classification work is the true
+   bottleneck.
+
+##### What remains
+
+The hybrid path (`IFC_GPU_CULL=1`) is functional and committed.  It
+matches the CPU path's performance today and provides the foundation
+for further GPU offload.  Remaining opportunities:
+
+- Move HiZ + LOD + winding classification to the GPU (eliminates the
+  5 ms `class` sub-phase entirely — the GPU already has the AABBs and
+  can sample the HiZ pyramid directly).
+- GPU BVH traversal to reduce dispatch from O(total) to O(visible +
+  tree overhead) — matters when survivor ratio is low.
+- GPU-driven indirect command building (eliminates CPU emit entirely).
+
+Each of these would chip away at the consume phase, but the sub_draw
+analysis below reveals a more fundamental bottleneck.
+
+#### 3F. Sub-draw fragmentation analysis
+
+##### The problem
+
+With GPU cull solving the *culling* bottleneck, the dominant cost
+shifts to the *drawing* side.  On the 1.06 M-instance / 111-model
+scene, frame times are 48–63 ms despite only 24–47 M visible
+triangles — well within the GTX 1650's throughput.  The culprit is
+the number of indirect sub-draws (individual `DrawElementsIndirectCommand`
+entries inside each `glMultiDrawElementsIndirect` call).
+
+##### Measurement
+
+Diagnostic instrumentation (`IFC_SUBDRAW_DIAG=1`) revealed:
+
+**Mixed scene (111 models, 1.06 M instances):**
+
+| instanceCount | sub_draws | % of total | instances | triangles |
+|---------------|-----------|------------|-----------|-----------|
+| 1 | 114,624 | **95.7%** | 114,624 | 16.9 M |
+| 2 | 2,269 | 1.9% | 4,538 | 1.3 M |
+| 3–4 | 1,127 | 0.9% | 3,873 | 1.6 M |
+| 5–8 | 1,106 | 0.9% | 6,407 | 1.9 M |
+| 9–16 | 376 | 0.3% | 4,315 | 0.8 M |
+| 17–64 | 264 | 0.2% | 7,766 | 8.0 M |
+| 65–256 | 29 | <0.1% | 3,331 | 2.0 M |
+| 257+ | 8 | <0.1% | 9,732 | 0.4 M |
+
+**Steel-only scene (18 models, 570 k instances):**
+
+| instanceCount | sub_draws | % of total | instances | triangles |
+|---------------|-----------|------------|-----------|-----------|
+| 1 | 68,616 | **85.9%** | 68,616 | 12.5 M |
+| 2 | 5,385 | 6.7% | 10,770 | 2.7 M |
+| 3–4 | 2,581 | 3.2% | 9,100 | 1.3 M |
+| 5+ | 3,324 | 4.2% | 66,407 | 7.0 M |
+
+##### Consolidation potential
+
+The mesh-level consolidation analysis found:
+
+- **119,803 unique visible mesh IDs = 119,803 sub_draws** (perfect 1:1)
+- **0 meshes split by winding or LOD buckets** — no mesh_id appears in
+  more than one (fwd/rev × lod0/lod1) bucket
+- **0% reduction** available from merging across winding/LOD
+- **114,624 meshes (95.7%)** are genuinely unique geometry placed
+  exactly once — instancing provides zero benefit for these
+
+This is a fundamental property of the IFC data, not a pipeline
+inefficiency.  BIM models contain thousands of unique parametric
+shapes (custom brackets, unique beam profiles, one-off fittings) each
+placed at a single location.  Only a minority of elements (standard
+doors, windows, pipe fittings) share geometry across placements.
+
+##### Conclusions
+
+1. **Instancing is maxed out.**  The pipeline already groups all
+   instances of each mesh into a single sub_draw.  With 96% of meshes
+   having exactly one visible instance, there is nothing more to
+   group.
+
+2. **Per-draw overhead dominates frame time.**  95–120 k sub_draws at
+   ~20 fps = 48–50 ms/frame, but only 24–33 M triangles.  A GTX 1650
+   can shade 1+ billion triangles/sec; the GPU is starving on
+   per-command overhead (command fetch, baseInstance lookup, draw
+   setup), not vertex/fragment throughput.
+
+3. **The path forward is static batching.**  Merge the vertex and
+   index data of multiple distinct single-instance meshes into
+   combined VBO/EBO ranges, each issued as one sub_draw.  Batches of
+   256–1024 spatially-coherent meshes would collapse 91–115 k
+   sub_draws into 100–450, a 200–1000× reduction.
+
+4. **Trade-offs of static batching:**
+   - Culling granularity degrades from per-mesh to per-batch.  Batches
+     must be spatially coherent (e.g., BVH subtree leaves) or invisible
+     geometry gets drawn.
+   - Per-instance attributes (object_id, colour_override) must move
+     into the vertex stream or a per-vertex SSBO lookup, since
+     instancing no longer applies to merged meshes.
+   - The VBO/EBO layout changes at finalize time; existing instancing
+     stays for multi-instance meshes (the 4% that benefit from it).
+   - The sidecar format needs a version bump to cache batch membership.
+
+5. **The steel scene validates the hypothesis.**  It has better
+   instancing reuse (86% single-instance vs 96%) and correspondingly
+   better fps (49 vs 20).  The ~2.5× fps ratio tracks the sub_draw
+   ratio (~80 k vs ~120 k), confirming per-draw overhead as the
+   dominant cost.
 
 ### Planned follow-ups (post-Phase-3)
 
@@ -769,7 +978,8 @@ Scene size                      Bottleneck              Fix
                                                         + Phase 3B LOD (done)
 multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU readback)
 many models, serial cull        single-thread BVH trv   Phase 3D parallel cull (done)
-single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (planned)
+single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (hybrid, done)
+90k+ unique visible meshes      per-draw GPU overhead   Phase 3F static batching (next)
 ```
 
 ## Roadmap
@@ -793,6 +1003,7 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (plann
 - [x] Phase 3D — Parallel per-model CPU cull (`std::async` fan-out)
 - [x] Quantized VBO (16 B/vert, sidecar v6)
 - [x] Event-driven rendering (zero idle CPU/GPU, cull skipped on still frames)
-- [ ] **Phase 3E — GPU-side compute-shader culling** (next; replaces the HiZ readback)
+- [x] Phase 3E — GPU compute-shader culling (hybrid: GPU frustum+contribution, async readback, CPU HiZ+LOD+emit)
+- [ ] **Phase 3F — Static batching of single-instance meshes** (next; reduces 90k+ sub_draws to hundreds)
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console

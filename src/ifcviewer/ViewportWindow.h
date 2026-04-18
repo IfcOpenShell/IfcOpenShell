@@ -376,6 +376,11 @@ private:
     QMatrix4x4 last_cull_proj_;
     bool       have_cached_cull_ = false;
 
+    // Motion-adaptive contribution culling.  During camera motion, use a
+    // larger pixel-radius threshold to aggressively cull small objects.
+    // When the camera stops, re-cull once at the base threshold.
+    bool       last_cull_was_motion_ = false;
+
     // Per-frame stats
     uint32_t visible_triangles_ = 0;
     uint32_t visible_objects_ = 0;

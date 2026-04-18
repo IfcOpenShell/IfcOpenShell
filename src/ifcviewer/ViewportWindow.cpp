@@ -1262,6 +1262,11 @@ void ViewportWindow::buildHizPyramid() {
                                        hiz_depth_tex_, 0);
         gl_->glNamedFramebufferDrawBuffer(hiz_fbo_, GL_NONE);
         gl_->glNamedFramebufferReadBuffer(hiz_fbo_, GL_NONE);
+        {
+            GLenum s = gl_->glCheckNamedFramebufferStatus(hiz_fbo_, GL_FRAMEBUFFER);
+            if (s != GL_FRAMEBUFFER_COMPLETE)
+                qWarning("HiZ FBO incomplete: 0x%04x", s);
+        }
 
         hiz_base_w_ = base_w;
         hiz_base_h_ = base_h;
@@ -1285,8 +1290,10 @@ void ViewportWindow::buildHizPyramid() {
         hiz_pyramid_.assign(off, 1.0f);
     }
 
-    // Step 1: MSAA default-fb → full-size single-sample resolve (same-size).
+    // Drain stale GL errors before HiZ pipeline.
     while (gl_->glGetError() != GL_NO_ERROR) {}
+
+    // Step 1: MSAA default-fb → full-size SS resolve (same-size blit).
     gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, hiz_resolve_fbo_);
     gl_->glBlitFramebuffer(0, 0, win_w, win_h,
@@ -1326,6 +1333,28 @@ void ViewportWindow::buildHizPyramid() {
     gl_->glGetTextureImage(hiz_depth_tex_, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
                            static_cast<GLsizei>(hiz_depth_readback_.size() * sizeof(float)),
                            hiz_depth_readback_.data());
+
+    {
+        static int diag = 5;
+        static int skip = 60;
+        if (skip > 0) { --skip; }
+        else if (diag > 0) {
+            --diag;
+            float mn = 1.0f, mx = 0.0f;
+            int zeros = 0, ones = 0;
+            for (size_t i = 0; i < hiz_depth_readback_.size(); ++i) {
+                float v = hiz_depth_readback_[i];
+                if (v < mn) mn = v;
+                if (v > mx) mx = v;
+                if (v == 0.0f) ++zeros;
+                if (v == 1.0f) ++ones;
+            }
+            int geom = (int)hiz_depth_readback_.size() - zeros - ones;
+            qWarning("HiZ readback %dx%d: min=%.6f max=%.6f zeros=%d ones=%d geom=%d total=%d",
+                     hiz_base_w_, hiz_base_h_, mn, mx, zeros, ones, geom,
+                     (int)hiz_depth_readback_.size());
+        }
+    }
 
     // Copy level 0 into the pyramid, then max-reduce subsequent levels.
     std::memcpy(hiz_pyramid_.data() + hiz_mip_offset_[0],
@@ -1920,13 +1949,14 @@ void ViewportWindow::render() {
     // culling below.
     const float focal_px = 0.5f * static_cast<float>(h) /
         std::tan(qDegreesToRadians(0.5f * camera_fov_y_deg_));
-    // Drop frustum-visible objects smaller than this many pixels.  Override
-    // with IFC_MIN_PX (0 = disabled).  2 px radius = ~4x4 pixels, well below
-    // what's meaningful at normal viewing distances and eliminates the long
-    // tail of distant MEP/fixings that dominate BIM triangle counts.
-    static const float min_pixel_radius = []{
+    static const float base_min_pixel_radius = []{
         const char* e = std::getenv("IFC_MIN_PX");
         return (e && *e) ? static_cast<float>(std::atof(e)) : 2.0f;
+    }();
+    static const float motion_min_pixel_radius = []{
+        const char* e = std::getenv("IFC_MIN_PX_MOTION");
+        return (e && *e) ? static_cast<float>(std::atof(e))
+                         : 0.0f;  // 0 = disabled (no motion boost)
     }();
 
     gl_->glUseProgram(main_program_);
@@ -1952,9 +1982,25 @@ void ViewportWindow::render() {
     const bool camera_unchanged = have_cached_cull_
         && last_cull_view_ == view_matrix_
         && last_cull_proj_ == proj_matrix_;
-    const bool cull_this_frame = !camera_unchanged;
+    const bool camera_moving = !camera_unchanged;
+    // Force a re-cull on the first still frame after motion so we
+    // restore the base (tighter) contribution threshold.
+    const bool needs_settle_recull = !camera_moving
+        && last_cull_was_motion_
+        && motion_min_pixel_radius > base_min_pixel_radius;
+    const bool cull_this_frame = camera_moving || needs_settle_recull;
+    // Invalidate HiZ on the settle frame: the pyramid was built from the
+    // motion frame's sparse depth (aggressive threshold hid objects whose
+    // depth would normally populate the pyramid), causing false occlusion.
+    if (needs_settle_recull)
+        hiz_vp_valid_ = false;
+    const bool use_motion_threshold = camera_moving
+        && motion_min_pixel_radius > base_min_pixel_radius;
+    const float min_pixel_radius = use_motion_threshold
+        ? motion_min_pixel_radius : base_min_pixel_radius;
     if (cull_this_frame) {
         hiz_reject_count_.store(0, std::memory_order_relaxed);
+        last_cull_was_motion_ = use_motion_threshold;
     } else {
         ++cull_skipped_frames_;
     }
@@ -1983,8 +2029,11 @@ void ViewportWindow::render() {
         }
 
         // --- Try to consume last frame's GPU cull results (one-frame-late) ---
+        // Skip GPU consume on the settle re-cull: the pending results were
+        // dispatched at the motion threshold and would be too aggressively
+        // culled.  Fall through to CPU which culls at the base threshold.
         bool gpu_consumed = false;
-        if (gpu_cull_enabled && gpu_cull_fence_) {
+        if (gpu_cull_enabled && gpu_cull_fence_ && !needs_settle_recull) {
             GLenum sync_status = gl_->glClientWaitSync(
                 gpu_cull_fence_, 0, 0);
             if (sync_status == GL_ALREADY_SIGNALED ||
@@ -2273,6 +2322,10 @@ void ViewportWindow::render() {
         last_cull_proj_     = proj_matrix_;
         have_cached_cull_   = true;
     }
+    if (needs_settle_recull)
+        qDebug("[motion-cull] settle result: obj=%u sub_draws=%u hiz_rej=%u",
+               visible_objects_, indirect_sub_draws_,
+               hiz_reject_count_.load());
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
     renderAxisGizmo();
@@ -2287,6 +2340,12 @@ void ViewportWindow::render() {
     }
 
     context_->swapBuffers(this);
+
+    // Ensure one more frame runs after the last motion frame so the
+    // settle recull can detect the camera has stopped and restore the
+    // base contribution threshold.
+    if (last_cull_was_motion_)
+        requestUpdate();
 
     // Measure frame *cost* (time spent inside render()) rather than the
     // wall-clock gap between frames.  With event-driven rendering, idle gaps
@@ -2378,6 +2437,145 @@ void ViewportWindow::render() {
                total_ebo / (1024.0*1024.0),
                total_ssbo / (1024.0*1024.0),
                num_models, num_hidden);
+
+        // One-shot sub_draw composition diagnostic.
+        static const bool subdraw_diag = std::getenv("IFC_SUBDRAW_DIAG") != nullptr;
+        if (subdraw_diag) {
+            uint32_t total_subdraws = 0;
+            uint32_t hist[8] = {};
+            uint32_t instances_in_bucket[8] = {};
+            uint32_t tris_in_bucket[8] = {};
+
+            struct ModelStats {
+                uint32_t model_id;
+                uint32_t subdraws;
+                uint32_t single_instance;
+                uint32_t total_meshes;
+                uint32_t total_instances;
+            };
+            std::vector<ModelStats> per_model;
+
+            auto bucket_idx = [](uint32_t ic) -> int {
+                if (ic <= 1) return 0;
+                if (ic <= 2) return 1;
+                if (ic <= 4) return 2;
+                if (ic <= 8) return 3;
+                if (ic <= 16) return 4;
+                if (ic <= 64) return 5;
+                if (ic <= 256) return 6;
+                return 7;
+            };
+
+            // --- Mesh-level consolidation analysis ---
+            // Per mesh_id, count visible instances across all 4 buckets.
+            // Also count how many buckets each mesh_id appears in.
+            uint32_t unique_visible_meshes = 0;
+            uint32_t meshes_truly_single = 0;   // 1 instance total, 1 bucket
+            uint32_t meshes_split_by_state = 0; // >1 bucket but each has 1 instance
+            uint32_t subdraws_if_merged_buckets = 0; // sub_draws if winding+LOD ignored
+            uint32_t mesh_vis_hist[8] = {};     // histogram of per-mesh visible instance counts
+
+            for (const auto& [mid, mm] : models_gpu_) {
+                if (mm.hidden) continue;
+                ModelStats ms{mid, mm.indirect_command_count, 0,
+                              static_cast<uint32_t>(mm.meshes.size()),
+                              static_cast<uint32_t>(mm.instances.size())};
+                for (const auto& cmd : mm.indirect_scratch) {
+                    int b = bucket_idx(cmd.instanceCount);
+                    hist[b]++;
+                    instances_in_bucket[b] += cmd.instanceCount;
+                    tris_in_bucket[b] += (cmd.count / 3) * cmd.instanceCount;
+                    if (cmd.instanceCount == 1) ms.single_instance++;
+                    total_subdraws++;
+                }
+                per_model.push_back(ms);
+
+                const size_t nm = mm.meshes.size();
+                for (size_t mi = 0; mi < nm; ++mi) {
+                    uint32_t total_vis = 0;
+                    uint32_t buckets_present = 0;
+                    auto count_bucket = [&](const std::vector<std::vector<uint32_t>>& v) {
+                        if (mi < v.size() && !v[mi].empty()) {
+                            total_vis += static_cast<uint32_t>(v[mi].size());
+                            buckets_present++;
+                        }
+                    };
+                    count_bucket(mm.vis_fwd_lod0);
+                    count_bucket(mm.vis_fwd_lod1);
+                    count_bucket(mm.vis_rev_lod0);
+                    count_bucket(mm.vis_rev_lod1);
+                    if (total_vis == 0) continue;
+
+                    unique_visible_meshes++;
+                    mesh_vis_hist[bucket_idx(total_vis)]++;
+                    if (total_vis > 0) subdraws_if_merged_buckets++;
+
+                    if (total_vis == 1 && buckets_present == 1)
+                        meshes_truly_single++;
+                    else if (buckets_present > 1) {
+                        bool all_single = true;
+                        auto check = [&](const std::vector<std::vector<uint32_t>>& v) {
+                            if (mi < v.size() && v[mi].size() > 1) all_single = false;
+                        };
+                        check(mm.vis_fwd_lod0); check(mm.vis_fwd_lod1);
+                        check(mm.vis_rev_lod0); check(mm.vis_rev_lod1);
+                        if (all_single) meshes_split_by_state++;
+                    }
+                }
+            }
+
+            qDebug("\n=== SUB_DRAW COMPOSITION (this frame) ===");
+            qDebug("Total sub_draws: %u", total_subdraws);
+            const char* labels[] = {"    1", "    2", "  3-4", "  5-8",
+                                    " 9-16", "17-64", "65-256", " 257+"};
+            qDebug("instanceCount histogram:");
+            qDebug("  range     | sub_draws | instances  | triangles");
+            for (int i = 0; i < 8; ++i) {
+                if (hist[i] == 0) continue;
+                qDebug("  %s   | %7u   | %9u  | %10u",
+                       labels[i], hist[i], instances_in_bucket[i], tris_in_bucket[i]);
+            }
+
+            uint32_t single = hist[0], small = hist[0] + hist[1] + hist[2];
+            qDebug("Single-instance sub_draws: %u (%.1f%%)",
+                   single, total_subdraws ? 100.0 * single / total_subdraws : 0.0);
+            qDebug("Small (<=4) sub_draws:     %u (%.1f%%)",
+                   small, total_subdraws ? 100.0 * small / total_subdraws : 0.0);
+
+            qDebug("\n--- MESH-LEVEL CONSOLIDATION ---");
+            qDebug("Unique visible mesh IDs: %u", unique_visible_meshes);
+            qDebug("Visible instance count per mesh_id:");
+            qDebug("  range     | mesh_ids");
+            for (int i = 0; i < 8; ++i) {
+                if (mesh_vis_hist[i] == 0) continue;
+                qDebug("  %s   | %7u", labels[i], mesh_vis_hist[i]);
+            }
+
+            qDebug("\nAmong single-instance sub_draws (%u):", single);
+            qDebug("  Truly unique (1 inst, 1 bucket):     %u", meshes_truly_single);
+            qDebug("  Split by state (>1 bucket, each =1): %u  (saves %u sub_draws if merged)",
+                   meshes_split_by_state, meshes_split_by_state);
+
+            qDebug("\nEstimated sub_draws by grouping strategy:");
+            qDebug("  Current (mesh_id x winding x LOD):   %u", total_subdraws);
+            qDebug("  Merged buckets (mesh_id only):        %u  (%.0f%% reduction)",
+                   subdraws_if_merged_buckets,
+                   total_subdraws ? 100.0 * (1.0 - (double)subdraws_if_merged_buckets / total_subdraws) : 0.0);
+
+            std::sort(per_model.begin(), per_model.end(),
+                      [](const ModelStats& a, const ModelStats& b) {
+                          return a.subdraws > b.subdraws;
+                      });
+            qDebug("\nTop 15 models by sub_draw count:");
+            qDebug("  model_id | sub_draws | single_inst | meshes   | instances");
+            for (size_t i = 0; i < std::min<size_t>(15, per_model.size()); ++i) {
+                const auto& ms = per_model[i];
+                qDebug("  %7u  | %7u   | %7u     | %7u  | %7u",
+                       ms.model_id, ms.subdraws, ms.single_instance,
+                       ms.total_meshes, ms.total_instances);
+            }
+            qDebug("=== END SUB_DRAW COMPOSITION ===\n");
+        }
     }
 }
 
