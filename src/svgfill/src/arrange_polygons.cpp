@@ -135,9 +135,9 @@ T take_first_if_single_item(const std::vector<T>& vec) {
 }
 
 template <typename T>
-boost::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
+std::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
     if (vec.size() == 0) {
-        return boost::none;
+        return std::nullopt;
     }
     if (true || vec.size() == 1) {
         return vec.front();
@@ -145,9 +145,9 @@ boost::optional<T> maybe_take_first_if_single_item(const std::vector<T>& vec) {
 }
 
 template <typename T>
-boost::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
+std::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
     std::vector<Polygon_with_holes_2> result;
-    boost::optional<Polygon_2> mp;
+    std::optional<Polygon_2> mp;
 
     CGAL::difference(lhs, rhs, std::back_inserter(result));
 
@@ -157,12 +157,12 @@ boost::optional<Polygon_2> subtract_retain_largest(const T& lhs, const T& rhs) {
 
     if (result.size() > 0) {
         if (result.front().has_holes()) {
-            return boost::none;
+            return std::nullopt;
         }
         return result.front().outer_boundary();
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 Polygon_2 circ_to_poly(typename Arrangement_2::Ccb_halfedge_const_circulator circ)
@@ -607,7 +607,7 @@ void eliminate_overlaps(DebugWriter& debug_writer, double OVERLAP_RESOLUTION_DIS
         {
             std::vector<Polygon_with_holes_2> result;
 
-            boost::optional<Polygon_2> mp1, mp2, mp3, mp4;
+            std::optional<Polygon_2> mp1, mp2, mp3, mp4;
             bool swap = false;
 
             swap = poly1->area() <= poly2->area();
@@ -1410,18 +1410,18 @@ Point_2 project_point_to_line_exact(const Point_2& p, const MergedBoxRecord& box
     return box.exact_start + d * t;
 }
 
-boost::optional<Point_2> intersect_infinite_lines_exact(const MergedBoxRecord& a, const MergedBoxRecord& b) {
+std::optional<Point_2> intersect_infinite_lines_exact(const MergedBoxRecord& a, const MergedBoxRecord& b) {
     if (a.exact_start == a.exact_end || b.exact_start == b.exact_end) {
-        return boost::none;
+        return std::nullopt;
     }
     auto x = CGAL::intersection(CGAL::Line_2<K>(a.exact_start, a.exact_end), CGAL::Line_2<K>(b.exact_start, b.exact_end));
     if (!x) {
-        return boost::none;
+        return std::nullopt;
     }
     if (auto* xp = variant_get<Point_2>(&*x)) {
         return *xp;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 double point_to_oriented_box_distance(const DPoint& p, const MergedBoxRecord& box) {
@@ -1811,8 +1811,8 @@ void edge_slide(Graph2D<K>& G) {
                     }
 
                     auto incoming = CGAL::Ray_2<K>(other, neighbour - other);
-                    boost::optional<CGAL::Segment_2<K>> closest_neighbouring_segment;
-                    boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                    std::optional<CGAL::Segment_2<K>> closest_neighbouring_segment;
+                    std::optional<CGAL::Point_2<K>> closest_intersection_point;
                     K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
 
                     for (auto vlt = vit->second.begin(); vlt != vit->second.end(); ++vlt) {
@@ -1920,8 +1920,8 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                             CGAL::Ray_2<K> ray(incoming, M - incoming);
 
                             // intersect ray with boundary
-                            boost::optional<CGAL::Segment_2<K>> closest_segment;
-                            boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                            std::optional<CGAL::Segment_2<K>> closest_segment;
+                            std::optional<CGAL::Point_2<K>> closest_intersection_point;
                             K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
                             for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
                                 const auto& seg = *jt;
@@ -1989,7 +1989,7 @@ std::list<std::pair<Point_2, Point_2>> extend_end_vertices_based_on_input(
                                 
                                 // Loop over boundary segments, and project point onto it, take the closest
                                 K::FT closest_distance = std::numeric_limits<double>::infinity();
-                                boost::optional<CGAL::Point_2<K>> closest_point;
+                                std::optional<CGAL::Point_2<K>> closest_point;
                                 for (auto& poly : outer_perimiter) {
                                     for (auto jt = poly.edges_begin(); jt != poly.edges_end(); ++jt) {
                                         auto seg = *jt;
