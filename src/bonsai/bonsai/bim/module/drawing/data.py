@@ -320,6 +320,9 @@ class DecoratorData:
             "StartArrowSymbol": "",
             "ShowEndArrow": True,
             "EndArrowSymbol": "",
+            "BorderOffset": 8.0,
+            "AutoStartPosition": "",
+            "AutoEndPosition": "",
         }
         obj_pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
         pset_data.update(obj_pset_data)
@@ -339,6 +342,9 @@ class DecoratorData:
                 "symbol": end_symbol or "section-arrow",
             },
             "connect_markers": pset_data["HasConnectedSectionLine"],
+            "border_offset": float(pset_data["BorderOffset"]),
+            "auto_start_position": pset_data["AutoStartPosition"] or "",
+            "auto_end_position": pset_data["AutoEndPosition"] or "",
         }
 
         cls.data[obj.name] = display_data
