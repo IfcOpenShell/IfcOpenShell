@@ -113,11 +113,10 @@ derived_field_statement_attrs = "idxs.insert(%d); "
 simpletype = """%(documentation)s
 class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
-    %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<instance_data>& data) : %(superclass)s(data) {}
+    using %(superclass)s::%(superclass_2)s;
 
     static const ifcopenshell::type_declaration& Class();
-    void initialize(%(type)s v);
+    %(name)s initialize(%(type)s v);
     operator %(type)s() const;
 };
 """
@@ -142,8 +141,7 @@ simpletype_impl_declaration = "return *((ifcopenshell::type_declaration*)%(schem
 select = """%(documentation)s
 class IFC_PARSE_API %(name)s : public express::Select {
 public:
-    %(name)s() {}
-    explicit %(name)s(const express::Base& c) : express::Select(c) {}
+    using express::Select::Select;
 
     static const ifcopenshell::select_type& Class();
 %(template_items)s
@@ -162,16 +160,15 @@ select_cast_function = """    %(name)s(const %(item_name)s& c) : express::Select
 enumeration = """%(documentation)s
 class IFC_PARSE_API %(name)s : public express::DeclaredType {
 public:
-    %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<instance_data>& data) : express::DeclaredType(data) {}
+    using express::DeclaredType::DeclaredType;
 
     typedef enum {%(values)s} Value;
     static const char* ToString(Value v);
     static Value FromString(const std::string& s);
 
     static const ifcopenshell::enumeration_type& Class();
-    void initialize(Value v);
-    void initialize(const std::string& v);
+    %(name)s initialize(Value v);
+    %(name)s initialize(const std::string& v);
     operator Value() const;
 };
 """
@@ -179,12 +176,11 @@ public:
 entity = """%(documentation)s
 class IFC_PARSE_API %(name)s : public %(superclass)s {
 public:
-    %(name)s() {}
-    explicit %(name)s (const std::weak_ptr<instance_data>& data) : %(superclass)s(data) {}
+    using %(superclass)s::%(superclass_2)s;
 
 %(attributes)s    %(inverse)s
     static const ifcopenshell::entity& Class();
-    void initialize(%(constructor_arguments)s);
+    %(name)s initialize(%(constructor_arguments)s);
 };
 """
 
@@ -227,7 +223,7 @@ entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
 const ifcopenshell::entity& %(schema_name)s::%(name)s::Class() { return *((ifcopenshell::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
-void %(schema_name)s::%(name)s::initialize(%(constructor_arguments)s) { %(constructor_implementation)s }
+%(schema_name)s::%(name)s %(schema_name)s::%(name)s::initialize(%(constructor_arguments)s) { %(constructor_implementation)s; return *this; }
 """
 
 # data_ = e; 
@@ -239,7 +235,7 @@ function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(argument
 const_function = "%(return_type)s %(schema_name)s::%(class_name)s::%(name)s(%(arguments)s) const { %(body)s }"
 constructor = "%(schema_name)s::%(class_name)s::%(class_name)s(%(arguments)s) { %(body)s }"
 initialize_single_initlist = (
-    "void %(schema_name)s::%(class_name)s::initialize(%(arguments)s) { %(body)s }"
+    "%(schema_name)s::%(class_name)s %(schema_name)s::%(class_name)s::initialize(%(arguments)s) { %(body)s; return *this; }"
 )
 cast_function = "%(schema_name)s::%(class_name)s::operator %(return_type)s() const { %(body)s }"
 

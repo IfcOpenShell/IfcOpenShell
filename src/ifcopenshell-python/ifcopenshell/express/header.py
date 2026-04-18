@@ -115,9 +115,10 @@ class Header(codegen.Base):
                 # with the v1 data model we're back to exactly one supertype, no more virtual inheritance to handle selects
                 assert len(superclasses) == 1
                 superclass_statement = superclasses[0]
+                superclass_2 = superclass_statement.split('::')[-1]
 
                 write(
-                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement
+                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement, superclass_2=superclass_2
                 )
 
         class_definitions = []
@@ -181,6 +182,7 @@ class Header(codegen.Base):
                     supertypes = list(map(case_normalize, supertypes))
                     assert len(supertypes) == 1
                     superclass = supertypes[0]
+                    superclass_2 = superclass.split('::')[-1]
 
                     argument_count = mapping.argument_count(type)
 
