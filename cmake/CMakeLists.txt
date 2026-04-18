@@ -55,7 +55,7 @@ option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter fr
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
 
 option(ENABLE_BUILD_OPTIMIZATIONS "Enable certain compiler and linker optimizations on RelWithDebInfo and Release builds." OFF)
-option(BUILD_SHARED_LIBS "Build IfcParse and IfcGeom as shared libs (SO/DLL)." ON)
+option(BUILD_SHARED_LIBS "Build IfcOpenShell as shared libraries (required)." ON)
 option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studio (/MP)" OFF)
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
@@ -121,7 +121,7 @@ if(MINIMAL_BUILD)
 endif()
 
 if(NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "IfcOpenShell now requires BUILD_SHARED_LIBS=ON.")
+    message(FATAL_ERROR "BUILD_SHARED_LIBS=OFF is not supported. Configure with -DBUILD_SHARED_LIBS=ON.")
 endif()
 
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
