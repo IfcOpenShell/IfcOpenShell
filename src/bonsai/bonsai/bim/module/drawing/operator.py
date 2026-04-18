@@ -1960,6 +1960,43 @@ class AssignManualDrawingReference(bpy.types.Operator, tool.Ifc.Operator):
                 area.tag_redraw()
 
 
+class UpdateSectionEndpoints(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.update_section_endpoints"
+    bl_label = "Reset Section to Border"
+    bl_description = "Recompute section line endpoints to match drawing border offset, overriding any manual edits"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get() or not context.active_object:
+            return False
+        element = tool.Ifc.get_entity(context.active_object)
+        return bool(
+            element
+            and element.is_a("IfcAnnotation")
+            and ifcopenshell.util.element.get_predefined_type(element) == "SECTION"
+            and context.scene.camera
+        )
+
+    def _execute(self, context):
+        obj = context.active_object
+        camera = context.scene.camera
+        element = tool.Ifc.get_entity(obj)
+        # Clear stored auto positions so both endpoints are forced back to border offset.
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
+        pset_id = pset_data.get("id")
+        if pset_id:
+            pset_entity = tool.Ifc.get().by_id(pset_id)
+        else:
+            pset_entity = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Section")
+        ifcopenshell.api.pset.edit_pset(
+            tool.Ifc.get(),
+            pset=pset_entity,
+            properties={"AutoStartPosition": "", "AutoEndPosition": ""},
+        )
+        tool.Drawing.update_section_endpoints(obj, camera)
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
@@ -2666,6 +2703,22 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         # Save drawing bounds to the .ifc file
         camera = context.scene.camera
         assert camera
+
+        # Update SECTION annotation endpoints for this drawing
+        print(f"[SECTION] ActivateDrawing: camera={camera.name}, drawing id={self.drawing}")
+        drawing_element = tool.Ifc.get().by_id(self.drawing)
+        drawing_camera_element = tool.Ifc.get_entity(camera)
+        print(f"[SECTION] drawing_element={drawing_element}, camera_element={drawing_camera_element}")
+        group = tool.Drawing.get_drawing_group(drawing_element)
+        print(f"[SECTION] group={group}")
+        if group:
+            for annotation in tool.Drawing.get_group_elements(group) or []:
+                print(f"[SECTION] group member: {annotation.is_a()} id={annotation.id()}")
+                if annotation.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(annotation) == "SECTION":
+                    ann_obj = tool.Ifc.get_object(annotation)
+                    print(f"[SECTION] found SECTION annotation obj={ann_obj}")
+                    if ann_obj:
+                        tool.Drawing.update_section_endpoints(ann_obj, camera)
         camera_props = tool.Drawing.get_camera_props(camera)
         # Check if this is a reflected ceiling camera and preserve its scale
         camera_element = tool.Ifc.get_entity(camera)

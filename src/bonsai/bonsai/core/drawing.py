@@ -520,6 +520,7 @@ def add_annotation(
     relating_type: ifcopenshell.entity_instance,
     enable_editing: bool = False,
 ) -> bpy.types.Object:
+    print(f"[SECTION] core.add_annotation called: object_type={object_type}")
     target_view = drawing_tool.get_drawing_target_view(drawing)
     context = drawing_tool.get_annotation_context(target_view, object_type)
     if not context:
@@ -542,6 +543,11 @@ def add_annotation(
         if relating_type:
             drawing_tool.run_type_assign_type(element=element, relating_type=relating_type)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
+        if object_type == "SECTION":
+            camera = ifc.get_object(drawing)
+            print(f"[SECTION] add_annotation: object_type=SECTION, camera={camera}")
+            if camera:
+                drawing_tool.update_section_endpoints(obj, camera)
     if representation := drawing_tool.get_representation(element, context):
         drawing_tool.reload_representation(obj=obj, representation=representation)
     collector.assign(obj, should_clean_users_collection=True)
