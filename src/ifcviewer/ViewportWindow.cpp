@@ -22,8 +22,10 @@
 #include "AppSettings.h"
 
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QWheelEvent>
 #include <QSurfaceFormat>
+#include <QCoreApplication>
 #include <QtMath>
 #include <QtOpenGL/QOpenGLVersionFunctionsFactory>
 
@@ -1203,6 +1205,44 @@ void ViewportWindow::setSelectedObjectId(uint32_t id) {
     requestUpdate();
 }
 
+void ViewportWindow::setCamera(float tx, float ty, float tz,
+                                float dist, float yaw, float pitch) {
+    camera_target_ = QVector3D(tx, ty, tz);
+    camera_distance_ = dist;
+    camera_yaw_ = yaw;
+    camera_pitch_ = pitch;
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
+void ViewportWindow::setBenchmarkFrames(int n) {
+    benchmark_total_ = n;
+    benchmark_count_ = 0;
+    benchmark_warmup_ = 5;
+    benchmark_yaw_start_ = camera_yaw_;
+    benchmark_frame_times_.clear();
+    benchmark_frame_times_.reserve(n);
+    requestUpdate();
+}
+
+QString ViewportWindow::cameraString() const {
+    return QString("%1,%2,%3,%4,%5,%6")
+        .arg(camera_target_.x(), 0, 'f', 4)
+        .arg(camera_target_.y(), 0, 'f', 4)
+        .arg(camera_target_.z(), 0, 'f', 4)
+        .arg(camera_distance_, 0, 'f', 4)
+        .arg(camera_yaw_, 0, 'f', 2)
+        .arg(camera_pitch_, 0, 'f', 2);
+}
+
+void ViewportWindow::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_C && !(event->modifiers() & Qt::ControlModifier)) {
+        qDebug("--camera %s", qPrintable(cameraString()));
+        return;
+    }
+    QWindow::keyPressEvent(event);
+}
+
 // --- HiZ occlusion culling (Phase 3C) -----------------------------------
 
 // Baseline HiZ resolution.  256x128 is enough to cull big occluders
@@ -1983,24 +2023,23 @@ void ViewportWindow::render() {
         && last_cull_view_ == view_matrix_
         && last_cull_proj_ == proj_matrix_;
     const bool camera_moving = !camera_unchanged;
-    // Force a re-cull on the first still frame after motion so we
-    // restore the base (tighter) contribution threshold.
-    const bool needs_settle_recull = !camera_moving
-        && last_cull_was_motion_
+    const bool use_motion_threshold = camera_moving
         && motion_min_pixel_radius > base_min_pixel_radius;
+    // Force a re-cull on the first still frame after motion so we
+    // restore the base contribution threshold and clear stale HiZ.
+    const bool needs_settle_recull = !camera_moving
+        && last_cull_was_motion_;
     const bool cull_this_frame = camera_moving || needs_settle_recull;
     // Invalidate HiZ on the settle frame: the pyramid was built from the
     // motion frame's sparse depth (aggressive threshold hid objects whose
     // depth would normally populate the pyramid), causing false occlusion.
     if (needs_settle_recull)
         hiz_vp_valid_ = false;
-    const bool use_motion_threshold = camera_moving
-        && motion_min_pixel_radius > base_min_pixel_radius;
     const float min_pixel_radius = use_motion_threshold
         ? motion_min_pixel_radius : base_min_pixel_radius;
     if (cull_this_frame) {
         hiz_reject_count_.store(0, std::memory_order_relaxed);
-        last_cull_was_motion_ = use_motion_threshold;
+        last_cull_was_motion_ = camera_moving;
     } else {
         ++cull_skipped_frames_;
     }
@@ -2353,6 +2392,42 @@ void ViewportWindow::render() {
     // Reported fps = "if I rendered continuously, this is the rate I'd hit",
     // which is what profiling actually wants.
     const float frame_cost_s = frame_cost_clock.nsecsElapsed() * 1e-9f;
+
+    if (benchmark_total_ > 0) {
+        camera_yaw_ += benchmark_yaw_speed_;
+        have_cached_cull_ = false;
+
+        if (benchmark_warmup_ > 0) {
+            --benchmark_warmup_;
+        } else {
+            benchmark_frame_times_.push_back(frame_cost_s * 1000.0f);
+            ++benchmark_count_;
+        }
+        if (benchmark_count_ >= benchmark_total_) {
+            std::sort(benchmark_frame_times_.begin(), benchmark_frame_times_.end());
+            float sum = 0.0f;
+            for (float t : benchmark_frame_times_) sum += t;
+            float avg = sum / benchmark_frame_times_.size();
+            float median = benchmark_frame_times_[benchmark_frame_times_.size() / 2];
+            float p1  = benchmark_frame_times_[(size_t)(benchmark_frame_times_.size() * 0.01f)];
+            float p99 = benchmark_frame_times_[(size_t)(benchmark_frame_times_.size() * 0.99f)];
+            float total_arc = benchmark_yaw_speed_ * (benchmark_total_ + 5);
+            qDebug("\n=== BENCHMARK (%d frames, orbit %.0f° at %.1f°/frame) ===",
+                   benchmark_total_, total_arc, benchmark_yaw_speed_);
+            qDebug("  avg: %.2f ms (%.1f fps)", avg, 1000.0f / avg);
+            qDebug("  median: %.2f ms (%.1f fps)", median, 1000.0f / median);
+            qDebug("  p1: %.2f ms  p99: %.2f ms", p1, p99);
+            qDebug("  last frame: obj %u  tri %u  sub_draws %u  hiz_rej %u",
+                   visible_objects_, visible_triangles_,
+                   indirect_sub_draws_,
+                   hiz_reject_count_.load());
+            qDebug("=== END BENCHMARK ===\n");
+            QCoreApplication::quit();
+            return;
+        }
+        requestUpdate();
+    }
+
     accumulated_time_ += frame_cost_s;
     frame_count_++;
     if (accumulated_time_ >= 1.0f) {

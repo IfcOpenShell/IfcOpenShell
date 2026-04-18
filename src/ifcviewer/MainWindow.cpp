@@ -190,6 +190,7 @@ void MainWindow::connectStreamer(GeometryStreamer* streamer) {
 void MainWindow::startNextLoad() {
     if (load_queue_.empty()) {
         loading_model_id_ = 0;
+        applyPendingBenchmark();
         return;
     }
 
@@ -552,5 +553,36 @@ void MainWindow::populateProperties(uint32_t object_id) {
                 }
             } catch (...) {}
         }
+    }
+}
+
+void MainWindow::setPendingCamera(const QString& params) {
+    pending_camera_ = params;
+}
+
+void MainWindow::setPendingBenchmark(int frames) {
+    pending_benchmark_ = frames;
+}
+
+void MainWindow::applyPendingBenchmark() {
+    if (pending_camera_.isEmpty() && pending_benchmark_ <= 0) return;
+
+    if (!pending_camera_.isEmpty()) {
+        QStringList parts = pending_camera_.split(',');
+        if (parts.size() == 6) {
+            viewport_->setCamera(
+                parts[0].toFloat(), parts[1].toFloat(), parts[2].toFloat(),
+                parts[3].toFloat(), parts[4].toFloat(), parts[5].toFloat());
+            qDebug("Camera set: %s", qPrintable(pending_camera_));
+        } else {
+            qWarning("--camera expects 6 comma-separated values: tx,ty,tz,dist,yaw,pitch");
+        }
+        pending_camera_.clear();
+    }
+
+    if (pending_benchmark_ > 0) {
+        qDebug("Starting benchmark: %d frames", pending_benchmark_);
+        viewport_->setBenchmarkFrames(pending_benchmark_);
+        pending_benchmark_ = 0;
     }
 }

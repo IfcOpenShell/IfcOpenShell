@@ -41,6 +41,10 @@ int main(int argc, char* argv[]) {
     parser.setApplicationDescription("IfcOpenShell IFC Viewer");
     parser.addHelpOption();
     parser.addPositionalArgument("files", "IFC file(s) to open", "[files...]");
+    parser.addOption({{"c", "camera"},
+        "Set camera: tx,ty,tz,dist,yaw,pitch", "params"});
+    parser.addOption({{"b", "benchmark"},
+        "Run N frames then print stats and exit", "frames"});
     parser.process(app);
 
     MainWindow window;
@@ -49,6 +53,13 @@ int main(int argc, char* argv[]) {
     auto args = parser.positionalArguments();
     if (!args.isEmpty()) {
         window.addFiles(args);
+    }
+
+    if (parser.isSet("camera")) {
+        window.setPendingCamera(parser.value("camera"));
+    }
+    if (parser.isSet("benchmark")) {
+        window.setPendingBenchmark(parser.value("benchmark").toInt());
     }
 
     return app.exec();

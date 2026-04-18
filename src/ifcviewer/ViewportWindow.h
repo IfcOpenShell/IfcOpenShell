@@ -174,6 +174,10 @@ public:
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
 
+    void setCamera(float tx, float ty, float tz, float dist, float yaw, float pitch);
+    void setBenchmarkFrames(int n);
+    QString cameraString() const;
+
     struct FrameStats {
         float fps;
         float frame_time_ms;
@@ -194,6 +198,7 @@ signals:
 protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
     bool event(QEvent* event) override;
 
 private:
@@ -380,6 +385,14 @@ private:
     // larger pixel-radius threshold to aggressively cull small objects.
     // When the camera stops, re-cull once at the base threshold.
     bool       last_cull_was_motion_ = false;
+
+    // Benchmark mode: render N frames, collect stats, then exit.
+    int  benchmark_total_  = 0;
+    int  benchmark_count_  = 0;
+    int  benchmark_warmup_ = 5;
+    float benchmark_yaw_start_ = 0.0f;
+    float benchmark_yaw_speed_ = 0.5f;  // degrees per frame
+    std::vector<float> benchmark_frame_times_;
 
     // Per-frame stats
     uint32_t visible_triangles_ = 0;

@@ -57,6 +57,8 @@ public:
     ~MainWindow();
 
     void addFiles(const QStringList& paths);
+    void setPendingCamera(const QString& params);
+    void setPendingBenchmark(int frames);
 
 private slots:
     void onFileOpen();
@@ -109,6 +111,11 @@ private:
     static uint64_t scopedKey(uint32_t model_id, int ifc_id) {
         return (static_cast<uint64_t>(model_id) << 32) | static_cast<uint32_t>(ifc_id);
     }
+
+    QString pending_camera_;
+    int     pending_benchmark_ = 0;
+
+    void applyPendingBenchmark();
 };
 
 #endif // MAINWINDOW_H

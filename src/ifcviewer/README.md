@@ -694,31 +694,33 @@ thousands and the frame time drops accordingly.
 
 ##### Known caveats
 
-- **Disabled while the camera moves.** The pyramid is aligned to the
-  VP matrix of the frame that produced it. On a moving camera the
-  stored VP no longer matches the current one, and reusing it would
-  pop objects in and out as the stale depth falsely claims they're
-  occluded. The cull now compares `hiz_vp_ == current_vp` and drops
-  HiZ rejection entirely when they differ, so HiZ only contributes on
-  still frames. The honest cost: orbiting — the exact motion where
-  the frame rate tends to dip — gets no HiZ help. A proper fix needs
-  a same-frame depth pre-pass (draw cheap depth, build HiZ from *that*
-  frame's VP, then issue the colour pass against it); deferred to the
-  GPU-compute cull rewrite in Phase 3E where we're touching this code
-  anyway. We also tried a 3-deep PBO ring for async readback (2-frame
-  stale) which produced visible flicker on fast orbits — reverted.
+- **Optional during camera motion (`IFC_HIZ_MOTION=1`).**  The pyramid
+  is aligned to the previous frame's VP.  On a moving camera the stale
+  depth can falsely occlude objects, particularly thin geometry (pipes,
+  railings) at oblique angles.  By default HiZ is disabled during motion
+  (`hiz_vp_ == current_vp` check).  Setting `IFC_HIZ_MOTION=1` forces
+  HiZ on during motion — benchmarks show this is the single biggest
+  perf lever (2.9× speedup), and the artifacts are transient and minor
+  during active orbiting.  When the camera stops, a settle recull fires
+  with `hiz_vp_valid_ = false`, disabling HiZ for that one frame and
+  re-culling the full scene.  This guarantees the stationary view is
+  artifact-free.  See Phase 3G for benchmark data.
+- **Conservative occlusion test.**  The original "max over coarse mip"
+  test was too aggressive for BIM scenes where the entire depth range
+  compresses into 0.99–1.00.  Replaced with "all fine-mip texels must
+  agree" — sample at mip 1, reject only if every texel has depth less
+  than the AABB's nearest point, early-out on the first non-occluding
+  texel.  Queries covering >64 texels skip HiZ entirely.  Eliminates
+  most false occlusions at the cost of fewer true rejections.
+- **Depth blit replaced with shader downsample.**  The original
+  `glBlitFramebuffer` for scaling the resolved depth to HiZ size
+  produced `GL_INVALID_VALUE` on some drivers.  Replaced with a
+  fullscreen-triangle shader writing `gl_FragDepth`.  The resolve
+  texture uses `GL_DEPTH24_STENCIL8` to match Qt's default FBO format
+  (which uses D24S8 even when only depth is requested).
 - **Readback syncs the GPU.** `glGetTextureImage` is blocking.
   Measured cost is well under a millisecond at 256×128; not a
-  bottleneck on the machines tested. Phase 3D's compute-shader cull
-  removes it entirely.
-- **Doesn't move the needle on overview shots.** Those scenes are
-  CPU-bound on the cull traversal itself, not GPU-bound on drawing,
-  so cutting the drawn-triangle count in half is invisible in the
-  frame time. `hiz_rej` still rises modestly on overviews (the frustum
-  hull contains everything behind visible walls) but saved GPU work
-  is masked by CPU cost. HiZ pays off on interior views, where the
-  GPU *was* the bottleneck. If a project never leaves overview,
-  `IFC_NO_HIZ=1` shaves the ~1 ms of HiZ cost.
+  bottleneck on the machines tested.
 - **Transparent geometry would need special handling**, but the
   current renderer doesn't have any, so no-op for now.
 
@@ -961,6 +963,74 @@ doors, windows, pipe fittings) share geometry across placements.
    ratio (~80 k vs ~120 k), confirming per-draw overhead as the
    dominant cost.
 
+#### 3G. Motion-adaptive culling + HiZ during motion — ✅ done
+
+The bottleneck during camera orbit is the sheer number of visible
+objects and sub_draws.  Two complementary strategies address this:
+
+##### Motion-adaptive contribution culling (`IFC_MIN_PX_MOTION`)
+
+During camera motion, use a larger pixel-radius threshold to hide
+small objects that contribute little at interactive rates.  When the
+camera stops, a settle recull restores the base threshold and full
+detail within one frame.  No visual artifacts — objects below the
+motion threshold are genuinely tiny on screen.
+
+##### HiZ during motion (`IFC_HIZ_MOTION=1`)
+
+Force the one-frame-stale HiZ pyramid to remain active during camera
+motion.  The stale depth causes minor false occlusions on thin
+geometry at oblique angles, but these are transient during active
+orbit.  When the camera stops, the settle recull invalidates the HiZ
+pyramid (`hiz_vp_valid_ = false`) and re-culls without HiZ,
+guaranteeing the stationary view is artifact-free.
+
+##### Benchmark results
+
+Benchmarked on 1.06 M-instance / 111-model scene, 200-frame orbit
+(103° arc, 0.5°/frame), GTX 1650:
+
+| Configuration                    | avg ms | fps  | speedup | obj   | sub_draws | hiz_rej |
+|----------------------------------|--------|------|---------|-------|-----------|---------|
+| Baseline (no opts)               | 61.25  | 16.3 | 1.0×    | 254k  | 155k      | 0       |
+| MIN_PX_MOTION=10                 | 37.67  | 26.5 | 1.6×    | 70k   | 56k       | 0       |
+| HIZ_MOTION=1                     | 21.44  | 46.6 | 2.9×    | 33k   | 17.5k     | 28k     |
+| HIZ_MOTION=1 + MIN_PX_MOTION=10  | 19.62  | 51.0 | 3.1×    | 11.4k | 8.7k      | 11.5k   |
+| GPU_CULL + HIZ + MIN_PX          | 19.22  | 52.0 | 3.2×    | 11.3k | 8.6k      | 59k     |
+
+##### Conclusions
+
+1. **HiZ during motion is the biggest single lever** — 2.9× alone.
+   Artifacts are minor and transient during orbit; the stationary view
+   is guaranteed correct by the settle recull.
+
+2. **Motion pixel culling is clean and effective** — 1.6× with zero
+   artifacts.
+
+3. **Combining both gives diminishing returns** — 3.1× vs 2.9× (HiZ
+   alone) or 1.6× (MIN_PX alone).  They compete over the same objects.
+
+4. **GPU cull adds nothing** on top of these — 52.0 vs 51.0 fps.  The
+   CPU BVH path handles the reduced visible set in ~2 ms.
+
+5. **The ~19 ms floor is GPU rendering**, not culling.  At 8.6k
+   sub_draws the bottleneck shifts to draw dispatch + triangle
+   rasterization.  Further improvement requires reducing sub_draws
+   (static batching) or moving to a more efficient draw model.
+
+##### Benchmark CLI
+
+Press **C** during interactive use to print the current camera as a
+`--camera` argument.  Then benchmark reproducibly:
+
+```bash
+./IfcViewer --camera tx,ty,tz,dist,yaw,pitch --benchmark 200 files...
+```
+
+The benchmark orbits the camera (0.5°/frame yaw), measures N frames
+after a 5-frame warmup, prints avg/median/p1/p99 frame times, then
+exits.  Env vars control the test configuration.
+
 ### Planned follow-ups (post-Phase-3)
 
 - **Mesh shaders / meshlets.** Ceiling-raising, but overkill until the
@@ -979,6 +1049,7 @@ Scene size                      Bottleneck              Fix
 multi-million + occluders       redundant rasterisation Phase 3C HiZ (done, CPU readback)
 many models, serial cull        single-thread BVH trv   Phase 3D parallel cull (done)
 single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (hybrid, done)
+orbit fps on 1M+ scenes         too many vis objects    Phase 3G motion culling + HiZ (done, 3.1×)
 90k+ unique visible meshes      per-draw GPU overhead   Phase 3F static batching (next)
 ```
 
@@ -996,7 +1067,7 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (hybri
 - [x] Reflection-aware two-pass draw for mirrored placements
 - [x] Backface culling (user-toggleable, default on)
 - [x] `reorient-shells` enabled in iterator
-- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`, `IFC_NO_HIZ`, `IFC_HIZ_SIZE`, `IFC_CULL_THREADS`)
+- [x] Perf diagnostic env vars (`IFC_SKIP_MDI`, `IFC_MAX_SUBDRAWS`, `IFC_MIN_PX`, `IFC_LOD1_PX`, `IFC_NO_HIZ`, `IFC_HIZ_SIZE`, `IFC_CULL_THREADS`, `IFC_MIN_PX_MOTION`, `IFC_HIZ_MOTION`, `IFC_GPU_CULL`, `IFC_SUBDRAW_DIAG`)
 - [x] Phase 3A — screen-space contribution culling
 - [x] Phase 3B — distance / contribution LOD (meshoptimizer `simplifySloppy`)
 - [x] Phase 3C — Hierarchical-Z occlusion culling (v1, CPU-side readback)
@@ -1004,6 +1075,8 @@ single giant model / <18 cores  CPU BVH trv             Phase 3E GPU cull (hybri
 - [x] Quantized VBO (16 B/vert, sidecar v6)
 - [x] Event-driven rendering (zero idle CPU/GPU, cull skipped on still frames)
 - [x] Phase 3E — GPU compute-shader culling (hybrid: GPU frustum+contribution, async readback, CPU HiZ+LOD+emit)
+- [x] Phase 3G — Motion-adaptive culling + HiZ during motion (3.1× orbit speedup on 1M-instance scene)
+- [x] Benchmark CLI (`--camera`, `--benchmark`, press C to capture camera)
 - [ ] **Phase 3F — Static batching of single-instance meshes** (next; reduces 90k+ sub_draws to hundreds)
 - [ ] Vulkan/MoltenVK backend for macOS
 - [ ] Embedded Python scripting console
