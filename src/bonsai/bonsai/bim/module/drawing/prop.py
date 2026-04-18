@@ -96,6 +96,17 @@ def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context
     ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=diagram_scale)
     self.update_camera_resolution()
 
+    group = tool.Drawing.get_drawing_group(element)
+    print(f"[SECTION] update_diagram_scale: camera={camera.name}, group={group}")
+    if group:
+        for annotation in tool.Drawing.get_group_elements(group) or []:
+            print(f"[SECTION] checking group member: {annotation}")
+            if annotation.is_a("IfcAnnotation") and ifcopenshell.util.element.get_predefined_type(annotation) == "SECTION":
+                ann_obj = tool.Ifc.get_object(annotation)
+                print(f"[SECTION] found SECTION annotation, ann_obj={ann_obj}")
+                if ann_obj:
+                    tool.Drawing.update_section_endpoints(ann_obj, camera)
+
 
 def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
