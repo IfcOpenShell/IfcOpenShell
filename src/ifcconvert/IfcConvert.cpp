@@ -1056,11 +1056,6 @@ bool init_input_file(const std::string& filename, ifcopenshell::file*& ifc_file,
 
 	bool requires_init = false;
 
-#ifdef WITH_IFCXML
-	// if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
-	// 	ifc_file = ifcopenshell::parse_ifcxml(filename);
-    // } else
-#endif
     {
         ifc_file = new ifcopenshell::file(ifcopenshell::uninitialized_tag{});
         requires_init = true;

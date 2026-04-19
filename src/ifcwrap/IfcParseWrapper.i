@@ -951,7 +951,6 @@ object = _old_object
 // The file* returned by open() is to be freed by SWIG/Python
 %newobject open;
 %newobject read;
-%newobject parse_ifcxml;
 %newobject stream_from_string;
 
 %inline %{

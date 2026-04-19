@@ -38,18 +38,6 @@ add_library(parse ALIAS IfcParse)
 target_compile_definitions(IfcParse PUBLIC ${SCHEMA_DEFINITIONS})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
-if(IFCXML_SUPPORT)
-    find_package(LibXml2 REQUIRED)
-    target_compile_definitions(IfcParse PUBLIC WITH_IFCXML)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_IFCXML PARENT_SCOPE)
-
-    if(LibXml2_DIR)
-        target_compile_definitions(IfcParse PRIVATE ${LIBXML2_DEFINITIONS})
-    endif()
-
-    target_link_libraries(IfcParse LibXml2::LibXml2)
-endif()
-
 if(WASM_BUILD)
     target_link_libraries(IfcParse plugin ${BCRYPT_LIBRARIES})
 else()
