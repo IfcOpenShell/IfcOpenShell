@@ -94,14 +94,6 @@ struct ModelGpuData {
     std::vector<BvhItem> bvh_items;
     ModelBvh             bvh;
 
-    // Per-instance world AABB on the GPU, 1:1 with `instances`.
-    // Populated at finalize / applyCachedModel.  Consumed by the upcoming
-    // GPU-compute cull (Phase 3E); the CPU cull still reads from bvh_items.
-    // Layout: struct { vec3 min; uint mesh_id; vec3 max; uint flags; } = 32 B.
-    // `flags` bit 0 = reflected (for winding-bucket selection).
-    GLuint aabb_ssbo = 0;
-    size_t aabb_ssbo_capacity = 0;  // bytes
-
     // Dynamic visible-instance index buffer (std430, binding = 1).
     // Re-uploaded each frame from visible_flat_.
     GLuint  visible_ssbo = 0;
@@ -229,12 +221,6 @@ private:
     bool growModelSsbo(ModelGpuData& m, size_t needed_total);
     ModelGpuData& getOrCreateModel(uint32_t model_id);
 
-    // (Re)build the per-instance world AABB SSBO from m.instances +
-    // m.instance_reflected.  One-shot upload called after finalizeModel /
-    // applyCachedModel once instances are settled.  Consumed by the GPU
-    // compute cull (Phase 3E, in progress).
-    void uploadInstanceAabbs(ModelGpuData& m);
-
     // Frustum-cull m's instances (BVH if available, else linear scan),
     // build the per-mesh DrawElementsIndirectCommand array + flat visible
     // list, and upload both to m.indirect_buffer / m.visible_ssbo.
@@ -254,13 +240,6 @@ private:
     void cullModelCpu(ModelGpuData& m, const float planes[6][4],
                       float focal_px, float min_pixel_radius);
 
-    // Emit pass for GPU cull path: given a flat list of surviving instance
-    // indices (already frustum+contribution filtered by GPU), perform HiZ,
-    // LOD selection, winding bucketing, and build indirect commands.
-    void emitFromGpuSurvivors(ModelGpuData& m,
-                              const uint32_t* survivor_indices, uint32_t count,
-                              float focal_px, float min_pixel_radius);
-
     // Main-thread only: uploads m.visible_flat / m.indirect_scratch into the
     // model's SSBO + indirect buffer, growing them if needed.
     void uploadCullResults(ModelGpuData& m);
@@ -279,40 +258,6 @@ private:
     GLuint main_program_ = 0;
     GLuint pick_program_ = 0;
     GLuint axis_program_ = 0;
-
-    // Phase 3E GPU frustum+contribution cull.  When IFC_GPU_CULL=1, replaces
-    // the CPU BVH walk + frustum + contribution stages.  Produces a scene-wide
-    // compact survivor-index list; CPU still handles LOD, winding, HiZ, emit.
-    //
-    // Uses one-frame-late async readback: frame N dispatches and fences, frame
-    // N+1 reads the results via a persistent-mapped buffer.  The first frame
-    // (or any frame where the previous dispatch hasn't completed) falls back
-    // to the CPU path.
-    GLuint cull_program_              = 0;
-    GLuint gpu_cull_counter_ssbo_     = 0;   // single uint32 atomic counter
-    GLuint gpu_cull_survivor_ssbo_    = 0;   // uint32[] packed survivors (GPU write)
-    size_t gpu_cull_survivor_capacity_= 0;   // bytes
-    GLuint gpu_cull_readback_buf_     = 0;   // persistent-mapped readback buffer
-    size_t gpu_cull_readback_capacity_= 0;
-    uint32_t* gpu_cull_readback_ptr_  = nullptr;  // persistent map pointer
-    GLsync gpu_cull_fence_            = nullptr;
-    GLuint gpu_cull_ts_[2]            = {};   // GPU timestamp queries
-    uint32_t gpu_cull_last_survivors_ = 0;
-    uint32_t gpu_cull_last_input_     = 0;
-    uint64_t gpu_cull_dispatch_ns_    = 0;   // GPU-side dispatch time
-    uint64_t gpu_cull_readback_ns_    = 0;   // CPU-side readback time
-    uint64_t gpu_cull_consume_ns_     = 0;   // CPU-side consume (emit) time
-    // Consume sub-phase profiling (atomics — safe from worker threads).
-    std::atomic<uint64_t> gpu_consume_bin_ns_{0};    // survivor binning by model
-    std::atomic<uint64_t> gpu_consume_clear_ns_{0};  // per-model bucket clearing
-    std::atomic<uint64_t> gpu_consume_class_ns_{0};  // LOD + winding classification
-    std::atomic<uint64_t> gpu_consume_emit_ns_{0};   // indirect command building
-    // Stashed per-frame dispatch metadata for one-frame-late consumption.
-    struct GpuCullPending {
-        std::vector<std::pair<uint32_t, ModelGpuData*>> model_targets;
-        uint32_t total_in = 0;
-    };
-    GpuCullPending gpu_cull_pending_;
 
     // Axis gizmo
     GLuint axis_vao_ = 0;
