@@ -625,7 +625,7 @@ Ifc4x3::IfcStyledItem create_styled_item(ifcopenshell::file* file, const Ifc4x3:
 
 #ifdef HAS_SCHEMA_4x3_tc1
 Ifc4x3_tc1::IfcStyledItem create_styled_item(ifcopenshell::file* file, const Ifc4x3_tc1::IfcRepresentationItem& item, const Ifc4x3_tc1::IfcPresentationStyle& style) {
-    auto sitem = file.crefile->createate<Ifc4x3_tc1::IfcStyledItem>();
+    auto sitem = file->create<Ifc4x3_tc1::IfcStyledItem>();
     sitem.setItem(item);
     sitem.setStyles(std::vector<Ifc4x3_tc1::IfcPresentationStyle>{style});
     return sitem;
