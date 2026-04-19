@@ -53,6 +53,8 @@ plugin::metadata plugin_metadata() {
 void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
 	document_serializer_info info;
 	info.format = "json";
+	info.name = "JSON";
+	info.description = "Property definitions and decomposition tree in xeokit JSON format.";
 	info.schema_name = STRINGIFY(IfcSchema);
 	registry.bind(info, create_serializer, module);
 }

@@ -59,6 +59,12 @@ void ifcopenshell::serializers::geometry_serializer_registry::bind(const geometr
 	entry entry;
 	entry.info_ = info;
 	entry.info_.format = boost::to_lower_copy(entry.info_.format);
+	if (entry.info_.name.empty() && !entry.info_.format.empty()) {
+		entry.info_.name = boost::to_upper_copy(entry.info_.format);
+	}
+	if (entry.info_.description.empty()) {
+		entry.info_.description = entry.info_.name;
+	}
 	entry.create_ = create;
 	entry.configure_ = configure;
 	entry.module_ = module.meta().id.empty() ? plugin::module(geometry_serializer_plugin_metadata(entry.info_.format)) : module;

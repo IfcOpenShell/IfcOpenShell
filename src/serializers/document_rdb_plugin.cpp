@@ -51,6 +51,8 @@ plugin::metadata plugin_metadata() {
 void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
 	document_serializer_info info;
 	info.format = "rdb";
+	info.name = "RocksDB";
+	info.description = "RocksDB key-value store serialization of IFC data.";
 	info.supports_ifc_file = false;
 	info.supports_input_filename = true;
 	info.writes_final_output = true;

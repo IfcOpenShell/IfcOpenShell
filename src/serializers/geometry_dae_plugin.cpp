@@ -44,6 +44,8 @@ boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serialize
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "dae";
+	info.name = "Collada";
+	info.description = "Digital Assets Exchange.";
 	info.extensions = { ".dae" };
 	info.supports_triangulation = true;
 	info.supports_user_element_hierarchy = true;

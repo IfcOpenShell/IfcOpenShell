@@ -65,6 +65,12 @@ void ifcopenshell::serializers::document_serializer_registry::bind(const documen
 	entry entry;
 	entry.info_ = info;
 	entry.info_.format = document_serializer_key(entry.info_.format);
+	if (entry.info_.name.empty() && !entry.info_.format.empty()) {
+		entry.info_.name = boost::to_upper_copy(entry.info_.format);
+	}
+	if (entry.info_.description.empty()) {
+		entry.info_.description = entry.info_.name;
+	}
 	entry.info_.schema_name = document_serializer_schema_key(entry.info_.schema_name);
 	entry.create_ = create;
 	entry.module_ = module.meta().id.empty() ? plugin::module(document_serializer_plugin_metadata(entry.info_.format, entry.info_.schema_name)) : module;

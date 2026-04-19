@@ -48,6 +48,8 @@ plugin::metadata plugin_metadata() {
 void register_plugin(document_serializer_registry& registry, const plugin::module& module) {
 	document_serializer_info info;
 	info.format = "xml";
+	info.name = "XML";
+	info.description = "Property definitions and decomposition tree.";
 	info.schema_name = STRINGIFY(IfcSchema);
 	registry.bind(info, create_serializer, module);
 }

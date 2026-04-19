@@ -49,6 +49,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "ttl";
+	info.name = "TTL/WKT";
+	info.description = "RDF Turtle with Well-Known Text geometry.";
 	info.extensions = { ".ttl" };
 	info.supports_triangulation = true;
 	info.supports_brep = true;

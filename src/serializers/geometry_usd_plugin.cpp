@@ -44,6 +44,8 @@ boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serialize
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "usd";
+	info.name = "USD";
+	info.description = "Universal Scene Description.";
 	info.extensions = { ".usd", ".usda", ".usdc" };
 	info.supports_triangulation = true;
 	info.supports_user_element_hierarchy = true;

@@ -60,6 +60,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "obj";
+	info.name = "WaveFront OBJ";
+	info.description = "A .mtl file is also created.";
 	info.extensions = { ".obj" };
 	info.supports_triangulation = true;
 	registry.bind(info, create_serializer, configure_serializer, module);

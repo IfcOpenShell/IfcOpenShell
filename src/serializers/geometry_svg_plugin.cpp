@@ -49,6 +49,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "svg";
+	info.name = "SVG";
+	info.description = "Scalable Vector Graphics (2D floor plan).";
 	info.extensions = { ".svg" };
 	info.kernel_ids = { "opencascade" };
 	info.supports_brep = true;

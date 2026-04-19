@@ -44,6 +44,8 @@ boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serialize
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "glb";
+	info.name = "glTF";
+	info.description = "Binary glTF v2.0.";
 	info.extensions = { ".glb" };
 	info.supports_triangulation = true;
 	info.supports_user_element_hierarchy = true;

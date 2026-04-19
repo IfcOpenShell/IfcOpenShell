@@ -37,6 +37,8 @@ namespace serializers {
 
 struct SERIALIZERS_API geometry_serializer_info {
 	std::string format;
+	std::string name;
+	std::string description;
 	std::vector<std::string> extensions;
 	std::vector<std::string> kernel_ids;
 	bool supports_triangulation = false;

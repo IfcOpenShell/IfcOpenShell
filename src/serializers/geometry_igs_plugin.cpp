@@ -58,6 +58,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "igs";
+	info.name = "IGES";
+	info.description = "Initial Graphics Exchange Specification.";
 	info.extensions = { ".igs" };
 	info.kernel_ids = { "opencascade" };
 	info.supports_brep = true;

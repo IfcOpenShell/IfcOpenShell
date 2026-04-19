@@ -3,7 +3,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     target_compile_definitions(document_serializer_xml_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
 
     if(GLTF_SUPPORT)
-        add_document_serializer_plugin(document_serializer_json_ifc${schema} "document.json.ifc${schema}" SOURCES JsonSerializer.cpp json_plugin.cpp)
+        add_document_serializer_plugin(document_serializer_json_ifc${schema} "document.json.ifc${schema}" SOURCES JsonSerializer.cpp json_plugin.cpp LIBRARIES nlohmann_json::nlohmann_json DEFINITIONS WITH_GLTF)
         target_compile_definitions(document_serializer_json_ifc${schema} PRIVATE IfcSchema=Ifc${schema})
     endif()
 endforeach()

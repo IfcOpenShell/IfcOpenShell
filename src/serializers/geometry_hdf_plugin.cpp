@@ -48,6 +48,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "hdf";
+	info.name = "HDF";
+	info.description = "Hierarchical Data Format storing positions, normals and indices.";
 	info.extensions = { ".h5" };
 	info.kernel_ids = { "opencascade" };
 	info.supports_triangulation = true;

@@ -5,10 +5,10 @@ file(GLOB SERIALIZERS_H_FILES *.h)
 file(GLOB SERIALIZERS_S_H_FILES schema_dependent/*.h)
 
 function(add_document_serializer_plugin target output_name)
-    cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES" ${ARGN})
+    cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
 
     add_library(${target} SHARED ${PLUGIN_SOURCES})
-    target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS)
+    target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE plugin IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME "${output_name}"
@@ -21,10 +21,10 @@ function(add_document_serializer_plugin target output_name)
 endfunction()
 
 function(add_geometry_serializer_plugin target output_name)
-    cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES" ${ARGN})
+    cmake_parse_arguments(PLUGIN "" "" "SOURCES;LIBRARIES;DEFINITIONS" ${ARGN})
 
     add_library(${target} SHARED ${PLUGIN_SOURCES})
-    target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS)
+    target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE plugin IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     if(WITH_PROJ)
         find_package(proj REQUIRED)
@@ -59,15 +59,15 @@ add_geometry_serializer_plugin(geometry_serializer_obj "geometry.obj" SOURCES ge
 add_geometry_serializer_plugin(geometry_serializer_ttl "geometry.ttl" SOURCES geometry_ttl_plugin.cpp TtlWktSerializer.cpp LIBRARIES ${ttl_geometry_serializer_libraries})
 
 if(OPENCOLLADA_FOUND)
-    add_geometry_serializer_plugin(geometry_serializer_dae "geometry.dae" SOURCES geometry_dae_plugin.cpp ColladaSerializer.cpp LIBRARIES ${OPENCOLLADA_LIBRARIES})
+    add_geometry_serializer_plugin(geometry_serializer_dae "geometry.dae" SOURCES geometry_dae_plugin.cpp ColladaSerializer.cpp LIBRARIES OpenCOLLADA::OpenCOLLADA DEFINITIONS WITH_OPENCOLLADA)
 endif()
 
 if(GLTF_SUPPORT)
-    add_geometry_serializer_plugin(geometry_serializer_glb "geometry.glb" SOURCES geometry_glb_plugin.cpp GltfSerializer.cpp)
+    add_geometry_serializer_plugin(geometry_serializer_glb "geometry.glb" SOURCES geometry_glb_plugin.cpp GltfSerializer.cpp LIBRARIES nlohmann_json::nlohmann_json DEFINITIONS WITH_GLTF)
 endif()
 
 if(USD_SUPPORT)
-    add_geometry_serializer_plugin(geometry_serializer_usd "geometry.usd" SOURCES geometry_usd_plugin.cpp USDSerializer.cpp LIBRARIES ${USD_LIBRARIES})
+    add_geometry_serializer_plugin(geometry_serializer_usd "geometry.usd" SOURCES geometry_usd_plugin.cpp USDSerializer.cpp LIBRARIES pxr::USD)
 endif()
 
 if(WITH_OPENCASCADE)

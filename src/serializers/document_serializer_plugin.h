@@ -38,6 +38,8 @@ namespace serializers {
 
 struct SERIALIZERS_API document_serializer_info {
 	std::string format;
+	std::string name;
+	std::string description;
 	std::string schema_name;
 	bool supports_ifc_file = true;
 	bool supports_input_filename = false;

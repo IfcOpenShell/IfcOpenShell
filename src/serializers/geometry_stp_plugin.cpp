@@ -49,6 +49,8 @@ void configure_serializer(geometry_serializer_context& context) {
 void register_plugin(geometry_serializer_registry& registry, const plugin::module& module) {
 	geometry_serializer_info info;
 	info.format = "stp";
+	info.name = "STEP";
+	info.description = "Standard for the Exchange of Product Data.";
 	info.extensions = { ".stp" };
 	info.kernel_ids = { "opencascade" };
 	info.supports_brep = true;

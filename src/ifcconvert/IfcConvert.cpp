@@ -50,11 +50,13 @@
 #include <boost/optional/optional_io.hpp>
 #include <boost/make_shared.hpp>
 
+#include <algorithm>
 #include <fstream>
-#include <sstream>
-#include <set>
-#include <time.h>
 #include <iomanip>
+#include <map>
+#include <set>
+#include <sstream>
+#include <time.h>
 
 #if USE_VLD
 #include <vld.h>
@@ -85,6 +87,91 @@ const std::string TEMP_FILE_EXTENSION = ".tmp";
 
 namespace po = boost::program_options;
 
+namespace {
+
+struct serializer_usage_line {
+	std::string extensions;
+	std::string name;
+	std::string description;
+};
+
+std::string join_extensions(const std::vector<std::string>& extensions) {
+	std::ostringstream stream;
+	for (std::size_t i = 0; i < extensions.size(); ++i) {
+		if (i != 0) {
+			stream << ", ";
+		}
+		stream << extensions[i];
+	}
+	return stream.str();
+}
+
+void print_serializer_section(const char* title, std::vector<serializer_usage_line> lines) {
+	if (lines.empty()) {
+		return;
+	}
+
+	std::size_t extensions_width = 0;
+	std::size_t name_width = 0;
+	for (const auto& line : lines) {
+		extensions_width = std::max(extensions_width, line.extensions.size());
+		name_width = std::max(name_width, line.name.size());
+	}
+
+	cout_ << title << "\n";
+	for (const auto& line : lines) {
+		const auto extensions = ifcopenshell::path::from_utf8(line.extensions);
+		const auto name = ifcopenshell::path::from_utf8(line.name);
+		const auto description = ifcopenshell::path::from_utf8(line.description);
+		cout_ << "  "
+			<< std::left << std::setw(static_cast<int>(extensions_width + 2)) << extensions
+			<< std::setw(static_cast<int>(name_width + 2)) << name
+			<< description << "\n";
+	}
+	cout_ << "\n";
+}
+
+std::vector<serializer_usage_line> geometry_serializer_usage_lines() {
+	auto serializers = ifcopenshell::serializers::geometry_serializer_registry_instance().serializers();
+	std::sort(serializers.begin(), serializers.end(), [](const auto& a, const auto& b) {
+		const auto& lhs = a.extensions.empty() ? a.format : a.extensions.front();
+		const auto& rhs = b.extensions.empty() ? b.format : b.extensions.front();
+		if (lhs != rhs) {
+			return lhs < rhs;
+		}
+		return a.format < b.format;
+	});
+
+	std::vector<serializer_usage_line> lines;
+	lines.reserve(serializers.size());
+	for (const auto& info : serializers) {
+		lines.push_back({ join_extensions(info.extensions), info.name, info.description });
+	}
+	return lines;
+}
+
+std::vector<serializer_usage_line> document_serializer_usage_lines() {
+	auto serializers = ifcopenshell::serializers::document_serializer_registry_instance().serializers();
+	std::sort(serializers.begin(), serializers.end(), [](const auto& a, const auto& b) {
+		if (a.format != b.format) {
+			return a.format < b.format;
+		}
+		return a.schema_name < b.schema_name;
+	});
+
+	std::set<std::string> seen_formats;
+	std::vector<serializer_usage_line> lines;
+	for (const auto& info : serializers) {
+		if (!seen_formats.insert(info.format).second) {
+			continue;
+		}
+		lines.push_back({ "." + info.format, info.name, info.description });
+	}
+	return lines;
+}
+
+}
+
 void print_version()
 {
     cout_ << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION;
@@ -98,31 +185,11 @@ void print_usage(bool suggest_help = true)
 {
     cout_ << "Usage: IfcConvert [options] <input.ifc> [<output>]\n"
         << "\n"
-        << "Converts (the geometry in) an IFC file into one of the following formats:\n"
-        << "  .obj   WaveFront OBJ  (a .mtl file is also created)\n"
-#ifdef WITH_OPENCOLLADA
-        << "  .dae   Collada        Digital Assets Exchange\n"
-#endif
-#ifdef WITH_GLTF
-		<< "  .glb   glTF           Binary glTF v2.0\n"
-#endif
-#ifdef WITH_USD
-		<< "  .usd   USD            Universal Scene Description\n"
-#endif
-        << "  .stp   STEP           Standard for the Exchange of Product Data\n"
-        << "  .igs   IGES           Initial Graphics Exchange Specification\n"
-        << "  .xml   XML            Property definitions and decomposition tree\n"
-#ifdef WITH_GLTF
-        << "  .json  JSON           Property definitions and decomposition tree in xeokit json format\n"
-#endif
-        << "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
-		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
-#ifdef WITH_HDF5
-		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
-#endif
-		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
-		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
-		<< "\n"
+        << "Converts (the geometry in) an IFC file into one of the following formats:\n\n";
+	print_serializer_section("Geometry serializers:", geometry_serializer_usage_lines());
+	print_serializer_section("Document serializers:", document_serializer_usage_lines());
+	print_serializer_section("Built-in:", { { ".ifc", "IFC-SPF", "Industry Foundation Classes." } });
+	cout_
         << "If no output filename given, <input>" << ifcopenshell::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
     if (suggest_help) {
         cout_ << "\nRun 'IfcConvert --help' for more information.";
@@ -224,6 +291,13 @@ int main(int argc, char** argv) {
 	path_t cache_file;
 	std::string log_format;
 	std::string geometry_kernel;
+	auto& document_serializer_registry = ifcopenshell::serializers::document_serializer_registry_instance();
+	auto& geometry_serializer_registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
+#ifdef WITH_HDF5
+	const bool supports_geometry_cache = geometry_serializer_registry.has(".h5");
+#else
+	const bool supports_geometry_cache = false;
+#endif
 
     po::options_description generic_options("Command line options");
 	verbosity_counter vcounter;
@@ -232,14 +306,15 @@ int main(int argc, char** argv) {
 		("version", "display version information")
 		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages. Use twice (-vv) for debugging level.")
 		("quiet,q", "less status and progress output")
-#ifdef WITH_HDF5
-		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
-#endif
 		("stderr-progress", "output progress to stderr stream")
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
+	if (supports_geometry_cache) {
+		generic_options.add_options()
+			("cache", "cache geometry creation. Use --cache-file to specify cache file path.");
+	}
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -248,11 +323,12 @@ int main(int argc, char** argv) {
 #endif
 		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
 		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file")
-#ifdef WITH_HDF5
-		("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file")
-#endif
 		("stream", "Use streaming conversion (currently supported with conversion to RocksDB)")
 		;
+	if (supports_geometry_cache) {
+		fileio_options.add_options()
+			("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file");
+	}
 
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
@@ -534,11 +610,8 @@ int main(int argc, char** argv) {
 
 	boost::optional<std::list<IfcGeom::Element*>> elems_from_adaptor;
     
-    const path_t CACHE = ifcopenshell::path::from_utf8(".cache"),
-		HDF = ifcopenshell::path::from_utf8(".h5"),
-		IFC = ifcopenshell::path::from_utf8(".ifc");
+    const path_t IFC = ifcopenshell::path::from_utf8(".ifc");
 
-	auto& document_serializer_registry = ifcopenshell::serializers::document_serializer_registry_instance();
 	const auto* document_serializer_info = document_serializer_registry.find(output_extension_utf8);
 	if (document_serializer_info) {
 		int exit_code = EXIT_FAILURE;
@@ -613,7 +686,6 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 
-	auto& geometry_serializer_registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
 	const auto* geometry_serializer_info = geometry_serializer_registry.find(output_extension_utf8);
 	if (!geometry_serializer_info) {
 		cerr_ << "[error] Unknown output filename extension '" << output_extension << "'\n";
@@ -830,10 +902,12 @@ int main(int argc, char** argv) {
 		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads));
 	}	
 
-#if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
+#ifdef WITH_HDF5
 	boost::shared_ptr<GeometrySerializer> cache;
-	const bool use_cache = context_iterator && (vmap.count("cache-file") || vmap.count("cache"));
+	const bool use_cache = supports_geometry_cache && context_iterator && (vmap.count("cache-file") || vmap.count("cache"));
 	if (use_cache) {
+		const path_t CACHE = ifcopenshell::path::from_utf8(".cache");
+		const path_t HDF = ifcopenshell::path::from_utf8(".h5");
 		if (!vmap.count("cache-file")) {
 			cache_file = input_filename + CACHE + HDF;
 		}
