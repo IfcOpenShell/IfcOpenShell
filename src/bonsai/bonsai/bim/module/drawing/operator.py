@@ -1826,6 +1826,7 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
         sheet = tool.Ifc.get().by_id(sheet_item.ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
+        sheet_builder.update_sheet_schedule_sizes(sheet)
         core.open_layout(tool.Drawing, sheet=sheet)
 
 
@@ -2085,6 +2086,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             # Update any drawing boundary changes
             sheet_builder = sheeter.SheetBuilder()
             sheet_builder.update_sheet_drawing_sizes(sheet)
+            sheet_builder.update_sheet_schedule_sizes(sheet)
 
             if not sheet.is_a("IfcDocumentInformation"):
                 return
