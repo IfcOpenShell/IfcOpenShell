@@ -1103,7 +1103,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons) {
 		std::vector<svgfill::polygon_2> r;
 		if (svgfill::arrange_polygons(settings, polygons, r)) {
 			return r;
