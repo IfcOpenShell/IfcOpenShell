@@ -266,17 +266,19 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     one_level_deep: bpy.props.BoolProperty(
         name="One Level Deep", description="Select only immediate children, not recursively", default=False
     )
+    should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep"
+            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select Aggregate"
+            return "Select Aggregate\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.ctrl:
             self.one_level_deep = True
+        self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
@@ -317,12 +319,18 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             for element in set(selected_parts + all_parts):
                 obj = tool.Ifc.get_object(element)
                 if obj:
+                    if self.should_unhide:
+                        obj.hide_viewport = False
+                        obj.hide_set(False)
                     obj.select_set(True)
 
         else:
             for aggregate_element in all_parts:
                 aggregate_obj = tool.Ifc.get_object(aggregate_element)
                 if aggregate_obj:
+                    if self.should_unhide:
+                        aggregate_obj.hide_viewport = False
+                        aggregate_obj.hide_set(False)
                     aggregate_obj.select_set(True)
                     bpy.context.view_layer.objects.active = aggregate_obj
 
