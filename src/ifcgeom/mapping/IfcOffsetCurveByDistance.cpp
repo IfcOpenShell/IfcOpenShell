@@ -158,7 +158,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
 
 	 // at this point, next == end and prev == end-1
     #if defined SCHEMA_HAS_IfcDistanceExpression
-    double last_distance = (*prev)->DistanceAlong() * length_unit_;
+    double last_distance = prev->DistanceAlong() * length_unit_;
     #else
     double last_distance = (double) prev->DistanceAlong().as<IfcSchema::IfcLengthMeasure>() * length_unit_;
     #endif
