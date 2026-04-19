@@ -197,10 +197,6 @@ endforeach()
 
 if(WITH_CGAL)
     find_package(CGAL REQUIRED)
-    if(TARGET CGAL::CGAL)
-        link_libraries(CGAL::CGAL)
-    endif()
-    add_definitions(-DIFOPSH_WITH_CGAL)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
     list(APPEND GEOMETRY_KERNELS cgal)
 endif()
@@ -209,7 +205,6 @@ if(BUILD_IFCGEOM AND WITH_OPENCASCADE)
     find_package(OpenCASCADE REQUIRED)
     # Map OpenCASCADE_LIBRARIES variable from OpenCASCADEConfig.cmake to OpenCASCADE_LIBRARIES used by kernel generic cmake file
     set(OpenCASCADE_LIBRARIES ${OpenCASCADE_LIBRARIES})
-    add_definitions(-DIFOPSH_WITH_OPENCASCADE)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
@@ -225,8 +220,6 @@ if(BUILD_IFCGEOM AND WITH_MANIFOLD)
     else()
         message(FATAL_ERROR "Unable to determine manifold target")
     endif()
-    add_definitions(-DIFOPSH_WITH_MANIFOLD)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_MANIFOLD)
     list(APPEND GEOMETRY_KERNELS manifold)
 endif()
 
@@ -235,29 +228,7 @@ if(BUILD_IFCGEOM)
 endif()
 
 if(GLTF_SUPPORT)
-    UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    if(NOT JSON_INCLUDE_DIR)
-        find_package(nlohmann_json CONFIG)
-        if(nlohmann_json_DIR)
-            link_libraries(nlohmann_json::nlohmann_json)
-        else()
-            message(STATUS "Unable to find nlohmann_json package, trying to find it as a header-only library.")
-        endif()
-    endif()
-
-    if(NOT nlohmann_json_DIR)
-        find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
-        set(JSON_INCLUDE_DIR ${json_header_path})
-
-        if(json_header_path)
-            message(STATUS "JSON for Modern C++ header file found in '${JSON_INCLUDE_DIR}'.")
-        else()
-            message(FATAL_ERROR "Unable to find JSON for Modern C++ header file / package, aborting")
-        endif()
-    endif()
-
-    add_definitions(-DWITH_GLTF)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
+    find_package(nlohmann_json REQUIRED)
 endif()
 
 # Add USD support to serializers
@@ -280,9 +251,6 @@ if (WITH_ROCKSDB)
     endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
-    add_definitions(-DIFOPSH_WITH_ROCKSDB)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
-    link_libraries(RocksDB::rocksdb)
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass
@@ -290,10 +258,6 @@ if (WITH_ROCKSDB)
         # detect based on rocksdb API?
         find_package(zstd CONFIG REQUIRED)
         message(STATUS "zstd: found at '${zstd_DIR}'.")
-        link_libraries(zstd::libzstd_static)
-
-        add_definitions(-DIFOPSH_WITH_ROCKSDB_ZSTD)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB_ZSTD)
     endif()
 endif()
 
@@ -340,8 +304,6 @@ if(USE_MMAP)
     else()
         set(BOOST_COMPONENTS ${BOOST_COMPONENTS} iostreams)
     endif()
-
-    add_definitions(-DUSE_MMAP)
 endif()
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
@@ -354,9 +316,6 @@ endif()
 
 if(HDF5_SUPPORT)
     find_package(HDF5 REQUIRED COMPONENTS C CXX)
-
-    add_definitions(-DWITH_HDF5)
-    set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif(HDF5_SUPPORT)
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
@@ -469,10 +428,9 @@ else()
     endif()
 endif(MSVC)
 
-include_directories(${INCLUDE_DIRECTORIES} ${OPENCOLLADA_INCLUDE_DIRS}
-	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
-    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
-    ${TBB_INCLUDE_DIR}
+include_directories(${INCLUDE_DIRECTORIES}
+	${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR}
+    ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
 )
 
 if(NOT SCHEMA_VERSIONS)
