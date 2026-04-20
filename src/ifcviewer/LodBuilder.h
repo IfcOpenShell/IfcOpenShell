@@ -23,8 +23,8 @@
 #include "SidecarCache.h"
 
 // Build a LOD1 index slice for every mesh in `sd` whose triangle count is
-// above `min_triangles`, using meshoptimizer's edge-collapse decimator.  The
-// LOD1 indices are appended to `sd.indices`; each MeshInfo's
+// above `min_triangles`, using meshoptimizer's sloppy (voxel-clustering)
+// decimator.  The LOD1 indices are appended to `sd.indices`; each MeshInfo's
 // lod1_ebo_byte_offset + lod1_index_count are populated to point at the
 // appended range.  Meshes that don't qualify (too small) or where the
 // decimator couldn't meet the target within the error budget have

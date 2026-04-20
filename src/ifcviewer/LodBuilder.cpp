@@ -37,28 +37,17 @@ void buildLods(SidecarData& sd,
     const size_t total_vertex_count = sd.vertices.size() / vtx_stride_bytes;
 
     // Env var knobs so we can tune without rebuilding.
-    //   IFC_LOD_LOCK_BORDER=1      re-enable LockBorder (off by default: BIM
-    //                              geometry is often non-manifold so locking
-    //                              borders prevents any collapse).
     //   IFC_LOD_ERROR=<float>      override target_error (default 0.05 → 0.2).
     //   IFC_LOD_RATIO=<float>      override target_ratio.
     //   IFC_LOD_MIN_SAVINGS=<0..1> minimum fraction of tris saved to accept
     //                              (default 0.25).
     //   IFC_LOD_DEBUG=1            print per-mesh diagnostics for the first
     //                              few meshes of each call.
-    //   IFC_LOD_SLOPPY=0           disable sloppy (clustering) decimator.
-    //                              Default ON: BIM brep output is usually
-    //                              non-manifold, so edge-collapse simplify
-    //                              returns the input unchanged.
-    const char* env_lock    = std::getenv("IFC_LOD_LOCK_BORDER");
     const char* env_err     = std::getenv("IFC_LOD_ERROR");
     const char* env_ratio   = std::getenv("IFC_LOD_RATIO");
     const char* env_savings = std::getenv("IFC_LOD_MIN_SAVINGS");
     const char* env_debug   = std::getenv("IFC_LOD_DEBUG");
-    const char* env_sloppy  = std::getenv("IFC_LOD_SLOPPY");
 
-    const bool lock_border = env_lock && env_lock[0] == '1';
-    const bool use_sloppy  = !(env_sloppy && env_sloppy[0] == '0');
     if (env_err)   target_error = static_cast<float>(std::atof(env_err));
     if (env_ratio) target_ratio = static_cast<float>(std::atof(env_ratio));
     float min_savings = 0.25f;
@@ -71,10 +60,8 @@ void buildLods(SidecarData& sd,
 
     // Scratch buffers reused across meshes so we only allocate once.
     std::vector<uint32_t> simplified;
-    std::vector<uint32_t> shadow;
     std::vector<float>    dequant_pos;   // 3 floats/vertex, dequantized
     simplified.reserve(1024);
-    shadow.reserve(1024);
     dequant_pos.reserve(1024 * 3);
 
     int dbg_printed = 0;
@@ -128,46 +115,18 @@ void buildLods(SidecarData& sd,
         const size_t target_index_count = std::max<size_t>(
             3, static_cast<size_t>(mesh.index_count * target_ratio) / 3 * 3);
 
-        // The instanced VBO stores each triangle's vertices separately, so the
-        // mesh's index buffer is topologically disconnected — every edge is
-        // boundary, every vertex is unique, and meshopt_simplify can't collapse
-        // anything.  Build a shadow index buffer that welds by position, so
-        // shared-position vertices share an ID; then simplify on that.  Output
-        // indices are still valid mesh-local IDs (canonical representatives),
-        // usable directly as LOD1 indices against the same VBO.
-        shadow.resize(mesh.index_count);
-        meshopt_generateShadowIndexBuffer(
-            shadow.data(),
-            indices, mesh.index_count,
-            positions, mesh.vertex_count,
-            sizeof(float) * 3,       // compare only xyz
-            local_pos_stride);
-
+        // Cluster-based (sloppy) decimator.  Ignores topology entirely;
+        // ideal for BIM brep output which is usually non-manifold / has
+        // T-junctions / per-triangle vertex duplication.  Quantises
+        // positions into voxel cells — no welding needed.
         simplified.resize(mesh.index_count);
         float result_error = 0.0f;
-        size_t new_index_count = 0;
-
-        if (use_sloppy) {
-            // Cluster-based decimator.  Ignores topology entirely; great for
-            // BIM brep output which is usually non-manifold / has T-junctions.
-            // Operates directly on the original indices — welding isn't
-            // needed since it quantises positions into voxel cells.
-            new_index_count = meshopt_simplifySloppy(
-                simplified.data(),
-                indices, mesh.index_count,
-                positions, mesh.vertex_count, local_pos_stride,
-                target_index_count, target_error,
-                &result_error);
-        } else {
-            const unsigned int options =
-                lock_border ? static_cast<unsigned int>(meshopt_SimplifyLockBorder) : 0u;
-            new_index_count = meshopt_simplify(
-                simplified.data(),
-                shadow.data(), mesh.index_count,
-                positions, mesh.vertex_count, local_pos_stride,
-                target_index_count, target_error,
-                options, &result_error);
-        }
+        size_t new_index_count = meshopt_simplifySloppy(
+            simplified.data(),
+            indices, mesh.index_count,
+            positions, mesh.vertex_count, local_pos_stride,
+            target_index_count, target_error,
+            &result_error);
 
         if (debug && dbg_printed < 8) {
             std::fprintf(stderr,
@@ -202,9 +161,9 @@ void buildLods(SidecarData& sd,
     if (debug) {
         std::fprintf(stderr,
             "  [lod] summary: accepted=%d rejected_noreduce=%d rejected_savings=%d "
-            "(lock_border=%d target_error=%.3f target_ratio=%.3f min_savings=%.3f)\n",
+            "(target_error=%.3f target_ratio=%.3f min_savings=%.3f)\n",
             dbg_accepted, dbg_rejected_noreduce, dbg_rejected_savings,
-            lock_border ? 1 : 0, target_error, target_ratio, min_savings);
+            target_error, target_ratio, min_savings);
     }
 }
 

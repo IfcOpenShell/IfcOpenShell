@@ -540,44 +540,28 @@ shader) is unchanged.
 
 ##### Decimator choice: `meshopt_simplifySloppy`
 
-The first attempt used `meshopt_simplify`, which is an edge-collapse
-decimator. It returned every input mesh unchanged (`err = 0.0`) for two
-reasons, both inherent to BIM brep output:
-
-1. **Per-triangle vertex duplication.** The instanced VBO stores each
-   triangle's vertices separately so that hard-edge normals can differ
-   across triangles. Topologically there are no shared vertices, so no
-   edges exist for `meshopt_simplify` to collapse. A
-   `meshopt_generateShadowIndexBuffer` welding pass (hash xyz only,
-   ignore the interleaved normal/colour) fixes this half cheaply — the
-   VBO isn't touched, only a per-call shadow index buffer is built.
-2. **Non-manifold topology even after welding.** BIM brep output has
-   T-junctions, coplanar slivers, separate solids meeting at a plane,
-   and multi-material cuts. `meshopt_simplify` needs valid 2-manifold
-   edge pairs to score collapses; it refuses the non-manifold ones, the
-   priority queue never fires, and it returns the input untouched.
-
 `meshopt_simplifySloppy` is a **voxel-clustering decimator** — it
 quantises positions into cells and merges everything in a cell to a
-single point. Topology is irrelevant, so it works directly on the
-original indices (welding isn't even needed). The trade-off is that it
-rounds off sharp corners and can produce slightly degenerate triangles,
-so it doesn't look great at mid-screen size. For a LOD1 that only
-activates below 30 px projected radius that's invisible in practice. If
-you ever want LOD1 to remain active at larger sizes, the only robust
-fix is to pre-process BIM meshes into manifold form (fuse coplanar
-faces, split at T-junctions) — a significant project unto itself.
+single point. This is the only meshoptimizer decimator that works on
+BIM brep output, which has per-triangle vertex duplication (hard-edge
+normals) and non-manifold topology (T-junctions, coplanar slivers,
+separate solids meeting at a plane). The edge-collapse decimator
+(`meshopt_simplify`) needs 2-manifold edge pairs to score collapses;
+on BIM geometry it returns the input unchanged.
+
+`simplifySloppy` rounds off sharp corners and can produce slightly
+degenerate triangles, so it doesn't look great at mid-screen size.
+For a LOD1 that only activates below 30 px projected radius that's
+invisible in practice.
 
 ##### Tuning knobs (env vars)
 
 | Var | Default | Effect |
 |-----|---------|--------|
 | `IFC_LOD1_PX` | `30` | Projected sphere radius (px) below which LOD1 kicks in. `0` disables LOD1 entirely. |
-| `IFC_LOD_SLOPPY` | `1` | `0` falls back to edge-collapse (`meshopt_simplify`) on shadow-welded indices. Typically produces zero LOD1 output for BIM — useful only for A/B comparison. |
 | `IFC_LOD_ERROR` | `0.2` | Target relative error passed to meshopt. |
 | `IFC_LOD_RATIO` | `0.25` | Target triangle-count ratio (LOD1 aims for 25 % of LOD0 tris). |
 | `IFC_LOD_MIN_SAVINGS` | `0.25` | Reject the LOD1 result if it doesn't shave at least this fraction of triangles. |
-| `IFC_LOD_LOCK_BORDER` | `0` | `1` re-enables `meshopt_SimplifyLockBorder` (only meaningful with `IFC_LOD_SLOPPY=0`). |
 | `IFC_LOD_DEBUG` | `0` | `1` prints per-mesh `tris / target / got / err` for the first 8 candidate meshes plus an accept/reject summary per model. |
 
 ##### Measured results
