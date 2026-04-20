@@ -593,26 +593,63 @@ class Style(bonsai.core.tool.Style):
         return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
+    def _color_from_principled(cls, node: bpy.types.Node) -> tuple[tuple[float, float, float], float]:
+        color = cls._resolve_color_socket(node.inputs["Base Color"])
+        alpha_socket = node.inputs["Alpha"]
+        alpha_source = cls._upstream_color_source(alpha_socket)
+        if alpha_source and alpha_source[0] == "IMAGE":
+            pixels = alpha_source[1].pixels[:]
+            n = len(pixels) // 4
+            step = max(1, n // 4096)
+            a_sum = sum(pixels[i * 4 + 3] for i in range(0, n, step))
+            count = len(range(0, n, step)) or 1
+            transparency = 1.0 - (a_sum / count)
+        else:
+            transparency = 1.0 - alpha_socket.default_value
+        return color, transparency
+
+    @classmethod
+    def _color_from_shader_socket(
+        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
+    ) -> tuple[tuple[float, float, float], float] | None:
+        if seen is None:
+            seen = set()
+        for link in socket.links:
+            node = link.from_node
+            if node.name in seen:
+                continue
+            seen.add(node.name)
+            if node.type == "BSDF_PRINCIPLED":
+                return cls._color_from_principled(node)
+            if node.type in ("BSDF_DIFFUSE", "DIFFUSE_BSDF"):
+                return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            if node.type == "BSDF_GLASS":
+                return cls._resolve_color_socket(node.inputs["Color"]), 0.0
+            if node.type in ("MIX_SHADER", "ADD_SHADER"):
+                for inp in node.inputs:
+                    if inp.type == "SHADER" and inp.is_linked:
+                        result = cls._color_from_shader_socket(inp, seen)
+                        if result:
+                            return result
+        return None
+
+    @classmethod
     def get_representative_material_color(
         cls, material: bpy.types.Material
     ) -> tuple[tuple[float, float, float], float]:
         if material.node_tree:
             nodes = material.node_tree.nodes
+            output_node = next((n for n in nodes if n.type == "OUTPUT_MATERIAL" and n.is_active_output), None) or next(
+                (n for n in nodes if n.type == "OUTPUT_MATERIAL"), None
+            )
+            if output_node:
+                result = cls._color_from_shader_socket(output_node.inputs["Surface"])
+                if result:
+                    return result
+            # Fallback: scan all shader nodes if no output node or graph traversal found nothing
             for node in nodes:
                 if node.type == "BSDF_PRINCIPLED":
-                    color = cls._resolve_color_socket(node.inputs["Base Color"])
-                    alpha_socket = node.inputs["Alpha"]
-                    alpha_source = cls._upstream_color_source(alpha_socket)
-                    if alpha_source and alpha_source[0] == "IMAGE":
-                        pixels = alpha_source[1].pixels[:]
-                        n = len(pixels) // 4
-                        step = max(1, n // 4096)
-                        a_sum = sum(pixels[i * 4 + 3] for i in range(0, n, step))
-                        count = len(range(0, n, step)) or 1
-                        transparency = 1.0 - (a_sum / count)
-                    else:
-                        transparency = 1.0 - alpha_socket.default_value
-                    return color, transparency
+                    return cls._color_from_principled(node)
             for node in nodes:
                 if node.type in ("BSDF_DIFFUSE", "DIFFUSE_BSDF"):
                     return cls._resolve_color_socket(node.inputs["Color"]), 0.0
@@ -624,25 +661,36 @@ class Style(bonsai.core.tool.Style):
         return color, transparency
 
     @classmethod
-    def _upstream_color_source(
-        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
-    ) -> tuple[str, object] | None:
-        if seen is None:
-            seen = set()
+    def _collect_upstream_sources(cls, socket: bpy.types.NodeSocket, seen: set[str]) -> list[tuple[str, object]]:
+        """Recursively collect all upstream colour/image sources reachable from *socket*."""
+        results = []
         for link in socket.links:
             node = link.from_node
             if node.name in seen:
                 continue
             seen.add(node.name)
             if node.type == "TEX_IMAGE":
-                return ("IMAGE", node.image)
-            if node.type == "VALTORGB":
-                return ("COLORRAMP", node)
-            for inp in node.inputs:
-                if inp.is_linked:
-                    result = cls._upstream_color_source(inp, seen)
-                    if result:
-                        return result
+                results.append(("IMAGE", node.image))
+            elif node.type == "VALTORGB":
+                results.append(("COLORRAMP", node))
+            else:
+                for inp in node.inputs:
+                    if inp.is_linked:
+                        results.extend(cls._collect_upstream_sources(inp, seen))
+        return results
+
+    @classmethod
+    def _upstream_color_source(
+        cls, socket: bpy.types.NodeSocket, seen: set[str] | None = None
+    ) -> tuple[str, object] | None:
+        sources = cls._collect_upstream_sources(socket, set() if seen is None else seen)
+        # Prefer a concrete image texture over a colour ramp (which may be greyscale/procedural).
+        for s in sources:
+            if s[0] == "IMAGE":
+                return s
+        for s in sources:
+            if s[0] == "COLORRAMP":
+                return s
         return None
 
     @classmethod
