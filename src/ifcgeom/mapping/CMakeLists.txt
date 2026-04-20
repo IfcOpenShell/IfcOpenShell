@@ -1,6 +1,6 @@
 find_package(Eigen3 REQUIRED)
 
-set(mapping_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
+set(mapping_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 
 foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_I_FILES *.i)

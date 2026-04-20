@@ -1,6 +1,6 @@
 message(STATUS "GEOMETRY_KERNELS ${GEOMETRY_KERNELS}")
 
-set(kernel_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
+set(kernel_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 
 foreach(kernel ${GEOMETRY_KERNELS})
     string(TOUPPER ${kernel} KERNEL_UPPER)

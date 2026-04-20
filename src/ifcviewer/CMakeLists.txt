@@ -40,10 +40,11 @@ set_target_properties(IfcViewer PROPERTIES
     MACOSX_BUNDLE ON
 )
 
+add_dependencies(IfcViewer ${kernel_libraries} ${mapping_libraries})
+
 target_link_libraries(IfcViewer PRIVATE
     IfcGeom
     IfcParse
-    ${kernel_libraries}
     ${OpenCASCADE_LIBRARIES}
     ${Boost_LIBRARIES}
     ${CGAL_LIBRARIES}
