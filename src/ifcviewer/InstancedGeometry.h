@@ -25,16 +25,18 @@
 #include <vector>
 
 // Per-vertex layout for instanced meshes, stored in local coordinates,
-// quantized against each mesh's local AABB.  16 bytes per vertex:
+// quantized against each mesh's local AABB.  12 bytes per vertex:
 //   offset 0   pos     3 x uint16   normalized -> [0,1]; dequant to
 //                                   mix(mesh.aabb_min, mesh.aabb_max, t)
-//   offset 6   _pad    2 bytes
-//   offset 8   normal  2 x int16    normalized -> [-1,1]; octahedral-decoded
-//   offset 12  color   4 x uint8    normalized -> [0,1]
+//   offset 6   normal  2 x int8     normalized -> [-1,1]; octahedral-decoded
+//   offset 8   color   4 x uint8    normalized -> [0,1]
+//
+// int8 normals give ~1.4° worst-case angular error — invisible for BIM
+// geometry which is overwhelmingly axis-aligned (walls, floors, slabs).
 //
 // Quantization basis is per mesh, stored in the MeshGpu SSBO bound at
 // binding=2.  The vertex shader looks up its basis via the instance's mesh_id.
-static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 16;
+static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 12;
 
 // Streamer-side intermediate format: 7 floats per vertex (pos3 + normal3 +
 // color-as-float).  GeometryStreamer writes this into MeshChunk.vertices;
@@ -43,8 +45,8 @@ static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 16;
 static constexpr int INSTANCED_VERTEX_STRIDE_FLOATS = 7;
 
 static constexpr int INSTANCED_VERTEX_POS_OFFSET    = 0;
-static constexpr int INSTANCED_VERTEX_NORMAL_OFFSET = 8;
-static constexpr int INSTANCED_VERTEX_COLOR_OFFSET  = 12;
+static constexpr int INSTANCED_VERTEX_NORMAL_OFFSET = 6;
+static constexpr int INSTANCED_VERTEX_COLOR_OFFSET  = 8;
 
 // Per-mesh quantization basis, uploaded to a std430 SSBO.  Two vec4s so
 // std430 layout is trivial (no alignment surprises).  w components unused.

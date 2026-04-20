@@ -39,7 +39,9 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      where meshoptimizer decimation produced useful output.
 // v6 = VBO vertices quantized to 16 B/vertex (pos u16x3 + normal oct i16x2 +
 //      color u8x4).  Dequant basis is per-mesh MeshInfo.local_aabb_min/max.
-static constexpr uint32_t SIDECAR_VERSION = 6;
+// v7 = VBO vertices shrunk to 12 B/vertex (normal oct i8x2 replaces i16x2,
+//      eliminating 2-byte pad + saving 2 bytes on normal).
+static constexpr uint32_t SIDECAR_VERSION = 7;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
@@ -61,7 +63,7 @@ struct PackedElementInfo {
 // re-running the iterator.  v6 schema: instanced + quantized geometry.
 struct SidecarData {
     // Per-model GPU geometry (local coords).  Raw VBO bytes at the
-    // INSTANCED_VERTEX_STRIDE_BYTES layout (16 B/vertex as of v6).
+    // INSTANCED_VERTEX_STRIDE_BYTES layout (12 B/vertex as of v7).
     std::vector<uint8_t>      vertices;
     std::vector<uint32_t>     indices;
 

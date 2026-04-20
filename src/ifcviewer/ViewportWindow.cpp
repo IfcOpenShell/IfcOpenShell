@@ -46,9 +46,9 @@ static_assert(sizeof(DrawElementsIndirectCommand) == 20, "indirect cmd must be 2
 // Shaders
 // -----------------------------------------------------------------------------
 //
-// Vertex layout (GL side, 16 bytes — quantized; see InstancedGeometry.h):
+// Vertex layout (GL side, 12 bytes — quantized; see InstancedGeometry.h):
 //   location 0: vec3 a_position_q   (u16x3 normalized, per-mesh AABB basis)
-//   location 1: vec2 a_normal_oct   (i16x2 normalized, octahedral)
+//   location 1: vec2 a_normal_oct   (i8x2 normalized, octahedral)
 //   location 2: vec4 a_color        (u8x4 normalized)
 //
 // Per-instance record in SSBO std430 (80 bytes):
@@ -66,7 +66,7 @@ static const char* MAIN_VERTEX_SHADER = R"(
 #extension GL_ARB_shader_draw_parameters : require
 // Quantized vertex inputs — see InstancedGeometry.h for layout.
 layout(location = 0) in vec3 a_position_q;  // u16x3 normalized -> [0,1]
-layout(location = 1) in vec2 a_normal_oct;  // i16x2 normalized -> [-1,1]
+layout(location = 1) in vec2 a_normal_oct;  // i8x2 normalized -> [-1,1]
 layout(location = 2) in vec4 a_color;
 
 struct InstanceRecord {
@@ -307,7 +307,7 @@ static void octEncode(const float n[3], float out[2]) {
 }
 
 // Quantize a streamer-format vertex (pos3 + normal3 + color-as-float) into
-// the 16 B VBO record, given the mesh's tight local AABB.  `extent_recip`
+// the 12 B VBO record, given the mesh's tight local AABB.  `extent_recip`
 // is 1/(max-min) per axis, or 0 for degenerate axes (quantum becomes 0).
 static void quantizeVertex(const float src[7],
                            const float aabb_min[3],
@@ -320,14 +320,14 @@ static void quantizeVertex(const float src[7],
         if (t < 0.0f) t = 0.0f; else if (t > 1.0f) t = 1.0f;
         p[a] = static_cast<uint16_t>(t * 65535.0f + 0.5f);
     }
-    // Normal -> oct i16x2.
+    // Normal -> oct i8x2.  int8 gives ~1.4° worst-case error — fine for BIM.
     float oct[2];
     octEncode(src + 3, oct);
-    int16_t* n = reinterpret_cast<int16_t*>(dst + INSTANCED_VERTEX_NORMAL_OFFSET);
+    int8_t* n = reinterpret_cast<int8_t*>(dst + INSTANCED_VERTEX_NORMAL_OFFSET);
     for (int a = 0; a < 2; ++a) {
         float v = oct[a];
         if (v < -1.0f) v = -1.0f; else if (v > 1.0f) v = 1.0f;
-        n[a] = static_cast<int16_t>(std::lrintf(v * 32767.0f));
+        n[a] = static_cast<int8_t>(std::lrintf(v * 127.0f));
     }
     // Color passes through — streamer packs 4 bytes into the 7th float slot.
     std::memcpy(dst + INSTANCED_VERTEX_COLOR_OFFSET, src + 6, 4);
@@ -498,13 +498,13 @@ void ViewportWindow::setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo) {
                                    INSTANCED_VERTEX_POS_OFFSET);
     gl_->glVertexArrayAttribBinding(vao, 0, 0);
 
-    // normal oct-encoded (2 x i16 normalized @ 8)
+    // normal oct-encoded (2 x i8 normalized @ 6)
     gl_->glEnableVertexArrayAttrib(vao, 1);
-    gl_->glVertexArrayAttribFormat(vao, 1, 2, GL_SHORT, GL_TRUE,
+    gl_->glVertexArrayAttribFormat(vao, 1, 2, GL_BYTE, GL_TRUE,
                                    INSTANCED_VERTEX_NORMAL_OFFSET);
     gl_->glVertexArrayAttribBinding(vao, 1, 0);
 
-    // color (4 x u8 normalized @ 12)
+    // color (4 x u8 normalized @ 8)
     gl_->glEnableVertexArrayAttrib(vao, 2);
     gl_->glVertexArrayAttribFormat(vao, 2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
                                    INSTANCED_VERTEX_COLOR_OFFSET);
