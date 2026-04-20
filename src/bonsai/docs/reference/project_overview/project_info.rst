@@ -58,7 +58,7 @@ Fields
     Class** based on the IFC Schema version.
 
 **Unit System**
-  Choose between metric and imperial units of measurement when creating a project.
+  Choose between metric and imperial units of measurement when creating a project. Project data is stored in this Unit System and displayed according to e.g. Length Unit, Area Unit, Volume Unit. Properly changing the Unit System after project creation requires conversion. See `Blender Manual : Scene Properties : Units <https://docs.blender.org/manual/en/latest/scene_layout/scene/properties.html#units>`_ for a description of changing the display units e.g. from Feet to Adaptive (enable Separate Units option) for Feet-and-Inches.
 
 **Length Unit**
   Depending on the unit system, choose the default unit to be used for all length measurements. Lengths are used for moving objects around in the 3D scene, as well as lengths, widths, height, and depth quantity take-off data.
