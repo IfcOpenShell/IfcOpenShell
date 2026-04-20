@@ -49,19 +49,17 @@ import bonsai.tool as tool
 from pathlib import Path
 from urllib.request import urlretrieve
 from urllib.parse import urlsplit, urlunsplit, quote
+import hashlib
+
 CACHE_DIR = Path.home() / ".blender_texture_cache"
 CACHE_DIR.mkdir(exist_ok=True)
+
 
 def encode_url(url: str) -> str:
     # make sure the URL is clean (e.g., special characters like spaces are encoded)
     parts = urlsplit(url)
-    return urlunsplit((
-        parts.scheme,
-        parts.netloc,
-        quote(parts.path),
-        parts.query,
-        parts.fragment
-    ))
+    return urlunsplit((parts.scheme, parts.netloc, quote(parts.path), parts.query, parts.fragment))
+
 
 def get_cached_path(url: str) -> Path:
     # Hash the URL -> unique filename
@@ -69,11 +67,13 @@ def get_cached_path(url: str) -> Path:
     ext = Path(urlsplit(url).path).suffix or ".img"
     return CACHE_DIR / f"{h}{ext}"
 
+
 def load_image_once(path: str):
     for img in bpy.data.images:
         if img.filepath == path:
             return img
     return bpy.data.images.load(path)
+
 
 # Progressively we'll refactor loading elements into Blender objects into this
 # class. This will break down the monolithic import_ifc module and allow us to
@@ -330,7 +330,7 @@ class Loader(bonsai.core.tool.Loader):
                     # IFC2X3 uses UrlReference, IFC4+ uses URLReference.
                     original_image_url = texture.get("URLReference") or texture.get("UrlReference", "")
 
-                    is_remote = original_image_url.startswith(("http://","https://"))
+                    is_remote = original_image_url.startswith(("http://", "https://"))
 
                     if is_remote:
                         try:
@@ -345,8 +345,10 @@ class Loader(bonsai.core.tool.Loader):
                             return load_image_once(str(cache_path))
 
                         except Exception as e:
-                            print(f"WARNING. Failed to load remote texture {original_image_url}, it will be skipped: {e}")
-                            return                        
+                            print(
+                                f"WARNING. Failed to load remote texture {original_image_url}, it will be skipped: {e}"
+                            )
+                            return
                     else:
                         is_relative = not os.path.isabs(original_image_url)
                         nonlocal image_url
