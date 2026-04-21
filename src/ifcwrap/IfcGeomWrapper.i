@@ -265,15 +265,6 @@ namespace {
 %include "../ifcgeom/taxonomy.h"
 %include "../ifcgeom/function_item_evaluator.h"
 
-%include "../serializers/SvgSerializer.h"
-%include "../serializers/HdfSerializer.h"
-%include "../serializers/WavefrontObjSerializer.h"
-%include "../serializers/ColladaSerializer.h"
-%include "../serializers/XmlSerializer.h"
-%include "../serializers/GltfSerializer.h"
-%include "../serializers/TtlWktSerializer.h"
-%include "../serializers/JsonSerializer.h"
-
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
 		if (!self->instance) {
@@ -916,31 +907,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 	}
 %}
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-
-%inline %{
-	#include <BRepTools_ShapeSet.hxx>
-
-	express::Base serialise(ifcopenshell::file& f, const std::string& shape_str, bool advanced=true) {
-		std::stringstream stream(shape_str);
-		BRepTools_ShapeSet shapes;
-		shapes.Read(stream);
-		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
-
-		return IfcGeom::serialise(f, shp, advanced);
-	}
-
-	express::Base tesselate(ifcopenshell::file& f, const std::string& shape_str, double d) {
-		std::stringstream stream(shape_str);
-		BRepTools_ShapeSet shapes;
-		shapes.Read(stream);
-		const TopoDS_Shape& shp = shapes.Shape(shapes.NbShapes());
-
-		return IfcGeom::tesselate(f, shp, d);
-	}
-%}
-
-#endif
+// @todo bring back serialization OCCT -> IFC by means of opencascade_geometry_ifc_writer_registry
 
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;

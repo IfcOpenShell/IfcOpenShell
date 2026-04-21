@@ -120,6 +120,10 @@ else()
 endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
+if(WITH_ROCKSDB)
+    message(STATUS TK)
+    target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
+endif()
 SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if (WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
@@ -141,18 +145,7 @@ if (WASM_BUILD)
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
     )
 endif()
-if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
-# On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
-else()
-target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
-endif()
-if(geometry_serializer_libraries)
-    target_link_libraries(ifcopenshell_wrapper PRIVATE ${geometry_serializer_libraries})
-endif()
-if(TARGET document_serializer_rdb)
-    target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
-endif()
+target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES} ${LIBSVGFILL})
 if(kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
     add_dependencies(ifcopenshell_wrapper ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
 endif()
@@ -218,6 +211,32 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 DESTINATION "${python_package_dir}/ifcopenshell")
         INSTALL(TARGETS ifcopenshell_wrapper
                 DESTINATION "${python_package_dir}/ifcopenshell")
+
+        if (CREATE_BUNDLE)
+            set(_ifcopenshell_python_runtime_targets
+                IfcGeom
+                IfcParse
+                ${kernel_libraries}
+                ${tree_libraries}
+                ${mapping_libraries}
+                ${geometry_serializer_libraries}
+                ${document_serializer_libraries}
+            )
+
+            list(REMOVE_DUPLICATES _ifcopenshell_python_runtime_targets)
+
+            if(_ifcopenshell_python_runtime_targets)
+                INSTALL(TARGETS ${_ifcopenshell_python_runtime_targets}
+                        LIBRARY DESTINATION "${python_package_dir}/ifcopenshell"
+                        RUNTIME DESTINATION "${python_package_dir}/ifcopenshell")
+            endif()
+
+            if(NOT WIN32 AND NOT WASM_BUILD)
+                set_target_properties(ifcopenshell_wrapper PROPERTIES
+                    INSTALL_RPATH "$ORIGIN"
+                )
+            endif()
+        endif()
 	if (MSVC)
 	    INSTALL(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
 	endif()

@@ -198,49 +198,6 @@
 	#include "../ifcgeom/taxonomy.h"
 	#include "../ifcgeom/function_item_evaluator.h"
 
-	#include "../serializers/SvgSerializer.h"
-	#include "../serializers/WavefrontObjSerializer.h"
-	#include "../serializers/ColladaSerializer.h"
-	#include "../serializers/HdfSerializer.h"
-	#include "../serializers/RocksDbSerializer.h"
-	
-#ifdef HAS_SCHEMA_2x3
-	#include "../ifcparse/schemas/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-	#include "../ifcparse/schemas/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-	#include "../ifcparse/schemas/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-	#include "../ifcparse/schemas/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	#include "../ifcparse/schemas/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	#include "../ifcparse/schemas/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-#include "../ifcparse/schemas/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-#include "../ifcparse/schemas/Ifc4x3_rc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x3
-#include "../ifcparse/schemas/Ifc4x3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-#include "../ifcparse/schemas/Ifc4x3_tc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-#include "../ifcparse/schemas/Ifc4x3_add1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-#include "../ifcparse/schemas/Ifc4x3_add2.h"
-#endif
-
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"
 	#include "../ifcparse/schema.h"
@@ -250,6 +207,9 @@
 	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../svgfill/src/svgfill.h"
+
+	// @todo abstract into plug-in interface
+	#include "../serializers/RocksDbSerializer.h"
 %}
 
 // Create docstrings for generated python code.
@@ -271,53 +231,6 @@
 	#include "../ifcgeom/ConversionResult.h"
 	#include "../ifcgeom/hybrid_kernel.h"
 
-	#include "../serializers/SvgSerializer.h"
-	#include "../serializers/WavefrontObjSerializer.h"
-	#include "../serializers/ColladaSerializer.h"
-	#include "../serializers/HdfSerializer.h"
-	#include "../serializers/XmlSerializer.h"
-	#include "../serializers/GltfSerializer.h"
-	#include "../serializers/TtlWktSerializer.h"
-	#include "../serializers/RocksDbSerializer.h"
-	#include "../serializers/JsonSerializer.h"
-
-#ifdef HAS_SCHEMA_2x3
-	#include "../ifcparse/schemas/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-	#include "../ifcparse/schemas/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-	#include "../ifcparse/schemas/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-	#include "../ifcparse/schemas/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-	#include "../ifcparse/schemas/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-	#include "../ifcparse/schemas/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-	#include "../ifcparse/schemas/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-	#include "../ifcparse/schemas/Ifc4x3_rc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x3
-	#include "../ifcparse/schemas/Ifc4x3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-	#include "../ifcparse/schemas/Ifc4x3_tc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-	#include "../ifcparse/schemas/Ifc4x3_add1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-	#include "../ifcparse/schemas/Ifc4x3_add2.h"
-#endif
-
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"
 	#include "../ifcparse/schema.h"
@@ -327,6 +240,9 @@
 	#include "../ifcgeom/ConversionResult.h"
 
 	#include "../svgfill/src/svgfill.h"
+
+	// @todo abstract into plug-in interface
+	#include "../serializers/RocksDbSerializer.h"
 %}
 
 %include "IfcGeomWrapper.i"

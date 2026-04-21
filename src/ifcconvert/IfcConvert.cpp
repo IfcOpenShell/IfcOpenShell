@@ -40,12 +40,6 @@
 
 #include "../ifcparse/utils.h"
 
-#ifdef IFOPSH_WITH_OPENCASCADE
-
-#include <Standard_Version.hxx>
-
-#endif
-
 #include <boost/program_options.hpp>
 #include <boost/optional/optional_io.hpp>
 #include <boost/make_shared.hpp>
@@ -174,11 +168,8 @@ std::vector<serializer_usage_line> document_serializer_usage_lines() {
 
 void print_version()
 {
-    cout_ << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION;
-#ifdef IFOPSH_WITH_OPENCASCADE
-    cout_ << " (OCC " << OCC_VERSION_STRING_EXT << ")";
-#endif
-    cout_ << "\n";
+	// @todo print plug-in versions
+    cout_ << "IfcOpenShell IfcConvert " << IFCOPENSHELL_VERSION << "\n";
 }
 
 void print_usage(bool suggest_help = true)

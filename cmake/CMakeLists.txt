@@ -60,6 +60,7 @@ option(MSVC_PARALLEL_BUILD "Multi-threaded compilation in Microsoft Visual Studi
 option(USE_VLD "Use Visual Leak Detector for debugging memory leaks, MSVC-only." OFF)
 option(USE_MMAP "Adds a command line options to parse IFC files from memory mapped files using Boost.Iostreams" OFF)
 option(NO_WARN "Disable all warnings" OFF)
+option(CREATE_BUNDLE "Copy .so files and don't create RPATHS or SOVERSION symlinks" )
 
 option(BUILD_IFCGEOM "Build IfcGeom." ON)
 option(BUILD_IFCPYTHON "Build IfcPython." ON)
