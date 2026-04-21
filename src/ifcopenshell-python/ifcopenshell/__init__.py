@@ -91,9 +91,8 @@ except Exception:
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
 from . import guid
-from .entity_instance import entity_instance
-from .file import file, rocksdb_lazy_instance
-from .file import file as _file
+from .ifcopenshell_wrapper import entity_instance, file
+from .file import rocksdb_lazy_instance
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols

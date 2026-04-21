@@ -35,7 +35,6 @@ import ifcopenshell
 from ifcopenshell.util.mvd_info import LARK_AVAILABLE, MvdInfo
 
 from . import ifcopenshell_wrapper
-from .entity_instance import entity_instance
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -702,7 +701,7 @@ class file_mixin:
         else:
             raise AttributeError
 
-    def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> entity_instance:
+    def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> ifcopenshell.entity_instance:
         if isinstance(key, numbers.Integral):
             return self.by_id(key)
         elif isinstance(key, (str, bytes)):

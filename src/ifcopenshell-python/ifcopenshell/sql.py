@@ -31,8 +31,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
 
 from . import ifcopenshell_wrapper
-from .entity_instance import entity_instance
-from .file import file
+from . import file, entity_instance
 
 if TYPE_CHECKING:
     import sqlite3
