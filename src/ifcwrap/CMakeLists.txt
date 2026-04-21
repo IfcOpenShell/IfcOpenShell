@@ -221,6 +221,8 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 ${mapping_libraries}
                 ${geometry_serializer_libraries}
                 ${document_serializer_libraries}
+                ${LIBSVGFILL}
+                plugin
             )
 
             list(REMOVE_DUPLICATES _ifcopenshell_python_runtime_targets)
