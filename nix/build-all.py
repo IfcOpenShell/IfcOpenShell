@@ -162,6 +162,8 @@ USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "9.11.2"
 ZSTD_VERSION = "1.5.7"
+MANIFOLD_VERSION = "3.2.1"
+
 # binaries
 cp = "cp"
 bash = "bash"
@@ -330,7 +332,7 @@ cecho(""" - IFC Schemas to compile. If not provided, fallback to default provide
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
-    "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen", "OpenCOLLADA"),
+    "IfcGeom": ("IfcParse", "occ", "manifold", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
@@ -347,6 +349,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "eigen": (),
     "rocksdb": ("zstd",),
     "zstd": (),
+    "manifold": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -998,6 +1001,29 @@ elif "occ" in targets:
         download_name=f"OCE-{OCE_VERSION}.tar.gz",
     )
 
+if "manifold" in targets:
+    dependency_name = f"manifold-{MANIFOLD_VERSION}"
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            "-DMANIFOLD_PAR=OFF",
+            "-DMANIFOLD_CROSS_SECTION=OFF",
+            "-DMANIFOLD_PYBIND=OFF",
+            "-DMANIFOLD_JSBIND=OFF",
+            "-DMANIFOLD_CBIND=OFF",
+            "-DMANIFOLD_TEST=OFF",
+            "-DMANIFOLD_EXPORT=OFF",
+            "-DMANIFOLD_DOWNLOADS=OFF",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
+        ],
+        download_url="https://github.com/elalish/manifold.git",
+        download_name="manifold",
+        download_tool=download_tool_git,
+        revision=f"v{MANIFOLD_VERSION}",
+    )
+
 if "libxml2" in targets:
     OLD_CC = ""
     if MAC_CROSS_COMPILE_INTEL:
@@ -1366,6 +1392,10 @@ elif "occ" in targets:
     occ_include_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/include/oce"
     occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
+
+if "manifold" in targets:
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+    cmake_args.append("-DWITH_MANIFOLD=On")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
