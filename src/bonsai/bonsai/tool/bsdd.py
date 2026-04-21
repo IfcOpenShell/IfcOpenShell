@@ -150,42 +150,6 @@ class Bsdd(bonsai.core.tool.Bsdd):
             statuses.append("Inactive")
         return list(filter(lambda d: d["status"] in statuses, dicts))
 
-    @classmethod
-    def get_class_properties(
-        cls, class_data: Union[bsdd.ClassContractV1, dict]
-    ) -> Union[dict[str, dict[str, Any]], None]:
-        properties = class_data.get("classProperties", None)
-        if not properties:
-            return {}
-
-        ifc_class = class_data.get("relatedIfcEntityNames") or ""
-        if ifc_class:
-            ifc_class = ifc_class[0]
-
-        psets = {}
-        for prop in properties:
-            prop_dictionary = prop.get("propertyDictionaryName") or ""
-            pset = prop.get("propertySet", None)
-            if not pset:
-                continue
-            psets.setdefault(pset, {})
-
-            predefined_value = prop.get("predefinedValue")
-            if predefined_value:
-                possible_values = [predefined_value]
-            else:
-                possible_values = prop.get("allowedValues", []) or []
-                possible_values = [v["value"] for v in possible_values]
-
-            description = prop.get("description", "")
-            psets[pset][prop["name"]] = {
-                "data_type": prop.get("dataType"),
-                "possible_values": possible_values,
-                "description": description,
-                "ifc_class": ifc_class,
-                "dictionary": prop_dictionary,
-            }
-        return psets
 
     @classmethod
     def get_related_ifc_entities(cls) -> list[str]:
