@@ -674,6 +674,8 @@ if(BUILD_IFCGEOM)
 endif(BUILD_IFCGEOM)
 if(BUILD_IFCVIEWER)
     add_subdirectory(../src/ifcviewer ifcviewer)
+    add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
+    add_subdirectory(../src/ifcviewer-full ifcviewer-full)
 endif()
 
 # Cmake uninstall target

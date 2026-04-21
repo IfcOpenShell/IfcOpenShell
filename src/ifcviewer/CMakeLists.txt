@@ -20,9 +20,9 @@
 message("Running CMakeLists.txt in /src/ifcviewer")
 
 set(QT_VERSION 6 CACHE STRING "Qt version")
-# IfcViewer always needs OpenGL in addition to Core/Gui/Widgets. We don't use
-# the CACHE'd QT_COMPONENTS here because it may have been set by another target
-# (e.g. qtviewer) without the OpenGL component.
+# IfcViewerLib always needs OpenGL in addition to Core/Gui/Widgets. We don't
+# use the CACHE'd QT_COMPONENTS here because it may have been set by another
+# target (e.g. qtviewer) without the OpenGL component.
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets OpenGL REQUIRED PATHS ${QT_DIR})
 
 find_package(OpenGL REQUIRED)
@@ -32,17 +32,21 @@ file(GLOB IFCVIEWER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 set(IFCVIEWER_FILES ${IFCVIEWER_CPP_FILES} ${IFCVIEWER_H_FILES})
 
-add_executable(IfcViewer ${IFCVIEWER_FILES})
+add_library(IfcViewer ${IFCVIEWER_FILES})
 
 set_target_properties(IfcViewer PROPERTIES
     AUTOMOC ON
-    WIN32_EXECUTABLE ON
-    MACOSX_BUNDLE ON
+    VERSION "${PROJECT_VERSION}"
+    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
+
+# Consumers include headers as `#include "ViewportWindow.h"`, so expose this
+# directory on the public interface.
+target_include_directories(IfcViewer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_dependencies(IfcViewer ${kernel_libraries} ${mapping_libraries})
 
-target_link_libraries(IfcViewer PRIVATE
+target_link_libraries(IfcViewer PUBLIC
     IfcGeom
     IfcParse
     ${OpenCASCADE_LIBRARIES}
@@ -58,7 +62,11 @@ target_link_libraries(IfcViewer PRIVATE
 
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
-    target_link_libraries(IfcViewer PRIVATE Threads::Threads)
+    target_link_libraries(IfcViewer PUBLIC Threads::Threads)
 endif()
 
 install(TARGETS IfcViewer EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+
+install(FILES ${IFCVIEWER_H_FILES}
+    DESTINATION ${INCLUDEDIR}/ifcviewer
+)
