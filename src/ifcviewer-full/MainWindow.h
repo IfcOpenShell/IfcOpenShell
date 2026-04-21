@@ -26,29 +26,15 @@
 #include <QProgressBar>
 #include <QLabel>
 #include <QSplitter>
-#include <QTimer>
 #include <QElapsedTimer>
 
 #include <map>
-#include <deque>
-#include <thread>
 #include <unordered_map>
 
 #include "ViewportWindow.h"
-#include "GeometryStreamer.h"
+#include "SceneLoader.h"
 
 class SettingsWindow;
-
-using ModelId = uint32_t;
-
-struct ModelHandle {
-    ModelId id = 0;
-    QString file_path;
-    QString display_name;
-    GeometryStreamer* streamer = nullptr;
-    QTreeWidgetItem* tree_root = nullptr;
-    bool visible = true;
-};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -63,27 +49,37 @@ public:
 private slots:
     void onFileOpen();
     void onFileSettings();
-    void onProgressChanged(int percent);
-    void onMeshReady(MeshChunk chunk);
-    void onInstanceReady(InstanceChunk chunk);
-    void onStreamingFinished();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();
-    void pollNewElements();
+
+    void onLoadStarted(uint32_t mid, QString display_name);
+    void onLoadProgressChanged(int percent);
+    void onSidecarElementsReady(uint32_t mid,
+                                std::vector<PackedElementInfo> elements,
+                                std::string string_table);
+    void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
+    void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
+    void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
+    void onLoadError(uint32_t mid, QString message);
+    void onAllLoadsFinished();
 
 private:
     void setupUi();
     void setupMenus();
     void populateProperties(uint32_t object_id);
-    void startNextLoad();
-    void applySidecarData(ModelId mid, SidecarData data);
-    void joinSidecarThread();
-    void populateTreeFromSidecar(ModelHandle& model,
-                                 const std::vector<PackedElementInfo>& elements,
-                                 const std::string& string_table);
-    void connectStreamer(GeometryStreamer* streamer);
+    void appendElementToTree(uint32_t model_id,
+                             uint32_t object_id,
+                             int ifc_id,
+                             int parent_ifc_id,
+                             const std::string& guid,
+                             const std::string& name,
+                             const std::string& type);
+    void writeSidecarForModel(uint32_t mid);
+    void applyPendingBenchmark();
+    QString formatElapsed(qint64 ms) const;
 
     ViewportWindow* viewport_ = nullptr;
+    SceneLoader*    loader_   = nullptr;
     SettingsWindow* settings_ = nullptr;
     QWidget* viewport_container_ = nullptr;
     QTreeWidget* element_tree_ = nullptr;
@@ -91,18 +87,11 @@ private:
     QProgressBar* progress_bar_ = nullptr;
     QLabel* status_label_ = nullptr;
     QLabel* stats_label_ = nullptr;
-    QTimer element_poll_timer_;
-    QElapsedTimer load_timer_;
 
-    // Multi-model state
-    std::map<ModelId, ModelHandle> models_;
-    ModelId next_model_id_ = 1;
-    uint32_t next_object_id_ = 1; // monotonically increasing across all models
-    std::deque<ModelId> load_queue_;
-    ModelId loading_model_id_ = 0;
-    std::thread sidecar_read_thread_;
+    // Per-model tree roots, keyed by model_id.
+    std::map<uint32_t, QTreeWidgetItem*> tree_roots_;
 
-    // Map object_id -> tree item and element info
+    // Display-side element registry for tree + property lookup.
     std::unordered_map<uint32_t, ElementInfo> element_map_;
     std::unordered_map<uint32_t, QTreeWidgetItem*> tree_items_;
     // Scoped (model_id, ifc_id) -> object_id
@@ -114,8 +103,6 @@ private:
 
     QString pending_camera_;
     int     pending_benchmark_ = 0;
-
-    void applyPendingBenchmark();
 };
 
 #endif // MAINWINDOW_H

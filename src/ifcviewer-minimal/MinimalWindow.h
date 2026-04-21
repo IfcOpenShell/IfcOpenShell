@@ -22,61 +22,35 @@
 
 #include <QMainWindow>
 #include <QLabel>
-#include <QTimer>
-#include <QElapsedTimer>
-
-#include <map>
-#include <deque>
-#include <thread>
 
 #include "ViewportWindow.h"
-#include "GeometryStreamer.h"
+#include "SceneLoader.h"
 
 class MinimalWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MinimalWindow(QWidget* parent = nullptr);
-    ~MinimalWindow();
+    ~MinimalWindow() = default;
 
     void addFiles(const QStringList& paths);
     void setPendingCamera(const QString& params);
     void setPendingBenchmark(int frames);
 
 private slots:
-    void onMeshReady(MeshChunk chunk);
-    void onInstanceReady(InstanceChunk chunk);
-    void onStreamingFinished();
-    void onErrorOccurred(const QString& message);
-    void drainStreamerElements();
+    void onLoadStarted(uint32_t mid, QString display_name);
+    void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
+    void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
+    void onLoadError(uint32_t mid, QString message);
+    void onAllLoadsFinished();
 
 private:
-    struct ModelEntry {
-        uint32_t id = 0;
-        QString file_path;
-        QString display_name;
-        GeometryStreamer* streamer = nullptr;
-    };
-
-    void startNextLoad();
-    void connectStreamer(GeometryStreamer* streamer);
-    void joinSidecarThread();
-    void applySidecarData(uint32_t mid, SidecarData data);
     void applyPendingBenchmark();
 
     ViewportWindow* viewport_ = nullptr;
+    SceneLoader*    loader_   = nullptr;
     QWidget* viewport_container_ = nullptr;
     QLabel* status_label_ = nullptr;
     QLabel* stats_label_ = nullptr;
-
-    std::map<uint32_t, ModelEntry> models_;
-    std::deque<uint32_t> load_queue_;
-    uint32_t next_model_id_ = 1;
-    uint32_t next_object_id_ = 1;
-    uint32_t loading_model_id_ = 0;
-    std::thread sidecar_read_thread_;
-
-    QTimer element_drain_timer_;
-    QElapsedTimer load_timer_;
 
     QString pending_camera_;
     int     pending_benchmark_ = 0;
