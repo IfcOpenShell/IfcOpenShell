@@ -627,10 +627,6 @@ if(BUILD_DOCUMENTATION)
     add_subdirectory(../docs docs)
 endif()
 
-if(BUILD_IFCPYTHON)
-    add_subdirectory(../src/ifcwrap ifcwrap)
-endif()
-
 if(BUILD_EXAMPLES)
     add_subdirectory(../src/examples examples)
 endif()
@@ -641,6 +637,10 @@ endif()
 
 if(BUILD_IFCPYTHON AND WITH_CGAL)
     add_subdirectory(../src/svgfill svgfill)
+endif()
+
+if(BUILD_IFCPYTHON)
+    add_subdirectory(../src/ifcwrap ifcwrap)
 endif()
 
 if(BUILD_QTVIEWER)
