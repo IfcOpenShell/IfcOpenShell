@@ -311,11 +311,11 @@ std::string character_decoder<Reader>::get(size_t& ptr) {
     return s;
 }
 
-template class character_decoder<file_reader<full_buffer_impl>>;
-template class character_decoder<file_reader<paged_file_impl>>;
-template class character_decoder<file_reader<pushed_sequential_impl>>;
+template class IFC_PARSE_API character_decoder<file_reader<full_buffer_impl>>;
+template class IFC_PARSE_API character_decoder<file_reader<paged_file_impl>>;
+template class IFC_PARSE_API character_decoder<file_reader<pushed_sequential_impl>>;
 #ifdef USE_MMAP
-template class character_decoder<file_reader<mmap_impl>>;
+template class IFC_PARSE_API character_decoder<file_reader<mmap_impl>>;
 #endif
 
 character_encoder::character_encoder(const std::string& input)

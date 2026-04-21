@@ -411,11 +411,11 @@ token spf_lexer<Reader>::next() {
     }
 }
 
-template class spf_lexer<file_reader<full_buffer_impl>>;
-template class spf_lexer<file_reader<paged_file_impl>>;
-template class spf_lexer<file_reader<pushed_sequential_impl>>;
+template class IFC_PARSE_API spf_lexer<file_reader<full_buffer_impl>>;
+template class IFC_PARSE_API spf_lexer<file_reader<paged_file_impl>>;
+template class IFC_PARSE_API spf_lexer<file_reader<pushed_sequential_impl>>;
 #ifdef USE_MMAP
-template class spf_lexer<file_reader<mmap_impl>>;
+template class IFC_PARSE_API spf_lexer<file_reader<mmap_impl>>;
 #endif
 
 bool token::is_operator() {
@@ -1745,7 +1745,7 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_p
     return return_value;
 }
 
-template class ifcopenshell::instance_streamer<file_reader<full_buffer_impl>>;
+template class IFC_PARSE_API ifcopenshell::instance_streamer<file_reader<full_buffer_impl>>;
 
 template <typename Reader>
 void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
