@@ -120,7 +120,7 @@ class mutable_attribute_value;
 
 namespace ifcopenshell {
 
-    struct instance_reference {
+    struct IFC_PARSE_API instance_reference {
         int v;
         size_t file_offset;
         operator int() const {
@@ -135,7 +135,7 @@ namespace ifcopenshell {
     template <typename Reader>
     class spf_lexer;
 
-    struct token {
+    struct IFC_PARSE_API token {
         enum token_type {
             Token_NONE,
             Token_STRING,
@@ -206,7 +206,7 @@ namespace ifcopenshell {
     struct parse_context;
     struct parse_context_pool;
 
-    struct parse_context_handle {
+    struct IFC_PARSE_API parse_context_handle {
         parse_context_pool* pool = nullptr;
         uint32_t index = 0;
 
@@ -216,7 +216,7 @@ namespace ifcopenshell {
         explicit operator bool() const { return pool != nullptr; }
     };
 
-    struct parse_context {
+    struct IFC_PARSE_API parse_context {
         std::vector<
             std::variant<
             express::Base,
@@ -250,7 +250,7 @@ namespace ifcopenshell {
         std::shared_ptr<instance_data> construct(ifcopenshell::file* owner_file, std::optional<size_t> instance_name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* declaration, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count = true);
     };
 
-    struct parse_context_pool {
+    struct IFC_PARSE_API parse_context_pool {
         // parse_context::push() stores child handles on the current context after
         // requesting a new pool slot. The pool therefore needs stable addresses
         // for existing contexts while it grows.
