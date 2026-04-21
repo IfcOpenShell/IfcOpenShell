@@ -767,14 +767,21 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
         print(f"[mirror] usage_type={usage_type} type_element=#{type_element.id() if type_element else None}")
-        if type_element and element.id() != type_element.id() and usage_type != "LAYER3":
+        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type != "LAYER3")
+        if is_assign_type_path:
             # obj has a type, use / create inverted type and assign it
             print(f"[mirror] -> assign_inverted_type path")
             self.assign_inverted_type(element, mirror_axes)
+            M_elem_after_assign = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            print(f"[mirror] element IFC pos after assign_inverted_type: {M_elem_after_assign[:3, 3].tolist()}")
         else:
             # invert representation of entity directly;
             # LAYER3 (slabs) store geometry on the instance, not the type, so always use this path
             print(f"[mirror] -> invert_representation path (direct)")
+            # Update opening placements BEFORE invert_representation so its internal reload
+            # sees the correct positions.  No element rotation change on this path → frame_change = I.
+            if opening_placements_before and M_slab_before is not None:
+                self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, np.eye(3))
             self.invert_representation(element, mirror_axes)
 
         context.view_layer.update()
@@ -797,66 +804,106 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if element.is_a("IfcElement") and element.FillsVoids:
             tool.Model.update_simple_openings(element)
 
-        # Mirror IfcOpeningElement placements in SLAB LOCAL SPACE.
-        #
-        # Working in world space caused a double-offset: edit_object_placement stores a relative
-        # matrix (relative to the slab's current IFC placement), so when the depsgraph later syncs
-        # the slab's Blender move to IFC the opening shifted again by the full slab displacement.
-        #
-        # By mirroring in the slab's local space and passing M_slab_before @ M_rel_new as the
-        # absolute matrix, edit_object_placement stores M_rel_new as the relative offset.
-        # The opening then moves correctly with the slab regardless of sync timing.
-        if opening_placements_before and M_slab_before is not None:
-            # Mirror normal in the slab's local coordinate space (same axes as geometry inversion)
-            N_local = np.zeros(3)
-            for i, flip in enumerate(mirror_axes[:3]):
-                if flip > 0.0:
-                    N_local[i] = 1.0
-            norm = np.linalg.norm(N_local)
-            if norm > 0:
-                N_local /= norm
-
-            for rel in element.HasOpenings:
-                opening = rel.RelatedOpeningElement
-                M_abs_old = opening_placements_before[opening.id()]
-
-                # Express opening in slab's local coordinate system
-                M_rel = np.linalg.inv(M_slab_before) @ M_abs_old
-                M_rel_new = M_rel.copy()
-
-                # Mirror translation: negate the same axes as the geometry inversion
-                for i, flip in enumerate(mirror_axes[:3]):
-                    if flip > 0.0:
-                        M_rel_new[i, 3] *= -1
-
-                # Mirror rotation columns: d' = d - 2*(d·N)*N
-                for i in range(3):
-                    d = M_rel[:3, i].copy()
-                    M_rel_new[:3, i] = d - 2 * np.dot(d, N_local) * N_local
-
-                # Restore proper rotation handedness (reflection gives det = -1)
-                if np.linalg.det(M_rel_new[:3, :3]) < 0:
-                    M_rel_new[:3, 2] *= -1
-
-                # Back to absolute using OLD slab matrix (still current in IFC at this point).
-                # edit_object_placement will compute relative = inv(M_slab_before) @ M_abs_new = M_rel_new ✓
-                M_abs_new = M_slab_before @ M_rel_new
-
-                print(f"[mirror] opening #{opening.id()} slab-local: {M_rel[:3, 3].tolist()} -> {M_rel_new[:3, 3].tolist()}")
-                print(f"[mirror] opening #{opening.id()} world:      {M_abs_old[:3, 3].tolist()} -> {M_abs_new[:3, 3].tolist()}")
-                ifcopenshell.api.geometry.edit_object_placement(
-                    tool.Ifc.get(), product=opening, matrix=M_abs_new, is_si=False
-                )
+        # For the assign_inverted_type path, mirror opening placements here (after origin reflection
+        # so obj.matrix_world already has the final rotation, needed to compute frame_change).
+        # The LAYER3 / invert_representation path already did this before invert_representation.
+        if is_assign_type_path and opening_placements_before and M_slab_before is not None:
+            R_elem_old = M_slab_before[:3, :3]
+            _, R_quat, _ = obj.matrix_world.decompose()
+            R_elem_new = np.array(R_quat.to_matrix())
+            frame_change = np.linalg.inv(R_elem_new) @ R_elem_old
+            self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, frame_change)
 
         # bonsai does not automatically switch to the representation that should be active in the given context
         # when switching to a type that was previously viewed in another context (e.g. plan view),
         # the wrong representation will be used.
+        if opening_placements_before:
+            for rel in element.HasOpenings:
+                op = rel.RelatedOpeningElement
+                M_pre_switch = ifcopenshell.util.placement.get_local_placement(op.ObjectPlacement)
+                print(f"[mirror] opening #{op.id()} IFC world PRE switch_representation: {M_pre_switch[:3, 3].tolist()}")
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
         )
+        if opening_placements_before:
+            for rel in element.HasOpenings:
+                op = rel.RelatedOpeningElement
+                M_post_switch = ifcopenshell.util.placement.get_local_placement(op.ObjectPlacement)
+                print(f"[mirror] opening #{op.id()} IFC world POST switch_representation: {M_post_switch[:3, 3].tolist()}")
+                op_obj = tool.Ifc.get_object(op)
+                if op_obj:
+                    print(f"[mirror] opening #{op.id()} Blender world POST switch_representation: {list(op_obj.matrix_world.translation)}")
+                else:
+                    print(f"[mirror] opening #{op.id()} has no Blender object yet")
+        print(f"[mirror] element Blender world POST switch_representation: {list(obj.matrix_world.translation)}")
+        M_elem_post_switch = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        print(f"[mirror] element IFC world POST switch_representation: {M_elem_post_switch[:3, 3].tolist()}")
+
+    def _apply_opening_mirror(self, element, mirror_axes, M_slab_before, opening_placements_before, frame_change):
+        """Mirror IfcOpeningElement placements in element-local space.
+
+        frame_change = inv(R_elem_new) @ R_elem_old accounts for any element rotation that will
+        be applied after save (e.g. 180° Z for Y-mirror via assign_inverted_type). Pass np.eye(3)
+        when no element rotation changes (LAYER3 / invert_representation path).
+        """
+        # Mirror normal in element's OLD local space
+        N_local = np.zeros(3)
+        for i, flip in enumerate(mirror_axes[:3]):
+            if flip > 0.0:
+                N_local[i] = 1.0
+        norm = np.linalg.norm(N_local)
+        if norm > 0:
+            N_local /= norm
+
+        for rel in element.HasOpenings:
+            opening = rel.RelatedOpeningElement
+            if opening.id() not in opening_placements_before:
+                continue
+            M_abs_old = opening_placements_before[opening.id()]
+            M_rel = np.linalg.inv(M_slab_before) @ M_abs_old
+            M_rel_new = M_rel.copy()
+
+            # Mirror then re-express translation in new element frame
+            t = M_rel[:3, 3].copy()
+            t_refl = t - 2 * np.dot(t, N_local) * N_local
+            M_rel_new[:3, 3] = frame_change @ t_refl
+
+            # Mirror rotation by conjugation: H@R@H keeps det=+1 and gives the correct mirrored rotation.
+            # Direct Householder on columns yields det=-1; IFC's Y=Z×X normalization then introduces
+            # a spurious 180°Z error (R_z(π-θ) instead of R_z(-θ)). Conjugation avoids this.
+            H = np.eye(3) - 2 * np.outer(N_local, N_local)
+            R_mirrored = H @ M_rel[:3, :3] @ H
+            M_rel_new[:3, :3] = frame_change @ R_mirrored
+
+            M_abs_new = M_slab_before @ M_rel_new
+            print(f"[mirror] opening #{opening.id()} slab-local: {M_rel[:3, 3].tolist()} -> {M_rel_new[:3, 3].tolist()}")
+            print(f"[mirror] opening #{opening.id()} world:      {M_abs_old[:3, 3].tolist()} -> {M_abs_new[:3, 3].tolist()}")
+            print(f"[mirror] opening #{opening.id()} rot_before X={M_rel[:3, 0].tolist()} Z={M_rel[:3, 2].tolist()}")
+            print(f"[mirror] opening #{opening.id()} rot_after  X={M_rel_new[:3, 0].tolist()} Z={M_rel_new[:3, 2].tolist()}")
+            ifcopenshell.api.geometry.edit_object_placement(
+                tool.Ifc.get(), product=opening, matrix=M_abs_new, is_si=False
+            )
+            M_after = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+            print(f"[mirror] opening #{opening.id()} IFC world AFTER: pos={M_after[:3, 3].tolist()} X={M_after[:3, 0].tolist()} Z={M_after[:3, 2].tolist()}")
+
+            # Mirror the opening's own representation geometry (local vertices/profile).
+            # edit_object_placement only moves the frame; the local shape must also be
+            # mirrored so the void is the correct mirror image.  Blender reload is skipped
+            # here because invert_representation / reload_representation recreates the
+            # opening objects when the host element reloads.
+            if opening.Representation:
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                mirror_axes_2d = mirror_axes[:2]
+                for rep in opening.Representation.Representations:
+                    for item in rep.Items:
+                        try:
+                            builder.mirror(item, mirror_axes_2d, create_copy=False)
+                            print(f"[mirror] opening #{opening.id()} geometry mirrored: #{item.id()} {item.is_a()}")
+                        except Exception as e:
+                            print(f"[mirror] opening #{opening.id()} geometry mirror failed for #{item.id()} {item.is_a()}: {e}")
 
     def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
         # ShapeBuilder.mirror works in 2D; use only the XY components
