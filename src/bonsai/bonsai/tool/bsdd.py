@@ -150,7 +150,6 @@ class Bsdd(bonsai.core.tool.Bsdd):
             statuses.append("Inactive")
         return list(filter(lambda d: d["status"] in statuses, dicts))
 
-
     @classmethod
     def get_related_ifc_entities(cls) -> list[str]:
         active_object = bpy.context.active_object
