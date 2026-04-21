@@ -1344,6 +1344,7 @@ cmake_args = [
     "-DBUILD_SHARED_LIBS=ON",
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
+    "-DCREATE_BUNDLE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
     *MAC_CROSS_COMPILE_INTEL_ARGS,
