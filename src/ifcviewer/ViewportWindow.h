@@ -34,6 +34,7 @@
 #include <memory>
 #include <atomic>
 #include <future>
+#include <deque>
 
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
@@ -194,7 +195,29 @@ protected:
     bool event(QEvent* event) override;
 
 private:
+    enum class PendingOpType {
+        UploadMeshChunk,
+        UploadInstanceChunk,
+        FinalizeModel,
+        ApplyCachedModel,
+        ApplyLodExtension,
+        ResetScene,
+        HideModel,
+        ShowModel,
+        RemoveModel,
+    };
+
+    struct PendingOperation {
+        PendingOpType type;
+        MeshChunk mesh_chunk;
+        InstanceChunk instance_chunk;
+        SidecarData sidecar_data;
+        uint32_t model_id = 0;
+    };
+
     void initGL();
+    void flushPendingOperations();
+    void enqueuePendingOperation(PendingOperation op);
     void render();
     void renderPickPass();
     void renderAxisGizmo();
@@ -253,6 +276,7 @@ private:
     QOpenGLContext* context_ = nullptr;
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
     bool gl_initialized_ = false;
+    std::deque<PendingOperation> pending_ops_;
 
     // Shaders
     GLuint main_program_ = 0;

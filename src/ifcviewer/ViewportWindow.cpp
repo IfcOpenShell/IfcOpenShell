@@ -483,9 +483,51 @@ void ViewportWindow::initGL() {
             });
 
     gl_initialized_ = true;
+    flushPendingOperations();
     requestUpdate();
 
     emit initialized();
+}
+
+void ViewportWindow::enqueuePendingOperation(PendingOperation op) {
+    pending_ops_.push_back(std::move(op));
+}
+
+void ViewportWindow::flushPendingOperations() {
+    while (!pending_ops_.empty()) {
+        PendingOperation op = std::move(pending_ops_.front());
+        pending_ops_.pop_front();
+
+        switch (op.type) {
+        case PendingOpType::UploadMeshChunk:
+            uploadMeshChunk(op.mesh_chunk);
+            break;
+        case PendingOpType::UploadInstanceChunk:
+            uploadInstanceChunk(op.instance_chunk);
+            break;
+        case PendingOpType::FinalizeModel:
+            finalizeModel(op.model_id);
+            break;
+        case PendingOpType::ApplyCachedModel:
+            applyCachedModel(op.model_id, std::move(op.sidecar_data));
+            break;
+        case PendingOpType::ApplyLodExtension:
+            applyLodExtension(op.model_id, op.sidecar_data);
+            break;
+        case PendingOpType::ResetScene:
+            resetScene();
+            break;
+        case PendingOpType::HideModel:
+            hideModel(op.model_id);
+            break;
+        case PendingOpType::ShowModel:
+            showModel(op.model_id);
+            break;
+        case PendingOpType::RemoveModel:
+            removeModel(op.model_id);
+            break;
+        }
+    }
 }
 
 void ViewportWindow::setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo) {
@@ -643,7 +685,13 @@ ModelGpuData& ViewportWindow::getOrCreateModel(uint32_t model_id) {
 }
 
 void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::UploadMeshChunk;
+        op.mesh_chunk = chunk;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     if (chunk.vertices.empty() || chunk.indices.empty()) return;
     context_->makeCurrent(this);
 
@@ -745,7 +793,13 @@ void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
 }
 
 void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::UploadInstanceChunk;
+        op.instance_chunk = chunk;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     context_->makeCurrent(this);
 
     ModelGpuData& m = getOrCreateModel(chunk.model_id);
@@ -795,7 +849,13 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
 }
 
 void ViewportWindow::finalizeModel(uint32_t model_id) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::FinalizeModel;
+        op.model_id = model_id;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     context_->makeCurrent(this);
 
     auto it = models_gpu_.find(model_id);
@@ -852,7 +912,14 @@ bool ViewportWindow::snapshotModel(uint32_t model_id, SidecarData& out) const {
 }
 
 void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::ApplyCachedModel;
+        op.model_id = model_id;
+        op.sidecar_data = std::move(data);
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     context_->makeCurrent(this);
 
     // Drop any existing state for this model_id.
@@ -965,7 +1032,14 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 }
 
 void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::ApplyLodExtension;
+        op.model_id = model_id;
+        op.sidecar_data = sd;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end() || !it->second.finalized) return;
     ModelGpuData& m = it->second;
@@ -997,7 +1071,13 @@ void ViewportWindow::applyLodExtension(uint32_t model_id, const SidecarData& sd)
 }
 
 void ViewportWindow::resetScene() {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::ResetScene;
+        pending_ops_.clear();
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     context_->makeCurrent(this);
     for (auto& [mid, m] : models_gpu_) {
         if (m.vao)  gl_->glDeleteVertexArrays(1, &m.vao);
@@ -1015,6 +1095,13 @@ void ViewportWindow::resetScene() {
 }
 
 void ViewportWindow::hideModel(uint32_t model_id) {
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::HideModel;
+        op.model_id = model_id;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     auto it = models_gpu_.find(model_id);
     if (it != models_gpu_.end()) {
         it->second.hidden = true;
@@ -1024,6 +1111,13 @@ void ViewportWindow::hideModel(uint32_t model_id) {
 }
 
 void ViewportWindow::showModel(uint32_t model_id) {
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::ShowModel;
+        op.model_id = model_id;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     auto it = models_gpu_.find(model_id);
     if (it != models_gpu_.end()) {
         it->second.hidden = false;
@@ -1033,7 +1127,13 @@ void ViewportWindow::showModel(uint32_t model_id) {
 }
 
 void ViewportWindow::removeModel(uint32_t model_id) {
-    if (!gl_initialized_) return;
+    if (!gl_initialized_) {
+        PendingOperation op;
+        op.type = PendingOpType::RemoveModel;
+        op.model_id = model_id;
+        enqueuePendingOperation(std::move(op));
+        return;
+    }
     context_->makeCurrent(this);
     auto it = models_gpu_.find(model_id);
     if (it != models_gpu_.end()) {
