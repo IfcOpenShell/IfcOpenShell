@@ -239,13 +239,15 @@ class UpdateCurrentStyle(bpy.types.Operator):
             if not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve)):
                 continue
             for mat in obj.data.materials:
-                if (
-                    mat
-                    and mat not in updated_materials
-                    and (msprops_ := tool.Style.get_material_style_props(mat)).ifc_definition_id != 0
-                ):
-                    msprops_.active_style_type = current_style_type
-                    updated_materials.add(mat)
+                if not mat:
+                    continue
+                msprops_ = tool.Style.get_material_style_props(mat)
+                if msprops_.ifc_definition_id == 0:
+                    continue
+                if mat in updated_materials:
+                    continue
+                msprops_.active_style_type = current_style_type
+                updated_materials.add(mat)
         return {"FINISHED"}
 
 
