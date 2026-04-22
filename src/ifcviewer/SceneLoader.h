@@ -63,7 +63,6 @@ public:
 
     QString filePath(uint32_t mid) const;
     QString displayName(uint32_t mid) const;
-    uint64_t fileSize(uint32_t mid) const;
     ifcopenshell::file* ifcFile(uint32_t mid) const;
 
 signals:

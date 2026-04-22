@@ -41,7 +41,11 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      color u8x4).  Dequant basis is per-mesh MeshInfo.local_aabb_min/max.
 // v7 = VBO vertices shrunk to 12 B/vertex (normal oct i8x2 replaces i16x2,
 //      eliminating 2-byte pad + saving 2 bytes on normal).
-static constexpr uint32_t SIDECAR_VERSION = 7;
+// v8 = source_file_size field dropped from header.  Sidecar is keyed purely
+//      on path stem (foo.ifc and foo.ifcdb/ both map to foo.ifcview) so the
+//      same cache serves either source format.  Staleness is user-managed
+//      (delete the sidecar to force a rebuild).
+static constexpr uint32_t SIDECAR_VERSION = 8;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
@@ -76,12 +80,11 @@ struct SidecarData {
     std::string               string_table;
 };
 
-// v4 writer/reader are stubbed for Commit A — no disk I/O happens.
-bool writeSidecar(const std::string& ifc_path,
-                  const SidecarData& data,
-                  uint64_t ifc_file_size);
+// Sidecar is keyed on the path stem: foo.ifc and foo.ifcdb/ both resolve to
+// foo.ifcview alongside the source.  No staleness check — callers delete the
+// file to invalidate.
+bool writeSidecar(const std::string& ifc_path, const SidecarData& data);
 
-std::optional<SidecarData> readSidecar(const std::string& ifc_path,
-                                       uint64_t ifc_file_size);
+std::optional<SidecarData> readSidecar(const std::string& ifc_path);
 
 #endif // SIDECARCACHE_H

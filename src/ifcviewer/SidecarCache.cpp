@@ -17,16 +17,12 @@
  *                                                                              *
  ********************************************************************************/
 
-// v6 layout (all multi-byte fields native-endian; endianness marker in header).
-// Same sequence as v5; the only change is that vertex data is now raw bytes
-// at the 16 B/vertex quantized layout (see InstancedGeometry.h).
-//
+// v8 layout (all multi-byte fields native-endian; endianness marker in header).
 //
 //   SidecarHeader (16 bytes)
-//   uint64_t  source_file_size
 //
 //   uint32_t  num_vertex_bytes
-//   uint8_t[] vertex data (16 B/vertex: pos u16x3 + pad2 + oct-normal i16x2 + rgba8)
+//   uint8_t[] vertex data (12 B/vertex: pos u16x3 + oct-normal i8x2 + rgba8)
 //   uint32_t  num_indices
 //   uint32_t[] index data (mesh-local indices; base_vertex applied at draw time)
 //
@@ -53,8 +49,20 @@ struct SidecarHeader {
     uint32_t reserved;
 };
 
+// foo.ifc       -> foo.ifcview
+// foo.ifcdb/    -> foo.ifcview
+// foo.ifcdb     -> foo.ifcview
+// foo (no ext)  -> foo.ifcview
 static std::string sidecarPath(const std::string& ifc_path) {
-    return ifc_path + ".ifcview";
+    std::string p = ifc_path;
+    while (!p.empty() && (p.back() == '/' || p.back() == '\\')) p.pop_back();
+    auto slash = p.find_last_of("/\\");
+    auto dot   = p.find_last_of('.');
+    std::string stem = (dot != std::string::npos &&
+                        (slash == std::string::npos || dot > slash))
+                           ? p.substr(0, dot)
+                           : p;
+    return stem + ".ifcview";
 }
 
 template<typename T>
@@ -74,16 +82,13 @@ static bool readVec(FILE* f, std::vector<T>& v) {
     return true;
 }
 
-bool writeSidecar(const std::string& ifc_path,
-                  const SidecarData& data,
-                  uint64_t ifc_file_size) {
+bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     std::string path = sidecarPath(ifc_path);
     FILE* f = fopen(path.c_str(), "wb");
     if (!f) return false;
 
     SidecarHeader hdr = { SIDECAR_MAGIC, SIDECAR_VERSION, SIDECAR_ENDIAN, 0 };
     if (fwrite(&hdr, sizeof(hdr), 1, f) != 1)    { fclose(f); return false; }
-    if (fwrite(&ifc_file_size, 8, 1, f) != 1)    { fclose(f); return false; }
 
     if (!writeVec(f, data.vertices))  { fclose(f); return false; }
     if (!writeVec(f, data.indices))   { fclose(f); return false; }
@@ -101,8 +106,7 @@ bool writeSidecar(const std::string& ifc_path,
     return true;
 }
 
-std::optional<SidecarData> readSidecar(const std::string& ifc_path,
-                                       uint64_t ifc_file_size) {
+std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
     std::string path = sidecarPath(ifc_path);
     FILE* f = fopen(path.c_str(), "rb");
     if (!f) return std::nullopt;
@@ -114,10 +118,6 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path,
     if (hdr.magic  != SIDECAR_MAGIC   ||
         hdr.version != SIDECAR_VERSION ||
         hdr.endian != SIDECAR_ENDIAN) return fail();
-
-    uint64_t stored_size;
-    if (fread(&stored_size, 8, 1, f) != 1)  return fail();
-    if (stored_size != ifc_file_size)       return fail();
 
     SidecarData data;
     if (!readVec(f, data.vertices))  return fail();

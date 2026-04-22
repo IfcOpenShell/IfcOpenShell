@@ -295,7 +295,7 @@ void MainWindow::writeSidecarForModel(uint32_t mid) {
     viewport_->applyLodExtension(mid, sd);
 
     QElapsedTimer t; t.start();
-    bool ok = writeSidecar(loader_->filePath(mid).toStdString(), sd, loader_->fileSize(mid));
+    bool ok = writeSidecar(loader_->filePath(mid).toStdString(), sd);
     qDebug("  Sidecar write: %lld ms (%s)", t.elapsed(), ok ? "ok" : "FAILED");
 }
 

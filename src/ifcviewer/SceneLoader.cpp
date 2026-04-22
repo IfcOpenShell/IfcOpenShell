@@ -54,12 +54,6 @@ QString SceneLoader::displayName(uint32_t mid) const {
     return it == models_.end() ? QString() : it->second.display_name;
 }
 
-uint64_t SceneLoader::fileSize(uint32_t mid) const {
-    auto it = models_.find(mid);
-    if (it == models_.end()) return 0;
-    return static_cast<uint64_t>(QFileInfo(it->second.file_path).size());
-}
-
 ifcopenshell::file* SceneLoader::ifcFile(uint32_t mid) const {
     auto it = models_.find(mid);
     return it == models_.end() ? nullptr : it->second.streamer->ifcFile();
@@ -124,14 +118,13 @@ void SceneLoader::startNextLoad() {
     emit loadStarted(model.id, model.display_name);
 
     std::string ifc_path = model.file_path.toStdString();
-    uint64_t file_size = this->fileSize(model.id);
     uint32_t mid = loading_model_id_;
 
     // Sidecar read on a background thread so the UI stays responsive.
     joinSidecarThread();
-    sidecar_read_thread_ = std::thread([this, ifc_path, file_size, mid]() {
+    sidecar_read_thread_ = std::thread([this, ifc_path, mid]() {
         QElapsedTimer rt; rt.start();
-        auto cached = readSidecar(ifc_path, file_size);
+        auto cached = readSidecar(ifc_path);
         qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result]() {

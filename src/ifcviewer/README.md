@@ -116,7 +116,7 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 | `InstancedGeometry.h` | Shared structs: `MeshInfo`, `InstanceCpu`, `InstanceGpu`, chunk records |
 | `BvhAccel.h/cpp` | Median-split BVH builder; operates on instance world-AABBs |
 | `LodBuilder.h/cpp` | Post-stream decimation of unique meshes via meshoptimizer (`simplifySloppy`) |
-| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v7) sidecar read/write |
+| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v8) sidecar read/write |
 | `AppSettings.h/cpp` | Persisted preferences (geometry library, stats overlay, backface culling) |
 | `SettingsWindow.h/cpp` | Settings dialog |
 | `CMakeLists.txt` | Build configuration |
@@ -293,14 +293,13 @@ while stack not empty:
 Depth 64 is enough for billions of items on any balanced tree. The stack
 is on the C++ stack, zero per-frame allocation.
 
-#### Sidecar format (`.ifcview`, v7)
+#### Sidecar format (`.ifcview`, v8)
 
 Raw memory dump, Blender-`.blend`-style — no serialisation, no parsing.
 Stores everything needed to skip the `IfcGeom::Iterator` pass:
 
 ```
 SidecarHeader            (magic "IFVW", version, endian, ...)
-uint64_t                 source_file_size
 uint32_t + uint8_t[]     vertex data    (12 B/vert quantized; per-mesh basis in MeshInfo)
 uint32_t + uint32_t[]    index data     (mesh-local)
 uint32_t + MeshInfo[]    per-unique-mesh metadata (56 B each, incl. LOD1 slice)
@@ -309,8 +308,10 @@ uint32_t + PackedElementInfo[]   element tree records
 uint32_t + char[]        string table
 ```
 
-Staleness check: `source_file_size` vs actual file size. Mismatched →
-reject and rebuild. Endianness marker rejects cross-arch caches.
+Sidecar path is the source stem + `.ifcview` — `foo.ifc` and `foo.ifcdb/`
+both map to `foo.ifcview`, so the same cache serves either source format.
+Staleness is user-managed: delete the sidecar to force a rebuild.
+Endianness marker rejects cross-arch caches.
 
 Sidecars store the raw `object_id` / `model_id` values from the session
 that wrote them. On load they are rebased onto the current session's ID
