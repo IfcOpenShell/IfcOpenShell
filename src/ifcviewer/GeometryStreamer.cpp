@@ -263,7 +263,10 @@ static void worldAabbFromLocal(const float local_min[3],
 
 void GeometryStreamer::run(const std::string& path, int num_threads) {
     try {
-        ifc_file_ = std::make_unique<ifcopenshell::file>(path);
+        // read_only is a no-op for SPF; for RocksDB it allows concurrent
+        // readers and avoids acquiring the exclusive DB lock.
+        ifc_file_ = std::make_unique<ifcopenshell::file>(
+            path, ifcopenshell::FT_AUTODETECT, /*read_only=*/true);
     } catch (const std::exception& e) {
         emit errorOccurred(QString("Failed to parse IFC file: %1").arg(e.what()));
         return;
@@ -281,6 +284,12 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // time, but results are cached in the sidecar so it's a one-shot hit.
     settings.set("reorient-shells", true);
 
+    // @todo parallel mapping on RocksDB-backed files still races somewhere
+    // outside the instance cache, producing inconsistent shape counts. Force
+    // serial iteration for RocksDB until the read path is fully thread-safe.
+    const bool is_rocksdb = std::holds_alternative<ifcopenshell::impl::rocks_db_file_storage>(ifc_file_->storage_);
+    const int effective_threads = is_rocksdb ? 1 : num_threads;
+
     std::unique_ptr<IfcGeom::Iterator> iterator;
     try {
         const std::string geometry_library =
@@ -288,7 +297,8 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         auto kernel = ifcopenshell::geometry::kernels::construct(
             ifc_file_.get(), geometry_library, settings);
         iterator = std::make_unique<IfcGeom::Iterator>(
-            std::move(kernel), settings, ifc_file_.get(), std::vector<ifcopenshell::geometry::filter_t>(), num_threads);
+            std::move(kernel), settings, ifc_file_.get(),
+            std::vector<ifcopenshell::geometry::filter_t>(), effective_threads);
     } catch (const std::exception& e) {
         emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
         return;

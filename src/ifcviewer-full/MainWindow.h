@@ -48,6 +48,7 @@ public:
 
 private slots:
     void onFileOpen();
+    void onDatabaseOpen();
     void onFileSettings();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();

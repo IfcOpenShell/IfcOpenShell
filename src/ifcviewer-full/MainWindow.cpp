@@ -132,6 +132,7 @@ void MainWindow::setupMenus() {
     auto* file_menu = menuBar()->addMenu("&File");
     auto* open_action = file_menu->addAction("&Add Files...", this, &MainWindow::onFileOpen);
     open_action->setShortcut(QKeySequence::Open);
+    file_menu->addAction("Add &Database...", this, &MainWindow::onDatabaseOpen);
     file_menu->addAction("&Settings...", this, &MainWindow::onFileSettings);
     file_menu->addSeparator();
     file_menu->addAction("&Quit", QKeySequence::Quit, qApp, &QApplication::quit);
@@ -143,6 +144,15 @@ void MainWindow::onFileOpen() {
         "IFC Files (*.ifc *.ifcxml *.ifczip);;All Files (*)");
     if (!paths.isEmpty()) {
         addFiles(paths);
+    }
+}
+
+void MainWindow::onDatabaseOpen() {
+    QString path = QFileDialog::getExistingDirectory(
+        this, "Add IFC Database", QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (!path.isEmpty()) {
+        addFiles({ path });
     }
 }
 
