@@ -976,12 +976,6 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:
         if style_type == "External":
-            ext, fast = cls.get_branch_outputs(blender_material)
-            if ext and fast:
-                ext.is_active_output = True
-                fast.is_active_output = False
-                blender_material.update_tag()
-                return
             try:
                 bpy.ops.bim.activate_external_style(material_name=blender_material.name)
             except RuntimeError as error:
