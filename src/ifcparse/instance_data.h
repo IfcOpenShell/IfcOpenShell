@@ -494,7 +494,7 @@ class IFC_PARSE_API instance_data {
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, attribute_index, value);
+            rocks_db_attribute_storage{}.set(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, declaration_->as_entity() ? id_ : identity_, attribute_index, value);
         }
 #endif
     }
@@ -506,7 +506,7 @@ class IFC_PARSE_API instance_data {
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {
-            return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, identity_, attribute_index);
+            return rocks_db_attribute_storage{}.has<T>(get_storage_of_type<ifcopenshell::impl::rocks_db_file_storage>(), declaration_, declaration_->as_entity() ? id_ : identity_, attribute_index);
         }
 #endif
     }

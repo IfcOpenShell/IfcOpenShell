@@ -2957,7 +2957,7 @@ attribute_value instance_data::get_attribute_value(size_t index) const
                 return nullptr;
             }
         }, file_->storage_);
-        return attribute_value(storage, identity_, declaration_, (uint8_t) index);
+        return attribute_value(storage, declaration_->as_entity() ? id_ : identity_, declaration_, (uint8_t)index);
     }
 }
 
