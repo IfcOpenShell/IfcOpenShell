@@ -387,6 +387,8 @@ express::Base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
         if (is_entity != (r == entityinstance_ref)) {
             throw std::runtime_error("Incorrect reference");
         }
+        // @nb note that in case of type declarations we pass the identity as the number so
+        // that we can read back the attributes from the db (we cannot assign to identity).
         auto data = std::make_shared<instance_data>(file, decl, number, rocks_db_attribute_storage{});
         if (r == ifcopenshell::impl::rocks_db_file_storage::entityinstance_ref) {
             instance_cache_.insert({number, data});
