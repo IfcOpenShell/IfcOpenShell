@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onStreamedElementsReady);
     connect(loader_, &SceneLoader::loadedFromStream,
             this, &MainWindow::onLoadedFromStream);
+    connect(loader_, &SceneLoader::loadCancelled,
+            this, &MainWindow::onLoadCancelled);
     connect(loader_, &SceneLoader::loadError,
             this, &MainWindow::onLoadError);
     connect(loader_, &SceneLoader::allLoadsFinished,
@@ -297,6 +299,42 @@ void MainWindow::writeSidecarForModel(uint32_t mid) {
     qDebug("  Sidecar write: %lld ms (%s)", t.elapsed(), ok ? "ok" : "FAILED");
 }
 
+void MainWindow::removeModelUi(uint32_t mid) {
+    auto root_it = tree_roots_.find(mid);
+    if (root_it != tree_roots_.end()) {
+        delete root_it->second;
+        tree_roots_.erase(root_it);
+    }
+
+    for (auto it = tree_items_.begin(); it != tree_items_.end();) {
+        auto info_it = element_map_.find(it->first);
+        if (info_it != element_map_.end() && info_it->second.model_id == mid) {
+            it = tree_items_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    for (auto it = element_map_.begin(); it != element_map_.end();) {
+        if (it->second.model_id == mid) {
+            it = element_map_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    for (auto it = scoped_ifc_id_to_object_id_.begin(); it != scoped_ifc_id_to_object_id_.end();) {
+        if (static_cast<uint32_t>(it->first >> 32) == mid) {
+            it = scoped_ifc_id_to_object_id_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    viewport_->setSelectedObjectId(0);
+    property_table_->setRowCount(0);
+}
+
 void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
     progress_bar_->setVisible(false);
     status_label_->setText(QString("%1 elements across %2 model(s) — last loaded in %3")
@@ -307,7 +345,16 @@ void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
     writeSidecarForModel(mid);
 }
 
-void MainWindow::onLoadError(uint32_t /*mid*/, QString message) {
+void MainWindow::onLoadCancelled(uint32_t mid) {
+    progress_bar_->setVisible(false);
+    removeModelUi(mid);
+    status_label_->setText(QString("%1 load cancelled").arg(loader_->displayName(mid)));
+}
+
+void MainWindow::onLoadError(uint32_t mid, QString message) {
+    progress_bar_->setVisible(false);
+    removeModelUi(mid);
+    status_label_->setText("Error: " + message);
     QMessageBox::warning(this, "Error", message);
 }
 

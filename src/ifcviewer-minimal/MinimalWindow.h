@@ -40,6 +40,7 @@ private slots:
     void onLoadStarted(uint32_t mid, QString display_name);
     void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
     void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
+    void onLoadCancelled(uint32_t mid);
     void onLoadError(uint32_t mid, QString message);
     void onAllLoadsFinished();
 

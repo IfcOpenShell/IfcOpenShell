@@ -95,8 +95,17 @@ void SceneLoader::connectStreamer(GeometryStreamer* streamer) {
             this, &SceneLoader::onStreamerInstanceReady, Qt::QueuedConnection);
     connect(streamer, &GeometryStreamer::finished,
             this, &SceneLoader::onStreamerFinished, Qt::QueuedConnection);
+    connect(streamer, &GeometryStreamer::cancelled,
+            this, &SceneLoader::onStreamerCancelled, Qt::QueuedConnection);
     connect(streamer, &GeometryStreamer::errorOccurred,
             this, &SceneLoader::onStreamerError, Qt::QueuedConnection);
+}
+
+void SceneLoader::cancelCurrentLoad() {
+    if (loading_model_id_ == 0) return;
+    auto it = models_.find(loading_model_id_);
+    if (it == models_.end() || it->second.streamer == nullptr) return;
+    it->second.streamer->cancel();
 }
 
 void SceneLoader::startNextLoad() {
@@ -232,6 +241,28 @@ void SceneLoader::onStreamerFinished() {
     startNextLoad();
 }
 
+void SceneLoader::onStreamerCancelled() {
+    element_poll_timer_.stop();
+
+    const uint32_t mid = loading_model_id_;
+    loading_model_id_ = 0;
+
+    if (mid != 0) {
+        viewport_->removeModel(mid);
+        emit loadCancelled(mid);
+    }
+    QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
+}
+
 void SceneLoader::onStreamerError(const QString& msg) {
-    emit loadError(loading_model_id_, msg);
+    element_poll_timer_.stop();
+
+    const uint32_t mid = loading_model_id_;
+    loading_model_id_ = 0;
+
+    if (mid != 0) {
+        viewport_->removeModel(mid);
+    }
+    emit loadError(mid, msg);
+    QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
 }

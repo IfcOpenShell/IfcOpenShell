@@ -68,6 +68,7 @@ signals:
     void meshReady(MeshChunk chunk);
     void instanceReady(InstanceChunk chunk);
     void finished();
+    void cancelled();
     void errorOccurred(const QString& message);
 
 private:
@@ -77,6 +78,7 @@ private:
     std::unique_ptr<QThread> worker_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> cancel_requested_{false};
+    std::atomic<bool> succeeded_{false};
     std::atomic<int> progress_{0};
 
     std::mutex elements_mutex_;

@@ -57,6 +57,7 @@ public:
     // Callers can use these to set up per-model UI state (tree roots, etc.)
     // before any load signal fires.
     std::vector<uint32_t> addFiles(const QStringList& paths);
+    void cancelCurrentLoad();
     bool isLoading() const { return loading_model_id_ != 0 || !load_queue_.empty(); }
     size_t modelCount() const { return models_.size(); }
 
@@ -87,6 +88,7 @@ signals:
     // elements to be known (e.g. sidecar write) — SceneLoader will only
     // start the next queued load after all slots return.
     void loadedFromStream(uint32_t mid, qint64 elapsed_ms);
+    void loadCancelled(uint32_t mid);
 
     void loadError(uint32_t mid, QString message);
     void allLoadsFinished();
@@ -96,6 +98,7 @@ private slots:
     void onStreamerMeshReady(MeshChunk chunk);
     void onStreamerInstanceReady(InstanceChunk chunk);
     void onStreamerFinished();
+    void onStreamerCancelled();
     void onStreamerError(const QString& msg);
     void onElementPollTick();
 

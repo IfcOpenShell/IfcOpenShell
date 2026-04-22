@@ -60,6 +60,7 @@ private slots:
     void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
     void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
     void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
+    void onLoadCancelled(uint32_t mid);
     void onLoadError(uint32_t mid, QString message);
     void onAllLoadsFinished();
 
@@ -75,6 +76,7 @@ private:
                              const std::string& name,
                              const std::string& type);
     void writeSidecarForModel(uint32_t mid);
+    void removeModelUi(uint32_t mid);
     void applyPendingBenchmark();
     QString formatElapsed(qint64 ms) const;
 

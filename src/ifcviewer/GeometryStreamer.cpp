@@ -89,6 +89,7 @@ void GeometryStreamer::loadFile(const std::string& path, uint32_t start_object_i
     }
 
     cancel_requested_ = false;
+    succeeded_ = false;
     running_ = true;
     progress_ = 0;
     next_object_id_ = start_object_id;
@@ -115,7 +116,11 @@ void GeometryStreamer::loadFile(const std::string& path, uint32_t start_object_i
 
     connect(worker_thread_.get(), &QThread::finished, this, [this]() {
         running_ = false;
-        emit finished();
+        if (succeeded_.load()) {
+            emit finished();
+        } else if (cancel_requested_.load()) {
+            emit cancelled();
+        }
     });
 
     worker_thread_->start();
@@ -402,4 +407,5 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     qDebug("Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx",
            path.c_str(), stream_timer.elapsed() / 1000.0,
            total_shapes, total_meshes, dedup_ratio);
+    succeeded_ = !cancel_requested_.load();
 }

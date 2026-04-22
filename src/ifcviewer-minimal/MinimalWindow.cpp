@@ -45,6 +45,8 @@ MinimalWindow::MinimalWindow(QWidget* parent)
             this, &MinimalWindow::onLoadedFromSidecar);
     connect(loader_, &SceneLoader::loadedFromStream,
             this, &MinimalWindow::onLoadedFromStream);
+    connect(loader_, &SceneLoader::loadCancelled,
+            this, &MinimalWindow::onLoadCancelled);
     connect(loader_, &SceneLoader::loadError,
             this, &MinimalWindow::onLoadError);
     connect(loader_, &SceneLoader::allLoadsFinished,
@@ -98,6 +100,11 @@ void MinimalWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
     status_label_->setText(QString("%1 streamed in %2")
         .arg(loader_->displayName(mid))
         .arg(formatElapsed(elapsed_ms)));
+}
+
+void MinimalWindow::onLoadCancelled(uint32_t mid) {
+    status_label_->setText(QString("%1 load cancelled")
+        .arg(loader_->displayName(mid)));
 }
 
 void MinimalWindow::onLoadError(uint32_t /*mid*/, QString message) {
