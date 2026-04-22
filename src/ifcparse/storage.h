@@ -203,36 +203,15 @@ namespace ifcopenshell {
         }
     };
 
-    struct parse_context;
-    struct parse_context_pool;
-
-    struct IFC_PARSE_API parse_context_handle {
-        parse_context_pool* pool = nullptr;
-        uint32_t index = 0;
-
-        parse_context& get() const;
-        parse_context* operator->() const;
-        parse_context& operator*() const;
-        explicit operator bool() const { return pool != nullptr; }
-    };
-
     struct IFC_PARSE_API parse_context {
         std::vector<
             std::variant<
             express::Base,
             token,
-            parse_context_handle
+            parse_context*
             >> tokens_;
 
-        void reset() {
-            tokens_.clear();
-        }
-
-        parse_context_pool* pool_;
-
-        parse_context(parse_context_pool* pool) : pool_(pool) {
-            tokens_.reserve(16);
-        };
+        parse_context() {}
         ~parse_context();
 
         parse_context(const parse_context& other) = delete;
@@ -250,44 +229,8 @@ namespace ifcopenshell {
         std::shared_ptr<instance_data> construct(ifcopenshell::file* owner_file, std::optional<size_t> instance_name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* declaration, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count = true);
     };
 
-    struct IFC_PARSE_API parse_context_pool {
-        // parse_context::push() stores child handles on the current context after
-        // requesting a new pool slot. The pool therefore needs stable addresses
-        // for existing contexts while it grows.
-        std::deque<parse_context> nodes_;
-        uint32_t used_ = 0;
-
-        void reset() { used_ = 0; }
-
-        parse_context_handle make() {
-            if (used_ == nodes_.size()) {
-                nodes_.emplace_back(this);
-            }
-            auto idx = used_++;
-            nodes_[idx].reset();
-            return {this, idx};
-        }
-
-        parse_context& get(uint32_t index) {
-            return nodes_[index];
-        }
-    };
-
-    inline parse_context& parse_context_handle::get() const {
-        return pool->get(index);
-    }
-
-    inline parse_context* parse_context_handle::operator->() const {
-        return &pool->get(index);
-    }
-
-    inline parse_context& parse_context_handle::operator*() const {
-        return pool->get(index);
-    }
-
     namespace impl {
         struct IFC_PARSE_API in_memory_file_storage {
-            ifcopenshell::parse_context_pool context_pool_;
 
             std::vector<std::shared_ptr<instance_data>> read_simple_type_instances;
             std::vector<std::shared_ptr<instance_data>> steal_instances() {

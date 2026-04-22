@@ -21,9 +21,9 @@ ifcopenshell::parse_context::~parse_context() {
 }
 
 ifcopenshell::parse_context& ifcopenshell::parse_context::push() {
-    auto child = pool_->make();
-    tokens_.emplace_back(child);
-    return *child;
+    auto* pc = new parse_context;
+    tokens_.push_back(pc);
+    return *pc;
 }
 
 void ifcopenshell::parse_context::push(token t) {
@@ -220,7 +220,7 @@ namespace {
                 if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ifcopenshell::token>) {
                     // @todo get aggregate of enumeration
                     dispatch_token(instance_id, attribute_id, v, aggr && aggr->type_of_element()->as_named_type() ? aggr->type_of_element()->as_named_type()->declared_type() : nullptr, append_to_aggregate_storage);
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ifcopenshell::parse_context_handle>) {
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ifcopenshell::parse_context*>) {
                     // nested list
                     if constexpr (Depth < 3) {
                         construct_<Depth + 1>(instance_id, attribute_id, *v, nullptr, append_to_aggregate_storage);
@@ -307,7 +307,7 @@ std::shared_ptr<instance_data> ifcopenshell::parse_context::construct(ifcopenshe
                         storage.set(index, v);
                     }
                 });
-            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ifcopenshell::parse_context_handle>) {
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, ifcopenshell::parse_context*>) {
                 const auto *pt = param_type;
                 if (pt) {
                     while (pt->as_named_type() && pt->as_named_type()->declared_type()->as_type_declaration()) {

@@ -602,7 +602,7 @@ void ifcopenshell::impl::in_memory_file_storage::load(ifcopenshell::spf_lexer<Re
             if (next.is_keyword()) {
                 try {
                     const auto* decl = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
-                    parse_context ps(&context_pool_);
+                    parse_context ps;
                     tokens->next();
                     // The only case we know where a defined type contains entity
                     // instance references is IfcPropertySetDefinitionSet. For
@@ -1387,11 +1387,10 @@ std::shared_ptr<instance_data> read_header_entity(
     spf_lexer<Reader>& lexer,
     ifcopenshell::unresolved_references& references_to_resolve,
     const ifcopenshell::entity& decl) {
-    parse_context pc(&storage.context_pool_);
+    parse_context pc;
     lexer.next();
     storage.load(&lexer, std::nullopt, nullptr, pc, -1);
     auto result = pc.construct(file, std::nullopt, references_to_resolve, &decl, decl.attribute_count(), -1);
-    storage.context_pool_.reset();
     return result;
 }
 
@@ -1436,7 +1435,6 @@ bool try_parse_header(
         parse_header(header, storage, lexer, references_to_resolve);
         return true;
     } catch (const std::exception& e) {
-        storage.context_pool_.reset();
         logger::error(e);
         return false;
     }
@@ -1697,7 +1695,7 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_p
                 }
             }
 
-            parse_context ps(&storage_.context_pool_);
+            parse_context ps;
             lexer_->next();
             try {
                 storage_.load(lexer_.get(), current_id, entity_type->as_entity(), ps, -1);
@@ -1714,7 +1712,6 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_p
             }
 
             auto data = ps.construct(owner_, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
-            storage_.context_pool_.reset();
 
             return_value.emplace(
                 (size_t)current_id,
