@@ -1270,6 +1270,7 @@ bool ifcopenshell::file::initialize(const std::string& path, filetype ty, bool r
                 byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
                 byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
                 byguid_ = decltype(byguid_)(&std::get<impl::rocks_db_file_storage>(storage_).byguid_);
+                good_ = file_open_status::SUCCESS;
             } else {
                 good_ = file_open_status::UNSUPPORTED_SCHEMA;
             }
