@@ -1241,13 +1241,15 @@ class Spatial(bonsai.core.tool.Spatial):
         if first_obj.hide_get() == False:
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                obj.hide_set(True)
+                if obj:
+                    obj.hide_set(True)
             return
 
         elif first_obj.hide_get() == True:
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                obj.hide_set(False)
+                if obj:
+                    obj.hide_set(False)
 
     @classmethod
     def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
