@@ -30,7 +30,7 @@ try:
 
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
-    from .file import file
+    from .ifcopenshell_wrapper import file
 
     class StreamTransformer(Transformer):
         file: file
