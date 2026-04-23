@@ -115,11 +115,10 @@ jobs:
 
           stage_runtime_payload() {
               dest="$1"
-              mkdir -p "$dest"
               while IFS= read -r runtime_file; do
                   cp -L "$runtime_file" "$dest/"
               done < <(
-                  for runtime_dir in "$install_root/bin" "$install_root/lib"; do
+                  for runtime_dir in "$install_root/bin" "$install_root/lib" "$install_root/lib64"; do
                       [ -d "$runtime_dir" ] || continue
                       find "$runtime_dir" -type f \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
                   done
@@ -154,11 +153,10 @@ jobs:
               cp "$exe_path" "$package_dir/"
               stage_runtime_payload "$package_dir"
               pushd "$package_dir" > /dev/null
-              zip -qq -r "$install_root/bin/${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip" .
+              zip -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip" .
               popd > /dev/null
               rm -rf "$package_dir"
           done
-          mv "$install_root"/bin/*.zip ~/output
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
