@@ -23,10 +23,10 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcTriangulatedFaceSet
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst) {
-	IfcSchema::IfcCartesianPointList3D* point_list = inst->Coordinates();
-	auto coordinates = point_list->CoordList();
-	std::vector<std::vector<int>> indices_list = inst->CoordIndex();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet& inst) {
+	auto point_list = inst.Coordinates();
+	auto coordinates = point_list.CoordList();
+	std::vector<std::vector<int>> indices_list = inst.CoordIndex();
 
 	std::vector<taxonomy::point3::ptr> points;
 	points.reserve(coordinates.size());
@@ -52,7 +52,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst) {
 			taxonomy::point3::ptr first, previous;
 			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
-					throw IfcParse::IfcException("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
+					throw ifcopenshell::exception("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 				}
 				const taxonomy::point3::ptr& current = points[(*jt) - 1];
 				if (jt == indices.begin()) {

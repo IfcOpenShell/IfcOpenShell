@@ -24,22 +24,22 @@
 #include "../../ifcparse/macros.h"
 #include "../../serializers/XmlSerializer.h"
 
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 #undef INCLUDE_PARENT_PARENT_DIR
-#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/x-definitions.h)
+#define INCLUDE_PARENT_PARENT_DIR(x) STRINGIFY(../../ifcparse/schemas/x-definitions.h)
 #include INCLUDE_PARENT_PARENT_DIR(IfcSchema)
 
 class POSTFIX_SCHEMA(XmlSerializer) : public XmlSerializer {
 private:
-	IfcParse::IfcFile* file;
+	ifcopenshell::file* file;
 
 	// @todo
 	ifcopenshell::geometry::Settings settings_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:
-	POSTFIX_SCHEMA(XmlSerializer)(IfcParse::IfcFile* file, const std::string& xml_filename)
+	POSTFIX_SCHEMA(XmlSerializer)(ifcopenshell::file* file, const std::string& xml_filename)
 		: XmlSerializer(0, "")
 		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_))
 	{
@@ -48,7 +48,7 @@ public:
 	}
 
 	void finalize();
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(ifcopenshell::file*) {}
 };
 
 #endif

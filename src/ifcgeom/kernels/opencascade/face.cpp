@@ -151,8 +151,8 @@ namespace {
 			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
 			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 2) {
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+			if (crv_or_wire.index() == 2) {
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 				return w;
 			} else {
 				throw std::runtime_error("Unexpected curve evaluation");
@@ -162,15 +162,15 @@ namespace {
 		Handle(Geom_Curve) get_curve(const taxonomy::item::ptr& i) {
 			// @todo unify with trimmed curve handling
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 0) {
+			if (crv_or_wire.index() == 0) {
 				throw std::runtime_error("Failed to obtain curve");
-			} else if (crv_or_wire.which() == 1) {
-				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
-			} else if (crv_or_wire.which() == 2) {
+			} else if (crv_or_wire.index() == 1) {
+				return std::get<Handle(Geom_Curve)>(crv_or_wire);
+			} else if (crv_or_wire.index() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
-				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
-				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+				logger::warning("Approximating BasisCurve due to possible discontinuities", i->instance);
+				const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 				BRepAdaptor_CompCurve cc(w, true);
 				Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
@@ -279,7 +279,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	int num_outer_bounds = 0;
 
 	for (auto& bound : face->children) {
-		if (bound->external.get_value_or(false)) {
+		if (bound->external.value_or(false)) {
 			num_outer_bounds++;
 		}
 	}
@@ -289,12 +289,12 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	// the face will still be processed as long as there are no holes. A compound of faces
 	// is returned in that case.
 	if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
-		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
+		logger::message(logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
 
 	if (num_outer_bounds > 1) {
-		Logger::Message(Logger::LOG_WARNING, "Multiple outer boundaries for:", face->instance);
+		logger::message(logger::LOG_WARNING, "Multiple outer boundaries for:", face->instance);
 		fd.all_outer() = true;
 	}
 
@@ -305,7 +305,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			bool same_sense = true; /* todo bound->Orientation(); */
 
 			const bool is_interior =
-				!bound->external.get_value_or(false) &&
+				!bound->external.value_or(false) &&
 				(num_bounds > 1) &&
 				(num_outer_bounds < num_bounds);
 
@@ -315,11 +315,11 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			TopoDS_Wire wire;
 			if (faceset_helper_ && bound->is_polyhedron()) {
 				if (!faceset_helper_->wire(bound, wire)) {
-					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", bound->instance);
+					logger::message(logger::LOG_WARNING, "Face boundary loop not included", bound->instance);
 					continue;
 				}
 			} else if (!convert(bound, wire)) {
-				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", bound->instance);
+				logger::message(logger::LOG_ERROR, "Failed to process face boundary loop", bound->instance);
 				return false;
 			}
 
@@ -336,7 +336,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			};
 			TopTools_ListOfShape results;
 			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
-				Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				logger::warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 				util::select_largest(results, wire);
 			}
 
@@ -347,7 +347,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	}
 
 	if (fd.wires().empty()) {
-		Logger::Warning("Face with no boundaries", face->instance);
+		logger::warning("Face with no boundaries", face->instance);
 		return false;
 	}
 
@@ -404,7 +404,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	if (fd.surface().IsNull()) {
 		// The set of wires is triangulated in case no surface can be found
-		Logger::Message(Logger::LOG_WARNING, "Triangulating face boundaries for face", face->instance);
+		logger::message(logger::LOG_WARNING, "Triangulating face boundaries for face", face->instance);
 
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
@@ -457,7 +457,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						kt.Value().Original().ToUTF8CString(c);
 						std::string message = c;
 						delete[] c;
-						Logger::Warning(message, face->instance);
+						logger::warning(message, face->instance);
 					}
 				}
 
@@ -469,17 +469,17 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						if (it.Value().ShapeType() == TopAbs_FACE) {
 							face_list.Append(it.Value());
 						} else {
-							Logger::Error("Unsupported output from face healing");
+							logger::error("Unsupported output from face healing");
 						}
 					}
 				} else {
-					Logger::Error("Unsupported output from face healing");
+					logger::error("Unsupported output from face healing");
 				}
 			} else {
 				face_list.Append(f);
 			}
 		} else {
-			Logger::Error("Internal error in face creation");
+			logger::error("Internal error in face creation");
 			return false;
 		}
 	} else {
@@ -520,14 +520,14 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						delete[] c;
 #if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR >= 7
 						if (!reversed_surface && !fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
-							Logger::Notice("Detected reversed wire, reattempting with reversed basis surface");
+							logger::notice("Detected reversed wire, reattempting with reversed basis surface");
 							TopoDS_Face reversed_result;
 							convert(face, reversed_result, true);
 							result = reversed_result;
 							return true;
 						} else
 #endif
-							Logger::Warning(message, face->instance);
+							logger::warning(message, face->instance);
 					}
 				}
 			}
@@ -606,7 +606,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::Co
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		face->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		face->instance.id(),
 		new OpenCascadeShape(shape),
 		face->surface_style
 	));

@@ -238,12 +238,12 @@ public:
 		unit_name = name;
 		unit_magnitude = magnitude;
 	}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(ifcopenshell::file*) {}
 
     std::string object_id(const IfcGeom::Element* o) /*override*/;
 
 private:
-    static std::string differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab);
+    static std::string differentiateSlabTypes(const express::Entity& slab);
 };
 
 #endif

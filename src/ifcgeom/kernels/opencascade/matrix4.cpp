@@ -14,7 +14,7 @@ bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& t
 		m(2, 0), m(2, 1), m(2, 2)
 	);
 
-	if (matrix->instance && matrix->instance->declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
+	if (matrix->instance && matrix->instance.declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
 		// std::wcout << "non uniform" << std::endl;
 	}
 

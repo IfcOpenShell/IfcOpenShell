@@ -38,8 +38,8 @@
 
 static std::string& collada_id(std::string& s)
 {
-    IfcUtil::sanitate_material_name(s);
-    IfcUtil::escape_xml(s);
+    ifcopenshell::sanitate_material_name(s);
+    ifcopenshell::escape_xml(s);
 	return s;
 }
 
@@ -219,7 +219,7 @@ void ColladaSerializer::ColladaExporter::ColladaScene::add(
     BOOST_FOREACH(const std::string &material_name, material_ids) {
 		// Unescape to avoid double escaping because OpenCollada's material URI parameter escapes XML internally
     	std::string unescaped = material_name;
-    	IfcUtil::unescape_xml(unescaped);
+    	ifcopenshell::unescape_xml(unescaped);
 
         COLLADASW::InstanceMaterial material(material_name, "#" + unescaped);
 		instanceGeometry.getBindMaterial().getInstanceMaterialList().push_back(material);
@@ -366,7 +366,7 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::write() {
 		openMaterial(material_name);
 
 		// Unescape to avoid double escaping because OpenCollada's addInstanceEffect escapes XML internally
-		IfcUtil::unescape_xml(material_name);
+		ifcopenshell::unescape_xml(material_name);
 
         addInstanceEffect("#" + material_name + "-fx");
 		closeMaterial();
@@ -412,9 +412,9 @@ void ColladaSerializer::ColladaExporter::write(const IfcGeom::TriangulationEleme
 	deferreds.push_back(deferred);
 }
 
-std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEntity* slab)
+std::string ColladaSerializer::differentiateSlabTypes(const express::Entity& slab)
 {
-	auto value = slab->get("PredefinedType");
+	auto value = slab.get("PredefinedType");
 
     if (value.isNull()) {
         return "_Unknown";
@@ -434,7 +434,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 	} else if (str_value == "NOTDEFINED") {
 		result = "_NotDefined";
 	} else {
-		auto otype = slab->get("ObjectType");
+		auto otype = slab.get("ObjectType");
 		if (otype.isNull()) {
 			result = "_Unknown";
 		} else {
@@ -448,7 +448,7 @@ std::string ColladaSerializer::differentiateSlabTypes(const IfcUtil::IfcBaseEnti
 std::string ColladaSerializer::object_id(const IfcGeom::Element* o) /*override*/
 {
     if (settings_.get<ifcopenshell::geometry::settings::UseElementTypes>().get()) {
-        const std::string slabSuffix = (o->product() && o->product()->declaration().name() == "IfcSlab")
+        const std::string slabSuffix = (o->product() && o->product().declaration().name() == "IfcSlab")
             ? differentiateSlabTypes(o->product())
             : "";
         return o->type() + slabSuffix;

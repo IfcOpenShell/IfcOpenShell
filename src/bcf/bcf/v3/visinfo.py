@@ -316,7 +316,7 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     Returns:
         The BCF viewpoint definition.
     """
-    ifc_file = element.wrapped_data.file
+    ifc_file = element.file
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
     elem_placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     elem_placement[:3, 3] *= unit_scale

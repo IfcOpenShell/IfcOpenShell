@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import deque
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, Optional, Union, get_args
-
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -360,7 +360,7 @@ class Usecase:
         self.whitelisted_inverse_attributes = {
             "IfcMaterial": ["HasExternalReferences", "HasProperties", "HasRepresentation"]
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         if element.HasRepresentation:
             self.reuse_existing_contexts()
@@ -388,7 +388,7 @@ class Usecase:
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
         return element
@@ -408,7 +408,7 @@ class Usecase:
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        self.existing_contexts = list(self.file.by_type("IfcGeometricRepresentationContext"))
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
 
@@ -450,9 +450,9 @@ class Usecase:
         new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
-        subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
+        subelement_queue = deque(self.settings["library"].traverse(element, max_levels=1)[1:])
         while subelement_queue:
-            subelement = subelement_queue.pop(0)
+            subelement = subelement_queue.popleft()
             existing_element = self.get_existing_element(subelement)
             if existing_element:
                 self.added_elements[subelement.id()] = existing_element
@@ -513,7 +513,7 @@ class Usecase:
             # 3 IfcPresentationLayerAssignment.AssignedItems
             skip_not_reused_entities_attr_i = 2
 
-        element_identity = element.wrapped_data.identity()
+        element_identity = element.identity()
 
         # Check if inverse element was created before.
         # Still need to recreate it again - e.g. it could be some rel
@@ -549,7 +549,7 @@ class Usecase:
                     if self.is_another_asset(item):
                         continue
                     if skip_not_reused_entities_attr_i is not None and i == skip_not_reused_entities_attr_i:
-                        identity = item.wrapped_data.identity()
+                        identity = item.identity()
                         if (item := self.reuse_identities.get(identity)) is None:
                             continue
                     else:
@@ -665,7 +665,7 @@ class Usecase:
             return ifc_file.add(element)
 
         reuse_identities = self.reuse_identities
-        element_identity = element.wrapped_data.identity()
+        element_identity = element.identity()
         if added_element := reuse_identities.get(element_identity):
             return added_element
 
@@ -676,7 +676,7 @@ class Usecase:
             nonlocal attributes_
             if attributes_ is not None:
                 return attributes_
-            attributes_ = element.wrapped_data.declaration().as_entity().all_attributes()
+            attributes_ = element.declaration.all_attributes()
             return attributes_
 
         def get_existing_element_(
@@ -684,7 +684,7 @@ class Usecase:
         ) -> Union[ifcopenshell.entity_instance, None]:
             # Check identity because `subelement` might not be the current `element`,
             # e.g. for IfcPersonAndOrganization.
-            element_identity = subelement.wrapped_data.identity()
+            element_identity = subelement.identity()
             if subelement_ := reuse_identities.get(element_identity):
                 return subelement_
 

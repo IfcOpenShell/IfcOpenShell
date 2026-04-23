@@ -20,16 +20,17 @@
 #ifndef SERIALIZER_H
 #define SERIALIZER_H
 
-#include "../ifcparse/IfcFile.h"
+#include "ifc_geom_api.h"
+#include "../ifcparse/file.h"
 
-class Serializer {
+class IFC_GEOM_API Serializer {
 public:
 	virtual ~Serializer() {}
 
 	virtual bool ready() = 0;
 	virtual void writeHeader() = 0;
 	virtual void finalize() = 0;
-	virtual void setFile(IfcParse::IfcFile*) = 0;
+	virtual void setFile(ifcopenshell::file*) = 0;
 };
 
 #endif

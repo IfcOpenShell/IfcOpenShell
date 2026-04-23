@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
 *                                                                              *
 * This file is part of IfcOpenShell.                                           *
 *                                                                              *
@@ -45,20 +45,17 @@ namespace ifcopenshell {
 
 		class IFC_GEOMLIBRARY_API OpenCascadeShape : public IfcGeom::ConversionResultShape {
 		public:
-			OpenCascadeShape(const TopoDS_Shape& shape)
-				: shape_(shape) {}
-			OpenCascadeShape(TopoDS_Shape&& shape)
-				: shape_(std::move(shape)) {}
+			OpenCascadeShape(const TopoDS_Shape& shape);
+			OpenCascadeShape(TopoDS_Shape&& shape);
 
-			const TopoDS_Shape& shape() const { return shape_; }
-			operator const TopoDS_Shape& () { return shape_; }
+			const TopoDS_Shape& shape() const;
+			operator const TopoDS_Shape& ();
+			virtual std::string_view backend_id() const;
 
 			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
 			virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
-			virtual IfcGeom::ConversionResultShape* clone() const {
-				return new OpenCascadeShape(shape_);
-			}
+			virtual IfcGeom::ConversionResultShape* clone() const;
 
 			virtual double bounding_box(void*&) const {
 				throw std::runtime_error("Not implemented");

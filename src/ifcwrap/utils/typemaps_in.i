@@ -20,23 +20,23 @@
 %define CREATE_VECTOR_TYPEMAP_IN(template_type, express_name, python_name)
 
 	%typemap(in) std::vector<template_type> {
-		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+		if (!check_aggregate_of_type<template_type>($input)) {
 			SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF " #express_name " needs a python sequence of " #python_name "s");
 		}
 		$1 = python_sequence_as_vector<template_type>($input);
 	}
 	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) std::vector<template_type> {
-		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+		$1 = check_aggregate_of_type<template_type>($input) ? 1 : 0;
 	}
 
 	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::vector<template_type>& {
-		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+		$1 = check_aggregate_of_type<template_type>($input) ? 1 : 0;
 	}
 	%typemap(arginit) const std::vector<template_type>& {
 		$1 = new std::vector<template_type>();
 	}
 	%typemap(in) const std::vector<template_type>& {
-		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+		if (!check_aggregate_of_type<template_type>($input)) {
 			SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF " #express_name " needs a python sequence of " #python_name "s");
 		}
 		*$1 = python_sequence_as_vector<template_type>($input);
@@ -46,7 +46,7 @@
 	}
 
 	%typemap(in) std::vector< std::vector<template_type> > {
-		if (!check_aggregate_of_aggregate_of_type($input, get_python_type<template_type>())) {
+		if (!check_aggregate_of_aggregate_of_type<template_type>($input)) {
 			SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF " #express_name " needs a python sequence of sequence of " #python_name "s");
 		}
 		$1 = python_sequence_as_vector_of_vector<template_type>($input);
@@ -56,7 +56,7 @@
 		$1 = new std::vector< std::vector<template_type> >();
 	}
 	%typemap(in) const std::vector< std::vector<template_type> >& {
-		if (!check_aggregate_of_aggregate_of_type($input, get_python_type<template_type>())) {
+		if (!check_aggregate_of_aggregate_of_type<template_type>($input)) {
 			SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF " #express_name " needs a python sequence of sequence of " #python_name "s");
 		}
 		*$1 = python_sequence_as_vector_of_vector<template_type>($input);
@@ -70,18 +70,19 @@
 CREATE_VECTOR_TYPEMAP_IN(int, INTEGER, int)
 CREATE_VECTOR_TYPEMAP_IN(double, REAL, float)
 CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
+CREATE_VECTOR_TYPEMAP_IN(express::Base, ENTITY INSTANCE, entity instance)
 
 // @todo use macros.
 
-%typemap(in) const std::vector<const IfcParse::declaration*>& {
+%typemap(in) const std::vector<const ifcopenshell::declaration*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::declaration*>;
+		$1 = new std::vector<const ifcopenshell::declaration*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__declaration, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__declaration, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::declaration*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::declaration*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -93,15 +94,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::entity*>& {
+%typemap(in) const std::vector<const ifcopenshell::entity*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::entity*>;
+		$1 = new std::vector<const ifcopenshell::entity*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__entity, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__entity, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::entity*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::entity*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -113,15 +114,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::attribute*>& {
+%typemap(in) const std::vector<const ifcopenshell::attribute*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::attribute*>;
+		$1 = new std::vector<const ifcopenshell::attribute*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__attribute, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__attribute, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::attribute*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -133,15 +134,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 	}
 }
 
-%typemap(in) const std::vector<const IfcParse::inverse_attribute*>& {
+%typemap(in) const std::vector<const ifcopenshell::inverse_attribute*>& {
 	if (PySequence_Check($input)) {
-		$1 = new std::vector<const IfcParse::inverse_attribute*>;
+		$1 = new std::vector<const ifcopenshell::inverse_attribute*>;
 		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
 			PyObject* element = PySequence_GetItem($input, i);
 			void *arg = 0;
-			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcParse__inverse_attribute, 0);
+			int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_ifcopenshell__inverse_attribute, 0);
 			Py_DECREF(element);
-			auto decl = static_cast<const IfcParse::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
+			auto decl = static_cast<const ifcopenshell::inverse_attribute*>(SWIG_IsOK(res) ? arg : 0);
 			if (decl) {
 				$1->push_back(decl);
 			} else {
@@ -163,57 +164,6 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		}
 	} else {
 		SWIG_exception(SWIG_TypeError, "Expected an sequence type");
-	}
-}
-
-%typemap(in) aggregate_of_instance::ptr {
-	if (PySequence_Check($input)) {
-		$1 = aggregate_of_instance::ptr(new aggregate_of_instance());
-		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
-			PyObject* element = PySequence_GetItem($input, i);
-			IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element);
-			Py_DECREF(element);
-			if (inst) {
-				$1->push(inst);
-			} else {
-				SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF ENTITY INSTANCE needs a python sequence of entity instances");
-			}
-		}
-	} else {
-		SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF ENTITY INSTANCE needs a python sequence of entity instances");
-	}
-}
-
-%typemap(in) aggregate_of_aggregate_of_instance::ptr {
-	if (PySequence_Check($input)) {
-		$1 = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance());
-		for(Py_ssize_t i = 0; i < PySequence_Size($input); ++i) {
-			PyObject* element = PySequence_GetItem($input, i);
-			bool b = false;
-			if (PySequence_Check(element)) {
-				b = true;
-				std::vector<IfcUtil::IfcBaseClass*> vector;
-				vector.reserve(PySequence_Size(element));
-				for(Py_ssize_t j = 0; j < PySequence_Size(element); ++j) {
-					PyObject* element_element = PySequence_GetItem(element, j);
-					IfcUtil::IfcBaseClass* inst = cast_pyobject<IfcUtil::IfcBaseClass*>(element_element);
-					Py_DECREF(element_element);
-					if (inst) {
-						vector.push_back(inst);
-					} else {
-						SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
-					}
-				}
-				$1->push(vector);
-			}
-			Py_DECREF(element);
-			if (!b) {
-				SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
-				break;
-			}
-		}
-	} else {
-		SWIG_exception(SWIG_TypeError, "Attribute of type AGGREGATE OF AGGREGATE OF ENTITY INSTANCE needs a python sequence of sequence of entity instances");
 	}
 }
 
@@ -291,9 +241,9 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 
 %define CREATE_OPTIONAL_TYPEMAP_IN(template_type, express_name, python_name)
 
-	%typemap(in) const boost::optional<template_type>& {
+	%typemap(in) const std::optional<template_type>& {
 		if ($input == Py_None) {
-			(*$1) = boost::none;
+			(*$1) = std::nullopt;
 		} else if ($input->ob_type != get_python_type<template_type>()) {
 			SWIG_exception(SWIG_TypeError, "Optional " #express_name " needs a " #python_name " or None");
 		} else {
@@ -301,15 +251,15 @@ CREATE_VECTOR_TYPEMAP_IN(std::string, STRING, str)
 		}
 	}
 
-	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const boost::optional<template_type>& {
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::optional<template_type>& {
 		$1 = ($input == Py_None || $input->ob_type == get_python_type<template_type>()) ? 1 : 0;
 	}
 
-	%typemap(arginit) const boost::optional<template_type>& {
-		$1 = new boost::optional<template_type>();
+	%typemap(arginit) const std::optional<template_type>& {
+		$1 = new std::optional<template_type>();
 	}
 
-	%typemap(freearg) const boost::optional<template_type>& {
+	%typemap(freearg) const std::optional<template_type>& {
 		delete $1;
 	}
 

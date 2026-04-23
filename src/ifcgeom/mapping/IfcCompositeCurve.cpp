@@ -21,38 +21,38 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	taxonomy::piecewise_function::spans_t spans;
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
-	IfcSchema::IfcSegment::list::ptr segments = inst->Segments();
+	std::vector<IfcSchema::IfcSegment> segments = inst.Segments();
 #else
-	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
+	std::vector<IfcSchema::IfcCompositeCurveSegment> segments = inst.Segments();
 #endif
 	
-	for (auto& segment : *segments) {
-		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
-			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
+	for (auto& segment : segments) {
+		if (segment.as<IfcSchema::IfcCompositeCurveSegment>() && segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>()) {
+			logger::notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
-			double u1 = segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
+			double u1 = segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>().Dir().Magnitude() * length_unit_;
 			if (u1 < settings_.get<settings::Precision>().get()) {
-				Logger::Warning("Segment length below tolerance", segment);
+				logger::warning("Segment length below tolerance", segment);
 			}
 
 			auto e = taxonomy::make<taxonomy::edge>();
-			e->basis = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
+			e->basis = map(segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve());
 			e->start = u0;
 			e->end = u1;
-			e->curve_sense.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
+			e->curve_sense.emplace(segment.as<IfcSchema::IfcCompositeCurveSegment>().SameSense());
 
 			loop->children.push_back(e);
 		}
-		else if (segment->as<IfcSchema::IfcCompositeCurveSegment>()) {
-			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
+		else if (segment.as<IfcSchema::IfcCompositeCurveSegment>()) {
+			auto crv = map(segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve());
 			if (crv) {
-				if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
+				if (!segment.as<IfcSchema::IfcCompositeCurveSegment>().SameSense()) {
 					crv->reverse();
 				}
 				if (crv->kind() == taxonomy::EDGE) {
@@ -62,7 +62,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 					for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 						loop->children.push_back(s);
 					}
-				} else if ((crv->kind() == taxonomy::CIRCLE || crv->kind() == taxonomy::ELLIPSE) && segments->size() == 1) {
+				} else if ((crv->kind() == taxonomy::CIRCLE || crv->kind() == taxonomy::ELLIPSE) && segments.size() == 1) {
 					// A circle or ellipse segment is a full circle/ellipse, only possible when it is the only segment
 					std::shared_ptr<taxonomy::edge> e = std::make_shared<taxonomy::edge>();
 					e->basis = crv;
@@ -70,15 +70,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 					e->end = 2.0 * boost::math::constants::pi<double>();
 					loop->children.push_back(e);
 				} else {
-					Logger::Warning("Unexpected segment type", segment);
+					logger::warning("Unexpected segment type", segment);
 					return nullptr;
 				}
 			}
 		}
 #ifdef SCHEMA_HAS_IfcCurveSegment
-		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
+		else if (segment.as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
-			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
+			auto crv = map(segment.as<IfcSchema::IfcCurveSegment>());
 			if (crv && crv->kind() == taxonomy::LOOP) {
 				for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 					loop->children.push_back(s);
@@ -95,8 +95,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	}
 
 	if (spans.empty()) {
-		aggregate_of_instance::ptr profile = inst->file_->getInverse(inst->id(), &IfcSchema::IfcProfileDef::Class(), -1);
-		const bool force_close = profile && profile->size() > 0;
+		std::vector<express::Entity> profile = inst.file()->get_inverse(inst.id(), &IfcSchema::IfcProfileDef::Class(), -1);
+        const bool force_close = !profile.empty();
 		loop->closed = force_close;
 		loop->instance = inst;
 		return loop;
@@ -128,7 +128,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
 		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			Logger::Error("Not implemented", *it);
+			logger::error("Not implemented", *it);
 			return false;
 		}
 
@@ -141,13 +141,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		TopoDS_Wire segment;
 
 		if (curve->as<IfcSchema::IfcLine>()) {
-			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			logger::notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
 			Handle_Geom_Curve handle;
 			convert_curve(curve, handle);
 			double u0 = 0.0;
 			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < getValue(GV_PRECISION)) {
-				Logger::Warning("Segment length below tolerance", *it);
+				logger::warning("Segment length below tolerance", *it);
 			}
 			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
 			if (me.IsDone()) {
@@ -157,7 +157,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 			}
 		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
-			Logger::Message(failed_on_purpose ? Logger::LOG_WARNING : Logger::LOG_ERROR, "Failed to convert curve:", curve);
+			logger::message(failed_on_purpose ? logger::LOG_WARNING : logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
 		}
 
@@ -173,7 +173,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Message(Logger::LOG_ERROR, "No segment successfully converted:", l);
+		logger::message(logger::LOG_ERROR, "No segment successfully converted:", l);
 		return false;
 	}
 
@@ -182,7 +182,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
+	std::vector<express::Base> profile = inst.data().get_inverse(&IfcSchema::IfcProfileDef::Class(), -1);
 	const bool force_close = profile && profile->size() > 0;
 
 	util::wire_builder bld(getValue(GV_PRECISION), l);

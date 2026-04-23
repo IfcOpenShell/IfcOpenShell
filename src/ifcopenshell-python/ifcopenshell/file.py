@@ -22,7 +22,6 @@ import functools
 import numbers
 import os
 import re
-import time
 import types
 import weakref
 import zipfile
@@ -36,7 +35,6 @@ import ifcopenshell
 from ifcopenshell.util.mvd_info import LARK_AVAILABLE, MvdInfo
 
 from . import ifcopenshell_wrapper
-from .entity_instance import entity_instance
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -110,7 +108,7 @@ class Transaction:
 
     def serialise_value(self, element, value) -> Any:
         return element.walk(
-            lambda v: isinstance(v, entity_instance),
+            lambda v: isinstance(v, ifcopenshell.entity_instance),
             lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
             value,
         )
@@ -239,24 +237,6 @@ class Transaction:
             else:
                 assert_never(operation["action"])
 
-
-file_dict: dict[int, tuple[weakref.ReferenceType[file], int]] = {}
-"""Mapping of internal IfcFile pointer address to existing ``ifcopenshell.file``
-and the timestamp when it was created.
-
-Needed only to quickly access related from ``entity_instance`` it's ``file``.
-"""
-
-READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
-NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
-UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
-INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
-
-# TODO: Workaround for old builds, remove after build stabilizes.
-try:
-    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
-except:
-    UNKNOWN = 5  # Workaround
 
 import struct
 
@@ -439,13 +419,13 @@ class rocksdb_file_storage:
         self._prefix = prefix
 
     def items(self):
-        it = self.file.wrapped_data.key_value_store_iter(self._prefix)
+        it = self.file.key_value_store_iter(self._prefix)
         while it and it.valid():
             yield it.key(), it.value()
             it.next()
 
     def read(self, key):
-        return self.file.wrapped_data.key_value_store_query(key)
+        return self.file.key_value_store_query(key)
 
     def by_id(self, name):
         if isinstance(name, tuple):
@@ -505,25 +485,7 @@ class rocksdb_file_storage:
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
 
-class file_header:
-    def __init__(self, file, header_data):
-        self.file = file
-        self.header_data = header_data
-
-    @property
-    def file_description(self) -> entity_instance:
-        return entity_instance.wrap_value(self.header_data.file_description_py(), file=self.file)
-
-    @property
-    def file_name(self) -> entity_instance:
-        return entity_instance.wrap_value(self.header_data.file_name_py(), file=self.file)
-
-    @property
-    def file_schema(self) -> entity_instance:
-        return entity_instance.wrap_value(self.header_data.file_schema_py(), file=self.file)
-
-
-class file:
+class file_mixin:
     """Base class for containing IFC files.
 
     Class has instance methods for filtering by element Id, Type, etc.
@@ -539,8 +501,7 @@ class file:
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
-    wrapped_data: ifcopenshell_wrapper.file
-    units: dict[str, entity_instance] = {}
+    units: dict[str, ifcopenshell.entity_instance] = {}
     history_size: int = 64
     history: list[Transaction]
     """Chronological order - from oldest to newest."""
@@ -550,103 +511,39 @@ class file:
     to_delete: Union[set[ifcopenshell.entity_instance], None] = None
     """Entities for batch removal."""
 
-    def __init__(
-        self,
-        f: Optional[ifcopenshell_wrapper.file] = None,
-        schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
-        schema_version: Optional[tuple[int, int, int, int]] = None,
-    ):
-        """Create a new blank IFC model
+    registry = {}
 
-        This IFC model does not have any entities in it yet. See the
-        ``create_entity`` function for how to create new entities. All data is
-        stored in memory. If you wish to write the IFC model to disk, see the
-        ``write`` function.
-
-        :param f: The underlying IfcOpenShell file object to be wrapped. This
-            is an internal implementation detail and should generally be left
-            as None by users.
-        :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
-            or "IFC4X3". These refer to the ISO approved versions of IFC.
-            Defaults to "IFC4" if not specified, which is currently recommended
-            for all new projects.
-        :param schema_version: If you want to specify an exact version of IFC
-            that may not be an ISO approved version, use this argument instead
-            of ``schema``. IFC versions on technical.buildingsmart.org are
-            described using 4 integers representing the major, minor, addendum,
-            and corrigendum number. For example, (4, 0, 2, 1) refers to IFC4
-            ADD2 TC1, which is the official version approved by ISO when people
-            refer to "IFC4". Generally you should not use this argument unless
-            you are testing non-ISO IFC releases.
-
-        Example:
-
-        .. code:: python
-
-            # Create a new IFC4 model, create a wall, then save it to an IFC-SPF file.
-            model = ifcopenshell.file()
-            model.create_entity("IfcWall")
-            model.write("/path/to/model.ifc")
-
-            # Create a new IFC4X3 model
-            model = ifcopenshell.file(schema="IFC4X3")
-
-            # A poweruser testing out a particular version of IFC4X3
-            model = ifcopenshell.file(schema_version=(4, 3, 0, 1))
-        """
-        if schema_version:
-            prefixes = ("IFC", "X", "_ADD", "_TC")
-            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+    def post_init(self, iden=None):
+        if iden is None:
+            iden = int(self.this)
+        if state := self.registry.get(iden):
+            self.state = state
         else:
-            schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
-        if f is not None:
-            self.wrapped_data = f
-            if not f.good():
-                from . import Error, SchemaError
-
-                exc, msg = {
-                    READ_ERROR: lambda: (IOError, "Unable to open file for reading"),
-                    NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
-                    UNSUPPORTED_SCHEMA: lambda: (
-                        SchemaError,
-                        "Unsupported schema: %s" % ",".join(self.header.file_schema.schema_identifiers),
-                    ),
-                    INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
-                    # This is the case when passing uninitialized_tag
-                    UNKNOWN: lambda: (None, None),
-                }[f.good().value()]()
-                if exc is not None:
-                    raise exc(msg)
-        else:
-            args = filter(None, [schema])
-            args = map(ifcopenshell_wrapper.schema_by_name, args)
-            self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history = []
-        self.future = []
-        self.transaction: Optional[Transaction] = None
-
-        # we store a tuple of C++ file pointer address and creation time stamp so that
-        # when memory addresses get recycled we do not run into collisions when the
-        # address is used as a cache key.
-        file_dict[self.wrapped_data.file_pointer()] = (weakref.ref(self), time.monotonic_ns())
+            self.state = self.registry[iden] = [[], [], None]
 
     @property
-    def identifier(self) -> tuple[int, int]:
-        """Pair of C++ file pointer address and creation time stamp to uniquely identify a file
-        over the life time of ifcopenshell module that should be mostly safe except in pathological
-        cases
+    def history(self):
+        return self.state[0]
 
-        Returns:
-            tuple[int, int]: Pair of C++ file pointer address and creation time stamp
-        """
-        return (self.wrapped_data.file_pointer(), file_dict[self.wrapped_data.file_pointer()][1])
+    @property
+    def future(self):
+        return self.state[1]
 
-    def __del__(self) -> None:
-        # Avoid infinite recursion if file is failed to initialize
-        # and wrapped_data is unset.
-        if "wrapped_data" not in dir(self):
-            return
-        del file_dict[self.file_pointer()]
+    @property
+    def transaction(self):
+        return self.state[2]
+
+    @history.setter
+    def history(self, v):
+        self.state[0] = v
+
+    @future.setter
+    def future(self, v):
+        self.state[1] = v
+
+    @transaction.setter
+    def transaction(self, v):
+        self.state[2] = v
 
     def set_history_size(self, size: int) -> None:
         self.history_size = size
@@ -718,7 +615,7 @@ class file:
         """
         eid = kwargs.pop("id", -1)
 
-        e = entity_instance((self.schema_identifier, type), self)
+        e = self.create(type, eid)
 
         # Create pairs of {attribute index, attribute value}.
         # Keyword arguments are mapped to their corresponding
@@ -727,7 +624,7 @@ class file:
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        kwargs_attrs = [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        kwargs_attrs = [(e.get_argument_index(name), arg) for name, arg in kwargs.items()]
         attrs = list(enumerate(args)) + kwargs_attrs
 
         if len(attrs) > len(e):
@@ -760,15 +657,6 @@ class file:
         if attrs:
             self.transaction = transaction
 
-        # Once the values are populated add the instance
-        # to the file.
-        self.wrapped_data.add(e.wrapped_data, eid)
-
-        # The file container now handles the lifetime of
-        # this instance. Tell SWIG that it is no longer
-        # the owner.
-        e.wrapped_data.this.disown()
-
         if self.transaction:
             self.transaction.store_create(e)
 
@@ -779,7 +667,7 @@ class file:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
         reg = "".join(f"(?P<{s}>{s}\\d+)?" for s in prefixes)
-        match = re.match(reg, self.wrapped_data.schema)
+        match = re.match(reg, self.schema_identifier)
         version_tuple = tuple(
             map(
                 lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
@@ -789,17 +677,12 @@ class file:
         return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
 
     @property
-    def schema_identifier(self) -> str:
-        """Full IFC schema version: IFC2X3_TC1, IFC4_ADD2, IFC4X3_ADD2, etc."""
-        return self.wrapped_data.schema
-
-    @property
     def schema_version(self) -> tuple[int, int, int, int]:
         """Numeric representation of the full IFC schema version.
 
         E.g. IFC4X3_ADD2 is represented as (4, 3, 2, 0).
         """
-        schema = self.wrapped_data.schema
+        schema = self.schema_identifier
         version = []
         for prefix in ("IFC", "X", "_ADD", "_TC"):
             number = re.search(prefix + r"(\d)", schema)
@@ -816,35 +699,15 @@ class file:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         else:
-            return getattr(self.wrapped_data, attr)
+            raise AttributeError
 
-    def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> entity_instance:
+    def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> ifcopenshell.entity_instance:
         if isinstance(key, numbers.Integral):
-            return entity_instance(self.wrapped_data.by_id(key), self)
+            return self.by_id(key)
         elif isinstance(key, (str, bytes)):
-            return entity_instance(self.wrapped_data.by_guid(str(key)), self)
-
-    def by_id(self, id: int) -> ifcopenshell.entity_instance:
-        """Return an IFC entity instance filtered by IFC ID.
-
-        :param id: STEP numerical identifier
-
-        :raises RuntimeError: If `id` is not found.
-
-        :returns: An ifcopenshell.entity_instance
-        """
-        return self[id]
-
-    def by_guid(self, guid: str) -> ifcopenshell.entity_instance:
-        """Return an IFC entity instance filtered by IFC GUID.
-
-        :param guid: GlobalId value in 22-character encoded form
-
-        :raises RuntimeError: If `guid` is not found.
-
-        :returns: An ifcopenshell.entity_instance
-        """
-        return self[guid]
+            return self.by_guid(str(key))
+        else:
+            raise TypeError("Indexing into file requires either an integral number or compressed guid string")
 
     def add(self, inst: ifcopenshell.entity_instance, _id: int = None) -> ifcopenshell.entity_instance:
         """Adds an entity including any dependent entities to an IFC file.
@@ -855,9 +718,10 @@ class file:
         """
 
         if self.transaction:
-            max_id = self.wrapped_data.getMaxId()
-        inst.wrapped_data.this.disown()
-        result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+            max_id = self.getMaxId()
+
+        result = self._add(inst, -1 if _id is None else _id)
+
         if self.transaction:
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
@@ -876,8 +740,8 @@ class file:
         :returns: A list of ifcopenshell.entity_instance objects
         """
         if include_subtypes:
-            return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
-        return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
+            return self._by_type(type)
+        return self._by_type_excl_subtypes(type)
 
     def traverse(
         self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
@@ -893,11 +757,11 @@ class file:
             max_levels = -1
 
         if breadth_first:
-            fn = self.wrapped_data.traverse_breadth_first
+            fn = self._traverse_breadth_first
         else:
-            fn = self.wrapped_data.traverse
+            fn = self._traverse
 
-        return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
+        return fn(inst, max_levels)
 
     @overload
     def get_inverse(
@@ -942,28 +806,17 @@ class file:
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
 
-        inverses = [entity_instance(e, self) for e in self.wrapped_data.get_inverse(inst.wrapped_data)]
+        inverses = self._get_inverse(inst)
 
         if allow_duplicate:
             if with_attribute_indices:
-                idxs = self.wrapped_data.get_inverse_indices(inst.wrapped_data)
+                idxs = self._get_inverse_indices(inst)
                 # TODO: include in typing.
                 return list(zip(inverses, idxs))
             else:
                 return inverses
 
         return set(inverses)
-
-    def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
-        """Returns the number of entities that reference this entity
-
-        This is equivalent to `len(model.get_inverse(element))`, but
-        significantly faster.
-
-        :param inst: The entity instance to get inverse relationships
-        :returns: The total number of references
-        """
-        return self.wrapped_data.get_total_inverses(inst.wrapped_data)
 
     def remove(self, inst: ifcopenshell.entity_instance) -> None:
         """Deletes an IFC object in the file.
@@ -976,22 +829,22 @@ class file:
         """
         if self.transaction:
             self.transaction.store_delete(inst)
-        return self.wrapped_data.remove(inst.wrapped_data)
+        return self._remove(inst)
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
         if self.transaction:
             self.transaction.batch()
-        return self.wrapped_data.batch()
+        return self.batch()
 
     def unbatch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
         if self.transaction:
             self.transaction.unbatch()
-        return self.wrapped_data.unbatch()
+        return self.unbatch()
 
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
-        return iter(self[id] for id in self.wrapped_data.entity_names())
+        return iter(self[id] for id in self.entity_names())
 
     def assign_header_from(self, other: ifcopenshell.file) -> None:
         for k, vs in HEADER_FIELDS.items():
@@ -1026,7 +879,7 @@ class file:
             raise NotImplementedError("Writing .ifcXML files is not supported")
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
-        self.wrapped_data.write(str(path))
+        self._write(str(path))
 
         if zipped:
             unzipped_path = path.with_suffix(format)
@@ -1040,27 +893,22 @@ class file:
                 unzipped_path.unlink()
         return
 
-    @staticmethod
-    def from_string(s: str) -> file:
-        return file(ifcopenshell_wrapper.read(s))
-
-    @staticmethod
-    def from_pointer(address: int) -> file:
-        assert (f := file_dict[address][0]()) is not None
-        return f
-
     def to_string(self) -> str:
-        return self.wrapped_data.to_string()
+        return self.to_string()
 
-    @property
-    def header(self) -> file_header:
-        # TODO: Workaround for old builds, remove after build stabilizes.
-        # TODO: No need for `wrapped_data.header` to be a method - should use `@property`?
-        header = self.wrapped_data.header
-        if isinstance(header, types.MethodType):
-            return file_header(self, self.wrapped_data.header())
+    @staticmethod
+    def _determine_schema_identifier(
+        schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
+        schema_version: Optional[tuple[int, int, int, int]] = None,
+    ):
+        if schema_version:
+            prefixes = ("IFC", "X", "_ADD", "_TC")
+            schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
+        elif schema:
+            schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
         else:
-            return self.wrapped_data.header
+            schema = "IFC4"
+        return schema
 
     @property
     def storage(self) -> Optional[rocksdb_file_storage]:
@@ -1068,5 +916,5 @@ class file:
         Returns:
             Optional[rocksdb_file_storage]: underlying key-value store interface when opened as a RocksDB-backed file
         """
-        if self.wrapped_data.storage_mode() == 1:
+        if self.storage_mode() == 1:
             return rocksdb_file_storage(self)

@@ -91,9 +91,8 @@ except Exception:
 # `_file`, `_stream` is used only for annotations inside this file,
 # see https://github.com/microsoft/pyright/discussions/9065.
 from . import guid
-from .entity_instance import entity_instance, register_schema_attributes
-from .file import file, rocksdb_lazy_instance
-from .file import file as _file
+from .ifcopenshell_wrapper import entity_instance, file
+from .file import rocksdb_lazy_instance
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols
@@ -173,6 +172,7 @@ def open(
         print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
+
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Path does not exist: '{path}'.")
@@ -211,34 +211,33 @@ def open(
         f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
     else:
         f = ifcopenshell_wrapper.open(str(path.absolute()))
-    return file(f)
 
+    f.post_init()
 
-def create_entity(type: str, schema: str = "IFC4", *args: Any, **kwargs: Any) -> entity_instance:
-    """Creates a new IFC entity that does not belong to an IFC file object
+    READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
+    NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
+    UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+    INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
+    UNKNOWN = ifcopenshell_wrapper.file_open_status.UNKNOWN
 
-    Note that it is more common to create entities within a existing file
-    object. See :meth:`ifcopenshell.file.create_entity`.
+    if not f.good():
+        from . import Error, SchemaError
 
-    :param type: Case insensitive name of the IFC class
-    :param schema: The IFC schema identifier
-    :param args: The positional arguments of the IFC class
-    :param kwargs: The keyword arguments of the IFC class
-    :returns: An entity instance
+        exc, msg = {
+            READ_ERROR: lambda: (IOError, "Unable to open file for reading"),
+            NO_HEADER: lambda: (Error, "Unable to parse IFC SPF header"),
+            UNSUPPORTED_SCHEMA: lambda: (
+                SchemaError,
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+            ),
+            INVALID_SYNTAX: lambda: (Error, "Syntax error during parse, check logs"),
+            # This is the case when passing uninitialized_tag
+            UNKNOWN: lambda: (None, None),
+        }[f.good().value()]()
+        if exc is not None:
+            raise exc(msg)
 
-    Example:
-
-    .. code:: python
-
-        person = ifcopenshell.create_entity("IfcPerson") # #0=IfcPerson($,$,$,$,$,$,$,$)
-        model = ifcopenshell.file()
-        model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
-    """
-    e = entity_instance((schema, type))
-    attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
-    for idx, arg in attrs:
-        e[idx] = arg
-    return e
+    return f
 
 
 def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
@@ -257,7 +256,6 @@ def register_schema(schema: ifcopenshell.express.schema_class.SchemaClass) -> No
     schema.schema.this.disown()
     schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
-    register_schema_attributes(schema.schema)
 
 
 def schema_by_name(

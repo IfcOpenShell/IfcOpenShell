@@ -31,7 +31,7 @@ bool IfcGeom::Iterator::initialize() {
 	try {
 		converter_->mapping()->get_representations(reps, filters_);
 	} catch (const std::exception& e) {
-		Logger::Error(e);
+		logger::error(e);
 	}
 	time_points[1] = high_resolution_clock::now();
 
@@ -46,9 +46,9 @@ bool IfcGeom::Iterator::initialize() {
 			if (!res.item) {
 				continue;
 			}
-			std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
+			std::transform(task.products.begin(), task.products.end(), std::back_inserter(res.products), [this, &res](const express::Base& prod) {
 				auto prod_item = converter_->mapping()->map(prod);
-				return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+				return std::make_pair(prod, ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
 			});
 		}
 		tasks_.push_back(res);
@@ -57,7 +57,7 @@ bool IfcGeom::Iterator::initialize() {
 	if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
 		std::unordered_map<
 			ifcopenshell::geometry::taxonomy::item::ptr,
-			std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
+			std::vector<std::pair<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
 
 		for (auto& r : tasks_) {
 			auto i = r.item;
@@ -94,7 +94,7 @@ bool IfcGeom::Iterator::initialize() {
 				tasks_.back().item = p.first;
 				tasks_.back().products = p.second;
 			}
-			Logger::Notice("Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
+			logger::notice("Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
 		}
 	}
 
@@ -104,7 +104,7 @@ bool IfcGeom::Iterator::initialize() {
 
 	size_t num_products = 0;
 	for (auto& r : tasks_) {
-		num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2->size() : r.products.size();
+		num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2.size() : r.products.size();
 	}
 
 	time_points[2] = high_resolution_clock::now();
@@ -116,7 +116,7 @@ bool IfcGeom::Iterator::initialize() {
 
 	std::vector<taxonomy::ptr> items;
 	std::map<taxonomy::ptr, taxonomy::matrix4> placements;
-	std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](IfcUtil::IfcBaseClass* p) {
+	std::transform(products.begin(), products.end(), std::back_inserter(items), [this, &placements](express::Base p) {
 	auto item = converter_->mapping()->map(p);
 	// Product placements do not affect item reuse and should temporarily be swapped to identity
 	if (item) {
@@ -132,18 +132,18 @@ bool IfcGeom::Iterator::initialize() {
 	geometry_conversion_result r;
 	r.item = *it;
 	std::transform(it, jt, std::back_inserter(r.products), [&r, &placements](taxonomy::ptr product_node) {
-	return std::make_pair((IfcUtil::IfcBaseEntity*) product_node->instance, placements[product_node]);
+	return std::make_pair((express::Base) product_node->instance, placements[product_node]);
 	});
 	tasks_.push_back(r);
 	it = jt;
 	}
 	*/
 
-	Logger::Notice("Created " + boost::lexical_cast<std::string>(tasks_.size()) + " tasks for " + boost::lexical_cast<std::string>(num_products) + " products");
+	logger::notice("Created " + boost::lexical_cast<std::string>(tasks_.size()) + " tasks for " + boost::lexical_cast<std::string>(num_products) + " products");
 
 	if (tasks_.size() == 0) {
-		Logger::Warning("No representations encountered, aborting");
-		initialization_outcome_.reset(false);
+		logger::warning("No representations encountered, aborting");
+		initialization_outcome_.emplace(false);
 	} else if (!settings_.get<ifcopenshell::geometry::settings::DeferProcessingFirstElement>().get()) {
 
 		task_iterator_ = tasks_.begin();
@@ -161,7 +161,7 @@ bool IfcGeom::Iterator::initialize() {
 			initialization_outcome_ = create();
 		}
 	} else {
-		initialization_outcome_.reset(true);
+		initialization_outcome_.emplace(true);
 	}
 
 	return *initialization_outcome_;
@@ -231,14 +231,14 @@ void IfcGeom::Iterator::process_concurrently() {
 			try {
 				this->create_element_(kernel, settings, rep);
 			} catch (const std::exception& e) {
-				Logger::Error(
+				logger::error(
 					std::string("Exception '") + e.what() +
 					std::string("' occurred while iterator was creating a shape: "),
 					rep->item->instance
 				);
 				had_error_processing_elements_ = true;
 			} catch (...) {
-				Logger::Error(
+				logger::error(
 					"Unknown exception occurred while iteartor was creating a shape: ",
 					rep->item->instance
 				);
@@ -263,10 +263,10 @@ void IfcGeom::Iterator::process_concurrently() {
 
 	finished_ = true;
 
-	Logger::SetProduct(boost::none);
+	logger::set_product(std::nullopt);
 
 	if (!terminating_) {
-		Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
+		logger::status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
 			" objects)								");
 	}
 }
@@ -306,9 +306,9 @@ void IfcGeom::Iterator::compute_bounds(bool with_geometry)
 		std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 		converter_->mapping()->get_representations(reps, filters_);
 
-		std::vector<IfcUtil::IfcBaseClass*> products;
+		std::vector<express::Base> products;
 		for (auto& r : reps) {
-			std::copy(r.products->begin(), r.products->end(), std::back_inserter(products));
+			std::copy(r.products.begin(), r.products.end(), std::back_inserter(products));
 		}
 
 		for (auto& product : products) {
@@ -323,7 +323,7 @@ void IfcGeom::Iterator::compute_bounds(bool with_geometry)
 	}
 }
 
-const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create_shape_model_for_next_entity() {
+express::Base IfcGeom::Iterator::create_shape_model_for_next_entity() {
 	geometry_conversion_result* task = nullptr;
 	for (; task_iterator_ < tasks_.end();) {
 		task = &*task_iterator_++;
@@ -336,9 +336,9 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create_shape_model_for_next_enti
 	}
 	if (task) {
 		process_finished_rep(task);
-		return task->item->instance->as<IfcUtil::IfcBaseClass>();
+        return task->item->instance;
 	} else {
-		return nullptr;
+        return express::Base{};
 	}
 }
 
@@ -349,31 +349,31 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		if (!rep->item) {
 			return;
 		}
-		std::transform(rep->products_2->begin(), rep->products_2->end(), std::back_inserter(rep->products), [this, &rep, kernel](IfcUtil::IfcBaseClass* prod) {
+		std::transform(rep->products_2.begin(), rep->products_2.end(), std::back_inserter(rep->products), [this, &rep, kernel](const express::Base& prod) {
 			auto prod_item = kernel->mapping()->map(prod);
-			return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+			return std::make_pair(prod, ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
 		});
 	} else {
 	}
 
 	auto product_node = rep->products.front();
-	const IfcUtil::IfcBaseEntity* product = product_node.first;
+	const express::Base product = product_node.first;
 	const auto& place = product_node.second;
 
-	Logger::SetProduct(product);
+	logger::set_product(product);
 
-	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product, place, rep]() {
+	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product.as<express::Entity>().get("GlobalId"), std::to_string(rep->item->instance.id()), [kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 	}));
 
 	if (!brep) {
-        Logger::SetProduct(boost::none);
+        logger::set_product(std::nullopt);
 		return;
 	}
 
 	auto elem = process_based_on_settings(settings, brep);
 	if (!elem) {
-        Logger::SetProduct(boost::none);
+        logger::set_product(std::nullopt);
 		return;
 	}
 
@@ -382,10 +382,10 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 
 	for (auto it = rep->products.begin() + 1; it != rep->products.end(); ++it) {
 		const auto& p = *it;
-		const IfcUtil::IfcBaseEntity* product2 = p.first;
+		const express::Base product2 = p.first;
 		const auto& place2 = p.second;
 
-		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product2, place2, brep]() {
+		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2.as<express::Entity>().get("GlobalId"), std::to_string(rep->item->instance.id()), [kernel, settings, product2, place2, brep]() {
 			return kernel->create_brep_for_processed_representation(product2, place2, brep);
 		}));
 		if (brep2) {
@@ -397,7 +397,7 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		}
 	}
 
-	Logger::SetProduct(boost::none);
+	logger::set_product(std::nullopt);
 }
 
 IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, IfcGeom::TriangulationElement* previous)
@@ -406,7 +406,7 @@ IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geo
 		try {
 			return new IfcGeom::SerializedElement(*elem);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Getting a serialized element from model failed.");
+			logger::message(logger::LOG_ERROR, "Getting a serialized element from model failed.");
 			return nullptr;
 		}
 	} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
@@ -425,7 +425,7 @@ IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geo
 					return new TriangulationElement(*elem, previous->geometry_pointer());
 				}
 			} catch (...) {
-				Logger::Message(Logger::LOG_ERROR, "Getting a triangulation element from model failed.");
+				logger::message(logger::LOG_ERROR, "Getting a triangulation element from model failed.");
 			}
 			return (TriangulationElement*)nullptr;
 		});
@@ -466,7 +466,7 @@ void IfcGeom::Iterator::log_timepoints() const {
 	for (auto it = time_points.begin() + 1; it != time_points.end(); ++it) {
 		auto jt = it - 1;
 		duration<double, std::milli> ms_double = (*it) - (*jt);
-		Logger::Notice(labels[std::distance(time_points.begin(), jt)] + " took " + std::to_string(ms_double.count()) + "ms");
+		logger::notice(labels[std::distance(time_points.begin(), jt)] + " took " + std::to_string(ms_double.count()) + "ms");
 	}
 }
 
@@ -490,7 +490,7 @@ void IfcGeom::Iterator::validate_iterator_state() const {
 
 /// Moves to the next shape representation, create its geometry, and returns the associated product.
 /// Use get() to retrieve the created geometry.
-const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
+express::Base IfcGeom::Iterator::next() {
 	using std::chrono::high_resolution_clock;
 	validate_iterator_state();
 
@@ -501,11 +501,11 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 
 	if (num_threads_ != 1) {
 		if (!wait_for_element()) {
-			Logger::SetProduct(boost::none);
+			logger::set_product(std::nullopt);
 			time_points[3] = high_resolution_clock::now();
 			log_timepoints();
 			task_result_ptr_exhausted = true;
-			return nullptr;
+            return express::Base{};
 		}
 
 		task_result_iterator_++;
@@ -517,11 +517,11 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::next() {
 		// shape representation
 		if (task_result_iterator_ == --all_processed_elements_.end()) {
 			if (!create()) {
-				Logger::SetProduct(boost::none);
+				logger::set_product(std::nullopt);
 				time_points[3] = high_resolution_clock::now();
 				log_timepoints();
 				task_result_ptr_exhausted = true;
-				return nullptr;
+                return express::Base{};
 			}
 		}
 
@@ -554,7 +554,7 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 			try {
 				parent_object = get_object(ret->parent_id());
 			} catch (const std::exception& e) {
-				Logger::Error(e);
+				logger::error(e);
 				hasParent = false;
 			}
 
@@ -565,14 +565,14 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 			while (parent_object != NULL && hasParent && parent_object->parent_id() != -1) {
 				// Find the next parent
                 auto pid = parent_object->parent_id();
-                auto ifc_product = ifc_file->instance_by_id(pid)->as<IfcUtil::IfcBaseEntity>();
-				if (ifc_product->declaration().name() == "IfcProject") {
+                auto ifc_product = ifc_file->instance_by_id(pid);
+				if (ifc_product.declaration().name() == "IfcProject") {
                     hasParent = false;
                 } else {
 					try {
 						parent_object = get_object(pid);
 					} catch (const std::exception& e) {
-						Logger::Error(e);
+						logger::error(e);
 						hasParent = false;
 					}
                 }
@@ -595,20 +595,20 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 	ifcopenshell::geometry::taxonomy::matrix4::ptr m4;
 	int parent_id = -1;
 	std::string instance_type, product_name, product_guid;
-	IfcUtil::IfcBaseEntity* ifc_product = 0;
+    express::Base ifc_product;
 
 	try {
-		ifc_product = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
-		instance_type = ifc_product->declaration().name();
+        ifc_product = ifc_file->instance_by_id(id);
+		instance_type = ifc_product.declaration().name();
 
-		if (ifc_product->declaration().is("IfcRoot")) {
-			product_guid = (std::string)ifc_product->get("GlobalId");
-			product_name = ifc_product->get_value<std::string>("Name", "");
+		if (ifc_product.declaration().is("IfcRoot")) {
+			product_guid = ifc_product.as<express::Entity>().get_value<std::string>("GlobalId");
+            product_name = ifc_product.as<express::Entity>().get_value<std::string>("Name", "");
 		}
 
 		auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
 		if (parent_object) {
-			parent_id = parent_object->id();
+			parent_id = parent_object.id();
 		}
 
 		// fails in case of IfcProject
@@ -619,24 +619,26 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 			m4 = casted->matrix;
 		}
 	} catch (const std::exception& e) {
-		Logger::Error(e);
-	} catch (...) {
-		Logger::Error("Unknown error returning product");
+		logger::error(e);
+	}
+	catch (...) {
+		logger::error("Unknown error returning product");
 	}
 
-	Element* ifc_object = new Element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product);
+	Element* ifc_object = new Element(settings_, id, parent_id, product_name, instance_type, product_guid, "", m4, ifc_product.as<express::Entity>());
 	return ifc_object;
 }
 
-const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create() {
-	const IfcUtil::IfcBaseClass* product = nullptr;
+express::Base IfcGeom::Iterator::create() {
+    express::Base product;
 	try {
 		product = create_shape_model_for_next_entity();
 	} catch (const std::exception& e) {
-		Logger::Error(e);
+		logger::error(e);
 		had_error_processing_elements_ = true;
-	} catch (...) {
-		Logger::Error("Unknown error creating geometry");
+	}
+	catch (...) {
+		logger::error("Unknown error creating geometry");
 		had_error_processing_elements_ = true;
 	}
 	return product;
@@ -655,7 +657,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 		throw std::runtime_error("remove_offset() can only be called with defer-processing-first-element and no-parallel-mapping settings");
 	}
 
-	auto collect_offset = [&](const item::ptr& itm, const std::vector<std::pair<IfcUtil::IfcBaseEntity*, matrix4::ptr>>& pr) -> std::pair<double, Eigen::Vector3d> {
+	auto collect_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::Base, matrix4::ptr>>& pr) -> std::pair<double, Eigen::Vector3d> {
 		std::function<std::pair<double, Eigen::Vector3d>(const item::ptr&, Eigen::Matrix4d)> traverse;
 		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> std::pair<double, Eigen::Vector3d> {
 			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
@@ -735,7 +737,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 	Eigen::Matrix4d translation_matrix = Eigen::Matrix4d::Identity();
 	translation_matrix.block<3, 1>(0, 3) = vec;
 
-	auto remove_offset = [&](const item::ptr& itm, const std::vector<std::pair<IfcUtil::IfcBaseEntity*, matrix4::ptr>>& pr) -> bool {
+	auto remove_offset = [&](const item::ptr& itm, const std::vector<std::pair<express::Base, matrix4::ptr>>& pr) -> bool {
 		std::function<bool(const item::ptr&, Eigen::Matrix4d)> traverse;
 		traverse = [&](const item::ptr& node, Eigen::Matrix4d m4) -> bool {
 			if (auto shl = std::dynamic_pointer_cast<shell>(node)) {
@@ -808,8 +810,8 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 		}
 	}
 
-	Logger::Notice("Removed large offsets within " + std::to_string(num_offset_applied) + " products");
-	Logger::Notice("Offset applied (" + std::to_string(vec(0)) + "," + std::to_string(vec(1)) + "," + std::to_string(vec(2)) + ")");
+	logger::notice("Removed large offsets within " + std::to_string(num_offset_applied) + " products");
+	logger::notice("Offset applied (" + std::to_string(vec(0)) + "," + std::to_string(vec(1)) + "," + std::to_string(vec(2)) + ")");
 
 	return make<direction3>(vec);
 }

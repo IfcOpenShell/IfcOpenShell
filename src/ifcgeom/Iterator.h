@@ -58,7 +58,7 @@
 #ifndef IFCGEOMITERATOR_H
 #define IFCGEOMITERATOR_H
 
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionResult.h"
@@ -87,14 +87,18 @@ namespace IfcGeom {
 
 		// For NoParallelMapping==true
 		ifcopenshell::geometry::taxonomy::ptr item;
-		std::vector<std::pair<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+		std::vector<std::pair<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
 
 		// For NoParallelMapping==false
-		IfcUtil::IfcBaseEntity* representation;
-		aggregate_of_instance::ptr products_2;
+		express::Base representation;
+		std::vector<express::Base> products_2;
 
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
+
+		bool is_parallel() const {
+            return !!representation;
+		}
 	};
 
 
@@ -122,8 +126,8 @@ namespace IfcGeom {
 		size_t async_elements_returned_ = 0;
 		
 		ifcopenshell::geometry::Settings settings_;
-		IfcParse::IfcFile* ifc_file;
-		std::vector<filter_t> filters_;
+		ifcopenshell::file* ifc_file;
+		std::vector<ifcopenshell::geometry::filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
 
@@ -189,7 +193,7 @@ namespace IfcGeom {
 			return element;
 		}
 
-		const IfcUtil::IfcBaseClass* create_shape_model_for_next_entity();
+		express::Base create_shape_model_for_next_entity();
 
 		void create_element_(
 			ifcopenshell::geometry::Converter* kernel,
@@ -209,7 +213,7 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
@@ -220,7 +224,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
@@ -229,7 +233,7 @@ namespace IfcGeom {
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
@@ -251,16 +255,16 @@ namespace IfcGeom {
 			return items;
 		}
 
-		aggregate_of_aggregate_of_instance::ptr get_task_products() const {
-			aggregate_of_aggregate_of_instance::ptr products = aggregate_of_aggregate_of_instance::ptr(new aggregate_of_aggregate_of_instance);
+		std::vector<std::vector<express::Base>> get_task_products() const {
+            std::vector<std::vector<express::Base>> products;
 			for (const auto& task : tasks_) {
-				if (task.products_2) {
-					products->push(task.products_2);
+				if (task.is_parallel()) {
+					products.push_back(task.products_2);
 				} else {
 					for (auto& product : task.products) {
-						aggregate_of_instance::ptr p(new aggregate_of_instance);
-						p->push(product.first);
-						products->push(p);
+                        std::vector<express::Base> p;
+						p.push_back(product.first);
+						products.push_back(p);
 					}
 				}
 			}
@@ -272,7 +276,7 @@ namespace IfcGeom {
 		// Check if error occurred during iterator initialization or iteration over elements.
 		bool had_error_processing_elements() const { return had_error_processing_elements_; }
 
-		boost::optional<bool> initialization_outcome_;
+		std::optional<bool> initialization_outcome_;
 
 		/**
 		 * @return Returns true if the iterator is initialized with any elements, false otherwise.
@@ -301,19 +305,19 @@ namespace IfcGeom {
 			return progress_;
 		}
 
-		std::string getLog() const { return Logger::GetLog(); }
+		std::string getLog() const { return logger::get_log(); }
 
-		IfcParse::IfcFile* file() const { return ifc_file; }
+		ifcopenshell::file* file() const { return ifc_file; }
 
-		const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
-		std::vector<IfcGeom::filter_t>& filters() { return filters_; }
+		const std::vector<ifcopenshell::geometry::filter_t>& filters() const { return filters_; }
+        std::vector<ifcopenshell::geometry::filter_t>& filters() { return filters_; }
 
 		const ifcopenshell::geometry::taxonomy::point3& bounds_min() const { return bounds_min_; }
 		const ifcopenshell::geometry::taxonomy::point3& bounds_max() const { return bounds_max_; }
 
 		/// Moves to the next shape representation, create its geometry, and returns the associated product.
 		/// Use get() to retrieve the created geometry.
-		const IfcUtil::IfcBaseClass* next();
+		express::Base next();
 
 		/// Gets the representation of the current geometrical entity.
 		Element* get();
@@ -326,7 +330,7 @@ namespace IfcGeom {
 
 		const Element* get_object(int id);
 
-		const IfcUtil::IfcBaseClass* create();
+		express::Base create();
 	};
 }
 

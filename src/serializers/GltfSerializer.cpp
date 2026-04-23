@@ -56,17 +56,17 @@ GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
-	, fstream_(IfcUtil::path::from_utf8(filename).c_str(), std::ios_base::binary)
-	, tmp_fstream1_(IfcUtil::path::from_utf8(tmp_filename1_).c_str(), std::ios_base::binary)
-	, tmp_fstream2_(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios_base::binary)
+	, fstream_(ifcopenshell::path::from_utf8(filename).c_str(), std::ios_base::binary)
+	, tmp_fstream1_(ifcopenshell::path::from_utf8(tmp_filename1_).c_str(), std::ios_base::binary)
+	, tmp_fstream2_(ifcopenshell::path::from_utf8(tmp_filename2_).c_str(), std::ios_base::binary)
 	, bufferViewId(0)
 	{}
 
 GltfSerializer::~GltfSerializer() {
 	tmp_fstream1_.close();
 	tmp_fstream2_.close();
-	IfcUtil::path::delete_file(tmp_filename1_);
-	IfcUtil::path::delete_file(tmp_filename2_);
+	ifcopenshell::path::delete_file(tmp_filename1_);
+	ifcopenshell::path::delete_file(tmp_filename2_);
 }
 
 bool GltfSerializer::ready() {
@@ -444,12 +444,12 @@ void GltfSerializer::finalize() {
 	// nb: uint32_t is the max buffer size in glTF
 	uint32_t indices_length, binary_length;
 	{
-		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename1_).c_str(), std::ios::binary);
+		std::ifstream ifs(ifcopenshell::path::from_utf8(tmp_filename1_).c_str(), std::ios::binary);
 		ifs.ignore(std::numeric_limits<std::streamsize>::max());
 		indices_length = ifs.gcount();
 	}
 	{
-		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios::binary);
+		std::ifstream ifs(ifcopenshell::path::from_utf8(tmp_filename2_).c_str(), std::ios::binary);
 		ifs.ignore(std::numeric_limits<std::streamsize>::max());
 		binary_length = indices_length + ifs.gcount();
 	}
@@ -490,12 +490,12 @@ void GltfSerializer::finalize() {
 	write_header<BIN>(fstream_, binary_length);
 	{
 		//First, write the indices buffer into our glb file
-		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename1_).c_str(), std::ios::binary);
+		std::ifstream ifs(ifcopenshell::path::from_utf8(tmp_filename1_).c_str(), std::ios::binary);
 		fstream_ << ifs.rdbuf();
 	}
 	{
 		//Next, write the vertices buffer into our glb file
-		std::ifstream ifs(IfcUtil::path::from_utf8(tmp_filename2_).c_str(), std::ios::binary);
+		std::ifstream ifs(ifcopenshell::path::from_utf8(tmp_filename2_).c_str(), std::ios::binary);
 		fstream_ << ifs.rdbuf();
 	}
 	write_padding<BIN>(fstream_, binary_length);
@@ -517,53 +517,51 @@ namespace {
 	}
 
 	void proj_log(void *, int, const char* c) {
-		Logger::Error("PROJ: " + std::string(c));
+		logger::error("PROJ: " + std::string(c));
 	}
 }
 
-void GltfSerializer::setFile(IfcParse::IfcFile* f) {
+void GltfSerializer::setFile(ifcopenshell::file* f) {
 	if (!settings_.get<ifcopenshell::geometry::settings::WriteGltfEcef>().get()) {
 		return;
 	}
 
-	boost::optional<std::string> crs_epsg;
-	boost::optional<std::array<double, 3>> crs_x_axis;
-	boost::optional<std::array<double, 3>> eastings_northings_elevation;
+	std::optional<std::string> crs_epsg;
+	std::optional<std::array<double, 3>> crs_x_axis;
+	std::optional<std::array<double, 3>> eastings_northings_elevation;
 
-	aggregate_of_instance::ptr coordops;
+	std::vector<express::Base> coordops;
 	try {
 		coordops = f->instances_by_type("IfcCoordinateOperation");
-	} catch (IfcParse::IfcException&) {
+	} catch (ifcopenshell::exception&) {
 		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
 	}
-	if (coordops) {
-		for (auto& coordop : *coordops) {
-			IfcUtil::IfcBaseClass* source_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
-			if (source_crs->declaration().is("IfcGeometricRepresentationContext")) {
-				IfcUtil::IfcBaseClass* target_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
-				auto name_attr = target_crs->as<IfcUtil::IfcBaseEntity>()->get("Name");
-				if (coordop->declaration().is("IfcMapConversion")) {
+	for (auto& coordop : coordops) {
+		express::Base source_crs = coordop.as<express::Entity>().get("SourceCRS");
+		if (source_crs.declaration().is("IfcGeometricRepresentationContext")) {
+            express::Base target_crs = coordop.as<express::Entity>().get("TargetCRS");
+			auto name_attr = target_crs.as<express::Entity>().get("Name");
+			if (coordop.declaration().is("IfcMapConversion")) {
 					
-					if (!name_attr.isNull()) {
-						std::string epsg_code = name_attr;
-						crs_epsg = epsg_code;
+				if (!name_attr.isNull()) {
+					std::string epsg_code = name_attr;
+					crs_epsg = epsg_code;
 
-						// @todo in which unit are these?
-						double eastings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Eastings");
-						double northings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Northings");
-						double height = coordop->as<IfcUtil::IfcBaseEntity>()->get("OrthogonalHeight");
-						height = 0.;
+					// @todo in which unit are these?
+					double eastings = coordop.as<express::Entity>().get("Eastings");
+					double northings = coordop.as<express::Entity>().get("Northings");
+					double height = coordop.as<express::Entity>().get("OrthogonalHeight");
+					height = 0.;
 
-						eastings_northings_elevation = { { eastings, northings, height} };
+					eastings_northings_elevation = { { eastings, northings, height} };
 
-						auto xaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisAbscissa");
-						auto yaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisOrdinate");
-						if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
-							double xaxis = xaxis_attr;
-							double yaxis = yaxis_attr;
+					auto xaxis_attr = coordop.as<express::Entity>().get("XAxisAbscissa");
+					auto yaxis_attr = coordop.as<express::Entity>().get("XAxisOrdinate");
+					if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
+						double xaxis = xaxis_attr;
+						double yaxis = yaxis_attr;
 
-							crs_x_axis = { { xaxis, yaxis, 0. } };
-						}
+						crs_x_axis = { { xaxis, yaxis, 0. } };
 					}
 				}
 			}
@@ -573,9 +571,9 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	if (!crs_epsg) {
 		auto sites = f->instances_by_type("IfcSite");
 
-		if (sites && sites->size() == 1) {
-			auto lat_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
-			auto lon_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
+		if (sites.size() == 1) {
+			auto lat_attr = sites.front().as<express::Entity>().get("RefLatitude");
+			auto lon_attr = sites.front().as<express::Entity>().get("RefLongitude");
 
 			if (!lat_attr.isNull() && !lon_attr.isNull()) {
 				std::vector<int> lat_dms = lat_attr;
@@ -594,13 +592,13 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 				double elev = 0.;
 
 				/*
-				auto elev_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefElevation");
+				auto elev_attr = (*sites->begin()).as<express::Entity>().get("RefElevation");
 				if (!elev_attr->isNull()) {
 					elev = *elev_attr;
 				}
 				*/
 
-				crs_epsg.reset("EPSG:4326");
+				crs_epsg.emplace("EPSG:4326");
 				eastings_northings_elevation = { { lat, lon, elev } };
 			}
 		}
@@ -608,13 +606,13 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 
 	auto contexts = f->instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
 
-	if (contexts && contexts->size() > 0) {
-		auto context = (*contexts->begin())->as<IfcUtil::IfcBaseEntity>();
-		auto north_attr = context->get("TrueNorth");
+	if (!contexts.empty()) {
+        auto context = contexts.front().as<express::Entity>();
+		auto north_attr = context.get("TrueNorth");
 		if (!north_attr.isNull()) {
-			IfcUtil::IfcBaseClass* north = north_attr;
-			if (north->declaration().is("IfcDirection")) {
-				std::vector<double> ratios = north->as<IfcUtil::IfcBaseEntity>()->get("DirectionRatios");
+			express::Base north = north_attr;
+			if (north.declaration().is("IfcDirection")) {
+				std::vector<double> ratios = north.as<express::Entity>().get("DirectionRatios");
 				crs_x_axis = { { ratios[1], -ratios[0], 0. } };
 			}
 		}
@@ -648,7 +646,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 				NULL);
 
 			if (!P) {
-				Logger::Error("Failed to create PROJ transformation object");
+				logger::error("Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -660,7 +658,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			Logger::Notice("Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			logger::notice("Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -685,7 +683,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			Logger::Error("Failed to create ellipsoid CRS");
+			logger::error("Failed to create ellipsoid CRS");
 			return;
 		}
 

@@ -26,7 +26,7 @@ def indent(n, s):
     else:
         strs = s
     splitted = itertools.chain.from_iterable(map(functools.partial(str.split, sep="\n"), map(str, strs)))
-    return "\n".join(" " * n + l for l in splitted)
+    return "\n".join(" "*n + l for l in splitted)
 
 
 class Base:

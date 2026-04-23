@@ -113,8 +113,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
             applied_temporary_offset = true;
             std::set<taxonomy::point3::ptr> unique_points;
             for (auto& e : std::dynamic_pointer_cast<taxonomy::loop>(curve)->children) {
-                auto* a = boost::get<taxonomy::point3::ptr>(&e->start);
-                auto* b = boost::get<taxonomy::point3::ptr>(&e->end);
+                auto* a = std::get_if<taxonomy::point3::ptr>(&e->start);
+                auto* b = std::get_if<taxonomy::point3::ptr>(&e->end);
                 if (a) {
                     unique_points.insert(*a);
                 }
@@ -129,8 +129,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
     }
 	
 	auto w = convert_curve(scs->curve);
-	if (w.which() != 2) {
-		Logger::Error("Unsupported directrix");
+	if (w.index() != 2) {
+		logger::error("Unsupported directrix");
 		return false;
 	}
 	TopoDS_Shape face_;
@@ -158,7 +158,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 	}	
 
 	gp_Trsf directrix;
-	TopoDS_Wire wire = boost::get<TopoDS_Wire>(w);
+	TopoDS_Wire wire = std::get<TopoDS_Wire>(w);
 
 	const bool is_plane = surface && surface->DynamicType() == STANDARD_TYPE(Geom_Plane);
 
@@ -178,7 +178,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", scs->instance);
+					logger::message(logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", scs->instance);
 					break;
 				}
 			}
@@ -348,7 +348,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::sweep_along_curve::ptr scs,
 		m = scs->matrix;
 	}
 	results.emplace_back(ConversionResult(
-		scs->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+        scs->instance.id(),
 		m,
 		new OpenCascadeShape(shape),
 		scs->surface_style

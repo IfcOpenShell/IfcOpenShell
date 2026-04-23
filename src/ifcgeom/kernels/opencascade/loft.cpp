@@ -82,79 +82,49 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	}
 
 	if (non_polygonal) {
-		if (loft->children.size() < 2) {
-            Logger::Error("Not enough sections to loft");
-            return false;
-        }
+		if (loft->children.size() == 2) {
+			BRep_Builder BB;
+			TopoDS_Shell comp;
+			BB.MakeShell(comp);
 
-		std::vector<std::vector<TopoDS_Wire>> sections;
-        sections.reserve(loft->children.size());
 
-		TopoDS_Shape f0, f1;
-
-        // Convert all children to vectors of wires
-        for (const auto& child : loft->children) {
-            TopoDS_Shape shape;
-            if (!convert(std::static_pointer_cast<taxonomy::face>(child), shape)) {
-                return false;
-            }
-            if (shape.ShapeType() != TopAbs_FACE) {
-                return false;
-            }
-			// At least make sure to have outer wire consistent, but in reality
-			// this is probably not a concern given how to build up these faces
-            auto f = TopoDS::Face(shape);
-
-			if (child == loft->children.front()) {
-                f0 = f;
-            } else if (child == loft->children.back()) {
-				f1 = f;
-            }
-
-            auto outer = BRepTools::OuterWire(f);
-            sections.emplace_back();
-            sections.back().push_back(outer);
-            for (TopoDS_Iterator it(f); it.More(); it.Next()) {
-                if (outer != it.Value()) {
-                    sections.back().push_back(TopoDS::Wire(it.Value()));
-                }
-            }
-        }
-
-		auto first_wire_count = sections.front().size();
-        for (auto& section : sections) {
-			if (section.size() != first_wire_count) {
-				Logger::Error("Inconsistent number of wires in sections");
+			TopoDS_Shape f0, f1;
+			if (!convert(std::static_pointer_cast<taxonomy::face>(loft->children.front()), f0) ||
+				!convert(std::static_pointer_cast<taxonomy::face>(loft->children.back()), f1))
+			{
 				return false;
 			}
-        }
-
-		BRep_Builder BB;
-		TopoDS_Shell comp;
-		BB.MakeShell(comp);
-
-        for (size_t i = 0; i < first_wire_count; ++i) {
-            // Rule=True uses linear interpolation.
-            // This is critical for preventing twists in roads/railings.
-            BRepOffsetAPI_ThruSections builder(false, true);
-            for (auto& ws : sections) {
-                builder.AddWire(ws[i]);
-            }
-            builder.Build();
-			if (!builder.IsDone()) {
+			if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
 				return false;
 			}
-			for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
-				BB.Add(comp, exp.Current());
+
+			TopExp_Explorer exp1(f0, TopAbs_WIRE);
+			TopExp_Explorer exp2(f1, TopAbs_WIRE);
+			for (; exp1.More() && exp2.More(); exp1.Next(), exp2.Next()) {
+				const auto& w1 = TopoDS::Wire(exp1.Current());
+				const auto& w2 = TopoDS::Wire(exp2.Current());
+				BRepOffsetAPI_ThruSections builder;
+				builder.AddWire(w1);
+				builder.AddWire(w2);
+				builder.Build();
+				if (!builder.IsDone()) {
+					return false;
+				}
+				for (TopExp_Explorer exp(builder.Shape(), TopAbs_FACE); exp.More(); exp.Next()) {
+					BB.Add(comp, exp.Current());
+				}
 			}
+
+			BB.Add(comp, f0.Reversed());
+			BB.Add(comp, f1);
+
+			result = BRepBuilderAPI_MakeSolid(comp).Solid();
+
+			return true;
+		} else {
+			logger::error("Lofting more than two sections is not supported");
+			return false;
 		}
-
-		BB.Add(comp, f0.Reversed());
-		BB.Add(comp, f1);
-
-		result = BRepBuilderAPI_MakeSolid(comp).Solid();
-
-		return true;
 	}
 	
 	TopTools_ListOfShape faces;
@@ -164,6 +134,13 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 	std::vector<TopoDS_Shape> shps(loft->children.size());
     std::vector<std::vector<std::set<std::string>>> all_tags;
+
+
+	std::ostringstream oss;
+    loft->children[0]->print(oss);
+    loft->children[1]->print(oss);
+    auto s = oss.str();
+    std::wcout << s.c_str() << std::endl;
 
 	// First convert all taxonomy items to TopoDS_Wire/Face
     for (auto it = loft->children.begin(); it < loft->children.end(); ++it) {
@@ -179,21 +156,21 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			// I think make_loft() where should just return a shell instead, because
 			// this faceted lofting does not depend on any functionality in the geometry library
 			// and the branching with tags needs to be solved twice otherwise
-			auto loop_to_points = [](const taxonomy::loop::ptr& loop, const boost::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
+			auto loop_to_points = [](const taxonomy::loop::ptr& loop, const std::optional<std::vector<std::string>>& input_tags) -> std::pair<std::vector<taxonomy::point3::ptr>, std::vector<std::set<std::string>>> {
                 std::vector<taxonomy::point3::ptr> points;
                 std::vector<std::set<std::string>> tags;
                 std::vector<std::string>::const_iterator tag_it;
 
-                if (!loop->closed.get_value_or(false)) {
-                    points = {boost::get<taxonomy::point3::ptr>(loop->children[0]->start)};
+                if (!loop->closed.value_or(false)) {
+                    points = {std::get<taxonomy::point3::ptr>(loop->children[0]->start)};
                     if (input_tags) {
                         tags = {{input_tags->front()}};
                         tag_it = ++input_tags->begin();
                     }
                 }
                 for (auto& e : loop->children) {
-                    const auto& p1 = boost::get<taxonomy::point3::ptr>(e->start);
-                    const auto& p2 = boost::get<taxonomy::point3::ptr>(e->end);
+                    const auto& p1 = std::get<taxonomy::point3::ptr>(e->start);
+                    const auto& p2 = std::get<taxonomy::point3::ptr>(e->end);
                     if (input_tags && p1->ccomponents() == p2->ccomponents()) {
                         tags.back().insert(*tag_it);
                         ++tag_it;
@@ -207,7 +184,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
                     }
                 }
                 if (!input_tags) {
-                    if (loop->closed.get_value_or(false)) {
+                    if (loop->closed.value_or(false)) {
                         // close polygon by referencing first point
                         points.push_back(points.front());
                     }
@@ -260,18 +237,6 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
     return true;
 	*/
 
-    if (shps.size() < 2) {
-        Logger::Error("Not enough sections to loft");
-        return false;
-    }
-
-    if (shps[0].ShapeType() == TopAbs_FACE) {
-        // When processing a sectioned *surface* there are no
-        // begin and end caps that need to be added.
-        BB.Add(comp, shps.front().Reversed());
-        BB.Add(comp, shps.back());
-    }
-
 	// @todo this approach is
     // potentially incorrect as there is no guarantee that the wires for
     // subsequently placed profiles are traversed from an equivalent start vertex.
@@ -295,6 +260,18 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 				}
 			} else {
                 ws[0][i] = TopoDS::Wire(*fa[i]);
+			}
+		}
+        if (it->ShapeType() == TopAbs_FACE) {
+			// When processing a sectioned *surface* there are no
+			// begin and end caps that need to be added.
+			if (it == shps.begin()) {
+				// faces.Append(shps[0]);
+				BB.Add(comp, shps[0]);
+			}
+            if (jt == shps.end() - 1) {
+				// faces.Append(shps[1]);
+				BB.Add(comp, shps[1]);
 			}
 		}
 
@@ -427,19 +404,15 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::loft::ptr loft, IfcGeom::ConversionResults& results) {
-    return handle_occt_exception([&]() -> bool {
-
 	TopoDS_Shape shape;
 	if (!convert(loft, shape)) {
 		return false;
 	}
 	results.emplace_back(ConversionResult(
-		loft->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		loft->instance.id(),
 		loft->matrix,
 		new OpenCascadeShape(shape),
 		loft->surface_style
 	));
 	return true;
-
-    });
 }

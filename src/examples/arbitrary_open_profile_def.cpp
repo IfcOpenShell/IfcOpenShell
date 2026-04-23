@@ -28,16 +28,15 @@
 #include <iostream>
 #include <fstream>
 
-#define IfcSchema Ifc4
-#include "ifcparse/Ifc4.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 static int i = 0;
 
-void create_product_from_item(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcRepresentationItem* item, const std::string& s) {
+void create_product_from_item(hierarchy_helper& file, IfcSchema::IfcRepresentationItem* item, const std::string& s) {
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("product"), null, null, 0, 0, null, null);
 	file.addBuildingProduct(product);
@@ -50,8 +49,8 @@ void create_product_from_item(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::If
 	items->push(item);
 
 	if (s == "GeometricSet") {
-        IfcSchema::IfcGeometricSet* set = new IfcSchema::IfcGeometricSet(items->as<IfcSchema::IfcGeometricSetSelect>());
-		file.addEntity(set);
+		IfcSchema::IfcGeometricSet* set = new IfcSchema::IfcGeometricSet(items->generalize());
+		file.add_entity(set);
 		items = IfcSchema::IfcRepresentationItem::list::ptr(new IfcSchema::IfcRepresentationItem::list());
 		items->push(set);
 	}
@@ -61,55 +60,55 @@ void create_product_from_item(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::If
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(boost::none, boost::none, reps);
-	file.addEntity(rep);
-	file.addEntity(shape);
+	file.add_entity(rep);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 }
 
-void create_surfaces_from_profile(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcProfileDef* profile) {
+void create_surfaces_from_profile(hierarchy_helper& file, IfcSchema::IfcProfileDef* profile) {
 	IfcSchema::IfcSurfaceOfLinearExtrusion* extrusion = new IfcSchema::IfcSurfaceOfLinearExtrusion(profile, file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 100.);
-	file.addEntity(extrusion);
+	file.add_entity(extrusion);
 
 	IfcSchema::IfcAxis1Placement* ax1 = new IfcSchema::IfcAxis1Placement(file.addTriplet<IfcSchema::IfcCartesianPoint>(0,100,0), file.addTriplet<IfcSchema::IfcDirection>(1,0,0));
 	IfcSchema::IfcSurfaceOfRevolution* revolution = new IfcSchema::IfcSurfaceOfRevolution(profile, file.addPlacement3d(), ax1);
-	file.addEntity(ax1);
-	file.addEntity(revolution);
+	file.add_entity(ax1);
+	file.add_entity(revolution);
 
 	create_product_from_item(file, extrusion, "GeometricSet");
 	create_product_from_item(file, revolution, "GeometricSet");
 }
 
-void create_solids_from_profile(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcProfileDef* profile) {
+void create_solids_from_profile(hierarchy_helper& file, IfcSchema::IfcProfileDef* profile) {
 	IfcSchema::IfcExtrudedAreaSolid* extrusion = new IfcSchema::IfcExtrudedAreaSolid(profile, file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 100.);
-	file.addEntity(extrusion);
+	file.add_entity(extrusion);
 
 	IfcSchema::IfcAxis1Placement* ax1 = new IfcSchema::IfcAxis1Placement(file.addTriplet<IfcSchema::IfcCartesianPoint>(0,100,0), file.addTriplet<IfcSchema::IfcDirection>(1,0,0));
 	IfcSchema::IfcRevolvedAreaSolid* revolution1 = new IfcSchema::IfcRevolvedAreaSolid(profile, file.addPlacement3d(), ax1, 360.);
 	IfcSchema::IfcRevolvedAreaSolid* revolution2 = new IfcSchema::IfcRevolvedAreaSolid(profile, file.addPlacement3d(), ax1, 90.);
-	file.addEntity(ax1);
-	file.addEntity(revolution1);
-	file.addEntity(revolution2);
+	file.add_entity(ax1);
+	file.add_entity(revolution1);
+	file.add_entity(revolution2);
 
 	create_product_from_item(file, extrusion, "SweptSolid");
 	create_product_from_item(file, revolution1, "SweptSolid");
 	create_product_from_item(file, revolution2, "SweptSolid");
 }
 
-void create_products_from_curve(IfcHierarchyHelper<IfcSchema>& file, IfcSchema::IfcBoundedCurve* curve) {
+void create_products_from_curve(hierarchy_helper& file, IfcSchema::IfcBoundedCurve* curve) {
 	IfcSchema::IfcArbitraryOpenProfileDef* open = new IfcSchema::IfcArbitraryOpenProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE, null, curve);
 	IfcSchema::IfcCenterLineProfileDef* center_line = new IfcSchema::IfcCenterLineProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, curve, 10.);
-	file.addEntity(open);
-	file.addEntity(center_line);
+	file.add_entity(open);
+	file.add_entity(center_line);
 
 	create_surfaces_from_profile(file, open);
 	create_solids_from_profile(file, center_line);
 }
 
 int main(int argc, char** argv) {
-	const char filename[] = "arbitrary_open_profile_def.ifc";
-	IfcHierarchyHelper<IfcSchema> file;
-	file.header().file_name()->setname(filename);
+	const char filename[] = "IfcArbitraryOpenProfileDef.ifc";
+	hierarchy_helper file;
+	file.header().file_name().name(filename);
 
 	double coords1[] = {-50.0, 0.0};
 	double coords2[] = { 50.0, 0.0};
@@ -118,23 +117,22 @@ int main(int argc, char** argv) {
 	points->push(new IfcSchema::IfcCartesianPoint(std::vector<double>(coords2, coords2+2)));
 	file.addEntities(points->generalize());
 	IfcSchema::IfcPolyline* poly = new IfcSchema::IfcPolyline(points);
-	file.addEntity(poly);
+	file.add_entity(poly);
 
 	create_products_from_curve(file, poly);
 
 	IfcSchema::IfcEllipse* ellipse = new IfcSchema::IfcEllipse(file.addPlacement2d(), 50., 25.);
-	file.addEntity(ellipse);
-    aggregate_of_instance::ptr trim1(new aggregate_of_instance);
-    aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	file.add_entity(ellipse);
+	IfcEntityList::ptr trim1(new IfcEntityList);
+	IfcEntityList::ptr trim2(new IfcEntityList);
 	trim1->push(new IfcSchema::IfcParameterValue(  0.));
 	trim2->push(new IfcSchema::IfcParameterValue(180.));
-    IfcSchema::IfcTrimmedCurve* trim = new IfcSchema::IfcTrimmedCurve(ellipse, trim1->as<IfcSchema::IfcTrimmingSelect>(), trim2->as<IfcSchema::IfcTrimmingSelect>(), true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
-	file.addEntity(trim);
+	IfcSchema::IfcTrimmedCurve* trim = new IfcSchema::IfcTrimmedCurve(ellipse, trim1, trim2, true, IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER);
+	file.add_entity(trim);
 
 	create_products_from_curve(file, trim);
 
-    using namespace std::string_literals;
-	file.getSingle<IfcSchema::IfcProject>()->setName("arbitrary_open_profile_def"s);
+	file.getSingle<Ifc2x3::IfcProject>()->setName("IfcArbitraryOpenProfileDef");
 
 	std::ofstream f(filename);
 	f << file;

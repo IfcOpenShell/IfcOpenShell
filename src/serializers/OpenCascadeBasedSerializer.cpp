@@ -32,10 +32,10 @@
 #include <BRepBuilderAPI_Transform.hxx>
 
 bool OpenCascadeBasedSerializer::ready() {
-	std::ofstream test_file(IfcUtil::path::from_utf8(out_filename).c_str(), std::ios_base::binary);
+	std::ofstream test_file(ifcopenshell::path::from_utf8(out_filename).c_str(), std::ios_base::binary);
 	bool succeeded = test_file.is_open();
 	test_file.close();
-	IfcUtil::path::delete_file(out_filename);
+	ifcopenshell::path::delete_file(out_filename);
 	return succeeded;
 }
 

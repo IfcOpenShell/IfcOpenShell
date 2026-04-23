@@ -958,7 +958,7 @@ def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcope
     :return: The elements using the profile.
     """
     ifc_file = profile.file
-    queue = ifc_file.get_inverse(profile)
+    queue = list(ifc_file.get_inverse(profile))
     processed: set[ifcopenshell.entity_instance] = set()
     representations: set[ifcopenshell.entity_instance] = set()
     while queue:
@@ -1675,14 +1675,14 @@ def remove_deep2(
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
-    subelement_queue = [element]
+    subelement_queue = deque([element])
 
     # Cache already processed entities to avoid traversing them multiple time.
     # E.g. lots of IFCINDEXEDPOLYCURVES may reference the same IFCCARTESIANPOINTLIST2D.
     processed_ids: set[int] = set()
 
     while subelement_queue:
-        subelement = subelement_queue.pop(0)
+        subelement = subelement_queue.popleft()
         subelement_id = subelement.id()
         if (
             subelement_id
@@ -1717,6 +1717,7 @@ def remove_deep2(
 
     # We delete elements from subgraph in reverse order to allow batching to work
     for subelement in filter(lambda e: e in to_delete, subgraph[::-1]):
+        to_delete.remove(subelement)
         ifc_file.remove(subelement)
     # ifc_file.unbatch()
 

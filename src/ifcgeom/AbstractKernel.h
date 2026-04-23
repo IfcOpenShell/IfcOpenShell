@@ -21,12 +21,14 @@
 #define ABSTRACT_KERNEL_H
 
 #include "../ifcparse/macros.h"
-#include "../ifcparse/IfcLogger.h"
+#include "../ifcparse/logger.h"
 #include "../ifcgeom/ifc_geom_api.h"
 #include "../ifcgeom/IfcGeomRepresentation.h"
 #include "../ifcgeom/taxonomy.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
+
+#include <string_view>
 
 static const double ALMOST_ZERO = 1.e-9;
 
@@ -79,6 +81,12 @@ namespace ifcopenshell {
 		const std::string& geometry_library() const {
 			return geometry_library_;
 		}
+		virtual std::string_view backend_id() const {
+			return geometry_library_;
+		}
+		virtual bool accepts(const IfcGeom::ConversionResultShape& shape) const {
+			return shape.backend_id() == backend_id();
+		}
 
 		virtual bool supports_boolean_operations() const = 0;
 
@@ -121,8 +129,8 @@ namespace ifcopenshell {
 		*/
 
 		virtual bool apply_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&) { throw not_implemented_error(); }
-		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information>&) { throw not_implemented_error(); }
-		virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
+		virtual bool apply_folded_layerset(IfcGeom::ConversionResults&, const ifcopenshell::geometry::layerset_information&, const std::map<express::Base, ifcopenshell::geometry::layerset_information>&) { throw not_implemented_error(); }
+		virtual bool convert_openings(const express::Base& entity, const std::vector<std::pair<taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 			const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) = 0;
 		virtual bool unify_shapes(const IfcGeom::ConversionResults&, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 
@@ -149,8 +157,10 @@ namespace {
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* k, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            if (k->partial_success_is_success) {
+                logger::error("No conversion for " + std::to_string(item->kind()));
+            }
 			return false;
 		}
 	};
@@ -169,8 +179,10 @@ namespace {
 
 	template <>
 	struct dispatch_with_upgrade<ifcopenshell::geometry::taxonomy::upgrades::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion with upgrade for " + std::to_string(item->kind()));
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* k, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            if (k->partial_success_is_success) {
+                logger::error("No conversion with upgrade for " + std::to_string(item->kind()));
+            }
 			return false;
 		}
 	};
@@ -206,7 +218,7 @@ namespace {
 	template <typename T>
 	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr& item, T&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			logger::error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};
@@ -228,7 +240,7 @@ namespace {
 	template <typename T>
 	struct dispatch_surface_creation<T, ifcopenshell::geometry::taxonomy::surfaces::max> {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr& item, T&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			logger::error("No conversion for " + std::to_string(item->kind()));
 			return false;
 		}
 	};

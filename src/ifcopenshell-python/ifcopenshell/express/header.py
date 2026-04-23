@@ -26,17 +26,14 @@ import documentation
 
 from collections import defaultdict
 
-USE_VIRTUAL_INHERITANCE = True
-
-
 class Header(codegen.Base):
     def __init__(self, mapping):
         declarations = []
 
         case_lookup = lambda nm: [k for k in mapping.schema.keys if k.lower() == nm.lower()][0]
-        case_normalize = lambda nm: nm if nm.startswith("IfcUtil::") else case_lookup(nm)
+        case_normalize = lambda nm: nm if nm.startswith("express::") else case_lookup(nm)
         create_supertype_statement = lambda nms: ", ".join(
-            "public %s %s" % ("" if c.startswith("IfcUtil::") else "", c) for c in nms
+            "public %s %s" % ("" if c.startswith("express::") else "", c) for c in nms
         )
 
         write = lambda str, **kwargs: declarations.append(
@@ -44,7 +41,7 @@ class Header(codegen.Base):
             % dict({"documentation": templates.multi_line_comment(documentation.description(kwargs["name"]))}, **kwargs)
         )
 
-        forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys())
+        forward_names = list(mapping.schema.entities.keys()) + list(mapping.schema.simpletypes.keys()) + list(mapping.schema.selects.keys()) + list(mapping.schema.enumerations.keys())
         forward_definitions = "".join(["class %s; " % n for n in forward_names])
 
         select_super_types = defaultdict(list)
@@ -52,7 +49,20 @@ class Header(codegen.Base):
         for name, type in mapping.schema.selects.items():
             for nm in type.values:
                 select_super_types[str(nm).lower()].append(name)
-            write(templates.select_virtual if USE_VIRTUAL_INHERITANCE else templates.select_plain, name=name)
+
+            # Previously we used (virtual) inheritance, now we use casts to go from Base to Select.
+            # Casts only go one conversion step deep, so we need to explicitly all descendant selected leafs.
+            def visit_select(s):
+                for x in map(str, s.values):
+                    yield x
+                    if mapping.schema.is_select(x):
+                        yield from visit_select(mapping.schema.selects[x])
+                
+            write(templates.select, 
+                  name=name, 
+                  template_items="\n".join(templates.select_list_item % {'item_name': nm} for nm in visit_select(type)),
+                  cast_functions="\n".join(templates.select_cast_function % {'name': name, 'item_name': nm} for nm in visit_select(type)),
+            )
 
         def get_select_super_types(nm, bases=[]):
             x = list(select_super_types[nm.lower()])
@@ -83,13 +93,15 @@ class Header(codegen.Base):
                         all_superclasses.append(superclass)
                         superclass = mapping.simple_type_parent(superclass)
                 else:
-                    superclasses.append("IfcUtil::IfcBaseType")
+                    superclasses.append("express::DeclaredType")
 
-                if USE_VIRTUAL_INHERITANCE:
-                    superclasses.extend(get_select_super_types(name, bases=all_superclasses))
+                # This is no longer used, previously virtual inheritance was used, now
+                # a variant-like approach is used instead, so the definition of selects
+                # is on the other side again, as it is in Express.
+                # superclasses.extend(get_select_super_types(name, bases=all_superclasses))
 
                 is_emitted = (
-                    lambda nm: nm == "IfcUtil::IfcBaseType"
+                    lambda nm: nm == "express::DeclaredType"
                     or nm in mapping.schema.selects
                     or nm.lower() in emitted_simpletypes
                 )
@@ -100,10 +112,13 @@ class Header(codegen.Base):
 
                 emitted_simpletypes.add(name.lower())
 
-                superclass_statement = create_supertype_statement(superclasses)
+                # with the v1 data model we're back to exactly one supertype, no more virtual inheritance to handle selects
+                assert len(superclasses) == 1
+                superclass_statement = superclasses[0]
+                superclass_2 = superclass_statement.split('::')[-1]
 
                 write(
-                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement
+                    templates.simpletype, name=name, type=type_str, attr_type=attr_type, superclass=superclass_statement, superclass_2=superclass_2
                 )
 
         class_definitions = []
@@ -127,9 +142,13 @@ class Header(codegen.Base):
                             ["/// %s" % d for d in documentation.description(".".join((name, attr.name)))]
                         )
                         type_str = mapping.get_parameter_type(attr)
-                        if mapping.make_argument_type(attr) != "IfcUtil::Argument_UNKNOWN":
+                        if mapping.make_argument_type(attr) != "ifcopenshell::Argument_UNKNOWN":
                             attr_lines.append("%s %s() const;" % (type_str, attr.name))
-                            attr_lines.append("void set%s(%s v);" % (attr.name, type_str))
+                            attr_lines.append("void set%s(const %s& v);" % (attr.name, type_str))
+                            if type_str == 'std::optional< std::string >':
+                                # because a 2-step char[] -> std::string -> optional<string> is not allowed
+                                # attr_lines.append("void set%s(const %s& v);" % (attr.name, 'std::string'))
+                                pass
 
                     [write_method(attr) for attr in type.attributes]
 
@@ -158,11 +177,12 @@ class Header(codegen.Base):
                         all_supertypes.append(tt.supertypes[0])
                         tt = mapping.schema.entities[tt.supertypes[0]]
 
-                    supertypes = list(type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
-                    if USE_VIRTUAL_INHERITANCE:
-                        supertypes.extend(get_select_super_types(name, bases=all_supertypes))
+                    supertypes = list(type.supertypes) if len(type.supertypes) else ["express::Entity"]
+                    # supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
-                    superclass = create_supertype_statement(supertypes)
+                    assert len(supertypes) == 1
+                    superclass = supertypes[0]
+                    superclass_2 = superclass.split('::')[-1]
 
                     argument_count = mapping.argument_count(type)
 
@@ -184,7 +204,7 @@ class Header(codegen.Base):
                     argument_name_function_body_tail = (
                         (" return %s::getArgumentName(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_name_function_body = (
@@ -196,7 +216,7 @@ class Header(codegen.Base):
                     derived_in_supertype = set(derived) & set(attribute_names)
                     derived_in_supertype_indices = sorted(attribute_names.index(nm) for nm in derived_in_supertype)
                     attribute_type_cases = [
-                        "case %d: return IfcUtil::Argument_DERIVED; " % idx for idx in derived_in_supertype_indices
+                        "case %d: return ifcopenshell::Argument_DERIVED; " % idx for idx in derived_in_supertype_indices
                     ]
                     attribute_type_cases += [
                         "case %d: return %s; " % (i + argument_start, mapping.make_argument_type(attr))
@@ -208,7 +228,7 @@ class Header(codegen.Base):
                     argument_type_function_body_tail = (
                         (" return %s::getArgumentType(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_type_function_body = (
@@ -231,7 +251,7 @@ class Header(codegen.Base):
                     argument_entity_function_body_tail = (
                         (" return %s::getArgumentEntity(i); " % type.supertypes[0])
                         if len(type.supertypes) == 1
-                        else ' (void)i; throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); '
+                        else ' (void)i; throw ifcopenshell::attribute_out_of_range_exception("Argument index out of range"); '
                     )
 
                     argument_entity_function_body = (

@@ -4,7 +4,7 @@
 
 using namespace ifcopenshell::geometry;
 
-ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
+ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geometry::Settings& s)
 	: kernel_(std::move(geometry_library))
 {
 	mapping_ = impl::mapping_implementations().construct(file, s);
@@ -29,17 +29,19 @@ namespace {
 		if (density > 1e5) {
 			items[0].Shape()->set_box(box);
 			items.erase(items.begin() + 1, items.end());
-			Logger::Notice("Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+			logger::notice("Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
 		}
 	}
 }
 
-IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place_) {
+IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(taxonomy::ptr representation_node, const express::Base product_, const taxonomy::matrix4::ptr& place_) {
+    auto product = product_.as<express::Entity>();
+    
 	std::stringstream representation_id_builder;
 
 	auto place = place_;
 
-	representation_id_builder << representation_node->instance->as<IfcUtil::IfcBaseEntity>()->id();
+	representation_id_builder << representation_node->instance.id();
 
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::ConversionResults shapes;
@@ -47,11 +49,11 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	if (!kernel_->convert(representation_node, shapes)) {
 		return 0;
 	}
-
+	
 	if (settings_.get<ifcopenshell::geometry::settings::ApplyLayerSets>().get()) {
 		ifcopenshell::geometry::layerset_information layerinfo;
 		std::vector<ifcopenshell::geometry::endpoint_connection> neighbours;
-		std::map<IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::layerset_information> neigbour_layers;
+		std::map<express::Base, ifcopenshell::geometry::layerset_information> neigbour_layers;
 		int layerset_id, lid;
 
 		if (mapping_->get_layerset_information(product, layerinfo, layerset_id)) {
@@ -99,7 +101,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 						}
 
 						if (!success) {
-							Logger::Error("Failed processing layerset");
+							logger::error("Failed processing layerset");
 						}
 					}
 				}
@@ -138,15 +140,15 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			}
 		}
 		if (some_items_without_style) {
-			Logger::Warning("No material and surface styles for:", product);
+			logger::warning("No material and surface styles for:", product);
 		}
 	}
 
 	if (material_style_applied) {
-		representation_id_builder << "-material-" << single_material->id();
+		representation_id_builder << "-material-" << single_material.id();
 	}
 
-	if (settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has() && product->declaration().is("IfcSpace")) {
+	if (settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has() && product.declaration().is("IfcSpace")) {
 		for (auto& s : shapes) {
 			if (s.hasStyle()) {
 				// @todo the uglyness
@@ -157,27 +159,27 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	int parent_id = -1;
 	try {
-		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
+		express::Base parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->id();
+			parent_id = parent_object.id();
 		}
 	} catch (const std::exception& e) {
-		Logger::Error(e);
+		logger::error(e);
 	}
 
-	const std::string name = product->get_value<std::string>("Name", "");
-	const std::string guid = product->get_value<std::string>("GlobalId", "");
+	const std::string name = product.get_value<std::string>("Name", "");
+	const std::string guid = product.get_value<std::string>("GlobalId", "");
 
-	const std::string product_type = product->declaration().name();
+	const std::string product_type = product.declaration().name();
 
 	// Does the IfcElement have any IfcOpenings?
 	// Note that openings for IfcOpeningElements are not processed
 	auto openings = mapping_->find_openings(product);
 
-	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && openings && openings->size()) {
+	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && !openings.empty()) {
 		representation_id_builder << "-openings";
-		for (auto it = openings->begin(); it != openings->end(); ++it) {
-			representation_id_builder << "-" << (*it)->id();
+        for (auto& op : openings) {
+			representation_id_builder << "-" << op.id();
 		}
 
 		IfcGeom::ConversionResults opened_shapes;
@@ -185,9 +187,9 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 		try {
 			std::vector<std::pair<taxonomy::ptr, taxonomy::matrix4>> opening_items;
 
-			std::transform(openings->begin(), openings->end(), std::back_inserter(opening_items), [this](IfcUtil::IfcBaseClass* opening) {
+			std::transform(openings.begin(), openings.end(), std::back_inserter(opening_items), [this](express::Base opening) {
 				auto prod_item = mapping()->map(opening);
-				auto repr = mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>());
+				auto repr = mapping()->representation_of(opening);
 				if (repr) {
 					return std::make_pair(mapping()->map(repr), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
 				} else {
@@ -208,10 +210,10 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
 			}
 		} catch (const std::exception& e) {
-			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
+			logger::message(logger::LOG_ERROR, std::string("error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Error processing openings for:", product);
+			logger::message(logger::LOG_ERROR, "error processing openings for:", product);
 		}
 
 		if (!(caught_error && opened_shapes.size() < shapes.size())) {
@@ -239,7 +241,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 				std::swap(shapes, unified_shapes);
 			}
 		} catch (std::exception& e) {
-			Logger::Error(e);
+			logger::error(e);
 		}
 	}
 
@@ -248,21 +250,21 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	std::string context_string = "";
 
 	// IfcShapeRepresentation.
-	const IfcUtil::IfcBaseEntity *representation = representation_node->instance->as<IfcUtil::IfcBaseEntity>();
-	auto representation_identifier = representation->get("RepresentationIdentifier");
+	auto representation = representation_node->instance.as<express::Entity>();
+	auto representation_identifier = representation.get("RepresentationIdentifier");
 	if (!representation_identifier.isNull()) {
 		context_string = (std::string) representation_identifier;
 	}
 	else {
-		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass*)representation->get("ContextOfItems");
-		auto context_type = context->as<IfcUtil::IfcBaseEntity>()->get("ContextType");
+		auto context = (express::Base)representation.get("ContextOfItems");
+		auto context_type = context.as<express::Entity>().get("ContextType");
 		if (!context_type.isNull()) {
 			context_string = (std::string)context_type;
 		}
 	}
 
 	auto elem = new IfcGeom::BRepElement(
-		product->id(),
+		product.id(),
 		parent_id,
 		name,
 		product_type,
@@ -295,12 +297,12 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 								if (elem->geometry().calculate_surface_area(a_calc)) {
 									double diff = std::abs(a_calc - a_file);
 									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
-										Logger::Error("Validation of surface area failed for:", product);
+										logger::error("Validation of surface area failed for:", product);
 									} else {
-										Logger::Notice("Validation of surface area succeeded for:", product);
+										logger::notice("Validation of surface area succeeded for:", product);
 									}
 								} else {
-									Logger::Error("Validation of surface area failed for:", product);
+									logger::error("Validation of surface area failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
 								double v_calc;
@@ -308,12 +310,12 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 								if (elem->geometry().calculate_volume(v_calc)) {
 									double diff = std::abs(v_calc - v_file);
 									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
-										Logger::Error("Validation of volume failed for:", product);
+										logger::error("Validation of volume failed for:", product);
 									} else {
-										Logger::Notice("Validation of volume succeeded for:", product);
+										logger::notice("Validation of volume succeeded for:", product);
 									}
 								} else {
-									Logger::Error("Validation of volume failed for:", product);
+									logger::error("Validation of volume failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
 								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
@@ -332,9 +334,9 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 									}
 								}
 								if (!all_succeeded) {
-									Logger::Error("Validation of surface genus failed for:", product);
+									logger::error("Validation of surface genus failed for:", product);
 								} else {
-									Logger::Notice("Validation of surface genus succeeded for:", product);
+									logger::notice("Validation of surface genus succeeded for:", product);
 								}
 							}
 						}
@@ -348,25 +350,26 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	return elem;
 }
 
-IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const taxonomy::matrix4::ptr& place, IfcGeom::BRepElement* brep) {
+IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_processed_representation(const express::Base product_, const taxonomy::matrix4::ptr& place, IfcGeom::BRepElement* brep) {
+    auto product = product_.as<express::Entity>();
 
 	int parent_id = -1;
 	try {
-		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
+		express::Base parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->id();
+			parent_id = parent_object.id();
 		}
 	} catch (const std::exception& e) {
-		Logger::Error(e);
+		logger::error(e);
 	}
 
-	const std::string guid = product->get_value<std::string>("GlobalId");
-	const std::string name = product->get_value<std::string>("Name", "");
-	const std::string product_type = product->declaration().name();
+	const std::string guid = product.get_value<std::string>("GlobalId");
+	const std::string name = product.get_value<std::string>("Name", "");
+	const std::string product_type = product.declaration().name();
 	const std::string context_string = brep->context();
 
 	return new IfcGeom::BRepElement(
-		product->id(),
+		product.id(),
 		parent_id,
 		name,
 		product_type,
@@ -378,7 +381,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 	);
 }
 
-IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product) {
+IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(const express::Base representation, const express::Base product) {
 	auto interpreted_representation = mapping_->map(representation);
 	if (!interpreted_representation) {
 		interpreted_representation = taxonomy::make<taxonomy::collection>();
@@ -391,7 +394,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	);
 }
 
-IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::IfcBaseClass * item)
+IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(express::Base item)
 {
 	std::clock_t map_start = std::clock();
 	auto geom_item = mapping_->map(item);

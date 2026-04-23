@@ -90,7 +90,7 @@ class PrintIfcFile(bpy.types.Operator):
         return tool.Ifc.get()
 
     def execute(self, context):
-        print(tool.Ifc.get().wrapped_data.to_string())
+        print(tool.Ifc.get().to_string())
         return {"FINISHED"}
 
 

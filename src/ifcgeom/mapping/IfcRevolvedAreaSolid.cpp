@@ -23,40 +23,31 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
-	const double ang = inst->Angle() * angle_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid& inst) {
+	const double ang = inst.Angle() * angle_unit_;
 
-	taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
+	taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
 	
-	boost::optional<double> angle;
+	std::optional<double> angle;
 
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = inst->Position() != nullptr;
+    has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	if (ang < boost::math::constants::pi<double>() * 2. - 1.e-5) {
 		angle = ang;
 	}
 
-	taxonomy::direction3::ptr axis;
-    if (inst->Axis()->Axis()) {
-        axis = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()->Axis()));
-    } else {
-        // IfcAxis1Placement.Axis is optional, and defaults to (0, 0, 1) if not provided.
-        axis = taxonomy::make<taxonomy::direction3>(0, 0, 1);
-    }
-
-
 	return taxonomy::make<taxonomy::revolve>(
 		matrix,
-		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
-		taxonomy::cast<taxonomy::point3>(map(inst->Axis()->Location())),
-		axis,
+		taxonomy::cast<taxonomy::face>(map(inst.SweptArea())),
+		taxonomy::cast<taxonomy::point3>(map(inst.Axis().Location())),
+		taxonomy::cast<taxonomy::direction3>(map(inst.Axis().Axis())),
 		angle
 	);
 
@@ -95,7 +86,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRevolvedAreaSolid* inst) {
 		}
 
 		if (intersecting) {
-			Logger::Warning("Warning Axis and SweptArea intersecting", l);
+			logger::warning("Warning Axis and SweptArea intersecting", l);
 		}
 	}
 	*/

@@ -21,82 +21,45 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-#include <deque>
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
+	IfcSchema::IfcObjectPlacement relative_to;
+	express::Base transform;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
-    if (placement_rel_to_type_ || placement_rel_to_instance_) {
-        using QueueItem = std::pair<const IfcUtil::IfcBaseEntity*, int>;
-        std::deque<QueueItem> q = {{inst, 0}};
-        while (!q.empty()) {
-            auto [placement_entity, depth] = q.front();
-            q.pop_front();
+	IfcSchema::IfcAxis2Placement3D fallback;
 
-            auto placement = placement_entity->as<typename IfcSchema::IfcObjectPlacement>();
-            if (!placement) {
-                continue;
-            }
-
-            auto self_places = placement->PlacesObject();
-            for (auto iter = self_places->begin(); iter != self_places->end(); ++iter) {
-                if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
-                    (placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)) {
-                    return taxonomy::make<taxonomy::matrix4>();
-                }
-            }
-
-			// Look for two levels deep, we want to know if we're at or *above* the 
-			// element we're ignoring, but we don't want to traverse the entire model.
-#ifdef SCHEMA_IfcObjectPlacement_HAS_ReferencedByPlacements
-			if (depth < 2) {
-                auto refs = placement->ReferencedByPlacements();
-                for (auto& ref : *refs) {
-                    q.emplace_back(ref, depth + 1);
-                }
-            }
-#else
-            Logger::Warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
-#endif
-        }
-	}
-
-	const IfcSchema::IfcObjectPlacement* relative_to = nullptr;
-	const IfcUtil::IfcBaseInterface* transform;
-
-	const IfcSchema::IfcAxis2Placement3D* fallback = nullptr;
-
-	if (inst->as<IfcSchema::IfcLocalPlacement>()) {
-		transform = inst->as<IfcSchema::IfcLocalPlacement>()->RelativePlacement();
+	if (inst.as<IfcSchema::IfcLocalPlacement>()) {
+		transform = inst.as<IfcSchema::IfcLocalPlacement>().RelativePlacement();
 	}
 #ifdef SCHEMA_HAS_IfcLinearPlacement
-   else if (inst->as<IfcSchema::IfcLinearPlacement>()) {
+   else if (inst.as<IfcSchema::IfcLinearPlacement>()) {
 #ifdef SCHEMA_IfcLinearPlacement_HAS_RelativePlacement
-        transform = inst->as<IfcSchema::IfcLinearPlacement>()->RelativePlacement();
-        fallback = inst->as<IfcSchema::IfcLinearPlacement>()->CartesianPosition();
+        transform = inst.as<IfcSchema::IfcLinearPlacement>().RelativePlacement();
+        fallback = inst.as<IfcSchema::IfcLinearPlacement>().CartesianPosition();
 #else
         // @todo Ifc4x1 and Ifc4x2 don't have RelativePlacement
         return nullptr;
 #endif
     }
 #endif
-    else if (inst->as<IfcSchema::IfcGridPlacement>()) {
+    else if (inst.as<IfcSchema::IfcGridPlacement>()) {
 		// @todo a bit harder to map without kernel
 		return nullptr;
 	}
 
 #ifdef SCHEMA_IfcObjectPlacement_HAS_PlacementRelTo
-	relative_to = inst->PlacementRelTo();
+	relative_to = inst.PlacementRelTo();
 #else
-	if (inst->as<IfcSchema::IfcLocalPlacement>()) {
-		relative_to = inst->as<IfcSchema::IfcLocalPlacement>()->PlacementRelTo();
+	if (inst.as<IfcSchema::IfcLocalPlacement>()) {
+		relative_to = inst.as<IfcSchema::IfcLocalPlacement>().PlacementRelTo();
 	}
 #endif
 
 	bool parent_placement_ignored = false;
 	if (relative_to && (placement_rel_to_type_ || placement_rel_to_instance_)) {
-		IfcSchema::IfcProduct::list::ptr parent_places = relative_to->PlacesObject();
-		for (auto iter = parent_places->begin(); iter != parent_places->end(); ++iter) {
-			if ((placement_rel_to_type_ && (*iter)->declaration().is(*placement_rel_to_type_)) ||
-				(placement_rel_to_instance_ && (*iter)->as<IfcUtil::IfcBaseEntity>() == placement_rel_to_instance_)) {
+		std::vector<IfcSchema::IfcProduct> parent_places = relative_to.PlacesObject();
+        for (auto& pp : parent_places) {
+            if ((placement_rel_to_type_ && pp.declaration().is(*placement_rel_to_type_)) ||
+                (placement_rel_to_instance_ && pp == placement_rel_to_instance_)) {
 				parent_placement_ignored = true;
 			}
 		}
@@ -127,7 +90,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
-            Logger::Warning("Computed placement differs from fallback", inst);
+            logger::warning("Computed placement differs from fallback", inst);
         }
     }
 
@@ -135,7 +98,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		Logger::Warning("Ignoring singular matrix:", inst);
+		logger::warning("Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 
@@ -145,7 +108,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 /*
 // @todo
 
-if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
+if (gridp = inst.as<IfcSchema::IfcGridPlacement>()) {
 	gp_Trsf grid_position;
 
 	auto axes = gridp->PlacementLocation()->IntersectingAxes();
@@ -159,7 +122,7 @@ if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
 	convert(l->PlacementRelTo(), grid_position);
 #else
 	IfcSchema::IfcGrid* grid = nullptr;
-	auto grids = (*axes->begin())->data().file->getInverse<IfcSchema::IfcGrid>((*axes->begin())->data().id(), -1);
+	auto grids = (*axes->begin())->data().file->get_inverse<IfcSchema::IfcGrid>((*axes->begin())->data().id(), -1);
 	if (grids && grids->size()) {
 		grid = *grids->begin();
 		if (grid->ObjectPlacement()) {
@@ -173,11 +136,11 @@ if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
 		auto offsets = x->OffsetDistances();
 
 		if (axes->size() != 2) {
-			Logger::Message(Logger::LOG_WARNING, "Unexpected grid axes count:" + std::to_string(axes->size()), x);
+			logger::message(logger::LOG_WARNING, "Unexpected grid axes count:" + std::to_string(axes->size()), x);
 			return false;
 		}
 		if (offsets.size() != 3) {
-			Logger::Message(Logger::LOG_WARNING, "Unexpected offset count:" + std::to_string(offsets.size()), x);
+			logger::message(logger::LOG_WARNING, "Unexpected offset count:" + std::to_string(offsets.size()), x);
 			return false;
 		}
 		auto first = *axes->begin();
@@ -208,7 +171,7 @@ if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
 		gp_Pnt pp1, pp2;
 		ecc->Points(1, pp1, pp2);
 		if (pp1.Distance(pp2) > getValue(GV_PRECISION)) {
-			Logger::Message(Logger::LOG_WARNING, "No axis intersection:", x);
+			logger::message(logger::LOG_WARNING, "No axis intersection:", x);
 			return false;
 		}
 		P = pp1;
@@ -239,7 +202,7 @@ if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
 			if (V.Magnitude() > 1.e-9) {
 				D = V;
 			} else {
-				Logger::Message(Logger::LOG_ERROR, "Unable to obtain ref direction:", l);
+				logger::message(logger::LOG_ERROR, "Unable to obtain ref direction:", l);
 				return false;
 			}
 		}
@@ -252,7 +215,7 @@ if (gridp = inst->as<IfcSchema::IfcGridPlacement>()) {
 		if (V.Magnitude() > 1.e-9) {
 			D = V;
 		} else {
-			Logger::Message(Logger::LOG_ERROR, "Unable to obtain ref direction:", l);
+			logger::message(logger::LOG_ERROR, "Unable to obtain ref direction:", l);
 			return false;
 		}
 	}

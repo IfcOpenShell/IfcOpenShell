@@ -23,12 +23,12 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcToroidalSurface
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface* inst) {
-    auto c = taxonomy::make<taxonomy::torus>();
-    c->radius1 = inst->MajorRadius() * length_unit_;
-    c->radius2 = inst->MinorRadius() * length_unit_;
-    c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
-    return c;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcToroidalSurface& inst) {
+	auto torus = taxonomy::make<taxonomy::torus>();
+	torus->radius1 = inst.MajorRadius() * length_unit_;
+	torus->radius2 = inst.MinorRadius() * length_unit_;
+	torus->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
+	return torus;
 }
 
 #endif

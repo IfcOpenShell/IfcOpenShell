@@ -27,21 +27,21 @@ using namespace ifcopenshell::geometry;
 #ifdef SCHEMA_HAS_IfcSectionedSurface
 
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface& inst) {
 	std::vector<cross_section> cross_sections;
 
-	auto dir = map(inst->Directrix());
+	auto dir = map(inst.Directrix());
     auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
     if (!fn) {
         // Only implement on alignment curves
-        Logger::Warning("IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
+        logger::warning("IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
     }
 
 
 	{	
-	auto css = inst->CrossSections();
-	auto csps = inst->CrossSectionPositions();
+	auto css = inst.CrossSections();
+	auto csps = inst.CrossSectionPositions();
 	std::vector<taxonomy::geom_item::ptr> faces;
 
 	// The PointByDistanceExpressions are factored out into (a) a cartesian offset relative to the
@@ -50,40 +50,58 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
 	// sweep segments. 
 	std::vector<Eigen::Vector3d> profile_offsets;
-	std::vector<boost::optional<Eigen::Matrix3d>> profile_rotations;
+	std::vector<std::optional<Eigen::Matrix3d>> profile_rotations;
 	std::vector<double> longitudes;
 
-	for (auto& cs : *css) {
+	for (auto& cs : css) {
 		faces.push_back(std::move(taxonomy::cast<taxonomy::geom_item>(map(cs))));
 	}
 	// IfcSectionedSurface::FixedAxisVertical removed in rc4, where CrossSectionPositions was IfcPointByDistanceExpression instead of IfcAxis2PlacementLinear
 #if defined(SCHEMA_HAS_IfcPointByDistanceExpression) && !defined(SCHEMA_IfcSectionedSurface_HAS_FixedAxisVertical)
-	for (auto& csp : *csps) {
-		auto pbde = csp->Location()->as<IfcSchema::IfcPointByDistanceExpression>(true);
+	for (auto& csp : csps) {
+		auto pbde = csp.Location().as<IfcSchema::IfcPointByDistanceExpression>();
 
-		longitudes.push_back(*pbde->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>(true) * length_unit_);
+		longitudes.push_back((double) pbde.DistanceAlong().as<IfcSchema::IfcLengthMeasure>() * length_unit_);
 
-        Eigen::Vector3d po(
-            pbde->OffsetLateral().get_value_or(0.),
-            // @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
-            pbde->OffsetVertical().get_value_or(0.),
-            0.);
+		// Corresponds to the profile X, Y directions (hopefully).
+		Eigen::Vector3d po(
+			pbde.OffsetLateral().value_or(0.),
+			// @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
+			pbde.OffsetVertical().value_or(0.),
+			0.
+		);
 
-        profile_offsets.push_back(po);
+		profile_offsets.push_back(po);
 
-        auto axis2_placement_linear = taxonomy::cast<taxonomy::matrix4>(map(csp));
-        boost::optional<Eigen::Matrix3d> rot(axis2_placement_linear->ccomponents().block<3, 3>(0, 0));
-        profile_rotations.push_back(rot);
-    }
+		std::optional<Eigen::Matrix3d> rot;
+		if (csp.Axis() && csp.RefDirection()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp.Axis()))->ccomponents(),
+				taxonomy::cast<taxonomy::direction3>(map(csp.RefDirection()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
+		} else if (csp.Axis()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp.Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
+        } else if (csp.RefDirection()) {
+            rot = taxonomy::matrix4(
+                      Eigen::Vector3d(0, 0, 0),
+                      Eigen::Vector3d(0, 0, 1),
+                      taxonomy::cast<taxonomy::direction3>(map(csp.RefDirection()))->ccomponents())
+                      .ccomponents()
+                      .block<3, 3>(0, 0);
+        }
+		profile_rotations.push_back(rot);
+	}
 #else
 	return nullptr;
 #endif
 	if (faces.size() != profile_offsets.size()) {
-		Logger::Warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
+		logger::warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
 		return nullptr;
 	}
 	if (faces.size() < 2) {
-		Logger::Warning("Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
+		logger::warning("Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
 		return nullptr;
 	}
 

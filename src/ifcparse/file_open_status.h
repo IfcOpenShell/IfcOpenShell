@@ -3,7 +3,7 @@
 
 #include "ifc_parse_api.h"
 
-namespace IfcParse {
+namespace ifcopenshell {
 
     class IFC_PARSE_API file_open_status {
     public:

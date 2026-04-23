@@ -21,14 +21,14 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation& inst) {
 	auto items_to_include = this->settings_.get<settings::OutputDimensionality>().get();
 
-	auto items = map_to_collection(this, inst->Items());
+	auto items = map_to_collection(this, inst.Items());
 	if (!items) {
-		auto its = inst->Items();
+		auto its = inst.Items();
 		bool empty_on_purpose = true;
-		for (auto& itm : *its) {
+		for (auto& itm : its) {
 			if (failed_on_purpose_.find(itm) == failed_on_purpose_.end()) {
 				empty_on_purpose = false;
 			}

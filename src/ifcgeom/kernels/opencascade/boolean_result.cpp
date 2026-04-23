@@ -108,7 +108,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			if (settings_.get<settings::DisableBooleanResult>().get()) {
 				results.emplace_back(IfcGeom::ConversionResult(
-					br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+					br->instance.id(),
 					br->matrix,
 					new OpenCascadeShape(a),
 					br->surface_style ? br->surface_style : first_item_style
@@ -118,14 +118,14 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			const double first_operand_volume = util::shape_volume(a);
 			if (first_operand_volume <= ALMOST_ZERO) {
-				Logger::Message(Logger::LOG_WARNING, "Empty solid for:", c->instance);
+				logger::message(logger::LOG_WARNING, "Empty solid for:", c->instance);
 			}
 		} else {
 
 			for (auto& r : cr) {
 				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
 				if (S.IsNull()) {
-					Logger::Error("Null operand");
+					logger::error("Null operand");
 					continue;
 				}
 				gp_GTrsf trsf;
@@ -140,7 +140,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
-						Logger::Message(Logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", c->instance);
+						logger::message(logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", c->instance);
 						continue;
 					} else {
 						S = result;
@@ -190,7 +190,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	}
 
 	results.emplace_back(IfcGeom::ConversionResult(
-		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		br->instance.id(),
 		br->matrix,
 		new OpenCascadeShape(a),
 		br->surface_style ? br->surface_style : first_item_style

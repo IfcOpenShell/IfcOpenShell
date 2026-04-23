@@ -21,29 +21,21 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution& inst) {
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = inst->Position() != nullptr;
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
-	}
-
-	taxonomy::direction3::ptr axis;
-	if (inst->AxisPosition()->Axis()) {
-        axis = taxonomy::cast<taxonomy::direction3>(map(inst->AxisPosition()->Axis()));
-    } else {
-        // IfcAxis1Placement.Axis is optional, and defaults to (0, 0, 1) if not provided.
-        axis = taxonomy::make<taxonomy::direction3>(0, 0, 1);
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return taxonomy::make<taxonomy::revolve>(
 		matrix,
-		taxonomy::cast<taxonomy::loop>(map(inst->SweptCurve())),
-		taxonomy::cast<taxonomy::point3>(map(inst->AxisPosition()->Location())),
-		axis,
-		boost::none
+		taxonomy::cast<taxonomy::loop>(map(inst.SweptCurve())),
+		taxonomy::cast<taxonomy::point3>(map(inst.AxisPosition().Location())),
+		taxonomy::cast<taxonomy::direction3>(map(inst.AxisPosition().Axis())),
+		std::nullopt
 	);
 }

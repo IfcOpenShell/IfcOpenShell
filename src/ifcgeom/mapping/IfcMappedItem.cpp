@@ -21,19 +21,19 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
-	IfcSchema::IfcCartesianTransformationOperator* transform = inst->MappingTarget();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMappedItem& inst) {
+	auto transform = inst.MappingTarget();
 	taxonomy::matrix4::ptr gtrsf = taxonomy::cast<taxonomy::matrix4>(map(transform));
-	IfcSchema::IfcRepresentationMap* rmap = inst->MappingSource();
-	IfcSchema::IfcAxis2Placement* placement = rmap->MappingOrigin();
+	auto rmap = inst.MappingSource();
+	auto placement = rmap.MappingOrigin();
 	taxonomy::matrix4::ptr trsf2 = taxonomy::cast<taxonomy::matrix4>(map(placement));
 	Eigen::Matrix4d res = gtrsf->ccomponents() * trsf2->ccomponents();
 
 	// @todo immutable for caching?
 	// @todo allow for multiple levels of matrix?
-	auto shapes = taxonomy::dcast<taxonomy::collection>(map(rmap->MappedRepresentation()));
+	auto shapes = taxonomy::dcast<taxonomy::collection>(map(rmap.MappedRepresentation()));
 	if (shapes == nullptr) {
-		if (failed_on_purpose_.find(rmap->MappedRepresentation()) != failed_on_purpose_.end()) {
+		if (failed_on_purpose_.find(rmap.MappedRepresentation()) != failed_on_purpose_.end()) {
 			// propagate
 			failed_on_purpose_.insert(inst);
 		}

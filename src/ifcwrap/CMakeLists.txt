@@ -24,27 +24,27 @@ if(POLICY CMP0177) # 3.31
     cmake_policy(SET CMP0177 OLD)
 endif()
 
-find_package(SWIG)
-if(NOT SWIG_FOUND)
-    message(
+FIND_PACKAGE(SWIG)
+IF(NOT SWIG_FOUND)
+	MESSAGE(
         FATAL_ERROR
         "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
         "Likely SWIG_EXECUTABLE is missing (current value - '${SWIG_EXECUTABLE}')."
     )
-endif()
+ENDIF()
 include(GNUInstallDirs)
-include(${SWIG_USE_FILE})
+INCLUDE(${SWIG_USE_FILE})
 
-if(NOT "${PYTHON_INCLUDE_DIR}" STREQUAL "")
+IF(NOT "${PYTHON_INCLUDE_DIR}" STREQUAL "")
     # Hint for FindPython where to find Python_INCLUDE_DIRS.
     set(Python_INCLUDE_DIR "${PYTHON_INCLUDE_DIR}")
-    message(STATUS "Looking for Python header files in: ${Python_INCLUDE_DIR}")
-endif()
-if(NOT "${PYTHON_LIBRARY}" STREQUAL "")
+    MESSAGE(STATUS "Looking for Python header files in: ${Python_INCLUDE_DIR}")
+ENDIF()
+IF(NOT "${PYTHON_LIBRARY}" STREQUAL "")
     # Hint for FindPython where to find Python_LIBRARIES.
     set(Python_LIBRARY "${PYTHON_LIBRARY}")
-    message(STATUS "Looking for Python library file in: ${Python_LIBRARY}")
-endif()
+    MESSAGE(STATUS "Looking for Python library file in: ${Python_LIBRARY}")
+ENDIF()
 
 # Development.Module = headers on Unix, headers+libraries on Windows.
 # Required variables:
@@ -53,29 +53,31 @@ endif()
 # Unfortunately all paths must be always provided explicitly, not by prefixing PATH.
 # Otherwise FindPython will break on newer Python versions (list of supported versions is hardcoded).
 find_package(Python COMPONENTS Development.Module)
-if(NOT Python_Development.Module_FOUND)
-    message(
-        FATAL_ERROR
-        "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed."
-    )
-endif()
+IF(NOT Python_Development.Module_FOUND)
+	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
+ENDIF()
 
 # Ensure version is saved here, from wasm libraries,
 # not from Python interpreter that might be unrelated to pyodide Python version.
 set(_python_libs_version "${Python_VERSION_MAJOR}${Python_VERSION_MINOR}")
-include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
+SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
-if(WITH_CGAL)
+if (WITH_CGAL)
     set(LIBSVGFILL svgfill)
 endif()
 
-set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
+SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
-set_property(
-    SOURCE IfcPython.i
-    PROPERTY DEPENDS IfcGeomWrapper.i IfcParseWrapper.i utils/type_conversion.i utils/typemaps_in.i utils/typemaps_out.i
+SET_PROPERTY(
+	SOURCE IfcPython.i
+	PROPERTY DEPENDS
+		IfcGeomWrapper.i
+		IfcParseWrapper.i
+		utils/type_conversion.i
+		utils/typemaps_in.i
+		utils/typemaps_out.i
 )
 
 # On Windows there is '_d' prefix for debug builds - e.g. `_d.cp311-win_amd64.pyd`.
@@ -90,18 +92,20 @@ endif()
 # But debug mode is still might be needed - e.g. Blender's Python is using it, if you're running debug build.
 if(NOT USE_DEBUG_PYTHON)
     set(Python_DEBUG_POSTFIX "")
-    add_compile_definitions(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
+	add_compile_definitions(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
     if(Python_LIBRARY_DEBUG)
         # If debug libraries were found, then override them with release ones.
         get_target_property(IMPORTED_IMPLIB Python::Module IMPORTED_IMPLIB_RELEASE)
         get_target_property(IMPORTED_LOCATION Python::Module IMPORTED_LOCATION_RELEASE)
         set_target_properties(
             Python::Module
-            PROPERTIES IMPORTED_IMPLIB_DEBUG "${IMPORTED_IMPLIB}" IMPORTED_LOCATION_DEBUG "${IMPORTED_LOCATION}"
+            PROPERTIES
+            IMPORTED_IMPLIB_DEBUG "${IMPORTED_IMPLIB}"
+            IMPORTED_LOCATION_DEBUG "${IMPORTED_LOCATION}"
         )
     endif()
 endif()
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.2")
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.2")
     # `DEBUG_POSTFIX` argument was added in 4.2.
     swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}")
 else()
@@ -109,12 +113,19 @@ else()
     # swig py wrapper will try to import `_ifcopenshell_wrapper_d` module and would fail.
     set(SWIG_MODULE_ifcopenshell_wrapper_EXTRA_FLAGS "-interface" "_ifcopenshell_wrapper")
     swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
-    set_target_properties(ifcopenshell_wrapper PROPERTIES DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}")
+    set_target_properties(
+        ifcopenshell_wrapper PROPERTIES
+        DEBUG_POSTFIX "${Python_DEBUG_POSTFIX}"
+    )
 endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
-set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
-if(WASM_BUILD)
+if(WITH_ROCKSDB)
+    message(STATUS TK)
+    target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
+endif()
+SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+if (WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
     # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
     # Possibly in the future we can clean up linked libs and try `=1`.
@@ -123,25 +134,22 @@ if(WASM_BUILD)
     if(CMAKE_GENERATOR MATCHES "Makefile" AND CMAKE_VERSION VERSION_LESS "4.2")
         # Accomodate bug in cmake makefile generator (fixed in 4.2+).
         # https://gitlab.kitware.com/cmake/cmake/-/issues/27326
-        string(REPLACE "SIDE_MODULE=1" "SIDE_MODULE=2" CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS}")
+        string(
+            REPLACE "SIDE_MODULE=1" "SIDE_MODULE=2"
+            CMAKE_MODULE_LINKER_FLAGS
+            "${CMAKE_MODULE_LINKER_FLAGS}"
+        )
     endif()
     target_link_options(
         ifcopenshell_wrapper
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
     )
 endif()
-if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
-    # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-    target_link_libraries(
-        ifcopenshell_wrapper
-        PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL}
-    )
-else()
-    target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
+target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES} ${LIBSVGFILL})
+if(kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
+    add_dependencies(ifcopenshell_wrapper ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
 endif()
-target_link_libraries(ifcopenshell_wrapper PRIVATE ${CGAL_LIBRARIES})
-target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom ${kernel_libraries})
-if((NOT WIN32) AND BUILD_SHARED_LIBS)
+if(NOT WIN32)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
@@ -149,10 +157,10 @@ endif()
 # directory in which the wrapper can be installed.
 if(NOT ${PYTHON_EXECUTABLE} STREQUAL "")
     set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
-    message(STATUS "Looking for Python interpreter in: ${PYTHON_EXECUTABLE}")
+    MESSAGE(STATUS "Looking for Python interpreter in: ${PYTHON_EXECUTABLE}")
 endif()
-find_package(Python COMPONENTS Interpreter)
-if(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
+FIND_PACKAGE(Python COMPONENTS Interpreter)
+IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     # Python_SOABI example value is 'cp311-win_amd64'.
     if(WASM_BUILD)
         # For WASM we usually don't provide interpreter,
@@ -165,43 +173,76 @@ if(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
     else()
         set(PYTHON_EXTENSION_SUFFIX ".${Python_SOABI}.so")
     endif()
-    set_target_properties(ifcopenshell_wrapper PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
-    if(PYTHON_MODULE_INSTALL_DIR)
-        set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
+    set_target_properties(
+        ifcopenshell_wrapper PROPERTIES
+        SUFFIX ${PYTHON_EXTENSION_SUFFIX}
+    )
+    if (PYTHON_MODULE_INSTALL_DIR)
+	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
-        if(USERSPACE_PYTHON_PREFIX)
-            execute_process(
+        IF (USERSPACE_PYTHON_PREFIX)
+            EXECUTE_PROCESS(
                 COMMAND ${PYTHON_EXECUTABLE} -c "import sys; import site; sys.stdout.write(site.USER_SITE)"
                 OUTPUT_VARIABLE python_package_dir
             )
-        else()
+        ELSE ()
             set(python_package_dir "${Python_SITEARCH}")
-        endif()
-        if(BUILD_PACKAGE)
+        ENDIF()
+        if (BUILD_PACKAGE)
             set(python_package_dir ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}/dist-packages/)
         endif()
     endif()
-    if("${python_package_dir}" STREQUAL "")
-        message(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
-    else()
+    IF("${python_package_dir}" STREQUAL "")
+        MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
+    ELSE()
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
-        file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
-        foreach(file ${sourcefiles})
-            file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
-            get_filename_component(dir "${relative}" DIRECTORY)
-            if(NOT IS_DIRECTORY "${file}")
-                install(FILES "${file}" DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
-            endif()
-        endforeach()
-        install(
-            FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
-            DESTINATION "${python_package_dir}/ifcopenshell"
+        FILE(GLOB_RECURSE sourcefiles
+            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
         )
-        install(TARGETS ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")
-        if(MSVC)
-            install(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+        FOREACH(file ${sourcefiles})
+            FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
+            GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
+            if(NOT IS_DIRECTORY "${file}")
+			    INSTALL(FILES "${file}"
+                        DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            endif()
+        ENDFOREACH()
+        INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
+                DESTINATION "${python_package_dir}/ifcopenshell")
+        INSTALL(TARGETS ifcopenshell_wrapper
+                DESTINATION "${python_package_dir}/ifcopenshell")
+
+        if (CREATE_BUNDLE)
+            set(_ifcopenshell_python_runtime_targets
+                IfcGeom
+                IfcParse
+                ${kernel_libraries}
+                ${tree_libraries}
+                ${mapping_libraries}
+                ${geometry_serializer_libraries}
+                ${document_serializer_libraries}
+                ${LIBSVGFILL}
+                plugin
+            )
+
+            list(REMOVE_DUPLICATES _ifcopenshell_python_runtime_targets)
+
+            if(_ifcopenshell_python_runtime_targets)
+                INSTALL(TARGETS ${_ifcopenshell_python_runtime_targets}
+                        LIBRARY DESTINATION "${python_package_dir}/ifcopenshell"
+                        RUNTIME DESTINATION "${python_package_dir}/ifcopenshell")
+            endif()
+
+            if(NOT WIN32 AND NOT WASM_BUILD)
+                set_target_properties(ifcopenshell_wrapper PROPERTIES
+                    INSTALL_RPATH "$ORIGIN"
+                )
+            endif()
         endif()
-    endif()
-else()
-    message(WARNING "No Python interpreter found, unable to install the Python wrapper")
-endif()
+	if (MSVC)
+	    INSTALL(FILES $<TARGET_PDB_FILE:ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	endif()
+    ENDIF()
+ELSE()
+    MESSAGE(WARNING "No Python interpreter found, unable to install the Python wrapper")
+ENDIF()

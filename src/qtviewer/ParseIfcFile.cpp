@@ -26,7 +26,7 @@ bool ParseIfcFile::Parse(
     const std::string& filePath,
     std::vector<osg::ref_ptr<osg::MatrixTransform>>& matrixTransforms
 ) {
-    IfcParse::IfcFile file(filePath);
+    ifcopenshell::file file(filePath);
     ifcopenshell::geometry::Settings settings;
     settings.set("use-world-coords", false);
     settings.set("weld-vertices", false);

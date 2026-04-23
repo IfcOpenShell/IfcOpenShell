@@ -27,12 +27,12 @@
 #include <iostream>
 #include <fstream>
 
-#define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
+typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
 
 class Node {
@@ -101,7 +101,7 @@ public:
 		return operate(OP_INTERSECT, p);
 	}
 
-	IfcSchema::IfcRepresentationItem* serialize(IfcHierarchyHelper<IfcSchema>& file) const {
+	IfcSchema::IfcRepresentationItem* serialize(hierarchy_helper& file) const {
 		IfcSchema::IfcRepresentationItem* my;
 		if (op == OP_TERMINAL) {
 			IfcSchema::IfcAxis2Placement3D* place = file.addPlacement3d(x,y,z,zx,zy,zz,xx,xy,xz);
@@ -117,7 +117,7 @@ public:
 				my = new IfcSchema::IfcRightCircularCone(place, b, a);
 			}
 		} else {
-			IfcSchema::IfcBooleanOperator o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION;
+			IfcSchema::IfcBooleanOperator::IfcBooleanOperator o;
 			if (op == OP_ADD) {
 				o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_UNION;
 			} else if (op == OP_SUBTRACT) {
@@ -125,17 +125,17 @@ public:
 			} else if (op == OP_INTERSECT) {
 				o = IfcSchema::IfcBooleanOperator::IfcBooleanOperator_INTERSECTION;
 			}
-			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file)->as<IfcSchema::IfcBooleanOperand>(), right->serialize(file)->as<IfcSchema::IfcBooleanOperand>());
+			my = new IfcSchema::IfcBooleanResult(o, left->serialize(file), right->serialize(file));
 		}
-		file.addEntity(my);
+		file.add_entity(my);
 		return my;
 	}
 };
 
 int main(int argc, char** argv) {
-	const char filename[] = "csg_primitive.ifc";
-	IfcHierarchyHelper<IfcSchema> file;
-	file.header().file_name()->setname(filename);
+	const char filename[] = "IfcCsgPrimitive.ifc";
+	hierarchy_helper file;
+	file.header().file_name().name(filename);
 
 	IfcSchema::IfcRepresentationItem* csg1 = Node::Box(8000.,6000.,3000.).subtract(
 		Node::Box(7600.,5600.,2800.).move(200.,200.,200.)
@@ -181,13 +181,12 @@ int main(int argc, char** argv) {
 	reps->push(rep);
 
 	IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
-	file.addEntity(rep);
-	file.addEntity(shape);
+	file.add_entity(rep);
+	file.add_entity(shape);
 		
 	product->setRepresentation(shape);
 
-	using namespace std::string_literals;
-	file.getSingle<IfcSchema::IfcProject>()->setName("csg_primitive"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("IfcCompositeProfileDef");
 
 	std::ofstream f(filename);
 	f << file;

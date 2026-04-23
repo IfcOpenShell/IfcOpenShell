@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -20,9 +20,9 @@
 // TODO: Multiple schemas
 #define IfcSchema Ifc2x3
 
-#include "ifcparse/IfcFile.h"
-#include "ifcparse/IfcLogger.h"
-#include "ifcparse/Ifc2x3.h"
+#include "../ifcparse/file.h"
+#include "../ifcparse/logger.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -47,7 +47,7 @@ static_assert(false, "A boost preprocessor sequence of schema identifiers is nee
 // for and then overflow into an existing empty include file.
 
 #define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/schemas/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
 
 #include INCLUDE_SCHEMA(0)
 #include INCLUDE_SCHEMA(1)
@@ -80,7 +80,7 @@ struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : s
 
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
 
-std::string format_string(const AttributeValue& argument) {
+std::string format_string(const attribute_value& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
 	// in this particular case we only care about flattening it to a string.
 	// @todo mostly duplicated from XmlSerializer.cpp
@@ -89,21 +89,21 @@ std::string format_string(const AttributeValue& argument) {
 	}
 	auto argument_type = argument.type();
 	switch (argument_type) {
-	case IfcUtil::Argument_BOOL: {
+	case ifcopenshell::Argument_BOOL: {
 		const bool b = argument;
 		return b ? "true" : "false";
 	}
-	case IfcUtil::Argument_DOUBLE: {
+	case ifcopenshell::Argument_DOUBLE: {
 		const double d = argument;
 		std::stringstream stream;
 		stream << std::setprecision(std::numeric_limits< double >::max_digits10) << d;
 		return stream.str();
 		break; }
-	case IfcUtil::Argument_STRING:
-	case IfcUtil::Argument_ENUMERATION: {
+	case ifcopenshell::Argument_STRING:
+	case ifcopenshell::Argument_ENUMERATION: {
 		return static_cast<std::string>(argument);
 		break; }
-	case IfcUtil::Argument_INT: {
+	case ifcopenshell::Argument_INT: {
 		const int v = argument;
 		std::stringstream stream;
 		stream << v;
@@ -114,44 +114,42 @@ std::string format_string(const AttributeValue& argument) {
 }
 
 template <typename Schema, typename T>
-void process_pset(element_properties& props, const T* inst) {
+void process_pset(element_properties& props, const T& inst) {
 	// Process an individual Property or Quantity set.
-	if (auto pset = inst->template as<typename Schema::IfcPropertySet>()) {
-		if (!pset->Name()) {
+	if (auto pset = inst.template as<typename Schema::IfcPropertySet>()) {
+		if (!pset.Name()) {
 			return;
 		}
-		auto ps = pset->HasProperties();
-		for (auto it = ps->begin(); it != ps->end(); ++it) {
-			auto& p = *it;
-			if (auto singleval = p->template as<typename Schema::IfcPropertySingleValue>()) {
+		auto ps = pset.HasProperties();
+		for (auto& p : ps) {
+			if (auto singleval = p.template as<typename Schema::IfcPropertySingleValue>()) {
 				std::string propname, propvalue;
 				if constexpr (is_ifc4_or_higher<Schema>::value) {
-					if (!singleval->Name()) {
+					if (!singleval.Name()) {
 						continue;
 					}
-					propname = *singleval->Name();
+					propname = *singleval.Name();
 				}
 				if constexpr (!is_ifc4_or_higher<Schema>::value) {
-					propname = singleval->Name();
+					propname = singleval.Name();
 				}
-				if (!singleval->NominalValue()) {
+				if (!singleval.NominalValue()) {
 					propvalue = "-";
 				} else {
-					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->get_attribute_value(0));
+					props[*pset.Name()][propname] = format_string(singleval.NominalValue().concrete().get_attribute_value(0));
 				}
 			}
 		}
 	}
-	if (auto qset = inst->template as<typename Schema::IfcElementQuantity>()) {
-		if (!qset->Name()) {
+	if (auto qset = inst.template as<typename Schema::IfcElementQuantity>()) {
+		if (!qset.Name()) {
 			return;
 		}
-		auto qs = qset->Quantities();
-		for (auto it = qs->begin(); it != qs->end(); ++it) {
-			auto& q = *it;
-			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->get_attribute_value(3).type() == IfcUtil::Argument_DOUBLE) {
-				double v = q->get_attribute_value(3);
-				props[*qset->Name()][q->Name()] = std::to_string(v);
+		auto qs = qset.Quantities();
+		for (auto& q : qs) {
+			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == ifcopenshell::Argument_DOUBLE) {
+				double v = q.get_attribute_value(3);
+				props[*qset.Name()][q.Name()] = std::to_string(v);
 			}
 		}
 	}
@@ -163,49 +161,44 @@ void process_pset(element_properties& props, const T* inst) {
 }
 
 template <typename Schema>
-void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefinition* inst) {
+void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefinition& inst) {
 	// Extracts the property definitions for an IFC instance. 
-	if (auto tyob = inst->template as<typename Schema::IfcTypeObject>()) {
-		if (tyob->HasPropertySets()) {
-			auto defs = *tyob->HasPropertySets();
-			for (auto it = defs->begin(); it != defs->end(); ++it) {
-				auto& def = *it;
+	if (auto tyob = inst.template as<typename Schema::IfcTypeObject>()) {
+		if (tyob.HasPropertySets()) {
+			auto defs = *tyob.HasPropertySets();
+			for (auto& def : defs) {
 				process_pset<Schema>(props, def);
 			}
 		}
 	}
 	if constexpr (is_ifc4_or_higher<Schema>::value) {
-		if (auto mdef = inst->template as<typename Schema::IfcMaterialDefinition>()) {
-			auto defs = mdef->HasProperties();
-			for (auto it = defs->begin(); it != defs->end(); ++it) {
-				auto& def = *it;
+		if (auto mdef = inst.template as<typename Schema::IfcMaterialDefinition>()) {
+			auto defs = mdef.HasProperties();
+			for (auto& def : defs) {
 				process_pset<Schema>(props, def);
 			}
 		}
-		if (auto pdef = inst->template as<typename Schema::IfcProfileDef>()) {
+		if (auto pdef = inst.template as<typename Schema::IfcProfileDef>()) {
 			auto defs = pdef->HasProperties();
-			for (auto it = defs->begin(); it != defs->end(); ++it) {
-				auto& def = *it;
+			for (auto& def : defs) {
 				process_pset<Schema>(props, def);
 			}
 		}
 	}
-	if (auto ob = inst->template as<typename Schema::IfcObject>()) {
+	if (auto ob = inst.template as<typename Schema::IfcObject>()) {
 		if constexpr (is_ifc4_or_higher<Schema>::value) {
-			auto rels = ob->IsTypedBy();
-			for (auto it = rels->begin(); it != rels->end(); ++it) {
-				auto& rel = *it;
+			auto rels = ob.IsTypedBy();
+			for (auto& rel : rels) {
 				get_psets_s<Schema>(props, rel->RelatingType());
 			}
 		}
 		{
-			auto rels = ob->IsDefinedBy();
-			for (auto it = rels->begin(); it != rels->end(); ++it) {
-				auto& rel = *it;
-				if (auto bytype = rel->template as<typename Schema::IfcRelDefinesByType>()) {
-					get_psets_s<Schema>(props, bytype->RelatingType());
-				} else if (auto byprops = rel->template as<typename Schema::IfcRelDefinesByProperties>()) {
-					process_pset<Schema>(props, byprops->RelatingPropertyDefinition());
+			auto rels = ob.IsDefinedBy();
+			for (auto& rel : rels) {
+				if (auto bytype = rel.template as<typename Schema::IfcRelDefinesByType>()) {
+					get_psets_s<Schema>(props, bytype.RelatingType());
+				} else if (auto byprops = rel.template as<typename Schema::IfcRelDefinesByProperties>()) {
+					process_pset<Schema>(props, byprops.RelatingPropertyDefinition());
 				}
 			}
 		}
@@ -220,10 +213,10 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 #define GENERATE_LITERAL_STRING(elem) "Ifc" # elem
 
 #define TEST_AND_DISPATCH(r, data, elem) \
-	if (strcasecmp(schema_name, GENERATE_LITERAL_STRING(elem)) == 0) { get_psets_s<EXPAND_AND_CONCATENATE(elem)>(props, inst->as<EXPAND_AND_CONCATENATE(elem)::IfcObjectDefinition>()); }
+	if (strcasecmp(schema_name, GENERATE_LITERAL_STRING(elem)) == 0) { get_psets_s<EXPAND_AND_CONCATENATE(elem)>(props, inst.as<EXPAND_AND_CONCATENATE(elem)::IfcObjectDefinition>()); }
 
-void get_psets(element_properties& props, const IfcUtil::IfcBaseClass* inst) {
-	auto schema_name = inst->declaration().schema()->name().c_str();
+void get_psets(element_properties& props, const express::Base& inst) {
+	auto schema_name = inst.declaration().schema()->name().c_str();
 	BOOST_PP_SEQ_FOR_EACH(TEST_AND_DISPATCH, , SCHEMA_SEQ)
 }
 
@@ -234,10 +227,10 @@ int main(int argc, char** argv) {
     }
     
     // Redirect the output (both progress and log) to stdout
-    Logger::SetOutput(&std::cout, &std::cout);
+    logger::set_output(&std::cout, &std::cout);
 
     // Parse the IFC file provided in argv[1]
-    IfcParse::IfcFile file(argv[1]);
+    ifcopenshell::file file(argv[1]);
     if (!file.good()) {
         std::cout << "Unable to parse .ifc file" << std::endl;
         return 1;
@@ -259,19 +252,17 @@ int main(int argc, char** argv) {
     // we need to cast them to IfcWindows. Since these properties
     // are optional we need to make sure the properties are
     // defined for the window in question before accessing them.
-	IfcSchema::IfcBuildingElement::list::ptr elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
+	auto elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
 
-    std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
+    std::cout << "Found " << elements.size() << " elements in " << argv[1] << ":" << std::endl;
 
-    for (auto it = elements->begin(); it != elements->end(); ++it) {
-        const auto* element = *it;
-		element->toString(std::cout);
+    for (auto& element : elements) {
+		element.to_string(std::cout);
 		std::cout << std::endl;
 
-        const IfcSchema::IfcWindow* window;
-        if ((window = element->as<IfcSchema::IfcWindow>()) != 0) {
-            if (window->OverallWidth() && window->OverallHeight()) {
-                const double area = *window->OverallWidth() * *window->OverallHeight();
+        if (auto window = element.as<IfcSchema::IfcWindow>()) {
+            if (window.OverallWidth() && window.OverallHeight()) {
+                const double area = *window.OverallWidth() * *window.OverallHeight();
                 std::cout << "The area of this window is " << area << std::endl;
             }
         }

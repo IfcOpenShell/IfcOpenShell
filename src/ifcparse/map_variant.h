@@ -25,11 +25,11 @@
 #include <string>
 #include <iostream>
 
-// VariantMap: A map interface that delegates to one of several map types.
+// variant_map: A map interface that delegates to one of several map types.
 // The underlying maps are referenced by pointers (not moved into the variant).
 // All map types must share the same key_type, mapped_type, and value_type.
 template <typename... Maps>
-class VariantMap {
+class variant_map {
 public:
     // The variant holds a pointer to the map
     using variant_type = std::variant<std::monostate, Maps*...>;
@@ -45,7 +45,7 @@ public:
 
     class iterator {
     public:
-        using value_type = VariantMap::value_type;
+        using value_type = variant_map::value_type;
         using difference_type = std::ptrdiff_t;
         using pointer = value_type*;
         using reference = value_type;
@@ -58,8 +58,8 @@ public:
 
         iterator() = default;
 
-        explicit iterator(underlying_iterator_variant v)
-            : it_var(std::move(v)) {}
+        explicit iterator(underlying_iterator_variant iterator_variant)
+            : it_var(std::move(iterator_variant)) {}
 
         iterator(const iterator& other)
             : it_var(other.it_var), cached_value_ptr_(nullptr) {}
@@ -104,10 +104,10 @@ public:
         }
     };
 
-    VariantMap() {}
+    variant_map() {}
 
     template <typename MapT>
-    VariantMap(MapT* m) : map_(m) {}
+    variant_map(MapT* map) : map_(map) {}
 
     iterator begin() const{
         return std::visit([](auto m) -> iterator {
@@ -160,11 +160,11 @@ public:
         }, map_);
     }
 
-    std::pair<iterator, bool> insert(const value_type& val) {
-        return std::visit([this, &val](auto m) -> std::pair<iterator, bool> {
+    std::pair<iterator, bool> insert(const value_type& value) {
+        return std::visit([this, &value](auto m) -> std::pair<iterator, bool> {
             // @todo is monostate still necessary here?
             if constexpr (!std::is_same_v<std::decay_t<decltype(m)>, std::monostate>) {
-                auto result = m->insert(val);
+                auto result = m->insert(value);
                 return { iterator(result.first), result.second };
             } else {
                 return { end(), false };

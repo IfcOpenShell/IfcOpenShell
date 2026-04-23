@@ -158,6 +158,8 @@ USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "9.11.2"
 ZSTD_VERSION = "1.5.7"
+MANIFOLD_VERSION = "3.2.1"
+
 # binaries
 cp = "cp"
 bash = "bash"
@@ -326,7 +328,7 @@ cecho(""" - IFC Schemas to compile. If not provided, fallback to default provide
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
     "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
-    "IfcGeom": ("IfcParse", "occ", "json", "cgal", "eigen", "OpenCOLLADA"),
+    "IfcGeom": ("IfcParse", "occ", "manifold", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
@@ -343,6 +345,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "eigen": (),
     "rocksdb": ("zstd",),
     "zstd": (),
+    "manifold": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -579,6 +582,11 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             ]
         )
 
+    if not any("BUILD_SHARED_LIBS" in f for f in cmake_args):
+        cmake_flags.append(
+            f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
+        )
+
     run(
         [
             *wasm,
@@ -587,7 +595,6 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             *cmake_flags,
             *cmake_args,
             f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
-            f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
             f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
         ],
         cwd=cwd,
@@ -990,6 +997,29 @@ elif "occ" in targets:
         download_name=f"OCE-{OCE_VERSION}.tar.gz",
     )
 
+if "manifold" in targets:
+    dependency_name = f"manifold-{MANIFOLD_VERSION}"
+    build_dependency(
+        name=dependency_name,
+        mode="cmake",
+        build_tool_args=[
+            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
+            "-DMANIFOLD_PAR=OFF",
+            "-DMANIFOLD_CROSS_SECTION=OFF",
+            "-DMANIFOLD_PYBIND=OFF",
+            "-DMANIFOLD_JSBIND=OFF",
+            "-DMANIFOLD_CBIND=OFF",
+            "-DMANIFOLD_TEST=OFF",
+            "-DMANIFOLD_EXPORT=OFF",
+            "-DMANIFOLD_DOWNLOADS=OFF",
+            *MAC_CROSS_COMPILE_INTEL_ARGS,
+        ],
+        download_url="https://github.com/elalish/manifold.git",
+        download_name="manifold",
+        download_tool=download_tool_git,
+        revision=f"v{MANIFOLD_VERSION}",
+    )
+
 if "libxml2" in targets:
     OLD_CC = ""
     if MAC_CROSS_COMPILE_INTEL:
@@ -1300,16 +1330,17 @@ if os.environ.get("NO_CLEAN", "").lower() not in {"1", "on", "true"}:
     if os.path.exists(IFCOS_DIR):
         shutil.rmtree(IFCOS_DIR)
 os.makedirs(IFCOS_DIR, exist_ok=True)
-executables_dir = os.path.join(IFCOS_DIR, "executables")
-os.makedirs(executables_dir, exist_ok=True)
+ifcos_build_dir = os.path.join(IFCOS_DIR, "build")
+os.makedirs(ifcos_build_dir, exist_ok=True)
 
 
 cmake_args = [
     "-DUSE_MMAP=OFF",
     "-DBUILD_EXAMPLES=OFF",
-    "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
+    "-DBUILD_SHARED_LIBS=ON",
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
+    "-DCREATE_BUNDLE=On",
     "-DADD_COMMIT_SHA=" + ("On" if ADD_COMMIT_SHA else "Off"),
     "-DVERSION_OVERRIDE=" + ("On" if ADD_COMMIT_SHA else "Off"),
     *MAC_CROSS_COMPILE_INTEL_ARGS,
@@ -1359,6 +1390,10 @@ elif "occ" in targets:
     occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
+if "manifold" in targets:
+    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+    cmake_args.append("-DWITH_MANIFOLD=On")
+
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
     # we don't need to add it explicitly here as cmake will find it from the config.
@@ -1404,40 +1439,33 @@ if "rocksdb" in targets:
 if "swig" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
 
+ifcos_build_args = [
+    f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
+    f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
+    f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
+    f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
+]
+
 if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
     logger.info("\rConfiguring executables...")
 
     exec_args = [
-        f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
-        f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
-        f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
+        *ifcos_build_args,
         f"-DBUILD_IFCPYTHON=OFF",
-        f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
     ]
 
-    run_cmake("", exec_args + cmake_args + get_cmake_args_prefix_path(), cmake_dir=CMAKE_DIR, cwd=executables_dir)
+    run_cmake("", exec_args + cmake_args + get_cmake_args_prefix_path(), cmake_dir=CMAKE_DIR, cwd=ifcos_build_dir)
 
     logger.info("\rBuilding executables...   ")
 
-    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=executables_dir)
-    run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=executables_dir)
+    run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "VERBOSE=1"], cwd=ifcos_build_dir)
+    run([make, "install/strip" if BUILD_CFG == "Release" else "install"], cwd=ifcos_build_dir)
 
 if "IfcOpenShell-Python" in targets:
-    # On OSX the actual Python library is not linked against.
-    ADDITIONAL_ARGS = ""
+    wrapper_ldflags = ""
     if platform.system() == "Darwin":
-        ADDITIONAL_ARGS = "-Wl,-undefined,dynamic_lookup"
-
-    # NOTE: We don't use `CXXFLAGS` for wrappers, so wrapper is compiled with different flags
-    # (e.g. ` -fdata-sections` is missing, which is set by default for executables)
-    # So cache doesn't match and running build-all.py builds most of ifcopenshell libraries twice.
-    os.environ["CPPFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
-    os.environ["CXXFLAGS"] = f"{CXXFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
-    os.environ["CFLAGS"] = f"{CFLAGS_MINIMAL} {ADDITIONAL_ARGS}"
-    os.environ["LDFLAGS"] = f"{LDFLAGS} {ADDITIONAL_ARGS}"
-
-    python_dir = os.path.join(IFCOS_DIR, "pythonwrapper")
-    os.makedirs(python_dir, exist_ok=True)
+        # On OSX the actual Python library is not linked against.
+        wrapper_ldflags = "-Wl,-undefined,dynamic_lookup"
 
     def compile_python_wrapper(
         python_version: str,
@@ -1452,10 +1480,6 @@ if "IfcOpenShell-Python" in targets:
 
         logger.info(f"\rConfiguring python {python_version} wrapper...")
 
-        cache_path = os.path.join(python_dir, "CMakeCache.txt")
-        if os.path.exists(cache_path):
-            os.remove(cache_path)
-
         if python_path:
             # We couldn't just prefix PATH and have to provide all variables explicitly,
             # see ifcwrap/cmake for the details.
@@ -1469,27 +1493,38 @@ if "IfcOpenShell-Python" in targets:
             )
 
         assert python_include
-        run_cmake(
-            "",
-            cmake_args
-            + get_cmake_args_prefix_path()
-            + [
-                *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
-                # Needed because pyodide is expecting setup.py to be in the root.
-                *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
-                f"-DPYTHON_INCLUDE_DIR={python_include}",
-                f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
-                "-DUSERSPACE_PYTHON_PREFIX="
-                + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
-            ],
-            cmake_dir=CMAKE_DIR,
-            cwd=python_dir,
-        )
+        old_ldflags = os.environ["LDFLAGS"]
+        if wrapper_ldflags:
+            os.environ["LDFLAGS"] = f"{old_ldflags} {wrapper_ldflags}"
+
+        try:
+            run_cmake(
+                "",
+                ifcos_build_args
+                + [
+                    "-DBUILD_IFCPYTHON=ON",
+                ]
+                + cmake_args
+                + get_cmake_args_prefix_path()
+                + [
+                    *([f"-DPYTHON_EXECUTABLE={python_executable}"] if python_executable else []),
+                    # Needed because pyodide is expecting setup.py to be in the root.
+                    *([f"-DPYTHON_MODULE_INSTALL_DIR={REPO_PATH}"] * WASM),
+                    f"-DPYTHON_INCLUDE_DIR={python_include}",
+                    f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell/tmp",
+                    "-DUSERSPACE_PYTHON_PREFIX="
+                    + ["Off", "On"][os.environ.get("PYTHON_USER_SITE", "").lower() in {"1", "on", "true"}],
+                ],
+                cmake_dir=CMAKE_DIR,
+                cwd=ifcos_build_dir,
+            )
+        finally:
+            os.environ["LDFLAGS"] = old_ldflags
 
         logger.info(f"\rBuilding python {python_version} wrapper...   ")
 
-        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper", "VERBOSE=1"], cwd=python_dir)
-        run([make, "install/local"], cwd=os.path.join(python_dir, "ifcwrap"))
+        run([make, f"-j{IFCOS_NUM_BUILD_PROCS}", "ifcopenshell_wrapper", "VERBOSE=1"], cwd=ifcos_build_dir)
+        run([make, "install/local"], cwd=os.path.join(ifcos_build_dir, "ifcwrap"))
 
         if python_executable:
             run([python_executable, "-m", "ensurepip"])

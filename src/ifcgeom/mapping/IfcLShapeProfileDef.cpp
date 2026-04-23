@@ -23,29 +23,29 @@ using namespace ifcopenshell::geometry;
 
 #include "../profile_helper.h"
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef* inst) {
-	const bool hasSlope = !!inst->LegSlope();
-	const bool doEdgeFillet = !!inst->EdgeRadius();
-	const bool doFillet = !!inst->FilletRadius();
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
+	const bool hasSlope = !!inst.LegSlope();
+	const bool doEdgeFillet = !!inst.EdgeRadius();
+	const bool doFillet = !!inst.FilletRadius();
 
-	const double y = inst->Depth() / 2.0f * length_unit_;
-	const double x = inst->Width().get_value_or(inst->Depth()) / 2.0f * length_unit_;
-	const double d = inst->Thickness() * length_unit_;
-	const double slope = inst->LegSlope().get_value_or(0.) * angle_unit_;
+	const double y = inst.Depth() / 2.0f * length_unit_;
+	const double x = inst.Width().value_or(inst.Depth()) / 2.0f * length_unit_;
+	const double d = inst.Thickness() * length_unit_;
+	const double slope = inst.LegSlope().value_or(0.) * angle_unit_;
 	
 	double f1 = 0.0f;
 	double f2 = 0.0f;
 	if (doFillet) {
-		f1 = *inst->FilletRadius() * length_unit_;
+		f1 = *inst.FilletRadius() * length_unit_;
 	}
 	if ( doEdgeFillet) {
-		f2 = *inst->EdgeRadius() * length_unit_;
+		f2 = *inst.EdgeRadius() * length_unit_;
 	}
 
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if ( x < tol || y < tol || d < tol) {
-		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		logger::message(logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 
@@ -77,7 +77,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef* inst) {
 		const double det = a1*b2 - a2*b1;
 
 		if (std::fabs(det) < 1.e-5) {
-			Logger::Message(Logger::LOG_NOTICE, "Legs do not intersect for:", inst);
+			logger::message(logger::LOG_NOTICE, "Legs do not intersect for:", inst);
 			return nullptr;
 		}
 
@@ -88,10 +88,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef* inst) {
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {

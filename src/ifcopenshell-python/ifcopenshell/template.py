@@ -21,7 +21,7 @@ import time
 import uuid
 from typing import Optional
 
-from .file import file
+from ifcopenshell import file
 from .guid import compress
 from .ifcopenshell_wrapper import version
 

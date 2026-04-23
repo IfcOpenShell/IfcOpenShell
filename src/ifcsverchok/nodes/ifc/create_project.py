@@ -52,7 +52,7 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         # file
         file = self.inputs["file"].sv_get()[0][0]
         if file:
-            schema_name = file.wrapped_data.schema
+            schema_name = file.schema
         else:
             schema_name = "IFC4"
 

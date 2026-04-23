@@ -36,9 +36,9 @@ private:
 	std::ofstream fstream_, tmp_fstream1_, tmp_fstream2_;
 	std::map<std::string, int> materials_, meshes_;
 	json json_, node_array_;
-	boost::optional<json> ecef_transform_, north_rotation_, z_up_transform_;
+	std::optional<json> ecef_transform_, north_rotation_, z_up_transform_;
 	int bufferViewId;
-    std::map<const IfcUtil::IfcBaseEntity*, size_t> node_indices_;
+    std::map<express::Base, size_t> node_indices_;
     std::vector<size_t> roots_;
 
 	int writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
@@ -52,7 +52,7 @@ public:
 	void finalize();
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile*);
+	void setFile(ifcopenshell::file*);
 };
 
 #endif

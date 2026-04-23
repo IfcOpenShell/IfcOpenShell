@@ -24,13 +24,13 @@
 #ifndef IFCPARSE_UTILS_H
 #define IFCPARSE_UTILS_H
 
-namespace IfcUtil {
+namespace ifcopenshell {
 
 /// Replaces spaces and potentially other problem causing characters with underscores.
-IFC_PARSE_API void sanitate_material_name(std::string& str);
+IFC_PARSE_API void sanitate_material_name(std::string& material_name);
 
-IFC_PARSE_API void escape_xml(std::string& str);
-IFC_PARSE_API void unescape_xml(std::string& str);
+IFC_PARSE_API void escape_xml(std::string& text);
+IFC_PARSE_API void unescape_xml(std::string& text);
 
 namespace path {
 
@@ -43,17 +43,17 @@ IFC_PARSE_API bool rename_file(const std::string& old_filename, const std::strin
 IFC_PARSE_API std::string to_utf8(const std::wstring& str);
 
 /// Uses windows.h string conversion functions
-IFC_PARSE_API std::wstring from_utf8(const std::string& str);
+IFC_PARSE_API std::wstring from_utf8(const std::string& value);
 #else
 /// Identity operation
-IFC_PARSE_API inline std::string to_utf8(const std::string& str) { return str; }
+IFC_PARSE_API inline std::string to_utf8(const std::string& value) { return value; }
 
 /// Identity operation
-IFC_PARSE_API inline std::string from_utf8(const std::string& str) { return str; }
+IFC_PARSE_API inline std::string from_utf8(const std::string& value) { return value; }
 #endif
 
 } // namespace path
 
-} // namespace IfcUtil
+} // namespace ifcopenshell
 
 #endif

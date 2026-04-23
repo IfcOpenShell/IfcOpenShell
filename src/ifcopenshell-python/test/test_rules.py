@@ -8,13 +8,12 @@ import tabulate
 import ifcopenshell.express.rule_executor
 import ifcopenshell.validate
 
-
 @pytest.mark.parametrize(
     "filename",
     [
         fn
         for fn in glob.glob(os.path.join(os.path.dirname(__file__), "fixtures/rules/*.ifc"))
-        if len(sys.argv) < 2 or sys.argv[1] in os.path.basename(fn)
+        if len(sys.argv) < 2 or (not sys.argv[1].endswith(".ifc") or sys.argv[1] in os.path.basename(fn))
     ],
 )
 def test_file(filename):

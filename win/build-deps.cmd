@@ -207,6 +207,7 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+goto :manifold
 
 :nuget
 set DEPENDENCY_NAME=nuget
@@ -598,7 +599,7 @@ IF NOT "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 
 :: nuget doesn't support providing architecture for packages.
 IF /I NOT "%TARGET_ARCH%"=="x64" IF /I NOT "%TARGET_ARCH%"=="arm64" (
-    call cecho.cmd 0 12 "Automatic insallation of Python for x86 builds is not supported,"
+    call cecho.cmd 0 12 "Automatic installation of Python for x86 builds is not supported,"
     call cecho.cmd 0 12 "please install Python %PYTHON_VERSION% manually and ensure that it is available in PATH."
     call cecho.cmd 0 12 "https://www.python.org/ftp/python/%PYTHON_VERSION%/%PYTHON_INSTALLER%"
     goto :Error
@@ -619,7 +620,7 @@ IF /I "%TARGET_ARCH%"=="x64" (
 
 :SWIG
 set DEPENDENCY_NAME=SWIG
-set SWIG_VERSION=4.2.1
+set SWIG_VERSION=4.4.1
 set DEPENDENCY_DIR=%DEPS_DIR%\swig-%SWIG_VERSION%
 set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\swig-%SWIG_VERSION%
 echo SWIG_INSTALL_DIR=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -660,6 +661,8 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" Release
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 robocopy "%INSTALL_DIR%\swigwin\bin" "%INSTALL_DIR%\swigwin" /move /e
+
+goto :Successful
 
 :cgal
 
@@ -763,6 +766,39 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :MarkInstallation
+
+:manifold
+set DEPENDENCY_NAME=manifold
+set MANIFOLD_VERSION=3.2.1
+set DEPENDENCY_DIR=%DEPS_DIR%\manifold-%MANIFOLD_VERSION%
+set DEPENDENCY_INSTALL_DIR=%INSTALL_DIR%\manifold-%MANIFOLD_VERSION%
+echo MANIFOLD_ROOT=%DEPENDENCY_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+IF EXIST "%DEPENDENCY_INSTALL_DIR%" (
+    echo Found existing "%DEPENDENCY_INSTALL_DIR%", skipping
+    goto :Eigen
+)
+
+call :GitCloneAndCheckoutRevision https://github.com/elalish/manifold.git "%DEPENDENCY_DIR%" v%MANIFOLD_VERSION%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+git reset --hard
+
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%DEPENDENCY_INSTALL_DIR%" ^
+               -DBUILD_SHARED_LIBS=OFF ^
+               -DMANIFOLD_PAR=OFF ^
+               -DMANIFOLD_CROSS_SECTION=OFF ^
+               -DMANIFOLD_PYBIND=OFF ^
+               -DMANIFOLD_JSBIND=OFF ^
+               -DMANIFOLD_CBIND=OFF ^
+               -DMANIFOLD_TEST=OFF ^
+               -DMANIFOLD_EXPORT=OFF ^
+               -DMANIFOLD_DOWNLOADS=OFF
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\manifold.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :: :tbb
 :: set DEPENDENCY_NAME=tbb

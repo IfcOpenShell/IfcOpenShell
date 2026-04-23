@@ -1,41 +1,50 @@
+#ifndef XMLSERIALIZER_H
+#define XMLSERIALIZER_H
+
 #define SCHEMA_METHOD
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
+#include "../plugin/plugin.h"
+#include "../serializers/document_serializer_plugin.h"
 
-#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 
-#include <map>
-
-class SERIALIZERS_API XmlSerializer : public Serializer {
+class XmlSerializer : public Serializer {
 private:
-	XmlSerializer* implementation_;
+	boost::shared_ptr<Serializer> implementation_;
 
 protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename);
+	XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename)
+		: xml_filename(xml_filename)
+	{
+		if (!file) {
+			return;
+		}
+
+		ifcopenshell::serializers::document_serializer_context context;
+		context.file = file;
+		context.output_filename = xml_filename;
+		context.schema_name = file->schema()->name();
+		implementation_ = ifcopenshell::serializers::document_serializer_registry_instance().create("xml", context);
+	}
 
 	virtual ~XmlSerializer() {}
 
 	bool ready() { return true; }
 	void writeHeader() {}
 
-	void finalize() { implementation_->finalize(); }
-	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
+	void finalize() {
+		if (!implementation_) {
+			throw ifcopenshell::exception("No XML serializer implementation constructed");
+		}
+		implementation_->finalize();
+	}
+	void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
 };
 
-struct SERIALIZERS_API XmlSerializerFactory {
-	typedef boost::function2<XmlSerializer*, IfcParse::IfcFile*, std::string> fn;
-
-	class Factory : public std::map<std::string, fn> {
-	public:
-		Factory();
-		void bind(const std::string& schema_name, fn);
-		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string);
-	};
-
-	static Factory& implementations();
-};
+#endif

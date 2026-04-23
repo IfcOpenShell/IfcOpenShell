@@ -621,7 +621,7 @@ struct Intersection_visitor {
 template <typename Kernel>
 struct Segment_collector {
 	typedef void result_type;
-	boost::optional<CGAL::Segment_3<Kernel>> segment;
+	std::optional<CGAL::Segment_3<Kernel>> segment;
 
 	void operator()(const CGAL::Point_3<Kernel>&)
 	{
@@ -648,7 +648,7 @@ public:
 
 	template <typename Edge, typename Graph>
 	bool tree_edge(Edge e, const Graph& g) {
-		if (boost::get(boost::edge_weight, g, e) == edgetype_) {
+		if (std::get(boost::edge_weight, g, e) == edgetype_) {
 			auto srcid = boost::source(e, g);
 			auto tgtid = boost::target(e, g);
 
@@ -667,7 +667,7 @@ public:
 
 				typename boost::graph_traits<Graph>::out_edge_iterator ei, ei_end;
 				for (boost::tie(ei, ei_end) = boost::out_edges(tgtid, g); ei != ei_end; ++ei) {
-					if (boost::get(boost::edge_weight, g, *ei) != edgetype_) {
+					if (std::get(boost::edge_weight, g, *ei) != edgetype_) {
 						tgt_has_any_reflex_edge = true;
 						// std::cout << "   reflex: " << boost::source(*ei, g) << " -- " << boost::target(*ei, g) << std::endl;
 						break;
@@ -712,9 +712,9 @@ public:
 									if (x) {
 										// std::cout << "   triangle: " << t << std::endl;
 										// Intersection_visitor v;
-										// boost::apply_visitor([](auto x) {std::cout << "   intersects: " << x << std::endl; })(*x);
+										// std::visit([](auto x) {std::cout << "   intersects: " << x << std::endl; })(*x);
 										Segment_collector<Kernel> sc;
-										boost::apply_visitor(sc)(*x);
+										std::visit(sc)(*x);
 										if (sc.segment) {
 											if (!std::any_of(edges_i.begin(), edges_i.end(), [&sc](CGAL::Segment_3<Kernel>& s) {
 												// When intersecting with the boundary of a facet we likely multiple co-planar facets. Exclude intersection.
@@ -723,7 +723,7 @@ public:
 													return false;
 												}
 												Segment_collector<Kernel> scy;
-												boost::apply_visitor(scy)(*xy);
+												std::visit(scy)(*xy);
 												return (bool)scy.segment;
 											})) {
 												return true;
@@ -807,7 +807,7 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree(Graph<Kernel>& 
 	bool all_convex = true;
 	typename boost::graph_traits<Graph<Kernel>>::edge_iterator ei, ei_end;
 	for (boost::tie(ei, ei_end) = boost::edges(G); ei != ei_end; ++ei) {
-		if (boost::get(boost::edge_weight, G, *ei) != edge_trait) {
+		if (std::get(boost::edge_weight, G, *ei) != edge_trait) {
 			// all_convex = false;
 			break;
 		}
@@ -1030,7 +1030,7 @@ public:
 		auto verts_backup = verts;
 		auto facets_backup = facets;
 
-		boost::optional<CGAL::Polygon_with_holes_2<Kernel>> pwh;
+		std::optional<CGAL::Polygon_with_holes_2<Kernel>> pwh;
 		auto nf = std::distance(h->facet_cycles_begin(), h->facet_cycles_end());
 		for (auto fc = h->facet_cycles_begin(); fc != h->facet_cycles_end(); ++fc) {
 			// std::cout << "h_plane.point() " << h_plane.point() << std::endl;

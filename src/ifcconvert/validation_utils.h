@@ -431,7 +431,7 @@ struct remove_thickness {
 
 
 struct intersection_validator {
-	typedef std::list<std::pair<const IfcUtil::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
+	typedef std::list<std::pair<const ifcopenshell::IfcBaseEntity*, CGAL::Nef_polyhedron_3<Kernel_>> > nefs_t;
 	typedef CGAL::Box_intersection_d::Box_with_handle_d<double, 3, nefs_t::value_type*> Box;
 
 	std::vector<Box> boxes;
@@ -443,9 +443,9 @@ struct intersection_validator {
 	double total_minkowsky_time = 0.;
 	double total_box_time = 0.;
 
-	std::set<const IfcUtil::IfcBaseEntity*> successfully_processed;
+	std::set<const ifcopenshell::IfcBaseEntity*> successfully_processed;
 
-	intersection_validator(IfcParse::IfcFile& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
+	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
 
 		ifcopenshell::geometry::Settings settings;
 		settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
@@ -485,7 +485,7 @@ struct intersection_validator {
 			}
 
 			std::stringstream ss;
-			geom_object->product()->toString(ss);
+			geom_object->product()->to_string(ss);
 			auto sss = ss.str();
 			std::wcout << sss.c_str() << std::endl;
 
@@ -543,7 +543,7 @@ struct intersection_validator {
 
 				/*
 				std::ostringstream ss;
-				ss << geom_object->product()->data().toString() << std::endl << b.min_coord(0) << " - " << b.max_coord(0) << std::endl;
+				ss << geom_object->product()->data().to_string() << std::endl << b.min_coord(0) << " - " << b.max_coord(0) << std::endl;
 				auto sss = ss.str();
 				std::wcout << sss.c_str();
 				*/
@@ -562,7 +562,7 @@ struct intersection_validator {
 						std::cerr << std::flush;
 				} else {
 					const int progress = context_iterator.progress() / 2;
-					if (old_progress != progress) Logger::ProgressBar(progress);
+					if (old_progress != progress) logger::progress_bar(progress);
 					old_progress = progress;
 				}
 			}
@@ -578,7 +578,7 @@ struct intersection_validator {
 			if (stderr_progress)
 				std::cerr << std::flush;
 		} else {
-			Logger::Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+			logger::status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 				" objects                                ");
 		}
 

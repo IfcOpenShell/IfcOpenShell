@@ -23,11 +23,11 @@ using namespace ifcopenshell::geometry;
 
 #include <boost/math/constants/constants.hpp>
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
-	std::vector<double> radii = { inst->Radius() * length_unit_ };
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircleProfileDef& inst) {
+	std::vector<double> radii = { inst.Radius() * length_unit_ };
 
-	if (inst->as<IfcSchema::IfcCircleHollowProfileDef>()) {
-		double t = inst->as<IfcSchema::IfcCircleHollowProfileDef>()->WallThickness() * length_unit_;
+	if (inst.as<IfcSchema::IfcCircleHollowProfileDef>()) {
+		double t = inst.as<IfcSchema::IfcCircleHollowProfileDef>().WallThickness() * length_unit_;
 		radii.push_back(radii.front() - t);
 	}
 
@@ -42,10 +42,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 
 		bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-		has_position = !!inst->Position();
+		has_position = !!inst.Position();
 #endif
 		if (has_position) {
-			c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+			c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 		} else {
 			// matrix needs to be set on elementary curves
 			c->matrix = taxonomy::make<taxonomy::matrix4>();

@@ -43,7 +43,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			for (auto& e : l->children) {
 				for (size_t i = 0; i < 2; ++i) {
 					// @todo make sure only cartesian points are provided here
-					auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(i == 0 ? e->start : e->end);
+					auto& p = std::get<ifcopenshell::geometry::taxonomy::point3::ptr>(i == 0 ? e->start : e->end);
 					if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
 						point_identities_visited.insert(p->identity());
 						points.push_back(p);
@@ -149,7 +149,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
 		if (unique.size() != num_retained) {
-			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
+			logger::notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;
@@ -198,8 +198,8 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 		}
 	}
 
-	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.get_value_or(false))) {
-		Logger::Warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.value_or(false))) {
+		logger::warning(boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 
@@ -209,14 +209,14 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geome
 	}
 
 	for (auto& edge : ps->children) {
-		auto A = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->start)->identity();
-		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->end)->identity();
+		auto A = std::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->start)->identity();
+		auto B = std::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->end)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
 		if (!fwd) {
 			std::swap(C, D);
 		}
-		if (!edge->orientation.get_value_or(true)) {
+		if (!edge->orientation.value_or(true)) {
 			fwd = !fwd;
 		}
 		if (C != D) {
@@ -270,7 +270,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geome
 			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionTolerance>().get(), 0.,
 			kernel_->settings().get<ifcopenshell::geometry::settings::Precision>().get()}))
 		{
-			Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+			logger::warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;
 		} else {

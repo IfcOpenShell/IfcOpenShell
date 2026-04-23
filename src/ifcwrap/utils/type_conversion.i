@@ -29,6 +29,29 @@
 	template <> void* get_python_type<std::string>() { return &PyString_Type; }
 	#endif
 
+	template <typename T>
+	bool check_python_type(PyObject* element) {
+		return element->ob_type == get_python_type<T>();
+	}
+
+	inline bool convert_pyobject_to_base(PyObject* element, express::Base& value) {
+		void* arg = nullptr;
+		int result = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_express__Base, 0);
+		if (SWIG_IsOK(result) && arg) {
+			value = *static_cast<express::Base*>(arg);
+			return true;
+		}
+
+		value = express::Base{};
+		return false;
+	}
+
+	template <>
+	bool check_python_type<express::Base>(PyObject* element) {
+		express::Base value;
+		return convert_pyobject_to_base(element, value);
+	}
+
 	bool check_aggregate_of_type(PyObject* aggregate, void* type_obj) {
 		if (!PySequence_Check(aggregate)) return false;
 		if (PySequence_Size(aggregate) == -1) return false;
@@ -53,6 +76,63 @@
 			bool b = check_aggregate_of_type(element, type_obj);
 			Py_DECREF(element);
 			if (!b) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <typename T>
+	bool check_aggregate_of_type(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_python_type<T>(element);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <>
+	bool check_aggregate_of_type<express::Base>(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			express::Base value;
+			bool valid = convert_pyobject_to_base(element, value);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <typename T>
+	bool check_aggregate_of_aggregate_of_type(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_aggregate_of_type<T>(element);
+			Py_DECREF(element);
+			if (!valid) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template <>
+	bool check_aggregate_of_aggregate_of_type<express::Base>(PyObject* aggregate) {
+		if (!PySequence_Check(aggregate)) return false;
+		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
+			PyObject* element = PySequence_GetItem(aggregate, i);
+			bool valid = check_aggregate_of_type<express::Base>(element);
+			Py_DECREF(element);
+			if (!valid) {
 				return false;
 			}
 		}
@@ -88,10 +168,9 @@
 	}
 
 	template <>
-	IfcUtil::IfcBaseClass* cast_pyobject(PyObject* element) {
-		void *arg = 0;
-		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);
-		return static_cast<IfcUtil::IfcBaseClass*>(SWIG_IsOK(res) ? arg : 0);
+	express::Base cast_pyobject(PyObject* element) {
+		express::Base value;
+		return convert_pyobject_to_base(element, value) ? value : express::Base{};
 	}
 
 	template<typename T>
@@ -114,6 +193,7 @@
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			T t = cast_pyobject<T>(element);
 			add_to_container(result_vector, t);
+			Py_DECREF(element);
 		}
 		return result_vector;
 	}
@@ -144,15 +224,15 @@
 
 // Conversion functions to convert STL vectors into Python objects
 %{
-	swig_type_info* declaration_type_to_swig(const IfcParse::declaration* t) {
+	swig_type_info* declaration_type_to_swig(const ifcopenshell::declaration* t) {
 		if (t->as_entity()) {
-			return SWIGTYPE_p_IfcParse__entity;
+			return SWIGTYPE_p_ifcopenshell__entity;
 		} else if (t->as_type_declaration()) {
-			return SWIGTYPE_p_IfcParse__type_declaration;
+			return SWIGTYPE_p_ifcopenshell__type_declaration;
 		} else if (t->as_select_type()) {
-			return SWIGTYPE_p_IfcParse__select_type;
+			return SWIGTYPE_p_ifcopenshell__select_type;
 		} else if (t->as_enumeration_type()) {
-			return SWIGTYPE_p_IfcParse__enumeration_type;
+			return SWIGTYPE_p_ifcopenshell__enumeration_type;
 		} else {
 			throw std::runtime_error("Unexpected declaration type");
 		}
@@ -164,11 +244,11 @@
 	PyObject* pythonize(const boost::logic::tribool& t) { return boost::logic::indeterminate(t) ? PyUnicode_FromString("UNKNOWN") : PyBool_FromLong((bool)t) ;}
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
-	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);        }
-	PyObject* pythonize(const IfcParse::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__attribute, 0);          }
-	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
-	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
-	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
+	PyObject* pythonize(const express::Base& t) { return SWIG_NewPointerObj(SWIG_as_voidptr(new express::Base(t)), SWIGTYPE_p_express__Base, SWIG_POINTER_OWN);        }
+	PyObject* pythonize(const ifcopenshell::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__attribute, 0);          }
+	PyObject* pythonize(const ifcopenshell::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__inverse_attribute, 0); }
+	PyObject* pythonize(const ifcopenshell::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__entity, 0);             }
+	PyObject* pythonize(const ifcopenshell::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
 	// @nb ownership
 	PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, SWIG_POINTER_OWN); }
 	// PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, 0); }
@@ -181,15 +261,6 @@
 		return pythonize(bitstring);
 	}
 
-	PyObject* pythonize(const aggregate_of_instance::ptr& t) { 
-		unsigned int i = 0;
-		PyObject* pyobj = PyTuple_New(t->size());
-		for (aggregate_of_instance::it it = t->begin(); it != t->end(); ++it, ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize(*it));
-		}
-		return pyobj;
-	}
-
 	template <typename T>
 	PyObject* pythonize_vector(const T& v) {
 		const size_t size = v.size();
@@ -200,15 +271,6 @@
 			} else {
 				PyTuple_SetItem(pyobj, i, pythonize(v[i]));
 			}
-		}
-		return pyobj;
-	}
-
-	PyObject* pythonize(const aggregate_of_aggregate_of_instance::ptr& t) {
-		unsigned int i = 0;
-		PyObject* pyobj = PyTuple_New(t->size());
-		for (aggregate_of_aggregate_of_instance::outer_it it = t->begin(); it != t->end(); ++it, ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize_vector(*it));
 		}
 		return pyobj;
 	}

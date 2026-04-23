@@ -1,4 +1,4 @@
-﻿/********************************************************************************
+/********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
  *                                                                              *
@@ -43,10 +43,10 @@
 
 #include "../ifcgeom/Iterator.h"
 #include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcparse/IfcFile.h"
-#include "../ifcparse/IfcLogger.h"
-
-#include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
+#include "../ifcgeom/kernel_registry.h"
+#include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
+#include "../ifcparse/file.h"
+#include "../ifcparse/logger.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -231,12 +231,12 @@ public:
 	Get() : Command(GET) {};
 };
 
-class GetLog : public Command {
+class get_log : public Command {
 protected:
 	void read_content(std::istream& /*s*/) {}
 	void write_content(std::ostream& /*s*/) {}
 public:
-	GetLog() : Command(GET_LOG) {};
+	get_log() : Command(GET_LOG) {};
 };
 
 class WriteLog : public Command {
@@ -568,7 +568,7 @@ int main () {
 	bool has_more = false;
 
 	IfcGeom::Iterator* iterator = 0;
-	IfcParse::IfcFile* file = 0;
+	ifcopenshell::file* file = 0;
 	std::vector< std::pair<uint32_t, uint32_t> > setting_pairs;
 
 	Hello().write(std::cout);
@@ -604,8 +604,8 @@ int main () {
 
 			settings.get<ifcopenshell::geometry::settings::MesherLinearDeflection>().value = deflection;
 
-			file = new IfcParse::IfcFile(data, (int)len);
-			iterator = new IfcGeom::Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(new IfcGeom::OpenCascadeKernel(settings)), settings, file);
+			file = new ifcopenshell::file(data, (int)len);
+			iterator = new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, "opencascade", settings), settings, file);
 			has_more = iterator->initialize();
 
 			More(has_more).write(std::cout);
@@ -640,8 +640,8 @@ int main () {
 			continue;
 		}
 		case GET_LOG: {
-			GetLog gl; gl.read(std::cin);
-			WriteLog(Logger::GetLog()).write(std::cout);
+			get_log gl; gl.read(std::cin);
+			WriteLog(logger::get_log()).write(std::cout);
 			continue;
 		}
 		case BYE: {

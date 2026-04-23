@@ -20,10 +20,11 @@
 #ifndef IFCGEOMTREE_H
 #define IFCGEOMTREE_H
 
-#include "../../../ifcparse/IfcFile.h"
+#include "../../../ifcparse/file.h"
 
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/Iterator.h"
+#include "../../../ifcgeom/tree.h"
 #include "OpenCascadeConversionResult.h"
 #include "OpenCascadeKernel.h"
 #include "base_utils.h"
@@ -69,26 +70,6 @@
 
 
 namespace IfcGeom {
-
-	struct ray_intersection_result {
-		double distance;
-		int style_index;
-		const IfcUtil::IfcBaseEntity* instance;
-		std::array<double, 3> position;
-		std::array<double, 3> normal;
-		double ray_distance;
-		double dot_product;
-	};
-
-	struct clash {
-        int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
-		const IfcUtil::IfcBaseClass* a;
-		const IfcUtil::IfcBaseClass* b;
-		double distance;
-		std::array<double, 3> p1;
-		std::array<double, 3> p2;
-	};
-
 	namespace {
 
 		// Approximates the distance `other` protrudes into `volume` by finding the
@@ -1442,9 +1423,9 @@ namespace IfcGeom {
 
             // Temporary structures for H5
             std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
-            std::map<const IfcUtil::IfcBaseClass*, std::string> global_ids_;
-            std::map<const IfcUtil::IfcBaseClass*, std::string> names_;
-            std::map<const IfcUtil::IfcBaseClass*, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
+            std::map<express::Base, std::string> global_ids_;
+            std::map<express::Base, std::string> names_;
+            std::map<express::Base, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
             std::map<std::string, std::vector<double>> local_verts_;
             std::map<std::string, std::vector<int>> local_faces_;
             std::map<std::string, std::vector<ifcopenshell::geometry::taxonomy::style::ptr>> local_materials_;
@@ -1481,24 +1462,24 @@ namespace IfcGeom {
 		};
 	}
 
-	class tree : public impl::tree<const IfcUtil::IfcBaseEntity*> {
+	class opencascade_tree : public impl::tree<express::Entity> {
 	public:
 
-		tree() {};
+		opencascade_tree() {};
 
-		tree(IfcParse::IfcFile& f) {
+		opencascade_tree(ifcopenshell::file& f) {
 			add_file(f, ifcopenshell::geometry::Settings{});
 		}
 
-		tree(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
+		opencascade_tree(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
 			add_file(f, settings);
 		}
 
-		tree(IfcGeom::Iterator& it) {
+		opencascade_tree(IfcGeom::Iterator& it) {
 			add_file(it);
 		}		
 
-		void add_file(IfcParse::IfcFile& f, ifcopenshell::geometry::Settings settings) {
+		void add_file(ifcopenshell::file& f, ifcopenshell::geometry::Settings settings) {
 			ifcopenshell::geometry::Settings settings_ = settings;
 			settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;

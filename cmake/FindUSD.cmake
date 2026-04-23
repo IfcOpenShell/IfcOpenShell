@@ -64,7 +64,6 @@ set(USD_LIBRARIES
 find_library(USD_LIBRARY NAMES ${USD_LIBRARIES} PATHS ${USD_LIBRARY_DIR})
 if(USD_LIBRARY)
     message(STATUS "USD libraries ${USD_LIBRARIES} found in: ${USD_LIBRARY_DIR}")
-    link_directories(${USD_LIBRARY_DIR})
 else()
     message(FATAL_ERROR "Unable to find USD libraries in: ${USD_LIBRARY_DIR}")
 endif()
@@ -82,5 +81,3 @@ if(MSVC)
 endif()
 
 target_compile_definitions(pxr::USD INTERFACE PXR_STATIC WITH_USD)
-
-set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_USD)

@@ -4,7 +4,7 @@
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"
-#include "../ifcparse/IfcFile.h"
+#include "../ifcparse/file.h"
 
 #include <rocksdb/db.h>
 
@@ -12,13 +12,12 @@ class SERIALIZERS_API RocksDbSerializer : public Serializer {
 private:
 	rocksdb::DB* db_;
 	std::string rocksdb_filename_;
-	std::variant<IfcParse::IfcFile*, std::string> file_;
-	IfcParse::IfcFile* output_file_;
+	std::variant<ifcopenshell::file*, std::string> file_;
+	ifcopenshell::file* output_file_;
 
 	void write_streaming_();
-	void write_non_streaming_();
 public:
-	RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename);
+	RocksDbSerializer(ifcopenshell::file* file, const std::string& rocksdb_filename);
 	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream);
 
 	virtual ~RocksDbSerializer() {}
@@ -27,7 +26,7 @@ public:
 	void writeHeader() {}
 
 	void finalize();
-	void setFile(IfcParse::IfcFile*) { throw IfcParse::IfcException("Should be supplied on construction"); }
+	void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
 };
 
 #endif

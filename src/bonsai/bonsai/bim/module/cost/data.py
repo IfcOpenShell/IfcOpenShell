@@ -206,7 +206,7 @@ class CostSchedulesData:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
             if quantity.is_a("IfcPhysicalSimpleQuantity"):
                 measure_class = (
-                    quantity.wrapped_data.declaration()
+                    quantity.declaration()
                     .as_entity()
                     .attribute_by_index(3)
                     .type_of_attribute()

@@ -60,9 +60,9 @@ def remove_representation(
         elif subelement.is_a("IfcProfileDef") and subelement.ProfileName:
             named_profiles.add(subelement)
 
-    do_not_delete = file.by_type("IfcGeometricRepresentationContext")
+    do_not_delete = set(file.by_type("IfcGeometricRepresentationContext"))
     if should_keep_named_profiles:
-        do_not_delete += named_profiles
+        do_not_delete |= named_profiles
 
     # Order matters - layer assignments may reference representation directly.
     also_consider = list(presentation_layer_assignments_reps)
@@ -73,7 +73,7 @@ def remove_representation(
         file,
         representation,
         also_consider=also_consider,
-        do_not_delete=set(do_not_delete),
+        do_not_delete=do_not_delete,
     )
 
     for texture in textures:

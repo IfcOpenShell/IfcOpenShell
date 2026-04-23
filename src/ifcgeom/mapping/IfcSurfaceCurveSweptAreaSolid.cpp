@@ -21,19 +21,19 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* inst) {
-	taxonomy::face::ptr f = taxonomy::cast<taxonomy::face>(map(inst->SweptArea()));
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& inst) {
+	taxonomy::face::ptr f = taxonomy::cast<taxonomy::face>(map(inst.SweptArea()));
 
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
-	has_position = inst->Position() != nullptr;
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
-	auto scs = taxonomy::make<taxonomy::sweep_along_curve>(matrix, f, map(inst->ReferenceSurface()), map(inst->Directrix()));
+	auto scs = taxonomy::make<taxonomy::sweep_along_curve>(matrix, f, map(inst.ReferenceSurface()), map(inst.Directrix()));
 	scs->matrix = matrix;
 
 	return scs;
@@ -44,16 +44,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* 
 	TopoDS_Face surface_face;
 	TopoDS_Wire wire, section;
 
-	const bool is_plane = inst->ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class());
+	const bool is_plane = inst.ReferenceSurface()->declaration().is(IfcSchema::IfcPlane::Class());
 
 	if (!is_plane) {
 		TopoDS_Shape surface_shell;
-		if (!convert_shape(inst->ReferenceSurface(), surface_shell)) {
-			Logger::Error("Failed to convert reference surface", l);
+		if (!convert_shape(inst.ReferenceSurface(), surface_shell)) {
+			logger::error("Failed to convert reference surface", l);
 			return false;
 		}
 		if (util::count(surface_shell, TopAbs_FACE) != 1) {
-			Logger::Error("Non-continuous reference surface", l);
+			logger::error("Non-continuous reference surface", l);
 			return false;
 		}
 		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
@@ -65,7 +65,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* 
 	bool directrix_on_plane = is_plane;
 
 	if (is_plane) {
-		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst->ReferenceSurface(), pln);
+		IfcGeom::Kernel::convert((IfcSchema::IfcPlane*) inst.ReferenceSurface(), pln);
 
 		// As per Informal propositions 2: The Directrix shall lie on the ReferenceSurface.
 		// This is not always the case with the test files in the repository. I am not sure
@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* 
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					Logger::Message(Logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
+					logger::message(logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
 					break;
 				}
 			}

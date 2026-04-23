@@ -38,8 +38,8 @@ private:
     Transform transform_;
 
 public:
-    set_to_map_transformer(BaseSet* map, Transform transform)
-        : base_map_(map), transform_(transform) {}
+    set_to_map_transformer(BaseSet* base_set, Transform transform)
+        : base_map_(base_set), transform_(transform) {}
 
     class iterator {
     public:
@@ -58,8 +58,8 @@ public:
 
     public:
         iterator() : base_it_(), transform_ptr_(nullptr) {}
-        iterator(base_iterator base_it, Transform* transform_ptr)
-            : base_it_(base_it), transform_ptr_(transform_ptr) {}
+        iterator(base_iterator base_iterator, Transform* transform)
+            : base_it_(base_iterator), transform_ptr_(transform) {}
 
         // On dereference, return a pair where the key is the set value and the mapped value
         // is the result of applying the transform to the underlying  value.
@@ -102,11 +102,12 @@ public:
         return iterator(base_map_->end(), &transform_);
     }
 
-    iterator find(const key_type& k) {
-        return iterator(base_map_->find(k), &transform_);
+    iterator find(const key_type& key) {
+        return iterator(base_map_->find(key), &transform_);
     }
 
-    size_t erase(const key_type&) {
+    size_t erase(const key_type& key) {
+        static_cast<void>(key);
         // @todo
         return 0;
     }

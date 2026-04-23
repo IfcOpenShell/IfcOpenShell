@@ -27,21 +27,21 @@
 #include <iostream>
 #include <fstream>
 
-#define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "../ifcparse/schemas/Ifc2x3.h"
+#include "../ifcparse/IfcUtil.h"
+#include "../ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
-typedef IfcParse::IfcGlobalId guid;
-boost::none_t const null = boost::none;
+typedef IfcWrite::IfcGuidHelper guid;
+boost::none_t const null = (static_cast<boost::none_t>(0));
 
 void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 	IfcSchema::IfcProfileDef* profile = *profiles->begin();
-	const std::string& profile_type = profile->declaration().name();
+	const std::string profile_type = IfcSchema::Type::ToString(profile->type());
 	const std::string filename = profile_type + ".ifc";
 	
-	IfcHierarchyHelper<IfcSchema> file;
-	file.header().file_name()->setname(filename);
+	hierarchy_helper file;
+	file.filename(filename);
 	
 	int i = 0;
 	for (IfcSchema::IfcProfileDef::list::it it = profiles->begin(); it != profiles->end(); ++it, ++i) {
@@ -54,15 +54,15 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 
 		product->setObjectPlacement(file.addLocalPlacement(0, 100. * i));
 
-		if (profile->declaration().is(IfcSchema::IfcParameterizedProfileDef::Class())) {
+		if (profile->is(IfcSchema::Type::IfcParameterizedProfileDef)) {
 			((IfcSchema::IfcParameterizedProfileDef*) profile)->setPosition(file.addPlacement2d());
 		}
 
 		IfcSchema::IfcExtrudedAreaSolid* solid = new IfcSchema::IfcExtrudedAreaSolid(profile,
 			file.addPlacement3d(), file.addTriplet<IfcSchema::IfcDirection>(0, 0, 1), 20.0);
 
-		file.addEntity(profile);
-		file.addEntity(solid);
+		file.add_entity(profile);
+		file.add_entity(solid);
 		
 		IfcSchema::IfcRepresentation::list::ptr reps (new IfcSchema::IfcRepresentation::list);
 		IfcSchema::IfcRepresentationItem::list::ptr items (new IfcSchema::IfcRepresentationItem::list);
@@ -72,9 +72,9 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 			file.getSingle<IfcSchema::IfcRepresentationContext>(), S("Body"), S("SweptSolid"), items);
 		reps->push(rep);
 
-		IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(null, null, reps);
-		file.addEntity(rep);
-		file.addEntity(shape);
+		IfcSchema::IfcProductDefinitionShape* shape = new IfcSchema::IfcProductDefinitionShape(0, 0, reps);
+		file.add_entity(rep);
+		file.add_entity(shape);
 		
 		product->setRepresentation(shape);
 	}
@@ -84,123 +84,122 @@ void create_testcase_for(IfcSchema::IfcProfileDef::list::ptr profiles) {
 }
 
 int main(int argc, char** argv) {
-    IfcSchema::get_schema();  // Ensure schema is initialized
 	{ IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcUShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,    null,    null));
-	profiles->push(new IfcSchema::IfcUShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,     2.0,     2.0,    null,    null));
-	profiles->push(new IfcSchema::IfcUShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,     4.0,    null));
-	profiles->push(new IfcSchema::IfcUShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcUShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,     1.0,     3.0,     6.0,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcTShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,    null,    null,    null,    null));
-	profiles->push(new IfcSchema::IfcTShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,     2.0,     2.0,     2.0,    null,    null,    null));
-	profiles->push(new IfcSchema::IfcTShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null,    null,     2.0,     2.0,    null));
-	profiles->push(new IfcSchema::IfcTShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,     3.0,     2.0,     1.0,     2.0,     2.0,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcZShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcZShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,    null,    null));
-	profiles->push(new IfcSchema::IfcZShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcZShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     5.0,     2.0,     2.0));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcEllipseProfileDef(
+	profiles->push(new Ifc2x3::IfcEllipseProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0,    15.0));
-	profiles->push(new IfcSchema::IfcEllipseProfileDef(
+	profiles->push(new Ifc2x3::IfcEllipseProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    15.0,    25.0));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcIShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcIShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0,    50.0,     5.0,     5.0,    null));
-	profiles->push(new IfcSchema::IfcIShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcIShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0,    50.0,     5.0,     5.0,     2.0));
-	profiles->push(new IfcSchema::IfcAsymmetricIShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcAsymmetricIShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0,    50.0,     5.0,     5.0,     2.0, 20.0, 10.0, 5.0, null));
 	create_testcase_for(profiles); }
 
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcLShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     null,    null,    null,    null,    null));
-	profiles->push(new IfcSchema::IfcLShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     2.0,      2.0,    null,    null,    null));
-	profiles->push(new IfcSchema::IfcLShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     null,    null,     2.0,    null,    null));
-	profiles->push(new IfcSchema::IfcLShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,      1.0,     2.0,     2.0,    null,    null));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcCShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcCShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,    10.0,    null,    null));
-	profiles->push(new IfcSchema::IfcCShapeProfileDef(
+	profiles->push(new Ifc2x3::IfcCShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,    10.0,     2.0,    null));
 	create_testcase_for(profiles); }
 
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcCircleProfileDef(
+	profiles->push(new Ifc2x3::IfcCircleProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0));
-	profiles->push(new IfcSchema::IfcCircleHollowProfileDef(
+	profiles->push(new Ifc2x3::IfcCircleHollowProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    25.0,     5.0));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcRectangleProfileDef(
+	profiles->push(new Ifc2x3::IfcRectangleProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0));
-	profiles->push(new IfcSchema::IfcRoundedRectangleProfileDef(
+	profiles->push(new Ifc2x3::IfcRoundedRectangleProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0));
-	profiles->push(new IfcSchema::IfcRectangleHollowProfileDef(
+	profiles->push(new Ifc2x3::IfcRectangleHollowProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,    null,    null));
-	profiles->push(new IfcSchema::IfcRectangleHollowProfileDef(
+	profiles->push(new Ifc2x3::IfcRectangleHollowProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    25.0,     5.0,     2.0,     4.0));
 	create_testcase_for(profiles); }
 	
     { IfcSchema::IfcProfileDef::list::ptr profiles (new IfcSchema::IfcProfileDef::list);
-	profiles->push(new IfcSchema::IfcTrapeziumProfileDef(
+	profiles->push(new Ifc2x3::IfcTrapeziumProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    30.0,    25.0,     0.0));
-	profiles->push(new IfcSchema::IfcTrapeziumProfileDef(
+	profiles->push(new Ifc2x3::IfcTrapeziumProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    60.0,    25.0,   -20.0));
-	profiles->push(new IfcSchema::IfcTrapeziumProfileDef(
+	profiles->push(new Ifc2x3::IfcTrapeziumProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
 		null, 0,    50.0,    10.0,    25.0,    30.0));
 	create_testcase_for(profiles); }

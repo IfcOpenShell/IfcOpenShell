@@ -41,7 +41,7 @@ public:
 	void finalize() {}
 	bool isTesselated() const;
 	void setUnitNameAndMagnitude(const std::string& /*name*/, float /*magnitude*/) {}
-	void setFile(IfcParse::IfcFile*) {}
+	void setFile(ifcopenshell::file*) {}
 	std::string ttl_object_id(const IfcGeom::Element* o, const char* const postfix = nullptr);
 };
 

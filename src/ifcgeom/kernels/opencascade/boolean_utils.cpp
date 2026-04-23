@@ -419,7 +419,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const TopTools_ListOfS
 
 		bool is_narrow = min_dimension < prec;
 
-		Logger::Notice("Min OBB dimension of operand = " + std::to_string(min_dimension));
+		logger::notice("Min OBB dimension of operand = " + std::to_string(min_dimension));
 
 		if (!is_narrow) {
 			c.Append(it.Value());
@@ -704,7 +704,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 							if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
 								// Edge curves belonging to different operands intersect, don't process
 								// using builder.
-								Logger::Notice("Intersecting boundaries");
+								logger::notice("Intersecting boundaries");
 								return false;
 							}
 						}
@@ -751,7 +751,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 			// any effect and marked as redundant. Feeding it to the builder algo
 			// will likely cause problems.
 			redundant[std::distance(wires.begin(), it)] = true;
-			Logger::Notice("Subtraction operand outside of outer bound");
+			logger::notice("Subtraction operand outside of outer bound");
 		}
 	}
 
@@ -791,7 +791,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 			if (wire_clss[wire_index].Perform(p2d) == TopAbs_IN) {
 				// A wire is contained within another operand
 				redundant[other_index] = true;
-				Logger::Notice("Subtraction operand contained in other");
+				logger::notice("Subtraction operand contained in other");
 			}
 		}
 	}
@@ -845,11 +845,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	std::string debug_identifier;
 	if (debug) {
-		static my_thread_local size_t operation_counter_ = 0;
+		static thread_local size_t operation_counter_ = 0;
 		std::stringstream ss;
 		ss << "bool-" << std::this_thread::get_id() << "-" << (operation_counter_++);
 		debug_identifier = ss.str();
-		Logger::Notice("Boolean debug identifier: " + debug_identifier);
+		logger::notice("Boolean debug identifier: " + debug_identifier);
 	}
 
 	if (fuzziness < 0.) {
@@ -885,8 +885,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 		a = unify(a_input, fuzziness * 1000.);
 
-		Logger::Message(
-			Logger::LOG_DEBUG,
+		logger::message(
+			logger::LOG_DEBUG,
 			"Simplified operand A from "s +
 			std::to_string(count(a_input, TopAbs_FACE)) +
 			" to "s +
@@ -897,8 +897,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			TopTools_ListIteratorOfListOfShape it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
-				Logger::Message(
-					Logger::LOG_DEBUG,
+				logger::message(
+					logger::LOG_DEBUG,
 					"Simplified operand B from "s +
 					std::to_string(count(it.Value(), TopAbs_FACE)) +
 					" to "s +
@@ -925,7 +925,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 			auto N = bounding_box_overlap(fuzziness, a, b, b_tmp);
 			if (N) {
-				Logger::Notice("Eliminated " + std::to_string(N) + " disjoint operands");
+				logger::notice("Eliminated " + std::to_string(N) + " disjoint operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -936,7 +936,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			b_tmp.Clear();
 			auto N = eliminate_touching_operands(fuzziness, a, b, b_tmp);
 			if (N) {
-				Logger::Notice("Eliminated " + std::to_string(N) + " touching operands");
+				logger::notice("Eliminated " + std::to_string(N) + " touching operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -947,7 +947,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			b_tmp.Clear();
 			auto N = eliminate_narrow_operands(fuzziness, b, b_tmp);
 			if (N) {
-				Logger::Notice("Eliminated " + std::to_string(N) + " narrow operands");
+				logger::notice("Eliminated " + std::to_string(N) + " narrow operands");
 				std::swap(b, b_tmp);
 			}
 		}
@@ -961,21 +961,21 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 
 	if (b.Extent() == 0) {
-		Logger::Warning("No other operands remaining, using first operand");
+		logger::warning("No other operands remaining, using first operand");
 		result = a;
 		return true;
 	}
 
-	if (!is_2d && Logger::LOG_NOTICE >= Logger::Verbosity()) {
+	if (!is_2d && logger::LOG_NOTICE >= logger::verbosity()) {
 		PERF("preliminary manifoldness check");
 
 		if (!a.IsNull()) {
-			Logger::Notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+			logger::notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
 		}
 
 		TopTools_ListIteratorOfListOfShape it(b);
 		for (int i = 0; it.More(); it.Next(), ++i) {
-			Logger::Notice("Operand B " + std::to_string(i) + " is " + (is_manifold(it.Value()) ? ""s : "non-"s) + "manifold");
+			logger::notice("Operand B " + std::to_string(i) + " is " + (is_manifold(it.Value()) ? ""s : "non-"s) + "manifold");
 		}
 	}
 
@@ -1015,7 +1015,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
-	Logger::Notice("Used fuzziness: " + std::to_string(fuzz));
+	logger::notice("Used fuzziness: " + std::to_string(fuzz));
 
 	const double new_fuzziness = fuzziness * 10.;
 	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
@@ -1049,7 +1049,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 
 		if (is_extrusion_a) {
-			Logger::Notice("Operand A 1/1 is an extrusion");
+			logger::notice("Operand A 1/1 is an extrusion");
 
 			TopTools_ListIteratorOfListOfShape it(b);
 			for (int nb = 1; it.More(); it.Next(), ++nb) {
@@ -1065,10 +1065,10 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				}
 
 				if (is_extrusion_b) {
-					Logger::Notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
+					logger::notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
 
 					if (b_interval.first < a_interval.first + (fuzz * 100.) && b_interval.second > a_interval.second - (fuzz * 100.)) {
-						Logger::Notice("Operand B creates a through hole");
+						logger::notice("Operand B creates a through hole");
 
 						// Align b with a operand
 						gp_Trsf trsf;
@@ -1108,23 +1108,23 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					BRepPrimAPI_MakePrism mp(face_result, gp_Vec(gp::DY()) * (a_interval.second - a_interval.first));
 					if (mp.IsDone()) {
 						if (b_remainder_3d.Extent()) {
-							Logger::Notice(std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
+							logger::notice(std::to_string(b_remainder_3d.Extent()) + " operands remaining to process in 3D");
 							b = b_remainder_3d;
 							s1s.Clear();
 							s1s.Append(mp.Shape());
 						} else {
-							Logger::Notice("Processed fully in 2D");
+							logger::notice("Processed fully in 2D");
 							result = mp.Shape();
 							return true;
 						}
 					} else {
-						Logger::Notice("Failed to extrude 2D boolean result. Retrying in 3D.");
+						logger::notice("Failed to extrude 2D boolean result. Retrying in 3D.");
 					}
 				} else {
-					Logger::Notice("Failed to perform 2D boolean operation. Retrying in 3D.");
+					logger::notice("Failed to perform 2D boolean operation. Retrying in 3D.");
 				}
 			} else {
-				Logger::Notice("No second operands can be processed as 2D inner bounds. Retrying in 3D.");
+				logger::notice("No second operands can be processed as 2D inner bounds. Retrying in 3D.");
 			}
 		}
 	}
@@ -1146,7 +1146,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	if (builder->IsDone()) {
 		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
-			Logger::Notice("Builder reports self-intersection in output");
+			logger::notice("Builder reports self-intersection in output");
 			success = false;
 
 			/*
@@ -1160,7 +1160,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			}
 			*/
 		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
-			Logger::Notice("Builder reports bad positioning and result is empty");
+			logger::notice("Builder reports bad positioning and result is empty");
 			success = false;
 		} else {
 			TopoDS_Shape r = *builder;
@@ -1174,7 +1174,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					fix.Perform();
 					r = fix.Shape();
 				} catch (...) {
-					Logger::Error("Shape healing failed on boolean result");
+					logger::error("Shape healing failed on boolean result");
 				}
 			}
 
@@ -1185,7 +1185,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				success = ana.IsValid() != 0;
 
 				if (!success) {
-					Logger::Notice("Boolean operation yields invalid result");
+					logger::notice("Boolean operation yields invalid result");
 
 					std::stringstream str;
 					bool any_emitted = false;
@@ -1215,7 +1215,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					dump(r);
 
-					Logger::Notice(str.str());
+					logger::notice(str.str());
 				}
 			}
 
@@ -1335,7 +1335,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 					if (op == BOPAlgo_CUT && has_open_shells && all_faces_included_in_result && result_n_faces > first_op_n_faces) {
 						success = false;
-						Logger::Notice("Boolean result discarded because subtractions results in only the addition of faces");
+						logger::notice("Boolean result discarded because subtractions results in only the addition of faces");
 					} else {
 						// when there are edges or vertex-edge distances close to the used fuzziness, the
 						// output is not trusted and the operation is attempted with a higher fuzziness.
@@ -1381,7 +1381,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 							static const char* const reason_strings[] = { "edge length", "vertex-edge", "face-face" };
 							std::stringstream str;
 							str << "Boolean operation result failing " << reason_strings[reason] << " interference check, with fuzziness " << fuzziness << " with length " << v;
-							Logger::Notice(str.str());
+							logger::notice(str.str());
 						}
 					}
 
@@ -1390,7 +1390,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					}
 
 				} else {
-					Logger::Notice("Boolean operation yields non-manifold result");
+					logger::notice("Boolean operation yields non-manifold result");
 				}
 			}
 		}
@@ -1400,7 +1400,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #if OCC_VERSION_HEX >= 0x70200
 
 		if (builder->HasError(STANDARD_TYPE(BOPAlgo_AlertBOPNotAllowed))) {
-			Logger::Error("Invalid operands. Using first operand");
+			logger::error("Invalid operands. Using first operand");
 			result = a;
 			success = true;
 		}
@@ -1413,14 +1413,14 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 #endif
 		std::string str_str = str.str();
 		if (str_str.size()) {
-			Logger::Notice(str_str);
+			logger::notice(str_str);
 		}
 	}
 	if (!success) {
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
-			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
+			logger::notice("No longer attempting boolean operation with higher fuzziness");
 		}
 	}
 	return success && !result.IsNull();

@@ -229,7 +229,7 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	const char* fn_mb = name;
 #endif
 
-	IfcParse::IfcFile file(fn_mb);
+	ifcopenshell::file file(fn_mb);
 	IfcGeom::Iterator<float> iterator(settings, &file);
     delete fn_mb;
 	if (!iterator.initialize()) return false;

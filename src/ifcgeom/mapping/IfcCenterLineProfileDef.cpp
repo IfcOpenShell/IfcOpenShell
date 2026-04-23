@@ -21,14 +21,14 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef& inst) {
 	return nullptr;
 
 	/*
-	const double d = inst->Thickness() * length_unit_ / 2.;
+	const double d = inst.Thickness() * length_unit_ / 2.;
 	auto f = taxonomy::make<taxonomy::face>();
 	auto ofc = taxonomy::make<taxonomy::offset_curve>();
-	ofc->basis = map(inst->Curve());
+	ofc->basis = map(inst.Curve());
 	ofc->offset = d;
 	// @todo
 	// f->children.push_back(ofc);
@@ -39,7 +39,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCenterLineProfileDef* inst) 
 
 	/*
 	TopoDS_Wire wire;
-	if (!convert_wire(inst->Curve(), wire)) return false;
+	if (!convert_wire(inst.Curve(), wire)) return false;
 
 	// BRepOffsetAPI_MakeOffset insists on creating circular arc
 	// segments for joining the curves that constitute the center

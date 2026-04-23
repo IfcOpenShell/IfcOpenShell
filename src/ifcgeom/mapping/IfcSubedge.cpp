@@ -22,7 +22,7 @@
 using namespace ifcopenshell::geometry;
 
 /*
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSubedge* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSubedge& inst) {
 	// @todo
 	return nullptr;
 }

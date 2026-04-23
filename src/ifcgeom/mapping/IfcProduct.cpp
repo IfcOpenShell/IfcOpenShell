@@ -4,12 +4,12 @@ using namespace ifcopenshell::geometry;
 
 using namespace IfcGeom;
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct* inst) {
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct& inst) {
 	// @todo decide on this, what happens in the product mapping?
 	// currently things like openings, layers and materials are processed in the converter
 	auto c = taxonomy::make<taxonomy::collection>();
-	if (inst->ObjectPlacement()) {
-		c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+	if (inst.ObjectPlacement()) {
+		c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.ObjectPlacement()));
 	} else {
 		// @todo Otherwise we get crashes in the serializer, but maybe fix them there..?
 		c->matrix = taxonomy::make<taxonomy::matrix4>();
@@ -21,7 +21,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 
 	auto openings = find_openings(inst);
 	// @todo const cast
-	auto reps = inst->data().file->traverse((IfcSchema::IfcProduct*) inst, 2)->as<IfcSchema::IfcRepresentation>();
+	auto reps = inst.data().file->traverse((IfcSchema::IfcProduct*) inst, 2)->as<IfcSchema::IfcRepresentation>();
 	IfcSchema::IfcRepresentation* body = nullptr;
 	for (auto& rep : *reps) {
 		if (rep->RepresentationIdentifier()) {
@@ -35,7 +35,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 	}
 
 	auto c = new taxonomy::collection;
-	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->ObjectPlacement()));
+	c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst.ObjectPlacement()));
 
 	const auto single_material = get_single_material_association(inst);
 	if (single_material) {
@@ -54,7 +54,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcProduct* inst) {
 			ci.setIdentity();
 		}
 
-		aggregate_of_instance::ptr operands(new aggregate_of_instance);
+		std::vector<express::Base> operands(new aggregate_of_instance);
 		operands->push(body);
 		operands->push(openings);
 		auto n = map_to_collection<taxonomy::boolean_result>(this, operands);

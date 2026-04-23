@@ -25,25 +25,25 @@ using namespace ifcopenshell::geometry;
 
 #ifdef SCHEMA_HAS_IfcCraneRailAShapeProfileDef
 
-taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef* inst) {
-	double oh = inst->OverallHeight() * length_unit_;
-	double bw2 = inst->BaseWidth2() * length_unit_;
-	double hw = inst->HeadWidth() * length_unit_;
-	double hd2 = inst->HeadDepth2() * length_unit_;
-	double hd3 = inst->HeadDepth3() * length_unit_;
-	double wt = inst->WebThickness() * length_unit_;
-	double bw4 = inst->BaseWidth4() * length_unit_;
-	double bd1 = inst->BaseDepth1() * length_unit_;
-	double bd2 = inst->BaseDepth2() * length_unit_;
-	double bd3 = inst->BaseDepth3() * length_unit_;
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCraneRailAShapeProfileDef& inst) {
+	double oh = inst.OverallHeight() * length_unit_;
+	double bw2 = inst.BaseWidth2() * length_unit_;
+	double hw = inst.HeadWidth() * length_unit_;
+	double hd2 = inst.HeadDepth2() * length_unit_;
+	double hd3 = inst.HeadDepth3() * length_unit_;
+	double wt = inst.WebThickness() * length_unit_;
+	double bw4 = inst.BaseWidth4() * length_unit_;
+	double bd1 = inst.BaseDepth1() * length_unit_;
+	double bd2 = inst.BaseDepth2() * length_unit_;
+	double bd3 = inst.BaseDepth3() * length_unit_;
 
 	taxonomy::matrix4::ptr m4;
 	bool has_position = true;
 #ifdef SCHEMA_IfcParameterizedProfileDef_Position_IS_OPTIONAL
-	has_position = !!inst->Position();
+	has_position = !!inst.Position();
 #endif
 	if (has_position) {
-		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		m4 = taxonomy::cast<taxonomy::matrix4>(map(inst.Position()));
 	}
 
 	return profile_helper(m4, {
