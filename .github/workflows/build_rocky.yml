@@ -128,7 +128,7 @@ jobs:
               cp "$exe_path" "$package_dir/"
               stage_runtime_payload "$package_dir"
               pushd "$package_dir" > /dev/null
-              zip -qq -r "~/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .
+              zip -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .
               popd > /dev/null
               rm -rf "$package_dir"
           done
