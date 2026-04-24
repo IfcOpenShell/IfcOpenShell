@@ -18,10 +18,12 @@
  ********************************************************************************/
 
 #include "SceneLoader.h"
+#include "AppSettings.h"
 
 #include <QFileInfo>
 #include <QTimer>
 #include <QDebug>
+#include <QElapsedTimer>
 
 #include <memory>
 #include <optional>
@@ -37,11 +39,19 @@ SceneLoader::SceneLoader(ViewportWindow* viewport, QObject* parent)
 
 SceneLoader::~SceneLoader() {
     joinSidecarThread();
+    joinDataSourceThreads();
 }
 
 void SceneLoader::joinSidecarThread() {
     if (sidecar_read_thread_.joinable())
         sidecar_read_thread_.join();
+}
+
+void SceneLoader::joinDataSourceThreads() {
+    for (auto& t : data_source_threads_) {
+        if (t.joinable()) t.join();
+    }
+    data_source_threads_.clear();
 }
 
 QString SceneLoader::filePath(uint32_t mid) const {
@@ -187,8 +197,73 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
     qint64 ms = model.load_timer.elapsed();
     emit loadedFromSidecar(mid, ms);
 
+    startDataSourceLoad(mid);
+
     loading_model_id_ = 0;
     QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
+}
+
+// Match SidecarCache.cpp's sidecarPath() stem logic so we resolve the
+// data-source siblings against the same stem the sidecar was keyed on.
+static std::string pathStem(const std::string& path) {
+    std::string p = path;
+    while (!p.empty() && (p.back() == '/' || p.back() == '\\')) p.pop_back();
+    auto slash = p.find_last_of("/\\");
+    auto dot   = p.find_last_of('.');
+    return (dot != std::string::npos &&
+            (slash == std::string::npos || dot > slash))
+               ? p.substr(0, dot)
+               : p;
+}
+
+void SceneLoader::startDataSourceLoad(uint32_t mid) {
+    if (!AppSettings::instance().loadDataSource()) return;
+
+    auto it = models_.find(mid);
+    if (it == models_.end()) return;
+
+    std::string original_path = it->second.file_path.toStdString();
+    std::string stem = pathStem(original_path);
+
+    // Prefer RocksDB (foo.rdb) over SPF (foo.ifc) for fast random lookups.
+    QString data_path;
+    const QString rdb_candidate = QString::fromStdString(stem + ".rdb");
+    const QString ifc_candidate = QString::fromStdString(stem + ".ifc");
+    if (QFileInfo::exists(rdb_candidate)) {
+        data_path = rdb_candidate;
+    } else if (QFileInfo::exists(ifc_candidate)) {
+        data_path = ifc_candidate;
+    } else {
+        return;
+    }
+
+    std::string data_path_std = data_path.toStdString();
+    data_source_threads_.emplace_back([this, mid, data_path_std]() {
+        QElapsedTimer t; t.start();
+        std::unique_ptr<ifcopenshell::file> file;
+        try {
+            file = std::make_unique<ifcopenshell::file>(
+                data_path_std, ifcopenshell::FT_AUTODETECT, /*read_only=*/true);
+        } catch (const std::exception& e) {
+            qWarning("  Data source load failed: %s (%s)",
+                     data_path_std.c_str(), e.what());
+            return;
+        }
+        qDebug("  Data source load: %lld ms (%s)", t.elapsed(), data_path_std.c_str());
+
+        auto shared = std::make_shared<std::unique_ptr<ifcopenshell::file>>(std::move(file));
+        QMetaObject::invokeMethod(this, [this, mid, shared]() {
+            auto it = models_.find(mid);
+            if (it == models_.end()) return;
+            auto* streamer = it->second.streamer;
+            if (streamer == nullptr) return;
+            // If the streamer already has a file (e.g. a later stream-fallback
+            // path somehow populated it), don't clobber it.
+            if (streamer->ifcFile() != nullptr) return;
+            streamer->setIfcFile(std::move(*shared));
+            emit dataSourceReady(mid);
+        }, Qt::QueuedConnection);
+    });
 }
 
 void SceneLoader::onStreamerProgressChanged(int percent) {
@@ -227,6 +302,13 @@ void SceneLoader::onStreamerFinished() {
 
             qint64 ms = it->second.load_timer.elapsed();
             emit loadedFromStream(mid, ms);
+
+            // Slot(s) above run synchronously (sidecar write uses element_map_,
+            // not ifcFile()); drop the parsed file now to save memory if the
+            // user has opted out of keeping a property data source.
+            if (!AppSettings::instance().loadDataSource()) {
+                it->second.streamer->setIfcFile(nullptr);
+            }
         }
     }
 

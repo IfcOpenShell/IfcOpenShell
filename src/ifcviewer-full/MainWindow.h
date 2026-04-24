@@ -59,6 +59,7 @@ private slots:
                                 std::vector<PackedElementInfo> elements,
                                 std::string string_table);
     void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
+    void onDataSourceReady(uint32_t mid);
     void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
     void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
     void onLoadCancelled(uint32_t mid);

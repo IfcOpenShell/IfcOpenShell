@@ -79,6 +79,10 @@ GeometryStreamer::~GeometryStreamer() {
     }
 }
 
+void GeometryStreamer::setIfcFile(std::unique_ptr<ifcopenshell::file> file) {
+    ifc_file_ = std::move(file);
+}
+
 void GeometryStreamer::loadFile(const std::string& path, uint32_t start_object_id, uint32_t model_id, int num_threads) {
     if (running_.load()) {
         cancel();

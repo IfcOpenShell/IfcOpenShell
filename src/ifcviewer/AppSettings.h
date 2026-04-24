@@ -40,10 +40,18 @@ public:
     bool backfaceCulling() const;
     void setBackfaceCulling(bool value);
 
+    // When true, the IFC/RocksDB file is kept open (and, on sidecar hits,
+    // opened in the background) so element properties can be queried.
+    // When false, only geometry is loaded — saves memory and avoids a
+    // second file read on sidecar hits, at the cost of no property panel.
+    bool loadDataSource() const;
+    void setLoadDataSource(bool value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
+    void loadDataSourceChanged(bool value);
 
 private:
     AppSettings();
@@ -53,6 +61,7 @@ private:
     QString geometry_library_;
     bool show_stats_ = false;
     bool backface_culling_ = true;
+    bool load_data_source_ = true;
 };
 
 #endif // APPSETTINGS_H

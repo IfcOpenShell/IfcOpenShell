@@ -49,6 +49,8 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onSidecarElementsReady);
     connect(loader_, &SceneLoader::loadedFromSidecar,
             this, &MainWindow::onLoadedFromSidecar);
+    connect(loader_, &SceneLoader::dataSourceReady,
+            this, &MainWindow::onDataSourceReady);
     connect(loader_, &SceneLoader::streamedElementsReady,
             this, &MainWindow::onStreamedElementsReady);
     connect(loader_, &SceneLoader::loadedFromStream,
@@ -141,7 +143,9 @@ void MainWindow::setupMenus() {
 void MainWindow::onFileOpen() {
     QStringList paths = QFileDialog::getOpenFileNames(
         this, "Add IFC Files", QString(),
-        "IFC Files (*.ifc *.ifcxml *.ifczip);;All Files (*)");
+        "IFC Files (*.ifc *.ifcxml *.ifczip);;"
+        "IFC Viewer Cache (*.ifcview);;"
+        "All Files (*)");
     if (!paths.isEmpty()) {
         addFiles(paths);
     }
@@ -252,6 +256,18 @@ void MainWindow::onSidecarElementsReady(uint32_t mid,
 
     element_tree_->setUpdatesEnabled(true);
     qDebug("  Tree build: %lld ms (%zu elements)", t.elapsed(), elements.size());
+}
+
+void MainWindow::onDataSourceReady(uint32_t mid) {
+    // Re-populate if the current selection belongs to this model, since
+    // populateProperties() now has an ifcFile() to query.
+    auto items = element_tree_->selectedItems();
+    if (items.isEmpty()) return;
+    uint32_t object_id = items.first()->data(0, Qt::UserRole).toUInt();
+    auto it = element_map_.find(object_id);
+    if (it != element_map_.end() && it->second.model_id == mid) {
+        populateProperties(object_id);
+    }
 }
 
 void MainWindow::onLoadedFromSidecar(uint32_t /*mid*/, qint64 elapsed_ms) {

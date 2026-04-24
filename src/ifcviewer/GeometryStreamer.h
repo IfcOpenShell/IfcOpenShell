@@ -53,6 +53,11 @@ public:
     void loadFile(const std::string& path, uint32_t start_object_id, uint32_t model_id, int num_threads = 0);
     void cancel();
 
+    // Adopt an externally-opened ifcopenshell::file as the data source
+    // (e.g. for the sidecar-hit path, where loadFile never runs).  The
+    // streamer must not be running geometry iteration when this is called.
+    void setIfcFile(std::unique_ptr<ifcopenshell::file> file);
+
     bool isRunning() const { return running_.load(); }
     int progress() const { return progress_.load(); }
     uint32_t lastObjectId() const { return next_object_id_; }

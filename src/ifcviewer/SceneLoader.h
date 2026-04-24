@@ -77,6 +77,11 @@ signals:
                               std::string string_table);
     void loadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
 
+    // Fired after a sidecar-hit model has its .rdb/.ifc opened as a
+    // property data source in the background.  Consumers can refresh
+    // any UI that queries ifcFile(mid) for attributes/properties.
+    void dataSourceReady(uint32_t mid);
+
     // Fired repeatedly while streaming, as the worker thread produces
     // elements.  Each batch contains whatever accumulated since the last
     // poll tick.
@@ -113,7 +118,9 @@ private:
     void startNextLoad();
     void connectStreamer(GeometryStreamer* streamer);
     void joinSidecarThread();
+    void joinDataSourceThreads();
     void applySidecarData(uint32_t mid, SidecarData data);
+    void startDataSourceLoad(uint32_t mid);
 
     ViewportWindow* viewport_ = nullptr;
     std::map<uint32_t, Entry> models_;
@@ -122,6 +129,10 @@ private:
     uint32_t next_object_id_ = 1;
     uint32_t loading_model_id_ = 0;
     std::thread sidecar_read_thread_;
+    // One thread per sidecar-hit model while its .rdb/.ifc opens in the
+    // background.  Joined only at destruction so a slow SPF parse on model
+    // A never blocks the sidecar-hit path of model B.
+    std::vector<std::thread> data_source_threads_;
     QTimer element_poll_timer_;
 };
 
