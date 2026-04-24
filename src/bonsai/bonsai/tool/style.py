@@ -822,27 +822,33 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def _remove_external_branch(cls, material: bpy.types.Material) -> None:
-        """Remove all nodes reachable from BIM_Output_External (walks links backwards)."""
+        """Remove all non-flat-branch nodes (external branch + any orphaned nodes from prior pastes).
+
+        Rather than walking forward from BIM_Output_External (which misses disconnected/orphan
+        nodes that the clipboard paste brought in), we walk backward from BIM_Output_Flat to
+        identify every node that belongs to the flat branch, then remove everything else.
+        """
         if not material.node_tree:
             return
         nodes = material.node_tree.nodes
-        output = nodes.get("BIM_Output_External")
-        if not output:
-            return
-        to_remove: set[str] = set()
-        stack = [output]
-        while stack:
-            node = stack.pop()
-            if node.name in to_remove:
-                continue
-            to_remove.add(node.name)
-            for inp in node.inputs:
-                for link in inp.links:
-                    stack.append(link.from_node)
-        for name in list(to_remove):
-            n = nodes.get(name)
-            if n:
-                nodes.remove(n)
+
+        # Walk backward from BIM_Output_Flat to collect every flat-branch node.
+        flat_output = nodes.get("BIM_Output_Flat")
+        flat_nodes: set[str] = set()
+        if flat_output:
+            stack = [flat_output]
+            while stack:
+                node = stack.pop()
+                if node.name in flat_nodes:
+                    continue
+                flat_nodes.add(node.name)
+                for inp in node.inputs:
+                    for link in inp.links:
+                        stack.append(link.from_node)
+
+        for node in nodes[:]:
+            if node.name not in flat_nodes:
+                nodes.remove(node)
 
     @classmethod
     def _build_flat_branch_nodes(cls, material: bpy.types.Material) -> "bpy.types.ShaderNode":
@@ -976,6 +982,15 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:
         if style_type == "External":
+            ext, fast = cls.get_branch_outputs(blender_material)
+            if ext and fast:
+                # Dual branch already built — just flip the active output without re-loading
+                # the external .blend file. This avoids redundant activate_external_style calls
+                # when restore_material_style_types fires for each viewport during file load.
+                ext.is_active_output = True
+                fast.is_active_output = False
+                blender_material.update_tag()
+                return
             try:
                 bpy.ops.bim.activate_external_style(material_name=blender_material.name)
             except RuntimeError as error:
