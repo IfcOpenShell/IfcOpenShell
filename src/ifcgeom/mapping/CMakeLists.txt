@@ -2,6 +2,12 @@ find_package(Eigen3 REQUIRED)
 
 set(mapping_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
 
+if (NOT WASM_BUILD)
+# wasm-ld (?) trips up on multiple defined symbols. IfcParse already brings
+# in plugin so we skip it here.
+set(plugin_when_not_wasm plugin)
+endif()
+
 foreach(schema ${SCHEMA_VERSIONS})
     file(GLOB IFCGEOM_I_FILES *.i)
     file(GLOB IFCGEOM_H_FILES *.h)
@@ -15,7 +21,15 @@ foreach(schema ${SCHEMA_VERSIONS})
         RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
-    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE plugin IfcGeom IfcParse Eigen3::Eigen ${OpenCASCADE_LIBRARIES})
+
+    if (WASM_BUILD)
+        target_link_options(
+            geometry_mapping_ifc${schema}
+            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
+        )
+    endif()
+
+    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse Eigen3::Eigen)
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 

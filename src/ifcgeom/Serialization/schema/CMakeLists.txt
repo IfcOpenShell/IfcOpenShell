@@ -1,3 +1,5 @@
+if (NOT WASM_BUILD)
+
 foreach(schema ${SCHEMA_VERSIONS})
     add_library(geometry_serializer_ifc${schema} SHARED Serialization.cpp plugin.cpp)
     target_link_libraries(geometry_serializer_ifc${schema} PRIVATE plugin geometry_serializer IfcGeom IfcParse ${OpenCASCADE_LIBRARIES})
@@ -10,3 +12,5 @@ foreach(schema ${SCHEMA_VERSIONS})
     list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
 endforeach()
 set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)
+
+endif()

@@ -8,7 +8,7 @@ source:
 
 build:
   script: |
-    BUILD_CFG=Release python nix/build-all.py -v --wasm --py313
+    CFLAGS="-O0 -g" CXXFLAGS="-O0 -g" LDFLAGS="-O0 -g" IFCOS_SCHEMAS=4 BUILD_CFG=Debug python nix/build-all.py -v --wasm --py313
 
 about:
   home: http://ifcopenshell.org

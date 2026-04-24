@@ -591,6 +591,10 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             f"-DBUILD_SHARED_LIBS={OFF_ON[not BUILD_STATIC]}",
         )
 
+    module_flags = []
+    if "wasm" in flags:
+        module_flags.append(f"-DCMAKE_MODULE_LINKER_FLAGS={os.environ['LDFLAGS']}")
+
     run(
         [
             *wasm,
@@ -600,6 +604,7 @@ def run_cmake(arg1, cmake_args: "list[str]", cmake_dir: Union[str, None] = None,
             *cmake_args,
             f"-DCMAKE_BUILD_TYPE={BUILD_CFG}",
             f"-DCMAKE_SHARED_LINKER_FLAGS={os.environ['LDFLAGS']}",
+            *module_flags
         ],
         cwd=cwd,
     )
@@ -1341,7 +1346,7 @@ os.makedirs(ifcos_build_dir, exist_ok=True)
 cmake_args = [
     "-DUSE_MMAP=OFF",
     "-DBUILD_EXAMPLES=OFF",
-    "-DBUILD_SHARED_LIBS=ON",
+    "-DBUILD_SHARED_LIBS=" + OFF_ON[not BUILD_STATIC],
     "-DGLTF_SUPPORT=ON",
     "-DBoost_NO_BOOST_CMAKE=On",
     "-DCREATE_BUNDLE=On",
@@ -1394,9 +1399,9 @@ elif "occ" in targets:
     occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
-if "manifold" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
-    cmake_args.append("-DWITH_MANIFOLD=On")
+# if "manifold" in targets:
+#     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+#     cmake_args.append("-DWITH_MANIFOLD=On")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,

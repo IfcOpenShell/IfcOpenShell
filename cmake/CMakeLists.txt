@@ -119,10 +119,6 @@ if(MINIMAL_BUILD)
     set(USD_SUPPORT OFF)
 endif()
 
-if(NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "BUILD_SHARED_LIBS=OFF is not supported. Configure with -DBUILD_SHARED_LIBS=ON.")
-endif()
-
 if((BUILD_CONVERT OR BUILD_GEOMSERVER OR BUILD_IFCPYTHON) AND(NOT BUILD_IFCGEOM))
     message(STATUS "'IfcGeom' is required with current outputs")
     set(BUILD_IFCGEOM ON)

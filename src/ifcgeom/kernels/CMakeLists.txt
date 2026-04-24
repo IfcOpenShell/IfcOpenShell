@@ -2,6 +2,12 @@ message(STATUS "GEOMETRY_KERNELS ${GEOMETRY_KERNELS}")
 
 set(kernel_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
 
+if (NOT WASM_BUILD)
+# wasm-ld (?) trips up on multiple defined symbols. IfcParse already brings
+# in plugin so we skip it here.
+set(plugin_when_not_wasm plugin)
+endif()
+
 foreach(kernel ${GEOMETRY_KERNELS})
     string(TOUPPER ${kernel} KERNEL_UPPER)
     file(GLOB IFCGEOM_H_FILES ${kernel}/*.h)
@@ -16,6 +22,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set(KERNEL_TARGET "geometry_kernel_${kernel}")
     add_library(${KERNEL_TARGET} SHARED ${IFCGEOM_FILES})
+
+    if (WASM_BUILD)
+        target_link_options(
+            ${KERNEL_TARGET}
+            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
+        )
+    endif()    
+
     set_target_properties(${KERNEL_TARGET} PROPERTIES
         COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
         OUTPUT_NAME "geometry.kernel.${kernel}"
@@ -23,7 +37,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
         LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
     )
     list(APPEND kernel_libraries ${KERNEL_TARGET})
-    target_link_libraries(${KERNEL_TARGET} PRIVATE plugin IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+    target_link_libraries(${KERNEL_TARGET} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
     install(TARGETS ${KERNEL_TARGET})
 
@@ -32,6 +46,14 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
         set(KERNEL_TARGET_SIMPLE "${KERNEL_TARGET}_simple")
         add_library(${KERNEL_TARGET_SIMPLE} SHARED ${IFCGEOM_FILES})
+
+    if (WASM_BUILD)
+        target_link_options(
+            ${KERNEL_TARGET_SIMPLE}
+            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
+        )
+    endif()
+
         set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES
             COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
             OUTPUT_NAME "geometry.kernel.cgalsimple"
@@ -39,11 +61,20 @@ foreach(kernel ${GEOMETRY_KERNELS})
             LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
         )
         list(APPEND kernel_libraries ${KERNEL_TARGET_SIMPLE})
-        target_link_libraries(${KERNEL_TARGET_SIMPLE} PRIVATE plugin IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
+        target_link_libraries(${KERNEL_TARGET_SIMPLE} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
         install(TARGETS ${KERNEL_TARGET_SIMPLE})
     elseif(${kernel} STREQUAL "opencascade")
-        target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
+        if (WASM_BUILD)
+            # exclude due to duplicate symbols tripping up wasm-ld
+            set(OCCT_LIBS_FILTERED ${OpenCASCADE_LIBRARIES})
+            list(FILTER OCCT_LIBS_FILTERED EXCLUDE REGEX "(^|;)TKXMesh($|;)")
+            target_link_libraries(${KERNEL_TARGET} PRIVATE ${OCCT_LIBS_FILTERED})
+		# message(FATAL_ERROR "OCCT_LIBS_FILTERED ${OCCT_LIBS_FILTERED}")
+        else()
+            target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
+        endif()
 
+	if (NOT WASM_BUILD)
         foreach(tree_backend brep trianglebvh)
             set(TREE_TARGET "geometry_tree_opencascade_${tree_backend}")
             add_library(${TREE_TARGET} SHARED
@@ -60,6 +91,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
             target_link_libraries(${TREE_TARGET} PRIVATE plugin IfcGeom geometry_kernel_opencascade ${OpenCASCADE_LIBRARIES} Eigen3::Eigen)
             install(TARGETS ${TREE_TARGET})
         endforeach()
+	endif()
     endif()
 
     install(FILES ${IFCGEOM_H_FILES}

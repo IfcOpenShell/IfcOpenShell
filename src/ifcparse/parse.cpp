@@ -411,11 +411,11 @@ token spf_lexer<Reader>::next() {
     }
 }
 
-template class IFC_PARSE_API spf_lexer<file_reader<full_buffer_impl>>;
-template class IFC_PARSE_API spf_lexer<file_reader<paged_file_impl>>;
-template class IFC_PARSE_API spf_lexer<file_reader<pushed_sequential_impl>>;
+template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<full_buffer_impl>>;
+template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<paged_file_impl>>;
+template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<pushed_sequential_impl>>;
 #ifdef USE_MMAP
-template class IFC_PARSE_API spf_lexer<file_reader<mmap_impl>>;
+template class IFC_PARSE_API ifcopenshell::spf_lexer<file_reader<mmap_impl>>;
 #endif
 
 bool token::is_operator() {
