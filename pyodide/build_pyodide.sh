@@ -35,6 +35,12 @@ sed -i s/0.8.0/$VERSION/g packages/ifcopenshell/meta.yaml
 # Otherwise pyodide build path typically includes package version, so cached cmake configs might break.
 export BUILD_DIR=`readlink -f ifcopenshell_build`
 
+# Sat, 25 Apr 2026 12:11:39 GMT 2026-04-25 12:11:39,173 - DEBUG - running
+# command `make -j5 ifcopenshell_wrapper VERBOSE=1` in directory
+# '/home/runner/work/IfcOpenShell/IfcOpenShell/ifcopenshell_build/Linux/wasm/build/ifcopenshell/build'
+# Sat, 25 Apr 2026 12:18:01 GMT Error: Process completed with exit code 143.
+export IFCOS_NUM_BUILD_PROCS=1
+
 # Use build-recipes-no-deps first, so logs would be printed to stdout.
 pyodide build-recipes-no-deps ifcopenshell
 pyodide build-recipes ifcopenshell --install
