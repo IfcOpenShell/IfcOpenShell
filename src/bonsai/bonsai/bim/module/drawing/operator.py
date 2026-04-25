@@ -4039,8 +4039,7 @@ class ExcludeFromDrawing(bpy.types.Operator, tool.Ifc.Operator):
                 if element:
                     tool.Drawing.exclude_element_from_drawing(element, drawing)
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-        bpy.ops.bim.enable_editing_element_filter(filter_mode="EXCLUDE")
-        bpy.ops.bim.edit_element_filter(filter_mode="EXCLUDE")
+        bpy.ops.bim.activate_drawing(drawing=drawing.id(), should_view_from_camera=False)
 
 
 class ActivateDrawingByAnnotation(bpy.types.Operator, tool.Ifc.Operator):

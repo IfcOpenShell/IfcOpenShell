@@ -232,7 +232,7 @@ class Drawing(bonsai.core.tool.Drawing):
             pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
         exclude = ifcopenshell.util.element.get_property_definition(pset, prop="Exclude") or ""
         if exclude:
-            exclude += "+"
+            exclude += " + "
         exclude += element.GlobalId
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Exclude": exclude})
 
