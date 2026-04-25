@@ -17,7 +17,8 @@ uv run pyodide xbuildenv install
 uv run pyodide xbuildenv install-emscripten
 
 EMSDK_ROOT=$(pyodide config get emscripten_dir)
-source ${EMSDK_ROOT}/emsdk_env.sh
+[ -f ${EMSDK_ROOT}/emsdk_env.sh ] && source ${EMSDK_ROOT}/emsdk_env.sh
+[ -f ${EMSDK_ROOT}/../../emsdk_env.sh ] && source ${EMSDK_ROOT}/../../emsdk_env.sh
 which emcc
 
 mkdir -p packages/ifcopenshell

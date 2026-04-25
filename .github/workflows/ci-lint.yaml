@@ -95,8 +95,7 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           }
 
-          run_check poe ruff-main
-          run_check poe ruff-old
+          run_check poe ruff
 
           exit $ERROR
         continue-on-error: true

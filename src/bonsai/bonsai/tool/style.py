@@ -203,6 +203,11 @@ class Style(bonsai.core.tool.Style):
 
         available_props = props.bl_rna.properties.keys()
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
+            null_prop_name = f"is_{prop_blender}_null"
+            if null_prop_name in available_props and getattr(props, null_prop_name):
+                surface_style_data[prop_ifc] = None
+                continue
+
             class_prop_name = f"{prop_blender}_class"
 
             # get detailed color properties if available

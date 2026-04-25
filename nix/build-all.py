@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# /// script
+# ///
 ###############################################################################
 #                                                                             #
 # This file is part of IfcOpenShell.                                          #
@@ -126,13 +128,7 @@ from collections.abc import Generator, Sequence
 from pathlib import Path
 from urllib.request import urlretrieve
 
-try:
-    from typing import Literal, Union
-except:
-    # python 3.6 compatibility for rocky 8
-    from typing import Union
-
-    from typing_extensions import Literal
+from typing import Literal, Union
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -1094,10 +1090,19 @@ if "python" in targets and not USE_CURRENT_PYTHON_VERSION and "wasm" not in flag
             f"http://www.python.org/ftp/python/{PYTHON_VERSION}/",
             f"Python-{PYTHON_VERSION}.tgz",
         )
-        python_bin = INSTALL_DIR / f"python-{PYTHON_VERSION}" / "bin" / "python3"
+        python_install = INSTALL_DIR / f"python-{PYTHON_VERSION}"
+        python_bin = python_install / "bin" / "python3"
         # `_ssl` module is present -> we will be able to install `numpy` later
         # to verify IfcOpenShell installation
-        run([str(python_bin), "-c", "import _ssl"])
+        try:
+            run([str(python_bin), "-c", "import _ssl"])
+        except RuntimeError:
+            print(
+                "ERROR: Python was built without SSL support (_ssl module is missing). "
+                f"To fix this: remove the installed Python at {python_install}; "
+                "install OpenSSL development libraries and re-run."
+            )
+            raise
 
     if MAC_CROSS_COMPILE_INTEL:
         assert original_path

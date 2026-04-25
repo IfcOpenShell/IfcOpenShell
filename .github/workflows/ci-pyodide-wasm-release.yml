@@ -29,7 +29,7 @@ jobs:
         with:
           repository: IfcOpenShell/wasm-wheels
           path: wasm-wheels
-          token: ${{ secrets.WASM_WHEELS_TOKEN }}
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
 
       - name: Commit and push wheel to wasm-wheels
         run: |
@@ -40,4 +40,7 @@ jobs:
           git config user.email "ifcopenbot@ifcopenshell.org"
           git add "$WHEEL_NAME"
           git commit -m "Add $WHEEL_NAME"
+          VERSION=$(cat ../VERSION)
+          git tag "v${VERSION}"
           git push origin main
+          git push origin "v${VERSION}"
