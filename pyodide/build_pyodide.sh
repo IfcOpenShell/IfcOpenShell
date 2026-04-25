@@ -3,6 +3,8 @@ set -ex
 
 PYODIDE_VERSION=0.29.3
 PYODIDE_BUILD_VERSION=0.33.0
+PYODIDE_XBUILDENV_ROOT="${HOME}/.cache/.pyodide-xbuildenv-${PYODIDE_BUILD_VERSION}"
+PYODIDE_XBUILDENV="${PYODIDE_XBUILDENV_ROOT}/${PYODIDE_VERSION}"
 
 # Script is assuming that it will be possible to execute it multiple times
 # therefore we're clearing venv each time and ignoring existing 'emsdk' folder.
@@ -19,10 +21,10 @@ uv pip install "pyodide-build==${PYODIDE_BUILD_VERSION}"
 uv run pyodide xbuildenv install "${PYODIDE_VERSION}"
 uv run pyodide xbuildenv install-emscripten
 
-EMSDK_ROOT=$(pyodide config get emscripten_dir)
-[ -f "${EMSDK_ROOT}/emsdk_env.sh" ] && source "${EMSDK_ROOT}/emsdk_env.sh"
-[ -f "${EMSDK_ROOT}/../../emsdk_env.sh" ] && source "${EMSDK_ROOT}/../../emsdk_env.sh"
+EMSDK_ROOT="${PYODIDE_XBUILDENV}/emsdk"
+source "${EMSDK_ROOT}/emsdk_env.sh"
 which emcc
+emcc --version
 
 mkdir -p packages/ifcopenshell
 VERSION=`cat IfcOpenShell/VERSION`
