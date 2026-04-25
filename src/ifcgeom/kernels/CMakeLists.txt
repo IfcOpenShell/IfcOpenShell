@@ -28,7 +28,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
             ${KERNEL_TARGET}
             PRIVATE "SHELL:-s -s SIDE_MODULE=1"
         )
-    endif()    
+    endif()
 
     set_target_properties(${KERNEL_TARGET} PROPERTIES
         COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
@@ -69,7 +69,6 @@ foreach(kernel ${GEOMETRY_KERNELS})
             set(OCCT_LIBS_FILTERED ${OpenCASCADE_LIBRARIES})
             list(FILTER OCCT_LIBS_FILTERED EXCLUDE REGEX "(^|;)TKXMesh($|;)")
             target_link_libraries(${KERNEL_TARGET} PRIVATE ${OCCT_LIBS_FILTERED})
-		# message(FATAL_ERROR "OCCT_LIBS_FILTERED ${OCCT_LIBS_FILTERED}")
         else()
             target_link_libraries(${KERNEL_TARGET} PRIVATE ${OpenCASCADE_LIBRARIES})
         endif()
