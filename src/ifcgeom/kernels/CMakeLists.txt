@@ -39,6 +39,26 @@ foreach(kernel ${GEOMETRY_KERNELS})
     list(APPEND kernel_libraries ${KERNEL_TARGET})
     target_link_libraries(${KERNEL_TARGET} PRIVATE ${plugin_when_not_wasm} IfcGeom ${${KERNEL_UPPER}_LIBRARIES} Eigen3::Eigen)
 
+    if (WASM_BUILD AND ${kernel} STREQUAL "opencascade")
+        # Try to disable wasm-opt:
+        #
+        # 2026-04-25T09:53:53.3073297Z [parse exception: popping from empty stack (at
+        # 0:32668981)] 2026-04-25T09:53:53.3073431Z Fatal: error parsing wasm (try
+        # --debug for more info) 2026-04-25T09:53:53.3075545Z em++: error:
+        # '/home/runner/.cache/.pyodide-xbuildenv-0.33.0/0.29.3/emsdk/upstream/bin/wasm-opt
+        # --strip-target-features --post-emscripten
+        # --pass-arg=post-emscripten-side-module -O3 --low-memory-unused
+        # --pass-arg=directize-initial-contents-immutable --no-stack-ir
+        # ../Release/libgeometry.kernel.opencascade.so -o
+        # ../Release/libgeometry.kernel.opencascade.so --mvp-features
+        # --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong
+        # --enable-exception-handling --enable-multivalue --enable-mutable-globals
+        # --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext'
+        # failed (returned 1)
+        target_link_options(${KERNEL_TARGET} PRIVATE -O0)
+    endif()
+
+
     install(TARGETS ${KERNEL_TARGET})
 
     if(${kernel} STREQUAL "cgal")
