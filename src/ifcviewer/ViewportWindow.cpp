@@ -26,6 +26,7 @@
 #include <QWheelEvent>
 #include <QSurfaceFormat>
 #include <QCoreApplication>
+#include <QCursor>
 #include <QtMath>
 #include <QtOpenGL/QOpenGLVersionFunctionsFactory>
 
@@ -1186,11 +1187,113 @@ QString ViewportWindow::cameraString() const {
 }
 
 void ViewportWindow::keyPressEvent(QKeyEvent* event) {
-    if (event->key() == Qt::Key_C && !(event->modifiers() & Qt::ControlModifier)) {
+    const int key = event->key();
+
+    // Shift+F toggles FPS/fly mode.  Checked before auto-repeat filtering so
+    // a held Shift+F doesn't thrash between modes.
+    if (key == Qt::Key_F
+        && (event->modifiers() & Qt::ShiftModifier)
+        && !event->isAutoRepeat()) {
+        if (camera_mode_ == CameraMode::Fps) exitFpsMode();
+        else                                 enterFpsMode();
+        return;
+    }
+
+    if (camera_mode_ == CameraMode::Fps) {
+        if (key == Qt::Key_Escape && !event->isAutoRepeat()) {
+            exitFpsMode();
+            return;
+        }
+        switch (key) {
+        case Qt::Key_W: case Qt::Key_A: case Qt::Key_S: case Qt::Key_D:
+        case Qt::Key_Q: case Qt::Key_E: case Qt::Key_Shift:
+            if (!event->isAutoRepeat()) {
+                const bool was_empty = fps_keys_held_.isEmpty();
+                fps_keys_held_.insert(key);
+                // Kick the render loop; subsequent frames self-schedule while
+                // any key stays held.  Reset the dt baseline so the first
+                // frame doesn't integrate idle time.
+                if (was_empty) {
+                    fps_last_tick_.restart();
+                    requestUpdate();
+                }
+            }
+            // Swallow auto-repeats too so they don't leak to shortcuts.
+            return;
+        default: break;
+        }
+    }
+
+    if (key == Qt::Key_C && !(event->modifiers() & Qt::ControlModifier)) {
         qDebug("--camera %s", qPrintable(cameraString()));
         return;
     }
     QWindow::keyPressEvent(event);
+}
+
+void ViewportWindow::keyReleaseEvent(QKeyEvent* event) {
+    if (camera_mode_ == CameraMode::Fps && !event->isAutoRepeat()) {
+        fps_keys_held_.remove(event->key());
+    }
+    QWindow::keyReleaseEvent(event);
+}
+
+void ViewportWindow::enterFpsMode() {
+    if (camera_mode_ == CameraMode::Fps) return;
+    camera_mode_ = CameraMode::Fps;
+    fps_keys_held_.clear();
+    setCursor(Qt::BlankCursor);
+    fps_ignore_next_mouse_move_ = true;
+    recenterFpsCursor();
+    fps_last_tick_.start();
+}
+
+void ViewportWindow::exitFpsMode() {
+    if (camera_mode_ == CameraMode::Orbit) return;
+    camera_mode_ = CameraMode::Orbit;
+    fps_keys_held_.clear();
+    unsetCursor();
+}
+
+void ViewportWindow::recenterFpsCursor() {
+    const QPoint center(width() / 2, height() / 2);
+    QCursor::setPos(mapToGlobal(center));
+    last_mouse_pos_ = center;
+}
+
+void ViewportWindow::fpsIntegrate() {
+    if (camera_mode_ != CameraMode::Fps || fps_keys_held_.isEmpty()) return;
+
+    qint64 ns = fps_last_tick_.nsecsElapsed();
+    fps_last_tick_.restart();
+    float dt = static_cast<float>(ns) * 1e-9f;
+    if (dt > 0.1f) dt = 0.1f;  // clamp after stalls
+
+    // View direction is target - eye = -offset.  offset components match
+    // updateCamera() so forward stays consistent when mode flips.
+    const float yaw_rad   = qDegreesToRadians(camera_yaw_);
+    const float pitch_rad = qDegreesToRadians(camera_pitch_);
+    const QVector3D offset(cosf(pitch_rad) * cosf(yaw_rad),
+                           cosf(pitch_rad) * sinf(yaw_rad),
+                           sinf(pitch_rad));
+    const QVector3D world_up(0, 0, 1);
+    const QVector3D forward = -offset;
+    QVector3D right = QVector3D::crossProduct(forward, world_up);
+    if (right.lengthSquared() > 1e-8f) right.normalize();
+
+    QVector3D move(0, 0, 0);
+    if (fps_keys_held_.contains(Qt::Key_W)) move += forward;
+    if (fps_keys_held_.contains(Qt::Key_S)) move -= forward;
+    if (fps_keys_held_.contains(Qt::Key_D)) move += right;
+    if (fps_keys_held_.contains(Qt::Key_A)) move -= right;
+    if (fps_keys_held_.contains(Qt::Key_E)) move += world_up;
+    if (fps_keys_held_.contains(Qt::Key_Q)) move -= world_up;
+    if (move.isNull()) return;
+    move.normalize();
+
+    const float speed_mul = fps_keys_held_.contains(Qt::Key_Shift) ? 5.0f : 1.0f;
+    camera_target_ += move * (fps_move_speed_ * speed_mul * dt);
+    have_cached_cull_ = false;
 }
 
 // --- HiZ occlusion culling (Phase 3C) -----------------------------------
@@ -1784,6 +1887,13 @@ void ViewportWindow::render() {
     QElapsedTimer frame_cost_clock;
     frame_cost_clock.start();
 
+    // Advance FPS-mode camera by wall-clock dt since the last frame, then let
+    // the view matrix derive from the new target.  Driving this from render()
+    // rather than a QTimer means a long frame costs exactly one missed step
+    // (caught up on the next frame) instead of a backlog that prints as a
+    // stall.
+    fpsIntegrate();
+
     context_->makeCurrent(this);
     updateCamera();
 
@@ -1993,6 +2103,22 @@ void ViewportWindow::render() {
     // Reported fps = "if I rendered continuously, this is the rate I'd hit",
     // which is what profiling actually wants.
     const float frame_cost_s = frame_cost_clock.nsecsElapsed() * 1e-9f;
+
+    // FPS-mode continuous redraw: keep asking for frames while any movement
+    // key is held.  When all keys release, the loop drops out and the
+    // viewport goes idle until the next input event.  Log hitches if
+    // IFC_FPS_HITCH_MS is set so stalls can be attributed.
+    if (camera_mode_ == CameraMode::Fps && !fps_keys_held_.isEmpty()) {
+        static const float hitch_ms = []{
+            const char* e = std::getenv("IFC_FPS_HITCH_MS");
+            return (e && *e) ? static_cast<float>(std::atof(e)) : 0.0f;
+        }();
+        if (hitch_ms > 0.0f && frame_cost_s * 1000.0f > hitch_ms) {
+            qDebug("[fps-hitch] frame %.1f ms  vis=%u  sub_draws=%u",
+                   frame_cost_s * 1000.0f, visible_objects_, indirect_sub_draws_);
+        }
+        requestUpdate();
+    }
 
     if (benchmark_total_ > 0) {
         camera_yaw_ += benchmark_yaw_speed_;
@@ -2336,10 +2462,18 @@ bool ViewportWindow::event(QEvent* e) {
 }
 
 void ViewportWindow::handleMousePress(QMouseEvent* e) {
+    // Blender-style: any click in FPS mode drops back to orbit and is
+    // swallowed (no pick, no camera state mutation).
+    if (camera_mode_ == CameraMode::Fps) {
+        exitFpsMode();
+        active_button_ = Qt::NoButton;
+        return;
+    }
     active_button_ = e->button();
     last_mouse_pos_ = e->pos();
 }
 void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
+    if (camera_mode_ == CameraMode::Fps) return;
     if (active_button_ == Qt::LeftButton && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
         uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
         selected_object_id_ = id;
@@ -2349,6 +2483,39 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
     active_button_ = Qt::NoButton;
 }
 void ViewportWindow::handleMouseMove(QMouseEvent* e) {
+    if (camera_mode_ == CameraMode::Fps) {
+        // QCursor::setPos emits a synthetic MouseMove at the center; skip it.
+        if (fps_ignore_next_mouse_move_) {
+            fps_ignore_next_mouse_move_ = false;
+            last_mouse_pos_ = e->pos();
+            return;
+        }
+        const QPoint center(width() / 2, height() / 2);
+        QPoint delta = e->pos() - center;
+        if (delta.isNull()) return;
+
+        camera_yaw_   -= delta.x() * 0.15f;
+        camera_pitch_ += delta.y() * 0.15f;
+        camera_pitch_ = qBound(-89.0f, camera_pitch_, 89.0f);
+
+        // Pin target so the eye stays put during rotation.  Rebuild offset
+        // from the new yaw/pitch and set target = eye - offset.  camera_eye_
+        // is from the last rendered frame, which is fine: it's the eye the
+        // user is currently seeing out of.
+        const float yaw_rad   = qDegreesToRadians(camera_yaw_);
+        const float pitch_rad = qDegreesToRadians(camera_pitch_);
+        const QVector3D new_offset(camera_distance_ * cosf(pitch_rad) * cosf(yaw_rad),
+                                   camera_distance_ * cosf(pitch_rad) * sinf(yaw_rad),
+                                   camera_distance_ * sinf(pitch_rad));
+        camera_target_ = camera_eye_ - new_offset;
+
+        fps_ignore_next_mouse_move_ = true;
+        recenterFpsCursor();
+        have_cached_cull_ = false;
+        requestUpdate();
+        return;
+    }
+
     QPoint delta = e->pos() - last_mouse_pos_;
     last_mouse_pos_ = e->pos();
     if (active_button_ == Qt::MiddleButton) {
@@ -2371,6 +2538,11 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
     }
 }
 void ViewportWindow::handleWheel(QWheelEvent* e) {
+    if (camera_mode_ == CameraMode::Fps) {
+        float factor = e->angleDelta().y() > 0 ? 1.25f : 0.8f;
+        fps_move_speed_ = qBound(0.05f, fps_move_speed_ * factor, 1000.0f);
+        return;
+    }
     float factor = e->angleDelta().y() > 0 ? 0.9f : 1.1f;
     camera_distance_ *= factor;
     camera_distance_ = qMax(0.1f, camera_distance_);

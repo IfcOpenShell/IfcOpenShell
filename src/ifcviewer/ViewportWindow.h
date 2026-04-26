@@ -26,6 +26,7 @@
 #include <QElapsedTimer>
 #include <QMatrix4x4>
 #include <QVector3D>
+#include <QSet>
 
 #include <vector>
 #include <unordered_map>
@@ -192,6 +193,7 @@ protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     bool event(QEvent* event) override;
 
 private:
@@ -272,6 +274,24 @@ private:
     void handleMouseRelease(QMouseEvent* event);
     void handleMouseMove(QMouseEvent* event);
     void handleWheel(QWheelEvent* event);
+
+    // FPS/fly mode.  Toggled with Shift+F; exits on any mouse click or Esc.
+    // While active, WASD translates the camera in view-space, Q/E moves
+    // world-down/up, mouse rotates the view (cursor hidden + recentered each
+    // move), Shift accelerates, and the wheel scales the base move speed
+    // instead of zooming.  The underlying orbit state is preserved: movement
+    // translates camera_target_ and rotation re-pins it so camera_eye_ stays
+    // put, so exiting drops the user back into orbit at the same viewpoint.
+    //
+    // Movement is integrated inside render() using wall-clock dt and the
+    // next frame is requestUpdate()'d while any movement key is held — that
+    // way one long frame only produces a single catch-up step instead of
+    // also missing a QTimer tick.
+    enum class CameraMode { Orbit, Fps };
+    void enterFpsMode();
+    void exitFpsMode();
+    void fpsIntegrate();     // called from render()
+    void recenterFpsCursor();
 
     QOpenGLContext* context_ = nullptr;
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
@@ -382,6 +402,16 @@ private:
     // Mouse
     Qt::MouseButton active_button_ = Qt::NoButton;
     QPoint last_mouse_pos_;
+
+    // FPS/fly mode state.  fps_keys_held_ tracks WASD/QE/Shift between
+    // press+release; fps_last_tick_ gates dt inside render().
+    // fps_ignore_next_mouse_move_ swallows the synthetic MouseMove that
+    // QCursor::setPos() generates after we recenter.
+    CameraMode     camera_mode_ = CameraMode::Orbit;
+    QSet<int>      fps_keys_held_;
+    float          fps_move_speed_ = 5.0f;   // m/s at speed=1
+    QElapsedTimer  fps_last_tick_;
+    bool           fps_ignore_next_mouse_move_ = false;
 
     // Selection
     uint32_t selected_object_id_ = 0;
