@@ -197,6 +197,8 @@ class Usecase:
         return self.results
 
     def remove_same_type_styles(self, style_item, current_style_type: str, remove_item: bool) -> None:
+        if style_item is None:
+            return
         styles = [s for s in style_item.Styles if s.is_a() != current_style_type]
         if remove_item and not styles:
             self.file.remove(style_item)

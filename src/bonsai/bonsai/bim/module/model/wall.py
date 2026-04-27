@@ -468,14 +468,21 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
 
-                    coord_list = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
-                    coord_list = [
-                        (p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list
-                    ]  # Reset the transformation and returns to the original points with 0 degrees
-                    coord_list = [
-                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list
-                    ]  # Apply the transformation for the new x_angle
-                    builder.set_polyline_coords(extrusion.SweptArea.OuterCurve, coord_list)
+                    profiles = []
+                    if extrusion.SweptArea.is_a("IfcArbitraryClosedProfileDef"):
+                        profiles = [extrusion.SweptArea]
+                    elif extrusion.SweptArea.is_a("IfcCompositeProfileDef"):
+                        profiles = [p for p in extrusion.SweptArea.Profiles if p.is_a("IfcArbitraryClosedProfileDef")]
+
+                    for profile in profiles:
+                        coord_list = builder.get_polyline_coords(profile.OuterCurve)
+                        coord_list = [
+                            (p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list
+                        ]  # Reset the transformation and returns to the original points with 0 degrees
+                        coord_list = [
+                            (p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list
+                        ]  # Apply the transformation for the new x_angle
+                        builder.set_polyline_coords(profile.OuterCurve, coord_list)
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative if that's the case
