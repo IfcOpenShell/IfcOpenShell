@@ -34,6 +34,7 @@
 #include "ViewportWindow.h"
 #include "SceneLoader.h"
 
+class Federation;
 class SettingsWindow;
 
 class MainWindow : public QMainWindow {
@@ -43,12 +44,22 @@ public:
     ~MainWindow();
 
     void addFiles(const QStringList& paths);
+    bool openFederation(const QString& path);
     void setPendingCamera(const QString& params);
     void setPendingBenchmark(int frames);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void onFileOpen();
     void onDatabaseOpen();
+    void onFederationNew();
+    void onFederationOpen();
+    bool onFederationSave();
+    bool onFederationSaveAs();
+    void onSetHomeView();
+    void onGoHomeView();
     void onFileSettings();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();
@@ -69,6 +80,11 @@ private slots:
 private:
     void setupUi();
     void setupMenus();
+    void loadModelsFromPaths(const QStringList& paths,
+                             const QStringList& fed_ids);
+    void clearScene();
+    bool confirmDiscardIfDirty();
+    void updateWindowTitle();
     void populateProperties(uint32_t object_id);
     void appendElementToTree(uint32_t model_id,
                              uint32_t object_id,
@@ -84,6 +100,7 @@ private:
 
     ViewportWindow* viewport_ = nullptr;
     SceneLoader*    loader_   = nullptr;
+    Federation*     federation_ = nullptr;
     SettingsWindow* settings_ = nullptr;
     QWidget* viewport_container_ = nullptr;
     QTreeWidget* element_tree_ = nullptr;
@@ -94,6 +111,11 @@ private:
 
     // Per-model tree roots, keyed by model_id.
     std::map<uint32_t, QTreeWidgetItem*> tree_roots_;
+
+    // Bidirectional federation_id <-> model_id map.  Federation owns the
+    // persistent ids; SceneLoader owns the runtime model_ids.
+    std::unordered_map<QString, uint32_t> fed_id_to_model_id_;
+    std::unordered_map<uint32_t, QString> model_id_to_fed_id_;
 
     // Display-side element registry for tree + property lookup.
     std::unordered_map<uint32_t, ElementInfo> element_map_;

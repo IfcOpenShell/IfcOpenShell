@@ -172,6 +172,14 @@ public:
     void setBenchmarkFrames(int n);
     QString cameraString() const;
 
+    struct CameraState {
+        QVector3D target;
+        float distance;
+        float yaw;    // degrees
+        float pitch;  // degrees
+    };
+    CameraState cameraState() const;
+
     struct FrameStats {
         float fps;
         float frame_time_ms;

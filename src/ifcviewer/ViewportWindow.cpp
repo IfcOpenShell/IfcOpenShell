@@ -1186,6 +1186,10 @@ QString ViewportWindow::cameraString() const {
         .arg(camera_pitch_, 0, 'f', 2);
 }
 
+ViewportWindow::CameraState ViewportWindow::cameraState() const {
+    return { camera_target_, camera_distance_, camera_yaw_, camera_pitch_ };
+}
+
 void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     const int key = event->key();
 

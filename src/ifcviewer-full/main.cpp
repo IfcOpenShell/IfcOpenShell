@@ -40,7 +40,9 @@ int main(int argc, char* argv[]) {
     QCommandLineParser parser;
     parser.setApplicationDescription("IfcOpenShell IFC Viewer");
     parser.addHelpOption();
-    parser.addPositionalArgument("files", "IFC file(s) to open", "[files...]");
+    parser.addPositionalArgument("files",
+        "IFC file(s) and/or one .ifcfed federation to open",
+        "[files...]");
     parser.addOption({{"c", "camera"},
         "Set camera: tx,ty,tz,dist,yaw,pitch", "params"});
     parser.addOption({{"b", "benchmark"},
@@ -51,9 +53,17 @@ int main(int argc, char* argv[]) {
     window.show();
 
     auto args = parser.positionalArguments();
-    if (!args.isEmpty()) {
-        window.addFiles(args);
+    QStringList file_args;
+    QString fed_arg;
+    for (const auto& a : args) {
+        if (fed_arg.isEmpty() && a.endsWith(".ifcfed", Qt::CaseInsensitive)) {
+            fed_arg = a;
+        } else {
+            file_args << a;
+        }
     }
+    if (!fed_arg.isEmpty()) window.openFederation(fed_arg);
+    if (!file_args.isEmpty()) window.addFiles(file_args);
 
     if (parser.isSet("camera")) {
         window.setPendingCamera(parser.value("camera"));

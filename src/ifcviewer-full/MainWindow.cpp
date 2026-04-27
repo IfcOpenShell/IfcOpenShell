@@ -19,11 +19,13 @@
 
 #include "MainWindow.h"
 #include "AppSettings.h"
+#include "Federation.h"
 #include "SettingsWindow.h"
 #include "LodBuilder.h"
 #include "SidecarCache.h"
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -39,6 +41,11 @@ MainWindow::MainWindow(QWidget* parent)
 {
     setupUi();
     setupMenus();
+
+    federation_ = new Federation(this);
+    connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
+        setWindowModified(dirty);
+    });
 
     loader_ = new SceneLoader(viewport_, this);
     connect(loader_, &SceneLoader::loadStarted,
@@ -82,7 +89,7 @@ MainWindow::MainWindow(QWidget* parent)
         if (!show) stats_label_->clear();
     });
 
-    setWindowTitle("IfcViewer");
+    updateWindowTitle();
     resize(1400, 900);
 }
 
@@ -132,12 +139,32 @@ void MainWindow::setupUi() {
 
 void MainWindow::setupMenus() {
     auto* file_menu = menuBar()->addMenu("&File");
-    auto* open_action = file_menu->addAction("&Add Files...", this, &MainWindow::onFileOpen);
-    open_action->setShortcut(QKeySequence::Open);
+    file_menu->addAction("&New Federation",
+                         this, &MainWindow::onFederationNew,
+                         QKeySequence::New);
+    file_menu->addAction("&Open Federation...",
+                         this, &MainWindow::onFederationOpen,
+                         QKeySequence::Open);
+    file_menu->addSeparator();
+    file_menu->addAction("&Add Files...",
+                         this, &MainWindow::onFileOpen,
+                         QKeySequence("Ctrl+Shift+O"));
     file_menu->addAction("Add &Database...", this, &MainWindow::onDatabaseOpen);
+    file_menu->addSeparator();
+    file_menu->addAction("&Save Federation",
+                         this, &MainWindow::onFederationSave,
+                         QKeySequence::Save);
+    file_menu->addAction("Save Federation &As...",
+                         this, &MainWindow::onFederationSaveAs,
+                         QKeySequence::SaveAs);
+    file_menu->addSeparator();
     file_menu->addAction("&Settings...", this, &MainWindow::onFileSettings);
     file_menu->addSeparator();
     file_menu->addAction("&Quit", QKeySequence::Quit, qApp, &QApplication::quit);
+
+    auto* view_menu = menuBar()->addMenu("&View");
+    view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
+    view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);
 }
 
 void MainWindow::onFileOpen() {
@@ -170,16 +197,187 @@ void MainWindow::onFileSettings() {
 }
 
 void MainWindow::addFiles(const QStringList& paths) {
+    QStringList accepted_paths;
+    QStringList accepted_fed_ids;
+    for (const auto& p : paths) {
+        QString fed_id = federation_->addModel(p);
+        if (fed_id.isEmpty()) continue;  // .ifcfed or empty path — silently skipped
+        accepted_paths << p;
+        accepted_fed_ids << fed_id;
+    }
+    loadModelsFromPaths(accepted_paths, accepted_fed_ids);
+    updateWindowTitle();
+}
+
+void MainWindow::loadModelsFromPaths(const QStringList& paths,
+                                      const QStringList& fed_ids) {
+    if (paths.isEmpty()) return;
     auto ids = loader_->addFiles(paths);
     for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()); ++i) {
-        uint32_t id = ids[i];
+        uint32_t mid = ids[i];
+        const QString& fed_id = fed_ids[i];
+        fed_id_to_model_id_[fed_id] = mid;
+        model_id_to_fed_id_[mid] = fed_id;
+
         QString display = QFileInfo(paths[i]).fileName();
         auto* root = new QTreeWidgetItem(element_tree_);
         root->setText(0, display);
         root->setText(1, "IFC Model");
         root->setData(0, Qt::UserRole, static_cast<uint32_t>(0));
-        tree_roots_[id] = root;
+        tree_roots_[mid] = root;
     }
+}
+
+bool MainWindow::openFederation(const QString& path) {
+    if (!confirmDiscardIfDirty()) return false;
+
+    QStringList warnings;
+    QString err;
+    if (!federation_->load(path, &warnings, &err)) {
+        QMessageBox::warning(this, "Open Federation",
+                              QString("Could not open federation:\n%1").arg(err));
+        return false;
+    }
+
+    clearScene();
+
+    QStringList paths;
+    QStringList fed_ids;
+    QStringList missing;
+    for (const auto& m : federation_->models()) {
+        if (m.source_kind != "local") continue;  // already warned by load()
+        if (!QFileInfo::exists(m.source_path)) {
+            missing << m.source_path;
+            continue;
+        }
+        paths << m.source_path;
+        fed_ids << m.id;
+    }
+    loadModelsFromPaths(paths, fed_ids);
+
+    for (const auto& msg : missing) {
+        warnings << QString("Source not found, kept in federation: %1").arg(msg);
+    }
+    if (!warnings.isEmpty()) {
+        QMessageBox::warning(this, "Open Federation",
+                              "Federation opened with warnings:\n\n" + warnings.join("\n"));
+    }
+
+    federation_->markClean();
+    updateWindowTitle();
+
+    if (federation_->hasHomeView()) {
+        const auto& hv = federation_->homeView();
+        viewport_->setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
+                             hv.distance, hv.yaw, hv.pitch);
+    }
+    return true;
+}
+
+void MainWindow::onFederationNew() {
+    if (!confirmDiscardIfDirty()) return;
+    clearScene();
+    federation_->clear();
+    updateWindowTitle();
+}
+
+void MainWindow::onFederationOpen() {
+    QString path = QFileDialog::getOpenFileName(
+        this, "Open Federation", QString(),
+        "IFC Federation (*.ifcfed);;All Files (*)");
+    if (path.isEmpty()) return;
+    openFederation(path);
+}
+
+bool MainWindow::onFederationSave() {
+    if (federation_->filePath().isEmpty()) return onFederationSaveAs();
+    QString err;
+    if (!federation_->save(federation_->filePath(), &err)) {
+        QMessageBox::warning(this, "Save Federation",
+                              QString("Could not save federation:\n%1").arg(err));
+        return false;
+    }
+    updateWindowTitle();
+    return true;
+}
+
+bool MainWindow::onFederationSaveAs() {
+    QString suggested = federation_->filePath();
+    if (suggested.isEmpty()) suggested = "federation.ifcfed";
+    QString path = QFileDialog::getSaveFileName(
+        this, "Save Federation As", suggested,
+        "IFC Federation (*.ifcfed);;All Files (*)");
+    if (path.isEmpty()) return false;
+    if (!path.endsWith(".ifcfed", Qt::CaseInsensitive)) path += ".ifcfed";
+
+    QString err;
+    if (!federation_->save(path, &err)) {
+        QMessageBox::warning(this, "Save Federation",
+                              QString("Could not save federation:\n%1").arg(err));
+        return false;
+    }
+    updateWindowTitle();
+    return true;
+}
+
+void MainWindow::onSetHomeView() {
+    auto cs = viewport_->cameraState();
+    Federation::HomeView hv;
+    hv.target   = cs.target;
+    hv.distance = cs.distance;
+    hv.yaw      = cs.yaw;
+    hv.pitch    = cs.pitch;
+    federation_->setHomeView(hv);
+    updateWindowTitle();
+}
+
+void MainWindow::onGoHomeView() {
+    if (!federation_->hasHomeView()) {
+        status_label_->setText("No home view set for this federation.");
+        return;
+    }
+    const auto& hv = federation_->homeView();
+    viewport_->setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
+                         hv.distance, hv.yaw, hv.pitch);
+}
+
+void MainWindow::clearScene() {
+    while (!tree_roots_.empty()) {
+        uint32_t mid = tree_roots_.begin()->first;
+        viewport_->removeModel(mid);
+        removeModelUi(mid);
+    }
+    fed_id_to_model_id_.clear();
+    model_id_to_fed_id_.clear();
+}
+
+bool MainWindow::confirmDiscardIfDirty() {
+    if (!federation_->isDirty()) return true;
+    auto ret = QMessageBox::question(
+        this, "Unsaved Federation",
+        "The current federation has unsaved changes. Save before continuing?",
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
+    if (ret == QMessageBox::Cancel) return false;
+    if (ret == QMessageBox::Save) return onFederationSave();
+    return true;  // Discard
+}
+
+void MainWindow::updateWindowTitle() {
+    QString fed_path = federation_->filePath();
+    if (fed_path.isEmpty() && federation_->models().empty()) {
+        setWindowTitle("IfcViewer");
+    } else if (fed_path.isEmpty()) {
+        setWindowTitle("untitled[*] — IfcViewer");
+    } else {
+        setWindowTitle(QFileInfo(fed_path).fileName() + "[*] — IfcViewer");
+    }
+    setWindowModified(federation_->isDirty());
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    if (confirmDiscardIfDirty()) event->accept();
+    else                          event->ignore();
 }
 
 void MainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {
@@ -326,6 +524,12 @@ void MainWindow::writeSidecarForModel(uint32_t mid) {
 }
 
 void MainWindow::removeModelUi(uint32_t mid) {
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    if (fed_it != model_id_to_fed_id_.end()) {
+        fed_id_to_model_id_.erase(fed_it->second);
+        model_id_to_fed_id_.erase(fed_it);
+    }
+
     auto root_it = tree_roots_.find(mid);
     if (root_it != tree_roots_.end()) {
         delete root_it->second;
