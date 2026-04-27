@@ -744,7 +744,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
         if self.ifc_class == "IfcSurfaceStyleLighting":
 
             def callback(attribute_name: str, _: object, data: dict[str, Any]) -> None:
-                assert attributes
+                assert attributes is not None
                 color = attributes.add()
                 assert isinstance(color, ColourRgb)
                 color.name = attribute_name

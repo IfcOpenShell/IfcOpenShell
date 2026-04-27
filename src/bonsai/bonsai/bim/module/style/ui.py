@@ -272,10 +272,17 @@ class BIM_PT_styles(Panel):
         bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout, enable_search=True)
 
     def draw_refraction_surface_style(self):
+        self.layout.label(
+            text="Refraction values are IFC-only and do not affect Blender surface appearance",
+            icon="ERROR",
+        )
         bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout, enable_search=True)
-        row = self.layout.row(align=True)
 
     def draw_lighting_surface_style(self):
+        self.layout.label(
+            text="Lighting values are IFC-only and do not affect Blender surface appearance",
+            icon="ERROR",
+        )
         bonsai.bim.helper.draw_attributes(self.props.lighting_style_colours, self.layout)
 
     def draw_edit_ui(self, edit_label: str):
