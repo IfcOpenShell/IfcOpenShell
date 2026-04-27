@@ -180,6 +180,17 @@ class BIM_PT_styles(Panel):
                 text=f"{self.props.reflectance_method} will be skipped: only PHYSICAL / NOTDEFINED / FLAT are supported",
                 icon="ERROR",
             )
+        elif self.props.reflectance_method == "FLAT":
+            if self.props.diffuse_colour_class == "IfcNormalisedRatioMeasure":
+                self.layout.label(
+                    text="Emissive ratio is IFC-only in FLAT Reflectance method and does not affect Blender appearance",
+                    icon="ERROR",
+                )
+            if self.props.specular_colour_class == "IfcNormalisedRatioMeasure":
+                self.layout.label(
+                    text="Specular ratio is IFC-only in FLAT Reflectance method and does not affect Blender appearance",
+                    icon="ERROR",
+                )
 
         row = self.layout.row(align=True)
         row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")
