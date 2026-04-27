@@ -176,8 +176,10 @@ class BIM_PT_styles(Panel):
         row.prop(self.props, "reflectance_method")
 
         if self.props.reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
-            self.layout.label(text="Supported reflectance methods are:")
-            self.layout.label(text="PHYSICAL / NOTDEFINED / FLAT")
+            self.layout.label(
+                text=f"{self.props.reflectance_method} will be skipped: only PHYSICAL / NOTDEFINED / FLAT are supported",
+                icon="ERROR",
+            )
 
         row = self.layout.row(align=True)
         row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")
@@ -245,6 +247,22 @@ class BIM_PT_styles(Panel):
             op_path = row.operator("bim.choose_texture_map_path", text="", icon="FILEBROWSER")
             op_clear = row.operator("bim.remove_texture_map", text="", icon="X")
             op_path.texture_map_index = op_clear.texture_map_index = i
+
+            reflectance = self.props.reflectance_method
+            mode = texture.mode
+            if reflectance == "FLAT":
+                if mode != "EMISSIVE":
+                    self.layout.label(
+                        text=f"{mode} will be skipped: only EMISSIVE is supported for Render Reflectance FLAT",
+                        icon="ERROR",
+                    )
+            elif reflectance in ("PHYSICAL", "NOTDEFINED"):
+                _SUPPORTED = {"DIFFUSE", "NORMAL", "METALLICROUGHNESS", "EMISSIVE", "OCCLUSION"}
+                if mode not in _SUPPORTED:
+                    self.layout.label(
+                        text=f"{mode} will be skipped: not supported for Render Reflectance PHYSICAL/NOTDEFINED",
+                        icon="ERROR",
+                    )
 
     def draw_externally_defined_surface_style(self):
         row = self.layout.row()
