@@ -189,7 +189,7 @@ class Loader(bonsai.core.tool.Loader):
                 uv_mode = "Generated"
             elif coordinates.is_a("IfcTextureCoordinateGenerator") and coordinates.Mode == "COORD-EYE":
                 uv_mode = "Camera"
-        surface_texture["uv_mode"] = uv_mode or "Generated"
+        surface_texture["uv_mode"] = uv_mode or "UV"
         return surface_texture
 
     @classmethod
