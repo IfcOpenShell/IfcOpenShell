@@ -472,12 +472,23 @@ class Loader(bonsai.core.tool.Loader):
                         print(f"{mode} Mode texture will be skipped.")
                     continue
 
-                if (image := get_image) is None:
+                if (image := get_image()) is None:
                     continue
 
-                # remove RGB node from `create_surface_style_rendering`
-                prev_node = bsdf.inputs[2].links[0].from_node
-                blender_material.node_tree.nodes.remove(prev_node)
+                # Replace whatever currently feeds the FLAT color input (RGB or previous texture chain).
+                for link in list(bsdf.inputs[2].links):
+                    prev_node = link.from_node
+                    blender_material.node_tree.links.remove(link)
+                    if prev_node.type == "TEX_IMAGE":
+                        # Remove linked texture coordinate node if it's no longer used.
+                        for vec_link in list(prev_node.inputs["Vector"].links):
+                            coord_node = vec_link.from_node
+                            blender_material.node_tree.links.remove(vec_link)
+                            if coord_node.type == "TEX_COORD" and not any(o.links for o in coord_node.outputs):
+                                blender_material.node_tree.nodes.remove(coord_node)
+                        blender_material.node_tree.nodes.remove(prev_node)
+                    elif prev_node.type == "RGB":
+                        blender_material.node_tree.nodes.remove(prev_node)
 
                 node = blender_material.node_tree.nodes.new(type="ShaderNodeTexImage")
                 node.location = bsdf.location - Vector((200, 250))
