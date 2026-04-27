@@ -1231,4 +1231,5 @@ class RemoveSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         surface_style = tool.Style.get_style_elements(style)[props.is_editing_class]
         ifcopenshell.api.style.remove_surface_style(ifc_file, surface_style)
         core.disable_editing_style(tool.Style)
+        core.load_styles(tool.Style, style_type=props.style_type)
         return {"FINISHED"}
