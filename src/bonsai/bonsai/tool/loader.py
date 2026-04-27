@@ -315,7 +315,7 @@ class Loader(bonsai.core.tool.Loader):
                     image_url = str(image_url)
                     if is_relative and bpy.data.filepath:
                         image_url = bpy.path.relpath(image_url)
-                    return bpy.data.images.load(image_url)
+                    return bpy.data.images.load(image_url, check_existing=True)
 
                 elif texture["type"] == "IfcBlobTexture":
                     # https://blender.stackexchange.com/questions/173206/how-to-efficiently-convert-a-pil-image-to-bpy-types-image
