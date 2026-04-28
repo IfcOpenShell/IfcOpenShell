@@ -72,6 +72,7 @@ option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is require
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_IFCVIEWER "Build IfcViewer, a high-performance IFC viewer" OFF) # Requires Qt6 + OpenGL 4.5
+option(BUILD_IFCVIEWER_TESTS "Build unit tests for IfcViewer (fetches Catch2 v3)" OFF)
 option(BUILD_PACKAGE "" OFF)
 
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
@@ -673,6 +674,23 @@ if(BUILD_IFCGEOM)
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
 if(BUILD_IFCVIEWER)
+    if(BUILD_IFCVIEWER_TESTS)
+        # Catch2 v3 — fetched on demand. Test option is OFF by default so the
+        # default build remains offline-capable.
+        include(FetchContent)
+        FetchContent_Declare(
+            Catch2
+            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+            GIT_TAG        v3.5.4
+            GIT_SHALLOW    TRUE
+        )
+        FetchContent_MakeAvailable(Catch2)
+        list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+        include(CTest)
+        include(Catch)
+        enable_testing()
+    endif()
+
     add_subdirectory(../src/ifcviewer ifcviewer)
     add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
     add_subdirectory(../src/ifcviewer-full ifcviewer-full)

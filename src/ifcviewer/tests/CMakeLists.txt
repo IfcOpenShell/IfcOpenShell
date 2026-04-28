@@ -17,24 +17,33 @@
 #                                                                              #
 ################################################################################
 
-message("Running CMakeLists.txt in /src/ifcviewer-full")
+# Tier-1 unit tests: pure-logic modules that need neither Qt nor an OpenGL
+# context. Each test binary compiles the production source(s) under test
+# directly (rather than linking the IfcViewer library) so the binaries stay
+# small and don't pull Qt6, OpenCASCADE, IfcGeom, etc. into the test build.
 
-file(GLOB IFCVIEWER_FULL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-file(GLOB IFCVIEWER_FULL_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-set(IFCVIEWER_FULL_FILES ${IFCVIEWER_FULL_CPP_FILES} ${IFCVIEWER_FULL_H_FILES})
+set(IFCVIEWER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-add_executable(IfcViewerFull ${IFCVIEWER_FULL_FILES})
+function(add_ifcviewer_unit_test name)
+    cmake_parse_arguments(T "" "" "SOURCES;LIBS" ${ARGN})
+    add_executable(${name} ${name}.cpp ${T_SOURCES})
+    target_include_directories(${name} PRIVATE ${IFCVIEWER_SRC})
+    target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain ${T_LIBS})
+    catch_discover_tests(${name})
+endfunction()
 
-set_target_properties(IfcViewerFull PROPERTIES
-    AUTOMOC ON
-    WIN32_EXECUTABLE ON
-    MACOSX_BUNDLE ON
+add_ifcviewer_unit_test(test_bvh_accel
+    SOURCES ${IFCVIEWER_SRC}/BvhAccel.cpp
 )
 
-target_link_libraries(IfcViewerFull PRIVATE IfcViewer)
+add_ifcviewer_unit_test(test_lod_builder
+    SOURCES
+        ${IFCVIEWER_SRC}/LodBuilder.cpp
+    LIBS meshoptimizer::meshoptimizer
+)
 
-install(TARGETS IfcViewerFull EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+add_ifcviewer_unit_test(test_sidecar_cache
+    SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp
+)
 
-if(BUILD_IFCVIEWER_TESTS)
-    add_subdirectory(tests)
-endif()
+add_ifcviewer_unit_test(test_instanced_geometry)

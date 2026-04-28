@@ -70,3 +70,7 @@ install(TARGETS IfcViewer EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 install(FILES ${IFCVIEWER_H_FILES}
     DESTINATION ${INCLUDEDIR}/ifcviewer
 )
+
+if(BUILD_IFCVIEWER_TESTS)
+    add_subdirectory(tests)
+endif()
