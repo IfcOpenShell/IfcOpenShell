@@ -17,9 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-// v8 layout (all multi-byte fields native-endian; endianness marker in header).
+// v9 layout (all multi-byte fields native-endian; endianness marker in header).
 //
-//   SidecarHeader (16 bytes)
+//   SidecarHeader (12 bytes)
 //
 //   uint32_t  num_vertex_bytes
 //   uint8_t[] vertex data (12 B/vertex: pos u16x3 + oct-normal i8x2 + rgba8)
@@ -46,7 +46,6 @@ struct SidecarHeader {
     uint32_t magic;
     uint32_t version;
     uint32_t endian;
-    uint32_t reserved;
 };
 
 // foo.ifc       -> foo.ifcview
@@ -87,7 +86,7 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     FILE* f = fopen(path.c_str(), "wb");
     if (!f) return false;
 
-    SidecarHeader hdr = { SIDECAR_MAGIC, SIDECAR_VERSION, SIDECAR_ENDIAN, 0 };
+    SidecarHeader hdr = { SIDECAR_MAGIC, SIDECAR_VERSION, SIDECAR_ENDIAN };
     if (fwrite(&hdr, sizeof(hdr), 1, f) != 1)    { fclose(f); return false; }
 
     if (!writeVec(f, data.vertices))  { fclose(f); return false; }

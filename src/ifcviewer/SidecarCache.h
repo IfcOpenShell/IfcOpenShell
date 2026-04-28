@@ -45,7 +45,8 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      on path stem (foo.ifc and foo.ifcdb/ both map to foo.ifcview) so the
 //      same cache serves either source format.  Staleness is user-managed
 //      (delete the sidecar to force a rebuild).
-static constexpr uint32_t SIDECAR_VERSION = 8;
+// v9 = unused `reserved` field dropped from header (16 B -> 12 B).
+static constexpr uint32_t SIDECAR_VERSION = 9;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

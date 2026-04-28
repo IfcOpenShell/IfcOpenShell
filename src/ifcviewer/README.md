@@ -116,7 +116,7 @@ engine with a Qt6 interface and OpenGL 4.5 rendering.
 | `InstancedGeometry.h` | Shared structs: `MeshInfo`, `InstanceCpu`, `InstanceGpu`, chunk records |
 | `BvhAccel.h/cpp` | Median-split BVH builder; operates on instance world-AABBs |
 | `LodBuilder.h/cpp` | Post-stream decimation of unique meshes via meshoptimizer (`simplifySloppy`) |
-| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v8) sidecar read/write |
+| `SidecarCache.h/cpp` | Raw binary `.ifcview` (v9) sidecar read/write |
 | `AppSettings.h/cpp` | Persisted preferences (geometry library, stats overlay, backface culling) |
 | `SettingsWindow.h/cpp` | Settings dialog |
 | `CMakeLists.txt` | Build configuration |
@@ -293,13 +293,13 @@ while stack not empty:
 Depth 64 is enough for billions of items on any balanced tree. The stack
 is on the C++ stack, zero per-frame allocation.
 
-#### Sidecar format (`.ifcview`, v8)
+#### Sidecar format (`.ifcview`, v9)
 
 Raw memory dump, Blender-`.blend`-style — no serialisation, no parsing.
 Stores everything needed to skip the `IfcGeom::Iterator` pass:
 
 ```
-SidecarHeader            (magic "IFVW", version, endian, ...)
+SidecarHeader            (magic "IFVW", version, endian)
 uint32_t + uint8_t[]     vertex data    (12 B/vert quantized; per-mesh basis in MeshInfo)
 uint32_t + uint32_t[]    index data     (mesh-local)
 uint32_t + MeshInfo[]    per-unique-mesh metadata (56 B each, incl. LOD1 slice)
