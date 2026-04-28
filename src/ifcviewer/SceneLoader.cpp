@@ -74,12 +74,12 @@ std::vector<uint32_t> SceneLoader::addFiles(const QStringList& paths) {
     assigned.reserve(paths.size());
     for (const auto& path : paths) {
         uint32_t id = next_model_id_++;
-        Entry entry;
-        entry.id = id;
-        entry.file_path = path;
-        entry.display_name = QFileInfo(path).fileName();
-        entry.streamer = new GeometryStreamer(this);
-        models_[id] = std::move(entry);
+        Model model;
+        model.id = id;
+        model.file_path = path;
+        model.display_name = QFileInfo(path).fileName();
+        model.streamer = new GeometryStreamer(this);
+        models_[id] = std::move(model);
         load_queue_.push_back(id);
         assigned.push_back(id);
     }

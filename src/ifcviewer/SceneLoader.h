@@ -107,7 +107,7 @@ private slots:
     void onElementPollTick();
 
 private:
-    struct Entry {
+    struct Model {
         uint32_t id = 0;
         QString file_path;
         QString display_name;
@@ -123,7 +123,7 @@ private:
     void startDataSourceLoad(uint32_t mid);
 
     ViewportWindow* viewport_ = nullptr;
-    std::map<uint32_t, Entry> models_;
+    std::map<uint32_t, Model> models_;
     std::deque<uint32_t> load_queue_;
     uint32_t next_model_id_ = 1;
     uint32_t next_object_id_ = 1;
