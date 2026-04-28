@@ -27,6 +27,8 @@ constexpr const char* kGeometryLibraryDefault = "hybrid-cgal-simple-opencascade"
 constexpr const char* kShowStatsKey = "viewport/show_stats";
 constexpr const char* kBackfaceCullingKey = "viewport/backface_culling";
 constexpr const char* kLoadDataSourceKey = "loading/load_data_source";
+constexpr const char* kVoidLimitKey = "loading/void_limit";
+constexpr int kVoidLimitDefault = 30;
 }
 
 AppSettings& AppSettings::instance() {
@@ -82,12 +84,26 @@ void AppSettings::setLoadDataSource(bool value) {
     emit loadDataSourceChanged(value);
 }
 
+int AppSettings::voidLimit() const {
+    return void_limit_;
+}
+
+void AppSettings::setVoidLimit(int value) {
+    if (value < 0) value = 0;
+    if (void_limit_ == value) return;
+    void_limit_ = value;
+    persist();
+    emit voidLimitChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
     show_stats_ = settings.value(kShowStatsKey, false).toBool();
     backface_culling_ = settings.value(kBackfaceCullingKey, true).toBool();
     load_data_source_ = settings.value(kLoadDataSourceKey, true).toBool();
+    void_limit_ = settings.value(kVoidLimitKey, kVoidLimitDefault).toInt();
+    if (void_limit_ < 0) void_limit_ = 0;
 }
 
 void AppSettings::persist() {
@@ -96,4 +112,5 @@ void AppSettings::persist() {
     settings.setValue(kShowStatsKey, show_stats_);
     settings.setValue(kBackfaceCullingKey, backface_culling_);
     settings.setValue(kLoadDataSourceKey, load_data_source_);
+    settings.setValue(kVoidLimitKey, void_limit_);
 }

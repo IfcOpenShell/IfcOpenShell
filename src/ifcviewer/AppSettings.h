@@ -47,11 +47,18 @@ public:
     bool loadDataSource() const;
     void setLoadDataSource(bool value);
 
+    // Skip elements with more than this many voids (HasOpenings inverse).
+    // Boolean subtraction of many openings is the dominant cost in some
+    // pathological exports; dropping those elements keeps load times sane.
+    int voidLimit() const;
+    void setVoidLimit(int value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
     void loadDataSourceChanged(bool value);
+    void voidLimitChanged(int value);
 
 private:
     AppSettings();
@@ -62,6 +69,7 @@ private:
     bool show_stats_ = false;
     bool backface_culling_ = true;
     bool load_data_source_ = true;
+    int void_limit_ = 30;
 };
 
 #endif // APPSETTINGS_H

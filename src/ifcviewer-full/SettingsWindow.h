@@ -25,6 +25,7 @@
 class QCheckBox;
 class QLineEdit;
 class QShowEvent;
+class QSpinBox;
 
 class SettingsWindow : public QDialog {
     Q_OBJECT
@@ -45,6 +46,7 @@ private:
     QCheckBox* show_stats_check_ = nullptr;
     QCheckBox* backface_culling_check_ = nullptr;
     QCheckBox* load_data_source_check_ = nullptr;
+    QSpinBox* void_limit_spin_ = nullptr;
 };
 
 #endif

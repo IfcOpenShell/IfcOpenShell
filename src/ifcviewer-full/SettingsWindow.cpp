@@ -25,6 +25,7 @@
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QShowEvent>
+#include <QSpinBox>
 #include <QVBoxLayout>
 
 SettingsWindow::SettingsWindow(QWidget *parent)
@@ -57,6 +58,14 @@ void SettingsWindow::setupUi() {
         "and, on sidecar hits, avoids a second file read.");
     form->addRow("Load Property Data Source", load_data_source_check_);
 
+    void_limit_spin_ = new QSpinBox(this);
+    void_limit_spin_->setRange(0, 100000);
+    void_limit_spin_->setToolTip(
+        "Skip elements with more openings (HasOpenings) than this.  "
+        "A handful of pathological elements can dominate boolean-subtraction "
+        "time; dropping them keeps load times sane.");
+    form->addRow("Void Limit", void_limit_spin_);
+
     auto* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
@@ -80,6 +89,7 @@ void SettingsWindow::syncFromSettings() {
     show_stats_check_->setChecked(AppSettings::instance().showStats());
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
     load_data_source_check_->setChecked(AppSettings::instance().loadDataSource());
+    void_limit_spin_->setValue(AppSettings::instance().voidLimit());
 }
 
 void SettingsWindow::onAccepted() {
@@ -87,5 +97,6 @@ void SettingsWindow::onAccepted() {
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
     AppSettings::instance().setLoadDataSource(load_data_source_check_->isChecked());
+    AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     accept();
 }

@@ -21,6 +21,8 @@
 #include "AppSettings.h"
 #include "../ifcgeom/hybrid_kernel.h"
 #include "../ifcgeom/taxonomy.h"
+#include "../ifcgeom/IfcGeomFilter.h"
+#include "../ifcparse/express.h"
 
 #include <Eigen/Dense>
 
@@ -30,6 +32,7 @@
 #include <cstring>
 #include <algorithm>
 #include <limits>
+#include <set>
 
 #include <QDebug>
 #include <QElapsedTimer>
@@ -294,30 +297,59 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     const bool is_rocksdb = std::holds_alternative<ifcopenshell::impl::rocks_db_file_storage>(ifc_file_->storage_);
     const int effective_threads = is_rocksdb ? 1 : num_threads;
 
-    std::unique_ptr<IfcGeom::Iterator> iterator;
-    try {
-        const std::string geometry_library =
-            AppSettings::instance().geometryLibrary().toStdString();
-        auto kernel = ifcopenshell::geometry::kernels::construct(
-            ifc_file_.get(), geometry_library, settings);
-        iterator = std::make_unique<IfcGeom::Iterator>(
-            std::move(kernel), settings, ifc_file_.get(),
-            std::vector<ifcopenshell::geometry::filter_t>(), effective_threads);
-    } catch (const std::exception& e) {
-        emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
-        return;
+    // Mirror bonsai's IfcImporter.process_element_filter: walk IfcElement
+    // (plus IfcProxy on IFC2X3/IFC4), drop IfcFeatureElement except
+    // IfcSurfaceFeature, and split elements with more openings than the
+    // configured void limit into a "gross" set that is rendered without
+    // opening subtractions.  Both sets become include filters so we don't
+    // waste time mapping openings, spaces, grids, etc.
+    std::set<int> net_ids;
+    std::set<int> gross_ids;
+    {
+        const std::string& schema_name = ifc_file_->schema()->name();
+        std::vector<express::Base> elements =
+            ifc_file_->instances_by_type("IfcElement");
+        if (schema_name == "IFC2X3" || schema_name == "IFC4") {
+            auto proxies = ifc_file_->instances_by_type("IfcProxy");
+            elements.insert(elements.end(), proxies.begin(), proxies.end());
+        }
+
+        const int void_limit = AppSettings::instance().voidLimit();
+        for (const auto& e : elements) {
+            const auto& decl = e.declaration();
+            if (decl.is("IfcFeatureElement") && !decl.is("IfcSurfaceFeature")) {
+                continue;
+            }
+            int opening_count = 0;
+            if (decl.is("IfcElement")) {
+                try {
+                    opening_count = static_cast<int>(
+                        e.as<express::Entity>().get_inverse("HasOpenings").size());
+                } catch (...) {
+                    // HasOpenings not declared on this entity — treat as 0.
+                }
+            }
+            if (opening_count > void_limit) {
+                gross_ids.insert(e.id());
+            } else {
+                net_ids.insert(e.id());
+            }
+        }
     }
 
-    if (!iterator->initialize()) {
-        emit errorOccurred("No geometry found in IFC file");
+    if (net_ids.empty() && gross_ids.empty()) {
+        emit errorOccurred("No geometry-bearing elements found in IFC file");
         return;
     }
+    if (!gross_ids.empty()) {
+        qDebug("Excessive voids: %zu element(s) will be loaded without "
+               "opening subtractions",
+               gross_ids.size());
+    }
 
-    int last_progress = 0;
-
-    // geom.id() → local_mesh_id within this model.
+    // Shared dedup + AABB state across passes — same geom.id() across
+    // net/gross passes still maps to one mesh upload.
     std::unordered_map<std::string, uint32_t> geom_to_local_mesh_id;
-    // local_mesh_id → (local AABB) so we can derive world AABBs for later instances.
     struct MeshAabb { float lmin[3], lmax[3]; };
     std::vector<MeshAabb> mesh_aabbs;
 
@@ -326,92 +358,144 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     QElapsedTimer stream_timer;
     stream_timer.start();
 
-    do {
-        if (cancel_requested_.load()) break;
+    // Split the 0–100 progress range proportionally to element counts so
+    // the bar advances roughly with wall time across both passes.
+    const size_t total_count = net_ids.size() + gross_ids.size();
+    const int net_progress_end = total_count == 0
+        ? 100
+        : static_cast<int>(100.0 * net_ids.size() / total_count + 0.5);
 
-        const IfcGeom::Element* elem = iterator->get();
-        if (!elem) continue;
+    auto run_pass = [&](const std::set<int>& include_ids,
+                        bool is_gross,
+                        int progress_lo,
+                        int progress_hi) -> bool {
+        if (include_ids.empty()) return true;
 
-        const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
-        if (!tri_elem) continue;
-
-        const auto& geom = tri_elem->geometry();
-        if (geom.verts().empty() || geom.faces().empty()) continue;
-
-        uint32_t object_id = next_object_id_++;
-
-        // Element metadata.
-        ElementInfo info;
-        info.object_id = object_id;
-        info.model_id = model_id_;
-        info.ifc_id = tri_elem->id();
-        info.guid = tri_elem->guid();
-        info.name = tri_elem->name();
-        info.type = tri_elem->type();
-        info.parent_id = tri_elem->parent_id();
-        {
-            std::lock_guard<std::mutex> lock(elements_mutex_);
-            pending_elements_.push_back(std::move(info));
+        ifcopenshell::geometry::Settings pass_settings = settings;
+        if (is_gross) {
+            pass_settings.set("disable-opening-subtractions", true);
         }
 
-        // Representation dedup.
-        const std::string& geom_id = geom.id();
-        uint32_t local_mesh_id;
-        bool first_sight = false;
-        if (geom_id.empty()) {
-            // No representation key — treat as unique.
-            local_mesh_id = total_meshes++;
-            first_sight = true;
-        } else {
-            auto it = geom_to_local_mesh_id.find(geom_id);
-            if (it == geom_to_local_mesh_id.end()) {
+        std::vector<ifcopenshell::geometry::filter_t> filters;
+        IfcGeom::instance_id_filter idf{
+            /*include=*/true, /*traverse=*/false, include_ids};
+        filters.push_back(idf);
+
+        std::unique_ptr<IfcGeom::Iterator> iterator;
+        try {
+            const std::string geometry_library =
+                AppSettings::instance().geometryLibrary().toStdString();
+            auto kernel = ifcopenshell::geometry::kernels::construct(
+                ifc_file_.get(), geometry_library, pass_settings);
+            iterator = std::make_unique<IfcGeom::Iterator>(
+                std::move(kernel), pass_settings, ifc_file_.get(),
+                filters, effective_threads);
+        } catch (const std::exception& e) {
+            emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
+            return false;
+        }
+
+        if (!iterator->initialize()) {
+            // Empty pass — no geometry survived for these ids.  Still
+            // advance progress to the upper bound so the bar doesn't stall.
+            progress_ = progress_hi;
+            emit progressChanged(progress_hi);
+            return true;
+        }
+
+        int last_progress = progress_lo;
+
+        do {
+            if (cancel_requested_.load()) break;
+
+            const IfcGeom::Element* elem = iterator->get();
+            if (!elem) continue;
+
+            const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
+            if (!tri_elem) continue;
+
+            const auto& geom = tri_elem->geometry();
+            if (geom.verts().empty() || geom.faces().empty()) continue;
+
+            uint32_t object_id = next_object_id_++;
+
+            ElementInfo info;
+            info.object_id = object_id;
+            info.model_id = model_id_;
+            info.ifc_id = tri_elem->id();
+            info.guid = tri_elem->guid();
+            info.name = tri_elem->name();
+            info.type = tri_elem->type();
+            info.parent_id = tri_elem->parent_id();
+            {
+                std::lock_guard<std::mutex> lock(elements_mutex_);
+                pending_elements_.push_back(std::move(info));
+            }
+
+            const std::string& geom_id = geom.id();
+            uint32_t local_mesh_id;
+            bool first_sight = false;
+            if (geom_id.empty()) {
                 local_mesh_id = total_meshes++;
-                geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
                 first_sight = true;
             } else {
-                local_mesh_id = it->second;
+                auto it = geom_to_local_mesh_id.find(geom_id);
+                if (it == geom_to_local_mesh_id.end()) {
+                    local_mesh_id = total_meshes++;
+                    geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
+                    first_sight = true;
+                } else {
+                    local_mesh_id = it->second;
+                }
             }
-        }
 
-        if (first_sight) {
-            MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
-            MeshAabb ma;
-            for (int a = 0; a < 3; ++a) {
-                ma.lmin[a] = mesh_chunk.local_aabb_min[a];
-                ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+            if (first_sight) {
+                MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
+                MeshAabb ma;
+                for (int a = 0; a < 3; ++a) {
+                    ma.lmin[a] = mesh_chunk.local_aabb_min[a];
+                    ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+                }
+                if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
+                mesh_aabbs[local_mesh_id] = ma;
+                if (!mesh_chunk.indices.empty()) {
+                    emit meshReady(std::move(mesh_chunk));
+                }
             }
-            if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
-            mesh_aabbs[local_mesh_id] = ma;
-            if (!mesh_chunk.indices.empty()) {
-                emit meshReady(std::move(mesh_chunk));
+
+            const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
+            InstanceChunk inst;
+            inst.model_id = model_id_;
+            inst.local_mesh_id = local_mesh_id;
+            inst.object_id = object_id;
+            inst.color_override_rgba8 = 0;
+            for (int i = 0; i < 16; ++i) {
+                inst.transform[i] = static_cast<float>(mat_d.data()[i]);
             }
-        }
 
-        // Transform (column-major 4x4, cast to float).
-        const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
-        InstanceChunk inst;
-        inst.model_id = model_id_;
-        inst.local_mesh_id = local_mesh_id;
-        inst.object_id = object_id;
-        inst.color_override_rgba8 = 0; // 0 = use baked vertex color
-        for (int i = 0; i < 16; ++i) {
-            inst.transform[i] = static_cast<float>(mat_d.data()[i]);
-        }
+            const MeshAabb& ma = mesh_aabbs[local_mesh_id];
+            worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
+                               inst.world_aabb_min, inst.world_aabb_max);
 
-        const MeshAabb& ma = mesh_aabbs[local_mesh_id];
-        worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
-                           inst.world_aabb_min, inst.world_aabb_max);
+            emit instanceReady(std::move(inst));
+            total_shapes++;
 
-        emit instanceReady(std::move(inst));
-        total_shapes++;
+            const int p = progress_lo +
+                (iterator->progress() * (progress_hi - progress_lo)) / 100;
+            if (p != last_progress) {
+                last_progress = p;
+                progress_ = p;
+                emit progressChanged(p);
+            }
+        } while (iterator->next());
 
-        int p = iterator->progress();
-        if (p != last_progress) {
-            last_progress = p;
-            progress_ = p;
-            emit progressChanged(p);
-        }
-    } while (iterator->next());
+        return true;
+    };
+
+    if (!run_pass(net_ids, /*is_gross=*/false, 0, net_progress_end)) return;
+    if (!cancel_requested_.load()) {
+        run_pass(gross_ids, /*is_gross=*/true, net_progress_end, 100);
+    }
 
     progress_ = 100;
     emit progressChanged(100);
