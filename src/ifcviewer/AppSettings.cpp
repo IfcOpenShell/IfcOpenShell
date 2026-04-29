@@ -29,6 +29,10 @@ constexpr const char* kBackfaceCullingKey = "viewport/backface_culling";
 constexpr const char* kLoadDataSourceKey = "loading/load_data_source";
 constexpr const char* kVoidLimitKey = "loading/void_limit";
 constexpr int kVoidLimitDefault = 30;
+constexpr const char* kDeflectionToleranceKey = "loading/deflection_tolerance";
+constexpr double kDeflectionToleranceDefault = 0.001;
+constexpr const char* kAngularToleranceKey = "loading/angular_tolerance";
+constexpr double kAngularToleranceDefault = 0.5;
 }
 
 AppSettings& AppSettings::instance() {
@@ -96,6 +100,30 @@ void AppSettings::setVoidLimit(int value) {
     emit voidLimitChanged(value);
 }
 
+double AppSettings::deflectionTolerance() const {
+    return deflection_tolerance_;
+}
+
+void AppSettings::setDeflectionTolerance(double value) {
+    if (value <= 0.0) value = kDeflectionToleranceDefault;
+    if (deflection_tolerance_ == value) return;
+    deflection_tolerance_ = value;
+    persist();
+    emit deflectionToleranceChanged(value);
+}
+
+double AppSettings::angularTolerance() const {
+    return angular_tolerance_;
+}
+
+void AppSettings::setAngularTolerance(double value) {
+    if (value <= 0.0) value = kAngularToleranceDefault;
+    if (angular_tolerance_ == value) return;
+    angular_tolerance_ = value;
+    persist();
+    emit angularToleranceChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
@@ -104,6 +132,10 @@ void AppSettings::load() {
     load_data_source_ = settings.value(kLoadDataSourceKey, true).toBool();
     void_limit_ = settings.value(kVoidLimitKey, kVoidLimitDefault).toInt();
     if (void_limit_ < 0) void_limit_ = 0;
+    deflection_tolerance_ = settings.value(kDeflectionToleranceKey, kDeflectionToleranceDefault).toDouble();
+    if (deflection_tolerance_ <= 0.0) deflection_tolerance_ = kDeflectionToleranceDefault;
+    angular_tolerance_ = settings.value(kAngularToleranceKey, kAngularToleranceDefault).toDouble();
+    if (angular_tolerance_ <= 0.0) angular_tolerance_ = kAngularToleranceDefault;
 }
 
 void AppSettings::persist() {
@@ -113,4 +145,6 @@ void AppSettings::persist() {
     settings.setValue(kBackfaceCullingKey, backface_culling_);
     settings.setValue(kLoadDataSourceKey, load_data_source_);
     settings.setValue(kVoidLimitKey, void_limit_);
+    settings.setValue(kDeflectionToleranceKey, deflection_tolerance_);
+    settings.setValue(kAngularToleranceKey, angular_tolerance_);
 }

@@ -22,6 +22,7 @@
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QShowEvent>
@@ -66,6 +67,25 @@ void SettingsWindow::setupUi() {
         "time; dropping them keeps load times sane.");
     form->addRow("Void Limit", void_limit_spin_);
 
+    deflection_tolerance_spin_ = new QDoubleSpinBox(this);
+    deflection_tolerance_spin_->setRange(0.000001, 1000.0);
+    deflection_tolerance_spin_->setDecimals(6);
+    deflection_tolerance_spin_->setSingleStep(0.001);
+    deflection_tolerance_spin_->setToolTip(
+        "Linear chord error between curved geometry and its triangulation, "
+        "in model length units.  Smaller = smoother curves but more "
+        "triangles and slower load.");
+    form->addRow("Deflection Tolerance", deflection_tolerance_spin_);
+
+    angular_tolerance_spin_ = new QDoubleSpinBox(this);
+    angular_tolerance_spin_->setRange(0.000001, 3.141592);
+    angular_tolerance_spin_->setDecimals(6);
+    angular_tolerance_spin_->setSingleStep(0.05);
+    angular_tolerance_spin_->setToolTip(
+        "Maximum angle (radians) between adjacent facet normals on a "
+        "curved surface.  Smaller = smoother shading but more triangles.");
+    form->addRow("Angular Tolerance", angular_tolerance_spin_);
+
     auto* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
@@ -90,6 +110,8 @@ void SettingsWindow::syncFromSettings() {
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
     load_data_source_check_->setChecked(AppSettings::instance().loadDataSource());
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
+    deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
+    angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
 }
 
 void SettingsWindow::onAccepted() {
@@ -98,5 +120,7 @@ void SettingsWindow::onAccepted() {
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
     AppSettings::instance().setLoadDataSource(load_data_source_check_->isChecked());
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
+    AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
+    AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());
     accept();
 }

@@ -23,6 +23,7 @@
 #include <QDialog>
 
 class QCheckBox;
+class QDoubleSpinBox;
 class QLineEdit;
 class QShowEvent;
 class QSpinBox;
@@ -47,6 +48,8 @@ private:
     QCheckBox* backface_culling_check_ = nullptr;
     QCheckBox* load_data_source_check_ = nullptr;
     QSpinBox* void_limit_spin_ = nullptr;
+    QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
+    QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
 };
 
 #endif

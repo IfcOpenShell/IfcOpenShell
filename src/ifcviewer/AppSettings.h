@@ -53,12 +53,25 @@ public:
     int voidLimit() const;
     void setVoidLimit(int value);
 
+    // Mesher tolerances passed straight to the IfcOpenShell iterator.
+    // Linear deflection bounds the chord error between a curve and its
+    // triangulation, in model length units; angular deflection bounds the
+    // angle (radians) between adjacent facet normals on a curved surface.
+    // Smaller values mean smoother geometry at the cost of more triangles
+    // and slower iteration.
+    double deflectionTolerance() const;
+    void setDeflectionTolerance(double value);
+    double angularTolerance() const;
+    void setAngularTolerance(double value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
     void loadDataSourceChanged(bool value);
     void voidLimitChanged(int value);
+    void deflectionToleranceChanged(double value);
+    void angularToleranceChanged(double value);
 
 private:
     AppSettings();
@@ -70,6 +83,8 @@ private:
     bool backface_culling_ = true;
     bool load_data_source_ = true;
     int void_limit_ = 30;
+    double deflection_tolerance_ = 0.001;
+    double angular_tolerance_ = 0.5;
 };
 
 #endif // APPSETTINGS_H

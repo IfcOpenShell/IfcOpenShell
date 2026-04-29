@@ -284,12 +284,17 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // applied on the GPU per instance.
     settings.set("use-world-coords", false);
     settings.set("weld-vertices", false);
-    settings.set("apply-default-materials", true);
+    settings.set("apply-default-materials", false);
     // Off by default in IfcOpenShell — makes face winding consistent within
     // each shell, which we need for GL_CULL_FACE and for per-vertex normals
     // to shade a solid without dark inside-out patches.  Costs some iterator
     // time, but results are cached in the sidecar so it's a one-shot hit.
     settings.set("reorient-shells", true);
+    settings.set("layerset-first", true);
+    settings.set("mesher-linear-deflection", AppSettings::instance().deflectionTolerance());
+    settings.set("mesher-angular-deflection", AppSettings::instance().angularTolerance());
+    // Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
+    settings.set("no-wire-intersection-check", true);
 
     // @todo parallel mapping on RocksDB-backed files still races somewhere
     // outside the instance cache, producing inconsistent shape counts. Force
