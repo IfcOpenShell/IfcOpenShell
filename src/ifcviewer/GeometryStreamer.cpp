@@ -246,6 +246,104 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
     return chunk;
 }
 
+// Port of ifcopenshell.util.representation.get_prioritised_contexts: rank every
+// IfcGeometricRepresentationContext (and SubContext) by (ContextType,
+// ContextIdentifier, TargetView, TargetScale) — tuple comparison, descending —
+// and return the resulting context ids high-priority first.  Used to drive a
+// pass-per-context iteration in the streamer (mirrors bonsai's
+// create_generic_element loop), so each element is rendered from its
+// preferred representation if available, falling back to lower-priority
+// contexts only when the preferred one is missing.
+static std::vector<int> prioritisedContextIds(ifcopenshell::file* ifc_file) {
+    static const std::vector<std::string> type_order = {
+        // "Annotation" accommodates broken Revit files that put 3D bodies
+        // under a context typed Annotation. See revit-ifc#187.
+        "Model", "Plan", "Annotation",
+    };
+    static const std::vector<std::string> identifier_order = {
+        "Body", "Body-FallBack", "Facetation", "FootPrint", "Profile",
+        "Surface", "Reference", "Axis", "Clearance", "Box", "Lighting",
+        "Annotation", "CoG",
+    };
+    static const std::vector<std::string> target_view_order = {
+        "MODEL_VIEW", "PLAN_VIEW", "REFLECTED_PLAN_VIEW", "ELEVATION_VIEW",
+        "SECTION_VIEW", "GRAPH_VIEW", "SKETCH_VIEW", "USERDEFINED",
+        "NOTDEFINED",
+    };
+
+    auto rank = [](const std::vector<std::string>& order,
+                   const std::string& value) -> int {
+        if (value.empty()) return 0;
+        auto it = std::find(order.begin(), order.end(), value);
+        if (it == order.end()) return 0;
+        return static_cast<int>(order.size() - (it - order.begin()));
+    };
+
+    struct ContextInfo {
+        int id;
+        int type_priority;
+        int identifier_priority;
+        int target_view_priority;
+        double target_scale;
+    };
+
+    std::vector<ContextInfo> infos;
+    auto contexts =
+        ifc_file->instances_by_type("IfcGeometricRepresentationContext");
+    infos.reserve(contexts.size());
+
+    for (const auto& ctx : contexts) {
+        ContextInfo info{};
+        info.id = ctx.id();
+
+        const auto entity = ctx.as<express::Entity>();
+        const std::string ctype =
+            entity.get_value<std::string>("ContextType", "");
+        const std::string cident =
+            entity.get_value<std::string>("ContextIdentifier", "");
+        info.type_priority = rank(type_order, ctype);
+        info.identifier_priority = rank(identifier_order, cident);
+
+        // TargetView and TargetScale only exist on
+        // IfcGeometricRepresentationSubContext; get() throws on the parent
+        // type, so gate by declaration before reading.
+        if (ctx.declaration().is("IfcGeometricRepresentationSubContext")) {
+            try {
+                auto tv = entity.get("TargetView");
+                if (!tv.isNull()) {
+                    enumeration_reference er = tv;
+                    info.target_view_priority =
+                        rank(target_view_order, er.value());
+                }
+            } catch (...) {}
+            try {
+                auto ts = entity.get("TargetScale");
+                if (!ts.isNull()) {
+                    info.target_scale = static_cast<double>(ts);
+                }
+            } catch (...) {}
+        }
+
+        infos.push_back(info);
+    }
+
+    std::sort(infos.begin(), infos.end(),
+              [](const ContextInfo& a, const ContextInfo& b) {
+                  if (a.type_priority != b.type_priority)
+                      return a.type_priority > b.type_priority;
+                  if (a.identifier_priority != b.identifier_priority)
+                      return a.identifier_priority > b.identifier_priority;
+                  if (a.target_view_priority != b.target_view_priority)
+                      return a.target_view_priority > b.target_view_priority;
+                  return a.target_scale > b.target_scale;
+              });
+
+    std::vector<int> result;
+    result.reserve(infos.size());
+    for (const auto& i : infos) result.push_back(i.id);
+    return result;
+}
+
 // Compute the world-space AABB by transforming the 8 corners of the local
 // AABB through the column-major 4x4 transform.
 static void worldAabbFromLocal(const float local_min[3],
@@ -375,130 +473,178 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         ? 100
         : static_cast<int>(100.0 * net_ids.size() / total_count + 0.5);
 
+    // High-priority context first, so each element gets its preferred
+    // representation; lower-priority contexts only pick up elements the
+    // earlier passes didn't yield geometry for.  Mirrors bonsai's
+    // create_generic_element loop over context_settings.
+    const std::vector<int> prioritised_contexts =
+        prioritisedContextIds(ifc_file_.get());
+
     auto run_pass = [&](const std::set<int>& include_ids,
                         bool is_gross,
                         int progress_lo,
                         int progress_hi) -> bool {
         if (include_ids.empty()) return true;
 
-        ifcopenshell::geometry::Settings pass_settings = settings;
+        ifcopenshell::geometry::Settings base_settings = settings;
         if (is_gross) {
-            pass_settings.set("disable-opening-subtractions", true);
+            base_settings.set("disable-opening-subtractions", true);
         }
 
-        std::vector<ifcopenshell::geometry::filter_t> filters;
-        IfcGeom::instance_id_filter idf{
-            /*include=*/true, /*traverse=*/false, include_ids};
-        filters.push_back(idf);
+        // Elements that haven't yet produced geometry from any context.
+        std::set<int> remaining = include_ids;
 
-        std::unique_ptr<IfcGeom::Iterator> iterator;
-        try {
-            const std::string geometry_library =
-                AppSettings::instance().geometryLibrary().toStdString();
-            auto kernel = ifcopenshell::geometry::kernels::construct(
-                ifc_file_.get(), geometry_library, pass_settings);
-            iterator = std::make_unique<IfcGeom::Iterator>(
-                std::move(kernel), pass_settings, ifc_file_.get(),
-                filters, effective_threads);
-        } catch (const std::exception& e) {
-            emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
-            return false;
-        }
+        auto run_iterator = [&](ifcopenshell::geometry::Settings& iter_settings,
+                                int sub_lo, int sub_hi) -> bool {
+            if (remaining.empty()) return true;
 
-        if (!iterator->initialize()) {
-            // Empty pass — no geometry survived for these ids.  Still
-            // advance progress to the upper bound so the bar doesn't stall.
-            progress_ = progress_hi;
-            emit progressChanged(progress_hi);
-            return true;
-        }
+            std::vector<ifcopenshell::geometry::filter_t> filters;
+            IfcGeom::instance_id_filter idf{
+                /*include=*/true, /*traverse=*/false, remaining};
+            filters.push_back(idf);
 
-        int last_progress = progress_lo;
-
-        do {
-            if (cancel_requested_.load()) break;
-
-            const IfcGeom::Element* elem = iterator->get();
-            if (!elem) continue;
-
-            const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
-            if (!tri_elem) continue;
-
-            const auto& geom = tri_elem->geometry();
-            if (geom.verts().empty() || geom.faces().empty()) continue;
-
-            uint32_t object_id = next_object_id_++;
-
-            ElementInfo info;
-            info.object_id = object_id;
-            info.model_id = model_id_;
-            info.ifc_id = tri_elem->id();
-            info.guid = tri_elem->guid();
-            info.name = tri_elem->name();
-            info.type = tri_elem->type();
-            info.parent_id = tri_elem->parent_id();
-            {
-                std::lock_guard<std::mutex> lock(elements_mutex_);
-                pending_elements_.push_back(std::move(info));
+            std::unique_ptr<IfcGeom::Iterator> iterator;
+            try {
+                const std::string geometry_library =
+                    AppSettings::instance().geometryLibrary().toStdString();
+                auto kernel = ifcopenshell::geometry::kernels::construct(
+                    ifc_file_.get(), geometry_library, iter_settings);
+                iterator = std::make_unique<IfcGeom::Iterator>(
+                    std::move(kernel), iter_settings, ifc_file_.get(),
+                    filters, effective_threads);
+            } catch (const std::exception& e) {
+                emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
+                return false;
             }
 
-            const std::string& geom_id = geom.id();
-            uint32_t local_mesh_id;
-            bool first_sight = false;
-            if (geom_id.empty()) {
-                local_mesh_id = total_meshes++;
-                first_sight = true;
-            } else {
-                auto it = geom_to_local_mesh_id.find(geom_id);
-                if (it == geom_to_local_mesh_id.end()) {
+            if (!iterator->initialize()) {
+                // No geometry survived this context for the remaining ids.
+                // Still advance progress so the bar doesn't stall.
+                progress_ = sub_hi;
+                emit progressChanged(sub_hi);
+                return true;
+            }
+
+            int last_progress = sub_lo;
+
+            do {
+                if (cancel_requested_.load()) break;
+
+                const IfcGeom::Element* elem = iterator->get();
+                if (!elem) continue;
+
+                const auto* tri_elem = dynamic_cast<const IfcGeom::TriangulationElement*>(elem);
+                if (!tri_elem) continue;
+
+                const auto& geom = tri_elem->geometry();
+                if (geom.verts().empty() || geom.faces().empty()) continue;
+
+                // Once an element yields geometry from this context, drop it
+                // from the remaining set so lower-priority contexts don't
+                // re-render it.
+                remaining.erase(tri_elem->id());
+
+                uint32_t object_id = next_object_id_++;
+
+                ElementInfo info;
+                info.object_id = object_id;
+                info.model_id = model_id_;
+                info.ifc_id = tri_elem->id();
+                info.guid = tri_elem->guid();
+                info.name = tri_elem->name();
+                info.type = tri_elem->type();
+                info.parent_id = tri_elem->parent_id();
+                {
+                    std::lock_guard<std::mutex> lock(elements_mutex_);
+                    pending_elements_.push_back(std::move(info));
+                }
+
+                const std::string& geom_id = geom.id();
+                uint32_t local_mesh_id;
+                bool first_sight = false;
+                if (geom_id.empty()) {
                     local_mesh_id = total_meshes++;
-                    geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
                     first_sight = true;
                 } else {
-                    local_mesh_id = it->second;
+                    auto it = geom_to_local_mesh_id.find(geom_id);
+                    if (it == geom_to_local_mesh_id.end()) {
+                        local_mesh_id = total_meshes++;
+                        geom_to_local_mesh_id.emplace(geom_id, local_mesh_id);
+                        first_sight = true;
+                    } else {
+                        local_mesh_id = it->second;
+                    }
                 }
-            }
 
-            if (first_sight) {
-                MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
-                MeshAabb ma;
-                for (int a = 0; a < 3; ++a) {
-                    ma.lmin[a] = mesh_chunk.local_aabb_min[a];
-                    ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+                if (first_sight) {
+                    MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
+                    MeshAabb ma;
+                    for (int a = 0; a < 3; ++a) {
+                        ma.lmin[a] = mesh_chunk.local_aabb_min[a];
+                        ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+                    }
+                    if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
+                    mesh_aabbs[local_mesh_id] = ma;
+                    if (!mesh_chunk.indices.empty()) {
+                        emit meshReady(std::move(mesh_chunk));
+                    }
                 }
-                if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
-                mesh_aabbs[local_mesh_id] = ma;
-                if (!mesh_chunk.indices.empty()) {
-                    emit meshReady(std::move(mesh_chunk));
+
+                const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
+                InstanceChunk inst;
+                inst.model_id = model_id_;
+                inst.local_mesh_id = local_mesh_id;
+                inst.object_id = object_id;
+                inst.color_override_rgba8 = 0;
+                for (int i = 0; i < 16; ++i) {
+                    inst.transform[i] = static_cast<float>(mat_d.data()[i]);
                 }
-            }
 
-            const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
-            InstanceChunk inst;
-            inst.model_id = model_id_;
-            inst.local_mesh_id = local_mesh_id;
-            inst.object_id = object_id;
-            inst.color_override_rgba8 = 0;
-            for (int i = 0; i < 16; ++i) {
-                inst.transform[i] = static_cast<float>(mat_d.data()[i]);
-            }
+                const MeshAabb& ma = mesh_aabbs[local_mesh_id];
+                worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
+                                   inst.world_aabb_min, inst.world_aabb_max);
 
-            const MeshAabb& ma = mesh_aabbs[local_mesh_id];
-            worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
-                               inst.world_aabb_min, inst.world_aabb_max);
+                emit instanceReady(std::move(inst));
+                total_shapes++;
 
-            emit instanceReady(std::move(inst));
-            total_shapes++;
+                const int p = sub_lo +
+                    (iterator->progress() * (sub_hi - sub_lo)) / 100;
+                if (p != last_progress) {
+                    last_progress = p;
+                    progress_ = p;
+                    emit progressChanged(p);
+                }
+            } while (iterator->next());
 
-            const int p = progress_lo +
-                (iterator->progress() * (progress_hi - progress_lo)) / 100;
-            if (p != last_progress) {
-                last_progress = p;
-                progress_ = p;
-                emit progressChanged(p);
-            }
-        } while (iterator->next());
+            return true;
+        };
 
+        if (prioritised_contexts.empty()) {
+            // No IfcGeometricRepresentationContext entities — fall back to
+            // a single iterator pass without context-id filtering.
+            return run_iterator(base_settings, progress_lo, progress_hi);
+        }
+
+        const int range = progress_hi - progress_lo;
+        const int n = static_cast<int>(prioritised_contexts.size());
+        for (int i = 0; i < n; ++i) {
+            if (cancel_requested_.load()) break;
+            if (remaining.empty()) break;
+
+            ifcopenshell::geometry::Settings iter_settings = base_settings;
+            iter_settings.set("context-ids",
+                std::set<int>{ prioritised_contexts[i] });
+
+            const int sub_lo = progress_lo + (range * i) / n;
+            const int sub_hi = (i + 1 == n)
+                ? progress_hi
+                : progress_lo + (range * (i + 1)) / n;
+
+            if (!run_iterator(iter_settings, sub_lo, sub_hi)) return false;
+        }
+
+        progress_ = progress_hi;
+        emit progressChanged(progress_hi);
         return true;
     };
 
