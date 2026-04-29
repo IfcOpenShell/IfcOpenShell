@@ -299,10 +299,10 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
     // Mirror bonsai's IfcImporter.process_element_filter: walk IfcElement
     // (plus IfcProxy on IFC2X3/IFC4), drop IfcFeatureElement except
-    // IfcSurfaceFeature, and split elements with more openings than the
-    // configured void limit into a "gross" set that is rendered without
-    // opening subtractions.  Both sets become include filters so we don't
-    // waste time mapping openings, spaces, grids, etc.
+    // IfcSurfaceFeature, pick up spatial elements, and split elements
+    // with more openings than the configured void limit into a "gross"
+    // set that is rendered without opening subtractions.  Both sets
+    // become include filters so we don't waste time mapping openings.
     std::set<int> net_ids;
     std::set<int> gross_ids;
     {
@@ -313,6 +313,11 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             auto proxies = ifc_file_->instances_by_type("IfcProxy");
             elements.insert(elements.end(), proxies.begin(), proxies.end());
         }
+        const char* spatial_root = (schema_name == "IFC2X3")
+            ? "IfcSpatialStructureElement"
+            : "IfcSpatialElement";
+        auto spatials = ifc_file_->instances_by_type(spatial_root);
+        elements.insert(elements.end(), spatials.begin(), spatials.end());
 
         const int void_limit = AppSettings::instance().voidLimit();
         for (const auto& e : elements) {
