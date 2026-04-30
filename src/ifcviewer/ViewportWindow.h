@@ -176,6 +176,14 @@ public:
     void setBenchmarkFrames(int n);
     QString cameraString() const;
 
+    // Move camera_target_ to the selected object's world-AABB centroid and
+    // dolly camera_distance_ so the object's bounding sphere fits the
+    // current viewport.  Yaw/pitch are preserved.  No-op if no object is
+    // selected or its AABB is unknown.
+    void focusOnSelectedObject();
+    // Frame the union of all finalized models.  No-op if the scene is empty.
+    void viewAll();
+
     struct CameraState {
         QVector3D target;
         float distance;
@@ -237,6 +245,17 @@ private:
     void renderAxisGizmo();
     void renderPivotIndicator();
     void updateCamera();
+
+    // Geometry queries used by focusOnSelectedObject() / viewAll().  Both
+    // return false when nothing matched (caller should leave the camera
+    // alone).  Bounds are world-space AABBs.
+    bool computeObjectAabb(uint32_t object_id, QVector3D& mn, QVector3D& mx) const;
+    bool computeSceneAabb(QVector3D& mn, QVector3D& mx) const;
+    // Re-aim the orbit camera so the bounding sphere of [mn, mx] just fits
+    // vertically and horizontally within the current FOV, with `padding`
+    // headroom (1.0 = tight).  Yaw/pitch are preserved; only target and
+    // distance change.
+    void frameAabb(const QVector3D& mn, const QVector3D& mx, float padding);
     void buildShaders();
     void buildAxisGizmo();
     void buildPivotIndicator();

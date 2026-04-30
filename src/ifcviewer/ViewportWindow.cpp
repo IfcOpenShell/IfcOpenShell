@@ -1230,6 +1230,108 @@ void ViewportWindow::setCamera(float tx, float ty, float tz,
     requestUpdate();
 }
 
+bool ViewportWindow::computeObjectAabb(uint32_t object_id,
+                                       QVector3D& mn, QVector3D& mx) const {
+    if (object_id == 0) return false;
+    bool found = false;
+    QVector3D lo( std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max());
+    QVector3D hi(-std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max());
+    for (const auto& [mid, m] : models_gpu_) {
+        if (!m.finalized || m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id != object_id) continue;
+            for (int a = 0; a < 3; ++a) {
+                if (inst.world_aabb_min[a] < lo[a]) lo[a] = inst.world_aabb_min[a];
+                if (inst.world_aabb_max[a] > hi[a]) hi[a] = inst.world_aabb_max[a];
+            }
+            found = true;
+        }
+    }
+    if (found) { mn = lo; mx = hi; }
+    return found;
+}
+
+bool ViewportWindow::computeSceneAabb(QVector3D& mn, QVector3D& mx) const {
+    bool found = false;
+    QVector3D lo( std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max(),
+                  std::numeric_limits<float>::max());
+    QVector3D hi(-std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max());
+    for (const auto& [mid, m] : models_gpu_) {
+        if (!m.finalized || m.hidden) continue;
+        if (!m.bvh.nodes.empty()) {
+            const BvhNode& root = m.bvh.nodes[0];
+            for (int a = 0; a < 3; ++a) {
+                if (root.aabb_min[a] < lo[a]) lo[a] = root.aabb_min[a];
+                if (root.aabb_max[a] > hi[a]) hi[a] = root.aabb_max[a];
+            }
+            found = true;
+        } else {
+            for (const InstanceCpu& inst : m.instances) {
+                for (int a = 0; a < 3; ++a) {
+                    if (inst.world_aabb_min[a] < lo[a]) lo[a] = inst.world_aabb_min[a];
+                    if (inst.world_aabb_max[a] > hi[a]) hi[a] = inst.world_aabb_max[a];
+                }
+                found = true;
+            }
+        }
+    }
+    if (found) { mn = lo; mx = hi; }
+    return found;
+}
+
+void ViewportWindow::frameAabb(const QVector3D& mn, const QVector3D& mx,
+                               float padding) {
+    const QVector3D centroid = (mn + mx) * 0.5f;
+    const float radius = ((mx - mn).length() * 0.5f);
+
+    // Empty / point AABB: keep the existing distance so we just recenter.
+    float new_distance = camera_distance_;
+    if (radius > 1e-4f) {
+        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
+        const float tan_half = tanf(fovy_rad * 0.5f);
+        // tan_half == 0 is impossible at fov 45°, but guard anyway.
+        if (tan_half > 1e-6f) {
+            const int   h = qMax(height(), 1);
+            const float aspect = float(qMax(width(), 1)) / float(h);
+            // Use the tighter axis: portrait windows need a larger pull-back.
+            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+            new_distance = (radius / (tan_half * min_aspect)) * padding;
+        }
+    }
+
+    camera_target_ = centroid;
+    camera_distance_ = qMax(0.1f, new_distance);
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
+void ViewportWindow::focusOnSelectedObject() {
+    if (camera_mode_ == CameraMode::Fps) return;
+    QVector3D mn, mx;
+    if (!computeObjectAabb(selected_object_id_, mn, mx)) {
+        qDebug("Focus: no object selected or no AABB available");
+        return;
+    }
+    frameAabb(mn, mx, 1.30f);  // a bit of headroom around small objects
+}
+
+void ViewportWindow::viewAll() {
+    if (camera_mode_ == CameraMode::Fps) return;
+    QVector3D mn, mx;
+    if (!computeSceneAabb(mn, mx)) {
+        qDebug("View All: scene is empty");
+        return;
+    }
+    frameAabb(mn, mx, 1.10f);
+}
+
 void ViewportWindow::setBenchmarkFrames(int n) {
     benchmark_total_ = n;
     benchmark_count_ = 0;
@@ -1294,6 +1396,20 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
 
     if (key == Qt::Key_C && !(event->modifiers() & Qt::ControlModifier)) {
         qDebug("--camera %s", qPrintable(cameraString()));
+        return;
+    }
+
+    // Plain F (no modifiers): focus camera on the currently selected object.
+    // Shift+F is FPS-mode toggle and was handled above.
+    if (key == Qt::Key_F
+        && event->modifiers() == Qt::NoModifier
+        && !event->isAutoRepeat()) {
+        focusOnSelectedObject();
+        return;
+    }
+    // Home: frame the entire scene.
+    if (key == Qt::Key_Home && !event->isAutoRepeat()) {
+        viewAll();
         return;
     }
     QWindow::keyPressEvent(event);
