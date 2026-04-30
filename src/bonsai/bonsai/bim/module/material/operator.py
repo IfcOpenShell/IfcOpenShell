@@ -630,7 +630,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
             if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
-                if "CardinalPoint" in attributes:
+                if "CardinalPoint" in attributes and attributes["CardinalPoint"] is not None:
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
                 ifcopenshell.api.material.edit_profile_usage(
                     self.file,
