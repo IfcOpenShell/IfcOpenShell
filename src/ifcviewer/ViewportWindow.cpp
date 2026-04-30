@@ -155,7 +155,10 @@ in vec3 v_world_pos;
 flat in uint v_object_id;
 flat in uint v_selected;
 
-uniform vec3 u_light_dir;
+uniform vec3 u_light_dir;       // primary key direction (world-space)
+uniform vec3 u_fill_dir;        // secondary fill direction
+uniform vec3 u_sky_color;       // hemisphere top tint
+uniform vec3 u_ground_color;    // hemisphere bottom tint
 
 // Section planes — clip the half-space dot(n,p)+d > 0.  AND-combined.
 const int MAX_CLIP_PLANES = 8;
@@ -177,10 +180,28 @@ void main() {
     // true and has no effect.
     vec3 n = normalize(v_normal);
     if (!gl_FrontFacing) n = -n;
-    float ndotl = max(dot(n, u_light_dir), 0.0);
-    float ambient = 0.25;
-    float diffuse = 0.75 * ndotl;
-    vec3 color = v_color.rgb * (ambient + diffuse);
+
+    // Hemisphere ambient: faces pointing up read sky, down read ground.
+    // World-up is +Z so n.z drives the mix.  Floors/ceilings/walls get
+    // visibly distinct ambient even when shadowed.
+    float hemi_t = 0.5 + 0.5 * n.z;
+    vec3  ambient = mix(u_ground_color, u_sky_color, hemi_t);
+
+    // Key + fill direct light.  Fill is a softer secondary so backs of
+    // objects don't go pitch black — keeps shape readable from any angle.
+    float key  = max(dot(n, u_light_dir), 0.0);
+    float fill = max(dot(n, u_fill_dir),  0.0) * 0.35;
+
+    vec3 color = v_color.rgb * (ambient + (key + fill) * 0.7);
+
+    // Cavity shading: where adjacent fragments have a sharp normal change
+    // (concave creases, edges where two faces meet), darken slightly.
+    // length(fwidth(n)) spikes at those boundaries; the clamp caps how
+    // dark a single edge can get so the effect is a hint, not a heavy
+    // outline.
+    float cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
+    color *= (1.0 - cavity);
+
     if (v_selected == 1u) color = mix(color, vec3(0.2, 0.6, 1.0), 0.5);
     frag_color = vec4(color, v_color.a);
 }
@@ -2402,9 +2423,21 @@ void ViewportWindow::render() {
     gl_->glUseProgram(main_program_);
     GLint u_vp        = gl_->glGetUniformLocation(main_program_, "u_view_projection");
     GLint u_light     = gl_->glGetUniformLocation(main_program_, "u_light_dir");
+    GLint u_fill      = gl_->glGetUniformLocation(main_program_, "u_fill_dir");
+    GLint u_sky       = gl_->glGetUniformLocation(main_program_, "u_sky_color");
+    GLint u_ground    = gl_->glGetUniformLocation(main_program_, "u_ground_color");
     GLint u_sel       = gl_->glGetUniformLocation(main_program_, "u_selected_id");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
-    gl_->glUniform3f(u_light, 0.3f, 0.5f, 0.8f);
+    // Key light: high noon-ish from off-camera; fill ~120° away so back-of-
+    // object surfaces still get some direct contribution.  Sky/ground tints
+    // are a neutral cool-on-warm pairing — readable on white walls and grey
+    // slabs without colouring shaded faces noticeably.
+    // Both directions are roughly unit-length (~0.99) — matches how
+    // u_light_dir was already supplied and keeps the brightness math sane.
+    gl_->glUniform3f(u_light,  0.3f,  0.5f, 0.8f);
+    gl_->glUniform3f(u_fill,  -0.3f, -0.5f, 0.8f);
+    gl_->glUniform3f(u_sky,    0.55f, 0.60f, 0.70f);
+    gl_->glUniform3f(u_ground, 0.35f, 0.32f, 0.28f);
     gl_->glUniform1ui(u_sel, selected_object_id_);
     uploadClipPlaneUniforms(main_program_);
 
