@@ -2189,9 +2189,20 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     const float cx = camera_eye_.x();
     const float cy = camera_eye_.y();
     const float cz = camera_eye_.z();
+    // In ortho the projected pixel size of a bounding sphere doesn't depend
+    // on per-instance distance — the ortho box scales the entire scene by a
+    // constant.  Substitute that constant (camera_distance_, which is
+    // exactly the half-height/tan(fovy/2) used to size the box) for the
+    // per-instance dist so the same `r_px = focal_px * r / dist` formula
+    // and threshold survive both modes.  Snapshot now so the worker threads
+    // see a consistent value.
+    const bool  ortho_mode    = projection_ortho_;
+    const float ortho_dist    = camera_distance_;
+
     auto contributionPasses = [&](const float mn[3], const float mx[3]) -> bool {
         if (min_pixel_radius <= 0.0f) return true;
-        // Camera inside AABB? Always keep.
+        // Camera inside AABB? Always keep — only relevant in perspective
+        // where dist→0 would make r_px blow up; harmless in ortho too.
         if (cx >= mn[0] && cx <= mx[0] &&
             cy >= mn[1] && cy <= mx[1] &&
             cz >= mn[2] && cz <= mx[2]) {
@@ -2201,10 +2212,15 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
         float ey = 0.5f * (mx[1] - mn[1]);
         float ez = 0.5f * (mx[2] - mn[2]);
         float radius = std::sqrt(ex*ex + ey*ey + ez*ez);
-        float dx = 0.5f * (mx[0] + mn[0]) - cx;
-        float dy = 0.5f * (mx[1] + mn[1]) - cy;
-        float dz = 0.5f * (mx[2] + mn[2]) - cz;
-        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        float dist;
+        if (ortho_mode) {
+            dist = ortho_dist;
+        } else {
+            float dx = 0.5f * (mx[0] + mn[0]) - cx;
+            float dy = 0.5f * (mx[1] + mn[1]) - cy;
+            float dz = 0.5f * (mx[2] + mn[2]) - cz;
+            dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        }
         // r_px = focal_px * radius / dist; compare r_px >= min_pixel_radius,
         // rearranged to avoid the divide.
         return focal_px * radius >= min_pixel_radius * dist;
@@ -2223,10 +2239,15 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
         float ey = 0.5f * (mx[1] - mn[1]);
         float ez = 0.5f * (mx[2] - mn[2]);
         float radius = std::sqrt(ex*ex + ey*ey + ez*ez);
-        float dx = 0.5f * (mx[0] + mn[0]) - cx;
-        float dy = 0.5f * (mx[1] + mn[1]) - cy;
-        float dz = 0.5f * (mx[2] + mn[2]) - cz;
-        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        float dist;
+        if (ortho_mode) {
+            dist = ortho_dist;
+        } else {
+            float dx = 0.5f * (mx[0] + mn[0]) - cx;
+            float dy = 0.5f * (mx[1] + mn[1]) - cy;
+            float dz = 0.5f * (mx[2] + mn[2]) - cz;
+            dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        }
         return dist > 0.0f ? focal_px * radius / dist
                            : std::numeric_limits<float>::infinity();
     };
@@ -2533,11 +2554,11 @@ void ViewportWindow::render() {
     // depth would normally populate the pyramid), causing false occlusion.
     if (needs_settle_recull)
         hiz_vp_valid_ = false;
-    // Contribution culling assumes perspective (r_px = focal_px * r / dist);
-    // in ortho the per-instance distance is irrelevant, so disable it rather
-    // than ship wrong results.  Frustum + HiZ culling still run.
-    const float min_pixel_radius = projection_ortho_ ? 0.0f
-        : (use_motion_threshold ? motion_min_pixel_radius : base_min_pixel_radius);
+    // Contribution culling works in both modes: cullModelCpu substitutes
+    // camera_distance_ for the per-instance dist when projection_ortho_ is
+    // set, which matches the ortho box's constant pixels-per-world.
+    const float min_pixel_radius = use_motion_threshold
+        ? motion_min_pixel_radius : base_min_pixel_radius;
     if (cull_this_frame) {
         hiz_reject_count_.store(0, std::memory_order_relaxed);
         last_cull_was_motion_ = camera_moving;
