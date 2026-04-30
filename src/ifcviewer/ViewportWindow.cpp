@@ -94,6 +94,7 @@ uniform uint u_selected_id;
 
 out vec3 v_normal;
 out vec4 v_color;
+out vec3 v_world_pos;
 flat out uint v_object_id;
 flat out uint v_selected;
 
@@ -115,6 +116,7 @@ void main() {
     vec3 pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, a_position_q);
 
     vec4 world = inst.transform * vec4(pos_local, 1.0);
+    v_world_pos = world.xyz;
     gl_Position = u_view_projection * world;
 
     // Rotate the normal by the upper-3x3 of the transform.  BIM placements
@@ -149,14 +151,25 @@ static const char* MAIN_FRAGMENT_SHADER = R"(
 #version 450 core
 in vec3 v_normal;
 in vec4 v_color;
+in vec3 v_world_pos;
 flat in uint v_object_id;
 flat in uint v_selected;
 
 uniform vec3 u_light_dir;
 
+// Section planes — clip the half-space dot(n,p)+d > 0.  AND-combined.
+const int MAX_CLIP_PLANES = 8;
+uniform int  u_clip_count;
+uniform vec4 u_clip_planes[MAX_CLIP_PLANES];
+
 out vec4 frag_color;
 
 void main() {
+    for (int i = 0; i < u_clip_count; ++i) {
+        if (dot(u_clip_planes[i].xyz, v_world_pos) + u_clip_planes[i].w > 0.0) {
+            discard;
+        }
+    }
     // v_normal already has the reflection flip applied in the vertex
     // shader.  When backface culling is off, open shells let us see the
     // "wrong" side of a face — flip based on gl_FrontFacing so both
@@ -177,6 +190,7 @@ static const char* PICK_VERTEX_SHADER = R"(
 #version 450 core
 #extension GL_ARB_shader_draw_parameters : require
 layout(location = 0) in vec3 a_position_q;
+layout(location = 1) in vec2 a_normal_oct;
 
 struct InstanceRecord {
     mat4 transform;
@@ -199,6 +213,15 @@ layout(std430, binding = 2) readonly buffer Meshes {
 uniform mat4 u_view_projection;
 
 flat out uint v_object_id;
+out vec3 v_world_pos;
+out vec3 v_world_normal;
+
+vec3 octDecode(vec2 e) {
+    vec3 n = vec3(e.xy, 1.0 - abs(e.x) - abs(e.y));
+    if (n.z < 0.0) n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0,
+                                                    n.y >= 0.0 ? 1.0 : -1.0);
+    return normalize(n);
+}
 
 void main() {
     uint slot = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
@@ -206,7 +229,16 @@ void main() {
     InstanceRecord inst = instances[iid];
     MeshQuant mq = meshes[inst.mesh_id];
     vec3 pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, a_position_q);
-    gl_Position = u_view_projection * inst.transform * vec4(pos_local, 1.0);
+    vec4 world = inst.transform * vec4(pos_local, 1.0);
+    v_world_pos = world.xyz;
+    gl_Position = u_view_projection * world;
+
+    vec3 n_local = octDecode(a_normal_oct);
+    mat3 rot = mat3(inst.transform);
+    vec3 n = rot * n_local;
+    if (determinant(rot) < 0.0) n = -n;
+    v_world_normal = normalize(n);
+
     v_object_id = inst.object_id;
 }
 )";
@@ -214,8 +246,27 @@ void main() {
 static const char* PICK_FRAGMENT_SHADER = R"(
 #version 450 core
 flat in uint v_object_id;
-out uint frag_id;
-void main() { frag_id = v_object_id; }
+in vec3 v_world_pos;
+in vec3 v_world_normal;
+
+const int MAX_CLIP_PLANES = 8;
+uniform int  u_clip_count;
+uniform vec4 u_clip_planes[MAX_CLIP_PLANES];
+
+layout(location = 0) out uint frag_id;
+layout(location = 1) out vec3 frag_pos;
+layout(location = 2) out vec3 frag_normal;
+
+void main() {
+    for (int i = 0; i < u_clip_count; ++i) {
+        if (dot(u_clip_planes[i].xyz, v_world_pos) + u_clip_planes[i].w > 0.0) {
+            discard;
+        }
+    }
+    frag_id     = v_object_id;
+    frag_pos    = v_world_pos;
+    frag_normal = normalize(v_world_normal);
+}
 )";
 
 static const char* AXIS_VERTEX_SHADER = R"(
@@ -471,7 +522,9 @@ ViewportWindow::~ViewportWindow() {
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (pivot_program_) gl_->glDeleteProgram(pivot_program_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
-            if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
+            if (pick_color_tex_)  gl_->glDeleteTextures(1, &pick_color_tex_);
+            if (pick_pos_tex_)    gl_->glDeleteTextures(1, &pick_pos_tex_);
+            if (pick_normal_tex_) gl_->glDeleteTextures(1, &pick_normal_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
             if (hiz_fbo_)         gl_->glDeleteFramebuffers(1, &hiz_fbo_);
             if (hiz_depth_tex_)   gl_->glDeleteTextures(1, &hiz_depth_tex_);
@@ -1745,15 +1798,27 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     int h = height() * devicePixelRatio();
     if (pick_width_ != w || pick_height_ != h) {
         if (pick_fbo_) gl_->glDeleteFramebuffers(1, &pick_fbo_);
-        if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
-        if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
+        if (pick_color_tex_)  gl_->glDeleteTextures(1, &pick_color_tex_);
+        if (pick_pos_tex_)    gl_->glDeleteTextures(1, &pick_pos_tex_);
+        if (pick_normal_tex_) gl_->glDeleteTextures(1, &pick_normal_tex_);
+        if (pick_depth_rbo_)  gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
         gl_->glCreateFramebuffers(1, &pick_fbo_);
         gl_->glCreateTextures(GL_TEXTURE_2D, 1, &pick_color_tex_);
         gl_->glTextureStorage2D(pick_color_tex_, 1, GL_R32UI, w, h);
         gl_->glNamedFramebufferTexture(pick_fbo_, GL_COLOR_ATTACHMENT0, pick_color_tex_, 0);
+        gl_->glCreateTextures(GL_TEXTURE_2D, 1, &pick_pos_tex_);
+        gl_->glTextureStorage2D(pick_pos_tex_, 1, GL_RGB32F, w, h);
+        gl_->glNamedFramebufferTexture(pick_fbo_, GL_COLOR_ATTACHMENT1, pick_pos_tex_, 0);
+        gl_->glCreateTextures(GL_TEXTURE_2D, 1, &pick_normal_tex_);
+        gl_->glTextureStorage2D(pick_normal_tex_, 1, GL_RGB16F, w, h);
+        gl_->glNamedFramebufferTexture(pick_fbo_, GL_COLOR_ATTACHMENT2, pick_normal_tex_, 0);
         gl_->glCreateRenderbuffers(1, &pick_depth_rbo_);
         gl_->glNamedRenderbufferStorage(pick_depth_rbo_, GL_DEPTH_COMPONENT24, w, h);
         gl_->glNamedFramebufferRenderbuffer(pick_fbo_, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, pick_depth_rbo_);
+        static const GLenum draw_bufs[3] = {
+            GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2
+        };
+        gl_->glNamedFramebufferDrawBuffers(pick_fbo_, 3, draw_bufs);
         pick_width_ = w;
         pick_height_ = h;
     }
@@ -1773,6 +1838,91 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     gl_->glGetTextureSubImage(pick_color_tex_, 0, px, py, 0, 1, 1, 1,
                               GL_RED_INTEGER, GL_UNSIGNED_INT, sizeof(pixel), &pixel);
     return pixel;
+}
+
+bool ViewportWindow::pickSurfaceAt(int x, int y,
+                                   uint32_t& object_id_out,
+                                   QVector3D& world_pos_out,
+                                   QVector3D& world_normal_out) {
+    const uint32_t id = pickObjectAt(x, y);
+    if (id == 0) return false;
+
+    const int px = x * devicePixelRatio();
+    const int py = (height() - y) * devicePixelRatio();
+    float pos[3]    = {0, 0, 0};
+    float normal[3] = {0, 0, 0};
+    gl_->glGetTextureSubImage(pick_pos_tex_, 0, px, py, 0, 1, 1, 1,
+                              GL_RGB, GL_FLOAT, sizeof(pos), pos);
+    gl_->glGetTextureSubImage(pick_normal_tex_, 0, px, py, 0, 1, 1, 1,
+                              GL_RGB, GL_FLOAT, sizeof(normal), normal);
+
+    QVector3D n(normal[0], normal[1], normal[2]);
+    if (n.lengthSquared() < 1e-8f) {
+        // Pick succeeded for object_id but normal attachment was empty —
+        // unexpected (shader writes it on every covered fragment), so bail
+        // rather than hand the caller a degenerate plane.
+        return false;
+    }
+    object_id_out    = id;
+    world_pos_out    = QVector3D(pos[0], pos[1], pos[2]);
+    world_normal_out = n.normalized();
+    return true;
+}
+
+void ViewportWindow::uploadClipPlaneUniforms(GLuint program) {
+    const GLint u_count = gl_->glGetUniformLocation(program, "u_clip_count");
+    if (u_count < 0) return;  // program does not declare clipping uniforms
+    const int n = qMin(int(section_planes_.size()), MaxSectionPlanes);
+    gl_->glUniform1i(u_count, n);
+    if (n == 0) return;
+    float packed[MaxSectionPlanes * 4] = {};
+    for (int i = 0; i < n; ++i) {
+        packed[i * 4 + 0] = section_planes_[i].n.x();
+        packed[i * 4 + 1] = section_planes_[i].n.y();
+        packed[i * 4 + 2] = section_planes_[i].n.z();
+        packed[i * 4 + 3] = section_planes_[i].d;
+    }
+    const GLint u_planes = gl_->glGetUniformLocation(program, "u_clip_planes");
+    if (u_planes >= 0) {
+        gl_->glUniform4fv(u_planes, n, packed);
+    }
+}
+
+bool ViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
+                                              const QVector3D& normal) {
+    if (int(section_planes_.size()) >= MaxSectionPlanes) {
+        qWarning("Section plane cap (%d) reached", MaxSectionPlanes);
+        return false;
+    }
+    QVector3D n = normal;
+    if (n.lengthSquared() < 1e-8f) return false;
+    n.normalize();
+    // Auto-flip so the plane clips the camera-facing half — first click
+    // immediately cuts away what's between the user and the clicked surface.
+    const QVector3D eye_dir = (camera_eye_ - point);
+    if (QVector3D::dotProduct(n, eye_dir) < 0.0f) n = -n;
+
+    SectionPlane p;
+    p.n = n;
+    p.d = -QVector3D::dotProduct(n, point);
+    section_planes_.push_back(p);
+    have_cached_cull_ = false;
+    requestUpdate();
+    return true;
+}
+
+void ViewportWindow::removeSectionPlane(int index) {
+    if (index < 0 || index >= int(section_planes_.size())) return;
+    section_planes_.erase(section_planes_.begin() + index);
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
+void ViewportWindow::clearSectionPlanes() {
+    if (section_planes_.empty()) return;
+    section_planes_.clear();
+    have_cached_cull_ = false;
+    requestUpdate();
 }
 
 void ViewportWindow::cullAndUploadVisible(ModelGpuData& m, const float planes[6][4],
@@ -2112,6 +2262,7 @@ void ViewportWindow::render() {
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
     gl_->glUniform3f(u_light, 0.3f, 0.5f, 0.8f);
     gl_->glUniform1ui(u_sel, selected_object_id_);
+    uploadClipPlaneUniforms(main_program_);
 
     visible_triangles_ = 0;
     visible_objects_ = 0;
@@ -2550,8 +2701,11 @@ void ViewportWindow::render() {
 void ViewportWindow::renderPickPass() {
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, pick_fbo_);
     gl_->glViewport(0, 0, pick_width_, pick_height_);
-    GLuint clear_val = 0;
-    gl_->glClearBufferuiv(GL_COLOR, 0, &clear_val);
+    const GLuint  zero_id  = 0;
+    const float   zero3[4] = {0, 0, 0, 0};
+    gl_->glClearBufferuiv(GL_COLOR, 0, &zero_id);
+    gl_->glClearBufferfv (GL_COLOR, 1, zero3);
+    gl_->glClearBufferfv (GL_COLOR, 2, zero3);
     gl_->glClear(GL_DEPTH_BUFFER_BIT);
 
     QMatrix4x4 vp = proj_matrix_ * view_matrix_;
@@ -2561,6 +2715,7 @@ void ViewportWindow::renderPickPass() {
     gl_->glUseProgram(pick_program_);
     GLint u_vp       = gl_->glGetUniformLocation(pick_program_, "u_view_projection");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
+    uploadClipPlaneUniforms(pick_program_);
 
     gl_->glFrontFace(GL_CCW);
 

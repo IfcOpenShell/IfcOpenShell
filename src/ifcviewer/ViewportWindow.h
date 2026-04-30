@@ -172,6 +172,30 @@ public:
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
 
+    // Extended pick: returns the object id, world-space hit point, and
+    // world-space surface normal at (x, y).  Renders the same pick pass as
+    // pickObjectAt but reads back from two extra color attachments
+    // (world_pos in RGB32F, world_normal in RGB16F).  Returns false if the
+    // click missed all geometry; the out-params are then untouched.
+    bool pickSurfaceAt(int x, int y,
+                       uint32_t& object_id_out,
+                       QVector3D& world_pos_out,
+                       QVector3D& world_normal_out);
+
+    // Section planes — fragment-shader clipping with up to MaxSectionPlanes
+    // active.  Each plane clips the half-space dot(n, p) + d > 0.  addSection-
+    // PlaneAtSurface auto-flips the normal toward the camera so the first
+    // click immediately cuts away the camera-facing side.
+    static constexpr int MaxSectionPlanes = 8;
+    struct SectionPlane {
+        QVector3D n;   // unit world-space normal
+        float     d;   // -dot(n, p) for some p on the plane
+    };
+    int  sectionPlaneCount() const { return int(section_planes_.size()); }
+    bool addSectionPlaneAtSurface(const QVector3D& point, const QVector3D& normal);
+    void removeSectionPlane(int index);
+    void clearSectionPlanes();
+
     void setCamera(float tx, float ty, float tz, float dist, float yaw, float pitch);
     void setBenchmarkFrames(int n);
     QString cameraString() const;
@@ -356,9 +380,15 @@ private:
     // Per-model GPU data
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
 
-    // Pick framebuffer
+    // Pick framebuffer.  Three color attachments:
+    //   0: R32UI    — object_id
+    //   1: RGB32F   — world position at hit
+    //   2: RGB16F   — world normal at hit (already flipped for reflections in
+    //                 the vertex shader)
     GLuint pick_fbo_ = 0;
     GLuint pick_color_tex_ = 0;
+    GLuint pick_pos_tex_ = 0;
+    GLuint pick_normal_tex_ = 0;
     GLuint pick_depth_rbo_ = 0;
     int pick_width_ = 0;
     int pick_height_ = 0;
@@ -466,6 +496,13 @@ private:
 
     // Selection
     uint32_t selected_object_id_ = 0;
+
+    // Active section planes.  Uploaded as uniform array each frame to the
+    // main + pick programs; capped at MaxSectionPlanes.
+    std::vector<SectionPlane> section_planes_;
+    // Push the current plane list into a freshly-bound program.  No-op if
+    // the program does not declare u_clip_count / u_clip_planes.
+    void uploadClipPlaneUniforms(GLuint program);
 
     // FPS smoothing
     int frame_count_ = 0;
