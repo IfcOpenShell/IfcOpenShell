@@ -188,13 +188,21 @@ public:
     // click immediately cuts away the camera-facing side.
     static constexpr int MaxSectionPlanes = 8;
     struct SectionPlane {
-        QVector3D n;   // unit world-space normal
-        float     d;   // -dot(n, p) for some p on the plane
+        QVector3D n;       // unit world-space normal
+        QVector3D origin;  // point on the plane — the gizmo's anchor
+        float     d;       // = -dot(n, origin); kept in sync with origin
     };
     int  sectionPlaneCount() const { return int(section_planes_.size()); }
     bool addSectionPlaneAtSurface(const QVector3D& point, const QVector3D& normal);
     void removeSectionPlane(int index);
     void clearSectionPlanes();
+
+    // Section tool: when active, LMB on geometry creates a new plane (using
+    // pickSurfaceAt for hit-point + normal); LMB on an existing plane's
+    // arrow gizmo selects + drags it; Delete removes the selected plane;
+    // Esc or another K-press exits the tool.
+    void toggleSectionTool();
+    bool sectionToolActive() const { return section_tool_active_; }
 
     void setCamera(float tx, float ty, float tz, float dist, float yaw, float pitch);
     void setBenchmarkFrames(int n);
@@ -268,6 +276,15 @@ private:
     void renderPickPass();
     void renderAxisGizmo();
     void renderPivotIndicator();
+    void renderSectionPlanes();
+    void buildSectionPlaneGizmo();
+    // Returns the index of the section plane whose arrow gizmo is under
+    // (x, y), or -1 if none.  Screen-space line-segment distance test.
+    int  hitTestSectionGizmo(int x, int y) const;
+    // Update section_planes_[section_drag_index_] from the current cursor
+    // position by projecting the move onto the plane's normal axis in
+    // screen space.
+    void updateSectionDrag(int x, int y);
     void updateCamera();
 
     // Geometry queries used by focusOnSelectedObject() / viewAll().  Both
@@ -500,9 +517,24 @@ private:
     // Active section planes.  Uploaded as uniform array each frame to the
     // main + pick programs; capped at MaxSectionPlanes.
     std::vector<SectionPlane> section_planes_;
+    bool   section_tool_active_      = false;
+    int    section_plane_selected_   = -1;
+    bool   section_drag_active_      = false;
+    int    section_drag_index_       = -1;
+    QVector3D section_drag_start_origin_;
+    QPoint    section_drag_start_mouse_;
     // Push the current plane list into a freshly-bound program.  No-op if
     // the program does not declare u_clip_count / u_clip_planes.
     void uploadClipPlaneUniforms(GLuint program);
+
+    // GL resources for the per-plane visualization (quad outline + arrow).
+    GLuint plane_program_ = 0;
+    GLuint plane_vao_ = 0;
+    GLuint plane_vbo_ = 0;
+    int    plane_quad_offset_ = 0;
+    int    plane_quad_count_  = 0;
+    int    plane_arrow_offset_ = 0;
+    int    plane_arrow_count_  = 0;
 
     // FPS smoothing
     int frame_count_ = 0;

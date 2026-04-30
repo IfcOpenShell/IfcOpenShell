@@ -317,6 +317,39 @@ out vec4 frag_color;
 void main() { frag_color = vec4(v_color, u_alpha); }
 )";
 
+// Section plane gizmo: a unit-extent quad + arrow expressed in plane-local
+// space, transformed to world via the per-plane basis (u, v, n).  The arrow
+// shaft sits along +z (== +n in plane-local terms), so dragging the arrow
+// always slides the plane along its normal regardless of camera orientation.
+static const char* PLANE_VERTEX_SHADER = R"(
+#version 450 core
+layout(location = 0) in vec3 a_local;     // (u, v, n) in plane-local space
+layout(location = 1) in vec3 a_color;
+uniform mat4  u_vp;
+uniform vec3  u_origin;
+uniform vec3  u_axis_u;
+uniform vec3  u_axis_v;
+uniform vec3  u_axis_n;
+uniform float u_size;
+uniform vec4  u_tint;
+out vec4 v_color;
+void main() {
+    vec3 world = u_origin
+               + a_local.x * u_axis_u * u_size
+               + a_local.y * u_axis_v * u_size
+               + a_local.z * u_axis_n * u_size;
+    gl_Position = u_vp * vec4(world, 1.0);
+    v_color = vec4(a_color, 1.0) * u_tint;
+}
+)";
+
+static const char* PLANE_FRAGMENT_SHADER = R"(
+#version 450 core
+in vec4 v_color;
+out vec4 frag_color;
+void main() { frag_color = v_color; }
+)";
+
 static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const char* source) {
     GLuint shader = gl->glCreateShader(type);
     gl->glShaderSource(shader, 1, &source, nullptr);
@@ -517,10 +550,13 @@ ViewportWindow::~ViewportWindow() {
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
             if (pivot_vao_)     gl_->glDeleteVertexArrays(1, &pivot_vao_);
             if (pivot_vbo_)     gl_->glDeleteBuffers(1, &pivot_vbo_);
+            if (plane_vao_)     gl_->glDeleteVertexArrays(1, &plane_vao_);
+            if (plane_vbo_)     gl_->glDeleteBuffers(1, &plane_vbo_);
             if (main_program_)  gl_->glDeleteProgram(main_program_);
             if (pick_program_)  gl_->glDeleteProgram(pick_program_);
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (pivot_program_) gl_->glDeleteProgram(pivot_program_);
+            if (plane_program_) gl_->glDeleteProgram(plane_program_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_)  gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_pos_tex_)    gl_->glDeleteTextures(1, &pick_pos_tex_);
@@ -551,6 +587,7 @@ void ViewportWindow::initGL() {
     buildShaders();
     buildAxisGizmo();
     buildPivotIndicator();
+    buildSectionPlaneGizmo();
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
@@ -661,6 +698,11 @@ void ViewportWindow::buildShaders() {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, PIVOT_VERTEX_SHADER);
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, PIVOT_FRAGMENT_SHADER);
         pivot_program_ = linkProgram(gl_, vs, fs);
+    }
+    {
+        GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, PLANE_VERTEX_SHADER);
+        GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, PLANE_FRAGMENT_SHADER);
+        plane_program_ = linkProgram(gl_, vs, fs);
     }
     {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, HIZ_DOWNSAMPLE_VS);
@@ -1465,6 +1507,28 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         viewAll();
         return;
     }
+    // K toggles the section tool.
+    if (key == Qt::Key_K
+        && event->modifiers() == Qt::NoModifier
+        && !event->isAutoRepeat()) {
+        toggleSectionTool();
+        return;
+    }
+    // While the section tool is active: Esc exits the tool, Delete removes
+    // the selected plane.
+    if (section_tool_active_) {
+        if (key == Qt::Key_Escape && !event->isAutoRepeat()) {
+            toggleSectionTool();
+            return;
+        }
+        if ((key == Qt::Key_Delete || key == Qt::Key_Backspace)
+            && !event->isAutoRepeat()
+            && section_plane_selected_ >= 0) {
+            removeSectionPlane(section_plane_selected_);
+            section_plane_selected_ = -1;
+            return;
+        }
+    }
     QWindow::keyPressEvent(event);
 }
 
@@ -1904,11 +1968,21 @@ bool ViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
 
     SectionPlane p;
     p.n = n;
+    p.origin = point;
     p.d = -QVector3D::dotProduct(n, point);
     section_planes_.push_back(p);
     have_cached_cull_ = false;
     requestUpdate();
     return true;
+}
+
+void ViewportWindow::toggleSectionTool() {
+    section_tool_active_ = !section_tool_active_;
+    if (!section_tool_active_) {
+        section_drag_active_ = false;
+        section_drag_index_  = -1;
+    }
+    requestUpdate();
 }
 
 void ViewportWindow::removeSectionPlane(int index) {
@@ -2414,6 +2488,7 @@ void ViewportWindow::render() {
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
     renderPivotIndicator();
+    renderSectionPlanes();
     renderAxisGizmo();
 
     // Build HiZ from this frame's resolved depth for next frame's cull.
@@ -2754,6 +2829,189 @@ void ViewportWindow::renderPickPass() {
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void ViewportWindow::buildSectionPlaneGizmo() {
+    // Plane-local geometry, all GL_LINES.  Quad is drawn in plane-local
+    // (u, v); arrow shaft + head extend along +n.  Layout per vertex:
+    //   x,y,z (plane-local)   r,g,b (color, modulated by u_tint)
+    static const float verts[] = {
+        // --- quad outline (4 segments = 8 verts, white) ---
+        -1, -1, 0,   1,1,1,   1, -1, 0,   1,1,1,
+         1, -1, 0,   1,1,1,   1,  1, 0,   1,1,1,
+         1,  1, 0,   1,1,1,  -1,  1, 0,   1,1,1,
+        -1,  1, 0,   1,1,1,  -1, -1, 0,   1,1,1,
+        // --- arrow shaft along +n (yellow) ---
+         0,  0, 0,   1.0f, 0.85f, 0.2f,
+         0,  0, 1,   1.0f, 0.85f, 0.2f,
+        // --- arrow head (4 diagonals from tip back to a ring at z=0.7) ---
+         0,  0, 1,   1.0f, 0.85f, 0.2f,
+        -0.18f, 0, 0.78f,  1.0f, 0.85f, 0.2f,
+         0,  0, 1,   1.0f, 0.85f, 0.2f,
+         0.18f, 0, 0.78f,  1.0f, 0.85f, 0.2f,
+         0,  0, 1,   1.0f, 0.85f, 0.2f,
+         0, -0.18f, 0.78f, 1.0f, 0.85f, 0.2f,
+         0,  0, 1,   1.0f, 0.85f, 0.2f,
+         0,  0.18f, 0.78f, 1.0f, 0.85f, 0.2f,
+    };
+    plane_quad_offset_  = 0;
+    plane_quad_count_   = 8;
+    plane_arrow_offset_ = 8;
+    plane_arrow_count_  = 10;  // 2 shaft + 8 head diagonals
+
+    gl_->glCreateVertexArrays(1, &plane_vao_);
+    gl_->glCreateBuffers(1, &plane_vbo_);
+    gl_->glNamedBufferStorage(plane_vbo_, sizeof(verts), verts, 0);
+    gl_->glVertexArrayVertexBuffer(plane_vao_, 0, plane_vbo_, 0, 6 * sizeof(float));
+    gl_->glEnableVertexArrayAttrib(plane_vao_, 0);
+    gl_->glVertexArrayAttribFormat(plane_vao_, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    gl_->glVertexArrayAttribBinding(plane_vao_, 0, 0);
+    gl_->glEnableVertexArrayAttrib(plane_vao_, 1);
+    gl_->glVertexArrayAttribFormat(plane_vao_, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(plane_vao_, 1, 0);
+}
+
+// Pick any unit vector orthogonal to n.  Avoids the degenerate case where n
+// is parallel to the seed by choosing the seed with the smallest |n_i|.
+static QVector3D anyOrthogonal(const QVector3D& n) {
+    const float ax = std::abs(n.x()), ay = std::abs(n.y()), az = std::abs(n.z());
+    QVector3D seed = (ax < ay && ax < az) ? QVector3D(1, 0, 0)
+                   : (ay < az)            ? QVector3D(0, 1, 0)
+                                          : QVector3D(0, 0, 1);
+    QVector3D u = QVector3D::crossProduct(n, seed);
+    if (u.lengthSquared() < 1e-12f) u = QVector3D(1, 0, 0);
+    return u.normalized();
+}
+
+void ViewportWindow::renderSectionPlanes() {
+    if (section_planes_.empty() || !plane_program_ || !plane_vao_) return;
+
+    // Plane half-extent in metres — quad is drawn at (±1, ±1) in plane-local
+    // space, so size = 1.0 produces the 2x2m footprint we want.
+    constexpr float kHalfSize = 1.0f;
+
+    const QMatrix4x4 vp = proj_matrix_ * view_matrix_;
+
+    gl_->glUseProgram(plane_program_);
+    gl_->glUniformMatrix4fv(gl_->glGetUniformLocation(plane_program_, "u_vp"),
+                            1, GL_FALSE, vp.constData());
+    gl_->glUniform1f(gl_->glGetUniformLocation(plane_program_, "u_size"), kHalfSize);
+
+    gl_->glEnable(GL_BLEND);
+    gl_->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    gl_->glBindVertexArray(plane_vao_);
+
+    const GLint loc_origin = gl_->glGetUniformLocation(plane_program_, "u_origin");
+    const GLint loc_u      = gl_->glGetUniformLocation(plane_program_, "u_axis_u");
+    const GLint loc_v      = gl_->glGetUniformLocation(plane_program_, "u_axis_v");
+    const GLint loc_n      = gl_->glGetUniformLocation(plane_program_, "u_axis_n");
+    const GLint loc_tint   = gl_->glGetUniformLocation(plane_program_, "u_tint");
+
+    for (int i = 0; i < int(section_planes_.size()); ++i) {
+        const SectionPlane& p = section_planes_[i];
+        const QVector3D u = anyOrthogonal(p.n);
+        const QVector3D v = QVector3D::crossProduct(p.n, u).normalized();
+
+        gl_->glUniform3f(loc_origin, p.origin.x(), p.origin.y(), p.origin.z());
+        gl_->glUniform3f(loc_u,      u.x(), u.y(), u.z());
+        gl_->glUniform3f(loc_v,      v.x(), v.y(), v.z());
+        gl_->glUniform3f(loc_n,      p.n.x(), p.n.y(), p.n.z());
+
+        const bool selected = (i == section_plane_selected_);
+        // Selected plane: cyan-tinted, full alpha.  Unselected: warm tint,
+        // dimmer.  Multiplied onto the per-vertex color.
+        if (selected) gl_->glUniform4f(loc_tint, 0.55f, 0.95f, 1.0f, 1.0f);
+        else          gl_->glUniform4f(loc_tint, 1.0f,  0.85f, 0.4f, 0.75f);
+
+        gl_->glLineWidth(selected ? 2.5f : 1.5f);
+        gl_->glDrawArrays(GL_LINES, plane_quad_offset_,  plane_quad_count_);
+        gl_->glDrawArrays(GL_LINES, plane_arrow_offset_, plane_arrow_count_);
+    }
+
+    gl_->glBindVertexArray(0);
+    gl_->glDisable(GL_BLEND);
+}
+
+int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
+    if (section_planes_.empty()) return -1;
+    const int w = width();
+    const int h = height();
+    if (w <= 0 || h <= 0) return -1;
+    const QMatrix4x4 vp = proj_matrix_ * view_matrix_;
+    const float grab_px = 12.0f;
+    int best = -1;
+    float best_d2 = grab_px * grab_px;
+
+    auto project = [&](const QVector3D& world, QVector2D& out) -> bool {
+        QVector4D clip = vp * QVector4D(world, 1.0f);
+        if (clip.w() <= 0.0f) return false;  // behind camera
+        const float invw = 1.0f / clip.w();
+        // Qt mouse coords have y down from the top — match that here.
+        out = QVector2D(
+            (clip.x() * invw * 0.5f + 0.5f) * float(w),
+            (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(h));
+        return true;
+    };
+
+    for (int i = 0; i < int(section_planes_.size()); ++i) {
+        const SectionPlane& p = section_planes_[i];
+        QVector2D s_origin, s_tip;
+        if (!project(p.origin, s_origin))               continue;
+        if (!project(p.origin + p.n * 1.0f, s_tip))     continue;
+
+        // Distance from (x,y) to the line segment (s_origin, s_tip).
+        const QVector2D q{float(x), float(y)};
+        const QVector2D ab = s_tip - s_origin;
+        const float ab_len2 = ab.lengthSquared();
+        if (ab_len2 < 1e-3f) continue;  // degenerate (axis edge-on)
+        float t = QVector2D::dotProduct(q - s_origin, ab) / ab_len2;
+        t = qBound(0.0f, t, 1.0f);
+        const QVector2D proj = s_origin + ab * t;
+        const float d2 = (q - proj).lengthSquared();
+        if (d2 < best_d2) { best_d2 = d2; best = i; }
+    }
+    return best;
+}
+
+void ViewportWindow::updateSectionDrag(int x, int y) {
+    if (!section_drag_active_) return;
+    if (section_drag_index_ < 0
+        || section_drag_index_ >= int(section_planes_.size())) return;
+    SectionPlane& p = section_planes_[section_drag_index_];
+
+    const int w = width();
+    const int h = height();
+    if (w <= 0 || h <= 0) return;
+    const QMatrix4x4 vp = proj_matrix_ * view_matrix_;
+
+    auto project = [&](const QVector3D& world, QVector2D& out) -> bool {
+        QVector4D clip = vp * QVector4D(world, 1.0f);
+        if (clip.w() <= 0.0f) return false;
+        const float invw = 1.0f / clip.w();
+        out = QVector2D(
+            (clip.x() * invw * 0.5f + 0.5f) * float(w),
+            (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(h));
+        return true;
+    };
+
+    QVector2D s_origin, s_n;
+    if (!project(section_drag_start_origin_, s_origin)) return;
+    if (!project(section_drag_start_origin_ + p.n, s_n)) return;
+    const QVector2D screen_axis = s_n - s_origin;
+    const float screen_axis_len2 = screen_axis.lengthSquared();
+    if (screen_axis_len2 < 1e-3f) return;  // axis is edge-on; drag would be ill-conditioned
+
+    // Project the cursor delta onto the screen-space axis to get the world-
+    // space slide along n.  delta_pixels / |screen_axis_pixels_per_meter|.
+    const QVector2D delta_px(float(x - section_drag_start_mouse_.x()),
+                             float(y - section_drag_start_mouse_.y()));
+    const float delta_along_axis_px = QVector2D::dotProduct(delta_px, screen_axis);
+    const float meters = delta_along_axis_px / screen_axis_len2;
+
+    p.origin = section_drag_start_origin_ + p.n * meters;
+    p.d      = -QVector3D::dotProduct(p.n, p.origin);
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
 void ViewportWindow::renderPivotIndicator() {
     if (!pivot_indicator_visible_ || !pivot_program_ || !pivot_vao_) return;
 
@@ -2878,10 +3136,46 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
         setPivotIndicatorVisible(true);
         requestUpdate();
     }
+    if (section_tool_active_ && e->button() == Qt::LeftButton) {
+        // First try to grab an existing plane's arrow gizmo.
+        const int hit = hitTestSectionGizmo(e->pos().x(), e->pos().y());
+        if (hit >= 0) {
+            section_plane_selected_  = hit;
+            section_drag_active_     = true;
+            section_drag_index_      = hit;
+            section_drag_start_origin_ = section_planes_[hit].origin;
+            section_drag_start_mouse_  = e->pos();
+            requestUpdate();
+            return;
+        }
+        // Otherwise: create a new plane at the clicked surface.
+        uint32_t  obj_id = 0;
+        QVector3D pos, normal;
+        if (pickSurfaceAt(e->pos().x(), e->pos().y(), obj_id, pos, normal)) {
+            if (addSectionPlaneAtSurface(pos, normal)) {
+                section_plane_selected_ = int(section_planes_.size()) - 1;
+                requestUpdate();
+            }
+        } else {
+            section_plane_selected_ = -1;
+            requestUpdate();
+        }
+    }
 }
 void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
     if (camera_mode_ == CameraMode::Fps) return;
-    if (active_button_ == Qt::LeftButton && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
+    if (section_drag_active_ && active_button_ == Qt::LeftButton) {
+        section_drag_active_ = false;
+        section_drag_index_  = -1;
+        active_button_ = Qt::NoButton;
+        return;
+    }
+    // LMB pick is suppressed in section-tool mode — LMB there creates or
+    // selects planes (handled in handleMousePress) and the release should
+    // not also trigger object selection.
+    if (active_button_ == Qt::LeftButton
+        && !section_tool_active_
+        && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
         uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
         selected_object_id_ = id;
         emit objectPicked(id);
@@ -2928,6 +3222,11 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
         return;
     }
 
+    if (section_drag_active_) {
+        updateSectionDrag(e->pos().x(), e->pos().y());
+        last_mouse_pos_ = e->pos();
+        return;
+    }
     QPoint delta = e->pos() - last_mouse_pos_;
     last_mouse_pos_ = e->pos();
     if (active_button_ == Qt::MiddleButton) {
