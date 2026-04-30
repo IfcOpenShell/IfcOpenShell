@@ -1507,6 +1507,32 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         viewAll();
         return;
     }
+    // P toggles orthographic / perspective projection.
+    if (key == Qt::Key_P
+        && event->modifiers() == Qt::NoModifier
+        && !event->isAutoRepeat()) {
+        toggleProjection();
+        return;
+    }
+    // Standard axis-aligned views: X/Y/Z look toward the target from the
+    // positive axis (eye on +X/+Y/+Z), Shift+X/Y/Z from the negative side.
+    // Yaw is the orbit angle in the world XY plane (0° = +X, 90° = +Y);
+    // pitch is the elevation (0° = horizon, +90° = looking down).  Top/
+    // bottom intentionally use pitch = ±90° — the up-vector switch in
+    // updateCamera() keeps lookAt well-conditioned there and yields
+    // world-Y as screen-up (architectural "north").
+    if ((key == Qt::Key_X || key == Qt::Key_Y || key == Qt::Key_Z)
+        && (event->modifiers() == Qt::NoModifier
+            || event->modifiers() == Qt::ShiftModifier)
+        && !event->isAutoRepeat()) {
+        const bool neg = (event->modifiers() & Qt::ShiftModifier);
+        switch (key) {
+        case Qt::Key_X: setStandardView(neg ? 180.0f : 0.0f,   0.0f);  break;
+        case Qt::Key_Y: setStandardView(neg ? 270.0f : 90.0f,  0.0f);  break;
+        case Qt::Key_Z: setStandardView(camera_yaw_, neg ? -90.0f : 90.0f); break;
+        }
+        return;
+    }
     // K toggles the section tool.
     if (key == Qt::Key_K
         && event->modifiers() == Qt::NoModifier
@@ -1995,6 +2021,22 @@ void ViewportWindow::toggleSectionTool() {
     requestUpdate();
 }
 
+void ViewportWindow::toggleProjection() {
+    projection_ortho_ = !projection_ortho_;
+    have_cached_cull_ = false;  // proj_matrix_ changes -> frustum planes change
+    requestUpdate();
+}
+
+void ViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
+    // Bypasses the orbit-MMB pitch clamp so top/bottom can land exactly on
+    // ±90°.  updateCamera() picks the up vector based on |pitch|, so the
+    // resulting view is well-conditioned at the poles too.
+    camera_yaw_   = yaw_deg;
+    camera_pitch_ = pitch_deg;
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
 void ViewportWindow::removeSectionPlane(int index) {
     if (index < 0 || index >= int(section_planes_.size())) return;
     section_planes_.erase(section_planes_.begin() + index);
@@ -2293,10 +2335,28 @@ void ViewportWindow::updateCamera() {
     eye.setZ(camera_target_.z() + camera_distance_ * sinf(pitch_rad));
     camera_eye_ = eye;
     view_matrix_.setToIdentity();
-    view_matrix_.lookAt(eye, camera_target_, QVector3D(0, 0, 1));
+    // Default up is world +Z.  Within ~1° of straight-up/down, switch to
+    // world +Y so lookAt's side vector doesn't degenerate (forward × up
+    // → 0).  Y-as-north is the architectural top-view convention.
+    const QVector3D up = (std::abs(camera_pitch_) >= 89.0f)
+                       ? QVector3D(0, 1, 0)
+                       : QVector3D(0, 0, 1);
+    view_matrix_.lookAt(eye, camera_target_, up);
     proj_matrix_.setToIdentity();
     float aspect = width() > 0 ? float(width()) / float(height()) : 1.0f;
-    proj_matrix_.perspective(camera_fov_y_deg_, aspect, 0.1f, camera_distance_ * 10.0f);
+    if (projection_ortho_) {
+        // Size the ortho box so it shows the same world rectangle the
+        // perspective camera would see at the pivot's distance — toggling
+        // at any zoom keeps the framing roughly identical.
+        const float half_h = camera_distance_ * tanf(qDegreesToRadians(camera_fov_y_deg_ * 0.5f));
+        const float half_w = half_h * aspect;
+        // Near/far span ±10× distance; matches the perspective far so
+        // typical scenes always fit between the planes.
+        const float depth = camera_distance_ * 10.0f;
+        proj_matrix_.ortho(-half_w, half_w, -half_h, half_h, -depth, depth);
+    } else {
+        proj_matrix_.perspective(camera_fov_y_deg_, aspect, 0.1f, camera_distance_ * 10.0f);
+    }
 }
 
 void ViewportWindow::render() {
@@ -2376,8 +2436,11 @@ void ViewportWindow::render() {
     // depth would normally populate the pyramid), causing false occlusion.
     if (needs_settle_recull)
         hiz_vp_valid_ = false;
-    const float min_pixel_radius = use_motion_threshold
-        ? motion_min_pixel_radius : base_min_pixel_radius;
+    // Contribution culling assumes perspective (r_px = focal_px * r / dist);
+    // in ortho the per-instance distance is irrelevant, so disable it rather
+    // than ship wrong results.  Frustum + HiZ culling still run.
+    const float min_pixel_radius = projection_ortho_ ? 0.0f
+        : (use_motion_threshold ? motion_min_pixel_radius : base_min_pixel_radius);
     if (cull_this_frame) {
         hiz_reject_count_.store(0, std::memory_order_relaxed);
         last_cull_was_motion_ = camera_moving;
@@ -3028,10 +3091,12 @@ void ViewportWindow::renderPivotIndicator() {
     const int h = height() * devicePixelRatio();
     if (h <= 0) return;
 
-    // Pick a world-space arm length that projects to ~30 pixels at the pivot's
-    // distance.  At fovy=45°, half the visible world height at distance d is
-    // d * tan(22.5°) ≈ 0.4142 * d.  pixels_per_world = (h/2) / (0.4142 * d).
-    // Inverting: world_per_pixel = 0.8284 * d / h.
+    // Pick a world-space arm length that projects to ~30 pixels.  In
+    // perspective, world-per-pixel grows with distance (factored from
+    // fovy and viewport height); in ortho it's set by the box height
+    // (camera_distance * tan(fovy/2)) and is independent of distance —
+    // both reduce to the same formula here because the ortho box is
+    // sized to match perspective at the pivot's distance.
     const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
     const float world_per_pixel = camera_distance_ * tanf(fovy_rad * 0.5f) * 2.0f / float(h);
     const float arm_pixels = 30.0f * float(devicePixelRatio());
@@ -3241,15 +3306,19 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
     last_mouse_pos_ = e->pos();
     if (active_button_ == Qt::MiddleButton) {
         if (e->modifiers() & Qt::ShiftModifier) {
-            float pan_speed = camera_distance_ * 0.002f;
-            float yaw_rad = qDegreesToRadians(camera_yaw_);
-            float pitch_rad = qDegreesToRadians(camera_pitch_);
-            QVector3D right(-sinf(yaw_rad), cosf(yaw_rad), 0.0f);
-            QVector3D up(-sinf(pitch_rad) * cosf(yaw_rad),
-                         -sinf(pitch_rad) * sinf(yaw_rad),
-                          cosf(pitch_rad));
+            const float pan_speed = camera_distance_ * 0.002f;
+            // Derive screen-right and screen-up from the actual camera basis
+            // rather than yaw/pitch alone — the latter assumed up = world +Z,
+            // which breaks at top/bottom views where updateCamera switches
+            // the lookAt up vector to world +Y.
+            const QVector3D forward = (camera_target_ - camera_eye_).normalized();
+            const QVector3D up_ref = (std::abs(camera_pitch_) >= 89.0f)
+                                   ? QVector3D(0, 1, 0)
+                                   : QVector3D(0, 0, 1);
+            const QVector3D right = QVector3D::crossProduct(forward, up_ref).normalized();
+            const QVector3D up    = QVector3D::crossProduct(right, forward).normalized();
             camera_target_ -= right * delta.x() * pan_speed;
-            camera_target_ += up * delta.y() * pan_speed;
+            camera_target_ += up    * delta.y() * pan_speed;
         } else {
             camera_yaw_ -= delta.x() * 0.3f;
             camera_pitch_ += delta.y() * 0.3f;

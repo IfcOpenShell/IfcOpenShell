@@ -204,6 +204,17 @@ public:
     void toggleSectionTool();
     bool sectionToolActive() const { return section_tool_active_; }
 
+    // Projection: orthographic vs perspective.  In ortho mode the visible
+    // box is sized to match what the perspective camera would show at the
+    // pivot's distance, so toggling at any zoom level keeps the framing.
+    void toggleProjection();
+    bool projectionOrtho() const { return projection_ortho_; }
+
+    // Snap the camera to a canonical axis-aligned view.  Yaw/pitch are
+    // clamped according to the orbit convention; target and distance are
+    // preserved (the user explicitly asked for a rotate-only behavior).
+    void setStandardView(float yaw_deg, float pitch_deg);
+
     void setCamera(float tx, float ty, float tz, float dist, float yaw, float pitch);
     void setBenchmarkFrames(int n);
     QString cameraString() const;
@@ -489,6 +500,7 @@ private:
     float camera_yaw_ = 45.0f;
     float camera_pitch_ = 30.0f;
     float camera_fov_y_deg_ = 45.0f;
+    bool  projection_ortho_ = false;
     QMatrix4x4 view_matrix_;
     QMatrix4x4 proj_matrix_;
 
