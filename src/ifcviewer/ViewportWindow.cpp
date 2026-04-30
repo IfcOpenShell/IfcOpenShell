@@ -27,6 +27,7 @@
 #include <QSurfaceFormat>
 #include <QCoreApplication>
 #include <QCursor>
+#include <QTimer>
 #include <QtMath>
 #include <QtOpenGL/QOpenGLVersionFunctionsFactory>
 
@@ -236,6 +237,35 @@ out vec4 frag_color;
 void main() { frag_color = vec4(v_color, 1.0); }
 )";
 
+// Pivot indicator: a small 3D axis cross drawn at u_pivot in world space.
+// a_local is the unit endpoint of one of the six arm vertices (±X,±Y,±Z),
+// scaled by u_arm_world so the cross keeps a roughly constant on-screen size
+// across zoom levels.  Drawing in world space (not screen-aligned) is the
+// whole point: it tumbles visibly when the camera orbits, which makes it
+// unambiguous that the marker is anchored to a 3D point and not glued to
+// the screen.  Per-vertex color gives RGB axes matching the corner gizmo.
+static const char* PIVOT_VERTEX_SHADER = R"(
+#version 450 core
+layout(location = 0) in vec3 a_local;
+layout(location = 1) in vec3 a_color;
+uniform mat4  u_mvp;
+uniform vec3  u_pivot;
+uniform float u_arm_world;
+out vec3 v_color;
+void main() {
+    gl_Position = u_mvp * vec4(u_pivot + a_local * u_arm_world, 1.0);
+    v_color = a_color;
+}
+)";
+
+static const char* PIVOT_FRAGMENT_SHADER = R"(
+#version 450 core
+in vec3 v_color;
+uniform float u_alpha;
+out vec4 frag_color;
+void main() { frag_color = vec4(v_color, u_alpha); }
+)";
+
 static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const char* source) {
     GLuint shader = gl->glCreateShader(type);
     gl->glShaderSource(shader, 1, &source, nullptr);
@@ -434,9 +464,12 @@ ViewportWindow::~ViewportWindow() {
             }
             if (axis_vao_)      gl_->glDeleteVertexArrays(1, &axis_vao_);
             if (axis_vbo_)      gl_->glDeleteBuffers(1, &axis_vbo_);
+            if (pivot_vao_)     gl_->glDeleteVertexArrays(1, &pivot_vao_);
+            if (pivot_vbo_)     gl_->glDeleteBuffers(1, &pivot_vbo_);
             if (main_program_)  gl_->glDeleteProgram(main_program_);
             if (pick_program_)  gl_->glDeleteProgram(pick_program_);
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
+            if (pivot_program_) gl_->glDeleteProgram(pivot_program_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_) gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_depth_rbo_) gl_->glDeleteRenderbuffers(1, &pick_depth_rbo_);
@@ -464,6 +497,7 @@ void ViewportWindow::initGL() {
 
     buildShaders();
     buildAxisGizmo();
+    buildPivotIndicator();
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
@@ -571,6 +605,11 @@ void ViewportWindow::buildShaders() {
         axis_program_ = linkProgram(gl_, vs, fs);
     }
     {
+        GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, PIVOT_VERTEX_SHADER);
+        GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, PIVOT_FRAGMENT_SHADER);
+        pivot_program_ = linkProgram(gl_, vs, fs);
+    }
+    {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, HIZ_DOWNSAMPLE_VS);
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, HIZ_DOWNSAMPLE_FS);
         hiz_downsample_program_ = linkProgram(gl_, vs, fs);
@@ -597,6 +636,31 @@ void ViewportWindow::buildAxisGizmo() {
     gl_->glEnableVertexArrayAttrib(axis_vao_, 1);
     gl_->glVertexArrayAttribFormat(axis_vao_, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
     gl_->glVertexArrayAttribBinding(axis_vao_, 1, 0);
+}
+
+void ViewportWindow::buildPivotIndicator() {
+    // 6 verts = 3 line segments along world ±X, ±Y, ±Z, RGB-coded.
+    static const float verts[] = {
+        // local x,y,z      r,g,b
+        -1, 0, 0,           1.0f, 0.30f, 0.30f,
+         1, 0, 0,           1.0f, 0.30f, 0.30f,
+         0,-1, 0,           0.35f, 0.95f, 0.35f,
+         0, 1, 0,           0.35f, 0.95f, 0.35f,
+         0, 0,-1,           0.35f, 0.55f, 1.0f,
+         0, 0, 1,           0.35f, 0.55f, 1.0f,
+    };
+    pivot_rim_count_ = 6;  // total vertex count drawn as GL_LINES
+
+    gl_->glCreateVertexArrays(1, &pivot_vao_);
+    gl_->glCreateBuffers(1, &pivot_vbo_);
+    gl_->glNamedBufferStorage(pivot_vbo_, sizeof(verts), verts, 0);
+    gl_->glVertexArrayVertexBuffer(pivot_vao_, 0, pivot_vbo_, 0, 6 * sizeof(float));
+    gl_->glEnableVertexArrayAttrib(pivot_vao_, 0);
+    gl_->glVertexArrayAttribFormat(pivot_vao_, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    gl_->glVertexArrayAttribBinding(pivot_vao_, 0, 0);
+    gl_->glEnableVertexArrayAttrib(pivot_vao_, 1);
+    gl_->glVertexArrayAttribFormat(pivot_vao_, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(pivot_vao_, 1, 0);
 }
 
 bool ViewportWindow::growModelVbo(ModelGpuData& m, size_t needed_total) {
@@ -2082,6 +2146,7 @@ void ViewportWindow::render() {
                hiz_reject_count_.load());
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
+    renderPivotIndicator();
     renderAxisGizmo();
 
     // Build HiZ from this frame's resolved depth for next frame's cull.
@@ -2418,6 +2483,69 @@ void ViewportWindow::renderPickPass() {
     gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void ViewportWindow::renderPivotIndicator() {
+    if (!pivot_indicator_visible_ || !pivot_program_ || !pivot_vao_) return;
+
+    const int h = height() * devicePixelRatio();
+    if (h <= 0) return;
+
+    // Pick a world-space arm length that projects to ~30 pixels at the pivot's
+    // distance.  At fovy=45°, half the visible world height at distance d is
+    // d * tan(22.5°) ≈ 0.4142 * d.  pixels_per_world = (h/2) / (0.4142 * d).
+    // Inverting: world_per_pixel = 0.8284 * d / h.
+    const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
+    const float world_per_pixel = camera_distance_ * tanf(fovy_rad * 0.5f) * 2.0f / float(h);
+    const float arm_pixels = 30.0f * float(devicePixelRatio());
+    const float arm_world  = arm_pixels * world_per_pixel;
+
+    const QMatrix4x4 mvp = proj_matrix_ * view_matrix_;
+
+    gl_->glUseProgram(pivot_program_);
+    gl_->glUniformMatrix4fv(gl_->glGetUniformLocation(pivot_program_, "u_mvp"),
+                            1, GL_FALSE, mvp.constData());
+    gl_->glUniform3f(gl_->glGetUniformLocation(pivot_program_, "u_pivot"),
+                     camera_target_.x(), camera_target_.y(), camera_target_.z());
+    gl_->glUniform1f(gl_->glGetUniformLocation(pivot_program_, "u_arm_world"),
+                     arm_world);
+
+    gl_->glEnable(GL_BLEND);
+    gl_->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    gl_->glLineWidth(2.0f);
+    gl_->glBindVertexArray(pivot_vao_);
+
+    // Pass 1: occluded portions, depth test reversed, dim — gives an X-ray
+    // hint that the pivot lives behind geometry.
+    gl_->glDepthFunc(GL_GREATER);
+    gl_->glUniform1f(gl_->glGetUniformLocation(pivot_program_, "u_alpha"), 0.30f);
+    gl_->glDrawArrays(GL_LINES, 0, pivot_rim_count_);
+
+    // Pass 2: visible portions, normal depth, full alpha.
+    gl_->glDepthFunc(GL_LEQUAL);
+    gl_->glUniform1f(gl_->glGetUniformLocation(pivot_program_, "u_alpha"), 1.0f);
+    gl_->glDrawArrays(GL_LINES, 0, pivot_rim_count_);
+
+    gl_->glBindVertexArray(0);
+    gl_->glDisable(GL_BLEND);
+    gl_->glDepthFunc(GL_LESS);
+}
+
+void ViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+    if (!pivot_indicator_hide_timer_) {
+        pivot_indicator_hide_timer_ = new QTimer(this);
+        pivot_indicator_hide_timer_->setSingleShot(true);
+        connect(pivot_indicator_hide_timer_, &QTimer::timeout, this, [this]() {
+            pivot_indicator_visible_ = false;
+            requestUpdate();
+        });
+    }
+    pivot_indicator_visible_ = visible;
+    if (visible && hide_after_ms > 0) {
+        pivot_indicator_hide_timer_->start(hide_after_ms);
+    } else {
+        pivot_indicator_hide_timer_->stop();
+    }
+}
+
 void ViewportWindow::renderAxisGizmo() {
     if (!axis_program_ || !axis_vao_) return;
     const int dpr = devicePixelRatio();
@@ -2475,6 +2603,10 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
     }
     active_button_ = e->button();
     last_mouse_pos_ = e->pos();
+    if (e->button() == Qt::MiddleButton) {
+        setPivotIndicatorVisible(true);
+        requestUpdate();
+    }
 }
 void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
     if (camera_mode_ == CameraMode::Fps) return;
@@ -2484,7 +2616,12 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
         emit objectPicked(id);
         requestUpdate();  // selection highlight changed
     }
+    const bool was_navigating = (active_button_ == Qt::MiddleButton);
     active_button_ = Qt::NoButton;
+    if (was_navigating && pivot_indicator_visible_) {
+        setPivotIndicatorVisible(false);
+        requestUpdate();
+    }
 }
 void ViewportWindow::handleMouseMove(QMouseEvent* e) {
     if (camera_mode_ == CameraMode::Fps) {
@@ -2550,5 +2687,6 @@ void ViewportWindow::handleWheel(QWheelEvent* e) {
     float factor = e->angleDelta().y() > 0 ? 0.9f : 1.1f;
     camera_distance_ *= factor;
     camera_distance_ = qMax(0.1f, camera_distance_);
+    setPivotIndicatorVisible(true, 750);
     requestUpdate();
 }

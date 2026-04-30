@@ -28,6 +28,10 @@
 #include <QVector3D>
 #include <QSet>
 
+QT_BEGIN_NAMESPACE
+class QTimer;
+QT_END_NAMESPACE
+
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
@@ -231,9 +235,16 @@ private:
     void render();
     void renderPickPass();
     void renderAxisGizmo();
+    void renderPivotIndicator();
     void updateCamera();
     void buildShaders();
     void buildAxisGizmo();
+    void buildPivotIndicator();
+    // Show/hide the orbit-pivot marker.  hide_after_ms > 0 starts a single-shot
+    // timer that auto-hides — used by the wheel handler to give the marker a
+    // short afterglow after zoom.  Drag-based callers pass 0 and toggle
+    // visibility manually on press/release.
+    void setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     void setupVaoLayout(GLuint vao, GLuint vbo, GLuint ebo);
 
     // Resolve the default framebuffer's MSAA depth into a single-sample
@@ -314,6 +325,14 @@ private:
     // Axis gizmo
     GLuint axis_vao_ = 0;
     GLuint axis_vbo_ = 0;
+
+    // Orbit-pivot indicator: 1 center vertex + (N+1) rim vertices on the unit
+    // circle (last == first to close the triangle fan).  Rendered as a screen-
+    // space disc at camera_target_, visible only while the user is navigating.
+    GLuint pivot_program_ = 0;
+    GLuint pivot_vao_ = 0;
+    GLuint pivot_vbo_ = 0;
+    int    pivot_rim_count_ = 0;
 
     // Per-model GPU data
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
@@ -410,6 +429,11 @@ private:
     // Mouse
     Qt::MouseButton active_button_ = Qt::NoButton;
     QPoint last_mouse_pos_;
+
+    // Pivot indicator visibility — true while drag-navigating, or briefly
+    // after a wheel notch (the timer auto-clears it).
+    bool    pivot_indicator_visible_ = false;
+    QTimer* pivot_indicator_hide_timer_ = nullptr;
 
     // FPS/fly mode state.  fps_keys_held_ tracks WASD/QE/Shift between
     // press+release; fps_last_tick_ gates dt inside render().
