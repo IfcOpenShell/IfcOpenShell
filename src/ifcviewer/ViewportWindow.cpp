@@ -371,6 +371,60 @@ out vec4 frag_color;
 void main() { frag_color = v_color; }
 )";
 
+// Edge pass — fullscreen triangle generated from gl_VertexID, samples
+// resolved depth at four cardinal neighbours, computes a laplacian, and
+// outputs a per-pixel darkening factor that gets multiplied into the
+// existing colour via GL_DST_COLOR * GL_ZERO blending.
+static const char* EDGE_VERTEX_SHADER = R"(
+#version 450 core
+out vec2 v_uv;
+void main() {
+    vec2 pos = vec2((gl_VertexID & 1) << 2, (gl_VertexID & 2) << 1) - 1.0;
+    v_uv = pos * 0.5 + 0.5;
+    gl_Position = vec4(pos, 0.0, 1.0);
+}
+)";
+
+static const char* EDGE_FRAGMENT_SHADER = R"(
+#version 450 core
+in vec2 v_uv;
+uniform sampler2D u_depth;
+uniform vec2  u_texel;       // 1.0 / depth-texture size
+uniform float u_near;
+uniform float u_far;
+uniform float u_is_ortho;    // 0 or 1
+uniform float u_scale;       // edge-darkening multiplier
+uniform float u_threshold;   // laplacian floor (relative to depth)
+out vec4 frag_color;
+
+float linearize(float z) {
+    if (u_is_ortho > 0.5) {
+        // Ortho: depth buffer is already a linear remap of view-z.
+        return mix(u_near, u_far, z);
+    }
+    // Perspective: standard NDC -> view-z reverse projection.
+    float ndc = z * 2.0 - 1.0;
+    return (2.0 * u_near * u_far) / (u_far + u_near - ndc * (u_far - u_near));
+}
+
+void main() {
+    float c = linearize(texture(u_depth, v_uv).r);
+    float n = linearize(texture(u_depth, v_uv + vec2( 0.0,  u_texel.y)).r);
+    float s = linearize(texture(u_depth, v_uv + vec2( 0.0, -u_texel.y)).r);
+    float e = linearize(texture(u_depth, v_uv + vec2( u_texel.x, 0.0)).r);
+    float w = linearize(texture(u_depth, v_uv + vec2(-u_texel.x, 0.0)).r);
+
+    // Laplacian magnitude: ~0 on smooth surfaces, large at depth jumps.
+    // Threshold scales with depth so distant edges still register.
+    float lap   = abs(4.0 * c - n - s - e - w);
+    float t     = u_threshold * c;
+    float edge  = clamp((lap - t) * u_scale, 0.0, 0.6);
+
+    // Multiplicative blend (GL_DST_COLOR, GL_ZERO): out = dst * rgb.
+    frag_color = vec4(vec3(1.0 - edge), 1.0);
+}
+)";
+
 static GLuint compileShader(QOpenGLFunctions_4_5_Core* gl, GLenum type, const char* source) {
     GLuint shader = gl->glCreateShader(type);
     gl->glShaderSource(shader, 1, &source, nullptr);
@@ -573,11 +627,15 @@ ViewportWindow::~ViewportWindow() {
             if (pivot_vbo_)     gl_->glDeleteBuffers(1, &pivot_vbo_);
             if (plane_vao_)     gl_->glDeleteVertexArrays(1, &plane_vao_);
             if (plane_vbo_)     gl_->glDeleteBuffers(1, &plane_vbo_);
+            if (edge_vao_)      gl_->glDeleteVertexArrays(1, &edge_vao_);
+            if (edge_depth_fbo_) gl_->glDeleteFramebuffers(1, &edge_depth_fbo_);
+            if (edge_depth_tex_) gl_->glDeleteTextures(1, &edge_depth_tex_);
             if (main_program_)  gl_->glDeleteProgram(main_program_);
             if (pick_program_)  gl_->glDeleteProgram(pick_program_);
             if (axis_program_)  gl_->glDeleteProgram(axis_program_);
             if (pivot_program_) gl_->glDeleteProgram(pivot_program_);
             if (plane_program_) gl_->glDeleteProgram(plane_program_);
+            if (edge_program_)  gl_->glDeleteProgram(edge_program_);
             if (pick_fbo_)      gl_->glDeleteFramebuffers(1, &pick_fbo_);
             if (pick_color_tex_)  gl_->glDeleteTextures(1, &pick_color_tex_);
             if (pick_pos_tex_)    gl_->glDeleteTextures(1, &pick_pos_tex_);
@@ -724,6 +782,12 @@ void ViewportWindow::buildShaders() {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, PLANE_VERTEX_SHADER);
         GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, PLANE_FRAGMENT_SHADER);
         plane_program_ = linkProgram(gl_, vs, fs);
+    }
+    {
+        GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, EDGE_VERTEX_SHADER);
+        GLuint fs = compileShader(gl_, GL_FRAGMENT_SHADER, EDGE_FRAGMENT_SHADER);
+        edge_program_ = linkProgram(gl_, vs, fs);
+        gl_->glCreateVertexArrays(1, &edge_vao_);
     }
     {
         GLuint vs = compileShader(gl_, GL_VERTEX_SHADER, HIZ_DOWNSAMPLE_VS);
@@ -2593,6 +2657,7 @@ void ViewportWindow::render() {
                hiz_reject_count_.load());
     gl_->glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
+    renderEdgePass();
     renderPivotIndicator();
     renderSectionPlanes();
     renderAxisGizmo();
@@ -3116,6 +3181,71 @@ void ViewportWindow::updateSectionDrag(int x, int y) {
     p.d      = -QVector3D::dotProduct(p.n, p.origin);
     have_cached_cull_ = false;
     requestUpdate();
+}
+
+void ViewportWindow::renderEdgePass() {
+    if (!edge_program_) return;
+    const int w = width()  * devicePixelRatio();
+    const int h = height() * devicePixelRatio();
+    if (w <= 0 || h <= 0) return;
+
+    // Lazy resize.  D24S8 to match Qt's default FBO format (depth+stencil
+    // even though we only sample depth) so the blit doesn't fail.
+    if (edge_w_ != w || edge_h_ != h) {
+        if (edge_depth_fbo_) gl_->glDeleteFramebuffers(1, &edge_depth_fbo_);
+        if (edge_depth_tex_) gl_->glDeleteTextures(1, &edge_depth_tex_);
+        gl_->glCreateTextures(GL_TEXTURE_2D, 1, &edge_depth_tex_);
+        gl_->glTextureStorage2D(edge_depth_tex_, 1, GL_DEPTH24_STENCIL8, w, h);
+        gl_->glCreateFramebuffers(1, &edge_depth_fbo_);
+        gl_->glNamedFramebufferTexture(edge_depth_fbo_, GL_DEPTH_STENCIL_ATTACHMENT,
+                                       edge_depth_tex_, 0);
+        edge_w_ = w; edge_h_ = h;
+    }
+
+    // Step 1: resolve MSAA depth from default FB → single-sample texture.
+    gl_->glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    gl_->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, edge_depth_fbo_);
+    gl_->glBlitFramebuffer(0, 0, w, h, 0, 0, w, h,
+                           GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+                           GL_NEAREST);
+
+    // Step 2: fullscreen darkening pass into default FB colour.
+    gl_->glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    gl_->glViewport(0, 0, w, h);
+    gl_->glDisable(GL_DEPTH_TEST);
+    gl_->glDepthMask(GL_FALSE);
+    gl_->glEnable(GL_BLEND);
+    gl_->glBlendFunc(GL_DST_COLOR, GL_ZERO);
+
+    gl_->glUseProgram(edge_program_);
+    gl_->glTextureParameteri(edge_depth_tex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    gl_->glTextureParameteri(edge_depth_tex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    gl_->glTextureParameteri(edge_depth_tex_, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    gl_->glBindTextureUnit(0, edge_depth_tex_);
+
+    // Match the (near, far) used in updateCamera().  For ortho the near
+    // plane is at -depth_extent, far at +depth_extent.
+    const float depth_extent = camera_distance_ * 10.0f;
+    const float near_z = projection_ortho_ ? -depth_extent : 0.1f;
+    const float far_z  = depth_extent;
+
+    gl_->glUniform1i(gl_->glGetUniformLocation(edge_program_, "u_depth"), 0);
+    gl_->glUniform2f(gl_->glGetUniformLocation(edge_program_, "u_texel"),
+                     1.0f / float(w), 1.0f / float(h));
+    gl_->glUniform1f(gl_->glGetUniformLocation(edge_program_, "u_near"),     near_z);
+    gl_->glUniform1f(gl_->glGetUniformLocation(edge_program_, "u_far"),      far_z);
+    gl_->glUniform1f(gl_->glGetUniformLocation(edge_program_, "u_is_ortho"),
+                     projection_ortho_ ? 1.0f : 0.0f);
+    gl_->glUniform1f(gl_->glGetUniformLocation(edge_program_, "u_scale"),     6.0f);
+    gl_->glUniform1f(gl_->glGetUniformLocation(edge_program_, "u_threshold"), 0.004f);
+
+    gl_->glBindVertexArray(edge_vao_);
+    gl_->glDrawArrays(GL_TRIANGLES, 0, 3);
+    gl_->glBindVertexArray(0);
+
+    gl_->glDisable(GL_BLEND);
+    gl_->glDepthMask(GL_TRUE);
+    gl_->glEnable(GL_DEPTH_TEST);
 }
 
 void ViewportWindow::renderPivotIndicator() {

@@ -289,6 +289,11 @@ private:
     void renderPivotIndicator();
     void renderSectionPlanes();
     void buildSectionPlaneGizmo();
+    // Post-process edge enhancement: resolve MSAA depth into a single-
+    // sample texture, then run a fullscreen pass that detects sharp
+    // depth-laplacian peaks and darkens the colour buffer there.  Catches
+    // silhouettes and overlapping-surface boundaries as faint dark lines.
+    void renderEdgePass();
     // Returns the index of the section plane whose arrow gizmo is under
     // (x, y), or -1 if none.  Screen-space line-segment distance test.
     int  hitTestSectionGizmo(int x, int y) const;
@@ -547,6 +552,16 @@ private:
     int    plane_quad_count_  = 0;
     int    plane_arrow_offset_ = 0;
     int    plane_arrow_count_  = 0;
+
+    // Edge-enhancement pass resources.  edge_depth_tex_ is a single-sample
+    // resolve target the size of the window; we blit the default FB depth
+    // into it each frame, then sample it from the fullscreen edge shader.
+    GLuint edge_program_    = 0;
+    GLuint edge_depth_fbo_  = 0;
+    GLuint edge_depth_tex_  = 0;
+    GLuint edge_vao_        = 0;   // empty VAO for fullscreen-triangle draw
+    int    edge_w_ = 0;
+    int    edge_h_ = 0;
 
     // FPS smoothing
     int frame_count_ = 0;
