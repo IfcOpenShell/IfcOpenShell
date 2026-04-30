@@ -358,11 +358,7 @@ endif
 
 .PHONY: test-modal
 test-modal:
-ifndef MODULE
-	blender --enable-event-simulate --python test/modal/test_snap.py
-else
-	blender --enable-event-simulate --python test/modal/test_$(MODULE).py
-endif
+	blender --enable-event-simulate --python test/modal/test_modal.py
 
 # Reregistering test is not added to the standard test suite because during unregister
 # Blender removes all Bonsai dependencies breaking dev-environment symlinks.
