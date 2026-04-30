@@ -1514,6 +1514,16 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         toggleSectionTool();
         return;
     }
+    // Shift+K clears every section plane (and the selection).
+    if (key == Qt::Key_K
+        && event->modifiers() == Qt::ShiftModifier
+        && !event->isAutoRepeat()) {
+        clearSectionPlanes();
+        section_plane_selected_ = -1;
+        section_drag_active_ = false;
+        section_drag_index_  = -1;
+        return;
+    }
     // While the section tool is active: Esc exits the tool, Delete removes
     // the selected plane.
     if (section_tool_active_) {
