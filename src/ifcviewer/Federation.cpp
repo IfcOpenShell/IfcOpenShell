@@ -202,6 +202,7 @@ void Federation::setConfig(const FederationConfig& c) {
         return;
     config_ = c;
     setDirty(true);
+    emit configChanged();
 }
 
 void Federation::setFederatedFalseOrigin(const FederatedFalseOrigin& o) {
@@ -209,6 +210,7 @@ void Federation::setFederatedFalseOrigin(const FederatedFalseOrigin& o) {
         federated_false_origin_.rz_deg == o.rz_deg) return;
     federated_false_origin_ = o;
     setDirty(true);
+    emit federatedFalseOriginChanged();
 }
 
 void Federation::setModelTransformation(const QString& fed_id,
@@ -217,6 +219,7 @@ void Federation::setModelTransformation(const QString& fed_id,
         if (m.id != fed_id) continue;
         m.model_transformation = xf;
         setDirty(true);
+        emit modelTransformationChanged(fed_id);
         return;
     }
 }

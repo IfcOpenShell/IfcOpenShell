@@ -204,6 +204,13 @@ public:
 signals:
     void dirtyChanged(bool dirty);
 
+    // Granular signals so consumers (notably the viewport-pushing layer in
+    // the host app) can recompose only what's needed.  Emitted in addition
+    // to dirtyChanged from the corresponding setters.
+    void configChanged();
+    void federatedFalseOriginChanged();
+    void modelTransformationChanged(const QString& fed_id);
+
 private:
     void setDirty(bool d);
     static QString generateId();

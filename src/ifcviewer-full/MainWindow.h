@@ -103,6 +103,16 @@ private:
     // or its IFC file isn't available (sidecar-hit before data-source
     // load); the call retries on onDataSourceReady.
     void applyCoordinateOperationToViewport(uint32_t mid);
+
+    // Push a model's ModelTransformation (stage 4) matrix to the viewport,
+    // composed from the federation's authoring intent + the model's units
+    // + the active CoordinateOperation matrix.  Identity when the model is
+    // not in the federation.
+    void applyModelTransformationToViewport(uint32_t mid);
+
+    // Push the federation-wide FederatedFalseOrigin (stage 3) matrix to
+    // the viewport.  Affects every loaded model.
+    void applyFederatedFalseOriginToViewport();
     QString formatElapsed(qint64 ms) const;
 
     ViewportWindow* viewport_ = nullptr;

@@ -43,6 +43,28 @@ MainWindow::MainWindow(QWidget* parent)
     setupMenus();
 
     federation_ = new Federation(this);
+
+    // Federation -> viewport: granular signals so we recompose only what's
+    // affected.  Each handler reads the current federation state, composes
+    // the matrix, and pushes to the viewport.
+    connect(federation_, &Federation::federatedFalseOriginChanged,
+            this, &MainWindow::applyFederatedFalseOriginToViewport);
+    connect(federation_, &Federation::configChanged, this, [this]() {
+        // Federation unit changed — both stage 3 (uses fed unit) and every
+        // model's stage 4 (b/pivot are in fed units) need recomposing.
+        applyFederatedFalseOriginToViewport();
+        for (const auto& kv : fed_id_to_model_id_) {
+            applyModelTransformationToViewport(kv.second);
+        }
+    });
+    connect(federation_, &Federation::modelTransformationChanged,
+            this, [this](const QString& fed_id) {
+        auto it = fed_id_to_model_id_.find(fed_id);
+        if (it != fed_id_to_model_id_.end()) {
+            applyModelTransformationToViewport(it->second);
+        }
+    });
+
     connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
         setWindowModified(dirty);
     });
@@ -276,6 +298,11 @@ bool MainWindow::openFederation(const QString& path) {
     federation_->markClean();
     updateWindowTitle();
 
+    // Push the federation's loaded FederatedFalseOrigin to the viewport.
+    // Per-model ModelTransformations get pushed as each model finishes
+    // loading, via applyCoordinateOperationToViewport.
+    applyFederatedFalseOriginToViewport();
+
     if (federation_->hasHomeView()) {
         const auto& hv = federation_->homeView();
         viewport_->setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
@@ -495,6 +522,41 @@ void MainWindow::applyCoordinateOperationToViewport(uint32_t mid) {
         }
     }
     viewport_->setModelCoordinateOperation(mid, M);
+    // ModelTransformation's compose can depend on the active
+    // CoordinateOperation (when ModelTransformation.a_frame == ModelLocal,
+    // a is lifted through stage 2), so re-push it whenever stage 2 changes.
+    applyModelTransformationToViewport(mid);
+}
+
+void MainWindow::applyModelTransformationToViewport(uint32_t mid) {
+    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    if (fed_it != model_id_to_fed_id_.end()) {
+        if (const Federation::Model* m = federation_->findById(fed_it->second)) {
+            // ModelUnits + the active CoordinateOperation come from the
+            // ModelGeoref cache; defaults are safe (1.0, 1.0, identity)
+            // when the IFC file isn't yet available.
+            ModelUnits      units;
+            Eigen::Matrix4d coord_op = Eigen::Matrix4d::Identity();
+            if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
+                units = gr->units;
+                if (AppSettings::instance().applyCoordinateOperation() &&
+                    gr->has_coordinate_operation) {
+                    coord_op = gr->coordinate_operation_meters;
+                }
+            }
+            M = composeModelTransformation(
+                    m->model_transformation, federation_->config(),
+                    units, coord_op);
+        }
+    }
+    viewport_->setModelTransformation(mid, M);
+}
+
+void MainWindow::applyFederatedFalseOriginToViewport() {
+    const Eigen::Matrix4d M = composeFederatedFalseOrigin(
+        federation_->federatedFalseOrigin(), federation_->config());
+    viewport_->setFederatedFalseOrigin(M);
 }
 
 void MainWindow::onLoadedFromSidecar(uint32_t /*mid*/, qint64 elapsed_ms) {
