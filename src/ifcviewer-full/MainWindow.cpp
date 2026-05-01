@@ -21,6 +21,7 @@
 #include "AppSettings.h"
 #include "Federation.h"
 #include "FederationSettingsDialog.h"
+#include "ModelTransformationDialog.h"
 #include "SettingsWindow.h"
 #include "LodBuilder.h"
 #include "SidecarCache.h"
@@ -192,6 +193,8 @@ void MainWindow::setupMenus() {
                          QKeySequence::SaveAs);
     file_menu->addAction("Federation Se&ttings...",
                          this, &MainWindow::onFederationSettings);
+    file_menu->addAction("&Model Transformations...",
+                         this, &MainWindow::onModelTransformations);
     file_menu->addSeparator();
     file_menu->addAction("&Settings...", this, &MainWindow::onFileSettings);
     file_menu->addSeparator();
@@ -238,6 +241,15 @@ void MainWindow::onFederationSettings() {
     federation_settings_->open();
     federation_settings_->activateWindow();
     federation_settings_->raise();
+}
+
+void MainWindow::onModelTransformations() {
+    if (model_transformations_ == nullptr) {
+        model_transformations_ = new ModelTransformationDialog(federation_, this);
+    }
+    model_transformations_->open();
+    model_transformations_->activateWindow();
+    model_transformations_->raise();
 }
 
 void MainWindow::addFiles(const QStringList& paths) {

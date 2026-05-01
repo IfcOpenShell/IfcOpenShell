@@ -37,6 +37,7 @@
 class Federation;
 class SettingsWindow;
 class FederationSettingsDialog;
+class ModelTransformationDialog;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -63,6 +64,7 @@ private slots:
     void onGoHomeView();
     void onFileSettings();
     void onFederationSettings();
+    void onModelTransformations();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();
 
@@ -122,6 +124,7 @@ private:
     Federation*     federation_ = nullptr;
     SettingsWindow* settings_ = nullptr;
     FederationSettingsDialog* federation_settings_ = nullptr;
+    ModelTransformationDialog* model_transformations_ = nullptr;
     QWidget* viewport_container_ = nullptr;
     QTreeWidget* element_tree_ = nullptr;
     QTableWidget* property_table_ = nullptr;
