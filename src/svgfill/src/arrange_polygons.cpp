@@ -834,6 +834,10 @@ class SegmentLookup {
         return out;
     }
 
+    PolygonIt end() const {
+        return polygons_ref_.end();
+    }
+
 private:
     using TreeTraits = CGAL::AABB_traits<K, CGAL::AABB_segment_primitive<K, std::list<CGAL::Segment_3<K>>::iterator>>;
     using Tree = CGAL::AABB_tree<TreeTraits>;
@@ -846,25 +850,29 @@ private:
     std::map<Point_2, std::vector<Polygon_2>::const_iterator> input_polygon_boundary_cache_;
 };
 
-Polygon_2 subdivide_polygon(double max_distance, const Polygon_2 & p) {
+Polygon_2 subdivide_polygon_on_same_input(SegmentLookup& segment_lookup, double max_distance, const Polygon_2& p) {
     std::vector<Point_2> points;
     for (auto it = p.edges_begin(); it != p.edges_end(); ++it) {
+        auto source_poly = segment_lookup.input_polygon_boundary(it->source());
+        auto target_poly = segment_lookup.input_polygon_boundary(it->target());
         const auto& seg = *it;
-        auto num_splits = (int)std::ceil(std::sqrt(CGAL::to_double(seg.squared_length())) / max_distance) - 1;
         points.push_back(seg.source());
-        for (auto i = 0; i < num_splits; ++i) {
-            auto d = (seg.target() - seg.source()) / (num_splits + 1) * (i + 1);
-            points.push_back(seg.source() + d);
+        if (source_poly == target_poly && source_poly != segment_lookup.end()) {
+            auto num_splits = (int)std::ceil(std::sqrt(CGAL::to_double(seg.squared_length())) / max_distance) - 1;
+            for (auto i = 0; i < num_splits; ++i) {
+                auto d = (seg.target() - seg.source()) / (num_splits + 1) * (i + 1);
+                points.push_back(seg.source() + d);
+            }
         }
     }
     return Polygon_2(points.begin(), points.end());
 };
 
-Polygon_with_holes_2 subdivide_polygon(double max_distance, const Polygon_with_holes_2& pwh) {
-    Polygon_2 outer = subdivide_polygon(max_distance, pwh.outer_boundary());
+Polygon_with_holes_2 subdivide_polygon_on_same_input(SegmentLookup& segment_lookup, double max_distance, const Polygon_with_holes_2& pwh) {
+    Polygon_2 outer = subdivide_polygon_on_same_input(segment_lookup, max_distance, pwh.outer_boundary());
     std::vector<Polygon_2> holes;
     for (auto hit = pwh.holes_begin(); hit != pwh.holes_end(); ++hit) {
-        holes.push_back(subdivide_polygon(max_distance, *hit));
+        holes.push_back(subdivide_polygon_on_same_input(segment_lookup, max_distance, *hit));
     }
     return Polygon_with_holes_2(outer, holes.begin(), holes.end());
 };
@@ -3262,13 +3270,14 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     t0.stop();
     t0 = timer.start("corridor triangulation");
 
+    SegmentLookup segment_lookup(input_polygons);
+
     // subdivide difference_result to have better more detailed triangulation and therefore less-pronounced artefacts in midpoint network
 
     auto subdivision_length = polygon_offset_distance / settings.subdivision_factor;
 
     for (auto& pwh : difference_result) {
-        difference_result_subdivided.push_back(subdivide_polygon(subdivision_length, pwh));
-        // difference_result_subdivided.push_back(subdivide_polygon(polygon_offset_distance / 64., pwh));
+        difference_result_subdivided.push_back(subdivide_polygon_on_same_input(segment_lookup, subdivision_length, pwh));
     }
 
     debug_output.write_polygons(difference_result_subdivided, "corridor_subdivided");
@@ -3292,8 +3301,6 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     t0 = timer.start("center line");
 
     debug_output.write_polygons(triangular_polygons, "triangulated_corridor");
-
-    SegmentLookup segment_lookup(input_polygons);
 
     auto [line_graph, midpoint_to_segment, segment_to_input_facet, midpoint_to_edge_length] = build_line_graph(input_polygons, segment_lookup, triangular_polygons);
     for (auto& p : line_graph) {
