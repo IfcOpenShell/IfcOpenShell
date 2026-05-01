@@ -3307,15 +3307,32 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     t0 = timer.start("center line cleaning");
 
     Graph2D<K> G;
+
+    {
+        // this is applied for both algos
+        auto eliminated_segments = eliminate_triangles(line_graph);
+        for (auto e : eliminated_segments) {
+            debug_output.write_segment(e.first, e.second, "eliminated");
+            for (int i = 0; i < 2; ++i) {
+                auto it = line_graph.find(e.first);
+                if (it == line_graph.end()) {
+                    std::cerr << "Warning: unable to locate vertex for elimination, skipping" << std::endl;
+                    continue;
+                }
+                auto& neighbours = it->second;
+                neighbours.erase(std::remove(neighbours.begin(), neighbours.end(), e.second), neighbours.end());
+                if (neighbours.empty()) {
+                    line_graph.erase(it);
+                }
+                std::swap(e.first, e.second);
+            }
+        }
+    }
+
     Graph2D<K> G_orig(line_graph);
 
     auto apply_line_cleaning_algo_1 = [&]() {
-        auto eliminated_segments = eliminate_triangles(line_graph);
         Graph2D<K> G2(line_graph);
-        for (auto& e : eliminated_segments) {
-            debug_output.write_segment(e.first, e.second, "eliminated");
-            G2.remove_edge(e.first, e.second);
-        }
         G = G2.weld_vertices();
         for (auto it = G.edges_begin(); it != G.edges_end(); ++it) {
             debug_output.write_segment(it->first, it->second, "network_2");
