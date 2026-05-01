@@ -432,6 +432,15 @@ class DebugWriter {
         }
     }
 
+    void write_point(const Point_2& p, const std::string& name) {
+        if (enabled_) {
+            obj << "o " << name << "\n";
+            obj << "v " << CGAL::to_double(p.x()) << " " << CGAL::to_double(p.y()) << " 0\n";
+            vi++;
+            svg << "<circle class=\"" << name << "\" cx=\"" << CGAL::to_double(p.x()) << "\" cy=\"" << -CGAL::to_double(p.y()) << "\" r=\"0.5\" />\n";
+        }
+    }
+
     void write_polygon(const Polygon_with_holes_2& polygon, const std::string& name) {
         if (enabled_) {
             write_polygon(polygon.outer_boundary(), name);
@@ -449,6 +458,20 @@ class DebugWriter {
                 write_polygon_to_svg_(svg, polygon, name);
              }
             obj << std::flush;
+        }
+    }
+
+    void write_polygons(const Arrangement_2& arr, const std::string& name) {
+        if (enabled_) {
+            // Just for the automatic numbering, create a full vector
+            std::vector<Polygon_2> temp;
+            for (auto it = arr.faces_begin(); it != arr.faces_end(); ++it) {
+                if (it->is_unbounded()) {
+                    continue;
+                }
+                temp.push_back(circ_to_poly(it->outer_ccb()));
+            }
+            write_polygons(temp, name);
         }
     }
 
@@ -475,7 +498,14 @@ class DebugWriter {
     std::string last_segment_name_;
     
     void write_polygon_to_svg_(std::ostream& ofs, const Polygon_2& polygon, const std::string& class_name = "") {
-        ofs << "<polygon class=\"" + class_name + "\" points=\"";
+        auto class_name_ = class_name;
+        if (!polygon.is_simple()) {
+            if (!class_name_.empty()) {
+                class_name_ += " ";
+            }
+            class_name_ += "self_intersecting";
+        }
+        ofs << "<polygon class=\"" + class_name_ + "\" points=\"";
         for (auto vit = polygon.vertices_begin(); vit != polygon.vertices_end(); ++vit) {
             ofs << CGAL::to_double(vit->x()) << "," << -CGAL::to_double(vit->y()) << " ";
         }
@@ -1522,8 +1552,11 @@ std::map<Point_2, std::vector<Point_2>> snap_points_to_box_axes(
             return a.line_distance < b.line_distance;
         });
 
-        if ((snapped_points[i] - best.projection).squared_length() < (max_projection_distance * max_projection_distance)) {
+        if ((graph.points[i] - best.projection).squared_length() < (max_projection_distance * max_projection_distance)) {
             snapped_points[i] = best.projection;
+        } else {
+            snapped_points[i] = graph.points[i];
+            std::cout << "Warning: snapping distance exceeding distance: " << std::sqrt(CGAL::to_double((snapped_points[i] - best.projection).squared_length())) << " > " << max_projection_distance << std::endl;
         }
     }
 
@@ -2078,6 +2111,7 @@ extend_end_vertices_based_on_input_simple(
     const Polygon_list& outer_perimiter,
     const K::FT& max_projection_distance)
 {
+    auto max_intersection_distance = max_projection_distance / 4;
     std::list<std::pair<Point_2, Point_2>> constructed_segments;
 
         for (auto it = G.vertices_begin(); it != G.vertices_end(); ++it) {
@@ -2103,7 +2137,7 @@ extend_end_vertices_based_on_input_simple(
                             if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
                                 auto dist = ((*xp) - M).squared_length();
                                 if (dist < sq_distance_along_ray) {
-                                    if (dist < (max_projection_distance * max_projection_distance)) {
+                                    if (dist < (max_intersection_distance * max_intersection_distance)) {
                                         closest_segment = seg;
                                         closest_intersection_point = *xp;
                                         sq_distance_along_ray = dist;
@@ -2139,6 +2173,8 @@ extend_end_vertices_based_on_input_simple(
 
                         if (closest_point) {
                             constructed_segments.push_front({M, *closest_point});
+                        } else {
+                            std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
                         }
                     }
                 }
@@ -2261,9 +2297,9 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
             for (auto hit = it->inner_ccbs_begin(); hit != it->inner_ccbs_end(); ++hit) {
                 pwh.add_hole(circ_to_poly(*hit));
             }
-            if (!pwh.outer_boundary().is_simple()) {
-                throw std::runtime_error("Polygon with holes has a non-simple outer boundary");
-            }
+            // if (!pwh.outer_boundary().is_simple()) {
+            //     throw std::runtime_error("Polygon with holes has a non-simple outer boundary");
+            // }
 
             CGAL::Polygon_triangulation_decomposition_2<K> decompositor;
             std::vector<Polygon_2> temp;
@@ -2312,6 +2348,8 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
 
                 visited_points.insert(best_point);
 
+                debug_output.write_point(best_point, "representative_point representative_point_" + std::to_string(std::distance(left.faces_begin(), it)));
+
                 auto res = walk_pl.locate(best_point);
                 if (auto* v = variant_get<Arrangement_2::Face_const_handle>(&res)) {
                     if ((*v)->is_unbounded()) {
@@ -2321,6 +2359,7 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
                     if (visited_faces_on_right.count(*v) > 0) {
                         // Maybe we should be more permissive, try some other points etc.
                         return_values.push_back(0);
+                        std::cout << "Already visited face on right, skipping point\n";
                     } else {
                         // convert arr facet to polygon with holes
                         auto polygon_exterior = circ_to_poly((*v)->outer_ccb());
@@ -2328,9 +2367,9 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
                         for (auto hit = (*v)->inner_ccbs_begin(); hit != (*v)->inner_ccbs_end(); ++hit) {
                             pwh_right.add_hole(circ_to_poly(*hit));
                         }
-                        if (!pwh_right.outer_boundary().is_simple()) {
-                            throw std::runtime_error("Polygon with holes has a non-simple outer boundary");
-                        }
+                        // if (!pwh_right.outer_boundary().is_simple()) {
+                        //     throw std::runtime_error("Polygon with holes has a non-simple outer boundary");
+                        // }
 
                         // compute intersection over union of pwh and the original polygon
                         if (CGAL::do_intersect(pwh, pwh_right)) {
@@ -2358,6 +2397,7 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
                                 max_deviation_poly_pair = {pwh.outer_boundary(), pwh_right.outer_boundary()};
                             }
                         } else {
+                            std::cout << "No intersection, skipping point\n";
                             return_values.push_back(0);
                         }
                     }
@@ -3269,6 +3309,24 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     Graph2D<K> G;
     Graph2D<K> G_orig(line_graph);
 
+    auto apply_line_cleaning_algo_1 = [&]() {
+        auto eliminated_segments = eliminate_triangles(line_graph);
+        Graph2D<K> G2(line_graph);
+        for (auto& e : eliminated_segments) {
+            debug_output.write_segment(e.first, e.second, "eliminated");
+            G2.remove_edge(e.first, e.second);
+        }
+        G = G2.weld_vertices();
+        for (auto it = G.edges_begin(); it != G.edges_end(); ++it) {
+            debug_output.write_segment(it->first, it->second, "network_2");
+        }
+        eliminate_colinear_vertices(G);
+        edge_slide(G);
+        for (auto it = G.edges_begin(); it != G.edges_end(); ++it) {
+            debug_output.write_segment(it->first, it->second, "network_3");
+        }
+    };
+
     if (settings.line_cleaning_algo == 0) {
         G = join_segment_runs(debug_output, line_graph, midpoint_to_edge_length, subdivision_length * 4);
         Arrangement_2 arr;
@@ -3281,27 +3339,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
             debug_output.write_segment(it->first, it->second, "network_2");
         }
     } else {
-        auto eliminated_segments = eliminate_triangles(line_graph);
-
-        Graph2D<K> G2(line_graph);
-        for (auto& e : eliminated_segments) {
-            debug_output.write_segment(e.first, e.second, "eliminated");
-            G2.remove_edge(e.first, e.second);
-        }
-
-        G = G2.weld_vertices();
-
-        for (auto it = G.edges_begin(); it != G.edges_end(); ++it) {
-            debug_output.write_segment(it->first, it->second, "network_2");
-        }
-
-        eliminate_colinear_vertices(G);
-
-        edge_slide(G);
-
-        for (auto it = G.edges_begin(); it != G.edges_end(); ++it) {
-            debug_output.write_segment(it->first, it->second, "network_3");
-        }
+        apply_line_cleaning_algo_1();
     }
 
     t0.stop();
@@ -3309,10 +3347,11 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     t0 = timer.start("topology");
 
     std::list<std::pair<Point_2, Point_2>> segments, segments1, segments2;
+    bool fallback_to_line_cleaning_algo_1 = false;
     
     if (settings.line_cleaning_algo == 0) {
-        segments1 = extend_end_vertices_based_on_input_simple(G, outer_perimiter, subdivision_length * 4);
-        segments2 = extend_end_vertices_based_on_input_simple(G_orig, outer_perimiter, subdivision_length * 4);
+        segments1 = extend_end_vertices_based_on_input_simple(G, outer_perimiter, subdivision_length * 16);
+        segments2 = extend_end_vertices_based_on_input_simple(G_orig, outer_perimiter, subdivision_length * 16);
         
         Arrangement_2 arr_clean;
         G.to_arrangement(arr_clean);
@@ -3332,9 +3371,6 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
             CGAL::insert(arr_orig, Segment_2(pq.first, pq.second));
         }
 
-        delete_same_facet_edge_pairs(arr_clean);
-        delete_same_facet_edge_pairs(arr_orig);
-
         for (auto& p : outer_perimiter) {
             for (auto it = p.edges_begin(); it != p.edges_end(); ++it) {
                 auto source = it->source();
@@ -3346,6 +3382,12 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
                 CGAL::insert(arr_clean, Segment_2(source, target));
             }
         }
+
+        delete_same_facet_edge_pairs(arr_clean);
+        delete_same_facet_edge_pairs(arr_orig);
+
+        debug_output.write_polygons(arr_clean, "iou_left");
+        debug_output.write_polygons(arr_orig, "iou_right");
 
         auto ious = arrangement_cell_iou(debug_output, arr_clean, arr_orig);
         /*
@@ -3359,12 +3401,14 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
         if (it != ious.end() && (*it < 0.5)) {
             std::cerr << "Significant difference between cleaned and original arrangement, using original for topology reconstruction: " << *it << std::endl;
-            segments = segments2;
-            G = G_orig;
+            fallback_to_line_cleaning_algo_1 = true;
+            apply_line_cleaning_algo_1();
         } else {
             segments = segments1;
         }
-    } else {
+    }
+
+    if (settings.line_cleaning_algo != 0 || fallback_to_line_cleaning_algo_1) {
         segments = extend_end_vertices_based_on_input(G, midpoint_to_segment, segment_to_input_facet, outer_perimiter, segment_lookup, subdivision_length * 4);
     }   
 
@@ -3408,15 +3452,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         }
     }
 
-    // Just for the automatic numbering, create a full vector
-    std::vector<Polygon_2> temp;
-    for (auto it = arr.faces_begin(); it != arr.faces_end(); ++it) {
-        if (it->is_unbounded()) {
-            continue;
-        }
-        temp.push_back(circ_to_poly(it->outer_ccb()));
-    }
-    debug_output.write_polygons(temp, "arr_faces");
+    debug_output.write_polygons(arr, "arr_faces");
 
 
     /* {
