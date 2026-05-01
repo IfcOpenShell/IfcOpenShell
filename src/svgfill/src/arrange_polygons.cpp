@@ -3399,7 +3399,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
         auto it = std::min_element(ious.begin(), ious.end());
 
-        if (it != ious.end() && (*it < 0.5)) {
+        if (it != ious.end() && (*it < 0.45)) {
             std::cerr << "Significant difference between cleaned and original arrangement, using original for topology reconstruction: " << *it << std::endl;
             fallback_to_line_cleaning_algo_1 = true;
             apply_line_cleaning_algo_1();
