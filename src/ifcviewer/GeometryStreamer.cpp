@@ -147,9 +147,16 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
 // Build a mesh chunk (local coords, 28-byte interleaved vertices) from a
 // TriangulationElement. Per-vertex color is baked from material_ids so that
 // triangulations with per-face materials still render correctly.
+// Stage 1 — vertex rebasing.  When `offset` is non-zero, every vertex
+// position is subtracted by it so the emitted mesh-local coordinates stay
+// near the origin (and float32 precision survives upload to the GPU).
+// Caller compensates by post-multiplying each instance's placement by
+// T(+offset), which is mathematically the identity overall but moves the
+// "magnitude" off the float-precision-sensitive vertex column.
 static MeshChunk buildMeshChunk(uint32_t model_id,
                                 uint32_t local_mesh_id,
-                                const IfcGeom::TriangulationElement* elem) {
+                                const IfcGeom::TriangulationElement* elem,
+                                const Eigen::Vector3d& offset) {
     MeshChunk chunk;
     chunk.model_id = model_id;
     chunk.local_mesh_id = local_mesh_id;
@@ -196,9 +203,11 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
         const uint32_t new_idx = static_cast<uint32_t>(
             chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
 
-        float px = static_cast<float>(verts[orig_idx * 3 + 0]);
-        float py = static_cast<float>(verts[orig_idx * 3 + 1]);
-        float pz = static_cast<float>(verts[orig_idx * 3 + 2]);
+        // Subtract in double, narrow to float — preserves precision when
+        // verts are far from origin and offset cancels the magnitude.
+        float px = static_cast<float>(verts[orig_idx * 3 + 0] - offset.x());
+        float py = static_cast<float>(verts[orig_idx * 3 + 1] - offset.y());
+        float pz = static_cast<float>(verts[orig_idx * 3 + 2] - offset.z());
         chunk.vertices.push_back(px);
         chunk.vertices.push_back(py);
         chunk.vertices.push_back(pz);
@@ -458,7 +467,14 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // Shared dedup + AABB state across passes — same geom.id() across
     // net/gross passes still maps to one mesh upload.
     std::unordered_map<std::string, uint32_t> geom_to_local_mesh_id;
-    struct MeshAabb { float lmin[3], lmax[3]; };
+    // Per-unique-mesh state shared across instances.  `offset` is the stage-1
+    // rebase applied to verts (zero when the mesh's first vert is near origin
+    // and rebasing wasn't worth it).
+    struct MeshAabb {
+        float lmin[3], lmax[3];
+        double offset[3] = {0.0, 0.0, 0.0};
+        bool   has_offset = false;
+    };
     std::vector<MeshAabb> mesh_aabbs;
 
     uint32_t total_shapes = 0;
@@ -577,12 +593,33 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 }
 
                 if (first_sight) {
-                    MeshChunk mesh_chunk = buildMeshChunk(model_id_, local_mesh_id, tri_elem);
+                    // Stage 1: pick a rebase offset when the mesh's first
+                    // source vertex is far from origin (>1 km in metres,
+                    // matching bonsai's distance_limit default).  Iterator
+                    // outputs metres, so the threshold is in metres directly.
+                    Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+                    constexpr double kFarAwayThresholdMeters = 1000.0;
+                    const auto& src_verts = tri_elem->geometry().verts();
+                    if (src_verts.size() >= 3) {
+                        const double x = src_verts[0];
+                        const double y = src_verts[1];
+                        const double z = src_verts[2];
+                        if (std::abs(x) > kFarAwayThresholdMeters ||
+                            std::abs(y) > kFarAwayThresholdMeters ||
+                            std::abs(z) > kFarAwayThresholdMeters) {
+                            offset = Eigen::Vector3d(x, y, z);
+                        }
+                    }
+
+                    MeshChunk mesh_chunk =
+                        buildMeshChunk(model_id_, local_mesh_id, tri_elem, offset);
                     MeshAabb ma;
                     for (int a = 0; a < 3; ++a) {
                         ma.lmin[a] = mesh_chunk.local_aabb_min[a];
                         ma.lmax[a] = mesh_chunk.local_aabb_max[a];
+                        ma.offset[a] = offset[a];
                     }
+                    ma.has_offset = (offset.squaredNorm() > 0.0);
                     if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
                     mesh_aabbs[local_mesh_id] = ma;
                     if (!mesh_chunk.indices.empty()) {
@@ -590,7 +627,19 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     }
                 }
 
-                const Eigen::Matrix4d& mat_d = tri_elem->transformation().data()->ccomponents();
+                // Stage 1 cont.: post-multiply the per-instance placement by
+                // T(+offset) so world position is preserved.  Matrix arithmetic
+                // is in double; narrow to float at the end.
+                Eigen::Matrix4d mat_d =
+                    tri_elem->transformation().data()->ccomponents();
+                if (mesh_aabbs[local_mesh_id].has_offset) {
+                    const Eigen::Vector3d off(
+                        mesh_aabbs[local_mesh_id].offset[0],
+                        mesh_aabbs[local_mesh_id].offset[1],
+                        mesh_aabbs[local_mesh_id].offset[2]);
+                    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * off;
+                }
+
                 InstanceChunk inst;
                 inst.model_id = model_id_;
                 inst.local_mesh_id = local_mesh_id;
