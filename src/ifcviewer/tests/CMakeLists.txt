@@ -58,10 +58,13 @@ find_package(Eigen3 REQUIRED)
 add_executable(test_federation
     test_federation.cpp
     ${IFCVIEWER_SRC}/Federation.cpp
-    # Federation pulls in Unit::convert for federation_unit_to_meters; compile
-    # Unit.cpp directly so the test doesn't have to link the whole IfcViewer
-    # library (which would drag in Qt6::OpenGL, OpenCASCADE, etc.).
+    # Federation pulls in Unit::convert for federationUnitToMeters and
+    # Geolocation helpers (helmertMetersFromParameters, getWcs, getMapUnit)
+    # for computeModelGeoref; compile both directly so the test doesn't
+    # have to link the whole IfcViewer library (which would drag in
+    # Qt6::OpenGL, OpenCASCADE, etc.).
     ${IFCVIEWER_SRC}/Unit.cpp
+    ${IFCVIEWER_SRC}/Geolocation.cpp
 )
 set_target_properties(test_federation PROPERTIES AUTOMOC ON)
 target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})

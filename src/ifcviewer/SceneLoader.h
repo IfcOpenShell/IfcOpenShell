@@ -33,6 +33,7 @@
 #include <thread>
 #include <vector>
 
+#include "Federation.h"
 #include "ViewportWindow.h"
 #include "GeometryStreamer.h"
 #include "SidecarCache.h"
@@ -64,6 +65,12 @@ public:
     QString filePath(uint32_t mid) const;
     QString displayName(uint32_t mid) const;
     ifcopenshell::file* ifcFile(uint32_t mid) const;
+
+    // Lazily computes the model's georef matrix + unit scales the first
+    // time it's asked for, caches the result, and returns a pointer into the
+    // cache.  Returns nullptr when the IFC file isn't available yet (e.g.
+    // sidecar-hit path before the data-source thread populates the streamer).
+    const ModelGeoref* modelGeoref(uint32_t mid);
 
 signals:
     void progressChanged(int percent);
@@ -113,6 +120,11 @@ private:
         QString display_name;
         GeometryStreamer* streamer = nullptr;
         QElapsedTimer load_timer;
+
+        // Cached on first SceneLoader::modelGeoref(mid) call once the
+        // streamer has its IFC file loaded.
+        ModelGeoref georef;
+        bool        has_georef = false;
     };
 
     void startNextLoad();

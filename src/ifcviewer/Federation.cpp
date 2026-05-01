@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "Federation.h"
+#include "Geolocation.h"
 #include "Unit.h"
 
 #include <QDir>
@@ -93,6 +94,45 @@ Eigen::Matrix4d composeFederationOrigin(const FederationOrigin& origin,
     Eigen::Matrix4d Rz4 = Eigen::Matrix4d::Identity();
     Rz4.block<3, 3>(0, 0) = Rz;
     return Rz4 * translation4(-xyz_m);
+}
+
+ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
+    ModelGeoref out;
+    if (!ifc_file) return out;
+
+    out.units.project_length_to_meters =
+        calculateUnitScale(ifc_file, "LENGTHUNIT");
+
+    if (auto map_unit = getMapUnit(ifc_file)) {
+        if (auto s = siScaleFromNamedUnit(*map_unit)) {
+            out.units.map_unit_to_meters = *s;
+        } else {
+            out.units.map_unit_to_meters = out.units.project_length_to_meters;
+        }
+    } else {
+        // No MapUnit on the IfcProjectedCRS — fall back to project length unit.
+        out.units.map_unit_to_meters = out.units.project_length_to_meters;
+    }
+
+    auto params = getHelmertTransformationParameters(ifc_file);
+    if (!params) return out;
+
+    Eigen::Matrix4d helmert =
+        helmertMetersFromParameters(*params, out.units.map_unit_to_meters);
+
+    if (auto wcs = getWcs(ifc_file)) {
+        // getWcs returns the WCS in project units (translation in project
+        // length units).  Convert translation to metres before inverting.
+        Eigen::Matrix4d wcs_m = *wcs;
+        wcs_m(0, 3) *= out.units.project_length_to_meters;
+        wcs_m(1, 3) *= out.units.project_length_to_meters;
+        wcs_m(2, 3) *= out.units.project_length_to_meters;
+        out.stage2_meters = helmert * wcs_m.inverse();
+    } else {
+        out.stage2_meters = helmert;
+    }
+    out.has_stage2 = true;
+    return out;
 }
 
 Eigen::Matrix4d composeModelTransform(const ModelTransform& xf,

@@ -31,6 +31,8 @@
 #include <string>
 #include <vector>
 
+namespace ifcopenshell { class file; }
+
 // === Stage-3/4 data model ===
 //
 // A federation places one or more IFC models in a shared scene.  Each model's
@@ -95,6 +97,21 @@ struct ModelUnits {
     double project_length_to_meters = 1.0;
     double map_unit_to_meters       = 1.0;
 };
+
+// Per-model georeferencing data derived from the IFC.  `stage2_meters` is
+// the helmert · inv(wcs) georef matrix in metres; consumers compose it
+// before stage 3 / stage 4 at upload time.  When the model has no map
+// conversion, `has_stage2 == false` and `stage2_meters` is identity.
+struct ModelGeoref {
+    ModelUnits      units;
+    Eigen::Matrix4d stage2_meters = Eigen::Matrix4d::Identity();
+    bool            has_stage2    = false;
+};
+
+// Read a model's project length unit, map unit, helmert parameters, and WCS
+// from `ifc_file` and reduce them to a metres-in / metres-out georef matrix.
+// Pure compute; safe to call repeatedly if the caller doesn't want to cache.
+ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
 
 // 1 federation_unit -> N metres.
 double federationUnitToMeters(const FederationConfig&);

@@ -69,6 +69,18 @@ ifcopenshell::file* SceneLoader::ifcFile(uint32_t mid) const {
     return it == models_.end() ? nullptr : it->second.streamer->ifcFile();
 }
 
+const ModelGeoref* SceneLoader::modelGeoref(uint32_t mid) {
+    auto it = models_.find(mid);
+    if (it == models_.end()) return nullptr;
+    auto& m = it->second;
+    if (m.has_georef) return &m.georef;
+    auto* file = m.streamer ? m.streamer->ifcFile() : nullptr;
+    if (!file) return nullptr;
+    m.georef = computeModelGeoref(file);
+    m.has_georef = true;
+    return &m.georef;
+}
+
 std::vector<uint32_t> SceneLoader::addFiles(const QStringList& paths) {
     std::vector<uint32_t> assigned;
     assigned.reserve(paths.size());
