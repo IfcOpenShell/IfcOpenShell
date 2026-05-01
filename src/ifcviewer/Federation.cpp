@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "Federation.h"
+#include "Unit.h"
 
 #include <QDir>
 #include <QFile>
@@ -29,8 +30,32 @@
 #include <QJsonValue>
 #include <QUuid>
 
+#include <cmath>
+
 namespace {
 constexpr const char* kSchema = "ifcfed/1";
+
+constexpr double kPi       = 3.14159265358979323846;
+constexpr double kDegToRad = kPi / 180.0;
+
+Eigen::Matrix4d translation4(const Eigen::Vector3d& t) {
+    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
+    M(0, 3) = t.x();
+    M(1, 3) = t.y();
+    M(2, 3) = t.z();
+    return M;
+}
+
+// Intrinsic XYZ Euler: R = R_z · R_y · R_x.
+Eigen::Matrix4d eulerXYZ(const Eigen::Vector3d& rxyz_rad) {
+    const Eigen::Matrix3d R3 =
+        (Eigen::AngleAxisd(rxyz_rad.z(), Eigen::Vector3d::UnitZ()) *
+         Eigen::AngleAxisd(rxyz_rad.y(), Eigen::Vector3d::UnitY()) *
+         Eigen::AngleAxisd(rxyz_rad.x(), Eigen::Vector3d::UnitX())).matrix();
+    Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
+    R.block<3, 3>(0, 0) = R3;
+    return R;
+}
 
 QString resolvePath(const QString& fed_dir, const QString& stored) {
     if (stored.isEmpty()) return stored;
@@ -52,6 +77,61 @@ QString relativizePath(const QString& fed_dir, const QString& abs_path) {
 }
 }  // namespace
 
+// === Stage-3/4 compose helpers ===
+
+double federationUnitToMeters(const FederationConfig& cfg) {
+    return convert(1.0, cfg.unit_prefix, cfg.unit_name, "", "METRE");
+}
+
+Eigen::Matrix4d composeFederationOrigin(const FederationOrigin& origin,
+                                        const FederationConfig& cfg) {
+    const double u = federationUnitToMeters(cfg);
+    const Eigen::Vector3d xyz_m = origin.xyz * u;
+    const double rz_rad = origin.rz_deg * kDegToRad;
+    const Eigen::Matrix3d Rz =
+        Eigen::AngleAxisd(rz_rad, Eigen::Vector3d::UnitZ()).matrix();
+    Eigen::Matrix4d Rz4 = Eigen::Matrix4d::Identity();
+    Rz4.block<3, 3>(0, 0) = Rz;
+    return Rz4 * translation4(-xyz_m);
+}
+
+Eigen::Matrix4d composeModelTransform(const ModelTransform& xf,
+                                      const FederationConfig& fed_cfg,
+                                      const ModelUnits& model_units,
+                                      const Eigen::Matrix4d& stage2_meters) {
+    const double u_fed = federationUnitToMeters(fed_cfg);
+
+    Eigen::Vector3d A_m;
+    if (xf.a_frame == AFrame::ModelLocal) {
+        // a is in the model's project length unit, expressed in the
+        // pre-stage2 frame.  Convert to metres, then lift through stage 2.
+        const Eigen::Vector4d a_h(
+            xf.a.x() * model_units.project_length_to_meters,
+            xf.a.y() * model_units.project_length_to_meters,
+            xf.a.z() * model_units.project_length_to_meters,
+            1.0);
+        A_m = (stage2_meters * a_h).head<3>();
+    } else {
+        // a is in the model's map unit, expressed in the post-stage2 frame.
+        A_m = xf.a * model_units.map_unit_to_meters;
+    }
+
+    const Eigen::Vector3d B_m     = xf.b     * u_fed;
+    const Eigen::Vector3d pivot_m = xf.pivot * u_fed;
+
+    const Eigen::Matrix4d R_local = eulerXYZ(xf.rxyz_deg * kDegToRad);
+    const Eigen::Matrix4d R_at_pivot =
+        translation4(pivot_m) * R_local * translation4(-pivot_m);
+
+    const Eigen::Vector4d Ah(A_m.x(), A_m.y(), A_m.z(), 1.0);
+    const Eigen::Vector3d RA = (R_at_pivot * Ah).head<3>();
+    const Eigen::Matrix4d T  = translation4(B_m - RA);
+
+    return T * R_at_pivot;
+}
+
+// === Federation class ===
+
 Federation::Federation(QObject* parent) : QObject(parent) {}
 
 QString Federation::generateId() {
@@ -68,9 +148,34 @@ void Federation::clear() {
     created_ = QDateTime();
     modified_ = QDateTime();
     models_.clear();
+    config_ = FederationConfig{};
+    origin_ = FederationOrigin{};
     has_home_view_ = false;
     home_view_ = HomeView{};
     setDirty(false);
+}
+
+void Federation::setConfig(const FederationConfig& c) {
+    if (config_.unit_name == c.unit_name && config_.unit_prefix == c.unit_prefix)
+        return;
+    config_ = c;
+    setDirty(true);
+}
+
+void Federation::setOrigin(const FederationOrigin& o) {
+    if (origin_.xyz == o.xyz && origin_.rz_deg == o.rz_deg) return;
+    origin_ = o;
+    setDirty(true);
+}
+
+void Federation::setModelTransform(const QString& fed_id,
+                                   const ModelTransform& xf) {
+    for (auto& m : models_) {
+        if (m.id != fed_id) continue;
+        m.transform_intent = xf;
+        setDirty(true);
+        return;
+    }
 }
 
 void Federation::markClean() {
@@ -163,6 +268,23 @@ bool Federation::load(const QString& path,
     created_ = QDateTime::fromString(root.value("created").toString(), Qt::ISODate);
     modified_ = QDateTime::fromString(root.value("modified").toString(), Qt::ISODate);
 
+    if (QJsonValue cv = root.value("config"); cv.isObject()) {
+        QJsonObject co = cv.toObject();
+        QJsonObject uo = co.value("unit").toObject();
+        config_.unit_name   = uo.value("name").toString("METRE").toStdString();
+        config_.unit_prefix = uo.value("prefix").toString("").toStdString();
+    }
+
+    if (QJsonValue ov = root.value("origin"); ov.isObject()) {
+        QJsonObject oo = ov.toObject();
+        QJsonArray xyz = oo.value("xyz").toArray();
+        if (xyz.size() == 3) {
+            origin_.xyz = Eigen::Vector3d(
+                xyz[0].toDouble(), xyz[1].toDouble(), xyz[2].toDouble());
+        }
+        origin_.rz_deg = oo.value("rz_deg").toDouble(0.0);
+    }
+
     QJsonArray arr = root.value("models").toArray();
     for (int i = 0; i < arr.size(); ++i) {
         if (!arr[i].isObject()) {
@@ -197,6 +319,22 @@ bool Federation::load(const QString& path,
 
         if (m.display_name.isEmpty())
             m.display_name = QFileInfo(m.source_path).fileName();
+
+        if (QJsonValue tv = mo.value("transform_intent"); tv.isObject()) {
+            QJsonObject to = tv.toObject();
+            const QString af = to.value("a_frame").toString("ModelGlobal");
+            m.transform_intent.a_frame =
+                (af == "ModelLocal") ? AFrame::ModelLocal : AFrame::ModelGlobal;
+            auto readVec3 = [](QJsonArray ja) {
+                if (ja.size() != 3) return Eigen::Vector3d::Zero().eval();
+                return Eigen::Vector3d(
+                    ja[0].toDouble(), ja[1].toDouble(), ja[2].toDouble());
+            };
+            m.transform_intent.a        = readVec3(to.value("a").toArray());
+            m.transform_intent.b        = readVec3(to.value("b").toArray());
+            m.transform_intent.rxyz_deg = readVec3(to.value("rxyz_deg").toArray());
+            m.transform_intent.pivot    = readVec3(to.value("pivot").toArray());
+        }
 
         QJsonValue vv = mo.value("visible");
         if (vv.isBool()) m.visible = vv.toBool();
@@ -238,6 +376,24 @@ bool Federation::save(const QString& path, QString* err) {
     root["created"]  = created_.toUTC().toString(Qt::ISODate);
     root["modified"] = modified_.toUTC().toString(Qt::ISODate);
 
+    {
+        QJsonObject co, uo;
+        uo["name"]   = QString::fromStdString(config_.unit_name);
+        uo["prefix"] = QString::fromStdString(config_.unit_prefix);
+        co["unit"]   = uo;
+        root["config"] = co;
+    }
+    {
+        QJsonObject oo;
+        QJsonArray xyz;
+        xyz.append(origin_.xyz.x());
+        xyz.append(origin_.xyz.y());
+        xyz.append(origin_.xyz.z());
+        oo["xyz"]    = xyz;
+        oo["rz_deg"] = origin_.rz_deg;
+        root["origin"] = oo;
+    }
+
     QJsonArray arr;
     for (const auto& m : models_) {
         QJsonObject mo;
@@ -253,6 +409,28 @@ bool Federation::save(const QString& path, QString* err) {
             so["path"] = m.source_path;
         }
         mo["source"] = so;
+
+        // Skip transform_intent when it's at defaults (identity placement).
+        const ModelTransform def;
+        const ModelTransform& xf = m.transform_intent;
+        const bool xf_is_default =
+            xf.a_frame == def.a_frame && xf.a == def.a && xf.b == def.b &&
+            xf.rxyz_deg == def.rxyz_deg && xf.pivot == def.pivot;
+        if (!xf_is_default) {
+            QJsonObject to;
+            to["a_frame"] = (xf.a_frame == AFrame::ModelLocal)
+                ? "ModelLocal" : "ModelGlobal";
+            auto writeVec3 = [](const Eigen::Vector3d& v) {
+                QJsonArray a;
+                a.append(v.x()); a.append(v.y()); a.append(v.z());
+                return a;
+            };
+            to["a"]        = writeVec3(xf.a);
+            to["b"]        = writeVec3(xf.b);
+            to["rxyz_deg"] = writeVec3(xf.rxyz_deg);
+            to["pivot"]    = writeVec3(xf.pivot);
+            mo["transform_intent"] = to;
+        }
 
         if (!m.visible) mo["visible"] = false;
 
