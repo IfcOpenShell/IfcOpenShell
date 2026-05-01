@@ -47,6 +47,14 @@ public:
     bool loadDataSource() const;
     void setLoadDataSource(bool value);
 
+    // When true, each loaded model's IfcCoordinateOperation (e.g.
+    // IfcMapConversion) is applied to the per-instance transform after
+    // load, lifting the model into map (georeferenced) coordinates.
+    // When false, models render in their local engineering frame —
+    // useful for previewing geometry without translating to e.g. UTM.
+    bool applyCoordinateOperation() const;
+    void setApplyCoordinateOperation(bool value);
+
     // Skip elements with more than this many voids (HasOpenings inverse).
     // Boolean subtraction of many openings is the dominant cost in some
     // pathological exports; dropping those elements keeps load times sane.
@@ -69,6 +77,7 @@ signals:
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
     void loadDataSourceChanged(bool value);
+    void applyCoordinateOperationChanged(bool value);
     void voidLimitChanged(int value);
     void deflectionToleranceChanged(double value);
     void angularToleranceChanged(double value);
@@ -82,6 +91,7 @@ private:
     bool show_stats_ = false;
     bool backface_culling_ = true;
     bool load_data_source_ = true;
+    bool apply_coordinate_operation_ = false;
     int void_limit_ = 30;
     double deflection_tolerance_ = 0.001;
     double angular_tolerance_ = 0.5;

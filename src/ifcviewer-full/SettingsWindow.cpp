@@ -59,6 +59,14 @@ void SettingsWindow::setupUi() {
         "and, on sidecar hits, avoids a second file read.");
     form->addRow("Load Property Data Source", load_data_source_check_);
 
+    apply_coordinate_operation_check_ = new QCheckBox(this);
+    apply_coordinate_operation_check_->setToolTip(
+        "Apply each model's IfcCoordinateOperation (e.g. IfcMapConversion) "
+        "after load so it lands in georeferenced map coordinates.  "
+        "Disable to keep models in their local engineering frame.");
+    form->addRow("Apply Coordinate Operation",
+                 apply_coordinate_operation_check_);
+
     void_limit_spin_ = new QSpinBox(this);
     void_limit_spin_->setRange(0, 100000);
     void_limit_spin_->setToolTip(
@@ -109,6 +117,8 @@ void SettingsWindow::syncFromSettings() {
     show_stats_check_->setChecked(AppSettings::instance().showStats());
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
     load_data_source_check_->setChecked(AppSettings::instance().loadDataSource());
+    apply_coordinate_operation_check_->setChecked(
+        AppSettings::instance().applyCoordinateOperation());
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
     deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
     angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
@@ -119,6 +129,8 @@ void SettingsWindow::onAccepted() {
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
     AppSettings::instance().setLoadDataSource(load_data_source_check_->isChecked());
+    AppSettings::instance().setApplyCoordinateOperation(
+        apply_coordinate_operation_check_->isChecked());
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
     AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());

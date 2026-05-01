@@ -96,6 +96,13 @@ private:
     void writeSidecarForModel(uint32_t mid);
     void removeModelUi(uint32_t mid);
     void applyPendingBenchmark();
+
+    // Push a model's CoordinateOperation matrix to the viewport (or
+    // identity, when the AppSettings toggle is off or the model has no
+    // map conversion).  No-op if the model isn't yet known to the loader
+    // or its IFC file isn't available (sidecar-hit before data-source
+    // load); the call retries on onDataSourceReady.
+    void applyCoordinateOperationToViewport(uint32_t mid);
     QString formatElapsed(qint64 ms) const;
 
     ViewportWindow* viewport_ = nullptr;

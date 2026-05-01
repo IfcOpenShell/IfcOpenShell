@@ -89,6 +89,16 @@ MainWindow::MainWindow(QWidget* parent)
         if (!show) stats_label_->clear();
     });
 
+    // Toggling the CoordinateOperation setting walks every loaded model
+    // and pushes either its georef matrix or identity to the viewport.
+    connect(&AppSettings::instance(),
+            &AppSettings::applyCoordinateOperationChanged,
+            this, [this](bool /*enabled*/) {
+        for (const auto& kv : fed_id_to_model_id_) {
+            applyCoordinateOperationToViewport(kv.second);
+        }
+    });
+
     updateWindowTitle();
     resize(1400, 900);
 }
@@ -457,6 +467,13 @@ void MainWindow::onSidecarElementsReady(uint32_t mid,
 }
 
 void MainWindow::onDataSourceReady(uint32_t mid) {
+    // The IFC file is now available — push the model's CoordinateOperation
+    // (or identity) to the viewport.  Sidecar-hit models get here for the
+    // first time; stream-loaded models also pass through here when a
+    // separate data source opens, but applyCoordinateOperationToViewport
+    // is idempotent so double-applying is harmless.
+    applyCoordinateOperationToViewport(mid);
+
     // Re-populate if the current selection belongs to this model, since
     // populateProperties() now has an ifcFile() to query.
     auto items = element_tree_->selectedItems();
@@ -466,6 +483,18 @@ void MainWindow::onDataSourceReady(uint32_t mid) {
     if (it != element_map_.end() && it->second.model_id == mid) {
         populateProperties(object_id);
     }
+}
+
+void MainWindow::applyCoordinateOperationToViewport(uint32_t mid) {
+    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
+    if (AppSettings::instance().applyCoordinateOperation()) {
+        if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
+            if (gr->has_coordinate_operation) {
+                M = gr->coordinate_operation_meters;
+            }
+        }
+    }
+    viewport_->setModelCoordinateOperation(mid, M);
 }
 
 void MainWindow::onLoadedFromSidecar(uint32_t /*mid*/, qint64 elapsed_ms) {
@@ -571,6 +600,10 @@ void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
         .arg(element_map_.size())
         .arg(loader_->modelCount())
         .arg(formatElapsed(elapsed_ms)));
+
+    // Stream path: the IFC is owned by the streamer, so georef is
+    // computable now.  (Sidecar-hit models defer to onDataSourceReady.)
+    applyCoordinateOperationToViewport(mid);
 
     writeSidecarForModel(mid);
 }
