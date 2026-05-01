@@ -147,12 +147,12 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
 // Build a mesh chunk (local coords, 28-byte interleaved vertices) from a
 // TriangulationElement. Per-vertex color is baked from material_ids so that
 // triangulations with per-face materials still render correctly.
-// Stage 1 — vertex rebasing.  When `offset` is non-zero, every vertex
-// position is subtracted by it so the emitted mesh-local coordinates stay
-// near the origin (and float32 precision survives upload to the GPU).
-// Caller compensates by post-multiplying each instance's placement by
-// T(+offset), which is mathematically the identity overall but moves the
-// "magnitude" off the float-precision-sensitive vertex column.
+// Vertex rebasing: when `offset` is non-zero, every vertex position is
+// subtracted by it so the emitted mesh-local coordinates stay near the
+// origin (and float32 precision survives upload to the GPU).  Caller
+// compensates by post-multiplying each instance's PlacementTransformation
+// by T(+offset), which is mathematically the identity overall but moves
+// the magnitude off the float-precision-sensitive vertex column.
 static MeshChunk buildMeshChunk(uint32_t model_id,
                                 uint32_t local_mesh_id,
                                 const IfcGeom::TriangulationElement* elem,
@@ -593,8 +593,8 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 }
 
                 if (first_sight) {
-                    // Stage 1: pick a rebase offset when the mesh's first
-                    // source vertex is far from origin (>1 km in metres,
+                    // Vertex rebasing: pick a rebase offset when the mesh's
+                    // first source vertex is far from origin (>1 km in metres,
                     // matching bonsai's distance_limit default).  Iterator
                     // outputs metres, so the threshold is in metres directly.
                     Eigen::Vector3d offset = Eigen::Vector3d::Zero();
@@ -627,9 +627,10 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     }
                 }
 
-                // Stage 1 cont.: post-multiply the per-instance placement by
-                // T(+offset) so world position is preserved.  Matrix arithmetic
-                // is in double; narrow to float at the end.
+                // Vertex rebasing cont.: post-multiply the per-instance
+                // PlacementTransformation by T(+offset) so world position is
+                // preserved.  Matrix arithmetic is in double; narrow to float
+                // at the end.
                 Eigen::Matrix4d mat_d =
                     tri_elem->transformation().data()->ccomponents();
                 if (mesh_aabbs[local_mesh_id].has_offset) {

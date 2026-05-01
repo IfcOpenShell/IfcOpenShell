@@ -305,8 +305,8 @@ TEST_CASE("load on malformed JSON fails with an error", "[federation]") {
     REQUIRE_FALSE(err.isEmpty());
 }
 
-TEST_CASE("config / origin / transform_intent round-trip through save+load",
-          "[federation]") {
+TEST_CASE("config / federated_false_origin / model_transformation round-trip "
+          "through save+load", "[federation]") {
     ensureQApp();
     QTemporaryDir tmp;
     REQUIRE(tmp.isValid());
@@ -322,18 +322,18 @@ TEST_CASE("config / origin / transform_intent round-trip through save+load",
     cfg.unit_prefix = "";
     src.setConfig(cfg);
 
-    FederationOrigin org;
+    FederatedFalseOrigin org;
     org.xyz    = Eigen::Vector3d(100.0, 200.0, 30.0);
     org.rz_deg = 45.0;
-    src.setOrigin(org);
+    src.setFederatedFalseOrigin(org);
 
-    ModelTransform xf;
+    ModelTransformation xf;
     xf.a_frame  = AFrame::ModelLocal;
     xf.a        = Eigen::Vector3d(1.0, 2.0, 3.0);
     xf.b        = Eigen::Vector3d(4.0, 5.0, 6.0);
     xf.rxyz_deg = Eigen::Vector3d(90.0, 0.0, 0.0);
     xf.pivot    = Eigen::Vector3d(7.0, 8.0, 9.0);
-    src.setModelTransform(id1, xf);
+    src.setModelTransformation(id1, xf);
 
     QString err;
     REQUIRE(src.save(fed_path, &err));
@@ -348,20 +348,21 @@ TEST_CASE("config / origin / transform_intent round-trip through save+load",
     REQUIRE(dst.config().unit_name   == "FOOT");
     REQUIRE(dst.config().unit_prefix == "");
 
-    REQUIRE(dst.origin().xyz    == org.xyz);
-    REQUIRE(dst.origin().rz_deg == 45.0);
+    REQUIRE(dst.federatedFalseOrigin().xyz    == org.xyz);
+    REQUIRE(dst.federatedFalseOrigin().rz_deg == 45.0);
 
     REQUIRE(dst.models().size() == 1);
     const auto& m = dst.models()[0];
     REQUIRE(m.id == id1);
-    REQUIRE(m.transform_intent.a_frame  == AFrame::ModelLocal);
-    REQUIRE(m.transform_intent.a        == xf.a);
-    REQUIRE(m.transform_intent.b        == xf.b);
-    REQUIRE(m.transform_intent.rxyz_deg == xf.rxyz_deg);
-    REQUIRE(m.transform_intent.pivot    == xf.pivot);
+    REQUIRE(m.model_transformation.a_frame  == AFrame::ModelLocal);
+    REQUIRE(m.model_transformation.a        == xf.a);
+    REQUIRE(m.model_transformation.b        == xf.b);
+    REQUIRE(m.model_transformation.rxyz_deg == xf.rxyz_deg);
+    REQUIRE(m.model_transformation.pivot    == xf.pivot);
 }
 
-TEST_CASE("default ModelTransform is omitted from saved JSON", "[federation]") {
+TEST_CASE("default ModelTransformation is omitted from saved JSON",
+          "[federation]") {
     ensureQApp();
     QTemporaryDir tmp;
     REQUIRE(tmp.isValid());
@@ -377,17 +378,17 @@ TEST_CASE("default ModelTransform is omitted from saved JSON", "[federation]") {
     QJsonObject root = readJsonFile(fed_path);
     QJsonArray models = root.value("models").toArray();
     REQUIRE(models.size() == 1);
-    REQUIRE_FALSE(models[0].toObject().contains("transform_intent"));
+    REQUIRE_FALSE(models[0].toObject().contains("model_transformation"));
 }
 
-TEST_CASE("composeFederationOrigin moves the nominated point to the origin",
+TEST_CASE("composeFederatedFalseOrigin moves the nominated point to the origin",
           "[federation][compose]") {
     FederationConfig cfg;          // METRE, no prefix
-    FederationOrigin org;
+    FederatedFalseOrigin org;
     org.xyz    = Eigen::Vector3d(10.0, 20.0, 5.0);
     org.rz_deg = 0.0;
 
-    Eigen::Matrix4d M = composeFederationOrigin(org, cfg);
+    Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
 
     // The nominated point (10, 20, 5) should map to (0, 0, 0).
     Eigen::Vector4d p(10.0, 20.0, 5.0, 1.0);
@@ -397,33 +398,33 @@ TEST_CASE("composeFederationOrigin moves the nominated point to the origin",
     REQUIRE(std::abs(r.z()) < 1e-9);
 }
 
-TEST_CASE("composeFederationOrigin scales by federation unit",
+TEST_CASE("composeFederatedFalseOrigin scales by federation unit",
           "[federation][compose]") {
     FederationConfig cfg;
     cfg.unit_name = "FOOT";        // 1 ft = 0.3048 m
-    FederationOrigin org;
+    FederatedFalseOrigin org;
     org.xyz = Eigen::Vector3d(1.0, 0.0, 0.0);  // 1 foot in fed coords
 
-    Eigen::Matrix4d M = composeFederationOrigin(org, cfg);
+    Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
     // Translation column should be -1 ft = -0.3048 m.
     REQUIRE(std::abs(M(0, 3) - (-0.3048)) < 1e-9);
 }
 
-TEST_CASE("composeModelTransform with pivot=B keeps A landing on B",
+TEST_CASE("composeModelTransformation with pivot=B keeps A landing on B",
           "[federation][compose]") {
-    // A in ModelGlobal frame, federation in metres, model has identity stage 2.
+    // A in ModelGlobal frame, federation in metres, identity CoordinateOperation.
     FederationConfig fed_cfg;       // METRE
     ModelUnits mu;                  // 1.0 / 1.0 (already in metres)
-    Eigen::Matrix4d stage2 = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d coord_op = Eigen::Matrix4d::Identity();
 
-    ModelTransform xf;
+    ModelTransformation xf;
     xf.a_frame  = AFrame::ModelGlobal;
     xf.a        = Eigen::Vector3d(5.0, 0.0, 0.0);
     xf.b        = Eigen::Vector3d(100.0, 50.0, 10.0);
     xf.rxyz_deg = Eigen::Vector3d(0.0, 0.0, 30.0);
     xf.pivot    = xf.b;             // pivot at B preserves A->B regardless of rotation
 
-    Eigen::Matrix4d M = composeModelTransform(xf, fed_cfg, mu, stage2);
+    Eigen::Matrix4d M = composeModelTransformation(xf, fed_cfg, mu, coord_op);
 
     Eigen::Vector4d a(xf.a.x(), xf.a.y(), xf.a.z(), 1.0);
     Eigen::Vector4d r = M * a;
