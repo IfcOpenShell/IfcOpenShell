@@ -46,7 +46,14 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      same cache serves either source format.  Staleness is user-managed
 //      (delete the sidecar to force a rebuild).
 // v9 = unused `reserved` field dropped from header (16 B -> 12 B).
-static constexpr uint32_t SIDECAR_VERSION = 9;
+// v10 = InstanceCpu gains placement_transformation[16] alongside transform[16]
+//       — record grew from 104 B to 168 B.  placement_transformation is the
+//       raw streamer output; transform is the composed FederatedFalseOrigin ·
+//       ModelTransformation · CoordinateOperation · placement_transformation
+//       result.  Sidecar serialises both; on load the transform is recomputed
+//       from placement_transformation + the ViewportWindow's current stage
+//       matrices, so v10 sidecars are reusable across .ifcfeds.
+static constexpr uint32_t SIDECAR_VERSION = 10;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

@@ -567,6 +567,29 @@ static void extractFrustumPlanes(const QMatrix4x4& vp, float planes[6][4]) {
     }
 }
 
+// Compute world AABB by transforming the 8 corners of `local_min..local_max`
+// through the column-major 4x4 `M` and bounding the result.  Same maths as
+// GeometryStreamer's worldAabbFromLocal; duplicated here so the viewport
+// can recompute world AABBs independently when stage matrices change.
+static void worldAabbFromLocalVp(const float local_min[3],
+                                 const float local_max[3],
+                                 const float M[16],
+                                 float out_min[3], float out_max[3]) {
+    out_min[0] = out_min[1] = out_min[2] =  std::numeric_limits<float>::max();
+    out_max[0] = out_max[1] = out_max[2] = -std::numeric_limits<float>::max();
+    for (int c = 0; c < 8; ++c) {
+        float x = (c & 1) ? local_max[0] : local_min[0];
+        float y = (c & 2) ? local_max[1] : local_min[1];
+        float z = (c & 4) ? local_max[2] : local_min[2];
+        float wx = M[0]*x + M[4]*y + M[8]*z  + M[12];
+        float wy = M[1]*x + M[5]*y + M[9]*z  + M[13];
+        float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
+        if (wx < out_min[0]) out_min[0] = wx; if (wx > out_max[0]) out_max[0] = wx;
+        if (wy < out_min[1]) out_min[1] = wy; if (wy > out_max[1]) out_max[1] = wy;
+        if (wz < out_min[2]) out_min[2] = wz; if (wz > out_max[2]) out_max[2] = wz;
+    }
+}
+
 // Build bvh_items (one per instance, 1:1 ordering) and a per-model BVH.
 // Items with instances.size() < BVH_MIN_OBJECTS leave bvh empty — the
 // render path falls back to drawing every instance.
@@ -1054,9 +1077,16 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     inst.object_id = chunk.object_id;
     inst.color_override_rgba8 = chunk.color_override_rgba8;
     inst.model_id = chunk.model_id;
-    std::memcpy(inst.transform,      chunk.transform,      sizeof(inst.transform));
-    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
-    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+    // Streamer's `chunk.transform` is the placement_transformation (the
+    // iterator's per-shape transform with vertex-rebasing offset folded in).
+    std::memcpy(inst.placement_transformation, chunk.transform,
+                sizeof(inst.placement_transformation));
+    // Compose against the model's current stage matrices to fill in
+    // inst.transform + inst.world_aabb_*.  When all stages are identity
+    // (the default until a setter is called), this reduces to
+    // transform == placement_transformation and the world AABB matches
+    // the streamer's pre-computed chunk.world_aabb_* exactly.
+    composeInstanceFromPlacement(inst, m);
     m.instances.push_back(inst);
     m.instance_reflected.push_back(transformIsReflected(inst.transform) ? 1 : 0);
 
@@ -1208,6 +1238,14 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         total_tri += (mesh.index_count / 3) * mesh.instance_count;
     }
     m.total_triangles = total_tri;
+
+    // Recompose every instance against the model's current stage matrices.
+    // The cached InstanceCpu::transform / world_aabb_* may have been frozen
+    // against a different .ifcfed's stages — placement_transformation is the
+    // authoritative input, so we always rebuild transform + world_aabb here.
+    for (auto& inst : m.instances) {
+        composeInstanceFromPlacement(inst, m);
+    }
 
     // Build and upload the instance SSBO.
     std::vector<InstanceGpu> gpu(m.instances.size());
@@ -3522,4 +3560,107 @@ void ViewportWindow::handleWheel(QWheelEvent* e) {
     camera_distance_ = qMax(0.1f, camera_distance_);
     setPivotIndicatorVisible(true, 750);
     requestUpdate();
+}
+
+// === Federation pipeline composition ===
+
+void ViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
+                                                  const ModelGpuData& m) const {
+    // Read placement_transformation as float-column-major and lift to double.
+    using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+    const Eigen::Matrix4d P =
+        Eigen::Map<const Mat4fCol>(inst.placement_transformation).cast<double>();
+
+    // FederatedFalseOrigin · ModelTransformation · CoordinateOperation · P.
+    const Eigen::Matrix4d composed =
+        federated_false_origin_meters_ *
+        m.model_transformation_meters *
+        m.coordinate_operation_meters *
+        P;
+
+    Eigen::Map<Mat4fCol> T_f(inst.transform);
+    T_f = composed.cast<float>();
+
+    // World AABB from the composed transform + the mesh's local AABB.
+    if (inst.mesh_id < m.meshes.size()) {
+        const MeshInfo& mi = m.meshes[inst.mesh_id];
+        worldAabbFromLocalVp(mi.local_aabb_min, mi.local_aabb_max,
+                             inst.transform,
+                             inst.world_aabb_min, inst.world_aabb_max);
+    } else {
+        // Mesh not yet uploaded — leave AABB at zero.  The streamer's
+        // contract emits MeshChunk before InstanceChunk so this branch
+        // shouldn't fire under normal flow.
+        for (int a = 0; a < 3; ++a) {
+            inst.world_aabb_min[a] = 0.0f;
+            inst.world_aabb_max[a] = 0.0f;
+        }
+    }
+}
+
+void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
+    if (!gl_initialized_) return;
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    ModelGpuData& m = it->second;
+    if (m.instances.empty()) return;
+    context_->makeCurrent(this);
+
+    // Recompose every instance + refresh reflection flag.
+    m.instance_reflected.resize(m.instances.size());
+    std::vector<InstanceGpu> gpu(m.instances.size());
+    for (size_t i = 0; i < m.instances.size(); ++i) {
+        InstanceCpu& inst = m.instances[i];
+        composeInstanceFromPlacement(inst, m);
+        m.instance_reflected[i] = transformIsReflected(inst.transform) ? 1 : 0;
+
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
+        dst.object_id            = inst.object_id;
+        dst.color_override_rgba8 = inst.color_override_rgba8;
+        dst.mesh_id              = inst.mesh_id;
+        dst._pad1                = 0;
+    }
+
+    // Re-upload the SSBO in one shot — its capacity already matches
+    // m.instances.size() since the SSBO grew incrementally during stream.
+    const size_t bytes = gpu.size() * sizeof(InstanceGpu);
+    if (bytes > m.ssbo_capacity) {
+        if (!growModelSsbo(m, bytes)) return;
+    }
+    if (bytes > 0) {
+        gl_->glNamedBufferSubData(m.ssbo, 0, bytes, gpu.data());
+    }
+    m.ssbo_instance_count = static_cast<uint32_t>(gpu.size());
+
+    // World AABBs changed, so the BVH is stale.
+    buildBvhForModel(m, model_id);
+    have_cached_cull_ = false;
+    requestUpdate();
+}
+
+void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
+    if (federated_false_origin_meters_ == matrix_meters) return;
+    federated_false_origin_meters_ = matrix_meters;
+    for (auto& kv : models_gpu_) {
+        recomposeAndUploadModel(kv.first);
+    }
+}
+
+void ViewportWindow::setModelCoordinateOperation(uint32_t model_id,
+                                                  const Eigen::Matrix4d& matrix_meters) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    if (it->second.coordinate_operation_meters == matrix_meters) return;
+    it->second.coordinate_operation_meters = matrix_meters;
+    recomposeAndUploadModel(model_id);
+}
+
+void ViewportWindow::setModelTransformation(uint32_t model_id,
+                                            const Eigen::Matrix4d& matrix_meters) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    if (it->second.model_transformation_meters == matrix_meters) return;
+    it->second.model_transformation_meters = matrix_meters;
+    recomposeAndUploadModel(model_id);
 }

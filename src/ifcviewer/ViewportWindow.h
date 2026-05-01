@@ -41,6 +41,8 @@ QT_END_NAMESPACE
 #include <future>
 #include <deque>
 
+#include <Eigen/Dense>
+
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
 #include "SidecarCache.h"
@@ -124,6 +126,12 @@ struct ModelGpuData {
 
     bool finalized = false;
     bool hidden    = false;
+
+    // Per-model federation-pipeline matrices in metres.  Default identity
+    // → no per-model contribution to the composed transform.  See
+    // Federation.h for the full pipeline composition order.
+    Eigen::Matrix4d coordinate_operation_meters = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d model_transformation_meters = Eigen::Matrix4d::Identity();
 };
 
 // Rendering is event-driven: render() runs only when QEvent::UpdateRequest
@@ -168,6 +176,18 @@ public:
     void hideModel(uint32_t model_id);
     void showModel(uint32_t model_id);
     void removeModel(uint32_t model_id);
+
+    // Federation pipeline: composed instance transform =
+    //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+    //                                              · placement_transformation
+    // setFederatedFalseOrigin affects every model; the per-model setters
+    // affect a single model.  Each setter rewrites the SSBO, recomputes
+    // world AABBs, rebuilds the BVH, and posts an update.  Defaults are
+    // identity, so until a setter is called the composed transform equals
+    // placement_transformation.
+    void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
+    void setModelCoordinateOperation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
+    void setModelTransformation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
 
     void setSelectedObjectId(uint32_t id);
     uint32_t pickObjectAt(int x, int y);
@@ -364,6 +384,21 @@ private:
     // model's SSBO + indirect buffer, growing them if needed.
     void uploadCullResults(ModelGpuData& m);
 
+    // Compose
+    //     FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+    //                                                · placement_transformation
+    // for one instance: writes inst.transform (composed, float) and
+    // recomputes inst.world_aabb_* from the composed transform + the
+    // mesh's local AABB.  Maths runs in double; narrow to float at the end.
+    void composeInstanceFromPlacement(InstanceCpu& inst, const ModelGpuData& m) const;
+
+    // Walk every instance of `model_id`, recompose `transform` from
+    // `placement_transformation` + current stage matrices, recompute world
+    // AABBs, re-upload the InstanceGpu SSBO, refresh instance_reflected,
+    // and rebuild the BVH.  Posts an update.  No-op if model_id is unknown
+    // or GL isn't initialised yet.
+    void recomposeAndUploadModel(uint32_t model_id);
+
     // Mouse interaction
     void handleMousePress(QMouseEvent* event);
     void handleMouseRelease(QMouseEvent* event);
@@ -412,6 +447,10 @@ private:
 
     // Per-model GPU data
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
+
+    // FederatedFalseOrigin matrix, in metres.  Default identity → no
+    // contribution to the composed transform.  See Federation.h.
+    Eigen::Matrix4d federated_false_origin_meters_ = Eigen::Matrix4d::Identity();
 
     // Pick framebuffer.  Three color attachments:
     //   0: R32UI    — object_id

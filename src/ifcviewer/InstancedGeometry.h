@@ -98,11 +98,20 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 
 // CPU-side per-instance data.  The GPU record above is derived from this;
 // we also retain the world AABB for BVH construction and the mesh_id.
+//
+// `placement_transformation` is the raw streamer output (the iterator's
+// transform with vertex-rebasing offset folded in; pre-CoordinateOperation
+// / FederatedFalseOrigin / ModelTransformation).  `transform` is the
+// composed FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+// · placement_transformation result — what gets uploaded to the SSBO and
+// used to compute world_aabb_*.  When ViewportWindow's stage matrices are
+// all identity (default), the two are equal.
 struct InstanceCpu {
-    uint32_t mesh_id              = 0;  // index into meshes array
-    uint32_t object_id            = 0;
-    uint32_t color_override_rgba8 = 0;
-    uint32_t model_id             = 0;
+    uint32_t mesh_id                  = 0;  // index into meshes array
+    uint32_t object_id                = 0;
+    uint32_t color_override_rgba8     = 0;
+    uint32_t model_id                 = 0;
+    float    placement_transformation[16]{};
     float    transform[16]{};
     float    world_aabb_min[3]{};
     float    world_aabb_max[3]{};
