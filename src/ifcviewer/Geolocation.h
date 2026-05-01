@@ -27,6 +27,8 @@
 #ifndef GEOLOCATION_H
 #define GEOLOCATION_H
 
+#include "../ifcparse/express.h"
+
 #include <Eigen/Dense>
 
 #include <optional>
@@ -69,5 +71,33 @@ Eigen::Matrix4d local2global(const Eigen::Matrix4d& matrix,
 Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
                                  const Eigen::Matrix4d& matrix,
                                  bool should_return_in_map_units = true);
+
+// Build the Helmert transformation as a meter-input / meter-output 4x4 matrix
+// directly from parsed parameters, bypassing autoLocal2Global's normalisation
+// step.  Used by callers that want a single per-model georef matrix to compose
+// with placement matrices at upload time.
+//
+// Result has shape:
+//     [ R_z(theta) · diag(fx, fy, fz)  | (e, n, h) · u_m ]
+//     [ 0                               | 1               ]
+//
+// `map_unit_to_meters` is the SI scale of IfcProjectedCRS.MapUnit (or the
+// project's LENGTHUNIT scale if MapUnit is absent).  The caller composes any
+// IfcGeometricRepresentationContext WCS on the right:
+//     G = helmertMetersFromParameters(...) · inv(wcs_meters)
+// (where wcs_meters has its translation column converted from project units
+// to meters via calculateUnitScale).
+//
+// Unlike autoLocal2Global, this preserves IfcMapConversionScaled.FactorX/Y/Z
+// in the rotation block, so they apply correctly to placement translations
+// when composing per-model.
+Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& params,
+                                            double map_unit_to_meters);
+
+// IfcCoordinateOperation.TargetCRS.MapUnit (the IfcNamedUnit), if present.
+// Returns nullopt for IFC2X3, models without an IfcCoordinateOperation, or
+// when MapUnit is absent on the IfcProjectedCRS.  Callers fall back to
+// calculateUnitScale(file, "LENGTHUNIT") in that case.
+std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file);
 
 #endif // GEOLOCATION_H

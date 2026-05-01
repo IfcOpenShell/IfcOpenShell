@@ -274,3 +274,40 @@ Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
     }
     return result;
 }
+
+Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& p,
+                                            double map_unit_to_meters) {
+    const double theta = std::atan2(p.xao, p.xaa);
+    const double c = std::cos(theta);
+    const double s = std::sin(theta);
+
+    Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
+    // R_z(theta) · diag(fx, fy, fz).  Factors stay in the rotation block so
+    // they apply to placement translations on compose; this is the behaviour
+    // IfcMapConversionScaled actually wants ("grid distance ≠ ground
+    // distance" — buildings on the grid should appear scaled by f).
+    M(0, 0) =  c * p.factor_x; M(0, 1) = -s * p.factor_y; M(0, 2) = 0.0;
+    M(1, 0) =  s * p.factor_x; M(1, 1) =  c * p.factor_y; M(1, 2) = 0.0;
+    M(2, 0) =  0.0;            M(2, 1) =  0.0;            M(2, 2) = p.factor_z;
+    M(0, 3) = p.e * map_unit_to_meters;
+    M(1, 3) = p.n * map_unit_to_meters;
+    M(2, 3) = p.h * map_unit_to_meters;
+    return M;
+}
+
+std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file) {
+    std::vector<express::Base> coordops;
+    try {
+        coordops = ifc_file->instances_by_type("IfcCoordinateOperation");
+    } catch (...) {
+        return std::nullopt;
+    }
+    if (coordops.empty()) return std::nullopt;
+    auto target_attr = coordops[0].as<express::Entity>().get("TargetCRS");
+    if (target_attr.isNull()) return std::nullopt;
+    express::Base target = target_attr;
+    if (!target.declaration().is("IfcProjectedCRS")) return std::nullopt;
+    auto mu_attr = target.as<express::Entity>().get("MapUnit");
+    if (mu_attr.isNull()) return std::nullopt;
+    return (express::Base) mu_attr;
+}
