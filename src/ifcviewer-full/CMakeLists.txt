@@ -34,7 +34,3 @@ set_target_properties(IfcViewerFull PROPERTIES
 target_link_libraries(IfcViewerFull PRIVATE IfcViewer)
 
 install(TARGETS IfcViewerFull EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
-
-if(BUILD_IFCVIEWER_TESTS)
-    add_subdirectory(tests)
-endif()

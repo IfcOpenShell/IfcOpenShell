@@ -47,3 +47,22 @@ add_ifcviewer_unit_test(test_sidecar_cache
 )
 
 add_ifcviewer_unit_test(test_instanced_geometry)
+
+# Federation is Qt-derived (QObject + signals + QVector3D + QJson*).  Unlike
+# the other Tier-1 tests it has to pull Qt6::Core/Gui/Test in directly and
+# enable AUTOMOC for the Q_OBJECT moc-generation.
+find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})
+
+add_executable(test_federation
+    test_federation.cpp
+    ${IFCVIEWER_SRC}/Federation.cpp
+)
+set_target_properties(test_federation PROPERTIES AUTOMOC ON)
+target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})
+target_link_libraries(test_federation PRIVATE
+    Catch2::Catch2WithMain
+    Qt${QT_VERSION}::Core
+    Qt${QT_VERSION}::Gui    # Federation::HomeView uses QVector3D from QtGui
+    Qt${QT_VERSION}::Test   # QSignalSpy
+)
+catch_discover_tests(test_federation)
