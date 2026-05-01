@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include "AppSettings.h"
 #include "Federation.h"
+#include "FederationSettingsDialog.h"
 #include "SettingsWindow.h"
 #include "LodBuilder.h"
 #include "SidecarCache.h"
@@ -189,6 +190,8 @@ void MainWindow::setupMenus() {
     file_menu->addAction("Save Federation &As...",
                          this, &MainWindow::onFederationSaveAs,
                          QKeySequence::SaveAs);
+    file_menu->addAction("Federation Se&ttings...",
+                         this, &MainWindow::onFederationSettings);
     file_menu->addSeparator();
     file_menu->addAction("&Settings...", this, &MainWindow::onFileSettings);
     file_menu->addSeparator();
@@ -226,6 +229,15 @@ void MainWindow::onFileSettings() {
     settings_->open();
     settings_->activateWindow();
     settings_->raise();
+}
+
+void MainWindow::onFederationSettings() {
+    if (federation_settings_ == nullptr) {
+        federation_settings_ = new FederationSettingsDialog(federation_, this);
+    }
+    federation_settings_->open();
+    federation_settings_->activateWindow();
+    federation_settings_->raise();
 }
 
 void MainWindow::addFiles(const QStringList& paths) {
