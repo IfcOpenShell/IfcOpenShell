@@ -740,15 +740,8 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 1.0 if abs(mirror_normal_local.y) > 0.5 else 0.0,
                 1.0 if abs(mirror_normal_local.z) > 0.5 else 0.0,
             )
-            print(f"[mirror] --- {obj.name} ---")
-            print(f"[mirror] mirror_ref='{mirror_ref.name}'")
-            print(f"[mirror] mirror_ref rotation:      {mirror_ref.matrix_world.to_euler()}")
-            print(f"[mirror] mirror normal (world):    {mirror_normal_world}")
-            print(f"[mirror] mirror normal (obj local):{mirror_normal_local}")
-            print(f"[mirror] mirror_axes:              {mirror_axes}")
         else:
             mirror_axes = (1, 0, 0)
-            print(f"[mirror] --- {obj.name} --- no mirror_ref, mirror_axes={mirror_axes}")
 
         # Snapshot opening world placements AND slab placement BEFORE any geometry or origin changes.
         # We work in the slab's LOCAL coordinate space so the mirrored relative offset is correct
@@ -761,23 +754,15 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 opening = rel.RelatedOpeningElement
                 M = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
                 opening_placements_before[opening.id()] = M.copy()
-                print(f"[mirror] opening #{opening.id()} pre-mirror world pos={M[:3, 3].tolist()}")
-                M_rel = np.linalg.inv(M_slab_before) @ M
-                print(f"[mirror] opening #{opening.id()} pre-mirror slab-local pos={M_rel[:3, 3].tolist()}")
 
         usage_type = tool.Model.get_usage_type(element)
-        print(f"[mirror] usage_type={usage_type} type_element=#{type_element.id() if type_element else None}")
-        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type != "LAYER3")
+        type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
+        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type != "LAYER3" and type_has_reps)
         if is_assign_type_path:
-            # obj has a type, use / create inverted type and assign it
-            print(f"[mirror] -> assign_inverted_type path")
             self.assign_inverted_type(element, mirror_axes)
-            M_elem_after_assign = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-            print(f"[mirror] element IFC pos after assign_inverted_type: {M_elem_after_assign[:3, 3].tolist()}")
         else:
             # invert representation of entity directly;
-            # LAYER3 (slabs) store geometry on the instance, not the type, so always use this path
-            print(f"[mirror] -> invert_representation path (direct)")
+            # LAYER3 (slabs) and elements whose type carries no geometry use this path
             # Update opening placements BEFORE invert_representation so its internal reload
             # sees the correct positions.  No element rotation change on this path → frame_change = I.
             if opening_placements_before and M_slab_before is not None:
@@ -789,17 +774,14 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         if mirror_ref:
             # Reflect object origin about the mirror reference's YZ plane
             origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
-            print(f"[mirror] origin before: {obj.matrix_world.translation}")
             origin_in_mirror.x *= -1
             obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
-            print(f"[mirror] origin after:  {obj.matrix_world.translation}")
         else:
             # Fall back: nudge in place to compensate for bounding box shift after inversion
             mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
             x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
             x_correction_vec = (obj.matrix_world @ Vector((x_correction_factor, 0, 0, 0))).xyz
             obj.location -= x_correction_vec
-            print(f"[mirror] fallback x_correction={x_correction_factor}")
 
         if element.is_a("IfcElement") and element.FillsVoids:
             tool.Model.update_simple_openings(element)
@@ -817,30 +799,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         # bonsai does not automatically switch to the representation that should be active in the given context
         # when switching to a type that was previously viewed in another context (e.g. plan view),
         # the wrong representation will be used.
-        if opening_placements_before:
-            for rel in element.HasOpenings:
-                op = rel.RelatedOpeningElement
-                M_pre_switch = ifcopenshell.util.placement.get_local_placement(op.ObjectPlacement)
-                print(f"[mirror] opening #{op.id()} IFC world PRE switch_representation: {M_pre_switch[:3, 3].tolist()}")
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
             representation=ifcopenshell.util.representation.get_representation(element, active_context),
         )
-        if opening_placements_before:
-            for rel in element.HasOpenings:
-                op = rel.RelatedOpeningElement
-                M_post_switch = ifcopenshell.util.placement.get_local_placement(op.ObjectPlacement)
-                print(f"[mirror] opening #{op.id()} IFC world POST switch_representation: {M_post_switch[:3, 3].tolist()}")
-                op_obj = tool.Ifc.get_object(op)
-                if op_obj:
-                    print(f"[mirror] opening #{op.id()} Blender world POST switch_representation: {list(op_obj.matrix_world.translation)}")
-                else:
-                    print(f"[mirror] opening #{op.id()} has no Blender object yet")
-        print(f"[mirror] element Blender world POST switch_representation: {list(obj.matrix_world.translation)}")
-        M_elem_post_switch = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        print(f"[mirror] element IFC world POST switch_representation: {M_elem_post_switch[:3, 3].tolist()}")
 
     def _apply_opening_mirror(self, element, mirror_axes, M_slab_before, opening_placements_before, frame_change):
         """Mirror IfcOpeningElement placements in element-local space.
@@ -879,15 +843,9 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             M_rel_new[:3, :3] = frame_change @ R_mirrored
 
             M_abs_new = M_slab_before @ M_rel_new
-            print(f"[mirror] opening #{opening.id()} slab-local: {M_rel[:3, 3].tolist()} -> {M_rel_new[:3, 3].tolist()}")
-            print(f"[mirror] opening #{opening.id()} world:      {M_abs_old[:3, 3].tolist()} -> {M_abs_new[:3, 3].tolist()}")
-            print(f"[mirror] opening #{opening.id()} rot_before X={M_rel[:3, 0].tolist()} Z={M_rel[:3, 2].tolist()}")
-            print(f"[mirror] opening #{opening.id()} rot_after  X={M_rel_new[:3, 0].tolist()} Z={M_rel_new[:3, 2].tolist()}")
             ifcopenshell.api.geometry.edit_object_placement(
                 tool.Ifc.get(), product=opening, matrix=M_abs_new, is_si=False
             )
-            M_after = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
-            print(f"[mirror] opening #{opening.id()} IFC world AFTER: pos={M_after[:3, 3].tolist()} X={M_after[:3, 0].tolist()} Z={M_after[:3, 2].tolist()}")
 
             # Mirror the opening's own representation geometry (local vertices/profile).
             # edit_object_placement only moves the frame; the local shape must also be
@@ -901,48 +859,68 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                     for item in rep.Items:
                         try:
                             builder.mirror(item, mirror_axes_2d, create_copy=False)
-                            print(f"[mirror] opening #{opening.id()} geometry mirrored: #{item.id()} {item.is_a()}")
-                        except Exception as e:
-                            print(f"[mirror] opening #{opening.id()} geometry mirror failed for #{item.id()} {item.is_a()}: {e}")
+                        except Exception:
+                            pass
 
     def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
         # ShapeBuilder.mirror works in 2D; use only the XY components
         mirror_axes_2d = mirror_axes[:2]
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-        print(f"[mirror:invert_general] element=#{element.id()} {element.is_a()} mirror_axes={mirror_axes} mirror_axes_2d={mirror_axes_2d}")
 
-        def mirror_item(item, depth=0):
-            indent = "  " * depth
-            print(f"[mirror:invert_general] {indent}mirror_item #{item.id()} type={item.is_a()}")
+        def mirror_item(item):
             if item.is_a("IfcBooleanResult"):
-                print(f"[mirror:invert_general] {indent}  -> IfcBooleanResult operator={item.Operator}")
-                print(f"[mirror:invert_general] {indent}  -> FirstOperand #{item.FirstOperand.id()} {item.FirstOperand.is_a()}")
-                mirror_item(item.FirstOperand, depth + 1)
-                print(f"[mirror:invert_general] {indent}  -> SecondOperand #{item.SecondOperand.id()} {item.SecondOperand.is_a()}")
+                mirror_item(item.FirstOperand)
                 try:
-                    mirror_item(item.SecondOperand, depth + 1)
-                except Exception as e:
-                    print(f"[mirror:invert_general] {indent}  -> SecondOperand skipped: {e}")
+                    mirror_item(item.SecondOperand)
+                except Exception:
+                    pass
+            elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
+                shells = [item.Outer]
+                if item.is_a("IfcFacetedBrepWithVoids"):
+                    shells.extend(item.Voids)
+
+                # Mirror all unique vertex coordinates along the flipped axes
+                points_done = set()
+                for shell in shells:
+                    for face in shell.CfsFaces:
+                        for bound in face.Bounds:
+                            if not bound.Bound.is_a("IfcPolyLoop"):
+                                continue
+                            for pt in bound.Bound.Polygon:
+                                if pt.id() in points_done:
+                                    continue
+                                points_done.add(pt.id())
+                                coords = list(pt.Coordinates)
+                                for i, flip in enumerate(mirror_axes[: len(coords)]):
+                                    if flip > 0.0:
+                                        coords[i] = -coords[i]
+                                pt.Coordinates = coords
+
+                # Reverse face winding for an odd number of flipped axes (restores outward normals)
+                num_flipped = sum(1 for v in mirror_axes if v > 0.0)
+                if num_flipped % 2 == 1:
+                    for shell in shells:
+                        for face in shell.CfsFaces:
+                            for bound in face.Bounds:
+                                if bound.Bound.is_a("IfcPolyLoop"):
+                                    bound.Bound.Polygon = list(reversed(bound.Bound.Polygon))
+            elif item.is_a("IfcMappedItem"):
+                for sub in item.MappingSource.MappedRepresentation.Items:
+                    mirror_item(sub)
             else:
-                print(f"[mirror:invert_general] {indent}  -> calling builder.mirror()")
                 builder.mirror(item, mirror_axes_2d, create_copy=False)
 
         if element.is_a("IfcProduct"):
             if not element.Representation:
-                print(f"[mirror:invert_general] element has no Representation, skipping")
                 return
-
             for representation in element.Representation.Representations:
-                print(f"[mirror:invert_general] representation #{representation.id()} context={representation.ContextOfItems.ContextIdentifier!r} type={representation.RepresentationType!r} items={len(representation.Items)}")
                 for item in representation.Items:
                     mirror_item(item)
         elif element.is_a("IfcTypeProduct"):
             for representation_map in (element.RepresentationMaps or []):
-                print(f"[mirror:invert_general] representation_map #{representation_map.id()} items={len(representation_map.MappedRepresentation.Items)}")
                 for item in representation_map.MappedRepresentation.Items:
                     mirror_item(item)
 
-        print(f"[mirror:invert_general] reloading representation for #{element.id()}")
         tool.Geometry.reload_representation(tool.Ifc.get_object(element))
 
     def invert_door_swing(self, element):
@@ -995,9 +973,6 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.Modifier.set_mirrored_type(inverted_type, type_element)
             tool.Blender.Modifier.set_mirrored_type(type_element, inverted_type)
             inverted_type.Name = f"{inverted_type.Name}.Mirror"
-            print(f"[mirror] created new inverted type '{inverted_type.Name}'")
-        else:
-            print(f"[mirror] reusing cached type '{inverted_type.Name}', mirror_axes={mirror_axes}")
 
         bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element, inverted_type)
 
@@ -1010,14 +985,12 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             rot_180_z = Matrix.Rotation(math.pi, 4, "Z")
             obj.matrix_world = rot_180_z @ obj.matrix_world
             obj.matrix_world.translation = loc
-            print(f"[mirror] applied 180° Z rotation to compensate for Y-flip")
         elif mirror_axes == (0.0, 0.0, 1.0):
             obj = tool.Ifc.get_object(element)
             loc = obj.matrix_world.translation.copy()
             rot_180_y = Matrix.Rotation(math.pi, 4, "Y")
             obj.matrix_world = rot_180_y @ obj.matrix_world
             obj.matrix_world.translation = loc
-            print(f"[mirror] applied 180° Y rotation to compensate for Z-flip")
 
 
 def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
