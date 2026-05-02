@@ -594,12 +594,18 @@ void MainWindow::applyFederatedFalseOriginToViewport() {
     viewport_->setFederatedFalseOrigin(M);
 }
 
-void MainWindow::onLoadedFromSidecar(uint32_t /*mid*/, qint64 elapsed_ms) {
+void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
     progress_bar_->setVisible(false);
     status_label_->setText(QString("%1 elements across %2 model(s) — loaded from cache in %3")
         .arg(element_map_.size())
         .arg(loader_->modelCount())
         .arg(formatElapsed(elapsed_ms)));
+
+    // Sidecar v11+ caches the CoordinateOperation, so SceneLoader has
+    // already populated modelGeoref by now — push CoordinateOperation +
+    // ModelTransformation immediately rather than waiting for the
+    // (possibly never-arriving) data-source load.
+    applyCoordinateOperationToViewport(mid);
 }
 
 void MainWindow::onStreamedElementsReady(uint32_t /*mid*/, std::vector<ElementInfo> elements) {
@@ -614,6 +620,16 @@ void MainWindow::onStreamedElementsReady(uint32_t /*mid*/, std::vector<ElementIn
 void MainWindow::writeSidecarForModel(uint32_t mid) {
     SidecarData sd;
     if (!viewport_->snapshotModel(mid, sd)) return;
+
+    // Cache the model's CoordinateOperation alongside the geometry so a
+    // sidecar load doesn't need the IFC source just to apply georef.
+    if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
+        sd.has_coordinate_operation = gr->has_coordinate_operation ? 1 : 0;
+        Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
+            sd.coordinate_operation_meters) = gr->coordinate_operation_meters;
+        sd.project_length_to_meters = gr->units.project_length_to_meters;
+        sd.map_unit_to_meters       = gr->units.map_unit_to_meters;
+    }
 
     for (const auto& [oid, info] : element_map_) {
         if (info.model_id != mid) continue;

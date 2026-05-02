@@ -53,7 +53,13 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       result.  Sidecar serialises both; on load the transform is recomputed
 //       from placement_transformation + the ViewportWindow's current stage
 //       matrices, so v10 sidecars are reusable across .ifcfeds.
-static constexpr uint32_t SIDECAR_VERSION = 10;
+// v11 = SidecarData gains a per-model CoordinateOperation cache:
+//       coordinate_operation_meters[16] (column-major), unit scales, and a
+//       has_coordinate_operation flag.  Lets sidecar-loaded models apply
+//       georef without re-parsing the IFC source.  Edits to the IFC's
+//       IfcMapConversion do NOT invalidate the sidecar — delete the
+//       .ifcview manually if you change the source's georef parameters.
+static constexpr uint32_t SIDECAR_VERSION = 11;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
@@ -82,6 +88,19 @@ struct SidecarData {
     // Mesh dictionary and per-instance data.
     std::vector<MeshInfo>     meshes;        // indexed by local_mesh_id
     std::vector<InstanceCpu>  instances;     // sorted by mesh_id
+
+    // CoordinateOperation cache (v11+).  Mirrors ModelGeoref so a sidecar
+    // load can apply georef without re-parsing the IFC source.
+    // has_coordinate_operation == 0 means the model has no
+    // IfcMapConversion; the matrix is then the identity placeholder.
+    double   coordinate_operation_meters[16] = {
+                 1, 0, 0, 0,
+                 0, 1, 0, 0,
+                 0, 0, 1, 0,
+                 0, 0, 0, 1 };
+    double   project_length_to_meters = 1.0;
+    double   map_unit_to_meters       = 1.0;
+    uint32_t has_coordinate_operation = 0;
 
     // Element tree metadata.
     std::vector<PackedElementInfo> elements;

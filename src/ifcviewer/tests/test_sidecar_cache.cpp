@@ -88,7 +88,10 @@ SidecarData buildFixture() {
         inst.object_id = uint32_t(100 + i);
         inst.color_override_rgba8 = uint32_t(0xAA000000u | (i * 0x010203u));
         inst.model_id  = 1;
-        for (int k = 0; k < 16; ++k) inst.transform[k] = float(i) * 0.5f + float(k);
+        for (int k = 0; k < 16; ++k) {
+            inst.placement_transformation[k] = float(i) * 0.25f + float(k);
+            inst.transform[k]                = float(i) * 0.5f  + float(k);
+        }
         inst.world_aabb_min[0] = float(i);
         inst.world_aabb_min[1] = float(i + 1);
         inst.world_aabb_min[2] = float(i + 2);
@@ -96,6 +99,12 @@ SidecarData buildFixture() {
         inst.world_aabb_max[1] = float(i + 1) + 10.0f;
         inst.world_aabb_max[2] = float(i + 2) + 10.0f;
     }
+
+    // Non-default georef block.
+    sd.has_coordinate_operation = 1;
+    for (int k = 0; k < 16; ++k) sd.coordinate_operation_meters[k] = 0.5 + 0.1 * k;
+    sd.project_length_to_meters = 0.001;  // mm project
+    sd.map_unit_to_meters       = 1.0;    // metres map
 
     sd.string_table = std::string("\0Wall\0Slab\0", 11);  // includes embedded NULs
     sd.elements.resize(3);
@@ -129,6 +138,15 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
     for (size_t i = 0; i < a.elements.size(); ++i) {
         if (std::memcmp(&a.elements[i], &b.elements[i], sizeof(PackedElementInfo)) != 0) return false;
     }
+
+    // v11 georef block.
+    if (a.has_coordinate_operation != b.has_coordinate_operation) return false;
+    if (a.project_length_to_meters != b.project_length_to_meters) return false;
+    if (a.map_unit_to_meters       != b.map_unit_to_meters)       return false;
+    for (int i = 0; i < 16; ++i) {
+        if (a.coordinate_operation_meters[i] != b.coordinate_operation_meters[i])
+            return false;
+    }
     return true;
 }
 
@@ -137,7 +155,7 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 9);
+    REQUIRE(SIDECAR_VERSION == 11);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }
 

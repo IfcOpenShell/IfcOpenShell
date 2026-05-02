@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-// v9 layout (all multi-byte fields native-endian; endianness marker in header).
+// v11 layout (all multi-byte fields native-endian; endianness marker in header).
 //
 //   SidecarHeader (12 bytes)
 //
@@ -30,7 +30,12 @@
 //   MeshInfo[num_meshes]
 //
 //   uint32_t  num_instances
-//   InstanceCpu[num_instances]   (already sorted by mesh_id)
+//   InstanceCpu[num_instances]   (already sorted by mesh_id; v10 layout)
+//
+//   uint32_t  has_coordinate_operation              (v11+)
+//   double[16] coordinate_operation_meters          (v11+; column-major)
+//   double    project_length_to_meters              (v11+)
+//   double    map_unit_to_meters                    (v11+)
 //
 //   uint32_t  num_elements
 //   PackedElementInfo[num_elements]
@@ -93,6 +98,16 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     if (!writeVec(f, data.indices))   { fclose(f); return false; }
     if (!writeVec(f, data.meshes))    { fclose(f); return false; }
     if (!writeVec(f, data.instances)) { fclose(f); return false; }
+
+    // v11 georef block (148 B).
+    if (fwrite(&data.has_coordinate_operation, 4, 1, f) != 1) { fclose(f); return false; }
+    if (fwrite(data.coordinate_operation_meters,
+               sizeof(double), 16, f) != 16)               { fclose(f); return false; }
+    if (fwrite(&data.project_length_to_meters,
+               sizeof(double), 1, f)  != 1)                { fclose(f); return false; }
+    if (fwrite(&data.map_unit_to_meters,
+               sizeof(double), 1, f)  != 1)                { fclose(f); return false; }
+
     if (!writeVec(f, data.elements))  { fclose(f); return false; }
 
     uint32_t stbl_len = static_cast<uint32_t>(data.string_table.size());
@@ -123,6 +138,16 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
     if (!readVec(f, data.indices))   return fail();
     if (!readVec(f, data.meshes))    return fail();
     if (!readVec(f, data.instances)) return fail();
+
+    // v11 georef block.
+    if (fread(&data.has_coordinate_operation, 4, 1, f) != 1) return fail();
+    if (fread(data.coordinate_operation_meters,
+              sizeof(double), 16, f) != 16)                  return fail();
+    if (fread(&data.project_length_to_meters,
+              sizeof(double), 1, f)  != 1)                   return fail();
+    if (fread(&data.map_unit_to_meters,
+              sizeof(double), 1, f)  != 1)                   return fail();
+
     if (!readVec(f, data.elements))  return fail();
 
     uint32_t stbl_len;

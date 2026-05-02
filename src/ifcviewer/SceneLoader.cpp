@@ -199,6 +199,21 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
         inst.model_id   = mid;
     }
 
+    // Restore the cached CoordinateOperation into the model so
+    // modelGeoref(mid) returns it without needing the IFC source.  Prevents
+    // sidecar-loaded models from silently losing their georef when the
+    // .ifc/.rdb sibling is absent or AppSettings.loadDataSource is off.
+    {
+        ModelGeoref& gr = model.georef;
+        gr.has_coordinate_operation = data.has_coordinate_operation != 0;
+        Eigen::Map<const Eigen::Matrix<double, 4, 4, Eigen::ColMajor>> M(
+            data.coordinate_operation_meters);
+        gr.coordinate_operation_meters     = M;
+        gr.units.project_length_to_meters  = data.project_length_to_meters;
+        gr.units.map_unit_to_meters        = data.map_unit_to_meters;
+        model.has_georef                   = true;
+    }
+
     std::vector<PackedElementInfo> elements = std::move(data.elements);
     std::string stbl                        = std::move(data.string_table);
 
