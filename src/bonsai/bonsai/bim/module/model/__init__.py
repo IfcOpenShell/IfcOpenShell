@@ -367,6 +367,8 @@ def register():
     )
 
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
+    bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
     workspace.load_custom_icons()
@@ -394,5 +396,7 @@ def unregister():
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
+    bpy.types.VIEW3D_MT_object_context_menu.remove(ui.object_menu)
+    bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
 
     workspace.unload_custom_icons()

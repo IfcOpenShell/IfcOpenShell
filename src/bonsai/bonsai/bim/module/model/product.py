@@ -757,17 +757,30 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
         type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
-        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type != "LAYER3" and type_has_reps)
+        # LAYER2 (walls) and LAYER3 (slabs) generate instance-specific bodies via DumbWallGenerator /
+        # DumbSlabGenerator rather than mapping the type's RepresentationMaps.  assign_inverted_type
+        # only flips the *type* geometry and would leave the instance body unchanged, so both layer
+        # usage types must go through invert_representation instead.
+        is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type not in ("LAYER2", "LAYER3") and type_has_reps)
         if is_assign_type_path:
             self.assign_inverted_type(element, mirror_axes)
         else:
             # invert representation of entity directly;
-            # LAYER3 (slabs) and elements whose type carries no geometry use this path
+            # LAYER2/LAYER3 (walls/slabs) and elements whose type carries no geometry use this path
             # Update opening placements BEFORE invert_representation so its internal reload
             # sees the correct positions.  No element rotation change on this path → frame_change = I.
             if opening_placements_before and M_slab_before is not None:
                 self._apply_opening_mirror(element, mirror_axes, M_slab_before, opening_placements_before, np.eye(3))
             self.invert_representation(element, mirror_axes)
+            # For LAYER2 walls, layers stack along local Y (LayerSetDirection=AXIS2).  A Y-axis flip
+            # reverses that direction, so DirectionSense and OffsetFromReferenceLine must both invert.
+            # (X/Z flips don't touch local Y, and the assign_inverted_type path handles Y-mirror via
+            # a 180°Z element rotation which implicitly flips local Y without changing the IFC attribute.)
+            if usage_type == "LAYER2" and mirror_axes[1] > 0.5:
+                mat_usage = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                if mat_usage and mat_usage.is_a("IfcMaterialLayerSetUsage"):
+                    mat_usage.DirectionSense = "NEGATIVE" if mat_usage.DirectionSense == "POSITIVE" else "POSITIVE"
+                    mat_usage.OffsetFromReferenceLine = -mat_usage.OffsetFromReferenceLine
 
         context.view_layer.update()
 
