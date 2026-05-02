@@ -177,6 +177,12 @@ public:
     void showModel(uint32_t model_id);
     void removeModel(uint32_t model_id);
 
+    // Debug helper: walk to the currently selected object's instance and
+    // qInfo a sample vertex (decoded from the VBO), the placement
+    // transformation matrix, and the global matrix
+    // (CoordinateOperation · placement_transformation), in metres.
+    void printSelectedObjectCoords();
+
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
     //                                              · placement_transformation

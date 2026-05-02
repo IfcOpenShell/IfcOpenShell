@@ -201,6 +201,17 @@ void MainWindow::setupMenus() {
     file_menu->addAction("&Quit", QKeySequence::Quit, qApp, &QApplication::quit);
 
     auto* view_menu = menuBar()->addMenu("&View");
+    // F frames the current selection.  The viewport already binds F in its
+    // own keyPressEvent for the case where it has focus; this duplicate at
+    // window level is so the shortcut still fires when the tree, property
+    // table, or any other child widget has keyboard focus.
+    view_menu->addAction("&Frame Selected", this, [this]() {
+        viewport_->focusOnSelectedObject();
+    }, QKeySequence(Qt::Key_F));
+    view_menu->addAction("Print Selected &Coords", this, [this]() {
+        viewport_->printSelectedObjectCoords();
+    }, QKeySequence("Ctrl+Shift+P"));
+    view_menu->addSeparator();
     view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
     view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);
 }

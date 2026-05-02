@@ -3664,3 +3664,86 @@ void ViewportWindow::setModelTransformation(uint32_t model_id,
     it->second.model_transformation_meters = matrix_meters;
     recomposeAndUploadModel(model_id);
 }
+
+void ViewportWindow::printSelectedObjectCoords() {
+    if (selected_object_id_ == 0) {
+        qInfo("printSelectedObjectCoords: no object selected");
+        return;
+    }
+    if (!gl_initialized_) {
+        qInfo("printSelectedObjectCoords: GL not initialised yet");
+        return;
+    }
+
+    for (const auto& kv : models_gpu_) {
+        const ModelGpuData& m = kv.second;
+        for (size_t i = 0; i < m.instances.size(); ++i) {
+            const InstanceCpu& inst = m.instances[i];
+            if (inst.object_id != selected_object_id_) continue;
+
+            qInfo("Selected object %u (model %u, mesh %u, instance %zu):",
+                  inst.object_id, inst.model_id, inst.mesh_id, i);
+
+            // Decode the first emitted vertex from the VBO.  Per
+            // InstancedGeometry.h: pos is 3 x uint16 at offset 0, normalised
+            // to [0,1] and dequantised against the mesh's local AABB.
+            float vx = 0, vy = 0, vz = 0;
+            bool have_vert = false;
+            if (inst.mesh_id < m.meshes.size()) {
+                const MeshInfo& mi = m.meshes[inst.mesh_id];
+                if (mi.vertex_count > 0) {
+                    context_->makeCurrent(this);
+                    uint16_t pos_u16[3] = {0, 0, 0};
+                    gl_->glGetNamedBufferSubData(
+                        m.vbo, mi.vbo_byte_offset, sizeof(pos_u16), pos_u16);
+                    auto lerp = [](float lo, float hi, float t) {
+                        return lo + t * (hi - lo);
+                    };
+                    vx = lerp(mi.local_aabb_min[0], mi.local_aabb_max[0],
+                              pos_u16[0] / 65535.0f);
+                    vy = lerp(mi.local_aabb_min[1], mi.local_aabb_max[1],
+                              pos_u16[1] / 65535.0f);
+                    vz = lerp(mi.local_aabb_min[2], mi.local_aabb_max[2],
+                              pos_u16[2] / 65535.0f);
+                    have_vert = true;
+                }
+            }
+            if (have_vert) {
+                qInfo("  vertex (mesh-local m): (%g, %g, %g)", vx, vy, vz);
+            } else {
+                qInfo("  vertex: (no vertex data)");
+            }
+
+            using Mat4f = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+            const Eigen::Matrix4d Pd =
+                Eigen::Map<const Mat4f>(inst.placement_transformation).cast<double>();
+            // global = CoordinateOperation · placement_transformation.
+            // (FederatedFalseOrigin and ModelTransformation are user-side
+            // tweaks; "global" here means the IFC's own georeferenced frame.)
+            const Eigen::Matrix4d Gd = m.coordinate_operation_meters * Pd;
+
+            auto print_mat = [](const char* label, const Eigen::Matrix4d& M) {
+                qInfo("  %s (m):", label);
+                for (int r = 0; r < 4; ++r) {
+                    qInfo("    [% .9g % .9g % .9g % .9g]",
+                          M(r, 0), M(r, 1), M(r, 2), M(r, 3));
+                }
+            };
+            print_mat("placement_transformation", Pd);
+            print_mat("global (CoordinateOperation . placement)", Gd);
+
+            if (have_vert) {
+                const Eigen::Vector4d vh(vx, vy, vz, 1.0);
+                const Eigen::Vector3d after_p = (Pd * vh).head<3>();
+                const Eigen::Vector3d after_g = (Gd * vh).head<3>();
+                qInfo("  vertex after placement (m): (% .9g, % .9g, % .9g)",
+                      after_p.x(), after_p.y(), after_p.z());
+                qInfo("  vertex after global (m):    (% .9g, % .9g, % .9g)",
+                      after_g.x(), after_g.y(), after_g.z());
+            }
+            return;
+        }
+    }
+    qInfo("printSelectedObjectCoords: object_id %u not found in any model",
+          selected_object_id_);
+}
