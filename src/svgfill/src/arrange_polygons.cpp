@@ -2190,7 +2190,25 @@ extend_end_vertices_based_on_input_simple(
                         if (closest_point) {
                             constructed_segments.push_front({M, *closest_point});
                         } else {
-                            std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
+
+                            for (auto& poly : outer_perimiter) {
+                                for (auto it = poly.begin(); it != poly.end(); ++it) {
+                                    auto Pp = *it;
+                                    auto d = CGAL::squared_distance(Pp, M);
+                                    if (d < (max_projection_distance * max_projection_distance)) {
+                                        if (d < closest_distance) {
+                                            closest_distance = d;
+                                            closest_point = Pp;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (closest_point) {
+                                constructed_segments.push_front({M, *closest_point});
+                            } else {
+                                std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
+                            }
                         }
                     }
                 }
