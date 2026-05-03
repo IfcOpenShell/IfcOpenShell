@@ -36,6 +36,9 @@
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QDockWidget>
+#include <QListView>
+#include <QTreeView>
+#include <QAbstractItemView>
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget* parent)
@@ -228,11 +231,23 @@ void MainWindow::onFileOpen() {
 }
 
 void MainWindow::onDatabaseOpen() {
-    QString path = QFileDialog::getExistingDirectory(
-        this, "Add IFC Database", QString(),
-        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-    if (!path.isEmpty()) {
-        addFiles({ path });
+    QFileDialog dialog(this, "Add IFC Databases");
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+    dialog.setOption(QFileDialog::DontResolveSymlinks, true);
+    // Native dialogs only support single-directory selection — use Qt's
+    // dialog so we can flip the inner views into ExtendedSelection.
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (auto* list = dialog.findChild<QListView*>("listView")) {
+        list->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    }
+    if (auto* tree = dialog.findChild<QTreeView*>()) {
+        tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    }
+    if (dialog.exec() != QDialog::Accepted) return;
+    QStringList paths = dialog.selectedFiles();
+    if (!paths.isEmpty()) {
+        addFiles(paths);
     }
 }
 
