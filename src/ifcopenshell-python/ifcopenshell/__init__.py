@@ -378,15 +378,24 @@ def stream2_from_string(data: str) -> Generator[dict]:
             yield inst
 
 
-def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]) -> None:
+def convert_path_to_rocksdb(
+    ifcspf_path: Union[Path, str],
+    rocksdb_path: Union[Path, str],
+    skip_supertypes: Optional[list[str]] = None,
+) -> None:
     """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
     RocksDB encoding. RocksDB is an embedded key-value store that allows
     partial reads and is therefore more memory efficient with larger files.
 
     :param ifcspf_path: Input file path - needs to exist
     :param rocksdb_path: RocksDB file path (directory) - may exist, but result may then be invalid
+    :param skip_supertypes: Optional list of entity type names. Any instance
+        whose declaration is-a (or subclasses) one of these names will be
+        omitted from the resulting RocksDB. Note: references to skipped
+        instances become dangling - reads that walk into them will fail.
     """
-    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True)
+    skip = list(skip_supertypes) if skip_supertypes else []
+    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True, skip)
     ser.finalize()
 
 
