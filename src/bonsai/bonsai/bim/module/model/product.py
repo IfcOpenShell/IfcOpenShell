@@ -880,54 +880,49 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             mirror_axes_2d = mirror_axes[:2]
-            num_flipped = sum(1 for v in mirror_axes_2d if v > 0.0)
             for rep in opening.Representation.Representations:
                 for item in rep.Items:
                     if item.is_a("IfcExtrudedAreaSolid"):
-                        # Bypass builder.mirror for IfcExtrudedAreaSolid — its translate→mirror→
-                        # translate sequence can corrupt profile coordinates via IFC entity aliasing
-                        # when Position.Location shares an IfcCartesianPoint with a profile vertex.
-                        # Direct negation avoids all aliasing. (Position assumed to have default /
-                        # identity orientation in practice.)
-                        pos = list(item.Position.Location.Coordinates)
-                        for i, flip in enumerate(mirror_axes_2d[: len(pos)]):
-                            if flip > 0.0:
-                                pos[i] = -pos[i]
-                        item.Position.Location.Coordinates = tuple(pos)
+                        # H (wall-local Householder) is already computed above for the placement
+                        # mirror.  Applying it as T_geom to opening-local coords is correct because:
+                        #   M_rel_new @ T_geom = H @ M_rel  (the true geometric mirror)
+                        # with M_rel_new = H@R@H (conjugation) → T_geom = H (wall-local numerics
+                        # applied to opening-local coords).  Conjugating into Position-local gives:
+                        #   H_pos = placement_mat.T @ H @ placement_mat
+                        placement_mat = ifcopenshell.util.placement.get_axis2placement(item.Position)[:3, :3]
+                        H_pos = placement_mat.T @ H @ placement_mat
 
+                        # Mirror Position.Location (opening-local 3D point) by H
+                        pos_coords = item.Position.Location.Coordinates
+                        pos3 = np.array([pos_coords[0], pos_coords[1], pos_coords[2] if len(pos_coords) > 2 else 0.0])
+                        pos3_new = H @ pos3
+                        if len(pos_coords) > 2:
+                            item.Position.Location.Coordinates = tuple(float(v) for v in pos3_new)
+                        else:
+                            item.Position.Location.Coordinates = (float(pos3_new[0]), float(pos3_new[1]))
+
+                        # Mirror profile coords in Position-local via H_pos.
+                        # H_pos is a reflection (det=-1) so winding must be reversed.
                         profile = item.SweptArea
                         for curve in [getattr(profile, "OuterCurve", None)]:
                             if curve is None:
                                 continue
                             coords = builder.get_polyline_coords(curve)
-                            for i, flip in enumerate(mirror_axes_2d[: coords.shape[1]]):
-                                if flip > 0.0:
-                                    coords[:, i] = -coords[:, i]
-                            if num_flipped % 2 == 1:
-                                coords = coords[::-1]
-                            builder.set_polyline_coords(curve, coords)
+                            coords3 = np.hstack([coords, np.zeros((len(coords), 1))])
+                            coords_new = (H_pos @ coords3.T).T[:, :2][::-1]
+                            builder.set_polyline_coords(curve, coords_new)
                         for inner in getattr(profile, "InnerCurves", None) or []:
                             coords = builder.get_polyline_coords(inner)
-                            for i, flip in enumerate(mirror_axes_2d[: coords.shape[1]]):
-                                if flip > 0.0:
-                                    coords[:, i] = -coords[:, i]
-                            if num_flipped % 2 == 1:
-                                coords = coords[::-1]
-                            builder.set_polyline_coords(inner, coords)
+                            coords3 = np.hstack([coords, np.zeros((len(coords), 1))])
+                            coords_new = (H_pos @ coords3.T).T[:, :2][::-1]
+                            builder.set_polyline_coords(inner, coords_new)
 
-                        placement_mat = ifcopenshell.util.placement.get_axis2placement(item.Position)[:3, :3]
+                        # Mirror ExtrudedDirection in Position-local via H_pos
                         dir_local = np.array(item.ExtrudedDirection.DirectionRatios)
-                        dir_opening = placement_mat @ dir_local
-                        for i, flip in enumerate(mirror_axes_2d):
-                            if flip > 0.0:
-                                dir_opening[i] = -dir_opening[i]
-                        dir_local_new = np.linalg.inv(placement_mat) @ dir_opening
+                        dir_local_new = H_pos @ dir_local
                         item.ExtrudedDirection.DirectionRatios = tuple(float(v) for v in dir_local_new)
                     else:
-                        try:
-                            builder.mirror(item, mirror_axes_2d, create_copy=False)
-                        except Exception:
-                            pass
+                        builder.mirror(item, mirror_axes_2d, create_copy=False)
 
     def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
         # ShapeBuilder.mirror works in 2D; use only the XY components
