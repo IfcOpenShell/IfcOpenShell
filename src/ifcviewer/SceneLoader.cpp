@@ -81,6 +81,12 @@ const ModelGeoref* SceneLoader::modelGeoref(uint32_t mid) {
     return &m.georef;
 }
 
+const Eigen::Matrix4d* SceneLoader::firstPlacement(uint32_t mid) const {
+    auto it = models_.find(mid);
+    if (it == models_.end() || !it->second.has_first_placement) return nullptr;
+    return &it->second.first_placement;
+}
+
 std::vector<uint32_t> SceneLoader::addFiles(const QStringList& paths) {
     std::vector<uint32_t> assigned;
     assigned.reserve(paths.size());
@@ -214,6 +220,14 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
         model.has_georef                   = true;
     }
 
+    if (!data.instances.empty() && !model.has_first_placement) {
+        using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+        model.first_placement =
+            Eigen::Map<const Mat4fCol>(data.instances[0].placement_transformation)
+                .cast<double>();
+        model.has_first_placement = true;
+    }
+
     std::vector<PackedElementInfo> elements = std::move(data.elements);
     std::string stbl                        = std::move(data.string_table);
 
@@ -302,6 +316,15 @@ void SceneLoader::onStreamerMeshReady(MeshChunk chunk) {
 }
 
 void SceneLoader::onStreamerInstanceReady(InstanceChunk chunk) {
+    if (loading_model_id_ != 0) {
+        auto it = models_.find(loading_model_id_);
+        if (it != models_.end() && !it->second.has_first_placement) {
+            using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+            it->second.first_placement =
+                Eigen::Map<const Mat4fCol>(chunk.transform).cast<double>();
+            it->second.has_first_placement = true;
+        }
+    }
     viewport_->uploadInstanceChunk(chunk);
 }
 

@@ -117,6 +117,15 @@ private:
     // Push the federation-wide FederatedFalseOrigin (stage 3) matrix to
     // the viewport.  Affects every loaded model.
     void applyFederatedFalseOriginToViewport();
+
+    // For an untitled federation whose FederatedFalseOrigin is still at
+    // its default, derive a sensible origin from `mid`'s first instance
+    // placement + georef and push it via Federation.  Idempotent: a
+    // non-default origin (user-edited, already guessed by a sibling load
+    // in the same batch, or loaded from a saved .ifcfed) is left
+    // untouched, so multi-file batches naturally anchor on whichever
+    // model finishes first.
+    void maybeGuessFederatedFalseOrigin(uint32_t mid);
     QString formatElapsed(qint64 ms) const;
 
     ViewportWindow* viewport_ = nullptr;

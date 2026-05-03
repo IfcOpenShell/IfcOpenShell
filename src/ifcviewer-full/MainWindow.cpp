@@ -594,6 +594,30 @@ void MainWindow::applyFederatedFalseOriginToViewport() {
     viewport_->setFederatedFalseOrigin(M);
 }
 
+void MainWindow::maybeGuessFederatedFalseOrigin(uint32_t mid) {
+    // Only auto-guess for untitled federations.  A saved .ifcfed carries its
+    // authoritative origin (even if that happens to be the default), so we
+    // never silently overwrite it when the user re-adds a model.
+    if (!federation_->filePath().isEmpty()) return;
+
+    // Skip once the origin is non-default — either the user edited it, a
+    // previous batch already guessed, or a load-from-file populated it.
+    // For a multi-file batch this means whichever model finishes first
+    // anchors the federation; the rest see a non-default origin and skip.
+    const FederatedFalseOrigin& cur = federation_->federatedFalseOrigin();
+    const FederatedFalseOrigin def;
+    if (cur.xyz != def.xyz || cur.rz_deg != def.rz_deg) return;
+
+    const Eigen::Matrix4d* placement = loader_->firstPlacement(mid);
+    const ModelGeoref*     gr        = loader_->modelGeoref(mid);
+    if (placement == nullptr || gr == nullptr) return;
+
+    const FederatedFalseOrigin guess = guessFederatedFalseOrigin(
+        *placement, *gr, federation_->config(),
+        AppSettings::instance().applyCoordinateOperation());
+    federation_->setFederatedFalseOrigin(guess);
+}
+
 void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
     progress_bar_->setVisible(false);
     status_label_->setText(QString("%1 elements across %2 model(s) — loaded from cache in %3")
@@ -606,6 +630,7 @@ void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
     // ModelTransformation immediately rather than waiting for the
     // (possibly never-arriving) data-source load.
     applyCoordinateOperationToViewport(mid);
+    maybeGuessFederatedFalseOrigin(mid);
 }
 
 void MainWindow::onStreamedElementsReady(uint32_t /*mid*/, std::vector<ElementInfo> elements) {
@@ -714,9 +739,8 @@ void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
         .arg(loader_->modelCount())
         .arg(formatElapsed(elapsed_ms)));
 
-    // Stream path: the IFC is owned by the streamer, so georef is
-    // computable now.  (Sidecar-hit models defer to onDataSourceReady.)
     applyCoordinateOperationToViewport(mid);
+    maybeGuessFederatedFalseOrigin(mid);
 
     writeSidecarForModel(mid);
 }

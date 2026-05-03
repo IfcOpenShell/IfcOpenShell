@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "Geolocation.h"
+#include "Placement.h"
 
 #include "../ifcparse/express.h"
 #include "../ifcparse/file.h"
@@ -29,59 +30,6 @@
 #include <vector>
 
 namespace {
-
-// IfcAxis2Placement3D / IfcAxis2PlacementLinear -> column-major 4x4 matrix.
-// Mirrors ifcopenshell.util.placement.a2p + get_axis2placement, but only the
-// branches needed for IfcGeometricRepresentationContext.WorldCoordinateSystem.
-std::optional<Eigen::Matrix4d> getAxis2Placement(express::Base placement) {
-    if (!placement) return std::nullopt;
-    const auto& decl = placement.declaration();
-    if (!(decl.is("IfcAxis2Placement3D") || decl.is("IfcAxis2PlacementLinear"))) {
-        return std::nullopt;
-    }
-
-    auto entity = placement.as<express::Entity>();
-
-    Eigen::Vector3d z(0.0, 0.0, 1.0);
-    Eigen::Vector3d x(1.0, 0.0, 0.0);
-
-    auto axis_attr = entity.get("Axis");
-    if (!axis_attr.isNull()) {
-        express::Base axis = axis_attr;
-        std::vector<double> dr =
-            axis.as<express::Entity>().get("DirectionRatios");
-        if (dr.size() >= 3) z = Eigen::Vector3d(dr[0], dr[1], dr[2]);
-    }
-
-    auto refdir_attr = entity.get("RefDirection");
-    if (!refdir_attr.isNull()) {
-        express::Base refdir = refdir_attr;
-        std::vector<double> dr =
-            refdir.as<express::Entity>().get("DirectionRatios");
-        if (dr.size() >= 3) x = Eigen::Vector3d(dr[0], dr[1], dr[2]);
-    }
-
-    auto loc_attr = entity.get("Location");
-    if (loc_attr.isNull()) return std::nullopt;
-    express::Base location = loc_attr;
-    auto coords_attr = location.as<express::Entity>().get("Coordinates");
-    if (coords_attr.isNull()) return std::nullopt;
-    std::vector<double> coords = coords_attr;
-    if (coords.size() < 3) return std::nullopt;
-
-    Eigen::Vector3d xn = x.normalized();
-    Eigen::Vector3d zn = z.normalized();
-    Eigen::Vector3d yn = zn.cross(xn).normalized();
-
-    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-    m.block<3, 1>(0, 0) = xn;
-    m.block<3, 1>(0, 1) = yn;
-    m.block<3, 1>(0, 2) = zn;
-    m(0, 3) = coords[0];
-    m(1, 3) = coords[1];
-    m(2, 3) = coords[2];
-    return m;
-}
 
 // Read a numeric NominalValue out of an IfcPropertySingleValue.  IFC2X3
 // ePSet_MapConversion stores eastings/northings/scale as IfcLengthMeasure or
@@ -223,6 +171,10 @@ std::optional<Eigen::Matrix4d> getWcs(ifcopenshell::file* ifc_file) {
         }
     }
     if (!found) return std::nullopt;
+    const auto& decl = wcs.declaration();
+    if (!(decl.is("IfcAxis2Placement3D") || decl.is("IfcAxis2PlacementLinear"))) {
+        return std::nullopt;
+    }
     return getAxis2Placement(wcs);
 }
 
@@ -310,4 +262,9 @@ std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file) {
     auto mu_attr = target.as<express::Entity>().get("MapUnit");
     if (mu_attr.isNull()) return std::nullopt;
     return (express::Base) mu_attr;
+}
+
+double xaxis2angleDeg(double xaa, double xao) {
+    constexpr double kPi = 3.14159265358979323846;
+    return -std::atan2(xao, xaa) * (180.0 / kPi);
 }

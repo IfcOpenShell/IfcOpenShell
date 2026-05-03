@@ -135,6 +135,36 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
     return out;
 }
 
+FederatedFalseOrigin
+guessFederatedFalseOrigin(const Eigen::Matrix4d& first_placement_meters,
+                          const ModelGeoref& georef,
+                          const FederationConfig& fed_cfg,
+                          bool apply_coordinate_operation) {
+    Eigen::Vector3d t_m = first_placement_meters.block<3, 1>(0, 3);
+
+    const bool use_coord_op =
+        apply_coordinate_operation && georef.has_coordinate_operation;
+    if (use_coord_op) {
+        const Eigen::Vector4d th(t_m.x(), t_m.y(), t_m.z(), 1.0);
+        t_m = (georef.coordinate_operation_meters * th).head<3>();
+    }
+
+    const double u_fed = federationUnitToMeters(fed_cfg);
+    const double u_fed_inv = (u_fed != 0.0) ? (1.0 / u_fed) : 1.0;
+
+    FederatedFalseOrigin out;
+    out.xyz = t_m * u_fed_inv;
+
+    // Rotation: helmert grid-north baked into coordinate_operation_meters.
+    // helmertMetersFromParameters built that block as R_z(theta)·diag(fx,fy,fz)
+    // with theta = atan2(xao, xaa); xaxis2angle is `-theta` in degrees.
+    if (use_coord_op) {
+        const Eigen::Matrix4d& M = georef.coordinate_operation_meters;
+        out.rz_deg = xaxis2angleDeg(M(0, 0), M(1, 0));
+    }
+    return out;
+}
+
 Eigen::Matrix4d composeModelTransformation(const ModelTransformation& xf,
                                            const FederationConfig& fed_cfg,
                                            const ModelUnits& model_units,

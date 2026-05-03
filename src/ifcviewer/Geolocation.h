@@ -100,4 +100,9 @@ Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& params,
 // calculateUnitScale(file, "LENGTHUNIT") in that case.
 std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file);
 
+// "How do I rotate project east to get to grid east?" — i.e. -atan2(xao, xaa)
+// converted to degrees, anticlockwise positive.  Mirrors
+// ifcopenshell.util.geolocation.xaxis2angle.
+double xaxis2angleDeg(double xaa, double xao);
+
 #endif // GEOLOCATION_H

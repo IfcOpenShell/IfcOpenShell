@@ -28,6 +28,7 @@
 #include <QDateTime>
 #include <QVector3D>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -124,6 +125,27 @@ struct ModelGeoref {
 // CoordinateOperation matrix.  Pure compute; safe to call repeatedly if the
 // caller doesn't want to cache.
 ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
+
+// Build a FederatedFalseOrigin guess so that a model lands near the
+// federation origin instead of out at its surveyor coordinates.  Designed
+// to work without an open IFC file so it's usable from sidecar-only loads
+// (the inputs are all derivable from the InstanceCpu cache + ModelGeoref).
+//
+// Position: `first_placement_meters` is the model's "anchor" placement —
+// typically the first instance's `placement_transformation`, which the
+// iterator already produces in metres (its `convert-back-units` default
+// is false).  The translation is optionally lifted through
+// `georef.coordinate_operation_meters` (controlled by
+// `apply_coordinate_operation`), then expressed in the federation unit.
+//
+// Rotation: read directly from `georef.coordinate_operation_meters` when
+// `apply_coordinate_operation && has_coordinate_operation` (this is the
+// helmert grid-north angle).  Otherwise zero.  Anticlockwise positive.
+FederatedFalseOrigin
+guessFederatedFalseOrigin(const Eigen::Matrix4d& first_placement_meters,
+                          const ModelGeoref& georef,
+                          const FederationConfig& fed_cfg,
+                          bool apply_coordinate_operation);
 
 // 1 federation_unit -> N metres.
 double federationUnitToMeters(const FederationConfig&);
