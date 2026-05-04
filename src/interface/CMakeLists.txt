@@ -27,6 +27,21 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MockMainWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MockMainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelTypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelTypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelTypes.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelView.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
 )
 

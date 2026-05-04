@@ -1,0 +1,71 @@
+// This file was generated with the assistance of an AI coding tool.
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#include "SpatialHierarchyPanelView.h"
+
+#include "SpatialHierarchyPanelWidget.h"
+
+namespace ifcinterface::panels::spatial_hierarchy {
+
+namespace {
+
+TreeNode* findNodeRecursive(QList<TreeNode>& nodes, const NodePath& path, int depth) {
+    for (auto& node : nodes) {
+        if (node.name != path.at(depth)) continue;
+        if (depth == path.size() - 1) return &node;
+        return findNodeRecursive(node.children, path, depth + 1);
+    }
+    return nullptr;
+}
+
+} // namespace
+
+SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget, QObject* parent)
+    : QObject(parent), widget_(widget)
+{
+    nodes_ = {
+        {"Site A", ItemKind::Site, true,
+         {{"Building 01", ItemKind::Building, true,
+           {{"Level 02", ItemKind::Storey, true,
+             {{"Lobby", ItemKind::Space, true, {}},
+              {"Core", ItemKind::Space, true, {}}}}}}}},
+    };
+
+    connect(widget_, &SpatialHierarchyPanelWidget::visibilityToggleRequested, this, [this](const NodePath& path) {
+        if (auto* node = findNode(path)) {
+            node->visible = !node->visible;
+            reload();
+            emit statusMessageRequested("Spatial", node->visible ? "Item shown" : "Item hidden");
+        }
+    });
+
+    reload();
+}
+
+void SpatialHierarchyPanelView::reload() {
+    widget_->setNodes(nodes_);
+}
+
+TreeNode* SpatialHierarchyPanelView::findNode(const NodePath& path) {
+    if (path.isEmpty()) return nullptr;
+    return findNodeRecursive(nodes_, path, 0);
+}
+
+} // namespace ifcinterface::panels::spatial_hierarchy

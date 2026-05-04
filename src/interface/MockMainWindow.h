@@ -31,6 +31,9 @@ class QTabBar;
 class QToolButton;
 class ViewportWindow;
 class SceneLoader;
+namespace ifcinterface::panels::models { class ModelsPanelView; }
+namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
+namespace ifcinterface::panels::properties { class PropertiesPanelView; }
 
 class MockMainWindow : public QMainWindow {
     Q_OBJECT
@@ -83,6 +86,9 @@ private:
     QDockWidget* spreadsheet_dock_ = nullptr;
     QDockWidget* clash_dock_ = nullptr;
     QDockWidget* issues_dock_ = nullptr;
+    ifcinterface::panels::models::ModelsPanelView* models_panel_view_ = nullptr;
+    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_panel_view_ = nullptr;
+    ifcinterface::panels::properties::PropertiesPanelView* properties_panel_view_ = nullptr;
 };
 
 #endif

@@ -23,6 +23,12 @@
 #include "AppSettings.h"
 #include "SceneLoader.h"
 #include "ViewportWindow.h"
+#include "panels/models/ModelsPanelView.h"
+#include "panels/models/ModelsPanelWidget.h"
+#include "panels/properties/PropertiesPanelView.h"
+#include "panels/properties/PropertiesPanelWidget.h"
+#include "panels/spatial_hierarchy/SpatialHierarchyPanelView.h"
+#include "panels/spatial_hierarchy/SpatialHierarchyPanelWidget.h"
 
 #include <QDockWidget>
 #include <QFileDialog>
@@ -91,10 +97,6 @@ QIcon makeTintedSvgIcon(const QString& icon_path, const QString& normal = "#39b5
 
 QIcon makePanelSvgIcon(const QString& icon_path) {
     return makeTintedSvgIcon(icon_path, "#e7ebf2", "#ffffff", "#6f7988");
-}
-
-QPixmap makePanelSvgPixmap(const QString& icon_path, const QSize& size) {
-    return renderTintedSvgPixmap(icon_path, "#e7ebf2", size);
 }
 
 class DockTitleBar : public QWidget {
@@ -173,165 +175,6 @@ QFrame* wrapInspectorPanel(QWidget* inner) {
 
     outer_layout->addWidget(frame);
     return outer;
-}
-
-QWidget* makeInspectorFilterField(const QString& placeholder, QWidget* parent = nullptr) {
-    auto* field = new QLineEdit(parent);
-    field->setPlaceholderText(placeholder);
-    field->setClearButtonEnabled(true);
-    field->addAction(makePanelSvgIcon(":/icons/filter.svg"), QLineEdit::LeadingPosition);
-    return field;
-}
-
-QWidget* makePropertySetPanel(const QString& title,
-                              const QList<QPair<QString, QString>>& rows,
-                              QWidget* parent = nullptr) {
-    auto* group = new QGroupBox(title, parent);
-    group->setObjectName("propertySetCard");
-    auto* form = new QFormLayout(group);
-    form->setContentsMargins(10, 10, 10, 10);
-    form->setHorizontalSpacing(16);
-    form->setVerticalSpacing(6);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-
-    for (const auto& [name, value] : rows) {
-        auto* key = new QLabel(name, group);
-        key->setObjectName("propertyKeyLabel");
-        auto* val = new QLabel(value, group);
-        val->setObjectName("propertyValueLabel");
-        val->setWordWrap(true);
-        form->addRow(key, val);
-    }
-
-    return group;
-}
-
-QWidget* makeInspectorSection(const QString& title,
-                              const QString& filter_placeholder,
-                              const QList<QWidget*>& groups,
-                              QWidget* parent = nullptr) {
-    auto* section = new QWidget(parent);
-    section->setObjectName("inspectorSection");
-    auto* layout = new QVBoxLayout(section);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
-
-    auto* header = new QFrame(section);
-    header->setObjectName("inspectorSectionHeader");
-    auto* header_layout = new QHBoxLayout(header);
-    header_layout->setContentsMargins(0, 0, 0, 0);
-    header_layout->setSpacing(6);
-
-    auto* toggle = new QToolButton(header);
-    toggle->setObjectName("inspectorSectionButton");
-    toggle->setText(title);
-    toggle->setCheckable(true);
-    toggle->setChecked(true);
-    toggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toggle->setArrowType(Qt::DownArrow);
-    header_layout->addWidget(toggle);
-    header_layout->addStretch(1);
-
-    QLineEdit* filter_field = nullptr;
-    if (!filter_placeholder.isEmpty()) {
-        auto* filter_toggle = new QToolButton(header);
-        filter_toggle->setObjectName("inspectorFilterToggle");
-        filter_toggle->setCheckable(true);
-        filter_toggle->setChecked(false);
-        filter_toggle->setIcon(makePanelSvgIcon(":/icons/filter.svg"));
-        filter_toggle->setAutoRaise(true);
-        filter_toggle->setToolTip(QString("Filter %1").arg(title.toLower()));
-        header_layout->addWidget(filter_toggle);
-
-        filter_field = qobject_cast<QLineEdit*>(makeInspectorFilterField(filter_placeholder, section));
-        filter_field->setVisible(false);
-        QObject::connect(filter_toggle, &QToolButton::toggled, filter_field, [filter_field](bool visible) {
-            filter_field->setVisible(visible);
-            if (visible) filter_field->setFocus();
-        });
-    }
-
-    auto* body = new QWidget(section);
-    body->setObjectName("inspectorSectionBody");
-    auto* body_layout = new QVBoxLayout(body);
-    body_layout->setContentsMargins(10, 6, 10, 0);
-    body_layout->setSpacing(6);
-    for (auto* group : groups) body_layout->addWidget(group);
-
-    QObject::connect(toggle, &QToolButton::toggled, body, [toggle, body](bool expanded) {
-        toggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
-        body->setVisible(expanded);
-    });
-
-    layout->addWidget(header);
-    if (filter_field) {
-        auto* filter_wrapper = new QWidget(section);
-        filter_wrapper->setObjectName("inspectorFilterWrapper");
-        auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-        filter_wrapper_layout->setContentsMargins(10, 0, 10, 0);
-        filter_wrapper_layout->setSpacing(0);
-        filter_wrapper_layout->addWidget(filter_field);
-        layout->addWidget(filter_wrapper);
-    }
-    layout->addWidget(body);
-    return section;
-}
-
-QWidget* makeAttributeList(const QList<QPair<QString, QString>>& rows, QWidget* parent = nullptr) {
-    auto* panel = new QWidget(parent);
-    panel->setObjectName("attributeList");
-    auto* form = new QFormLayout(panel);
-    form->setContentsMargins(0, 0, 0, 0);
-    form->setHorizontalSpacing(16);
-    form->setVerticalSpacing(6);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-
-    for (const auto& [name, value] : rows) {
-        auto* key = new QLabel(name, panel);
-        key->setObjectName("propertyKeyLabel");
-        auto* val = new QLabel(value, panel);
-        val->setObjectName("propertyValueLabel");
-        val->setWordWrap(true);
-        form->addRow(key, val);
-    }
-
-    return panel;
-}
-
-QWidget* makeRelationshipList(const QList<QPair<QString, QString>>& rows, QWidget* parent = nullptr) {
-    auto* panel = new QWidget(parent);
-    panel->setObjectName("attributeList");
-    auto* layout = new QVBoxLayout(panel);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
-
-    for (const auto& [name, value] : rows) {
-        auto* row = new QWidget(panel);
-        row->setObjectName("relationshipRow");
-        auto* row_layout = new QHBoxLayout(row);
-        row_layout->setContentsMargins(0, 0, 0, 0);
-        row_layout->setSpacing(12);
-
-        auto* key = new QLabel(name, row);
-        key->setObjectName("propertyKeyLabel");
-        key->setMinimumWidth(72);
-
-        auto* target = new QLabel(value, row);
-        target->setObjectName("relationshipValueLabel");
-        target->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-        auto* icon = new QLabel(row);
-        icon->setObjectName("relationshipIconLabel");
-        icon->setPixmap(makePanelSvgPixmap(":/icons/cursor-pointer.svg", QSize(14, 14)));
-        icon->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-
-        row_layout->addWidget(key);
-        row_layout->addWidget(target, 1);
-        row_layout->addWidget(icon, 0, Qt::AlignRight | Qt::AlignVCenter);
-        layout->addWidget(row);
-    }
-
-    return panel;
 }
 
 } // namespace
@@ -931,231 +774,22 @@ void MockMainWindow::setupViewport() {
 }
 
 void MockMainWindow::setupDocks() {
-    auto* models_panel = new QWidget(this);
-    auto* models_panel_layout = new QVBoxLayout(models_panel);
-    models_panel_layout->setContentsMargins(0, 0, 0, 0);
-    models_panel_layout->setSpacing(0);
+    auto* models_panel = new ifcinterface::panels::models::ModelsPanelWidget(this);
+    auto* spatial_panel = new ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
+    auto* properties_panel = new ifcinterface::panels::properties::PropertiesPanelWidget(this);
 
-    auto* models_tree = new QTreeWidget(this);
-    models_tree->setColumnCount(2);
-    models_tree->setHeaderLabels({"Model", ""});
-    models_tree->setIconSize(QSize(16, 16));
-    models_tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    models_tree->setContextMenuPolicy(Qt::CustomContextMenu);
-    models_tree->setUniformRowHeights(true);
-    models_tree->header()->setStretchLastSection(false);
-    models_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    models_tree->header()->setSectionResizeMode(1, QHeaderView::Fixed);
-    models_tree->header()->resizeSection(1, 28);
-    models_tree->header()->hide();
+    models_panel_view_ = new ifcinterface::panels::models::ModelsPanelView(models_panel, this);
+    spatial_panel_view_ = new ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel, this);
+    properties_panel_view_ = new ifcinterface::panels::properties::PropertiesPanelView(properties_panel, this);
 
-    auto* local_group = new QTreeWidgetItem(models_tree, {"Local Models", ""});
-    local_group->setIcon(0, makePanelSvgIcon(":/icons/folder.svg"));
-    local_group->setIcon(1, makePanelSvgIcon(":/icons/eye.svg"));
-    local_group->setData(1, Qt::UserRole, true);
-    local_group->setSizeHint(0, QSize(0, 24));
-    auto* linked_group = new QTreeWidgetItem(models_tree, {"Linked Models", ""});
-    linked_group->setIcon(0, makePanelSvgIcon(":/icons/folder.svg"));
-    linked_group->setIcon(1, makePanelSvgIcon(":/icons/eye.svg"));
-    linked_group->setData(1, Qt::UserRole, true);
-    linked_group->setSizeHint(0, QSize(0, 24));
-
-    auto make_model_item = [this](QTreeWidgetItem* parent, const QString& name, bool visible) {
-        auto* item = new QTreeWidgetItem(parent, {name, ""});
-        item->setIcon(0, makePanelSvgIcon(":/icons/cube.svg"));
-        item->setIcon(1, makePanelSvgIcon(visible ? ":/icons/eye-solid.svg" : ":/icons/eye.svg"));
-        item->setData(1, Qt::UserRole, visible);
-        item->setSizeHint(0, QSize(0, 24));
-        return item;
-    };
-
-    make_model_item(local_group, "Architecture.ifc", true);
-    make_model_item(local_group, "Structure.ifc", true);
-    make_model_item(linked_group, "MEP.ifc", false);
-    models_tree->expandAll();
-
-    models_panel_layout->addWidget(models_tree);
-
-    connect(models_tree, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
-        if (!item || column != 1) return;
-        const bool visible = item->data(1, Qt::UserRole).toBool();
-        const bool next_visible = !visible;
-        item->setData(1, Qt::UserRole, next_visible);
-        if (item->childCount() > 0) {
-            item->setIcon(1, makePanelSvgIcon(next_visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
-        } else {
-            item->setIcon(1, makePanelSvgIcon(next_visible ? ":/icons/eye-solid.svg" : ":/icons/eye-closed.svg"));
-        }
-        setStatusMessage("Models", next_visible ? "Item shown" : "Item hidden");
-    });
-
-    connect(models_tree, &QTreeWidget::customContextMenuRequested, this, [this, models_tree](const QPoint& pos) {
-        auto* item = models_tree->itemAt(pos);
-        QMenu menu(models_tree);
-        if (item && item->childCount() > 0) {
-            menu.addAction(makePanelSvgIcon(":/icons/folder-plus.svg"), "Add Group", [this]() {
-                setStatusMessage("Models", "Add Group coming soon");
-            });
-            menu.addAction(makePanelSvgIcon(":/icons/folder-minus.svg"), "Remove Group", [this]() {
-                setStatusMessage("Models", "Remove Group coming soon");
-            });
-        }
-        if (item && item->childCount() == 0) {
-            menu.addAction(makePanelSvgIcon(":/icons/minus-square.svg"), "Remove Model", [this]() {
-                setStatusMessage("Models", "Remove Model coming soon");
-            });
-        }
-        menu.addAction(makePanelSvgIcon(":/icons/intersect.svg"), "Invert Visibility", [this]() {
-            setStatusMessage("Models", "Invert visibility coming soon");
-        });
-        if (!menu.actions().isEmpty()) menu.exec(models_tree->viewport()->mapToGlobal(pos));
-    });
-
-    auto* spatial_tree = new QTreeWidget(this);
-    spatial_tree->setColumnCount(2);
-    spatial_tree->setHeaderLabels({"Spatial Item", ""});
-    spatial_tree->setIconSize(QSize(16, 16));
-    spatial_tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    spatial_tree->setUniformRowHeights(true);
-    spatial_tree->header()->setStretchLastSection(false);
-    spatial_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    spatial_tree->header()->setSectionResizeMode(1, QHeaderView::Fixed);
-    spatial_tree->header()->resizeSection(1, 28);
-    spatial_tree->header()->hide();
-
-    auto make_spatial_item = [this](QTreeWidgetItem* parent, const QString& name, const QString& icon_path) {
-        auto* item = new QTreeWidgetItem(parent, {name, ""});
-        item->setIcon(0, makePanelSvgIcon(icon_path));
-        item->setIcon(1, makePanelSvgIcon(":/icons/eye.svg"));
-        item->setData(1, Qt::UserRole, true);
-        item->setSizeHint(0, QSize(0, 24));
-        return item;
-    };
-
-    auto* site = make_spatial_item(spatial_tree->invisibleRootItem(), "Site A", ":/icons/frame-alt.svg");
-    auto* building = make_spatial_item(site, "Building 01", ":/icons/city.svg");
-    auto* storey = make_spatial_item(building, "Level 02", ":/icons/planimetry.svg");
-    make_spatial_item(storey, "Lobby", ":/icons/square3d-from-center.svg");
-    make_spatial_item(storey, "Core", ":/icons/square3d-from-center.svg");
-    spatial_tree->expandAll();
-
-    connect(spatial_tree, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
-        if (!item || column != 1) return;
-        const bool visible = item->data(1, Qt::UserRole).toBool();
-        const bool next_visible = !visible;
-        item->setData(1, Qt::UserRole, next_visible);
-        item->setIcon(1, makePanelSvgIcon(next_visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
-        setStatusMessage("Spatial", next_visible ? "Item shown" : "Item hidden");
-    });
-
-    auto* properties_content = new QWidget(this);
-    properties_content->setObjectName("inspectorPanel");
-    auto* properties_layout = new QVBoxLayout(properties_content);
-    properties_layout->setContentsMargins(0, 0, 0, 0);
-    properties_layout->setSpacing(12);
-
-    auto* entity_card = new QFrame(properties_content);
-    entity_card->setObjectName("entityClassCard");
-    auto* entity_layout = new QHBoxLayout(entity_card);
-    entity_layout->setContentsMargins(10, 8, 10, 8);
-    entity_layout->setSpacing(10);
-    auto* entity_icon = new QLabel(entity_card);
-    entity_icon->setPixmap(makePanelSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
-    entity_icon->setAlignment(Qt::AlignCenter);
-    auto* entity_text = new QWidget(entity_card);
-    auto* entity_text_layout = new QVBoxLayout(entity_text);
-    entity_text_layout->setContentsMargins(0, 0, 0, 0);
-    entity_text_layout->setSpacing(2);
-    auto* entity_class = new QLabel("IfcWall", entity_text);
-    entity_class->setObjectName("entityClassLabel");
-    auto* entity_type = new QLabel("SOLIDWALL", entity_text);
-    entity_type->setObjectName("entityTypeLabel");
-    entity_text_layout->addWidget(entity_class);
-    entity_text_layout->addWidget(entity_type);
-    entity_layout->addWidget(entity_icon, 0, Qt::AlignVCenter);
-    entity_layout->addWidget(entity_text, 1, Qt::AlignVCenter);
-
-    auto* attributes_section = makeInspectorSection(
-        "Attributes", "",
-        {
-            makeAttributeList({{"GlobalId", "2Q$n5SLPP9Q8B7wQKjKfUQ"},
-                               {"Name", "Core-EXT-204"},
-                               {"Description", "External load-bearing wall"}}, properties_content)
-        },
-        properties_content);
-
-    auto* properties_section = makeInspectorSection(
-        "Properties", "Filter properties or sets",
-        {
-            makePropertySetPanel("Pset_WallCommon",
-                                 {{"Reference", "Core-EXT-204"},
-                                  {"Status", "Reviewed"},
-                                  {"Fire Rating", "120 min"},
-                                  {"LoadBearing", "True"}},
-                                 properties_content),
-            makePropertySetPanel("Identity Data",
-                                 {{"Type", "IfcWall"},
-                                  {"Name", "Core-EXT-204"},
-                                  {"Owner", "Architecture"},
-                                  {"Phase", "Construction"}},
-                                 properties_content),
-            makePropertySetPanel("BIM Collaboration",
-                                 {{"Issue Count", "2 open"},
-                                  {"Last Review", "2026-04-30"},
-                                  {"Assigned To", "Design Coordination"}},
-                                 properties_content)
-        },
-        properties_content);
-
-    qobject_cast<QVBoxLayout*>(attributes_section->layout())->setSpacing(8);
-
-    auto* relationships_section = makeInspectorSection(
-        "Relationships", "",
-        {
-            makeRelationshipList({{"Type", "Basic Wall: Exterior - 200mm"},
-                                  {"Container", "Level 02"}}, properties_content)
-        },
-        properties_content);
-
-    auto* quantities_section = makeInspectorSection(
-        "Quantities", "Filter quantities or sets",
-        {
-            makePropertySetPanel("BaseQuantities",
-                                 {{"Length", "6.20 m"},
-                                  {"Height", "3.45 m"},
-                                  {"Width", "0.30 m"},
-                                  {"Volume", "6.42 m3"}},
-                                 properties_content),
-            makePropertySetPanel("Finish Quantities",
-                                 {{"NetSideArea", "21.39 m2"},
-                                  {"GrossArea", "22.10 m2"},
-                                  {"Paint Coverage", "42.78 m2"}},
-                                 properties_content)
-        },
-        properties_content);
-
-    auto* entity_wrapper = new QWidget(properties_content);
-    entity_wrapper->setObjectName("inspectorSectionBody");
-    auto* entity_wrapper_layout = new QVBoxLayout(entity_wrapper);
-    entity_wrapper_layout->setContentsMargins(10, 0, 10, 0);
-    entity_wrapper_layout->setSpacing(0);
-    entity_wrapper_layout->addWidget(entity_card);
-
-    properties_layout->addWidget(entity_wrapper);
-    properties_layout->addWidget(attributes_section);
-    properties_layout->addWidget(relationships_section);
-    properties_layout->addWidget(properties_section);
-    properties_layout->addWidget(quantities_section);
-    properties_layout->addStretch(1);
-
-    auto* properties_scroll = new QScrollArea(this);
-    properties_scroll->setWidgetResizable(true);
-    properties_scroll->setFrameShape(QFrame::NoFrame);
-    properties_scroll->setWidget(properties_content);
+    connect(models_panel_view_, &ifcinterface::panels::models::ModelsPanelView::statusMessageRequested,
+            this, &MockMainWindow::setStatusMessage);
+    connect(spatial_panel_view_, &ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
+            this, &MockMainWindow::setStatusMessage);
 
     models_dock_ = makeDock("Models", wrapPanel(models_panel), this, true);
-    spatial_dock_ = makeDock("Spatial Hierarchy", wrapPanel(spatial_tree), this);
-    properties_dock_ = makeDock("Properties", wrapInspectorPanel(properties_scroll), this);
+    spatial_dock_ = makeDock("Spatial Hierarchy", wrapPanel(spatial_panel), this);
+    properties_dock_ = makeDock("Properties", wrapInspectorPanel(properties_panel), this);
     layers_dock_ = makeDock("Layers", wrapPanel(makeComingSoonPanel("Layers")), this);
     stored_views_dock_ = makeDock("Stored Views", wrapPanel(makeComingSoonPanel("Stored Views")), this);
     search_dock_ = makeDock("Search and Query", wrapPanel(makeComingSoonPanel("Search and Query")), this);
