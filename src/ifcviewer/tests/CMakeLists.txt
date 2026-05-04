@@ -62,9 +62,11 @@ add_executable(test_federation
     # Geolocation helpers (helmertMetersFromParameters, getWcs, getMapUnit)
     # for computeModelGeoref; compile both directly so the test doesn't
     # have to link the whole IfcViewer library (which would drag in
-    # Qt6::OpenGL, OpenCASCADE, etc.).
+    # Qt6::OpenGL, OpenCASCADE, etc.).  Placement.cpp provides
+    # getAxis2Placement, called from Geolocation::getWcs.
     ${IFCVIEWER_SRC}/Unit.cpp
     ${IFCVIEWER_SRC}/Geolocation.cpp
+    ${IFCVIEWER_SRC}/Placement.cpp
 )
 set_target_properties(test_federation PROPERTIES AUTOMOC ON)
 target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})
