@@ -28,11 +28,14 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+
+#include <algorithm>
 #include <QMenu>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QHeaderView>
@@ -77,6 +80,59 @@ MainWindow::MainWindow(QWidget* parent)
         if (it != fed_id_to_model_id_.end()) {
             applyModelVisibilityToViewport(it->second);
         }
+    });
+
+    connect(federation_, &Federation::modelGroupChanged,
+            this, [this](const QString& fed_id, const QString& /*group_id*/) {
+        auto it = fed_id_to_model_id_.find(fed_id);
+        if (it == fed_id_to_model_id_.end()) return;
+        reparentModelTreeRoot(it->second);
+        // Effective visibility may have flipped because the new group's
+        // chain visibility differs from the old one.
+        applyModelVisibilityToViewport(it->second);
+    });
+
+    connect(federation_, &Federation::groupAdded,
+            this, [this](const QString& group_id) {
+        ensureGroupTreeItem(group_id);
+        reparentGroupTreeItem(group_id);
+        refreshGroupRowAppearance(group_id);
+    });
+
+    connect(federation_, &Federation::groupChanged,
+            this, [this](const QString& group_id) {
+        const Federation::Group* g = federation_->findGroupById(group_id);
+        if (!g) return;
+        auto it = group_tree_items_.find(group_id);
+        if (it == group_tree_items_.end()) return;
+        it->second->setText(0, g->display_name);
+        reparentGroupTreeItem(group_id);
+        // Reparenting a group changes the chain visibility for the moved
+        // group + its descendants — refresh both rows and viewport.
+        for (const QString& gid : descendantGroupIds(group_id)) {
+            refreshGroupRowAppearance(gid);
+        }
+        applyVisibilityCascadeFromGroup(group_id);
+    });
+
+    connect(federation_, &Federation::groupVisibilityChanged,
+            this, [this](const QString& group_id, bool /*visible*/) {
+        for (const QString& gid : descendantGroupIds(group_id)) {
+            refreshGroupRowAppearance(gid);
+        }
+        applyVisibilityCascadeFromGroup(group_id);
+    });
+
+    connect(federation_, &Federation::groupRemoved,
+            this, [this](const QString& group_id) {
+        auto it = group_tree_items_.find(group_id);
+        if (it == group_tree_items_.end()) return;
+        // By now, the federation has fired groupChanged / modelGroupChanged
+        // for every direct child, and our slots have moved them out from
+        // under this item, so deleting it just removes the (now empty)
+        // group row.
+        delete it->second;
+        group_tree_items_.erase(it);
     });
 
     connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
@@ -314,11 +370,12 @@ void MainWindow::loadModelsFromPaths(const QStringList& paths,
         model_id_to_fed_id_[mid] = fed_id;
 
         QString display = QFileInfo(paths[i]).fileName();
-        auto* root = new QTreeWidgetItem(element_tree_);
+        auto* root = new QTreeWidgetItem();
         root->setText(0, display);
         root->setText(1, "IFC Model");
         root->setData(0, Qt::UserRole, static_cast<uint32_t>(0));
         tree_roots_[mid] = root;
+        reparentModelTreeRoot(mid);
     }
 }
 
@@ -334,6 +391,15 @@ bool MainWindow::openFederation(const QString& path) {
     }
 
     clearScene();
+
+    // Materialise group tree items.  allGroups() walks parents-before-
+    // children, so reparenting in the same pass always finds the parent's
+    // tree item ready.
+    for (const Federation::Group* g : federation_->allGroups()) {
+        ensureGroupTreeItem(g->id);
+        reparentGroupTreeItem(g->id);
+        refreshGroupRowAppearance(g->id);
+    }
 
     QStringList paths;
     QStringList fed_ids;
@@ -449,6 +515,8 @@ void MainWindow::clearScene() {
     }
     fed_id_to_model_id_.clear();
     model_id_to_fed_id_.clear();
+    for (auto& kv : group_tree_items_) delete kv.second;
+    group_tree_items_.clear();
 }
 
 bool MainWindow::confirmDiscardIfDirty() {
@@ -909,50 +977,160 @@ uint32_t MainWindow::modelIdForRoot(QTreeWidgetItem* item) const {
 void MainWindow::applyModelVisibilityToViewport(uint32_t mid) {
     auto fed_it = model_id_to_fed_id_.find(mid);
     if (fed_it == model_id_to_fed_id_.end()) return;
-    const Federation::Model* m = federation_->findById(fed_it->second);
-    if (!m) return;
-    if (m->visible) viewport_->showModel(mid);
-    else            viewport_->hideModel(mid);
+    const QString& fed_id = fed_it->second;
+    const bool effective = federation_->isModelEffectivelyVisible(fed_id);
+    if (effective) viewport_->showModel(mid);
+    else           viewport_->hideModel(mid);
 
-    // Tree-side cue: italicise + grey out the model root when hidden.
+    // Tree-side cue: italicise + grey out the model root when not
+    // effectively visible (own toggle off, or any ancestor group hidden).
     auto root_it = tree_roots_.find(mid);
     if (root_it != tree_roots_.end()) {
         QFont f = root_it->second->font(0);
-        f.setItalic(!m->visible);
+        f.setItalic(!effective);
         for (int col = 0; col < element_tree_->columnCount(); ++col) {
             root_it->second->setFont(col, f);
             root_it->second->setForeground(
                 col,
-                m->visible ? element_tree_->palette().color(QPalette::Text)
-                           : element_tree_->palette().color(QPalette::Disabled,
-                                                            QPalette::Text));
+                effective ? element_tree_->palette().color(QPalette::Text)
+                          : element_tree_->palette().color(QPalette::Disabled,
+                                                           QPalette::Text));
         }
     }
 }
 
 void MainWindow::onTreeContextMenu(const QPoint& pos) {
     QTreeWidgetItem* item = element_tree_->itemAt(pos);
-    uint32_t mid = modelIdForRoot(item);
-    if (mid == 0) return;  // not a model root — only roots get the menu
-
-    auto fed_it = model_id_to_fed_id_.find(mid);
-    if (fed_it == model_id_to_fed_id_.end()) return;
-    const Federation::Model* m = federation_->findById(fed_it->second);
-    if (!m) return;
-
-    const bool currently_loading = loader_->isLoadingModel(mid);
+    const uint32_t mid = modelIdForRoot(item);
+    const QString  group_id = groupIdForItem(item);
+    // Element rows (children of a model root) are excluded — only model
+    // roots, group rows, and the empty area get a menu.
+    const bool is_element_row =
+        item != nullptr && mid == 0 && group_id.isEmpty();
+    if (is_element_row) return;
 
     QMenu menu(this);
-    QAction* hide_show = menu.addAction(m->visible ? "Hide" : "Show");
-    QAction* remove    = menu.addAction("Remove");
-    remove->setEnabled(!currently_loading);
 
+    if (mid != 0) {
+        // === Model row ===
+        auto fed_it = model_id_to_fed_id_.find(mid);
+        if (fed_it == model_id_to_fed_id_.end()) return;
+        const Federation::Model* m = federation_->findById(fed_it->second);
+        if (!m) return;
+
+        const bool currently_loading = loader_->isLoadingModel(mid);
+
+        QAction* hide_show = menu.addAction(m->visible ? "Hide" : "Show");
+
+        QMenu* move_menu = menu.addMenu("Move to Group");
+        QAction* move_to_root = move_menu->addAction("(Root)");
+        move_to_root->setEnabled(!m->group_id.isEmpty());
+        move_menu->addSeparator();
+        std::vector<std::pair<QAction*, QString>> move_targets;
+        for (const Federation::Group* g : federation_->allGroups()) {
+            QAction* a = move_menu->addAction(g->display_name);
+            a->setEnabled(g->id != m->group_id);
+            move_targets.emplace_back(a, g->id);
+        }
+        if (federation_->allGroups().empty()) {
+            QAction* none = move_menu->addAction("(no groups)");
+            none->setEnabled(false);
+        }
+
+        QAction* remove = menu.addAction("Remove");
+        remove->setEnabled(!currently_loading);
+
+        QAction* chosen = menu.exec(element_tree_->viewport()->mapToGlobal(pos));
+        if (!chosen) return;
+        if (chosen == hide_show) {
+            federation_->setModelVisible(fed_it->second, !m->visible);
+        } else if (chosen == move_to_root) {
+            federation_->setModelGroup(fed_it->second, QString());
+        } else if (chosen == remove) {
+            removeModel(mid);
+        } else {
+            for (const auto& [a, gid] : move_targets) {
+                if (chosen == a) {
+                    federation_->setModelGroup(fed_it->second, gid);
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    if (!group_id.isEmpty()) {
+        // === Group row ===
+        const Federation::Group* g = federation_->findGroupById(group_id);
+        if (!g) return;
+
+        QAction* hide_show = menu.addAction(g->visible ? "Hide" : "Show");
+        QAction* rename    = menu.addAction("Rename...");
+        QAction* new_sub   = menu.addAction("New Subgroup");
+
+        QMenu* move_menu = menu.addMenu("Move to Parent");
+        QAction* move_to_root = move_menu->addAction("(Root)");
+        move_to_root->setEnabled(g->parent != nullptr);
+        move_menu->addSeparator();
+        std::vector<std::pair<QAction*, QString>> move_targets;
+        for (const Federation::Group* og : federation_->allGroups()) {
+            QAction* a = move_menu->addAction(og->display_name);
+            // Disable self, current parent, and any descendant of g (the
+            // latter would create a cycle).  Walk og's ancestor chain to
+            // detect descendants.
+            bool would_cycle = false;
+            for (const Federation::Group* cur = og; cur; cur = cur->parent) {
+                if (cur == g) { would_cycle = true; break; }
+            }
+            const bool is_current_parent =
+                g->parent != nullptr && og == g->parent;
+            a->setEnabled(!would_cycle && !is_current_parent);
+            move_targets.emplace_back(a, og->id);
+        }
+
+        QAction* remove = menu.addAction("Remove Group");
+
+        QAction* chosen = menu.exec(element_tree_->viewport()->mapToGlobal(pos));
+        if (!chosen) return;
+        if (chosen == hide_show) {
+            federation_->setGroupVisible(group_id, !g->visible);
+        } else if (chosen == rename) {
+            bool ok = false;
+            QString name = QInputDialog::getText(
+                this, "Rename Group", "Group name:", QLineEdit::Normal,
+                g->display_name, &ok);
+            if (ok && !name.isEmpty()) federation_->setGroupName(group_id, name);
+        } else if (chosen == new_sub) {
+            bool ok = false;
+            QString name = QInputDialog::getText(
+                this, "New Subgroup", "Group name:", QLineEdit::Normal,
+                "Group", &ok);
+            if (ok && !name.isEmpty()) federation_->addGroup(name, group_id);
+        } else if (chosen == move_to_root) {
+            federation_->setGroupParent(group_id, QString());
+        } else if (chosen == remove) {
+            federation_->removeGroup(group_id);
+        } else {
+            for (const auto& [a, gid] : move_targets) {
+                if (chosen == a) {
+                    federation_->setGroupParent(group_id, gid);
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+    // === Empty area ===
+    QAction* new_group = menu.addAction("New Group");
     QAction* chosen = menu.exec(element_tree_->viewport()->mapToGlobal(pos));
     if (!chosen) return;
-    if (chosen == hide_show) {
-        federation_->setModelVisible(fed_it->second, !m->visible);
-    } else if (chosen == remove) {
-        removeModel(mid);
+    if (chosen == new_group) {
+        bool ok = false;
+        QString name = QInputDialog::getText(
+            this, "New Group", "Group name:", QLineEdit::Normal,
+            "Group", &ok);
+        if (ok && !name.isEmpty()) federation_->addGroup(name, QString());
     }
 }
 
@@ -968,4 +1146,149 @@ void MainWindow::removeModel(uint32_t mid) {
     removeModelUi(mid);
     if (!fed_id.isEmpty()) federation_->removeModel(fed_id);
     updateWindowTitle();
+}
+
+QString MainWindow::groupIdForItem(QTreeWidgetItem* item) const {
+    if (!item) return {};
+    for (const auto& kv : group_tree_items_) {
+        if (kv.second == item) return kv.first;
+    }
+    return {};
+}
+
+QTreeWidgetItem* MainWindow::ensureGroupTreeItem(const QString& group_id) {
+    if (group_id.isEmpty()) return nullptr;
+    auto it = group_tree_items_.find(group_id);
+    if (it != group_tree_items_.end()) return it->second;
+    const Federation::Group* g = federation_->findGroupById(group_id);
+    if (!g) return nullptr;
+
+    auto* item = new QTreeWidgetItem();
+    item->setText(0, g->display_name);
+    item->setText(1, "Group");
+    group_tree_items_[group_id] = item;
+    return item;
+}
+
+void MainWindow::reparentGroupTreeItem(const QString& group_id) {
+    auto it = group_tree_items_.find(group_id);
+    if (it == group_tree_items_.end()) return;
+    QTreeWidgetItem* item = it->second;
+    const Federation::Group* g = federation_->findGroupById(group_id);
+    if (!g) return;
+
+    QTreeWidgetItem* desired_parent = nullptr;
+    if (g->parent != nullptr) {
+        auto pit = group_tree_items_.find(g->parent->id);
+        if (pit != group_tree_items_.end()) desired_parent = pit->second;
+    }
+
+    QTreeWidgetItem* current_parent = item->parent();
+    if (current_parent == desired_parent &&
+        (current_parent != nullptr ||
+         element_tree_->indexOfTopLevelItem(item) >= 0)) {
+        return;
+    }
+
+    // Detach from current location.
+    if (current_parent) {
+        current_parent->removeChild(item);
+    } else {
+        int idx = element_tree_->indexOfTopLevelItem(item);
+        if (idx >= 0) element_tree_->takeTopLevelItem(idx);
+    }
+    // Attach to desired location.
+    if (desired_parent) desired_parent->addChild(item);
+    else                element_tree_->addTopLevelItem(item);
+}
+
+void MainWindow::reparentModelTreeRoot(uint32_t mid) {
+    auto root_it = tree_roots_.find(mid);
+    if (root_it == tree_roots_.end()) return;
+    QTreeWidgetItem* item = root_it->second;
+
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    QString group_id;
+    if (fed_it != model_id_to_fed_id_.end()) {
+        if (const Federation::Model* m = federation_->findById(fed_it->second)) {
+            group_id = m->group_id;
+        }
+    }
+
+    QTreeWidgetItem* desired_parent = nullptr;
+    if (!group_id.isEmpty()) {
+        auto pit = group_tree_items_.find(group_id);
+        if (pit != group_tree_items_.end()) desired_parent = pit->second;
+    }
+
+    QTreeWidgetItem* current_parent = item->parent();
+    if (current_parent == desired_parent &&
+        (current_parent != nullptr ||
+         element_tree_->indexOfTopLevelItem(item) >= 0)) {
+        return;
+    }
+
+    if (current_parent) {
+        current_parent->removeChild(item);
+    } else {
+        int idx = element_tree_->indexOfTopLevelItem(item);
+        if (idx >= 0) element_tree_->takeTopLevelItem(idx);
+    }
+    if (desired_parent) desired_parent->addChild(item);
+    else                element_tree_->addTopLevelItem(item);
+}
+
+void MainWindow::refreshGroupRowAppearance(const QString& group_id) {
+    auto it = group_tree_items_.find(group_id);
+    if (it == group_tree_items_.end()) return;
+    QTreeWidgetItem* item = it->second;
+    const bool effective = federation_->isGroupChainVisible(group_id);
+
+    QFont f = item->font(0);
+    f.setItalic(!effective);
+    f.setBold(true);
+    for (int col = 0; col < element_tree_->columnCount(); ++col) {
+        item->setFont(col, f);
+        item->setForeground(
+            col,
+            effective ? element_tree_->palette().color(QPalette::Text)
+                      : element_tree_->palette().color(QPalette::Disabled,
+                                                       QPalette::Text));
+    }
+}
+
+std::vector<QString> MainWindow::descendantGroupIds(const QString& group_id) const {
+    std::vector<QString> out;
+    auto walk = [&](auto&& self,
+                    const std::vector<std::unique_ptr<Federation::Group>>& src) -> void {
+        for (const auto& g : src) {
+            out.push_back(g->id);
+            self(self, g->children);
+        }
+    };
+    if (group_id.isEmpty()) {
+        walk(walk, federation_->rootGroups());
+    } else {
+        const Federation::Group* g = federation_->findGroupById(group_id);
+        if (!g) return out;
+        out.push_back(g->id);
+        walk(walk, g->children);
+    }
+    return out;
+}
+
+void MainWindow::applyVisibilityCascadeFromGroup(const QString& group_id) {
+    const std::vector<QString> gids = descendantGroupIds(group_id);
+    // Models directly assigned to one of these groups need their viewport
+    // visibility re-pushed because chain visibility may have flipped.
+    for (const auto& m : federation_->models()) {
+        const bool affected =
+            (group_id.isEmpty()) ||
+            std::find(gids.begin(), gids.end(), m.group_id) != gids.end();
+        if (!affected) continue;
+        auto it = fed_id_to_model_id_.find(m.id);
+        if (it != fed_id_to_model_id_.end()) {
+            applyModelVisibilityToViewport(it->second);
+        }
+    }
 }

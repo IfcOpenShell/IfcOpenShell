@@ -31,7 +31,9 @@
 #include <QJsonValue>
 #include <QUuid>
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 
 namespace {
 constexpr const char* kSchema = "ifcfed/1";
@@ -220,6 +222,7 @@ void Federation::clear() {
     created_ = QDateTime();
     modified_ = QDateTime();
     models_.clear();
+    root_groups_.clear();
     config_                 = FederationConfig{};
     federated_false_origin_ = FederatedFalseOrigin{};
     has_home_view_ = false;
@@ -263,6 +266,193 @@ void Federation::setModelVisible(const QString& fed_id, bool visible) {
         emit modelVisibilityChanged(fed_id, visible);
         return;
     }
+}
+
+void Federation::setModelGroup(const QString& fed_id, const QString& group_id) {
+    if (!group_id.isEmpty() && findGroupById(group_id) == nullptr) return;
+    for (auto& m : models_) {
+        if (m.id != fed_id) continue;
+        if (m.group_id == group_id) return;
+        m.group_id = group_id;
+        setDirty(true);
+        emit modelGroupChanged(fed_id, group_id);
+        return;
+    }
+}
+
+QString Federation::addGroup(const QString& display_name,
+                              const QString& parent_id) {
+    Group* parent = nullptr;
+    if (!parent_id.isEmpty()) {
+        parent = findGroupByIdMutable(parent_id);
+        if (!parent) return {};
+    }
+
+    auto g = std::make_unique<Group>();
+    g->id = generateId();
+    g->display_name = display_name.isEmpty() ? QString("Group") : display_name;
+    g->parent = parent;
+    const QString new_id = g->id;
+
+    if (parent) parent->children.push_back(std::move(g));
+    else        root_groups_.push_back(std::move(g));
+
+    setDirty(true);
+    emit groupAdded(new_id);
+    return new_id;
+}
+
+void Federation::removeGroup(const QString& group_id) {
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+
+    Group* new_parent = group->parent;
+    const QString new_parent_id = new_parent ? new_parent->id : QString();
+    auto& target_children = new_parent ? new_parent->children : root_groups_;
+
+    // Move out of the to-be-removed group.  Splice into target_children
+    // *before* the removed group's slot when possible to keep stable
+    // visual order.  We don't bother with the precise position — append
+    // is fine and simpler.
+    std::vector<QString> moved_child_ids;
+    moved_child_ids.reserve(group->children.size());
+    for (auto& child : group->children) {
+        moved_child_ids.push_back(child->id);
+        child->parent = new_parent;
+        target_children.push_back(std::move(child));
+    }
+    group->children.clear();
+
+    // Reparent direct child models up one level.
+    std::vector<QString> moved_model_ids;
+    for (auto& m : models_) {
+        if (m.group_id == group_id) {
+            m.group_id = new_parent_id;
+            moved_model_ids.push_back(m.id);
+        }
+    }
+
+    // Detach + drop the now-empty group.
+    auto owned = detachGroup(group);
+    owned.reset();
+
+    setDirty(true);
+    for (const auto& cid : moved_child_ids) emit groupChanged(cid);
+    for (const auto& mid : moved_model_ids) emit modelGroupChanged(mid, new_parent_id);
+    emit groupRemoved(group_id);
+}
+
+void Federation::setGroupName(const QString& group_id,
+                              const QString& display_name) {
+    Group* g = findGroupByIdMutable(group_id);
+    if (!g) return;
+    if (g->display_name == display_name) return;
+    g->display_name = display_name;
+    setDirty(true);
+    emit groupChanged(group_id);
+}
+
+void Federation::setGroupParent(const QString& group_id,
+                                 const QString& parent_id) {
+    if (group_id.isEmpty()) return;
+    if (parent_id == group_id) return;
+
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+
+    Group* new_parent = nullptr;
+    if (!parent_id.isEmpty()) {
+        new_parent = findGroupByIdMutable(parent_id);
+        if (!new_parent) return;
+        if (isDescendantOrSelf(group, new_parent)) return;
+    }
+
+    if (group->parent == new_parent) return;
+
+    auto owned = detachGroup(group);
+    if (!owned) return;
+    owned->parent = new_parent;
+    if (new_parent) new_parent->children.push_back(std::move(owned));
+    else            root_groups_.push_back(std::move(owned));
+
+    setDirty(true);
+    emit groupChanged(group_id);
+}
+
+void Federation::setGroupVisible(const QString& group_id, bool visible) {
+    Group* g = findGroupByIdMutable(group_id);
+    if (!g) return;
+    if (g->visible == visible) return;
+    g->visible = visible;
+    setDirty(true);
+    emit groupVisibilityChanged(group_id, visible);
+}
+
+const Federation::Group* Federation::findGroupById(const QString& group_id) const {
+    return const_cast<Federation*>(this)->findGroupByIdMutable(group_id);
+}
+
+Federation::Group* Federation::findGroupByIdMutable(const QString& group_id) {
+    if (group_id.isEmpty()) return nullptr;
+    std::vector<Group*> stack;
+    for (auto& g : root_groups_) stack.push_back(g.get());
+    while (!stack.empty()) {
+        Group* g = stack.back();
+        stack.pop_back();
+        if (g->id == group_id) return g;
+        for (auto& c : g->children) stack.push_back(c.get());
+    }
+    return nullptr;
+}
+
+std::vector<const Federation::Group*> Federation::allGroups() const {
+    std::vector<const Group*> out;
+    for (const auto& g : root_groups_) appendDfs(g.get(), out);
+    return out;
+}
+
+void Federation::appendDfs(const Group* g, std::vector<const Group*>& out) {
+    if (!g) return;
+    out.push_back(g);
+    for (const auto& c : g->children) appendDfs(c.get(), out);
+}
+
+std::unique_ptr<Federation::Group> Federation::detachGroup(Group* group) {
+    if (!group) return nullptr;
+    auto& siblings = group->parent ? group->parent->children : root_groups_;
+    auto it = std::find_if(siblings.begin(), siblings.end(),
+        [group](const std::unique_ptr<Group>& up) { return up.get() == group; });
+    if (it == siblings.end()) return nullptr;
+    std::unique_ptr<Group> owned = std::move(*it);
+    siblings.erase(it);
+    return owned;
+}
+
+bool Federation::isDescendantOrSelf(const Group* group,
+                                     const Group* candidate_descendant) {
+    if (!group || !candidate_descendant) return false;
+    if (group == candidate_descendant) return true;
+    for (const auto& c : group->children) {
+        if (isDescendantOrSelf(c.get(), candidate_descendant)) return true;
+    }
+    return false;
+}
+
+bool Federation::isGroupChainVisible(const QString& group_id) const {
+    if (group_id.isEmpty()) return true;
+    const Group* g = findGroupById(group_id);
+    while (g != nullptr) {
+        if (!g->visible) return false;
+        g = g->parent;
+    }
+    return true;
+}
+
+bool Federation::isModelEffectivelyVisible(const QString& fed_id) const {
+    const Model* m = findById(fed_id);
+    if (!m) return false;
+    if (!m->visible) return false;
+    return isGroupChainVisible(m->group_id);
 }
 
 void Federation::markClean() {
@@ -372,6 +562,41 @@ bool Federation::load(const QString& path,
         federated_false_origin_.rz_deg = oo.value("rz_deg").toDouble(0.0);
     }
 
+    // Groups load before models so model.group_id can be validated.
+    {
+        // Recursive descend over the nested "groups" array.  Each entry is
+        // {id, display_name, visible?, groups?: [...]}.  Children inherit
+        // their parent pointer at construction time.
+        std::function<void(const QJsonArray&,
+                           std::vector<std::unique_ptr<Group>>&,
+                           Group*)> load_groups;
+        load_groups = [&](const QJsonArray& arr,
+                          std::vector<std::unique_ptr<Group>>& sink,
+                          Group* parent) {
+            for (int i = 0; i < arr.size(); ++i) {
+                if (!arr[i].isObject()) {
+                    if (warnings)
+                        *warnings << QString("groups: entry %1 is not an object; skipping.").arg(i);
+                    continue;
+                }
+                QJsonObject go = arr[i].toObject();
+                auto g = std::make_unique<Group>();
+                g->id = go.value("id").toString();
+                if (g->id.isEmpty()) g->id = generateId();
+                g->display_name = go.value("display_name").toString();
+                if (QJsonValue vv = go.value("visible"); vv.isBool())
+                    g->visible = vv.toBool();
+                g->parent = parent;
+
+                if (QJsonValue cv = go.value("groups"); cv.isArray()) {
+                    load_groups(cv.toArray(), g->children, g.get());
+                }
+                sink.push_back(std::move(g));
+            }
+        };
+        load_groups(root.value("groups").toArray(), root_groups_, nullptr);
+    }
+
     QJsonArray arr = root.value("models").toArray();
     for (int i = 0; i < arr.size(); ++i) {
         if (!arr[i].isObject()) {
@@ -425,6 +650,14 @@ bool Federation::load(const QString& path,
 
         QJsonValue vv = mo.value("visible");
         if (vv.isBool()) m.visible = vv.toBool();
+
+        m.group_id = mo.value("group_id").toString();
+        if (!m.group_id.isEmpty() && findGroupById(m.group_id) == nullptr) {
+            if (warnings)
+                *warnings << QString("models[%1]: unknown group_id '%2'; moved to root.")
+                                 .arg(i).arg(m.group_id);
+            m.group_id.clear();
+        }
 
         models_.push_back(std::move(m));
     }
@@ -481,6 +714,23 @@ bool Federation::save(const QString& path, QString* err) {
         root["federated_false_origin"] = oo;
     }
 
+    if (!root_groups_.empty()) {
+        std::function<QJsonArray(const std::vector<std::unique_ptr<Group>>&)> dump;
+        dump = [&](const std::vector<std::unique_ptr<Group>>& src) {
+            QJsonArray out;
+            for (const auto& g : src) {
+                QJsonObject go;
+                go["id"]           = g->id;
+                go["display_name"] = g->display_name;
+                if (!g->visible)   go["visible"] = false;
+                if (!g->children.empty()) go["groups"] = dump(g->children);
+                out.append(go);
+            }
+            return out;
+        };
+        root["groups"] = dump(root_groups_);
+    }
+
     QJsonArray arr;
     for (const auto& m : models_) {
         QJsonObject mo;
@@ -520,6 +770,7 @@ bool Federation::save(const QString& path, QString* err) {
         }
 
         if (!m.visible) mo["visible"] = false;
+        if (!m.group_id.isEmpty()) mo["group_id"] = m.group_id;
 
         arr.append(mo);
     }

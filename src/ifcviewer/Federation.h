@@ -28,6 +28,7 @@
 #include <QDateTime>
 #include <QVector3D>
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -191,6 +192,29 @@ public:
         QString source_path;                     // resolved absolute when kind == "local"
         ModelTransformation model_transformation;
         bool visible = true;
+        QString group_id;                        // empty = root level
+    };
+
+    // Group — a named container for sub-groups and models.  Models are
+    // assigned via Model::group_id (one-to-one); sub-groups live in
+    // `children` (owning).  Visibility is per-group and cascades: a
+    // model is effectively visible only when its `visible` is true and
+    // every ancestor group's `visible` is true.
+    //
+    // `parent` is a non-owning back pointer, kept in sync by Federation
+    // mutations.  Group ownership tree is rooted at Federation::root_groups_.
+    struct Group {
+        QString id;                              // stable, persisted
+        QString display_name;
+        bool    visible = true;
+        std::vector<std::unique_ptr<Group>> children;
+        Group*  parent = nullptr;                // not owned; nullptr at root
+
+        Group() = default;
+        Group(const Group&) = delete;
+        Group& operator=(const Group&) = delete;
+        Group(Group&&) = default;
+        Group& operator=(Group&&) = default;
     };
 
     explicit Federation(QObject* parent = nullptr);
@@ -211,10 +235,39 @@ public:
     void setFederatedFalseOrigin(const FederatedFalseOrigin&);
     void setModelTransformation(const QString& fed_id, const ModelTransformation&);
     void setModelVisible(const QString& fed_id, bool visible);
+    // Reassign a model to a group (or to root, when group_id is empty).
+    // No-op when fed_id is unknown or group_id is unknown-and-non-empty.
+    void setModelGroup(const QString& fed_id, const QString& group_id);
+
+    // Group mutations.  All return / accept stable group ids.
+    QString addGroup(const QString& display_name = QString(),
+                     const QString& parent_id = QString());
+    // Removes the group; child sub-groups + child models are reparented
+    // to the removed group's parent (i.e. up one level).  No-op when
+    // group_id is unknown.
+    void removeGroup(const QString& group_id);
+    void setGroupName(const QString& group_id, const QString& display_name);
+    // Reparents a group.  No-op if the move would create a cycle (new
+    // parent is the group itself or one of its descendants) or if either
+    // id is unknown.
+    void setGroupParent(const QString& group_id, const QString& parent_id);
+    void setGroupVisible(const QString& group_id, bool visible);
 
     // Accessors
     const std::vector<Model>& models() const { return models_; }
     const Model* findById(const QString& fed_id) const;
+    // Top-level groups in insertion order; descend via Group::children.
+    const std::vector<std::unique_ptr<Group>>& rootGroups() const { return root_groups_; }
+    const Group* findGroupById(const QString& group_id) const;
+    // Depth-first flatten: every group in the tree, parents before
+    // children.  Cheap, intended for UI iteration.
+    std::vector<const Group*> allGroups() const;
+    // True iff every ancestor of `group_id` (inclusive of `group_id`
+    // itself) has visible == true.  Returns true for empty group_id (root).
+    bool isGroupChainVisible(const QString& group_id) const;
+    // True iff the model exists, its own `visible` is true, and every
+    // ancestor group is visible.
+    bool isModelEffectivelyVisible(const QString& fed_id) const;
     bool isDirty() const { return dirty_; }
     void markClean();
     QString filePath() const { return file_path_; }
@@ -234,17 +287,40 @@ signals:
     void federatedFalseOriginChanged();
     void modelTransformationChanged(const QString& fed_id);
     void modelVisibilityChanged(const QString& fed_id, bool visible);
+    void modelGroupChanged(const QString& fed_id, const QString& group_id);
+
+    void groupAdded(const QString& group_id);
+    void groupRemoved(const QString& group_id);
+    // Emitted on rename or reparent.
+    void groupChanged(const QString& group_id);
+    // Visibility flip on this group only.  Effective visibility of
+    // descendant models also changes; consumers that care should walk
+    // descendants themselves.
+    void groupVisibilityChanged(const QString& group_id, bool visible);
 
 private:
     void setDirty(bool d);
     static QString generateId();
     static bool isFederationPath(const QString& path);
 
+    Group* findGroupByIdMutable(const QString& group_id);
+    // Detach a group from its current parent's children vector, returning
+    // ownership.  group->parent is left set to its former parent — the
+    // caller must update it before reattachment.  Returns nullptr if the
+    // group can't be found in the expected parent.
+    std::unique_ptr<Group> detachGroup(Group* group);
+    // True iff `candidate_descendant` is `group` itself or any descendant.
+    static bool isDescendantOrSelf(const Group* group,
+                                    const Group* candidate_descendant);
+    // DFS append for allGroups() and similar walks.
+    static void appendDfs(const Group* g, std::vector<const Group*>& out);
+
     QString file_path_;
     QString name_;
     QDateTime created_;
     QDateTime modified_;
     std::vector<Model> models_;
+    std::vector<std::unique_ptr<Group>> root_groups_;
     FederationConfig     config_;
     FederatedFalseOrigin federated_false_origin_;
     bool has_home_view_ = false;

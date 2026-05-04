@@ -457,6 +457,237 @@ TEST_CASE("composeFederatedFalseOrigin scales by federation unit",
     REQUIRE(std::abs(M(0, 3) - (-0.3048)) < 1e-9);
 }
 
+TEST_CASE("addGroup creates a top-level group; addGroup with parent nests it",
+          "[federation][groups]") {
+    ensureQApp();
+    Federation fed;
+    QSignalSpy added_spy(&fed, &Federation::groupAdded);
+
+    QString a = fed.addGroup("Site A");
+    REQUIRE_FALSE(a.isEmpty());
+    REQUIRE(fed.rootGroups().size() == 1);
+    REQUIRE(fed.rootGroups()[0]->id == a);
+    REQUIRE(fed.findGroupById(a)->parent == nullptr);
+    REQUIRE(fed.isDirty());
+    REQUIRE(added_spy.count() == 1);
+
+    QString sub = fed.addGroup("Building 1", a);
+    REQUIRE_FALSE(sub.isEmpty());
+    REQUIRE(fed.rootGroups().size() == 1);  // still one root
+    REQUIRE(fed.rootGroups()[0]->children.size() == 1);
+    REQUIRE(fed.rootGroups()[0]->children[0]->id == sub);
+    REQUIRE(fed.findGroupById(sub)->parent == fed.findGroupById(a));
+
+    // Unknown parent_id is rejected.
+    QString bad = fed.addGroup("Orphan", "no-such-id");
+    REQUIRE(bad.isEmpty());
+
+    // allGroups walks parents-before-children.
+    auto all = fed.allGroups();
+    REQUIRE(all.size() == 2);
+    REQUIRE(all[0]->id == a);
+    REQUIRE(all[1]->id == sub);
+}
+
+TEST_CASE("setModelGroup assigns and reassigns; rejects unknown group",
+          "[federation][groups]") {
+    ensureQApp();
+    QTemporaryDir tmp;
+    Federation fed;
+    QString mid = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString gid = fed.addGroup("G");
+    fed.markClean();
+
+    QSignalSpy spy(&fed, &Federation::modelGroupChanged);
+    fed.setModelGroup(mid, gid);
+    REQUIRE(fed.findById(mid)->group_id == gid);
+    REQUIRE(fed.isDirty());
+    REQUIRE(spy.count() == 1);
+
+    // Idempotent.
+    fed.markClean();
+    spy.clear();
+    fed.setModelGroup(mid, gid);
+    REQUIRE_FALSE(fed.isDirty());
+    REQUIRE(spy.count() == 0);
+
+    // Unknown group is rejected.
+    fed.setModelGroup(mid, "no-such-group");
+    REQUIRE(fed.findById(mid)->group_id == gid);
+    REQUIRE_FALSE(fed.isDirty());
+
+    // Reassign back to root.
+    fed.setModelGroup(mid, QString());
+    REQUIRE(fed.findById(mid)->group_id.isEmpty());
+    REQUIRE(spy.count() == 1);
+}
+
+TEST_CASE("setGroupVisible affects effective visibility cascade",
+          "[federation][groups]") {
+    ensureQApp();
+    QTemporaryDir tmp;
+    Federation fed;
+    QString mid = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString outer = fed.addGroup("Outer");
+    QString inner = fed.addGroup("Inner", outer);
+    fed.setModelGroup(mid, inner);
+
+    REQUIRE(fed.isModelEffectivelyVisible(mid));
+    REQUIRE(fed.isGroupChainVisible(inner));
+
+    // Hide the outer group: inner chain visibility flips, model effective
+    // visibility flips, but the model's own visible flag is untouched.
+    fed.setGroupVisible(outer, false);
+    REQUIRE_FALSE(fed.isGroupChainVisible(outer));
+    REQUIRE_FALSE(fed.isGroupChainVisible(inner));
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
+    REQUIRE(fed.findById(mid)->visible);
+
+    // Hiding a model directly while its group is also hidden — still
+    // effectively hidden.
+    fed.setModelVisible(mid, false);
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
+
+    // Re-show the outer group; model is still hidden by its own flag.
+    fed.setGroupVisible(outer, true);
+    REQUIRE(fed.isGroupChainVisible(inner));
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
+
+    fed.setModelVisible(mid, true);
+    REQUIRE(fed.isModelEffectivelyVisible(mid));
+}
+
+TEST_CASE("setGroupParent rejects cycles and self-parenting",
+          "[federation][groups]") {
+    ensureQApp();
+    Federation fed;
+    QString a = fed.addGroup("A");
+    QString b = fed.addGroup("B", a);
+    QString c = fed.addGroup("C", b);
+
+    // Self-parent: rejected.
+    fed.setGroupParent(a, a);
+    REQUIRE(fed.findGroupById(a)->parent == nullptr);
+
+    // Parenting an ancestor under its descendant: rejected.
+    fed.setGroupParent(a, c);
+    REQUIRE(fed.findGroupById(a)->parent == nullptr);
+    REQUIRE(fed.findGroupById(c)->parent->id == b);
+
+    // Valid reparent: move b up to root.
+    fed.setGroupParent(b, QString());
+    REQUIRE(fed.findGroupById(b)->parent == nullptr);
+    REQUIRE(fed.findGroupById(c)->parent->id == b);  // c stays under b
+    REQUIRE(fed.rootGroups().size() == 2);           // a + b at root
+}
+
+TEST_CASE("removeGroup reparents direct children + models up one level",
+          "[federation][groups]") {
+    ensureQApp();
+    QTemporaryDir tmp;
+    Federation fed;
+    QString outer = fed.addGroup("Outer");
+    QString mid_outer = fed.addGroup("MidOuter", outer);
+    QString inner = fed.addGroup("Inner", mid_outer);
+
+    QString m_outer = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString m_mid   = fed.addModel(writeStubFile(tmp.filePath("b.ifc")));
+    QString m_inner = fed.addModel(writeStubFile(tmp.filePath("c.ifc")));
+    fed.setModelGroup(m_outer, outer);
+    fed.setModelGroup(m_mid,   mid_outer);
+    fed.setModelGroup(m_inner, inner);
+    fed.markClean();
+
+    QSignalSpy gc_spy(&fed, &Federation::groupChanged);
+    QSignalSpy mg_spy(&fed, &Federation::modelGroupChanged);
+    QSignalSpy gr_spy(&fed, &Federation::groupRemoved);
+
+    // Remove the middle group: its child group (inner) and child model
+    // (m_mid) should both move up to `outer`.
+    fed.removeGroup(mid_outer);
+
+    REQUIRE(fed.findGroupById(mid_outer) == nullptr);
+    REQUIRE(fed.findGroupById(inner)->parent->id == outer);
+    REQUIRE(fed.findById(m_mid)->group_id == outer);
+    // Untouched siblings.
+    REQUIRE(fed.findById(m_outer)->group_id == outer);
+    REQUIRE(fed.findById(m_inner)->group_id == inner);
+    REQUIRE(fed.isDirty());
+
+    REQUIRE(gc_spy.count() == 1);
+    REQUIRE(gc_spy.takeFirst().at(0).toString() == inner);
+    REQUIRE(mg_spy.count() == 1);
+    REQUIRE(mg_spy.takeFirst().at(0).toString() == m_mid);
+    REQUIRE(gr_spy.count() == 1);
+    REQUIRE(gr_spy.takeFirst().at(0).toString() == mid_outer);
+}
+
+TEST_CASE("groups + model.group_id round-trip through nested JSON save/load",
+          "[federation][groups]") {
+    ensureQApp();
+    QTemporaryDir tmp;
+    QString fed_path = tmp.filePath("p.ifcfed");
+
+    QString site_id, bldg_id, m_root, m_bldg;
+    {
+        Federation src;
+        site_id = src.addGroup("Site");
+        bldg_id = src.addGroup("Building 1", site_id);
+        m_root  = src.addModel(writeStubFile(tmp.filePath("root.ifc")));
+        m_bldg  = src.addModel(writeStubFile(tmp.filePath("bldg.ifc")));
+        src.setModelGroup(m_bldg, bldg_id);
+        src.setGroupVisible(bldg_id, false);
+
+        QString err;
+        REQUIRE(src.save(fed_path, &err));
+    }
+
+    // Inspect raw JSON: groups should be nested under "groups" with no
+    // parent_id field anywhere, and model.group_id is present only when set.
+    {
+        QJsonObject root = readJsonFile(fed_path);
+        REQUIRE(root.contains("groups"));
+        QJsonArray grps = root.value("groups").toArray();
+        REQUIRE(grps.size() == 1);
+        QJsonObject site = grps[0].toObject();
+        REQUIRE(site.value("display_name").toString() == "Site");
+        REQUIRE_FALSE(site.contains("parent_id"));
+
+        QJsonArray site_children = site.value("groups").toArray();
+        REQUIRE(site_children.size() == 1);
+        QJsonObject bldg = site_children[0].toObject();
+        REQUIRE(bldg.value("display_name").toString() == "Building 1");
+        REQUIRE(bldg.value("visible").toBool() == false);
+        REQUIRE_FALSE(bldg.contains("parent_id"));
+
+        QJsonArray models = root.value("models").toArray();
+        REQUIRE(models.size() == 2);
+        // m_root is at root: no group_id key.
+        REQUIRE_FALSE(models[0].toObject().contains("group_id"));
+        // m_bldg is inside the building.
+        REQUIRE(models[1].toObject().value("group_id").toString() == bldg_id);
+    }
+
+    {
+        Federation dst;
+        QStringList warnings;
+        QString err;
+        REQUIRE(dst.load(fed_path, &warnings, &err));
+        REQUIRE(warnings.isEmpty());
+        REQUIRE(dst.rootGroups().size() == 1);
+        REQUIRE(dst.rootGroups()[0]->id == site_id);
+        REQUIRE(dst.rootGroups()[0]->children.size() == 1);
+        REQUIRE(dst.rootGroups()[0]->children[0]->id == bldg_id);
+        REQUIRE_FALSE(dst.rootGroups()[0]->children[0]->visible);
+        REQUIRE(dst.rootGroups()[0]->children[0]->parent != nullptr);
+        REQUIRE(dst.rootGroups()[0]->children[0]->parent->id == site_id);
+
+        REQUIRE(dst.findById(m_root)->group_id.isEmpty());
+        REQUIRE(dst.findById(m_bldg)->group_id == bldg_id);
+        REQUIRE_FALSE(dst.isModelEffectivelyVisible(m_bldg));
+    }
+}
+
 TEST_CASE("composeModelTransformation with pivot=B keeps A landing on B",
           "[federation][compose]") {
     // A in ModelGlobal frame, federation in metres, identity CoordinateOperation.

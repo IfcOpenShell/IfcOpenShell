@@ -30,6 +30,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 #include "ViewportWindow.h"
 #include "SceneLoader.h"
@@ -102,8 +103,31 @@ private:
     void removeModelUi(uint32_t mid);
     void removeModel(uint32_t mid);
     // Returns the model_id whose tree root is `item`, or 0 if `item` is not
-    // a model root (i.e. an element row, or null).
+    // a model root (i.e. an element row, group, or null).
     uint32_t modelIdForRoot(QTreeWidgetItem* item) const;
+    // Returns the group_id whose tree item is `item`, or empty string when
+    // `item` is null or is not a group item.
+    QString  groupIdForItem(QTreeWidgetItem* item) const;
+    // Place / reparent a model root under its group (or at top level when
+    // group_id is empty / unknown).  Idempotent.  No-op if there's no tree
+    // root yet for `mid`.
+    void     reparentModelTreeRoot(uint32_t mid);
+    // Place / reparent a group item under its parent group (or at top
+    // level).  Idempotent.  No-op if there's no tree item for `group_id`.
+    void     reparentGroupTreeItem(const QString& group_id);
+    // Lazily create the QTreeWidgetItem for `group_id` if not already in
+    // group_tree_items_.  Returns the item.  Sets text + flags but does
+    // not place it under a parent — call reparentGroupTreeItem afterwards.
+    QTreeWidgetItem* ensureGroupTreeItem(const QString& group_id);
+    // Recompute italic/grey on a group row from current effective visibility.
+    void     refreshGroupRowAppearance(const QString& group_id);
+    // Walk descendants of `group_id` and re-push effective visibility to
+    // the viewport for every model under it.  When `group_id` is empty,
+    // re-pushes every model in the federation.
+    void     applyVisibilityCascadeFromGroup(const QString& group_id);
+    // Walk every group_id whose ancestor chain currently includes
+    // `group_id` (inclusive).
+    std::vector<QString> descendantGroupIds(const QString& group_id) const;
     // Push the federation's `visible` flag for `mid` onto the viewport.
     // No-op if `mid` is not in the federation map.  Idempotent — safe to
     // call before the model is finalised on the viewport (hideModel is a
@@ -151,8 +175,11 @@ private:
     QLabel* status_label_ = nullptr;
     QLabel* stats_label_ = nullptr;
 
-    // Per-model tree roots, keyed by model_id.
+    // Per-model tree roots, keyed by model_id.  May live at the top level
+    // of element_tree_ or as a child of a group tree item.
     std::map<uint32_t, QTreeWidgetItem*> tree_roots_;
+    // Per-group tree items, keyed by Federation group id.
+    std::unordered_map<QString, QTreeWidgetItem*> group_tree_items_;
 
     // Bidirectional federation_id <-> model_id map.  Federation owns the
     // persistent ids; SceneLoader owns the runtime model_ids.
