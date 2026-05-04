@@ -60,7 +60,14 @@ public:
     std::vector<uint32_t> addFiles(const QStringList& paths);
     void cancelCurrentLoad();
     bool isLoading() const { return loading_model_id_ != 0 || !load_queue_.empty(); }
+    bool isLoadingModel(uint32_t mid) const { return loading_model_id_ == mid; }
     size_t modelCount() const { return models_.size(); }
+
+    // Drop the loader's tracking for `mid` — its streamer, file path, georef
+    // cache, and queue slot if still pending.  Caller is responsible for the
+    // viewport / UI cleanup; this only releases the loader's own state.
+    // Refuses while the model is the active load (use cancelCurrentLoad first).
+    void removeModel(uint32_t mid);
 
     QString filePath(uint32_t mid) const;
     QString displayName(uint32_t mid) const;

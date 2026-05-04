@@ -123,6 +123,25 @@ void SceneLoader::connectStreamer(GeometryStreamer* streamer) {
             this, &SceneLoader::onStreamerError, Qt::QueuedConnection);
 }
 
+void SceneLoader::removeModel(uint32_t mid) {
+    // Refuse while the model is the active load: the streamer thread is still
+    // running and would race with the deleteLater().  UI gates Remove on
+    // isLoading(), but guard here too.
+    if (loading_model_id_ == mid) return;
+
+    for (auto it = load_queue_.begin(); it != load_queue_.end();) {
+        if (*it == mid) it = load_queue_.erase(it);
+        else            ++it;
+    }
+
+    auto it = models_.find(mid);
+    if (it == models_.end()) return;
+    if (it->second.streamer) {
+        it->second.streamer->deleteLater();
+    }
+    models_.erase(it);
+}
+
 void SceneLoader::cancelCurrentLoad() {
     if (loading_model_id_ == 0) return;
     auto it = models_.find(loading_model_id_);

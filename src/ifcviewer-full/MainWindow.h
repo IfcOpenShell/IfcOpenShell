@@ -67,6 +67,7 @@ private slots:
     void onModelTransformations();
     void onObjectPicked(uint32_t object_id);
     void onTreeSelectionChanged();
+    void onTreeContextMenu(const QPoint& pos);
 
     void onLoadStarted(uint32_t mid, QString display_name);
     void onLoadProgressChanged(int percent);
@@ -99,6 +100,15 @@ private:
                              const std::string& type);
     void writeSidecarForModel(uint32_t mid);
     void removeModelUi(uint32_t mid);
+    void removeModel(uint32_t mid);
+    // Returns the model_id whose tree root is `item`, or 0 if `item` is not
+    // a model root (i.e. an element row, or null).
+    uint32_t modelIdForRoot(QTreeWidgetItem* item) const;
+    // Push the federation's `visible` flag for `mid` onto the viewport.
+    // No-op if `mid` is not in the federation map.  Idempotent — safe to
+    // call before the model is finalised on the viewport (hideModel is a
+    // lookup-and-set on models_gpu_; missing entries are skipped).
+    void applyModelVisibilityToViewport(uint32_t mid);
     void applyPendingBenchmark();
 
     // Push a model's CoordinateOperation matrix to the viewport (or

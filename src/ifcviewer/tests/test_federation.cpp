@@ -145,6 +145,48 @@ TEST_CASE("setHomeView / clearHomeView toggle dirty + has_home_view", "[federati
     REQUIRE(spy.count() == 0);
 }
 
+TEST_CASE("setModelVisible toggles flag, dirty, and signal; idempotent", "[federation]") {
+    ensureQApp();
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+
+    Federation fed;
+    QString id = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    REQUIRE_FALSE(id.isEmpty());
+    REQUIRE(fed.findById(id)->visible);  // visible by default
+    fed.markClean();
+
+    QSignalSpy dirty_spy(&fed, &Federation::dirtyChanged);
+    QSignalSpy vis_spy(&fed, &Federation::modelVisibilityChanged);
+
+    fed.setModelVisible(id, false);
+    REQUIRE_FALSE(fed.findById(id)->visible);
+    REQUIRE(fed.isDirty());
+    REQUIRE(dirty_spy.count() == 1);
+    REQUIRE(vis_spy.count() == 1);
+    REQUIRE(vis_spy.takeFirst().at(0).toString() == id);
+
+    // Idempotent: same value, no signal, dirty unchanged.
+    fed.markClean();
+    dirty_spy.clear();
+    vis_spy.clear();
+    fed.setModelVisible(id, false);
+    REQUIRE_FALSE(fed.isDirty());
+    REQUIRE(dirty_spy.count() == 0);
+    REQUIRE(vis_spy.count() == 0);
+
+    // Unknown fed_id is a no-op (no crash, no signal).
+    fed.setModelVisible("not-a-real-id", false);
+    REQUIRE_FALSE(fed.isDirty());
+    REQUIRE(vis_spy.count() == 0);
+
+    // Toggle back on.
+    fed.setModelVisible(id, true);
+    REQUIRE(fed.findById(id)->visible);
+    REQUIRE(fed.isDirty());
+    REQUIRE(vis_spy.count() == 1);
+}
+
 TEST_CASE("save then load round-trips models, transform, visibility, home view", "[federation]") {
     ensureQApp();
     QTemporaryDir tmp;
@@ -159,6 +201,9 @@ TEST_CASE("save then load round-trips models, transform, visibility, home view",
     QString id2 = src.addModel(src2);  // default display_name from filename
     REQUIRE_FALSE(id1.isEmpty());
     REQUIRE_FALSE(id2.isEmpty());
+
+    // Hide the second model — exercises the visibility round-trip.
+    src.setModelVisible(id2, false);
 
     Federation::HomeView hv;
     hv.target = QVector3D(10, 20, 30);
@@ -183,9 +228,11 @@ TEST_CASE("save then load round-trips models, transform, visibility, home view",
     REQUIRE(dst.models()[0].id == id1);
     REQUIRE(dst.models()[0].display_name == "Wall");
     REQUIRE(dst.models()[0].source_path == src1);
+    REQUIRE(dst.models()[0].visible);
     REQUIRE(dst.models()[1].id == id2);
     REQUIRE(dst.models()[1].display_name == "slab.ifc");
     REQUIRE(dst.models()[1].source_path == src2);
+    REQUIRE_FALSE(dst.models()[1].visible);
 
     REQUIRE(dst.hasHomeView());
     REQUIRE(dst.homeView().target == QVector3D(10, 20, 30));

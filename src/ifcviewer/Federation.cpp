@@ -254,6 +254,17 @@ void Federation::setModelTransformation(const QString& fed_id,
     }
 }
 
+void Federation::setModelVisible(const QString& fed_id, bool visible) {
+    for (auto& m : models_) {
+        if (m.id != fed_id) continue;
+        if (m.visible == visible) return;
+        m.visible = visible;
+        setDirty(true);
+        emit modelVisibilityChanged(fed_id, visible);
+        return;
+    }
+}
+
 void Federation::markClean() {
     setDirty(false);
 }

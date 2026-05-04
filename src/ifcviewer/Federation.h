@@ -210,6 +210,7 @@ public:
     void setConfig(const FederationConfig&);
     void setFederatedFalseOrigin(const FederatedFalseOrigin&);
     void setModelTransformation(const QString& fed_id, const ModelTransformation&);
+    void setModelVisible(const QString& fed_id, bool visible);
 
     // Accessors
     const std::vector<Model>& models() const { return models_; }
@@ -232,6 +233,7 @@ signals:
     void configChanged();
     void federatedFalseOriginChanged();
     void modelTransformationChanged(const QString& fed_id);
+    void modelVisibilityChanged(const QString& fed_id, bool visible);
 
 private:
     void setDirty(bool d);

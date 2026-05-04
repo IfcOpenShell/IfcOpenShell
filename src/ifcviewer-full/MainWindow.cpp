@@ -28,9 +28,11 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QMenu>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFont>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QHeaderView>
@@ -67,6 +69,13 @@ MainWindow::MainWindow(QWidget* parent)
         auto it = fed_id_to_model_id_.find(fed_id);
         if (it != fed_id_to_model_id_.end()) {
             applyModelTransformationToViewport(it->second);
+        }
+    });
+    connect(federation_, &Federation::modelVisibilityChanged,
+            this, [this](const QString& fed_id, bool /*visible*/) {
+        auto it = fed_id_to_model_id_.find(fed_id);
+        if (it != fed_id_to_model_id_.end()) {
+            applyModelVisibilityToViewport(it->second);
         }
     });
 
@@ -148,7 +157,10 @@ void MainWindow::setupUi() {
     element_tree_->setColumnWidth(0, 200);
     element_tree_->setColumnWidth(1, 120);
     element_tree_->setSelectionMode(QAbstractItemView::SingleSelection);
+    element_tree_->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(element_tree_, &QTreeWidget::itemSelectionChanged, this, &MainWindow::onTreeSelectionChanged);
+    connect(element_tree_, &QTreeWidget::customContextMenuRequested,
+            this, &MainWindow::onTreeContextMenu);
     tree_dock->setWidget(element_tree_);
     addDockWidget(Qt::LeftDockWidgetArea, tree_dock);
 
@@ -432,6 +444,7 @@ void MainWindow::clearScene() {
     while (!tree_roots_.empty()) {
         uint32_t mid = tree_roots_.begin()->first;
         viewport_->removeModel(mid);
+        loader_->removeModel(mid);
         removeModelUi(mid);
     }
     fed_id_to_model_id_.clear();
@@ -645,6 +658,7 @@ void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
     // ModelTransformation immediately rather than waiting for the
     // (possibly never-arriving) data-source load.
     applyCoordinateOperationToViewport(mid);
+    applyModelVisibilityToViewport(mid);
     maybeGuessFederatedFalseOrigin(mid);
 }
 
@@ -755,6 +769,7 @@ void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
         .arg(formatElapsed(elapsed_ms)));
 
     applyCoordinateOperationToViewport(mid);
+    applyModelVisibilityToViewport(mid);
     maybeGuessFederatedFalseOrigin(mid);
 
     writeSidecarForModel(mid);
@@ -881,4 +896,76 @@ QString MainWindow::formatElapsed(qint64 ms) const {
     return (ms >= 1000)
         ? QString::number(ms / 1000.0, 'f', 2) + " s"
         : QString::number(ms) + " ms";
+}
+
+uint32_t MainWindow::modelIdForRoot(QTreeWidgetItem* item) const {
+    if (!item) return 0;
+    for (const auto& kv : tree_roots_) {
+        if (kv.second == item) return kv.first;
+    }
+    return 0;
+}
+
+void MainWindow::applyModelVisibilityToViewport(uint32_t mid) {
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    if (fed_it == model_id_to_fed_id_.end()) return;
+    const Federation::Model* m = federation_->findById(fed_it->second);
+    if (!m) return;
+    if (m->visible) viewport_->showModel(mid);
+    else            viewport_->hideModel(mid);
+
+    // Tree-side cue: italicise + grey out the model root when hidden.
+    auto root_it = tree_roots_.find(mid);
+    if (root_it != tree_roots_.end()) {
+        QFont f = root_it->second->font(0);
+        f.setItalic(!m->visible);
+        for (int col = 0; col < element_tree_->columnCount(); ++col) {
+            root_it->second->setFont(col, f);
+            root_it->second->setForeground(
+                col,
+                m->visible ? element_tree_->palette().color(QPalette::Text)
+                           : element_tree_->palette().color(QPalette::Disabled,
+                                                            QPalette::Text));
+        }
+    }
+}
+
+void MainWindow::onTreeContextMenu(const QPoint& pos) {
+    QTreeWidgetItem* item = element_tree_->itemAt(pos);
+    uint32_t mid = modelIdForRoot(item);
+    if (mid == 0) return;  // not a model root — only roots get the menu
+
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    if (fed_it == model_id_to_fed_id_.end()) return;
+    const Federation::Model* m = federation_->findById(fed_it->second);
+    if (!m) return;
+
+    const bool currently_loading = loader_->isLoadingModel(mid);
+
+    QMenu menu(this);
+    QAction* hide_show = menu.addAction(m->visible ? "Hide" : "Show");
+    QAction* remove    = menu.addAction("Remove");
+    remove->setEnabled(!currently_loading);
+
+    QAction* chosen = menu.exec(element_tree_->viewport()->mapToGlobal(pos));
+    if (!chosen) return;
+    if (chosen == hide_show) {
+        federation_->setModelVisible(fed_it->second, !m->visible);
+    } else if (chosen == remove) {
+        removeModel(mid);
+    }
+}
+
+void MainWindow::removeModel(uint32_t mid) {
+    if (loader_->isLoadingModel(mid)) return;
+
+    QString fed_id;
+    auto fed_it = model_id_to_fed_id_.find(mid);
+    if (fed_it != model_id_to_fed_id_.end()) fed_id = fed_it->second;
+
+    viewport_->removeModel(mid);
+    loader_->removeModel(mid);
+    removeModelUi(mid);
+    if (!fed_id.isEmpty()) federation_->removeModel(fed_id);
+    updateWindowTitle();
 }
