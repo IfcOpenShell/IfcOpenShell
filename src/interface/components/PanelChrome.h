@@ -18,60 +18,21 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "MainWindow.h"
+#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
 
-#include <QApplication>
-#include <QCommandLineParser>
-#include <QFont>
-#include <QFontDatabase>
-#include <QSurfaceFormat>
+#include <QString>
 
-namespace {
+class QDockWidget;
+class QFrame;
+class QWidget;
 
-void installUiFont() {
-    const QString blender_font =
-        "/home/dion/drive/blender/blender-5.1.0-linux-x64/5.1/datafiles/fonts/Inter.woff2";
+namespace ifcinterface::components::panel {
 
-    int font_id = QFontDatabase::addApplicationFont(blender_font);
-    if (font_id < 0) {
-        font_id = QFontDatabase::addApplicationFont(
-            ":/fonts/DMSans-VariableFont_opsz,wght.ttf");
-    }
-    QString family;
-    if (font_id >= 0) {
-        const QStringList families = QFontDatabase::applicationFontFamilies(font_id);
-        if (!families.isEmpty()) {
-            family = families.front();
-        }
-    }
-    if (!family.isEmpty()) {
-        QApplication::setFont(QFont(family, 10));
-    }
-}
+QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings = false);
+QFrame* wrapPanel(QWidget* inner);
+QFrame* wrapInspectorPanel(QWidget* inner);
 
-} // namespace
+} // namespace ifcinterface::components::panel
 
-int main(int argc, char* argv[]) {
-    QApplication app(argc, argv);
-    app.setApplicationName("IfcInterfaceMockup");
-    app.setOrganizationName("IfcOpenShell");
-
-    QSurfaceFormat fmt;
-    fmt.setVersion(4, 5);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
-    fmt.setDepthBufferSize(24);
-    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    fmt.setSamples(4);
-    QSurfaceFormat::setDefaultFormat(fmt);
-
-    QCommandLineParser parser;
-    parser.setApplicationDescription("IfcOpenShell interface mockup with live viewport");
-    parser.addHelpOption();
-    parser.process(app);
-
-    installUiFont();
-
-    ifcinterface::shell::MainWindow window;
-    window.show();
-    return app.exec();
-}
+#endif

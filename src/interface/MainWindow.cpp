@@ -18,11 +18,13 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "MockMainWindow.h"
+#include "MainWindow.h"
 
-#include "AppSettings.h"
-#include "SceneLoader.h"
-#include "ViewportWindow.h"
+#include "../ifcviewer/AppSettings.h"
+#include "../ifcviewer/SceneLoader.h"
+#include "../ifcviewer/ViewportWindow.h"
+#include "components/PanelChrome.h"
+#include "components/SvgIcon.h"
 #include "panels/models/ModelsPanelView.h"
 #include "panels/models/ModelsPanelWidget.h"
 #include "panels/properties/PropertiesPanelView.h"
@@ -32,154 +34,21 @@
 
 #include <QDockWidget>
 #include <QFileDialog>
-#include <QFile>
-#include <QFormLayout>
 #include <QFrame>
-#include <QGroupBox>
-#include <QHeaderView>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
-#include <QLineEdit>
-#include <QListWidget>
-#include <QMenu>
 #include <QMessageBox>
-#include <QPainter>
-#include <QPixmap>
-#include <QRegularExpression>
-#include <QScrollArea>
-#include <QSvgRenderer>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
-#include <QTableWidget>
 #include <QTabBar>
 #include <QToolButton>
-#include <QTreeWidget>
 #include <QVBoxLayout>
 
-namespace {
+namespace ifcinterface::shell {
 
-QPixmap renderTintedSvgPixmap(const QString& icon_path, const QString& color, const QSize& size) {
-    QFile file(icon_path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QIcon(icon_path).pixmap(size);
-    }
-
-    QString svg = QString::fromUtf8(file.readAll());
-    QString tinted = svg;
-    tinted.replace("currentColor", color, Qt::CaseSensitive);
-    tinted.replace(QRegularExpression(R"(stroke="[^"]*")"), QString("stroke=\"%1\"").arg(color));
-    tinted.replace(QRegularExpression(R"(fill="none")"), "fill=\"none\"");
-    QByteArray data = tinted.toUtf8();
-    QSvgRenderer renderer(data);
-    QPixmap pixmap(size);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    renderer.render(&painter);
-    return pixmap;
-}
-
-QIcon makeTintedSvgIcon(const QString& icon_path, const QString& normal = "#39b54a",
-                        const QString& active = "#53c763", const QString& disabled = "#6f7988") {
-    QFile file(icon_path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QIcon(icon_path);
-    }
-
-    QIcon icon;
-    icon.addPixmap(renderTintedSvgPixmap(icon_path, normal, QSize(20, 20)), QIcon::Normal, QIcon::Off);
-    icon.addPixmap(renderTintedSvgPixmap(icon_path, active, QSize(20, 20)), QIcon::Active, QIcon::Off);
-    icon.addPixmap(renderTintedSvgPixmap(icon_path, active, QSize(20, 20)), QIcon::Selected, QIcon::Off);
-    icon.addPixmap(renderTintedSvgPixmap(icon_path, disabled, QSize(20, 20)), QIcon::Disabled, QIcon::Off);
-    return icon;
-}
-
-QIcon makePanelSvgIcon(const QString& icon_path) {
-    return makeTintedSvgIcon(icon_path, "#e7ebf2", "#ffffff", "#6f7988");
-}
-
-class DockTitleBar : public QWidget {
-public:
-    explicit DockTitleBar(const QString& title, bool has_settings = false, QWidget* parent = nullptr)
-        : QWidget(parent)
-    {
-        auto* layout = new QHBoxLayout(this);
-        layout->setContentsMargins(10, 6, 6, 6);
-        layout->setSpacing(6);
-
-        auto* text = new QLabel(title.toUpper(), this);
-        text->setObjectName("dockTitleText");
-
-        layout->addWidget(text);
-        layout->addStretch(1);
-        if (has_settings) {
-            auto* settings = new QToolButton(this);
-            settings->setIcon(makePanelSvgIcon(":/icons/settings.svg"));
-            settings->setAutoRaise(true);
-            settings->setCursor(Qt::ArrowCursor);
-            settings->setFixedSize(18, 18);
-            settings->setObjectName("dockTitleButton");
-            settings->setToolTip(QString("%1 settings").arg(title));
-            connect(settings, &QToolButton::clicked, this, [this, title]() {
-                auto* anchor = parentWidget();
-                QMenu menu(anchor);
-                menu.addAction(QString("%1 settings coming soon").arg(title));
-                menu.exec(QCursor::pos());
-            });
-            layout->addWidget(settings);
-        }
-    }
-};
-
-QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings = false) {
-    auto* dock = new QDockWidget(title, parent);
-    dock->setObjectName(title);
-    dock->setFeatures(QDockWidget::DockWidgetMovable |
-                      QDockWidget::DockWidgetFloatable |
-                      QDockWidget::DockWidgetClosable);
-    dock->setTitleBarWidget(new DockTitleBar(title, has_settings, dock));
-    dock->setWidget(content);
-    return dock;
-}
-
-QFrame* wrapPanel(QWidget* inner) {
-    auto* outer = new QFrame();
-    auto* outer_layout = new QVBoxLayout(outer);
-    outer_layout->setContentsMargins(6, 6, 6, 6);
-    outer_layout->setSpacing(0);
-
-    auto* frame = new QFrame(outer);
-    frame->setObjectName("panelFrame");
-    auto* layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(0);
-    layout->addWidget(inner);
-
-    outer_layout->addWidget(frame);
-    return outer;
-}
-
-QFrame* wrapInspectorPanel(QWidget* inner) {
-    auto* outer = new QFrame();
-    auto* outer_layout = new QVBoxLayout(outer);
-    outer_layout->setContentsMargins(6, 6, 6, 6);
-    outer_layout->setSpacing(0);
-
-    auto* frame = new QFrame(outer);
-    frame->setObjectName("panelFrame");
-    auto* layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(0, 8, 0, 8);
-    layout->setSpacing(0);
-    layout->addWidget(inner);
-
-    outer_layout->addWidget(frame);
-    return outer;
-}
-
-} // namespace
-
-MockMainWindow::MockMainWindow(QWidget* parent)
+MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     setupChrome();
@@ -191,7 +60,7 @@ MockMainWindow::MockMainWindow(QWidget* parent)
     resize(1720, 980);
 }
 
-void MockMainWindow::setupChrome() {
+void MainWindow::setupChrome() {
     setWindowTitle("IfcOpenShell Interface");
     setDockOptions(QMainWindow::AllowNestedDocks |
                    QMainWindow::AllowTabbedDocks |
@@ -459,12 +328,12 @@ void MockMainWindow::setupChrome() {
     )");
 }
 
-QToolButton* MockMainWindow::makeRibbonAction(const QString& text, const QString& icon_path) {
+QToolButton* MainWindow::makeRibbonAction(const QString& text, const QString& icon_path) {
     auto* button = new QToolButton(this);
     button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     button->setIcon(icon_path.endsWith(".svg")
-        ? makeTintedSvgIcon(icon_path)
-        : QIcon(icon_path));
+                        ? components::icons::makeTintedSvgIcon(icon_path)
+                        : QIcon(icon_path));
     button->setIconSize(QSize(20, 20));
     button->setText(text);
     button->setMinimumSize(QSize(68, 54));
@@ -473,7 +342,7 @@ QToolButton* MockMainWindow::makeRibbonAction(const QString& text, const QString
     return button;
 }
 
-QWidget* MockMainWindow::makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons) {
+QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons) {
     auto* group = new QFrame(this);
     group->setObjectName("ribbonGroup");
     auto* group_layout = new QVBoxLayout(group);
@@ -493,7 +362,7 @@ QWidget* MockMainWindow::makeRibbonGroup(const QString& title, const QList<QTool
     return group;
 }
 
-QWidget* MockMainWindow::makeComingSoonPanel(const QString& title) {
+QWidget* MainWindow::makeComingSoonPanel(const QString& title) {
     auto* widget = new QWidget(this);
     auto* layout = new QVBoxLayout(widget);
     layout->setContentsMargins(12, 12, 12, 12);
@@ -509,12 +378,12 @@ QWidget* MockMainWindow::makeComingSoonPanel(const QString& title) {
     return widget;
 }
 
-void MockMainWindow::setStatusMessage(const QString& mode, const QString& detail) {
+void MainWindow::setStatusMessage(const QString& mode, const QString& detail) {
     status_mode_label_->setText(mode);
     status_selection_label_->setText(detail);
 }
 
-QToolButton* MockMainWindow::makePanelToggle(const QString& text, QDockWidget* dock) {
+QToolButton* MainWindow::makePanelToggle(const QString& text, QDockWidget* dock) {
     auto* button = makeRibbonAction(text, ":/icons/dm_toggle_openings.png");
     button->setCheckable(true);
     button->setChecked(dock->isVisible());
@@ -529,7 +398,7 @@ QToolButton* MockMainWindow::makePanelToggle(const QString& text, QDockWidget* d
     return button;
 }
 
-QWidget* MockMainWindow::buildHomeRibbonPage() {
+QWidget* MainWindow::buildHomeRibbonPage() {
     auto* page = new QFrame(this);
     page->setObjectName("ribbonPage");
     auto* row = new QHBoxLayout(page);
@@ -562,7 +431,7 @@ QWidget* MockMainWindow::buildHomeRibbonPage() {
     });
 
     auto* add_model = makeRibbonAction("Add Model", ":/icons/cube.svg");
-    connect(add_model, &QToolButton::clicked, this, &MockMainWindow::onAddFiles);
+    connect(add_model, &QToolButton::clicked, this, &MainWindow::onAddFiles);
     auto* sync_models = makeRibbonAction("Sync Models", ":/icons/refresh-double.svg");
     connect(sync_models, &QToolButton::clicked, this, [this]() {
         setStatusMessage("Models", "Sync models coming soon");
@@ -580,7 +449,7 @@ QWidget* MockMainWindow::buildHomeRibbonPage() {
     return page;
 }
 
-QWidget* MockMainWindow::buildNavigateRibbonPage() {
+QWidget* MainWindow::buildNavigateRibbonPage() {
     auto* page = new QFrame(this);
     page->setObjectName("ribbonPage");
     auto* row = new QHBoxLayout(page);
@@ -643,7 +512,7 @@ QWidget* MockMainWindow::buildNavigateRibbonPage() {
     return page;
 }
 
-QWidget* MockMainWindow::buildInspectRibbonPage() {
+QWidget* MainWindow::buildInspectRibbonPage() {
     auto* page = new QFrame(this);
     page->setObjectName("ribbonPage");
     auto* row = new QHBoxLayout(page);
@@ -686,7 +555,7 @@ QWidget* MockMainWindow::buildInspectRibbonPage() {
     return page;
 }
 
-QWidget* MockMainWindow::buildPanelsRibbonPage() {
+QWidget* MainWindow::buildPanelsRibbonPage() {
     auto* page = new QFrame(this);
     page->setObjectName("ribbonPage");
     auto* row = new QHBoxLayout(page);
@@ -712,7 +581,7 @@ QWidget* MockMainWindow::buildPanelsRibbonPage() {
     return page;
 }
 
-void MockMainWindow::setupRibbon() {
+void MainWindow::setupRibbon() {
     auto* shell = new QFrame(this);
     shell->setObjectName("ribbonShell");
 
@@ -751,7 +620,7 @@ void MockMainWindow::setupRibbon() {
     setMenuWidget(shell);
 }
 
-void MockMainWindow::setupViewport() {
+void MainWindow::setupViewport() {
     viewport_ = new ViewportWindow();
     viewport_container_ = QWidget::createWindowContainer(viewport_, this);
     viewport_container_->setMinimumSize(400, 300);
@@ -773,29 +642,38 @@ void MockMainWindow::setupViewport() {
     setCentralWidget(shell);
 }
 
-void MockMainWindow::setupDocks() {
-    auto* models_panel = new ifcinterface::panels::models::ModelsPanelWidget(this);
-    auto* spatial_panel = new ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
-    auto* properties_panel = new ifcinterface::panels::properties::PropertiesPanelWidget(this);
+void MainWindow::setupDocks() {
+    auto* models_panel = new panels::models::ModelsPanelWidget(this);
+    auto* spatial_panel = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
+    auto* properties_panel = new panels::properties::PropertiesPanelWidget(this);
 
-    models_panel_view_ = new ifcinterface::panels::models::ModelsPanelView(models_panel, this);
-    spatial_panel_view_ = new ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel, this);
-    properties_panel_view_ = new ifcinterface::panels::properties::PropertiesPanelView(properties_panel, this);
+    models_panel_view_ = new panels::models::ModelsPanelView(models_panel, this);
+    spatial_panel_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel, this);
+    properties_panel_view_ = new panels::properties::PropertiesPanelView(properties_panel, this);
 
-    connect(models_panel_view_, &ifcinterface::panels::models::ModelsPanelView::statusMessageRequested,
-            this, &MockMainWindow::setStatusMessage);
-    connect(spatial_panel_view_, &ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
-            this, &MockMainWindow::setStatusMessage);
+    connect(models_panel_view_, &panels::models::ModelsPanelView::statusMessageRequested,
+            this, &MainWindow::setStatusMessage);
+    connect(spatial_panel_view_, &panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
+            this, &MainWindow::setStatusMessage);
 
-    models_dock_ = makeDock("Models", wrapPanel(models_panel), this, true);
-    spatial_dock_ = makeDock("Spatial Hierarchy", wrapPanel(spatial_panel), this);
-    properties_dock_ = makeDock("Properties", wrapInspectorPanel(properties_panel), this);
-    layers_dock_ = makeDock("Layers", wrapPanel(makeComingSoonPanel("Layers")), this);
-    stored_views_dock_ = makeDock("Stored Views", wrapPanel(makeComingSoonPanel("Stored Views")), this);
-    search_dock_ = makeDock("Search and Query", wrapPanel(makeComingSoonPanel("Search and Query")), this);
-    spreadsheet_dock_ = makeDock("Spreadsheet", wrapPanel(makeComingSoonPanel("Spreadsheet")), this);
-    clash_dock_ = makeDock("Clash", wrapPanel(makeComingSoonPanel("Clash")), this);
-    issues_dock_ = makeDock("Issues", wrapPanel(makeComingSoonPanel("Issues")), this);
+    models_dock_ = components::panel::makeDock(
+        "Models", components::panel::wrapPanel(models_panel), this, true);
+    spatial_dock_ = components::panel::makeDock(
+        "Spatial Hierarchy", components::panel::wrapPanel(spatial_panel), this);
+    properties_dock_ = components::panel::makeDock(
+        "Properties", components::panel::wrapInspectorPanel(properties_panel), this);
+    layers_dock_ = components::panel::makeDock(
+        "Layers", components::panel::wrapPanel(makeComingSoonPanel("Layers")), this);
+    stored_views_dock_ = components::panel::makeDock(
+        "Stored Views", components::panel::wrapPanel(makeComingSoonPanel("Stored Views")), this);
+    search_dock_ = components::panel::makeDock(
+        "Search and Query", components::panel::wrapPanel(makeComingSoonPanel("Search and Query")), this);
+    spreadsheet_dock_ = components::panel::makeDock(
+        "Spreadsheet", components::panel::wrapPanel(makeComingSoonPanel("Spreadsheet")), this);
+    clash_dock_ = components::panel::makeDock(
+        "Clash", components::panel::wrapPanel(makeComingSoonPanel("Clash")), this);
+    issues_dock_ = components::panel::makeDock(
+        "Issues", components::panel::wrapPanel(makeComingSoonPanel("Issues")), this);
 
     addDockWidget(Qt::LeftDockWidgetArea, models_dock_);
     addDockWidget(Qt::LeftDockWidgetArea, spatial_dock_);
@@ -828,7 +706,7 @@ void MockMainWindow::setupDocks() {
     resizeDocks({models_dock_, spatial_dock_}, {280, 240}, Qt::Vertical);
 }
 
-void MockMainWindow::setupStatus() {
+void MainWindow::setupStatus() {
     status_mode_label_ = new QLabel("Ready", this);
     status_selection_label_ = new QLabel("No selection", this);
     status_perf_label_ = new QLabel(this);
@@ -845,15 +723,15 @@ void MockMainWindow::setupStatus() {
     });
 }
 
-void MockMainWindow::setupLoader() {
+void MainWindow::setupLoader() {
     AppSettings::instance().setLoadDataSource(false);
     loader_ = new SceneLoader(viewport_, this);
-    connect(loader_, &SceneLoader::loadStarted, this, &MockMainWindow::onLoadStarted);
-    connect(loader_, &SceneLoader::loadedFromSidecar, this, &MockMainWindow::onLoadedFromSidecar);
-    connect(loader_, &SceneLoader::loadedFromStream, this, &MockMainWindow::onLoadedFromStream);
-    connect(loader_, &SceneLoader::loadCancelled, this, &MockMainWindow::onLoadCancelled);
-    connect(loader_, &SceneLoader::loadError, this, &MockMainWindow::onLoadError);
-    connect(loader_, &SceneLoader::allLoadsFinished, this, &MockMainWindow::onAllLoadsFinished);
+    connect(loader_, &SceneLoader::loadStarted, this, &MainWindow::onLoadStarted);
+    connect(loader_, &SceneLoader::loadedFromSidecar, this, &MainWindow::onLoadedFromSidecar);
+    connect(loader_, &SceneLoader::loadedFromStream, this, &MainWindow::onLoadedFromStream);
+    connect(loader_, &SceneLoader::loadCancelled, this, &MainWindow::onLoadCancelled);
+    connect(loader_, &SceneLoader::loadError, this, &MainWindow::onLoadError);
+    connect(loader_, &SceneLoader::allLoadsFinished, this, &MainWindow::onAllLoadsFinished);
 
     connect(viewport_, &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& s) {
@@ -870,30 +748,30 @@ void MockMainWindow::setupLoader() {
     });
 }
 
-void MockMainWindow::addFiles(const QStringList& paths) {
+void MainWindow::addFiles(const QStringList& paths) {
     if (paths.isEmpty()) return;
     loader_->addFiles(paths);
 }
 
-QString MockMainWindow::formatElapsed(qint64 ms) const {
+QString MainWindow::formatElapsed(qint64 ms) const {
     return (ms >= 1000)
         ? QString::number(ms / 1000.0, 'f', 2) + " s"
         : QString::number(ms) + " ms";
 }
 
-void MockMainWindow::onAddFiles() {
+void MainWindow::onAddFiles() {
     const QStringList paths = QFileDialog::getOpenFileNames(
         this, "Add IFC Files", QString(),
         "IFC Viewer Cache (*.ifcview)");
     addFiles(paths);
 }
 
-void MockMainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {
+void MainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {
     status_mode_label_->setText("Loading");
     status_selection_label_->setText(display_name);
 }
 
-void MockMainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
+void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
     status_mode_label_->setText("Loaded");
     status_selection_label_->setText(
         QString("%1 from cache in %2")
@@ -901,7 +779,7 @@ void MockMainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
             .arg(formatElapsed(elapsed_ms)));
 }
 
-void MockMainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
+void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
     status_mode_label_->setText("Loaded");
     status_selection_label_->setText(
         QString("%1 streamed in %2")
@@ -909,18 +787,20 @@ void MockMainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
             .arg(formatElapsed(elapsed_ms)));
 }
 
-void MockMainWindow::onLoadCancelled(uint32_t mid) {
+void MainWindow::onLoadCancelled(uint32_t mid) {
     status_mode_label_->setText("Cancelled");
     status_selection_label_->setText(loader_->displayName(mid));
 }
 
-void MockMainWindow::onLoadError(uint32_t /*mid*/, QString message) {
+void MainWindow::onLoadError(uint32_t /*mid*/, QString message) {
     status_mode_label_->setText("Error");
     status_selection_label_->setText(message);
     QMessageBox::warning(this, "IfcInterfaceMockup", message);
 }
 
-void MockMainWindow::onAllLoadsFinished() {
+void MainWindow::onAllLoadsFinished() {
     status_mode_label_->setText("Loaded");
     status_selection_label_->setText(QString("%1 model(s)").arg(loader_->modelCount()));
 }
+
+} // namespace ifcinterface::shell

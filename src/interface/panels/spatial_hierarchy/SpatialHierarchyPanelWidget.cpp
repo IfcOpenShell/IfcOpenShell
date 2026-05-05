@@ -20,47 +20,12 @@
 
 #include "SpatialHierarchyPanelWidget.h"
 
-#include <QFile>
+#include "../../components/SvgIcon.h"
+
 #include <QHeaderView>
-#include <QPainter>
-#include <QPixmap>
-#include <QRegularExpression>
-#include <QSvgRenderer>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
-
-namespace {
-
-QPixmap renderPanelSvgPixmap(const QString& icon_path, const QString& color, const QSize& size) {
-    QFile file(icon_path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QIcon(icon_path).pixmap(size);
-    }
-
-    QString svg = QString::fromUtf8(file.readAll());
-    svg.replace("currentColor", color, Qt::CaseSensitive);
-    svg.replace(QRegularExpression(R"(stroke="[^"]*")"), QString("stroke=\"%1\"").arg(color));
-    svg.replace(QRegularExpression(R"(fill="none")"), "fill=\"none\"");
-
-    QSvgRenderer renderer(svg.toUtf8());
-    QPixmap pixmap(size);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    renderer.render(&painter);
-    return pixmap;
-}
-
-QIcon makePanelSvgIcon(const QString& icon_path) {
-    QIcon icon;
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#e7ebf2", QSize(20, 20)), QIcon::Normal, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#ffffff", QSize(20, 20)), QIcon::Active, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#ffffff", QSize(20, 20)), QIcon::Selected, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#6f7988", QSize(20, 20)), QIcon::Disabled, QIcon::Off);
-    return icon;
-}
-
-} // namespace
 
 namespace ifcinterface::panels::spatial_hierarchy {
 
@@ -102,8 +67,8 @@ void SpatialHierarchyPanelWidget::addNode(QTreeWidgetItem* parent, const TreeNod
     auto* item = new QTreeWidgetItem(parent, {node.name, ""});
     item->setData(1, Qt::UserRole, node.visible);
     item->setSizeHint(0, QSize(0, 24));
-    item->setIcon(0, makePanelSvgIcon(iconPath(node.kind)));
-    item->setIcon(1, makePanelSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
+    item->setIcon(0, components::icons::makePanelSvgIcon(iconPath(node.kind)));
+    item->setIcon(1, components::icons::makePanelSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
     for (const auto& child : node.children) {
         addNode(item, child);
     }

@@ -18,60 +18,31 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "MainWindow.h"
+#ifndef IFCINTERFACE_COMPONENTS_INSPECTOR_COLLAPSIBLESECTION_H
+#define IFCINTERFACE_COMPONENTS_INSPECTOR_COLLAPSIBLESECTION_H
 
-#include <QApplication>
-#include <QCommandLineParser>
-#include <QFont>
-#include <QFontDatabase>
-#include <QSurfaceFormat>
+#include <QWidget>
 
-namespace {
+class QLineEdit;
+class QVBoxLayout;
 
-void installUiFont() {
-    const QString blender_font =
-        "/home/dion/drive/blender/blender-5.1.0-linux-x64/5.1/datafiles/fonts/Inter.woff2";
+namespace ifcinterface::components::inspector {
 
-    int font_id = QFontDatabase::addApplicationFont(blender_font);
-    if (font_id < 0) {
-        font_id = QFontDatabase::addApplicationFont(
-            ":/fonts/DMSans-VariableFont_opsz,wght.ttf");
-    }
-    QString family;
-    if (font_id >= 0) {
-        const QStringList families = QFontDatabase::applicationFontFamilies(font_id);
-        if (!families.isEmpty()) {
-            family = families.front();
-        }
-    }
-    if (!family.isEmpty()) {
-        QApplication::setFont(QFont(family, 10));
-    }
-}
+class CollapsibleSection : public QWidget {
+    Q_OBJECT
+public:
+    explicit CollapsibleSection(const QString& title,
+                                const QString& filter_placeholder = {},
+                                QWidget* parent = nullptr);
 
-} // namespace
+    void addBodyWidget(QWidget* widget);
 
-int main(int argc, char* argv[]) {
-    QApplication app(argc, argv);
-    app.setApplicationName("IfcInterfaceMockup");
-    app.setOrganizationName("IfcOpenShell");
+private:
+    QWidget* body_ = nullptr;
+    QVBoxLayout* body_layout_ = nullptr;
+    QLineEdit* filter_field_ = nullptr;
+};
 
-    QSurfaceFormat fmt;
-    fmt.setVersion(4, 5);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
-    fmt.setDepthBufferSize(24);
-    fmt.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
-    fmt.setSamples(4);
-    QSurfaceFormat::setDefaultFormat(fmt);
+} // namespace ifcinterface::components::inspector
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription("IfcOpenShell interface mockup with live viewport");
-    parser.addHelpOption();
-    parser.process(app);
-
-    installUiFont();
-
-    ifcinterface::shell::MainWindow window;
-    window.show();
-    return app.exec();
-}
+#endif

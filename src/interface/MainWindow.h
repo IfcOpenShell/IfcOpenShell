@@ -18,8 +18,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_MOCKMAINWINDOW_H
-#define IFCINTERFACE_MOCKMAINWINDOW_H
+#ifndef IFCINTERFACE_SHELL_MAINWINDOW_H
+#define IFCINTERFACE_SHELL_MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QStringList>
@@ -35,10 +35,12 @@ namespace ifcinterface::panels::models { class ModelsPanelView; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcinterface::panels::properties { class PropertiesPanelView; }
 
-class MockMainWindow : public QMainWindow {
+namespace ifcinterface::shell {
+
+class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MockMainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
 
 private:
     void setupChrome();
@@ -90,5 +92,7 @@ private:
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_panel_view_ = nullptr;
     ifcinterface::panels::properties::PropertiesPanelView* properties_panel_view_ = nullptr;
 };
+
+} // namespace ifcinterface::shell
 
 #endif

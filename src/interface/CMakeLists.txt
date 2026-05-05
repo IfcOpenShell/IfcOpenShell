@@ -25,8 +25,14 @@ find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets Svg REQUIRED PATHS ${QT
 
 set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/MockMainWindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/MockMainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/CollapsibleSection.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/CollapsibleSection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/PanelChrome.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/PanelChrome.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelTypes.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.h

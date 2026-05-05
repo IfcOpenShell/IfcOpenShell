@@ -20,62 +20,18 @@
 
 #include "PropertiesPanelWidget.h"
 
-#include <QFile>
+#include "../../components/CollapsibleSection.h"
+#include "../../components/SvgIcon.h"
+
 #include <QFormLayout>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
-#include <QPainter>
-#include <QPixmap>
-#include <QRegularExpression>
 #include <QScrollArea>
-#include <QSvgRenderer>
-#include <QToolButton>
 #include <QVBoxLayout>
 
 namespace {
-
-QPixmap renderPanelSvgPixmap(const QString& icon_path, const QString& color, const QSize& size) {
-    QFile file(icon_path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QIcon(icon_path).pixmap(size);
-    }
-
-    QString svg = QString::fromUtf8(file.readAll());
-    svg.replace("currentColor", color, Qt::CaseSensitive);
-    svg.replace(QRegularExpression(R"(stroke="[^"]*")"), QString("stroke=\"%1\"").arg(color));
-    svg.replace(QRegularExpression(R"(fill="none")"), "fill=\"none\"");
-
-    QSvgRenderer renderer(svg.toUtf8());
-    QPixmap pixmap(size);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
-    renderer.render(&painter);
-    return pixmap;
-}
-
-QIcon makePanelSvgIcon(const QString& icon_path) {
-    QIcon icon;
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#e7ebf2", QSize(20, 20)), QIcon::Normal, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#ffffff", QSize(20, 20)), QIcon::Active, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#ffffff", QSize(20, 20)), QIcon::Selected, QIcon::Off);
-    icon.addPixmap(renderPanelSvgPixmap(icon_path, "#6f7988", QSize(20, 20)), QIcon::Disabled, QIcon::Off);
-    return icon;
-}
-
-QPixmap makePanelSvgPixmap(const QString& icon_path, const QSize& size) {
-    return renderPanelSvgPixmap(icon_path, "#e7ebf2", size);
-}
-
-QWidget* makeInspectorFilterField(const QString& placeholder, QWidget* parent = nullptr) {
-    auto* field = new QLineEdit(parent);
-    field->setPlaceholderText(placeholder);
-    field->setClearButtonEnabled(true);
-    field->addAction(makePanelSvgIcon(":/icons/filter.svg"), QLineEdit::LeadingPosition);
-    return field;
-}
 
 QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
@@ -96,75 +52,6 @@ QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySe
     }
 
     return group;
-}
-
-QWidget* makeInspectorSection(const QString& title,
-                              const QString& filter_placeholder,
-                              const QList<QWidget*>& groups,
-                              QWidget* parent = nullptr) {
-    auto* section = new QWidget(parent);
-    section->setObjectName("inspectorSection");
-    auto* layout = new QVBoxLayout(section);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
-
-    auto* header = new QFrame(section);
-    header->setObjectName("inspectorSectionHeader");
-    auto* header_layout = new QHBoxLayout(header);
-    header_layout->setContentsMargins(0, 0, 0, 0);
-    header_layout->setSpacing(6);
-
-    auto* toggle = new QToolButton(header);
-    toggle->setObjectName("inspectorSectionButton");
-    toggle->setText(title);
-    toggle->setCheckable(true);
-    toggle->setChecked(true);
-    toggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toggle->setArrowType(Qt::DownArrow);
-    header_layout->addWidget(toggle);
-    header_layout->addStretch(1);
-
-    QLineEdit* filter_field = nullptr;
-    if (!filter_placeholder.isEmpty()) {
-        auto* filter_toggle = new QToolButton(header);
-        filter_toggle->setObjectName("inspectorFilterToggle");
-        filter_toggle->setCheckable(true);
-        filter_toggle->setIcon(makePanelSvgIcon(":/icons/filter.svg"));
-        filter_toggle->setAutoRaise(true);
-        header_layout->addWidget(filter_toggle);
-
-        filter_field = qobject_cast<QLineEdit*>(makeInspectorFilterField(filter_placeholder, section));
-        filter_field->setVisible(false);
-        QObject::connect(filter_toggle, &QToolButton::toggled, filter_field, [filter_field](bool visible) {
-            filter_field->setVisible(visible);
-            if (visible) filter_field->setFocus();
-        });
-    }
-
-    auto* body = new QWidget(section);
-    body->setObjectName("inspectorSectionBody");
-    auto* body_layout = new QVBoxLayout(body);
-    body_layout->setContentsMargins(10, 6, 10, 0);
-    body_layout->setSpacing(6);
-    for (auto* group : groups) body_layout->addWidget(group);
-
-    QObject::connect(toggle, &QToolButton::toggled, body, [toggle, body](bool expanded) {
-        toggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
-        body->setVisible(expanded);
-    });
-
-    layout->addWidget(header);
-    if (filter_field) {
-        auto* filter_wrapper = new QWidget(section);
-        filter_wrapper->setObjectName("inspectorFilterWrapper");
-        auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-        filter_wrapper_layout->setContentsMargins(10, 0, 10, 0);
-        filter_wrapper_layout->setSpacing(0);
-        filter_wrapper_layout->addWidget(filter_field);
-        layout->addWidget(filter_wrapper);
-    }
-    layout->addWidget(body);
-    return section;
 }
 
 QWidget* makeAttributeList(const QList<ifcinterface::panels::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
@@ -212,7 +99,7 @@ QWidget* makeRelationshipList(const QList<ifcinterface::panels::properties::Rela
 
         auto* icon = new QLabel(row);
         icon->setObjectName("relationshipIconLabel");
-        icon->setPixmap(makePanelSvgPixmap(":/icons/cursor-pointer.svg", QSize(14, 14)));
+        icon->setPixmap(ifcinterface::components::icons::makePanelSvgPixmap(":/icons/cursor-pointer.svg", QSize(14, 14)));
         icon->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
         row_layout->addWidget(key);
@@ -255,7 +142,7 @@ void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
     entity_layout->setContentsMargins(10, 8, 10, 8);
     entity_layout->setSpacing(10);
     auto* entity_icon = new QLabel(entity_card);
-    entity_icon->setPixmap(makePanelSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
+    entity_icon->setPixmap(components::icons::makePanelSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
     entity_icon->setAlignment(Qt::AlignCenter);
     auto* entity_text = new QWidget(entity_card);
     auto* entity_text_layout = new QVBoxLayout(entity_text);
@@ -287,14 +174,14 @@ void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
         quantity_set_widgets.append(makePropertySetPanel(property_set, content));
     }
 
-    auto* attributes_section = makeInspectorSection(
-        "Attributes", "", {makeAttributeList(state.attributes, content)}, content);
-    auto* relationships_section = makeInspectorSection(
-        "Relationships", "", {makeRelationshipList(state.relationships, content)}, content);
-    auto* properties_section = makeInspectorSection(
-        "Properties", "Filter properties or sets", property_set_widgets, content);
-    auto* quantities_section = makeInspectorSection(
-        "Quantities", "Filter quantities or sets", quantity_set_widgets, content);
+    auto* attributes_section = new components::inspector::CollapsibleSection("Attributes", "", content);
+    attributes_section->addBodyWidget(makeAttributeList(state.attributes, content));
+    auto* relationships_section = new components::inspector::CollapsibleSection("Relationships", "", content);
+    relationships_section->addBodyWidget(makeRelationshipList(state.relationships, content));
+    auto* properties_section = new components::inspector::CollapsibleSection("Properties", "Filter properties or sets", content);
+    for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
+    auto* quantities_section = new components::inspector::CollapsibleSection("Quantities", "Filter quantities or sets", content);
+    for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
 
     content_layout->addWidget(entity_wrapper);
     content_layout->addWidget(attributes_section);
