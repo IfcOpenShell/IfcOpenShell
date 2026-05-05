@@ -9,6 +9,10 @@ foreach(schema ${SCHEMA_VERSIONS})
         RUNTIME_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
     )
+    ifcopenshell_wasm_plugin_link_options(
+        geometry_serializer_ifc${schema}
+        ifcopenshell_register_opencascade_geometry_ifc_writer_plugin_v1
+    )
     list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
 endforeach()
 set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)

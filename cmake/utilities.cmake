@@ -41,6 +41,28 @@ macro(SET_INSTALL_RPATHS _target _paths)
     set_target_properties(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
 endmacro()
 
+function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
+    if(NOT WASM_BUILD)
+        return()
+    endif()
+
+    cmake_parse_arguments(PLUGIN "" "OPTIMIZATION" "" ${ARGN})
+    if(NOT PLUGIN_OPTIMIZATION)
+        set(PLUGIN_OPTIMIZATION -O1)
+    endif()
+
+    set(plugin_symbols
+        ifcopenshell_plugin_abi_v1
+        ifcopenshell_plugin_metadata_v1
+        ${REGISTRATION_SYMBOL}
+    )
+
+    target_link_options(${TARGET} PRIVATE "SHELL:-s SIDE_MODULE=2" ${PLUGIN_OPTIMIZATION})
+    foreach(symbol IN LISTS plugin_symbols)
+        target_link_options(${TARGET} PRIVATE "LINKER:--export=${symbol}")
+    endforeach()
+endfunction()
+
 # Get a list of all OPTION flags from the CMakeLists.txt and store in an output LIST
 function(get_all_option_flags output_list)
     # Read the contents of the CMakeLists.txt

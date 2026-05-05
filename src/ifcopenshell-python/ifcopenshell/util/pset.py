@@ -25,7 +25,6 @@ import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
-from ifcopenshell.entity_instance import entity_instance
 
 templates: dict[ifcopenshell.util.schema.IFC_SCHEMA, "PsetQto"] = {}
 
@@ -78,7 +77,7 @@ class PsetQto:
         pset_only=False,
         qto_only=False,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
-    ) -> list[entity_instance]:
+    ) -> list[ifcopenshell.entity_instance]:
         """Get applicable property set templates."""
         any_class = not ifc_class
         entity = None
@@ -179,7 +178,7 @@ class PsetQto:
         return False
 
     @lru_cache
-    def get_by_name(self, name: str) -> Optional[entity_instance]:
+    def get_by_name(self, name: str) -> Optional[ifcopenshell.entity_instance]:
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
                 if prop_set.Name == name:
@@ -190,7 +189,7 @@ class PsetQto:
         return bool(self.get_by_name(name))
 
 
-def get_pset_template_type(pset_template: entity_instance) -> Literal["PSET", "QTO", None]:
+def get_pset_template_type(pset_template: ifcopenshell.entity_instance) -> Literal["PSET", "QTO", None]:
     """Get the type of the pset template.
     If type is mixed or not defined, return None."""
 

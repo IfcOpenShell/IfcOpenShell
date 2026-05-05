@@ -22,12 +22,7 @@ foreach(schema ${SCHEMA_VERSIONS})
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
 
-    if (WASM_BUILD)
-        target_link_options(
-            geometry_mapping_ifc${schema}
-            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
-        )
-    endif()
+    ifcopenshell_wasm_plugin_link_options(geometry_mapping_ifc${schema} ifcopenshell_register_mapping_plugin_v1)
 
     target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse Eigen3::Eigen)
 

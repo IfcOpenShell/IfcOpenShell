@@ -23,8 +23,8 @@ from collections.abc import Generator, Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
 from .. import ifcopenshell_wrapper, open
-from ..entity_instance import entity_instance
-from ..file import file
+from .. import entity_instance
+from .. import file
 from . import has_occ
 
 if TYPE_CHECKING:
@@ -625,8 +625,9 @@ def make_shape_function(fn):
     return _
 
 
-serialise = make_shape_function(ifcopenshell_wrapper.serialise)
-tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
+# @todo, plug-ins now
+# serialise = make_shape_function(ifcopenshell_wrapper.serialise)
+# tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
 
 
 def transform_string(v: Union[str, serializers.buffer]) -> serializers.buffer:
@@ -659,7 +660,7 @@ class serializers:
 
     # Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
     # so no wrap_buffer_creation() for these serializers
-    xml = ifcopenshell_wrapper.XmlSerializer
+    # xml = ifcopenshell_wrapper.XmlSerializer
     buffer = ifcopenshell_wrapper.buffer
     # gltf, hdf5, collada and json availability depend on IfcOpenShell configuration settings
     try:

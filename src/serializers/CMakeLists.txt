@@ -25,12 +25,7 @@ function(add_document_serializer_plugin target output_name)
     list(APPEND document_serializer_libraries ${target})
     set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)
 
-    if (WASM_BUILD)
-        target_link_options(
-            ${target}
-            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
-        )
-    endif()
+    ifcopenshell_wasm_plugin_link_options(${target} ifcopenshell_register_document_serializer_plugin_v1)
 endfunction()
 
 function(add_geometry_serializer_plugin target output_name)
@@ -56,12 +51,7 @@ function(add_geometry_serializer_plugin target output_name)
     list(APPEND geometry_serializer_libraries ${target})
     set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)
 
-    if (WASM_BUILD)
-        target_link_options(
-            ${target}
-            PRIVATE "SHELL:-s -s SIDE_MODULE=1"
-        )
-    endif()
+    ifcopenshell_wasm_plugin_link_options(${target} ifcopenshell_register_geometry_serializer_plugin_v1)
 
 endfunction()
 

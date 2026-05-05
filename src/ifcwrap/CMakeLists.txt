@@ -142,7 +142,7 @@ if (WASM_BUILD)
     endif()
     target_link_options(
         ifcopenshell_wrapper
-        PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2"
+        PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2" -O1
     )
 endif()
 target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES} ${LIBSVGFILL})
