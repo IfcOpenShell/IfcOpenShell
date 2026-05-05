@@ -20,7 +20,7 @@
 
 #include "PropertiesPanelWidget.h"
 
-#include "../../components/CollapsibleSection.h"
+#include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 
 #include <QFormLayout>
@@ -157,13 +157,6 @@ void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
     entity_layout->addWidget(entity_icon, 0, Qt::AlignVCenter);
     entity_layout->addWidget(entity_text, 1, Qt::AlignVCenter);
 
-    auto* entity_wrapper = new QWidget(content);
-    entity_wrapper->setObjectName("inspectorSectionBody");
-    auto* entity_wrapper_layout = new QVBoxLayout(entity_wrapper);
-    entity_wrapper_layout->setContentsMargins(10, 0, 10, 0);
-    entity_wrapper_layout->setSpacing(0);
-    entity_wrapper_layout->addWidget(entity_card);
-
     QList<QWidget*> property_set_widgets;
     for (const auto& property_set : state.property_sets) {
         property_set_widgets.append(makePropertySetPanel(property_set, content));
@@ -174,16 +167,18 @@ void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
         quantity_set_widgets.append(makePropertySetPanel(property_set, content));
     }
 
-    auto* attributes_section = new components::inspector::CollapsibleSection("Attributes", "", content);
+    auto* entity_section = new components::Section("", components::SectionHeaderMode::Hidden, "", content);
+    entity_section->addBodyWidget(entity_card);
+    auto* attributes_section = new components::Section("Attributes", components::SectionHeaderMode::Visible, "", content);
     attributes_section->addBodyWidget(makeAttributeList(state.attributes, content));
-    auto* relationships_section = new components::inspector::CollapsibleSection("Relationships", "", content);
+    auto* relationships_section = new components::Section("Relationships", components::SectionHeaderMode::Visible, "", content);
     relationships_section->addBodyWidget(makeRelationshipList(state.relationships, content));
-    auto* properties_section = new components::inspector::CollapsibleSection("Properties", "Filter properties or sets", content);
+    auto* properties_section = new components::Section("Properties", components::SectionHeaderMode::Visible, "Filter properties or sets", content);
     for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
-    auto* quantities_section = new components::inspector::CollapsibleSection("Quantities", "Filter quantities or sets", content);
+    auto* quantities_section = new components::Section("Quantities", components::SectionHeaderMode::Visible, "Filter quantities or sets", content);
     for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
 
-    content_layout->addWidget(entity_wrapper);
+    content_layout->addWidget(entity_section);
     content_layout->addWidget(attributes_section);
     content_layout->addWidget(relationships_section);
     content_layout->addWidget(properties_section);

@@ -18,20 +18,19 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_PANELS_TODO_TODOPANELWIDGET_H
+#define IFCINTERFACE_PANELS_TODO_TODOPANELWIDGET_H
 
-#include <QString>
+#include <QWidget>
 
-class QDockWidget;
-class QFrame;
-class QWidget;
+namespace ifcinterface::panels::todo {
 
-namespace ifcinterface::components::panel {
+class TodoPanelWidget : public QWidget {
+    Q_OBJECT
+public:
+    explicit TodoPanelWidget(const QString& title, QWidget* parent = nullptr);
+};
 
-QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings = false);
-QFrame* wrapPanel(QWidget* inner);
-
-} // namespace ifcinterface::components::panel
+} // namespace ifcinterface::panels::todo
 
 #endif

@@ -18,31 +18,43 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_INSPECTOR_COLLAPSIBLESECTION_H
-#define IFCINTERFACE_COMPONENTS_INSPECTOR_COLLAPSIBLESECTION_H
+#include "TodoPanelWidget.h"
 
-#include <QWidget>
+#include "../../components/Section.h"
 
-class QLineEdit;
-class QVBoxLayout;
+#include <QLabel>
+#include <QVBoxLayout>
 
-namespace ifcinterface::components::inspector {
+namespace ifcinterface::panels::todo {
 
-class CollapsibleSection : public QWidget {
-    Q_OBJECT
-public:
-    explicit CollapsibleSection(const QString& title,
-                                const QString& filter_placeholder = {},
-                                QWidget* parent = nullptr);
+TodoPanelWidget::TodoPanelWidget(const QString& title, QWidget* parent)
+    : QWidget(parent)
+{
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
-    void addBodyWidget(QWidget* widget);
+    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, "", this);
 
-private:
-    QWidget* body_ = nullptr;
-    QVBoxLayout* body_layout_ = nullptr;
-    QLineEdit* filter_field_ = nullptr;
-};
+    auto* body = new QWidget(section);
+    auto* body_layout = new QVBoxLayout(body);
+    body_layout->setContentsMargins(0, 12, 0, 12);
+    body_layout->setSpacing(12);
 
-} // namespace ifcinterface::components::inspector
+    auto* heading = new QLabel(title, body);
+    heading->setObjectName("todoPanelTitle");
 
-#endif
+    auto* content = new QLabel("Coming soon", body);
+    content->setObjectName("todoPanelBody");
+    content->setAlignment(Qt::AlignCenter);
+
+    body_layout->addWidget(heading);
+    body_layout->addStretch(1);
+    body_layout->addWidget(content);
+    body_layout->addStretch(1);
+
+    section->addBodyWidget(body);
+    layout->addWidget(section);
+}
+
+} // namespace ifcinterface::panels::todo

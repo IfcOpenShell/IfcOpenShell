@@ -29,8 +29,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/components/CollapsibleSection.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/components/CollapsibleSection.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/PanelChrome.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/PanelChrome.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelTypes.h
@@ -38,6 +38,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/TodoPanelWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/TodoPanelWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelTypes.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.h

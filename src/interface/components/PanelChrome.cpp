@@ -89,23 +89,6 @@ QFrame* wrapPanel(QWidget* inner) {
     auto* frame = new QFrame(outer);
     frame->setObjectName("panelFrame");
     auto* layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(0);
-    layout->addWidget(inner);
-
-    outer_layout->addWidget(frame);
-    return outer;
-}
-
-QFrame* wrapInspectorPanel(QWidget* inner) {
-    auto* outer = new QFrame();
-    auto* outer_layout = new QVBoxLayout(outer);
-    outer_layout->setContentsMargins(6, 6, 6, 6);
-    outer_layout->setSpacing(0);
-
-    auto* frame = new QFrame(outer);
-    frame->setObjectName("panelFrame");
-    auto* layout = new QVBoxLayout(frame);
     layout->setContentsMargins(0, 8, 0, 8);
     layout->setSpacing(0);
     layout->addWidget(inner);

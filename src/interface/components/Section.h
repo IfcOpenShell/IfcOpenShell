@@ -18,20 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_COMPONENTS_SECTION_H
+#define IFCINTERFACE_COMPONENTS_SECTION_H
 
-#include <QString>
+#include <QWidget>
 
-class QDockWidget;
-class QFrame;
-class QWidget;
+class QLineEdit;
+class QVBoxLayout;
 
-namespace ifcinterface::components::panel {
+namespace ifcinterface::components {
 
-QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings = false);
-QFrame* wrapPanel(QWidget* inner);
+enum class SectionHeaderMode {
+    Visible,
+    Hidden,
+};
 
-} // namespace ifcinterface::components::panel
+class Section : public QWidget {
+    Q_OBJECT
+public:
+    explicit Section(const QString& title,
+                     SectionHeaderMode header_mode = SectionHeaderMode::Visible,
+                     const QString& filter_placeholder = {},
+                     QWidget* parent = nullptr);
+
+    void addBodyWidget(QWidget* widget);
+
+private:
+    QWidget* body_ = nullptr;
+    QVBoxLayout* body_layout_ = nullptr;
+    QLineEdit* filter_field_ = nullptr;
+};
+
+} // namespace ifcinterface::components
 
 #endif

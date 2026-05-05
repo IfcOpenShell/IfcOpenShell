@@ -25,6 +25,7 @@
 #include "../ifcviewer/ViewportWindow.h"
 #include "components/PanelChrome.h"
 #include "components/SvgIcon.h"
+#include "panels/todo/TodoPanelWidget.h"
 #include "panels/models/ModelsPanelView.h"
 #include "panels/models/ModelsPanelWidget.h"
 #include "panels/properties/PropertiesPanelView.h"
@@ -155,6 +156,9 @@ void MainWindow::setupChrome() {
             border: 1px solid #3e444e;
             border-radius: 3px;
         }
+        QWidget#panelBody {
+            background: #2b2f36;
+        }
         QTreeWidget, QListWidget, QTableWidget, QAbstractScrollArea {
             background: #2b2f36;
             border: none;
@@ -268,10 +272,10 @@ void MainWindow::setupChrome() {
         QGroupBox#propertySetCard > QWidget {
             background: #26292f;
         }
-        QWidget#inspectorSection {
+        QWidget#panelSection {
             background: transparent;
         }
-        QWidget#inspectorFilterWrapper {
+        QWidget#panelSectionFilterWrapper {
             background: transparent;
         }
         QWidget#relationshipRow {
@@ -283,7 +287,10 @@ void MainWindow::setupChrome() {
         QWidget#inspectorPanel {
             background: #2b2f36;
         }
-        QToolButton#inspectorSectionButton {
+        QFrame#panelSectionHeader {
+            background: #26292f;
+        }
+        QToolButton#panelSectionHeaderButton {
             background: transparent;
             border: none;
             color: #e1e7f0;
@@ -292,25 +299,22 @@ void MainWindow::setupChrome() {
             padding: 2px;
             margin: 0;
         }
-        QToolButton#inspectorSectionButton:hover {
+        QToolButton#panelSectionHeaderButton:hover {
             color: #ffffff;
         }
-        QToolButton#inspectorSectionButton::menu-indicator {
+        QToolButton#panelSectionHeaderButton::menu-indicator {
             image: none;
             width: 0;
         }
-        QFrame#inspectorSectionHeader {
-            background: #26292f;
-        }
-        QToolButton#inspectorFilterToggle {
+        QToolButton#panelSectionFilterToggle {
             background: transparent;
             border: none;
             padding: 2px;
         }
-        QToolButton#inspectorFilterToggle:hover {
+        QToolButton#panelSectionFilterToggle:hover {
             background: #353a42;
         }
-        QWidget#inspectorSectionBody {
+        QWidget#panelSectionBody {
             background: transparent;
         }
         QLabel#propertyKeyLabel {
@@ -323,6 +327,16 @@ void MainWindow::setupChrome() {
         }
         QLabel#relationshipValueLabel {
             color: #dce2eb;
+            background: transparent;
+        }
+        QLabel#todoPanelTitle {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e1e6ee;
+            background: transparent;
+        }
+        QLabel#todoPanelBody {
+            color: #8f98a6;
             background: transparent;
         }
     )");
@@ -363,19 +377,7 @@ QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButt
 }
 
 QWidget* MainWindow::makeComingSoonPanel(const QString& title) {
-    auto* widget = new QWidget(this);
-    auto* layout = new QVBoxLayout(widget);
-    layout->setContentsMargins(12, 12, 12, 12);
-    auto* heading = new QLabel(title, widget);
-    heading->setStyleSheet("font-size:14px; font-weight:600; color:#e1e6ee;");
-    auto* body = new QLabel("Coming soon", widget);
-    body->setAlignment(Qt::AlignCenter);
-    body->setStyleSheet("color:#8f98a6;");
-    layout->addWidget(heading);
-    layout->addStretch(1);
-    layout->addWidget(body);
-    layout->addStretch(1);
-    return widget;
+    return new panels::todo::TodoPanelWidget(title, this);
 }
 
 void MainWindow::setStatusMessage(const QString& mode, const QString& detail) {
@@ -661,7 +663,7 @@ void MainWindow::setupDocks() {
     spatial_dock_ = components::panel::makeDock(
         "Spatial Hierarchy", components::panel::wrapPanel(spatial_panel), this);
     properties_dock_ = components::panel::makeDock(
-        "Properties", components::panel::wrapInspectorPanel(properties_panel), this);
+        "Properties", components::panel::wrapPanel(properties_panel), this);
     layers_dock_ = components::panel::makeDock(
         "Layers", components::panel::wrapPanel(makeComingSoonPanel("Layers")), this);
     stored_views_dock_ = components::panel::makeDock(

@@ -20,6 +20,7 @@
 
 #include "SpatialHierarchyPanelWidget.h"
 
+#include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 
 #include <QHeaderView>
@@ -36,7 +37,9 @@ SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    tree_ = new QTreeWidget(this);
+    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, "", this);
+
+    tree_ = new QTreeWidget(section);
     tree_->setColumnCount(2);
     tree_->setHeaderLabels({"Spatial Item", ""});
     tree_->setIconSize(QSize(16, 16));
@@ -47,7 +50,8 @@ SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
     tree_->header()->setSectionResizeMode(1, QHeaderView::Fixed);
     tree_->header()->resizeSection(1, 28);
     tree_->header()->hide();
-    layout->addWidget(tree_);
+    section->addBodyWidget(tree_);
+    layout->addWidget(section);
 
     connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
         if (!item || column != 1) return;
