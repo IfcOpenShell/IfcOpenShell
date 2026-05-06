@@ -31,6 +31,7 @@ class QTabBar;
 class QToolButton;
 class ViewportWindow;
 class SceneLoader;
+namespace ifcinterface { class ElementRegistry; }
 namespace ifcinterface::panels::models { class ModelsPanelView; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcinterface::panels::properties { class PropertiesPanelView; }
@@ -46,7 +47,7 @@ private:
     void setupChrome();
     void setupRibbon();
     void setupViewport();
-    void setupDocks();
+    void setupPanels();
     void setupStatus();
     void setupLoader();
     QWidget* buildHomeRibbonPage();
@@ -55,7 +56,6 @@ private:
     QWidget* buildPanelsRibbonPage();
     QToolButton* makeRibbonAction(const QString& text, const QString& icon_path);
     QWidget* makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons);
-    QWidget* makeComingSoonPanel(const QString& title);
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
     void setStatusMessage(const QString& mode, const QString& detail);
     void addFiles(const QStringList& paths);
@@ -78,19 +78,21 @@ private:
     QStackedWidget* ribbon_pages_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
     SceneLoader* loader_ = nullptr;
+    ifcinterface::ElementRegistry* element_registry_ = nullptr;
     QWidget* viewport_container_ = nullptr;
-    QDockWidget* models_dock_ = nullptr;
-    QDockWidget* spatial_dock_ = nullptr;
-    QDockWidget* layers_dock_ = nullptr;
-    QDockWidget* properties_dock_ = nullptr;
-    QDockWidget* stored_views_dock_ = nullptr;
-    QDockWidget* search_dock_ = nullptr;
-    QDockWidget* spreadsheet_dock_ = nullptr;
-    QDockWidget* clash_dock_ = nullptr;
-    QDockWidget* issues_dock_ = nullptr;
-    ifcinterface::panels::models::ModelsPanelView* models_panel_view_ = nullptr;
-    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_panel_view_ = nullptr;
-    ifcinterface::panels::properties::PropertiesPanelView* properties_panel_view_ = nullptr;
+    QDockWidget* models_panel_ = nullptr;
+    QDockWidget* spatial_panel_ = nullptr;
+    QDockWidget* layers_panel_ = nullptr;
+    QDockWidget* properties_panel_ = nullptr;
+    QDockWidget* stored_views_panel_ = nullptr;
+    QDockWidget* search_panel_ = nullptr;
+    QDockWidget* spreadsheet_panel_ = nullptr;
+    QDockWidget* audit_panel_ = nullptr;
+    QDockWidget* clash_panel_ = nullptr;
+    QDockWidget* issues_panel_ = nullptr;
+    ifcinterface::panels::models::ModelsPanelView* models_view_ = nullptr;
+    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
+    ifcinterface::panels::properties::PropertiesPanelView* properties_view_ = nullptr;
 };
 
 } // namespace ifcinterface::shell

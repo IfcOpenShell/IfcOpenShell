@@ -4,21 +4,6 @@
         <file alias="DMSans-VariableFont_opsz,wght.ttf">../ifctester/webapp/public/fonts/dmsans/DMSans-VariableFont_opsz,wght.ttf</file>
     </qresource>
     <qresource prefix="/icons">
-        <file alias="IFC.png">../bonsai/bonsai/bim/data/icons/IFC.png</file>
-        <file alias="dm_add.png">../bonsai/bonsai/bim/data/icons/dm_add.png</file>
-        <file alias="dm_add_type.png">../bonsai/bonsai/bim/data/icons/dm_add_type.png</file>
-        <file alias="dm_assign.png">../bonsai/bonsai/bim/data/icons/dm_assign.png</file>
-        <file alias="dm_centerline.png">../bonsai/bonsai/bim/data/icons/dm_centerline.png</file>
-        <file alias="dm_connect_mep_elements.png">../bonsai/bonsai/bim/data/icons/dm_connect_mep_elements.png</file>
-        <file alias="dm_decomposition.png">../bonsai/bonsai/bim/data/icons/dm_decomposition.png</file>
-        <file alias="dm_edit_profile.png">../bonsai/bonsai/bim/data/icons/dm_edit_profile.png</file>
-        <file alias="dm_ifc.png">../bonsai/bonsai/bim/data/icons/dm_ifc.png</file>
-        <file alias="dm_perform_quantity_take-off.png">../bonsai/bonsai/bim/data/icons/dm_perform_quantity_take-off.png</file>
-        <file alias="dm_rectangle.png">../bonsai/bonsai/bim/data/icons/dm_rectangle.png</file>
-        <file alias="dm_refresh.png">../bonsai/bonsai/bim/data/icons/dm_refresh.png</file>
-        <file alias="dm_rotate_90.png">../bonsai/bonsai/bim/data/icons/dm_rotate_90.png</file>
-        <file alias="dm_split.png">../bonsai/bonsai/bim/data/icons/dm_split.png</file>
-        <file alias="dm_toggle_openings.png">../bonsai/bonsai/bim/data/icons/dm_toggle_openings.png</file>
         <file alias="plus-square.svg">icons/plus-square.svg</file>
         <file alias="download-square.svg">icons/download-square.svg</file>
         <file alias="cloud-square.svg">icons/cloud-square.svg</file>
@@ -55,5 +40,6 @@
         <file alias="filter.svg">icons/filter.svg</file>
         <file alias="cube-dots.svg">icons/cube-dots.svg</file>
         <file alias="cursor-pointer.svg">icons/cursor-pointer.svg</file>
+        <file alias="sidebar-expand.svg">icons/sidebar-expand.svg</file>
     </qresource>
 </RCC>

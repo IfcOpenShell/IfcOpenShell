@@ -18,8 +18,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "PanelChrome.h"
+#include "Panel.h"
 
+#include "Style.h"
 #include "SvgIcon.h"
 
 #include <QDockWidget>
@@ -30,7 +31,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::components::panel {
+namespace ifcinterface::components {
 
 namespace {
 
@@ -69,32 +70,31 @@ public:
 
 } // namespace
 
-QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings) {
-    auto* dock = new QDockWidget(title, parent);
-    dock->setObjectName(title);
-    dock->setFeatures(QDockWidget::DockWidgetMovable |
-                      QDockWidget::DockWidgetFloatable |
-                      QDockWidget::DockWidgetClosable);
-    dock->setTitleBarWidget(new DockTitleBar(title, has_settings, dock));
-    dock->setWidget(content);
-    return dock;
-}
-
-QFrame* wrapPanel(QWidget* inner) {
+Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_settings)
+    : QDockWidget(title, parent)
+{
     auto* outer = new QFrame();
     auto* outer_layout = new QVBoxLayout(outer);
-    outer_layout->setContentsMargins(6, 6, 6, 6);
+    outer_layout->setContentsMargins(style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding);
     outer_layout->setSpacing(0);
 
     auto* frame = new QFrame(outer);
-    frame->setObjectName("panelFrame");
-    auto* layout = new QVBoxLayout(frame);
-    layout->setContentsMargins(0, 8, 0, 8);
-    layout->setSpacing(0);
-    layout->addWidget(inner);
-
+    frame->setObjectName("panel");
+    auto* frame_layout = new QVBoxLayout(frame);
+    frame_layout->setContentsMargins(0, style::metrics::padding, 0, style::metrics::padding);
+    frame_layout->setSpacing(0);
+    frame_layout->addWidget(content);
     outer_layout->addWidget(frame);
-    return outer;
+
+    setObjectName(title);
+    setFeatures(QDockWidget::DockWidgetMovable |
+                QDockWidget::DockWidgetFloatable |
+                QDockWidget::DockWidgetClosable);
+    setTitleBarWidget(new DockTitleBar(title, has_settings, this));
+    setWidget(outer);
 }
 
-} // namespace ifcinterface::components::panel
+} // namespace ifcinterface::components

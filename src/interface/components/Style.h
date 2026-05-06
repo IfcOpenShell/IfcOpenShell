@@ -18,34 +18,32 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
+#ifndef IFCINTERFACE_COMPONENTS_STYLE_H
+#define IFCINTERFACE_COMPONENTS_STYLE_H
 
-#include "PropertiesPanelTypes.h"
+#include <QString>
 
-#include <QObject>
+namespace ifcinterface::components::style::metrics {
 
-namespace ifcinterface { class ElementRegistry; }
-class ViewportWindow;
-namespace ifcinterface::panels::properties {
+inline constexpr int padding = 6;
+inline constexpr int section_spacing = 6;
+inline constexpr int section_body_padding_x = 10;
+inline constexpr int section_body_padding_top = 6;
+inline constexpr int hidden_section_body_padding_x = 8;
+inline constexpr int section_header_padding = 2;
+inline constexpr int filter_body_padding_x = 10;
+inline constexpr int hidden_filter_body_padding_x = 8;
+inline constexpr int card_padding = 10;
+inline constexpr int control_padding_y = 6;
+inline constexpr int control_padding_x = 8;
+inline constexpr int panel_radius = 3;
 
-class PropertiesPanelWidget;
+} // namespace ifcinterface::components::style::metrics
 
-class PropertiesPanelView : public QObject {
-    Q_OBJECT
-public:
-    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ViewportWindow* viewport,
-                                 ifcinterface::ElementRegistry* registry,
-                                 QObject* parent = nullptr);
+namespace ifcinterface::components::style {
 
-private:
-    void refresh(uint32_t object_id);
+QString buildAppStyleSheet();
 
-    PropertiesPanelWidget* widget_ = nullptr;
-    ifcinterface::ElementRegistry* registry_ = nullptr;
-};
-
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::components::style
 
 #endif

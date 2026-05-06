@@ -25,6 +25,9 @@
 
 #include <QWidget>
 
+class QScrollArea;
+class QVBoxLayout;
+
 namespace ifcinterface::panels::properties {
 
 class PropertiesPanelWidget : public QWidget {
@@ -32,7 +35,12 @@ class PropertiesPanelWidget : public QWidget {
 public:
     explicit PropertiesPanelWidget(QWidget* parent = nullptr);
 
-    void setState(const PropertiesPanelState& state);
+    void render(const PropertiesPanelState& state);
+
+private:
+    QScrollArea* scroll_ = nullptr;
+    QWidget* content_ = nullptr;
+    QVBoxLayout* content_layout_ = nullptr;
 };
 
 } // namespace ifcinterface::panels::properties

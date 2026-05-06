@@ -23,7 +23,9 @@
 #include "../ifcviewer/AppSettings.h"
 #include "../ifcviewer/SceneLoader.h"
 #include "../ifcviewer/ViewportWindow.h"
-#include "components/PanelChrome.h"
+#include "ElementRegistry.h"
+#include "components/Panel.h"
+#include "components/Style.h"
 #include "components/SvgIcon.h"
 #include "panels/todo/TodoPanelWidget.h"
 #include "panels/models/ModelsPanelView.h"
@@ -52,9 +54,10 @@ namespace ifcinterface::shell {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
+    element_registry_ = new ifcinterface::ElementRegistry(this);
     setupChrome();
     setupViewport();
-    setupDocks();
+    setupPanels();
     setupStatus();
     setupLoader();
     setupRibbon();
@@ -66,280 +69,7 @@ void MainWindow::setupChrome() {
     setDockOptions(QMainWindow::AllowNestedDocks |
                    QMainWindow::AllowTabbedDocks |
                    QMainWindow::GroupedDragging);
-
-    setStyleSheet(R"(
-        QMainWindow {
-            background: #26292f;
-        }
-        QWidget {
-            color: #d0d5dd;
-            background: #26292f;
-            selection-background-color: #39b54a;
-            selection-color: #14161a;
-        }
-        QFrame#ribbonShell {
-            background: #2d3138;
-            border-bottom: 1px solid #1b1d22;
-        }
-        QTabBar::tab {
-            background: transparent;
-            color: #8d97a7;
-            padding: 8px 14px;
-            margin-right: 2px;
-            border-bottom: 2px solid transparent;
-        }
-        QTabBar::tab:selected {
-            color: #f2f5fa;
-            border-bottom: 2px solid #39b54a;
-        }
-        QTabBar::tab:hover {
-            color: #ffffff;
-        }
-        QFrame#ribbonBand {
-            background: #31353d;
-            border-top: 1px solid #3b4048;
-        }
-        QFrame#ribbonPage {
-            background: transparent;
-        }
-        QFrame#ribbonGroup {
-            background: transparent;
-            border-right: 1px solid #434852;
-        }
-        QLabel#ribbonGroupLabel {
-            color: #7f8796;
-            font-size: 9px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-        }
-        QToolButton#ribbonButton {
-            background: transparent;
-            border: none;
-            padding: 6px 4px 4px 4px;
-            font-size: 11px;
-            color: #d6dce6;
-        }
-        QToolButton#ribbonButton:hover {
-            background: #3a3f48;
-        }
-        QToolButton#ribbonButton:pressed {
-            background: #24282f;
-        }
-        QFrame#viewportShell {
-            background: #202329;
-            border-top: 1px solid #1d2025;
-        }
-        QFrame#viewportFrame {
-            background: #1a1d22;
-            border: 1px solid #333942;
-        }
-        QDockWidget {
-            color: #d0d5dd;
-        }
-        QLabel#dockTitleText {
-            color: #dfe4ec;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-        }
-        QToolButton#dockTitleButton {
-            color: #8e97a5;
-            border: none;
-            background: transparent;
-        }
-        QToolButton#dockTitleButton:hover {
-            color: #ffffff;
-            background: #353a42;
-        }
-        QFrame#panelFrame {
-            background: #2b2f36;
-            border: 1px solid #3e444e;
-            border-radius: 3px;
-        }
-        QWidget#panelBody {
-            background: #2b2f36;
-        }
-        QTreeWidget, QListWidget, QTableWidget, QAbstractScrollArea {
-            background: #2b2f36;
-            border: none;
-            outline: none;
-            gridline-color: #333842;
-        }
-        QTreeWidget::viewport, QListWidget::viewport, QTableWidget::viewport {
-            background: #2b2f36;
-        }
-        QHeaderView::section {
-            background: #31353d;
-            color: #b5becc;
-            border: none;
-            border-bottom: 1px solid #434a55;
-            padding: 7px 8px;
-            font-weight: 600;
-        }
-        QTableCornerButton::section {
-            background: #31353d;
-            border: none;
-        }
-        QScrollArea {
-            background: #2b2f36;
-            border: none;
-        }
-        QScrollArea > QWidget > QWidget {
-            background: #2b2f36;
-        }
-        QLineEdit {
-            background: #31353d;
-            border: 1px solid #434a55;
-            border-radius: 3px;
-            padding: 6px 8px;
-            color: #d9dfeb;
-        }
-        QLineEdit:focus {
-            border: 1px solid #5b6472;
-        }
-        QFrame#entityClassCard {
-            background: #26292f;
-            border: 1px solid #404650;
-            border-radius: 3px;
-        }
-        QLabel#entityClassLabel {
-            color: #eef2f8;
-            font-weight: 700;
-            background: transparent;
-        }
-        QLabel#entityTypeLabel {
-            color: #9aa4b3;
-            background: transparent;
-        }
-        QWidget#attributeList {
-            background: transparent;
-        }
-        QTreeView::item, QListView::item, QTableView::item {
-            padding: 4px;
-        }
-        QScrollBar:vertical {
-            background: transparent;
-            width: 10px;
-            margin: 2px 2px 2px 0;
-        }
-        QScrollBar:horizontal {
-            background: transparent;
-            height: 10px;
-            margin: 0 2px 2px 2px;
-        }
-        QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-            background: #525a67;
-            border-radius: 3px;
-            min-height: 24px;
-            min-width: 24px;
-        }
-        QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
-            background: #697385;
-        }
-        QScrollBar::add-line, QScrollBar::sub-line,
-        QScrollBar::add-page, QScrollBar::sub-page {
-            background: transparent;
-            border: none;
-        }
-        QStatusBar {
-            background: #24272c;
-            border-top: 1px solid #1a1c20;
-        }
-        QStatusBar QLabel {
-            color: #97a1af;
-            background: transparent;
-            border: none;
-            padding: 2px 8px;
-        }
-        QGroupBox {
-            background: transparent;
-            border: 1px solid #404650;
-            border-radius: 3px;
-            margin-top: 10px;
-            padding-top: 10px;
-        }
-        QGroupBox#propertySetCard {
-            background: #26292f;
-            border: 1px solid #404650;
-            border-radius: 3px;
-        }
-        QGroupBox#propertySetCard::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 4px;
-            color: #d5dbe5;
-        }
-        QGroupBox#propertySetCard > QWidget {
-            background: #26292f;
-        }
-        QWidget#panelSection {
-            background: transparent;
-        }
-        QWidget#panelSectionFilterWrapper {
-            background: transparent;
-        }
-        QWidget#relationshipRow {
-            background: transparent;
-        }
-        QLabel#relationshipIconLabel {
-            background: transparent;
-        }
-        QWidget#inspectorPanel {
-            background: #2b2f36;
-        }
-        QFrame#panelSectionHeader {
-            background: #26292f;
-        }
-        QToolButton#panelSectionHeaderButton {
-            background: transparent;
-            border: none;
-            color: #e1e7f0;
-            font-weight: 700;
-            text-align: left;
-            padding: 2px;
-            margin: 0;
-        }
-        QToolButton#panelSectionHeaderButton:hover {
-            color: #ffffff;
-        }
-        QToolButton#panelSectionHeaderButton::menu-indicator {
-            image: none;
-            width: 0;
-        }
-        QToolButton#panelSectionFilterToggle {
-            background: transparent;
-            border: none;
-            padding: 2px;
-        }
-        QToolButton#panelSectionFilterToggle:hover {
-            background: #353a42;
-        }
-        QWidget#panelSectionBody {
-            background: transparent;
-        }
-        QLabel#propertyKeyLabel {
-            color: #9aa4b3;
-            background: transparent;
-        }
-        QLabel#propertyValueLabel {
-            color: #dce2eb;
-            background: transparent;
-        }
-        QLabel#relationshipValueLabel {
-            color: #dce2eb;
-            background: transparent;
-        }
-        QLabel#todoPanelTitle {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e1e6ee;
-            background: transparent;
-        }
-        QLabel#todoPanelBody {
-            color: #8f98a6;
-            background: transparent;
-        }
-    )");
+    setStyleSheet(components::style::buildAppStyleSheet());
 }
 
 QToolButton* MainWindow::makeRibbonAction(const QString& text, const QString& icon_path) {
@@ -376,17 +106,13 @@ QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButt
     return group;
 }
 
-QWidget* MainWindow::makeComingSoonPanel(const QString& title) {
-    return new panels::todo::TodoPanelWidget(title, this);
-}
-
 void MainWindow::setStatusMessage(const QString& mode, const QString& detail) {
     status_mode_label_->setText(mode);
     status_selection_label_->setText(detail);
 }
 
 QToolButton* MainWindow::makePanelToggle(const QString& text, QDockWidget* dock) {
-    auto* button = makeRibbonAction(text, ":/icons/dm_toggle_openings.png");
+    auto* button = makeRibbonAction(text, ":/icons/sidebar-expand.svg");
     button->setCheckable(true);
     button->setChecked(dock->isVisible());
     connect(button, &QToolButton::toggled, dock, [dock](bool checked) {
@@ -565,19 +291,20 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
     row->setSpacing(0);
 
     row->addWidget(makeRibbonGroup("DATA", {
-        makePanelToggle("Models", models_dock_),
-        makePanelToggle("Spatial", spatial_dock_),
-        makePanelToggle("Layers", layers_dock_),
-        makePanelToggle("Properties", properties_dock_)
+        makePanelToggle("Models", models_panel_),
+        makePanelToggle("Spatial", spatial_panel_),
+        makePanelToggle("Layers", layers_panel_),
+        makePanelToggle("Properties", properties_panel_)
     }));
     row->addWidget(makeRibbonGroup("QUERY", {
-        makePanelToggle("Views", stored_views_dock_),
-        makePanelToggle("Search", search_dock_),
-        makePanelToggle("Sheets", spreadsheet_dock_)
+        makePanelToggle("Views", stored_views_panel_),
+        makePanelToggle("Search", search_panel_),
+        makePanelToggle("Sheets", spreadsheet_panel_),
+        makePanelToggle("Audit", audit_panel_)
     }));
     row->addWidget(makeRibbonGroup("COLLABORATE", {
-        makePanelToggle("Clash", clash_dock_),
-        makePanelToggle("Issues", issues_dock_)
+        makePanelToggle("Clash", clash_panel_),
+        makePanelToggle("Issues", issues_panel_)
     }));
     row->addStretch(1);
     return page;
@@ -644,68 +371,67 @@ void MainWindow::setupViewport() {
     setCentralWidget(shell);
 }
 
-void MainWindow::setupDocks() {
-    auto* models_panel = new panels::models::ModelsPanelWidget(this);
-    auto* spatial_panel = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
-    auto* properties_panel = new panels::properties::PropertiesPanelWidget(this);
+void MainWindow::setupPanels() {
+    auto* models_widget = new panels::models::ModelsPanelWidget(this);
+    auto* spatial_widget = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
+    auto* properties_widget = new panels::properties::PropertiesPanelWidget(this);
 
-    models_panel_view_ = new panels::models::ModelsPanelView(models_panel, this);
-    spatial_panel_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel, this);
-    properties_panel_view_ = new panels::properties::PropertiesPanelView(properties_panel, this);
+    models_view_ = new panels::models::ModelsPanelView(models_widget, this);
+    spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_widget, this);
+    properties_view_ = new panels::properties::PropertiesPanelView(
+        properties_widget, viewport_, element_registry_, this);
 
-    connect(models_panel_view_, &panels::models::ModelsPanelView::statusMessageRequested,
+    connect(models_view_, &panels::models::ModelsPanelView::statusMessageRequested,
             this, &MainWindow::setStatusMessage);
-    connect(spatial_panel_view_, &panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
+    connect(spatial_view_, &panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
             this, &MainWindow::setStatusMessage);
 
-    models_dock_ = components::panel::makeDock(
-        "Models", components::panel::wrapPanel(models_panel), this, true);
-    spatial_dock_ = components::panel::makeDock(
-        "Spatial Hierarchy", components::panel::wrapPanel(spatial_panel), this);
-    properties_dock_ = components::panel::makeDock(
-        "Properties", components::panel::wrapPanel(properties_panel), this);
-    layers_dock_ = components::panel::makeDock(
-        "Layers", components::panel::wrapPanel(makeComingSoonPanel("Layers")), this);
-    stored_views_dock_ = components::panel::makeDock(
-        "Stored Views", components::panel::wrapPanel(makeComingSoonPanel("Stored Views")), this);
-    search_dock_ = components::panel::makeDock(
-        "Search and Query", components::panel::wrapPanel(makeComingSoonPanel("Search and Query")), this);
-    spreadsheet_dock_ = components::panel::makeDock(
-        "Spreadsheet", components::panel::wrapPanel(makeComingSoonPanel("Spreadsheet")), this);
-    clash_dock_ = components::panel::makeDock(
-        "Clash", components::panel::wrapPanel(makeComingSoonPanel("Clash")), this);
-    issues_dock_ = components::panel::makeDock(
-        "Issues", components::panel::wrapPanel(makeComingSoonPanel("Issues")), this);
+    models_panel_ = new components::Panel("Models", models_widget, this, true);
+    spatial_panel_ = new components::Panel("Spatial Hierarchy", spatial_widget, this);
+    properties_panel_ = new components::Panel("Properties", properties_widget, this);
+    layers_panel_ = new components::Panel("Layers", new panels::todo::TodoPanelWidget("Layers", this), this);
+    stored_views_panel_ = new components::Panel(
+        "Stored Views", new panels::todo::TodoPanelWidget("Stored Views", this), this);
+    search_panel_ = new components::Panel(
+        "Search and Query", new panels::todo::TodoPanelWidget("Search and Query", this), this);
+    spreadsheet_panel_ = new components::Panel(
+        "Spreadsheet", new panels::todo::TodoPanelWidget("Spreadsheet", this), this);
+    audit_panel_ = new components::Panel("Audit", new panels::todo::TodoPanelWidget("Audit", this), this);
+    clash_panel_ = new components::Panel("Clash", new panels::todo::TodoPanelWidget("Clash", this), this);
+    issues_panel_ = new components::Panel("Issues", new panels::todo::TodoPanelWidget("Issues", this), this);
 
-    addDockWidget(Qt::LeftDockWidgetArea, models_dock_);
-    addDockWidget(Qt::LeftDockWidgetArea, spatial_dock_);
-    splitDockWidget(models_dock_, spatial_dock_, Qt::Vertical);
+    addDockWidget(Qt::LeftDockWidgetArea, models_panel_);
+    addDockWidget(Qt::LeftDockWidgetArea, spatial_panel_);
+    splitDockWidget(models_panel_, spatial_panel_, Qt::Vertical);
 
-    addDockWidget(Qt::RightDockWidgetArea, properties_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, layers_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, stored_views_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, search_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, spreadsheet_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, clash_dock_);
-    addDockWidget(Qt::RightDockWidgetArea, issues_dock_);
+    addDockWidget(Qt::RightDockWidgetArea, properties_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, layers_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, stored_views_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, search_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, spreadsheet_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, audit_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, clash_panel_);
+    addDockWidget(Qt::RightDockWidgetArea, issues_panel_);
 
-    tabifyDockWidget(properties_dock_, layers_dock_);
-    tabifyDockWidget(layers_dock_, stored_views_dock_);
-    tabifyDockWidget(stored_views_dock_, search_dock_);
-    tabifyDockWidget(search_dock_, spreadsheet_dock_);
-    tabifyDockWidget(spreadsheet_dock_, clash_dock_);
-    tabifyDockWidget(clash_dock_, issues_dock_);
-    properties_dock_->raise();
+    tabifyDockWidget(properties_panel_, layers_panel_);
+    tabifyDockWidget(layers_panel_, stored_views_panel_);
+    tabifyDockWidget(stored_views_panel_, search_panel_);
+    tabifyDockWidget(search_panel_, spreadsheet_panel_);
+    tabifyDockWidget(spreadsheet_panel_, audit_panel_);
+    tabifyDockWidget(audit_panel_, clash_panel_);
+    tabifyDockWidget(clash_panel_, issues_panel_);
+    properties_panel_->raise();
 
-    layers_dock_->hide();
-    stored_views_dock_->hide();
-    search_dock_->hide();
-    spreadsheet_dock_->hide();
-    clash_dock_->hide();
-    issues_dock_->hide();
+    layers_panel_->hide();
+    stored_views_panel_->hide();
+    search_panel_->hide();
+    spreadsheet_panel_->hide();
+    audit_panel_->hide();
+    clash_panel_->hide();
+    issues_panel_->hide();
 
-    resizeDocks({models_dock_, properties_dock_}, {290, 330}, Qt::Horizontal);
-    resizeDocks({models_dock_, spatial_dock_}, {280, 240}, Qt::Vertical);
+    resizeDocks({models_panel_, properties_panel_}, {290, 330}, Qt::Horizontal);
+    resizeDocks({models_panel_, spatial_panel_}, {280, 240}, Qt::Vertical);
 }
 
 void MainWindow::setupStatus() {
@@ -728,6 +454,7 @@ void MainWindow::setupStatus() {
 void MainWindow::setupLoader() {
     AppSettings::instance().setLoadDataSource(false);
     loader_ = new SceneLoader(viewport_, this);
+    element_registry_->bindLoader(loader_);
     connect(loader_, &SceneLoader::loadStarted, this, &MainWindow::onLoadStarted);
     connect(loader_, &SceneLoader::loadedFromSidecar, this, &MainWindow::onLoadedFromSidecar);
     connect(loader_, &SceneLoader::loadedFromStream, this, &MainWindow::onLoadedFromStream);

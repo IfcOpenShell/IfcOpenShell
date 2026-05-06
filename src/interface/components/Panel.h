@@ -18,34 +18,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
+#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
 
-#include "PropertiesPanelTypes.h"
+#include <QDockWidget>
 
-#include <QObject>
+class QWidget;
 
-namespace ifcinterface { class ElementRegistry; }
-class ViewportWindow;
-namespace ifcinterface::panels::properties {
+namespace ifcinterface::components {
 
-class PropertiesPanelWidget;
-
-class PropertiesPanelView : public QObject {
+class Panel : public QDockWidget {
     Q_OBJECT
+
 public:
-    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ViewportWindow* viewport,
-                                 ifcinterface::ElementRegistry* registry,
-                                 QObject* parent = nullptr);
-
-private:
-    void refresh(uint32_t object_id);
-
-    PropertiesPanelWidget* widget_ = nullptr;
-    ifcinterface::ElementRegistry* registry_ = nullptr;
+    explicit Panel(const QString& title, QWidget* content, QWidget* parent = nullptr, bool has_settings = false);
 };
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::components
 
 #endif

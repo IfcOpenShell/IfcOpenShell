@@ -20,6 +20,7 @@
 
 #include "Section.h"
 
+#include "Style.h"
 #include "SvgIcon.h"
 
 #include <QFrame>
@@ -49,14 +50,14 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
     setObjectName("panelSection");
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
+    layout->setSpacing(style::metrics::section_spacing);
 
     if (header_mode == SectionHeaderMode::Visible) {
         auto* header = new QFrame(this);
         header->setObjectName("panelSectionHeader");
         auto* header_layout = new QHBoxLayout(header);
         header_layout->setContentsMargins(0, 0, 0, 0);
-        header_layout->setSpacing(6);
+        header_layout->setSpacing(style::metrics::section_spacing);
 
         auto* toggle = new QToolButton(header);
         toggle->setObjectName("panelSectionHeaderButton");
@@ -89,7 +90,8 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
             auto* filter_wrapper = new QWidget(this);
             filter_wrapper->setObjectName("panelSectionFilterWrapper");
             auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-            filter_wrapper_layout->setContentsMargins(10, 0, 10, 0);
+            filter_wrapper_layout->setContentsMargins(style::metrics::filter_body_padding_x, 0,
+                                                      style::metrics::filter_body_padding_x, 0);
             filter_wrapper_layout->setSpacing(0);
             filter_wrapper_layout->addWidget(filter_field_);
             layout->addWidget(filter_wrapper);
@@ -108,7 +110,8 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
         auto* filter_wrapper = new QWidget(this);
         filter_wrapper->setObjectName("panelSectionFilterWrapper");
         auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-        filter_wrapper_layout->setContentsMargins(8, 0, 8, 0);
+        filter_wrapper_layout->setContentsMargins(style::metrics::hidden_filter_body_padding_x, 0,
+                                                  style::metrics::hidden_filter_body_padding_x, 0);
         filter_wrapper_layout->setSpacing(0);
         filter_wrapper_layout->addWidget(filter_field_);
         layout->addWidget(filter_wrapper);
@@ -118,11 +121,14 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
     body_->setObjectName("panelSectionBody");
     body_layout_ = new QVBoxLayout(body_);
     if (header_mode == SectionHeaderMode::Visible) {
-        body_layout_->setContentsMargins(10, 6, 10, 0);
+        body_layout_->setContentsMargins(style::metrics::section_body_padding_x,
+                                         style::metrics::section_body_padding_top,
+                                         style::metrics::section_body_padding_x, 0);
     } else {
-        body_layout_->setContentsMargins(8, 0, 8, 0);
+        body_layout_->setContentsMargins(style::metrics::hidden_section_body_padding_x, 0,
+                                         style::metrics::hidden_section_body_padding_x, 0);
     }
-    body_layout_->setSpacing(6);
+    body_layout_->setSpacing(style::metrics::section_spacing);
     layout->addWidget(body_);
 }
 

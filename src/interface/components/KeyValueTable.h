@@ -18,20 +18,30 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_COMPONENTS_KEYVALUETABLE_H
+#define IFCINTERFACE_COMPONENTS_KEYVALUETABLE_H
 
+#include <QList>
 #include <QString>
+#include <QWidget>
 
-class QDockWidget;
-class QFrame;
-class QWidget;
+namespace ifcinterface::components {
 
-namespace ifcinterface::components::panel {
+struct KeyValueTableRow {
+    QString key;
+    QString value;
+    QString value_object_name = "propertyValueLabel";
+    QString trailing_icon_path;
+    QString trailing_icon_object_name;
+    int key_minimum_width = 0;
+};
 
-QDockWidget* makeDock(const QString& title, QWidget* content, QWidget* parent, bool has_settings = false);
-QFrame* wrapPanel(QWidget* inner);
+class KeyValueTable : public QWidget {
+    Q_OBJECT
+public:
+    explicit KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* parent = nullptr);
+};
 
-} // namespace ifcinterface::components::panel
+} // namespace ifcinterface::components
 
 #endif

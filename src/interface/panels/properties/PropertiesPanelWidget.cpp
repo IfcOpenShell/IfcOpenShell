@@ -20,10 +20,10 @@
 
 #include "PropertiesPanelWidget.h"
 
+#include "../../components/KeyValueTable.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 
-#include <QFormLayout>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -36,79 +36,37 @@ namespace {
 QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
     group->setObjectName("propertySetCard");
-    auto* form = new QFormLayout(group);
-    form->setContentsMargins(10, 10, 10, 10);
-    form->setHorizontalSpacing(16);
-    form->setVerticalSpacing(6);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    auto* layout = new QVBoxLayout(group);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(0);
 
+    QList<ifcinterface::components::KeyValueTableRow> rows;
     for (const auto& row : property_set.rows) {
-        auto* key = new QLabel(row.key, group);
-        key->setObjectName("propertyKeyLabel");
-        auto* value = new QLabel(row.value, group);
-        value->setObjectName("propertyValueLabel");
-        value->setWordWrap(true);
-        form->addRow(key, value);
+        rows.append({row.key, row.value, "propertyValueLabel", "", "", 0});
     }
-
+    layout->addWidget(new ifcinterface::components::KeyValueTable(rows, group));
     return group;
 }
 
 QWidget* makeAttributeList(const QList<ifcinterface::panels::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
-    auto* panel = new QWidget(parent);
-    panel->setObjectName("attributeList");
-    auto* form = new QFormLayout(panel);
-    form->setContentsMargins(0, 0, 0, 0);
-    form->setHorizontalSpacing(16);
-    form->setVerticalSpacing(6);
-    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-
+    QList<ifcinterface::components::KeyValueTableRow> table_rows;
     for (const auto& row : rows) {
-        auto* key = new QLabel(row.key, panel);
-        key->setObjectName("propertyKeyLabel");
-        auto* value = new QLabel(row.value, panel);
-        value->setObjectName("propertyValueLabel");
-        value->setWordWrap(true);
-        form->addRow(key, value);
+        table_rows.append({row.key, row.value, "propertyValueLabel", "", "", 0});
     }
-
-    return panel;
+    return new ifcinterface::components::KeyValueTable(table_rows, parent);
 }
 
 QWidget* makeRelationshipList(const QList<ifcinterface::panels::properties::RelationshipRow>& rows, QWidget* parent = nullptr) {
-    auto* panel = new QWidget(parent);
-    panel->setObjectName("attributeList");
-    auto* layout = new QVBoxLayout(panel);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
-
+    QList<ifcinterface::components::KeyValueTableRow> table_rows;
     for (const auto& row_data : rows) {
-        auto* row = new QWidget(panel);
-        row->setObjectName("relationshipRow");
-        auto* row_layout = new QHBoxLayout(row);
-        row_layout->setContentsMargins(0, 0, 0, 0);
-        row_layout->setSpacing(12);
-
-        auto* key = new QLabel(row_data.key, row);
-        key->setObjectName("propertyKeyLabel");
-        key->setMinimumWidth(72);
-
-        auto* target = new QLabel(row_data.value, row);
-        target->setObjectName("relationshipValueLabel");
-        target->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-        auto* icon = new QLabel(row);
-        icon->setObjectName("relationshipIconLabel");
-        icon->setPixmap(ifcinterface::components::icons::makePanelSvgPixmap(":/icons/cursor-pointer.svg", QSize(14, 14)));
-        icon->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-
-        row_layout->addWidget(key);
-        row_layout->addWidget(target, 1);
-        row_layout->addWidget(icon, 0, Qt::AlignRight | Qt::AlignVCenter);
-        layout->addWidget(row);
+        table_rows.append({row_data.key,
+                           row_data.value,
+                           "relationshipValueLabel",
+                           ":/icons/cursor-pointer.svg",
+                           "relationshipIconLabel",
+                           72});
     }
-
-    return panel;
+    return new ifcinterface::components::KeyValueTable(table_rows, parent);
 }
 
 } // namespace
@@ -121,22 +79,28 @@ PropertiesPanelWidget::PropertiesPanelWidget(QWidget* parent)
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
+
+    scroll_ = new QScrollArea(this);
+    scroll_->setWidgetResizable(true);
+    scroll_->setFrameShape(QFrame::NoFrame);
+
+    content_ = new QWidget(scroll_);
+    content_->setObjectName("inspectorPanel");
+    content_layout_ = new QVBoxLayout(content_);
+    content_layout_->setContentsMargins(0, 0, 0, 0);
+    content_layout_->setSpacing(12);
+
+    scroll_->setWidget(content_);
+    root->addWidget(scroll_);
 }
 
-void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
-    auto* root = qobject_cast<QVBoxLayout*>(layout());
-    while (auto* item = root->takeAt(0)) {
+void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
+    while (auto* item = content_layout_->takeAt(0)) {
         if (auto* widget = item->widget()) widget->deleteLater();
         delete item;
     }
 
-    auto* content = new QWidget(this);
-    content->setObjectName("inspectorPanel");
-    auto* content_layout = new QVBoxLayout(content);
-    content_layout->setContentsMargins(0, 0, 0, 0);
-    content_layout->setSpacing(12);
-
-    auto* entity_card = new QFrame(content);
+    auto* entity_card = new QFrame(content_);
     entity_card->setObjectName("entityClassCard");
     auto* entity_layout = new QHBoxLayout(entity_card);
     entity_layout->setContentsMargins(10, 8, 10, 8);
@@ -159,37 +123,31 @@ void PropertiesPanelWidget::setState(const PropertiesPanelState& state) {
 
     QList<QWidget*> property_set_widgets;
     for (const auto& property_set : state.property_sets) {
-        property_set_widgets.append(makePropertySetPanel(property_set, content));
+        property_set_widgets.append(makePropertySetPanel(property_set, content_));
     }
 
     QList<QWidget*> quantity_set_widgets;
     for (const auto& property_set : state.quantity_sets) {
-        quantity_set_widgets.append(makePropertySetPanel(property_set, content));
+        quantity_set_widgets.append(makePropertySetPanel(property_set, content_));
     }
 
-    auto* entity_section = new components::Section("", components::SectionHeaderMode::Hidden, "", content);
+    auto* entity_section = new components::Section("", components::SectionHeaderMode::Hidden, "", content_);
     entity_section->addBodyWidget(entity_card);
-    auto* attributes_section = new components::Section("Attributes", components::SectionHeaderMode::Visible, "", content);
-    attributes_section->addBodyWidget(makeAttributeList(state.attributes, content));
-    auto* relationships_section = new components::Section("Relationships", components::SectionHeaderMode::Visible, "", content);
-    relationships_section->addBodyWidget(makeRelationshipList(state.relationships, content));
-    auto* properties_section = new components::Section("Properties", components::SectionHeaderMode::Visible, "Filter properties or sets", content);
+    auto* attributes_section = new components::Section("Attributes", components::SectionHeaderMode::Visible, "", content_);
+    attributes_section->addBodyWidget(makeAttributeList(state.attributes, content_));
+    auto* relationships_section = new components::Section("Relationships", components::SectionHeaderMode::Visible, "", content_);
+    relationships_section->addBodyWidget(makeRelationshipList(state.relationships, content_));
+    auto* properties_section = new components::Section("Properties", components::SectionHeaderMode::Visible, "Filter properties or sets", content_);
     for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
-    auto* quantities_section = new components::Section("Quantities", components::SectionHeaderMode::Visible, "Filter quantities or sets", content);
+    auto* quantities_section = new components::Section("Quantities", components::SectionHeaderMode::Visible, "Filter quantities or sets", content_);
     for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
 
-    content_layout->addWidget(entity_section);
-    content_layout->addWidget(attributes_section);
-    content_layout->addWidget(relationships_section);
-    content_layout->addWidget(properties_section);
-    content_layout->addWidget(quantities_section);
-    content_layout->addStretch(1);
-
-    auto* scroll = new QScrollArea(this);
-    scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setWidget(content);
-    root->addWidget(scroll);
+    content_layout_->addWidget(entity_section);
+    content_layout_->addWidget(attributes_section);
+    content_layout_->addWidget(relationships_section);
+    content_layout_->addWidget(properties_section);
+    content_layout_->addWidget(quantities_section);
+    content_layout_->addStretch(1);
 }
 
 } // namespace ifcinterface::panels::properties

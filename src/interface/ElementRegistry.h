@@ -18,34 +18,49 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-
-#include "PropertiesPanelTypes.h"
+#ifndef IFCINTERFACE_ELEMENTREGISTRY_H
+#define IFCINTERFACE_ELEMENTREGISTRY_H
 
 #include <QObject>
+#include <QString>
+#include <optional>
+#include <unordered_map>
+#include <vector>
+#include <string>
 
-namespace ifcinterface { class ElementRegistry; }
-class ViewportWindow;
-namespace ifcinterface::panels::properties {
+class SceneLoader;
+struct PackedElementInfo;
+struct ElementInfo;
 
-class PropertiesPanelWidget;
+namespace ifcinterface {
 
-class PropertiesPanelView : public QObject {
-    Q_OBJECT
-public:
-    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ViewportWindow* viewport,
-                                 ifcinterface::ElementRegistry* registry,
-                                 QObject* parent = nullptr);
-
-private:
-    void refresh(uint32_t object_id);
-
-    PropertiesPanelWidget* widget_ = nullptr;
-    ifcinterface::ElementRegistry* registry_ = nullptr;
+struct BasicElementInfo {
+    uint32_t object_id = 0;
+    uint32_t model_id = 0;
+    int ifc_id = 0;
+    int parent_id = 0;
+    QString guid;
+    QString name;
+    QString type;
 };
 
-} // namespace ifcinterface::panels::properties
+class ElementRegistry : public QObject {
+    Q_OBJECT
+public:
+    explicit ElementRegistry(QObject* parent = nullptr);
+
+    void bindLoader(SceneLoader* loader);
+    std::optional<BasicElementInfo> find(uint32_t object_id) const;
+
+private:
+    void onSidecarElementsReady(uint32_t mid,
+                                std::vector<PackedElementInfo> elements,
+                                std::string string_table);
+    void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
+
+    std::unordered_map<uint32_t, BasicElementInfo> elements_;
+};
+
+} // namespace ifcinterface
 
 #endif

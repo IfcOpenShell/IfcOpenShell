@@ -22,22 +22,36 @@
 
 #include "PropertiesPanelWidget.h"
 
+#include "../../ElementRegistry.h"
+#include "../../../ifcviewer/ViewportWindow.h"
+
 namespace ifcinterface::panels::properties {
 
-PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget, QObject* parent)
-    : QObject(parent), widget_(widget)
+PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget,
+                                         ViewportWindow* viewport,
+                                         ifcinterface::ElementRegistry* registry,
+                                         QObject* parent)
+    : QObject(parent), widget_(widget), registry_(registry)
 {
-    state_.entity = {"IfcWall", "SOLIDWALL"};
-    state_.attributes = {
+    connect(viewport, &ViewportWindow::objectPicked, this, [this](uint32_t object_id) {
+        refresh(object_id);
+    });
+    refresh(0);
+}
+
+void PropertiesPanelView::refresh(uint32_t object_id) {
+    PropertiesPanelState state;
+    state.entity = {"IfcWall", "SOLIDWALL"};
+    state.attributes = {
         {"GlobalId", "2Q$n5SLPP9Q8B7wQKjKfUQ"},
         {"Name", "Core-EXT-204"},
         {"Description", "External load-bearing wall"},
     };
-    state_.relationships = {
+    state.relationships = {
         {"Type", "Basic Wall: Exterior - 200mm"},
         {"Container", "Level 02"},
     };
-    state_.property_sets = {
+    state.property_sets = {
         {"Pset_WallCommon",
          {{"Reference", "Core-EXT-204"},
           {"Status", "Reviewed"},
@@ -53,7 +67,7 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget, QObject*
           {"Last Review", "2026-04-30"},
           {"Assigned To", "Design Coordination"}}},
     };
-    state_.quantity_sets = {
+    state.quantity_sets = {
         {"BaseQuantities",
          {{"Length", "6.20 m"},
           {"Height", "3.45 m"},
@@ -65,7 +79,25 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget, QObject*
           {"Paint Coverage", "42.78 m2"}}},
     };
 
-    widget_->setState(state_);
+    if (registry_) {
+        auto info = registry_->find(object_id);
+        if (info && !info->type.isEmpty()) {
+            state.entity.entity_class = info->type;
+            if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
+                state.property_sets[1].rows[0].value = info->type;
+            }
+        }
+        if (info && !info->name.isEmpty()) {
+            state.attributes[1].value = info->name;
+            if (state.property_sets.size() > 1 && state.property_sets[1].rows.size() > 1) {
+                state.property_sets[1].rows[1].value = info->name;
+            }
+        }
+        if (info && !info->guid.isEmpty()) {
+            state.attributes[0].value = info->guid;
+        }
+    }
+    widget_->render(state);
 }
 
 } // namespace ifcinterface::panels::properties
