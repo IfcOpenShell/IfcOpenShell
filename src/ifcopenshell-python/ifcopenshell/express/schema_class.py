@@ -401,13 +401,15 @@ class SchemaClass(codegen.Base):
 
             if isinstance(type, nodes.AggregationType):
                 aggr_type = type.aggregate_type
+
                 def make_bound(b):
                     # `?` and non-literal bounds (attribute references, arithmetic expressions) collapse to -1.
-                    # 
+                    #
                     try:
                         return int(b)
                     except (TypeError, ValueError):
                         return -1
+
                 bound1, bound2 = map(make_bound, (type.bounds.lower, type.bounds.upper))
                 decl_type = get_declared_type(type.type, emitted_names)
                 return x.aggregation_type(aggr_type, bound1, bound2, decl_type)
@@ -534,6 +536,7 @@ class SchemaClass(codegen.Base):
                 inv_attrs = []
                 for attr in type.inverse:
                     if attr.bounds:
+
                         def make_bound(b):
                             # `?` and non-literal bounds (attribute references, arithmetic
                             # expressions) collapse to -1 (unbounded) — the C++ runtime has
@@ -542,6 +545,7 @@ class SchemaClass(codegen.Base):
                                 return int(b)
                             except (TypeError, ValueError):
                                 return -1
+
                         bound1, bound2 = map(make_bound, (attr.bounds.lower, attr.bounds.upper))
                     else:
                         bound1, bound2 = -1, -1

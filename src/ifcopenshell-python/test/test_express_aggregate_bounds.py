@@ -24,9 +24,7 @@ def _parse(schema_text):
 class TestAggregateBounds(unittest.TestCase):
     def test_literal_bounds_preserved(self):
         """After loading [1;3] -> (1, 3)?"""
-        s = _parse(
-            "SCHEMA t; ENTITY E; v : ARRAY [1:3] OF REAL; END_ENTITY; END_SCHEMA;"
-        )
+        s = _parse("SCHEMA t; ENTITY E; v : ARRAY [1:3] OF REAL; END_ENTITY; END_SCHEMA;")
         agg = (
             next(d for d in s.schema.declarations() if d.name() == "E")
             .attributes()[0]
@@ -37,10 +35,8 @@ class TestAggregateBounds(unittest.TestCase):
         s.disown()
 
     def test_unbounded_marker(self):
-        """ [0:?] -> (0, -1)?"""
-        s = _parse(
-            "SCHEMA t; ENTITY E; v : LIST [0:?] OF REAL; END_ENTITY; END_SCHEMA;"
-        )
+        """[0:?] -> (0, -1)?"""
+        s = _parse("SCHEMA t; ENTITY E; v : LIST [0:?] OF REAL; END_ENTITY; END_SCHEMA;")
         agg = (
             next(d for d in s.schema.declarations() if d.name() == "E")
             .attributes()[0]
@@ -52,12 +48,11 @@ class TestAggregateBounds(unittest.TestCase):
         s.disown()
 
     def test_voxel_grid_with_dynamic_bound_loads(self):
-        """ 
+        """
         Array that is an expression :  [1:dim_x*dim_y*dim_z]
         Parsing must not crash, Bbund must be (1, -1)
         """
-        s = _parse(
-            """
+        s = _parse("""
             SCHEMA t;
             TYPE IfcBoolean = BOOLEAN; END_TYPE;
 
@@ -68,8 +63,7 @@ class TestAggregateBounds(unittest.TestCase):
               Voxels : ARRAY [1:NumberOfVoxelsX*NumberOfVoxelsY*NumberOfVoxelsZ] OF IfcBoolean;
             END_ENTITY;
             END_SCHEMA;
-            """
-        )
+            """)
         holder = next(d for d in s.schema.declarations() if d.name() == "IfcVoxelHolder")
         voxels = holder.attributes()[-1].type_of_attribute().as_aggregation_type()
         self.assertEqual((voxels.bound1(), voxels.bound2()), (1, -1))
