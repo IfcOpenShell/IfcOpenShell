@@ -91,7 +91,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     )
 
     if(WASM_BUILD)
-        target_link_options(${SCHEMA_PLUGIN_TARGET} PRIVATE "SHELL:-s SIDE_MODULE=1")
+        target_link_options(${SCHEMA_PLUGIN_TARGET} PRIVATE "SHELL:-s SIDE_MODULE=1" "-O1")
     endif()
 
     list(APPEND schema_libraries ${SCHEMA_PLUGIN_TARGET})
