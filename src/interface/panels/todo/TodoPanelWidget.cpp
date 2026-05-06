@@ -42,10 +42,8 @@ TodoPanelWidget::TodoPanelWidget(const QString& title, QWidget* parent)
     body_layout->setSpacing(12);
 
     auto* heading = new QLabel(title, body);
-    heading->setObjectName("todoPanelTitle");
 
     auto* content = new QLabel("Coming soon", body);
-    content->setObjectName("todoPanelBody");
     content->setAlignment(Qt::AlignCenter);
 
     body_layout->addWidget(heading);

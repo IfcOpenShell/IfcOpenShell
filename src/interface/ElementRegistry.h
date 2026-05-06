@@ -23,10 +23,11 @@
 
 #include <QObject>
 #include <QString>
+#include "../ifcparse/express.h"
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <string>
 
 class SceneLoader;
 struct PackedElementInfo;
@@ -50,7 +51,8 @@ public:
     explicit ElementRegistry(QObject* parent = nullptr);
 
     void bindLoader(SceneLoader* loader);
-    std::optional<BasicElementInfo> find(uint32_t object_id) const;
+    std::optional<BasicElementInfo> findBasicElementInfo(uint32_t object_id) const;
+    std::optional<express::Base> findEntity(uint32_t object_id) const;
 
 private:
     void onSidecarElementsReady(uint32_t mid,
@@ -58,6 +60,7 @@ private:
                                 std::string string_table);
     void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
 
+    SceneLoader* loader_ = nullptr;
     std::unordered_map<uint32_t, BasicElementInfo> elements_;
 };
 

@@ -32,16 +32,35 @@ ElementRegistry::ElementRegistry(QObject* parent)
 }
 
 void ElementRegistry::bindLoader(SceneLoader* loader) {
+    loader_ = loader;
     connect(loader, &SceneLoader::sidecarElementsReady,
             this, &ElementRegistry::onSidecarElementsReady);
     connect(loader, &SceneLoader::streamedElementsReady,
             this, &ElementRegistry::onStreamedElementsReady);
 }
 
-std::optional<BasicElementInfo> ElementRegistry::find(uint32_t object_id) const {
+std::optional<BasicElementInfo> ElementRegistry::findBasicElementInfo(uint32_t object_id) const {
     auto it = elements_.find(object_id);
     if (it == elements_.end()) return std::nullopt;
     return it->second;
+}
+
+std::optional<express::Base> ElementRegistry::findEntity(uint32_t object_id) const {
+    if (!loader_) return std::nullopt;
+
+    auto info = findBasicElementInfo(object_id);
+    if (!info) return std::nullopt;
+
+    auto* file = loader_->ifcFile(info->model_id);
+    if (!file) return std::nullopt;
+
+    try {
+        auto instance = file->instance_by_id(info->ifc_id);
+        if (!instance) return std::nullopt;
+        return instance;
+    } catch (...) {
+        return std::nullopt;
+    }
 }
 
 void ElementRegistry::onSidecarElementsReady(uint32_t /*mid*/,

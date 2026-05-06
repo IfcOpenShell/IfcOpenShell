@@ -23,6 +23,7 @@
 #include "PropertiesPanelWidget.h"
 
 #include "../../ElementRegistry.h"
+#include "../../../ifcviewer/AppSettings.h"
 #include "../../../ifcviewer/ViewportWindow.h"
 
 namespace ifcinterface::panels::properties {
@@ -79,8 +80,13 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
           {"Paint Coverage", "42.78 m2"}}},
     };
 
-    if (registry_) {
-        auto info = registry_->find(object_id);
+    if (!registry_) {
+        widget_->render(state);
+        return;
+    }
+
+    if (!AppSettings::instance().loadDataSource()) {
+        auto info = registry_->findBasicElementInfo(object_id);
         if (info && !info->type.isEmpty()) {
             state.entity.entity_class = info->type;
             if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
@@ -95,6 +101,17 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         }
         if (info && !info->guid.isEmpty()) {
             state.attributes[0].value = info->guid;
+        }
+
+        widget_->render(state);
+        return;
+    }
+
+    auto entity = registry_->findEntity(object_id);
+    if (entity) {
+        state.entity.entity_class = QString::fromStdString(entity->declaration().name());
+        if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
+            state.property_sets[1].rows[0].value = state.entity.entity_class;
         }
     }
     widget_->render(state);

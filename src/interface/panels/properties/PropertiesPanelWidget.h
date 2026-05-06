@@ -25,7 +25,6 @@
 
 #include <QWidget>
 
-class QScrollArea;
 class QVBoxLayout;
 
 namespace ifcinterface::panels::properties {
@@ -38,8 +37,6 @@ public:
     void render(const PropertiesPanelState& state);
 
 private:
-    QScrollArea* scroll_ = nullptr;
-    QWidget* content_ = nullptr;
     QVBoxLayout* content_layout_ = nullptr;
 };
 

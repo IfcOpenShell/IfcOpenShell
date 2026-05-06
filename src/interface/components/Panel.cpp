@@ -28,6 +28,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QScrollArea>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -70,7 +71,7 @@ public:
 
 } // namespace
 
-Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_settings)
+Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_settings, bool scrollable)
     : QDockWidget(title, parent)
 {
     auto* outer = new QFrame();
@@ -86,7 +87,24 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
     auto* frame_layout = new QVBoxLayout(frame);
     frame_layout->setContentsMargins(0, style::metrics::padding, 0, style::metrics::padding);
     frame_layout->setSpacing(0);
-    frame_layout->addWidget(content);
+
+    if (scrollable) {
+        auto* scroll = new QScrollArea(frame);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+
+        auto* scroll_body = new QWidget(scroll);
+        scroll_body->setObjectName("panelScrollBody");
+        auto* scroll_body_layout = new QVBoxLayout(scroll_body);
+        scroll_body_layout->setContentsMargins(0, 0, 0, 0);
+        scroll_body_layout->setSpacing(0);
+        scroll_body_layout->addWidget(content);
+
+        scroll->setWidget(scroll_body);
+        frame_layout->addWidget(scroll);
+    } else {
+        frame_layout->addWidget(content);
+    }
     outer_layout->addWidget(frame);
 
     setObjectName(title);

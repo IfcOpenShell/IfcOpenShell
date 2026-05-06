@@ -164,7 +164,7 @@ QString buildAppStyleSheet() {
             color: #9aa4b3;
             background: transparent;
         }
-        QWidget#attributeList {
+        QWidget#keyValueTable {
             background: transparent;
         }
         QTreeView::item, QListView::item, QTableView::item {
@@ -237,7 +237,7 @@ QString buildAppStyleSheet() {
         QLabel#relationshipIconLabel {
             background: transparent;
         }
-        QWidget#inspectorPanel {
+        QWidget#panelScrollBody {
             background: #2b2f36;
         }
         QFrame#panelSectionHeader {
@@ -274,22 +274,8 @@ QString buildAppStyleSheet() {
             color: #9aa4b3;
             background: transparent;
         }
-        QLabel#propertyValueLabel {
+        QLabel#keyValueValueLabel {
             color: #dce2eb;
-            background: transparent;
-        }
-        QLabel#relationshipValueLabel {
-            color: #dce2eb;
-            background: transparent;
-        }
-        QLabel#todoPanelTitle {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e1e6ee;
-            background: transparent;
-        }
-        QLabel#todoPanelBody {
-            color: #8f98a6;
             background: transparent;
         }
     )")

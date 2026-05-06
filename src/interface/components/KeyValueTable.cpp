@@ -31,7 +31,7 @@ namespace ifcinterface::components {
 KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* parent)
     : QWidget(parent)
 {
-    setObjectName("attributeList");
+    setObjectName("keyValueTable");
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -57,7 +57,7 @@ KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* paren
 
         auto* value = new QLabel(row_data.value, row);
         value->setObjectName(row_data.value_object_name.isEmpty()
-                                 ? "propertyValueLabel"
+                                 ? "keyValueValueLabel"
                                  : row_data.value_object_name);
         value->setWordWrap(true);
         value->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

@@ -31,7 +31,11 @@ class Panel : public QDockWidget {
     Q_OBJECT
 
 public:
-    explicit Panel(const QString& title, QWidget* content, QWidget* parent = nullptr, bool has_settings = false);
+    explicit Panel(const QString& title,
+                   QWidget* content,
+                   QWidget* parent = nullptr,
+                   bool has_settings = false,
+                   bool scrollable = false);
 };
 
 } // namespace ifcinterface::components

@@ -388,7 +388,7 @@ void MainWindow::setupPanels() {
 
     models_panel_ = new components::Panel("Models", models_widget, this, true);
     spatial_panel_ = new components::Panel("Spatial Hierarchy", spatial_widget, this);
-    properties_panel_ = new components::Panel("Properties", properties_widget, this);
+    properties_panel_ = new components::Panel("Properties", properties_widget, this, false, true);
     layers_panel_ = new components::Panel("Layers", new panels::todo::TodoPanelWidget("Layers", this), this);
     stored_views_panel_ = new components::Panel(
         "Stored Views", new panels::todo::TodoPanelWidget("Stored Views", this), this);

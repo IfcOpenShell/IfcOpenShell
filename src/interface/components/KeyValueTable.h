@@ -30,7 +30,7 @@ namespace ifcinterface::components {
 struct KeyValueTableRow {
     QString key;
     QString value;
-    QString value_object_name = "propertyValueLabel";
+    QString value_object_name = "keyValueValueLabel";
     QString trailing_icon_path;
     QString trailing_icon_object_name;
     int key_minimum_width = 0;
