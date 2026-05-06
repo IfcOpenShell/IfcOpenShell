@@ -69,6 +69,3 @@ def test_bearing2dd():
 
     with pytest.raises(ValueError, match="Invalid bearing string"):
         ifcopenshell.api.cogo.bearing2dd("N 45 15 99.5 E")
-
-
-test_bearing2dd()

@@ -16,9 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+
+
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 
 def _test_horizontal():
@@ -84,10 +93,8 @@ def _test_horizontal_vertical_cant():
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(cant)
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_has_zero_length_segment():
     _test_horizontal()
     _test_horizontal_vertical()
     _test_horizontal_vertical_cant()
-
-
-test_has_zero_length_segment()

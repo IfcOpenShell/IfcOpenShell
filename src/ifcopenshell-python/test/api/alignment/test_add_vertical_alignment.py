@@ -17,11 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_add_vertical_alignment():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
@@ -70,6 +80,3 @@ def test_add_vertical_alignment():
     assert len(alignment.IsNestedBy) == 2
     assert len(layout_nest.RelatedObjects) == 1
     assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
-
-
-test_add_vertical_alignment()

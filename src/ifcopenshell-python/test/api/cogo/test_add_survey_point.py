@@ -23,6 +23,14 @@ import ifcopenshell.api.cogo
 import ifcopenshell.api.context
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_add_survey_point():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
     project = file.createIfcProject(Name="Test")

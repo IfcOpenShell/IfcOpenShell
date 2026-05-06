@@ -22,6 +22,12 @@ import ifcopenshell
 import test.bootstrap
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
 class TestTransaction(test.bootstrap.IFC4):
     def test_that_nothing_happens_without_a_transaction(self):
         wall = self.file.createIfcWall()
@@ -158,12 +164,14 @@ class TestFile(test.bootstrap.IFC4):
         assert f.schema_identifier == "IFC4"
         assert f.schema_version == (4, 0, 0, 0)
 
+    @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
     def test_creating_an_ifc4x3_file(self):
         f = ifcopenshell.file(schema="IFC4X3")
         assert f.schema == "IFC4X3"
         assert f.schema_identifier == "IFC4X3_ADD2"
         assert f.schema_version == (4, 3, 2, 0)
 
+    @pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
     def test_creating_a_specific_version(self):
         f = ifcopenshell.file(schema_version=(4, 3, 2, 0))
         assert f.schema == "IFC4X3"
@@ -288,6 +296,7 @@ class TestFile(test.bootstrap.IFC4):
         g.assign_header_from(f)
         assert g.header.file_name.name == "test"
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_schema_identifier():
     f = ifcopenshell.file(schema='IFC4X3')
     assert f.schema_identifier == 'IFC4X3_ADD2'

@@ -16,9 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
+
 import ifcopenshell
 import ifcopenshell.api.unit
 import ifcopenshell.util.alignment as sta
+
+
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 
 def _test_si_stations():
@@ -77,10 +86,8 @@ def _test_us_stations():
     assert s == "-1234+56.79"
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_station_as_string():
     _test_si_stations()
     _test_si_stations_millimeter()
     _test_us_stations()
-
-
-test_station_as_string()

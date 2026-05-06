@@ -23,6 +23,14 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_update_fallback_position():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
@@ -67,6 +75,3 @@ def test_update_fallback_position():
         (0.22453152656315067, 0.9744668252840736, 0.0)
     )
     assert lp.CartesianPosition.Axis.DirectionRatios == pytest.approx((0.0, 0.0, 1.0))
-
-
-test_update_fallback_position()

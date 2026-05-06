@@ -358,7 +358,7 @@ public:
 
     /// Get the attribute indices corresponding to the list of entity instances
     /// returned by get_inverse().
-    std::vector<int> get_inverse_indices(int instance_id);
+    std::vector<int> get_inverse_indices_by_id(int instance_id);
 
     template <typename T>
     typename T::list::ptr get_inverse(int instance_id, int attribute_index) {

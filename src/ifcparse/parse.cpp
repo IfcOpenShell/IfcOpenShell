@@ -2606,7 +2606,7 @@ const ifcopenshell::schema_definition* file::schema() const {
     return schema_;
 }
 
-std::vector<int> file::get_inverse_indices(int instance_id) {
+std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
     std::vector<int> return_value;
 
     // Mapping of instance id to attribute offset.

@@ -69,7 +69,6 @@
 %rename("_by_type") instances_by_type;
 %rename("_by_type_excl_subtypes") instances_by_type_excl_subtypes;
 %rename("get_inverses_by_declaration") get_inverse;
-%rename("get_total_inverses_by_id") get_total_inverses;
 %rename("entity_instance") express::Base;
 %rename("file") file;
 // _add() because mixin defined add which adds transaction logic
@@ -216,7 +215,7 @@ private:
 
 	int get_total_inverses(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
-			return $self->get_total_inverses(e_.id());
+			return $self->get_inverse_indices_by_id(e_.id()).size();
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e.declaration().name() + "'.");
 	}
@@ -549,7 +548,7 @@ private:
 		}
 	}
 
-	std::vector<express::Base> get_inverse(const std::string& a) {
+	std::vector<express::Base> _get_inverse(const std::string& a) {
 		if ($self->declaration().as_entity()) {
 			return cast_vector<express::Base>($self->as<express::Entity>().get_inverse(a));
 		} else {

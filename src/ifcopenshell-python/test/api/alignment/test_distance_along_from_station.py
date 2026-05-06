@@ -23,6 +23,14 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
+
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_distance_along_from_station():
     file = ifcopenshell.file(schema="IFC4X3")
     project = file.createIfcProject(GlobalId=ifcopenshell.guid.new(), Name="Test")
@@ -51,6 +59,3 @@ def test_distance_along_from_station():
 
     # Station 175+25.36
     assert ifcopenshell.api.alignment.distance_along_from_station(file, alignment, 17525.36) == pytest.approx(7525.36)
-
-
-test_distance_along_from_station()

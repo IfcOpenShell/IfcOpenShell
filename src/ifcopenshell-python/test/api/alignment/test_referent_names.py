@@ -23,6 +23,13 @@ import ifcopenshell.api.context
 import ifcopenshell.api.unit
 
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
+
+
 @pytest.fixture(scope="module")
 def default_names_alignment():
     file = ifcopenshell.file(schema="IFC4X3")
@@ -96,6 +103,7 @@ def callback_alignment():
     yield alignment
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_with_default_names(default_names_alignment):
     referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, default_names_alignment)
 
@@ -104,6 +112,7 @@ def test_with_default_names(default_names_alignment):
         assert [x in r.Name for x in expected]
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_with_callbacks(callback_alignment):
     referent_nest = ifcopenshell.api.alignment.get_referent_nest(None, callback_alignment)
 

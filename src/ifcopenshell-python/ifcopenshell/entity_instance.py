@@ -103,7 +103,7 @@ class entity_instance_mixin:
             idx = self.get_argument_index(name)
             return self.get_argument(idx)
         elif attr_cat == INVERSE:
-            vs = self.get_inverse(name)
+            vs = self._get_inverse(name)
             if settings.unpack_non_aggregate_inverses:
                 schema_name = self.is_a(True).split(".")[0]
                 ent: ifcopenshell_wrapper.entity

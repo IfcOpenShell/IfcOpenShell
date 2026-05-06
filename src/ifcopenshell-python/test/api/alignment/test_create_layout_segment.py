@@ -18,9 +18,18 @@
 
 import math
 
+import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
+
+
+try:
+    ifcopenshell.file(schema="IFC4X3_ADD2")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 
 def _test_horizontal() -> ifcopenshell.file:
@@ -268,10 +277,8 @@ def _test_horizontal_vertical2(file: ifcopenshell.file):
     assert len(curve.Segments) == 3
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_append_segment():
     file = _test_horizontal()
     _test_horizontal_vertical()
     _test_horizontal_vertical2(file)
-
-
-test_append_segment()

@@ -26,6 +26,11 @@ from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
     _map_alignment_vertical_segment,
 )
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 def _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file):
     design_parameters = file.createIfcAlignmentVerticalSegment(
@@ -769,6 +774,7 @@ def _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file):
     assert mapped_segment.ParentCurve.CoefficientsY == pytest.approx((10.0, -1.0, 0.0025))
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_map_alignment_vertical_segment():
     file = ifcopenshell.file(schema="IFC4X3")
     _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file)
@@ -797,6 +803,3 @@ def test_map_alignment_vertical_segment():
     _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file)
 
     # VERTICAL CLOTHOID NOT IMPLEMENTED
-
-
-test_map_alignment_vertical_segment()

@@ -17,12 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import pytest
+
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
     _update_curve_segment_transition_code,
 )
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 def _test1():
     file = ifcopenshell.file(schema="IFC4X3")
@@ -243,9 +250,7 @@ def _test2():
     assert clothoid2.Transition == "CONTSAMEGRADIENTSAMECURVATURE"
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_update_curve_segment_transition_code():
     _test1()
     _test2()
-
-
-test_update_curve_segment_transition_code()

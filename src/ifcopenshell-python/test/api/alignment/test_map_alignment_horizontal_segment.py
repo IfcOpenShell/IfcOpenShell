@@ -27,6 +27,11 @@ from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
     _map_alignment_horizontal_segment,
 )
 
+try:
+    ifcopenshell.file(schema="IFC4X3")
+    IFC4X3_AVAILABLE = True
+except RuntimeError:
+    IFC4X3_AVAILABLE = False
 
 def _BlossCurve_100_0_300_1000_1_Meter(file):
     design_parameters = file.createIfcAlignmentHorizontalSegment(
@@ -2558,6 +2563,7 @@ def _VienneseBend_100_0__inf__300_1_Meter(file):
     assert mapped_segment.ParentCurve.ConstantTerm == pytest.approx(None)
 
 
+@pytest.mark.skipif(not IFC4X3_AVAILABLE, reason="IFC4X3 not available")
 def test_map_alignment_horizontal_segment():
     file = ifcopenshell.file(schema="IFC4X3")
     _BlossCurve_100_0_300_1000_1_Meter(file)
@@ -2632,6 +2638,3 @@ def test_map_alignment_horizontal_segment():
     _VienneseBend_100_0__1000__300_1_Meter(file)
     _VienneseBend_100_0_inf_300_1_Meter(file)
     _VienneseBend_100_0__inf__300_1_Meter(file)
-
-
-test_map_alignment_horizontal_segment()
