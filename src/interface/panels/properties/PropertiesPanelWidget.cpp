@@ -62,7 +62,7 @@ QWidget* makeRelationshipList(const QList<ifcinterface::panels::properties::Rela
                            row_data.value,
                            "keyValueValueLabel",
                            ":/icons/cursor-pointer.svg",
-                           "relationshipIconLabel",
+                           "keyValueTrailingIconLabel",
                            72});
     }
     return new ifcinterface::components::KeyValueTable(table_rows, parent);
@@ -101,7 +101,7 @@ void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
     auto* entity_class = new QLabel(state.entity.entity_class, entity_text);
     entity_class->setObjectName("entityClassLabel");
     auto* entity_type = new QLabel(state.entity.predefined_type, entity_text);
-    entity_type->setObjectName("entityTypeLabel");
+    entity_type->setProperty("textRole", "secondary");
     entity_text_layout->addWidget(entity_class);
     entity_text_layout->addWidget(entity_type);
     entity_layout->addWidget(entity_icon, 0, Qt::AlignVCenter);

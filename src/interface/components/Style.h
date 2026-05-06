@@ -26,19 +26,20 @@
 namespace ifcinterface::components::style::metrics {
 
 inline constexpr int padding = 6;
-inline constexpr int section_spacing = 6;
-inline constexpr int section_body_padding_x = 10;
-inline constexpr int section_body_padding_top = 6;
-inline constexpr int hidden_section_body_padding_x = 8;
+inline constexpr int section_body_padding = 10;
 inline constexpr int section_header_padding = 2;
-inline constexpr int filter_body_padding_x = 10;
-inline constexpr int hidden_filter_body_padding_x = 8;
-inline constexpr int card_padding = 10;
-inline constexpr int control_padding_y = 6;
-inline constexpr int control_padding_x = 8;
 inline constexpr int panel_radius = 3;
 
 } // namespace ifcinterface::components::style::metrics
+
+namespace ifcinterface::components::style::palette {
+
+inline constexpr auto primary_text = "#d0d5dd";
+inline constexpr auto secondary_text = "#9aa4b3";
+inline constexpr auto disabled_text = "#8f98a6";
+inline constexpr auto warning_text = "#e4b35a";
+
+} // namespace ifcinterface::components::style::palette
 
 namespace ifcinterface::components::style {
 

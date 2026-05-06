@@ -22,9 +22,8 @@
 
 #include "SvgIcon.h"
 
-#include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
-#include <QVBoxLayout>
 
 namespace ifcinterface::components {
 
@@ -33,49 +32,40 @@ KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* paren
 {
     setObjectName("keyValueTable");
 
-    auto* layout = new QVBoxLayout(this);
+    auto* layout = new QGridLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(6);
+    layout->setHorizontalSpacing(12);
+    layout->setVerticalSpacing(6);
+    layout->setColumnStretch(1, 1);
 
+    int row_index = 0;
     for (const auto& row_data : rows) {
-        auto* row = new QWidget(this);
-        if (!row_data.trailing_icon_path.isEmpty()) {
-            row->setObjectName("relationshipRow");
-        } else {
-            row->setObjectName("keyValueRow");
-        }
-
-        auto* row_layout = new QHBoxLayout(row);
-        row_layout->setContentsMargins(0, 0, 0, 0);
-        row_layout->setSpacing(12);
-
-        auto* key = new QLabel(row_data.key, row);
-        key->setObjectName("propertyKeyLabel");
+        auto* key = new QLabel(row_data.key, this);
+        key->setProperty("textRole", "secondary");
         if (row_data.key_minimum_width > 0) {
             key->setMinimumWidth(row_data.key_minimum_width);
         }
 
-        auto* value = new QLabel(row_data.value, row);
+        auto* value = new QLabel(row_data.value, this);
         value->setObjectName(row_data.value_object_name.isEmpty()
                                  ? "keyValueValueLabel"
                                  : row_data.value_object_name);
         value->setWordWrap(true);
         value->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-        row_layout->addWidget(key);
-        row_layout->addWidget(value, 1);
+        layout->addWidget(key, row_index, 0, Qt::AlignLeft | Qt::AlignTop);
+        layout->addWidget(value, row_index, 1);
 
         if (!row_data.trailing_icon_path.isEmpty()) {
-            auto* icon = new QLabel(row);
+            auto* icon = new QLabel(this);
             icon->setObjectName(row_data.trailing_icon_object_name.isEmpty()
-                                    ? "relationshipIconLabel"
+                                    ? "keyValueTrailingIconLabel"
                                     : row_data.trailing_icon_object_name);
             icon->setPixmap(icons::makePanelSvgPixmap(row_data.trailing_icon_path, QSize(14, 14)));
             icon->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            row_layout->addWidget(icon, 0, Qt::AlignRight | Qt::AlignVCenter);
+            layout->addWidget(icon, row_index, 2, Qt::AlignRight | Qt::AlignTop);
         }
-
-        layout->addWidget(row);
+        ++row_index;
     }
 }
 

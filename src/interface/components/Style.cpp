@@ -24,12 +24,9 @@ namespace ifcinterface::components::style {
 
 QString buildAppStyleSheet() {
     return QString(R"(
-        QMainWindow {
+        QMainWindow#appWindow {
             background: #26292f;
-        }
-        QWidget {
-            color: #d0d5dd;
-            background: #26292f;
+            color: %6;
             selection-background-color: #39b54a;
             selection-color: #14161a;
         }
@@ -63,7 +60,6 @@ QString buildAppStyleSheet() {
             border-right: 1px solid #434852;
         }
         QLabel#ribbonGroupLabel {
-            color: #7f8796;
             font-size: 9px;
             font-weight: 600;
             letter-spacing: 0.08em;
@@ -92,18 +88,39 @@ QString buildAppStyleSheet() {
         QDockWidget {
             color: #d0d5dd;
         }
-        QLabel#dockTitleText {
+        QLabel {
+            color: %6;
+            background: transparent;
+        }
+        QAbstractItemView,
+        QTreeWidget,
+        QListWidget,
+        QTableWidget,
+        QLineEdit,
+        QToolButton {
+            color: %6;
+        }
+        QLabel[textRole="secondary"] {
+            color: %7;
+        }
+        QLabel[textRole="disabled"] {
+            color: %8;
+        }
+        QLabel[textRole="warning"] {
+            color: %9;
+        }
+        QLabel#panelTitleText {
             color: #dfe4ec;
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.08em;
         }
-        QToolButton#dockTitleButton {
+        QToolButton#panelTitleButton {
             color: #8e97a5;
             border: none;
             background: transparent;
         }
-        QToolButton#dockTitleButton:hover {
+        QToolButton#panelTitleButton:hover {
             color: #ffffff;
             background: #353a42;
         }
@@ -144,7 +161,7 @@ QString buildAppStyleSheet() {
             background: #31353d;
             border: 1px solid #434a55;
             border-radius: %1px;
-            padding: %2px %3px;
+            padding: %2px %2px;
             color: #d9dfeb;
         }
         QLineEdit:focus {
@@ -158,10 +175,6 @@ QString buildAppStyleSheet() {
         QLabel#entityClassLabel {
             color: #eef2f8;
             font-weight: 700;
-            background: transparent;
-        }
-        QLabel#entityTypeLabel {
-            color: #9aa4b3;
             background: transparent;
         }
         QWidget#keyValueTable {
@@ -199,7 +212,7 @@ QString buildAppStyleSheet() {
             border-top: 1px solid #1a1c20;
         }
         QStatusBar QLabel {
-            color: #97a1af;
+            color: %7;
             background: transparent;
             border: none;
             padding: 2px 8px;
@@ -218,7 +231,7 @@ QString buildAppStyleSheet() {
         }
         QGroupBox#propertySetCard::title {
             subcontrol-origin: margin;
-            left: %4px;
+            left: %2px;
             padding: 0 4px;
             color: #d5dbe5;
         }
@@ -231,10 +244,7 @@ QString buildAppStyleSheet() {
         QWidget#panelSectionFilterWrapper {
             background: transparent;
         }
-        QWidget#relationshipRow {
-            background: transparent;
-        }
-        QLabel#relationshipIconLabel {
+        QLabel#keyValueTrailingIconLabel {
             background: transparent;
         }
         QWidget#panelScrollBody {
@@ -249,7 +259,7 @@ QString buildAppStyleSheet() {
             color: #e1e7f0;
             font-weight: 700;
             text-align: left;
-            padding: %5px;
+            padding: %3px;
             margin: 0;
         }
         QToolButton#panelSectionHeaderButton:hover {
@@ -262,16 +272,12 @@ QString buildAppStyleSheet() {
         QToolButton#panelSectionFilterToggle {
             background: transparent;
             border: none;
-            padding: %5px;
+            padding: %3px;
         }
         QToolButton#panelSectionFilterToggle:hover {
             background: #353a42;
         }
         QWidget#panelSectionBody {
-            background: transparent;
-        }
-        QLabel#propertyKeyLabel {
-            color: #9aa4b3;
             background: transparent;
         }
         QLabel#keyValueValueLabel {
@@ -280,10 +286,12 @@ QString buildAppStyleSheet() {
         }
     )")
         .arg(metrics::panel_radius)
-        .arg(metrics::control_padding_y)
-        .arg(metrics::control_padding_x)
-        .arg(metrics::card_padding)
-        .arg(metrics::section_header_padding);
+        .arg(metrics::padding)
+        .arg(metrics::section_header_padding)
+        .arg(palette::primary_text)
+        .arg(palette::secondary_text)
+        .arg(palette::disabled_text)
+        .arg(palette::warning_text);
 }
 
 } // namespace ifcinterface::components::style

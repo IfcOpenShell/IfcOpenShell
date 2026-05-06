@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget* parent)
 }
 
 void MainWindow::setupChrome() {
+    setObjectName("appWindow");
     setWindowTitle("IfcOpenShell Interface");
     setDockOptions(QMainWindow::AllowNestedDocks |
                    QMainWindow::AllowTabbedDocks |
@@ -100,6 +101,7 @@ QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButt
     }
     auto* label = new QLabel(title, group);
     label->setObjectName("ribbonGroupLabel");
+    label->setProperty("textRole", "secondary");
     label->setAlignment(Qt::AlignCenter);
     group_layout->addLayout(button_row);
     group_layout->addWidget(label);

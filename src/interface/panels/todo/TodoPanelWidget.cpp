@@ -44,6 +44,7 @@ TodoPanelWidget::TodoPanelWidget(const QString& title, QWidget* parent)
     auto* heading = new QLabel(title, body);
 
     auto* content = new QLabel("Coming soon", body);
+    content->setProperty("textRole", "disabled");
     content->setAlignment(Qt::AlignCenter);
 
     body_layout->addWidget(heading);

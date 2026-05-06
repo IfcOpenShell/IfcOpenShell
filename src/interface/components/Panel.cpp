@@ -46,7 +46,7 @@ public:
         layout->setSpacing(6);
 
         auto* text = new QLabel(title.toUpper(), this);
-        text->setObjectName("dockTitleText");
+        text->setObjectName("panelTitleText");
 
         layout->addWidget(text);
         layout->addStretch(1);
@@ -56,7 +56,7 @@ public:
             settings->setAutoRaise(true);
             settings->setCursor(Qt::ArrowCursor);
             settings->setFixedSize(18, 18);
-            settings->setObjectName("dockTitleButton");
+            settings->setObjectName("panelTitleButton");
             settings->setToolTip(QString("%1 settings").arg(title));
             connect(settings, &QToolButton::clicked, this, [this, title]() {
                 auto* anchor = parentWidget();
@@ -85,7 +85,7 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
     auto* frame = new QFrame(outer);
     frame->setObjectName("panel");
     auto* frame_layout = new QVBoxLayout(frame);
-    frame_layout->setContentsMargins(0, style::metrics::padding, 0, style::metrics::padding);
+    frame_layout->setContentsMargins(0, style::metrics::section_body_padding, 0, style::metrics::section_body_padding);
     frame_layout->setSpacing(0);
 
     if (scrollable) {
