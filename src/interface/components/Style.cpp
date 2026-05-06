@@ -23,41 +23,49 @@
 namespace ifcinterface::components::style {
 
 QString buildAppStyleSheet() {
-    return QString(R"(
+    QString stylesheet = QStringLiteral(R"(
         QMainWindow#appWindow {
-            background: #26292f;
-            color: %6;
-            selection-background-color: #39b54a;
-            selection-color: #14161a;
+            background: ${app_background};
+            color: ${primary_text};
+            selection-background-color: ${selection_background};
+            selection-color: ${selection_text};
+        }
+        QDialog#appDialog {
+            background: ${app_background};
+            color: ${primary_text};
         }
         QFrame#ribbonShell {
-            background: #2d3138;
-            border-bottom: 1px solid #1b1d22;
+            background: ${ribbon_shell_background};
+            border-bottom: 1px solid ${border};
         }
         QTabBar::tab {
             background: transparent;
-            color: #8d97a7;
+            color: ${secondary_text};
             padding: 8px 14px;
             margin-right: 2px;
             border-bottom: 2px solid transparent;
         }
         QTabBar::tab:selected {
-            color: #f2f5fa;
-            border-bottom: 2px solid #39b54a;
+            color: ${primary_text};
+            border-bottom: 2px solid ${selection_background};
         }
         QTabBar::tab:hover {
-            color: #ffffff;
+            color: ${ribbon_tab_hover_text};
         }
         QFrame#ribbonBand {
-            background: #31353d;
-            border-top: 1px solid #3b4048;
+            background: ${ribbon_band_background};
+            border-top: 1px solid ${border};
+        }
+        QTabWidget::pane {
+            border: none;
+            background: transparent;
         }
         QFrame#ribbonPage {
             background: transparent;
         }
         QFrame#ribbonGroup {
             background: transparent;
-            border-right: 1px solid #434852;
+            border-right: 1px solid ${border};
         }
         QLabel#ribbonGroupLabel {
             font-size: 9px;
@@ -69,27 +77,27 @@ QString buildAppStyleSheet() {
             border: none;
             padding: 6px 4px 4px 4px;
             font-size: 11px;
-            color: #d6dce6;
+            color: ${primary_text};
         }
         QToolButton#ribbonButton:hover {
-            background: #3a3f48;
+            background: ${ribbon_button_hover};
         }
         QToolButton#ribbonButton:pressed {
-            background: #24282f;
+            background: ${ribbon_button_pressed};
         }
         QFrame#viewportShell {
-            background: #202329;
-            border-top: 1px solid #1d2025;
+            background: ${viewport_shell_background};
+            border-top: none;
         }
         QFrame#viewportFrame {
-            background: #1a1d22;
-            border: 1px solid #333942;
+            background: ${viewport_background};
+            border: 1px solid ${border};
         }
         QDockWidget {
-            color: #d0d5dd;
+            color: ${primary_text};
         }
         QLabel {
-            color: %6;
+            color: ${primary_text};
             background: transparent;
         }
         QAbstractItemView,
@@ -97,83 +105,127 @@ QString buildAppStyleSheet() {
         QListWidget,
         QTableWidget,
         QLineEdit,
+        QSpinBox,
+        QDoubleSpinBox,
+        QCheckBox,
+        QPushButton,
         QToolButton {
-            color: %6;
+            color: ${primary_text};
         }
         QLabel[textRole="secondary"] {
-            color: %7;
+            color: ${secondary_text};
         }
         QLabel[textRole="disabled"] {
-            color: %8;
+            color: ${disabled_text};
         }
         QLabel[textRole="warning"] {
-            color: %9;
+            color: ${warning_text};
         }
         QLabel#panelTitleText {
-            color: #dfe4ec;
+            color: ${primary_text};
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.08em;
         }
         QToolButton#panelTitleButton {
-            color: #8e97a5;
+            color: ${panel_title_button};
             border: none;
             background: transparent;
         }
         QToolButton#panelTitleButton:hover {
-            color: #ffffff;
-            background: #353a42;
+            color: ${ribbon_tab_hover_text};
+            background: ${panel_title_button_hover};
         }
         QFrame#panel {
-            background: #2b2f36;
-            border: 1px solid #3e444e;
-            border-radius: %1px;
+            background: ${panel_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
         }
         QTreeWidget, QListWidget, QTableWidget, QAbstractScrollArea {
-            background: #2b2f36;
+            background: ${panel_background};
             border: none;
             outline: none;
-            gridline-color: #333842;
+            gridline-color: ${border};
         }
         QTreeWidget::viewport, QListWidget::viewport, QTableWidget::viewport {
-            background: #2b2f36;
+            background: ${panel_background};
         }
         QHeaderView::section {
-            background: #31353d;
-            color: #b5becc;
+            background: ${control_background};
+            color: ${primary_text};
             border: none;
-            border-bottom: 1px solid #434a55;
+            border-bottom: 1px solid ${border};
             padding: 7px 8px;
             font-weight: 600;
         }
         QTableCornerButton::section {
-            background: #31353d;
+            background: ${control_background};
             border: none;
         }
         QScrollArea {
-            background: #2b2f36;
+            background: ${panel_background};
             border: none;
         }
         QScrollArea > QWidget > QWidget {
-            background: #2b2f36;
+            background: ${panel_background};
         }
         QLineEdit {
-            background: #31353d;
-            border: 1px solid #434a55;
-            border-radius: %1px;
-            padding: %2px %2px;
-            color: #d9dfeb;
+            background: ${control_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
+            padding: ${padding}px ${padding}px;
+            color: ${primary_text};
         }
         QLineEdit:focus {
-            border: 1px solid #5b6472;
+            border: 1px solid ${control_border_focus};
         }
-        QFrame#entityClassCard {
-            background: #26292f;
-            border: 1px solid #404650;
-            border-radius: %1px;
+        QSpinBox, QDoubleSpinBox {
+            background: ${control_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
+            padding: ${padding}px ${padding}px;
+        }
+        QSpinBox:focus, QDoubleSpinBox:focus {
+            border: 1px solid ${control_border_focus};
+        }
+        QCheckBox {
+            background: transparent;
+            spacing: 8px;
+        }
+        QCheckBox::indicator {
+            width: 16px;
+            height: 16px;
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
+            background: ${control_background};
+        }
+        QCheckBox::indicator:hover {
+            background: ${ribbon_button_hover};
+        }
+        QCheckBox::indicator:checked {
+            border: 1px solid ${selection_background};
+            background: ${selection_background};
+        }
+        QPushButton {
+            background: ${control_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
+            padding: ${padding}px ${padding}px;
+        }
+        QPushButton:hover {
+            background: ${ribbon_button_hover};
+        }
+        QPushButton:pressed {
+            background: ${ribbon_button_pressed};
+        }
+        QFrame#entityClassBox,
+        QGroupBox#propertySetBox {
+            background: ${box_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
         }
         QLabel#entityClassLabel {
-            color: #eef2f8;
+            color: ${primary_text};
             font-weight: 700;
             background: transparent;
         }
@@ -194,13 +246,13 @@ QString buildAppStyleSheet() {
             margin: 0 2px 2px 2px;
         }
         QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-            background: #525a67;
-            border-radius: %1px;
+            background: ${scroll_handle};
+            border-radius: ${panel_radius}px;
             min-height: 24px;
             min-width: 24px;
         }
         QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
-            background: #697385;
+            background: ${scroll_handle_hover};
         }
         QScrollBar::add-line, QScrollBar::sub-line,
         QScrollBar::add-page, QScrollBar::sub-page {
@@ -208,35 +260,29 @@ QString buildAppStyleSheet() {
             border: none;
         }
         QStatusBar {
-            background: #24272c;
-            border-top: 1px solid #1a1c20;
+            background: ${status_background};
         }
         QStatusBar QLabel {
-            color: %7;
+            color: ${secondary_text};
             background: transparent;
             border: none;
             padding: 2px 8px;
         }
         QGroupBox {
             background: transparent;
-            border: 1px solid #404650;
-            border-radius: %1px;
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
             margin-top: 10px;
             padding-top: 10px;
         }
-        QGroupBox#propertySetCard {
-            background: #26292f;
-            border: 1px solid #404650;
-            border-radius: %1px;
-        }
-        QGroupBox#propertySetCard::title {
+        QGroupBox#propertySetBox::title {
             subcontrol-origin: margin;
-            left: %2px;
+            left: ${padding}px;
             padding: 0 4px;
-            color: #d5dbe5;
+            color: ${primary_text};
         }
-        QGroupBox#propertySetCard > QWidget {
-            background: #26292f;
+        QGroupBox#propertySetBox > QWidget {
+            background: ${box_background};
         }
         QWidget#panelSection {
             background: transparent;
@@ -248,22 +294,22 @@ QString buildAppStyleSheet() {
             background: transparent;
         }
         QWidget#panelScrollBody {
-            background: #2b2f36;
+            background: ${panel_background};
         }
         QFrame#panelSectionHeader {
-            background: #26292f;
+            background: ${section_header_background};
         }
         QToolButton#panelSectionHeaderButton {
             background: transparent;
             border: none;
-            color: #e1e7f0;
+            color: ${primary_text};
             font-weight: 700;
             text-align: left;
-            padding: %3px;
+            padding: ${section_header_padding}px;
             margin: 0;
         }
         QToolButton#panelSectionHeaderButton:hover {
-            color: #ffffff;
+            color: ${ribbon_tab_hover_text};
         }
         QToolButton#panelSectionHeaderButton::menu-indicator {
             image: none;
@@ -272,26 +318,53 @@ QString buildAppStyleSheet() {
         QToolButton#panelSectionFilterToggle {
             background: transparent;
             border: none;
-            padding: %3px;
+            padding: ${section_header_padding}px;
         }
         QToolButton#panelSectionFilterToggle:hover {
-            background: #353a42;
+            background: ${panel_title_button_hover};
         }
         QWidget#panelSectionBody {
             background: transparent;
         }
         QLabel#keyValueValueLabel {
-            color: #dce2eb;
+            color: ${key_value_value_text};
             background: transparent;
         }
-    )")
-        .arg(metrics::panel_radius)
-        .arg(metrics::padding)
-        .arg(metrics::section_header_padding)
-        .arg(palette::primary_text)
-        .arg(palette::secondary_text)
-        .arg(palette::disabled_text)
-        .arg(palette::warning_text);
+    )");
+
+    stylesheet.replace("${panel_radius}", QString::number(metrics::panel_radius));
+    stylesheet.replace("${padding}", QString::number(metrics::padding));
+    stylesheet.replace("${section_header_padding}", QString::number(metrics::section_header_padding));
+
+    stylesheet.replace("${app_background}", palette::app_background);
+    stylesheet.replace("${border}", palette::border);
+    stylesheet.replace("${selection_background}", palette::selection_background);
+    stylesheet.replace("${selection_text}", palette::selection_text);
+    stylesheet.replace("${ribbon_shell_background}", palette::ribbon_shell_background);
+    stylesheet.replace("${ribbon_tab_hover_text}", palette::ribbon_tab_hover_text);
+    stylesheet.replace("${ribbon_band_background}", palette::ribbon_band_background);
+    stylesheet.replace("${ribbon_button_hover}", palette::ribbon_button_hover);
+    stylesheet.replace("${ribbon_button_pressed}", palette::ribbon_button_pressed);
+    stylesheet.replace("${viewport_shell_background}", palette::viewport_shell_background);
+    stylesheet.replace("${viewport_background}", palette::viewport_background);
+    stylesheet.replace("${panel_title_button}", palette::panel_title_button);
+    stylesheet.replace("${panel_title_button_hover}", palette::panel_title_button_hover);
+    stylesheet.replace("${panel_background}", palette::panel_background);
+    stylesheet.replace("${control_background}", palette::control_background);
+    stylesheet.replace("${control_border_focus}", palette::control_border_focus);
+    stylesheet.replace("${box_background}", palette::box_background);
+    stylesheet.replace("${scroll_handle}", palette::scroll_handle);
+    stylesheet.replace("${scroll_handle_hover}", palette::scroll_handle_hover);
+    stylesheet.replace("${status_background}", palette::status_background);
+    stylesheet.replace("${section_header_background}", palette::section_header_background);
+    stylesheet.replace("${key_value_value_text}", palette::key_value_value_text);
+
+    stylesheet.replace("${primary_text}", palette::primary_text);
+    stylesheet.replace("${secondary_text}", palette::secondary_text);
+    stylesheet.replace("${disabled_text}", palette::disabled_text);
+    stylesheet.replace("${warning_text}", palette::warning_text);
+
+    return stylesheet;
 }
 
 } // namespace ifcinterface::components::style

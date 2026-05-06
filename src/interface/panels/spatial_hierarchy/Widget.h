@@ -18,31 +18,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
-#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
+#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
+#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
 
-#include "SpatialHierarchyPanelTypes.h"
+#include "Types.h"
 
-#include <QObject>
+#include <QWidget>
+
+class QTreeWidget;
+class QTreeWidgetItem;
 
 namespace ifcinterface::panels::spatial_hierarchy {
 
-class SpatialHierarchyPanelWidget;
-
-class SpatialHierarchyPanelView : public QObject {
+class SpatialHierarchyPanelWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget, QObject* parent = nullptr);
+    explicit SpatialHierarchyPanelWidget(QWidget* parent = nullptr);
+
+    void setNodes(const QList<TreeNode>& nodes);
 
 signals:
-    void statusMessageRequested(const QString& mode, const QString& detail);
+    void visibilityToggleRequested(const NodePath& path);
 
 private:
-    void reload();
-    TreeNode* findNode(const NodePath& path);
+    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
+    NodePath itemPath(QTreeWidgetItem* item) const;
+    QString iconPath(ItemKind kind) const;
 
-    SpatialHierarchyPanelWidget* widget_ = nullptr;
-    QList<TreeNode> nodes_;
+    QTreeWidget* tree_ = nullptr;
 };
 
 } // namespace ifcinterface::panels::spatial_hierarchy

@@ -18,9 +18,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "PropertiesPanelView.h"
+#include "View.h"
 
-#include "PropertiesPanelWidget.h"
+#include "Widget.h"
 
 #include "../../ElementRegistry.h"
 #include "../../../ifcviewer/AppSettings.h"

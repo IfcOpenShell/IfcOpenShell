@@ -18,36 +18,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
-#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
+#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
+#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
 
-#include "SpatialHierarchyPanelTypes.h"
+#include "Types.h"
 
-#include <QWidget>
+#include <QObject>
 
-class QTreeWidget;
-class QTreeWidgetItem;
+namespace ifcinterface { class ElementRegistry; }
+class ViewportWindow;
+namespace ifcinterface::panels::properties {
 
-namespace ifcinterface::panels::spatial_hierarchy {
+class PropertiesPanelWidget;
 
-class SpatialHierarchyPanelWidget : public QWidget {
+class PropertiesPanelView : public QObject {
     Q_OBJECT
 public:
-    explicit SpatialHierarchyPanelWidget(QWidget* parent = nullptr);
-
-    void setNodes(const QList<TreeNode>& nodes);
-
-signals:
-    void visibilityToggleRequested(const NodePath& path);
+    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
+                                 ViewportWindow* viewport,
+                                 ifcinterface::ElementRegistry* registry,
+                                 QObject* parent = nullptr);
 
 private:
-    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
-    NodePath itemPath(QTreeWidgetItem* item) const;
-    QString iconPath(ItemKind kind) const;
+    void refresh(uint32_t object_id);
 
-    QTreeWidget* tree_ = nullptr;
+    PropertiesPanelWidget* widget_ = nullptr;
+    ifcinterface::ElementRegistry* registry_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::spatial_hierarchy
+} // namespace ifcinterface::panels::properties
 
 #endif

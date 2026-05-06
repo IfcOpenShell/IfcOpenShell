@@ -18,28 +18,33 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
+#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
+#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
 
-#include "PropertiesPanelTypes.h"
+#include "Types.h"
 
-#include <QWidget>
+#include <QObject>
 
-class QVBoxLayout;
+namespace ifcinterface::panels::spatial_hierarchy {
 
-namespace ifcinterface::panels::properties {
+class SpatialHierarchyPanelWidget;
 
-class PropertiesPanelWidget : public QWidget {
+class SpatialHierarchyPanelView : public QObject {
     Q_OBJECT
 public:
-    explicit PropertiesPanelWidget(QWidget* parent = nullptr);
+    explicit SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget, QObject* parent = nullptr);
 
-    void render(const PropertiesPanelState& state);
+signals:
+    void statusMessageRequested(const QString& mode, const QString& detail);
 
 private:
-    QVBoxLayout* content_layout_ = nullptr;
+    void reload();
+    TreeNode* findNode(const NodePath& path);
+
+    SpatialHierarchyPanelWidget* widget_ = nullptr;
+    QList<TreeNode> nodes_;
 };
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::panels::spatial_hierarchy
 
 #endif

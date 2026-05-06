@@ -18,7 +18,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "TodoPanelWidget.h"
+#include "Widget.h"
 
 #include "../../components/Section.h"
 
@@ -34,7 +34,7 @@ TodoPanelWidget::TodoPanelWidget(const QString& title, QWidget* parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, "", this);
+    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
 
     auto* body = new QWidget(section);
     auto* body_layout = new QVBoxLayout(body);

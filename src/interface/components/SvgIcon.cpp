@@ -61,11 +61,11 @@ QIcon makeTintedSvgIcon(const QString& icon_path, const QString& normal,
     return icon;
 }
 
-QIcon makePanelSvgIcon(const QString& icon_path) {
+QIcon makeSvgIcon(const QString& icon_path) {
     return makeTintedSvgIcon(icon_path, "#e7ebf2", "#ffffff", "#6f7988");
 }
 
-QPixmap makePanelSvgPixmap(const QString& icon_path, const QSize& size) {
+QPixmap makeSvgPixmap(const QString& icon_path, const QSize& size) {
     return renderTintedSvgPixmap(icon_path, "#e7ebf2", size);
 }
 

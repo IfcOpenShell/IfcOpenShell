@@ -21,30 +21,15 @@
 #include "Section.h"
 
 #include "Style.h"
-#include "SvgIcon.h"
 
 #include <QFrame>
 #include <QHBoxLayout>
-#include <QLineEdit>
 #include <QToolButton>
 #include <QVBoxLayout>
 
 namespace ifcinterface::components {
 
-namespace {
-
-QWidget* makeSectionFilterField(const QString& placeholder, QWidget* parent = nullptr) {
-    auto* field = new QLineEdit(parent);
-    field->setPlaceholderText(placeholder);
-    field->setClearButtonEnabled(true);
-    field->addAction(icons::makePanelSvgIcon(":/icons/filter.svg"), QLineEdit::LeadingPosition);
-    return field;
-}
-
-} // namespace
-
-Section::Section(const QString& title, SectionHeaderMode header_mode,
-                 const QString& filter_placeholder, QWidget* parent)
+Section::Section(const QString& title, SectionHeaderMode header_mode, QWidget* parent)
     : QWidget(parent)
 {
     setObjectName("panelSection");
@@ -55,70 +40,26 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
     if (header_mode == SectionHeaderMode::Visible) {
         auto* header = new QFrame(this);
         header->setObjectName("panelSectionHeader");
-        auto* header_layout = new QHBoxLayout(header);
-        header_layout->setContentsMargins(0, 0, 0, 0);
-        header_layout->setSpacing(style::metrics::padding);
+        header_layout_ = new QHBoxLayout(header);
+        header_layout_->setContentsMargins(0, 0, 0, 0);
+        header_layout_->setSpacing(style::metrics::padding);
 
-        auto* toggle = new QToolButton(header);
-        toggle->setObjectName("panelSectionHeaderButton");
-        toggle->setText(title);
-        toggle->setCheckable(true);
-        toggle->setChecked(true);
-        toggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        toggle->setArrowType(Qt::DownArrow);
-        header_layout->addWidget(toggle);
-        header_layout->addStretch(1);
-
-        if (!filter_placeholder.isEmpty()) {
-            auto* filter_toggle = new QToolButton(header);
-            filter_toggle->setObjectName("panelSectionFilterToggle");
-            filter_toggle->setCheckable(true);
-            filter_toggle->setIcon(icons::makePanelSvgIcon(":/icons/filter.svg"));
-            filter_toggle->setAutoRaise(true);
-            header_layout->addWidget(filter_toggle);
-
-            filter_field_ = qobject_cast<QLineEdit*>(makeSectionFilterField(filter_placeholder, this));
-            filter_field_->setVisible(false);
-            connect(filter_toggle, &QToolButton::toggled, filter_field_, [this](bool visible) {
-                filter_field_->setVisible(visible);
-                if (visible) filter_field_->setFocus();
-            });
-        }
+        toggle_button_ = new QToolButton(header);
+        toggle_button_->setObjectName("panelSectionHeaderButton");
+        toggle_button_->setText(title);
+        toggle_button_->setCheckable(true);
+        toggle_button_->setChecked(true);
+        toggle_button_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        toggle_button_->setArrowType(Qt::DownArrow);
+        header_layout_->addWidget(toggle_button_);
+        header_layout_->addStretch(1);
 
         layout->addWidget(header);
-        if (filter_field_) {
-            auto* filter_wrapper = new QWidget(this);
-            filter_wrapper->setObjectName("panelSectionFilterWrapper");
-            auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-            filter_wrapper_layout->setContentsMargins(style::metrics::section_body_padding,
-                                                      0,
-                                                      style::metrics::section_body_padding,
-                                                      0);
-            filter_wrapper_layout->setSpacing(0);
-            filter_wrapper_layout->addWidget(filter_field_);
-            layout->addWidget(filter_wrapper);
-        }
 
-        connect(toggle, &QToolButton::toggled, this, [this, toggle](bool expanded) {
-            toggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
+        connect(toggle_button_, &QToolButton::toggled, this, [this](bool expanded) {
+            toggle_button_->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
             body_->setVisible(expanded);
-            if (filter_field_) {
-                auto* wrapper = filter_field_->parentWidget();
-                if (wrapper) wrapper->setVisible(expanded && filter_field_->isVisible());
-            }
         });
-    } else if (!filter_placeholder.isEmpty()) {
-        filter_field_ = qobject_cast<QLineEdit*>(makeSectionFilterField(filter_placeholder, this));
-        auto* filter_wrapper = new QWidget(this);
-        filter_wrapper->setObjectName("panelSectionFilterWrapper");
-        auto* filter_wrapper_layout = new QVBoxLayout(filter_wrapper);
-        filter_wrapper_layout->setContentsMargins(style::metrics::section_body_padding,
-                                                  0,
-                                                  style::metrics::section_body_padding,
-                                                  0);
-        filter_wrapper_layout->setSpacing(0);
-        filter_wrapper_layout->addWidget(filter_field_);
-        layout->addWidget(filter_wrapper);
     }
 
     body_ = new QWidget(this);
@@ -134,6 +75,27 @@ Section::Section(const QString& title, SectionHeaderMode header_mode,
 
 void Section::addBodyWidget(QWidget* widget) {
     body_layout_->addWidget(widget);
+}
+
+void Section::clearBody() {
+    while (auto* item = body_layout_->takeAt(0)) {
+        if (auto* widget = item->widget()) widget->deleteLater();
+        delete item;
+    }
+}
+
+void Section::addHeaderWidget(QWidget* widget) {
+    if (!header_layout_) return;
+    header_layout_->addWidget(widget);
+}
+
+bool Section::isExpanded() const {
+    return !toggle_button_ || toggle_button_->isChecked();
+}
+
+void Section::setExpanded(bool expanded) {
+    if (!toggle_button_) return;
+    toggle_button_->setChecked(expanded);
 }
 
 } // namespace ifcinterface::components

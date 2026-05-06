@@ -52,7 +52,7 @@ public:
         layout->addStretch(1);
         if (has_settings) {
             auto* settings = new QToolButton(this);
-            settings->setIcon(icons::makePanelSvgIcon(":/icons/settings.svg"));
+            settings->setIcon(icons::makeSvgIcon(":/icons/settings.svg"));
             settings->setAutoRaise(true);
             settings->setCursor(Qt::ArrowCursor);
             settings->setFixedSize(18, 18);

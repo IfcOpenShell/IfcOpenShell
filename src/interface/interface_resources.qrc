@@ -41,5 +41,7 @@
         <file alias="cube-dots.svg">icons/cube-dots.svg</file>
         <file alias="cursor-pointer.svg">icons/cursor-pointer.svg</file>
         <file alias="sidebar-expand.svg">icons/sidebar-expand.svg</file>
+        <file alias="check.svg">icons/check.svg</file>
+        <file alias="xmark-circle.svg">icons/xmark-circle.svg</file>
     </qresource>
 </RCC>

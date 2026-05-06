@@ -18,9 +18,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SpatialHierarchyPanelView.h"
+#include "View.h"
 
-#include "SpatialHierarchyPanelWidget.h"
+#include "Widget.h"
 
 namespace ifcinterface::panels::spatial_hierarchy {
 

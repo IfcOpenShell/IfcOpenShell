@@ -27,13 +27,14 @@
 #include "components/Panel.h"
 #include "components/Style.h"
 #include "components/SvgIcon.h"
-#include "panels/todo/TodoPanelWidget.h"
-#include "panels/models/ModelsPanelView.h"
-#include "panels/models/ModelsPanelWidget.h"
-#include "panels/properties/PropertiesPanelView.h"
-#include "panels/properties/PropertiesPanelWidget.h"
-#include "panels/spatial_hierarchy/SpatialHierarchyPanelView.h"
-#include "panels/spatial_hierarchy/SpatialHierarchyPanelWidget.h"
+#include "panels/todo/Widget.h"
+#include "panels/models/View.h"
+#include "panels/models/Widget.h"
+#include "panels/properties/View.h"
+#include "panels/properties/Widget.h"
+#include "panels/settings/Dialog.h"
+#include "panels/spatial_hierarchy/View.h"
+#include "panels/spatial_hierarchy/Widget.h"
 
 #include <QDockWidget>
 #include <QFileDialog>
@@ -169,7 +170,8 @@ QWidget* MainWindow::buildHomeRibbonPage() {
 
     auto* settings_button = makeRibbonAction("Settings", ":/icons/settings.svg");
     connect(settings_button, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Settings", "Settings coming soon");
+        panels::settings::SettingsDialog dialog(this);
+        dialog.exec();
     });
 
     row->addWidget(makeRibbonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project, save_project_as}));
@@ -454,7 +456,6 @@ void MainWindow::setupStatus() {
 }
 
 void MainWindow::setupLoader() {
-    AppSettings::instance().setLoadDataSource(false);
     loader_ = new SceneLoader(viewport_, this);
     element_registry_->bindLoader(loader_);
     connect(loader_, &SceneLoader::loadStarted, this, &MainWindow::onLoadStarted);

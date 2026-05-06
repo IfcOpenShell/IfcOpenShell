@@ -18,7 +18,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "SpatialHierarchyPanelWidget.h"
+#include "Widget.h"
 
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
@@ -37,7 +37,7 @@ SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, "", this);
+    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
 
     tree_ = new QTreeWidget(section);
     tree_->setColumnCount(2);
@@ -71,8 +71,8 @@ void SpatialHierarchyPanelWidget::addNode(QTreeWidgetItem* parent, const TreeNod
     auto* item = new QTreeWidgetItem(parent, {node.name, ""});
     item->setData(1, Qt::UserRole, node.visible);
     item->setSizeHint(0, QSize(0, 24));
-    item->setIcon(0, components::icons::makePanelSvgIcon(iconPath(node.kind)));
-    item->setIcon(1, components::icons::makePanelSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
+    item->setIcon(0, components::icons::makeSvgIcon(iconPath(node.kind)));
+    item->setIcon(1, components::icons::makeSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
     for (const auto& child : node.children) {
         addNode(item, child);
     }

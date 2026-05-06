@@ -39,23 +39,25 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelTypes.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelWidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/ModelsPanelView.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/TodoPanelWidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/TodoPanelWidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelTypes.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelWidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelView.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/PropertiesPanelView.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelTypes.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelWidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelWidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelView.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/SpatialHierarchyPanelView.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/Widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/Widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.h
     ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
 )
 

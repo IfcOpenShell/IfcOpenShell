@@ -18,42 +18,45 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_SECTION_H
-#define IFCINTERFACE_COMPONENTS_SECTION_H
+#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
+#define IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
+
+#include "Types.h"
 
 #include <QWidget>
 
-class QHBoxLayout;
-class QToolButton;
 class QVBoxLayout;
+class QLabel;
+class QLineEdit;
+class QToolButton;
+namespace ifcinterface::components { class Section; }
 
-namespace ifcinterface::components {
+namespace ifcinterface::panels::properties {
 
-enum class SectionHeaderMode {
-    Visible,
-    Hidden,
-};
-
-class Section : public QWidget {
+class PropertiesPanelWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit Section(const QString& title,
-                     SectionHeaderMode header_mode = SectionHeaderMode::Visible,
-                     QWidget* parent = nullptr);
+    explicit PropertiesPanelWidget(QWidget* parent = nullptr);
 
-    void addBodyWidget(QWidget* widget);
-    void clearBody();
-    void addHeaderWidget(QWidget* widget);
-    bool isExpanded() const;
-    void setExpanded(bool expanded);
+    void render(const PropertiesPanelState& state);
 
 private:
-    QWidget* body_ = nullptr;
-    QVBoxLayout* body_layout_ = nullptr;
-    QHBoxLayout* header_layout_ = nullptr;
-    QToolButton* toggle_button_ = nullptr;
+    QVBoxLayout* content_layout_ = nullptr;
+    QLabel* entity_class_label_ = nullptr;
+    QLabel* entity_type_label_ = nullptr;
+    components::Section* entity_section_ = nullptr;
+    components::Section* attributes_section_ = nullptr;
+    components::Section* relationships_section_ = nullptr;
+    components::Section* properties_section_ = nullptr;
+    components::Section* quantities_section_ = nullptr;
+    QWidget* properties_filter_wrapper_ = nullptr;
+    QWidget* quantities_filter_wrapper_ = nullptr;
+    QLineEdit* properties_filter_field_ = nullptr;
+    QLineEdit* quantities_filter_field_ = nullptr;
+    QToolButton* properties_filter_toggle_ = nullptr;
+    QToolButton* quantities_filter_toggle_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcinterface::panels::properties
 
 #endif

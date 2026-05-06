@@ -18,34 +18,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
+#ifndef IFCINTERFACE_PANELS_SETTINGSDIALOG_H
+#define IFCINTERFACE_PANELS_SETTINGSDIALOG_H
 
-#include "PropertiesPanelTypes.h"
+#include <QDialog>
 
-#include <QObject>
+class QCheckBox;
+class QDoubleSpinBox;
+class QLineEdit;
+class QShowEvent;
+class QSpinBox;
 
-namespace ifcinterface { class ElementRegistry; }
-class ViewportWindow;
-namespace ifcinterface::panels::properties {
+namespace ifcinterface::panels::settings {
 
-class PropertiesPanelWidget;
-
-class PropertiesPanelView : public QObject {
+class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ViewportWindow* viewport,
-                                 ifcinterface::ElementRegistry* registry,
-                                 QObject* parent = nullptr);
+    explicit SettingsDialog(QWidget* parent = nullptr);
+
+protected:
+    void showEvent(QShowEvent* event) override;
 
 private:
-    void refresh(uint32_t object_id);
+    void setupUi();
+    void syncFromSettings();
+    void onAccepted();
 
-    PropertiesPanelWidget* widget_ = nullptr;
-    ifcinterface::ElementRegistry* registry_ = nullptr;
+    QLineEdit* geometry_library_edit_ = nullptr;
+    QCheckBox* show_stats_check_ = nullptr;
+    QCheckBox* backface_culling_check_ = nullptr;
+    QCheckBox* load_data_source_checkbox_ = nullptr;
+    QCheckBox* apply_coordinate_operation_check_ = nullptr;
+    QSpinBox* void_limit_spin_ = nullptr;
+    QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
+    QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::panels::settings
 
 #endif

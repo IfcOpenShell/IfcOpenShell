@@ -61,7 +61,7 @@ KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* paren
             icon->setObjectName(row_data.trailing_icon_object_name.isEmpty()
                                     ? "keyValueTrailingIconLabel"
                                     : row_data.trailing_icon_object_name);
-            icon->setPixmap(icons::makePanelSvgPixmap(row_data.trailing_icon_path, QSize(14, 14)));
+            icon->setPixmap(icons::makeSvgPixmap(row_data.trailing_icon_path, QSize(14, 14)));
             icon->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
             layout->addWidget(icon, row_index, 2, Qt::AlignRight | Qt::AlignTop);
         }
