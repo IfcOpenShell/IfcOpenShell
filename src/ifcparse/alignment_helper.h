@@ -29,31 +29,26 @@
 #include "ifc_parse_api.h"
 #include "logger.h"
 
-#ifdef HAS_SCHEMA_4x3_add2
-#include "schemas/Ifc4x3_add2.h"
-#endif
-
 #include "hierarchy_helper.h"
+#include "schemas/Ifc4x3_add2.h"
 
-#ifdef HAS_SCHEMA_4x3_add2
 //
 // alignment helper methods
 //
 
 // creates a horizontal alignment from a list of PI points and curve radii. if include_geometry is true, the geometric representations are created, otherwise only business logic is created
-IFC_PARSE_API Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& model, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, bool include_geometry = true);
+IFC_SCHEMA_API Ifc4x3_add2::IfcAlignment addHorizontalAlignment(hierarchy_helper<Ifc4x3_add2>& model, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, bool include_geometry = true);
 
 // creates a horizontal and vertical alignment from a list of PI points, curve radii, and VPI points and vertical curve lengths. if include_geometry is true, the geometric representations are created, otherwise only business logic is created
-IFC_PARSE_API Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& model, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, const std::vector<std::pair<double, double>>& vertical_points, const std::vector<double>& vertical_curve_lengths, bool include_geometry = true);
+IFC_SCHEMA_API Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_add2>& model, const std::string& alignment_name, const std::vector<std::pair<double, double>>& points, const std::vector<double>& radii, const std::vector<std::pair<double, double>>& vertical_points, const std::vector<double>& vertical_curve_lengths, bool include_geometry = true);
 
 // Maps horizontal alignment business logic to geometry.
 // Bloss curves have two geometry elements for one horizontal alignment segment. That is the reason for returning a pair.
 // Typically the first element of the pair will have the geometry and the second element will be nullptr
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentSegment& segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentCantSegment& segment);
-#endif
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentSegment& segment);
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment);
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment);
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentCantSegment& segment);
 
 
 #endif

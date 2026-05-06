@@ -43,6 +43,14 @@ std::string geometry_serializer_key(const std::string& extension) {
 	return key;
 }
 
+std::string geometry_serializer_format_from_extension(const std::string& extension) {
+	auto key = geometry_serializer_key(extension);
+	if (!key.empty() && key.front() == '.') {
+		key.erase(key.begin());
+	}
+	return key;
+}
+
 void add_geometry_serializer_search_paths(ifcopenshell::plugin::manager& manager) {
 	const auto directory = ifcopenshell::serializers::geometry_serializer_plugin_directory();
 	manager.add_search_path(directory);
@@ -80,11 +88,19 @@ void ifcopenshell::serializers::geometry_serializer_registry::bind(const geometr
 }
 
 bool ifcopenshell::serializers::geometry_serializer_registry::has(const std::string& extension) const {
-	return entries_.find(geometry_serializer_key(extension)) != entries_.end();
+	const auto key = geometry_serializer_key(extension);
+	if (entries_.find(key) == entries_.end()) {
+		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);
+	}
+	return entries_.find(key) != entries_.end();
 }
 
 const ifcopenshell::serializers::geometry_serializer_info* ifcopenshell::serializers::geometry_serializer_registry::find(const std::string& extension) const {
-	const auto iter = entries_.find(geometry_serializer_key(extension));
+	const auto key = geometry_serializer_key(extension);
+	if (entries_.find(key) == entries_.end()) {
+		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);
+	}
+	const auto iter = entries_.find(key);
 	if (iter == entries_.end()) {
 		return nullptr;
 	}
@@ -92,7 +108,11 @@ const ifcopenshell::serializers::geometry_serializer_info* ifcopenshell::seriali
 }
 
 void ifcopenshell::serializers::geometry_serializer_registry::configure(const std::string& extension, geometry_serializer_context& context) const {
-	const auto iter = entries_.find(geometry_serializer_key(extension));
+	const auto key = geometry_serializer_key(extension);
+	if (entries_.find(key) == entries_.end()) {
+		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);
+	}
+	const auto iter = entries_.find(key);
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry serializer registered for " + extension);
 	}
@@ -102,7 +122,11 @@ void ifcopenshell::serializers::geometry_serializer_registry::configure(const st
 }
 
 boost::shared_ptr<GeometrySerializer> ifcopenshell::serializers::geometry_serializer_registry::create(const std::string& extension, const geometry_serializer_context& context) const {
-	const auto iter = entries_.find(geometry_serializer_key(extension));
+	const auto key = geometry_serializer_key(extension);
+	if (entries_.find(key) == entries_.end()) {
+		load_geometry_serializer_plugin(const_cast<geometry_serializer_registry&>(*this), extension);
+	}
+	const auto iter = entries_.find(key);
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry serializer registered for " + extension);
 	}
@@ -117,6 +141,31 @@ std::vector<ifcopenshell::serializers::geometry_serializer_info> ifcopenshell::s
 			continue;
 		}
 		result.push_back(pair.second.info_);
+	}
+
+	ifcopenshell::plugin::manager manager;
+	add_geometry_serializer_search_paths(manager);
+	for (const auto& path : manager.discover(geometry_serializer_plugin_prefix())) {
+		ifcopenshell::plugin::module module;
+		try {
+			module = manager.load(path);
+		} catch (const std::exception& e) {
+			logger::error(e);
+			continue;
+		}
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer) {
+			continue;
+		}
+
+		geometry_serializer_registry plugin_registry;
+		auto register_plugin = module.get_alias<register_geometry_serializer_plugin_fn>(geometry_serializer_plugin_registration_symbol());
+		register_plugin(plugin_registry, module);
+		for (const auto& pair : plugin_registry.entries_) {
+			if (!seen_formats.insert(pair.second.info_.format).second) {
+				continue;
+			}
+			result.push_back(pair.second.info_);
+		}
 	}
 	return result;
 }
@@ -158,9 +207,37 @@ void ifcopenshell::serializers::load_geometry_serializer_plugins(geometry_serial
 	}
 }
 
+bool ifcopenshell::serializers::load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension) {
+	const auto format = geometry_serializer_format_from_extension(extension);
+	if (format.empty()) {
+		return false;
+	}
+
+	ifcopenshell::plugin::manager manager;
+	add_geometry_serializer_search_paths(manager);
+
+	for (const auto& path : manager.discover_exact(geometry_serializer_plugin_prefix(format))) {
+		ifcopenshell::plugin::module module;
+		try {
+			module = manager.load(path);
+		} catch (const std::exception& e) {
+			logger::error(e);
+			continue;
+		}
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer ||
+			module.meta().format != format) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_geometry_serializer_plugin_fn>(geometry_serializer_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return registry.entries_.find(geometry_serializer_key(extension)) != registry.entries_.end();
+	}
+
+	return false;
+}
+
 ifcopenshell::serializers::geometry_serializer_registry& ifcopenshell::serializers::geometry_serializer_registry_instance() {
 	static geometry_serializer_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_geometry_serializer_plugins, std::ref(registry));
 	return registry;
 }

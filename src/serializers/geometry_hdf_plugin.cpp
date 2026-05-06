@@ -34,7 +34,7 @@ plugin::abi_info plugin_abi() {
 }
 
 plugin::metadata plugin_metadata() {
-	return geometry_serializer_plugin_metadata("hdf");
+	return geometry_serializer_plugin_metadata("h5");
 }
 
 boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {

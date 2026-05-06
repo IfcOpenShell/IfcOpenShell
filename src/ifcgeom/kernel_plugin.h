@@ -34,6 +34,7 @@ namespace ifcopenshell {
 			IFC_GEOM_API ifcopenshell::plugin::metadata kernel_plugin_metadata(const std::string& plugin_name);
 			IFC_GEOM_API std::filesystem::path kernel_plugin_directory();
 			IFC_GEOM_API void load_kernel_plugins(kernel_registry& registry);
+			IFC_GEOM_API bool load_kernel_plugin(kernel_registry& registry, const std::string& backend_id);
 
 		}
 	}

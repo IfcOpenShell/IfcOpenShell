@@ -121,7 +121,6 @@ endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
 if(WITH_ROCKSDB)
-    message(STATUS TK)
     target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
 endif()
 SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
@@ -146,8 +145,8 @@ if (WASM_BUILD)
     )
 endif()
 target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES} ${LIBSVGFILL})
-if(kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
-    add_dependencies(ifcopenshell_wrapper ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
+if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
+    add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
 endif()
 if(NOT WIN32)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -216,6 +215,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             set(_ifcopenshell_python_runtime_targets
                 IfcGeom
                 IfcParse
+                ${schema_libraries}
                 ${kernel_libraries}
                 ${tree_libraries}
                 ${mapping_libraries}

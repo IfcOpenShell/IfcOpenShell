@@ -24,47 +24,9 @@
 #include "../ifcparse/logger.h"
 #include "../ifcparse/schemas/Ifc2x3.h"
 
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/seq/pop_back.hpp>
-#include <boost/preprocessor/comparison/greater.hpp> 
-#include <boost/preprocessor/selection/min.hpp>
-
 #ifdef _MSC_VER 
 #define strcasecmp _stricmp
 #endif
-
-#ifndef SCHEMA_SEQ
-static_assert(false, "A boost preprocessor sequence of schema identifiers is needed for this file to compile.");
-#endif
-
-// @todo duplicated with Kernel.h
-
-// @tfk A macro cannot define an include (I think), so here we can't
-// loop over the sequence of schema identifiers, but rather we have
-// unroll the loop with at least the amount of schemas we'd like support
-// for and then overflow into an existing empty include file.
-
-#define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/schemas/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
-
-#include INCLUDE_SCHEMA(0)
-#include INCLUDE_SCHEMA(1)
-#include INCLUDE_SCHEMA(2)
-#include INCLUDE_SCHEMA(3)
-#include INCLUDE_SCHEMA(4)
-#include INCLUDE_SCHEMA(5)
-#include INCLUDE_SCHEMA(6)
-#include INCLUDE_SCHEMA(7)
-#include INCLUDE_SCHEMA(8)
-#include INCLUDE_SCHEMA(9)
-#include INCLUDE_SCHEMA(10)
-#include INCLUDE_SCHEMA(11)
-#include INCLUDE_SCHEMA(12)
-#include INCLUDE_SCHEMA(13)
-#include INCLUDE_SCHEMA(14)
-#include INCLUDE_SCHEMA(15)
 
 #include <iomanip>
 
@@ -205,19 +167,11 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 	}
 }
 
-// What follows is machinery to create a preprocessor-based dispatch mechanism to dispatch to the
-// correct get_psets_s<Schema>() based on inst->declaration().schema()->name().
-
-#define EXPAND_AND_CONCATENATE(elem) Ifc##elem
-
-#define GENERATE_LITERAL_STRING(elem) "Ifc" # elem
-
-#define TEST_AND_DISPATCH(r, data, elem) \
-	if (strcasecmp(schema_name, GENERATE_LITERAL_STRING(elem)) == 0) { get_psets_s<EXPAND_AND_CONCATENATE(elem)>(props, inst.as<EXPAND_AND_CONCATENATE(elem)::IfcObjectDefinition>()); }
-
 void get_psets(element_properties& props, const express::Base& inst) {
 	auto schema_name = inst.declaration().schema()->name().c_str();
-	BOOST_PP_SEQ_FOR_EACH(TEST_AND_DISPATCH, , SCHEMA_SEQ)
+	if (strcasecmp(schema_name, "Ifc2x3") == 0) {
+		get_psets_s<Ifc2x3>(props, inst.as<Ifc2x3::IfcObjectDefinition>());
+	}
 }
 
 int main(int argc, char** argv) {

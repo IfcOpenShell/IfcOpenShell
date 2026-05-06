@@ -34,6 +34,7 @@ namespace ifcopenshell {
 			IFC_GEOM_API ifcopenshell::plugin::metadata tree_plugin_metadata(const std::string& plugin_name);
 			IFC_GEOM_API std::filesystem::path tree_plugin_directory();
 			IFC_GEOM_API void load_tree_plugins(tree_registry& registry);
+			IFC_GEOM_API bool load_tree_plugin(tree_registry& registry, const std::string& backend_id);
 
 		}
 	}

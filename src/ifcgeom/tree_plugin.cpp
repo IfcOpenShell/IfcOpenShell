@@ -19,6 +19,8 @@
 
 #include "tree_plugin.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
+
 namespace {
 	constexpr const char* tree_plugin_prefix = "geometry.tree.";
 }
@@ -51,4 +53,26 @@ void ifcopenshell::geometry::trees::load_tree_plugins(tree_registry& registry) {
 		auto register_plugin = module.get_alias<register_tree_plugin_fn>(tree_plugin_registration_symbol());
 		register_plugin(registry, module);
 	}
+}
+
+bool ifcopenshell::geometry::trees::load_tree_plugin(tree_registry& registry, const std::string& backend_id) {
+	plugin::manager manager;
+	manager.add_search_path(tree_plugin_directory());
+
+	const auto plugin_name = boost::to_lower_copy(backend_id);
+	const auto basename = std::string(tree_plugin_prefix) + plugin_name;
+
+	for (const auto& path : manager.discover_exact(basename)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::tree ||
+			module.meta().id != basename) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_tree_plugin_fn>(tree_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return registry.has(backend_id);
+	}
+
+	return false;
 }

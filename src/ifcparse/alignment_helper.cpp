@@ -32,8 +32,6 @@ static const double PI = boost::math::constants::pi<double>();
 
 #include <boost/math/quadrature/trapezoidal.hpp>
 
-#ifdef HAS_SCHEMA_4x3_add2
-
 // sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
 void _name_segments(const char* prefix, std::vector<Ifc4x3_add2::IfcObjectDefinition>& segments) {
     unsigned idx = 1;
@@ -886,4 +884,3 @@ std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignme
     }
     return result;
 }
-#endif

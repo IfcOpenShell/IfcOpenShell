@@ -17,7 +17,7 @@ function(add_document_serializer_plugin target output_name)
     target_compile_definitions(${target} PRIVATE SERIALIZERS_EXPORTS BOOST_DLL_USE_STD_FS ${PLUGIN_DEFINITIONS})
     target_link_libraries(${target} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${PLUGIN_LIBRARIES})
     set_target_properties(${target} PROPERTIES
-        OUTPUT_NAME "${output_name}"
+        OUTPUT_NAME "ifcopenshell.${output_name}"
         RUNTIME_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${document_serializer_plugin_runtime_dir}"
     )
@@ -43,7 +43,7 @@ function(add_geometry_serializer_plugin target output_name)
         target_link_libraries(${target} PRIVATE proj::proj)
     endif()
     set_target_properties(${target} PROPERTIES
-        OUTPUT_NAME "${output_name}"
+        OUTPUT_NAME "ifcopenshell.${output_name}"
         RUNTIME_OUTPUT_DIRECTORY "${geometry_serializer_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${geometry_serializer_plugin_runtime_dir}"
     )
@@ -90,7 +90,7 @@ if(WITH_OPENCASCADE AND NOT WASM_BUILD)
     add_geometry_serializer_plugin(geometry_serializer_svg "geometry.svg" SOURCES geometry_svg_plugin.cpp SvgSerializer.cpp util.cpp LIBRARIES ${opencascade_geometry_serializer_libraries})
 
     if(HDF5_SUPPORT)
-        add_geometry_serializer_plugin(geometry_serializer_hdf "geometry.hdf" SOURCES geometry_hdf_plugin.cpp HdfSerializer.cpp LIBRARIES ${opencascade_geometry_serializer_libraries} ${HDF5_LIBRARIES})
+        add_geometry_serializer_plugin(geometry_serializer_hdf "geometry.h5" SOURCES geometry_hdf_plugin.cpp HdfSerializer.cpp LIBRARIES ${opencascade_geometry_serializer_libraries} ${HDF5_LIBRARIES})
     endif()
 endif()
 

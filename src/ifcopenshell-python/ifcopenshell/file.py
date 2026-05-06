@@ -718,7 +718,7 @@ class file_mixin:
         """
 
         if self.transaction:
-            max_id = self.getMaxId()
+            max_id = self.get_max_id()
 
         result = self._add(inst, -1 if _id is None else _id)
 

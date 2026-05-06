@@ -19,10 +19,19 @@
 
 #include "kernel_plugin.h"
 
+#include <boost/algorithm/string/case_conv.hpp>
+
+#include <algorithm>
 #include <stdexcept>
 
 namespace {
 	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
+
+	std::string kernel_plugin_name(const std::string& backend_id) {
+		auto name = boost::to_lower_copy(backend_id);
+		name.erase(std::remove(name.begin(), name.end(), '-'), name.end());
+		return name;
+	}
 }
 
 const char* ifcopenshell::geometry::kernels::kernel_plugin_registration_symbol() {
@@ -53,4 +62,26 @@ void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& regis
 		auto register_plugin = module.get_alias<register_kernel_plugin_fn>(kernel_plugin_registration_symbol());
 		register_plugin(registry, module);
 	}
+}
+
+bool ifcopenshell::geometry::kernels::load_kernel_plugin(kernel_registry& registry, const std::string& backend_id) {
+	plugin::manager manager;
+	manager.add_search_path(kernel_plugin_directory());
+
+	const auto plugin_name = kernel_plugin_name(backend_id);
+	const auto basename = std::string(kernel_plugin_prefix) + plugin_name;
+
+	for (const auto& path : manager.discover_exact(basename)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::kernel ||
+			module.meta().id != basename) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_kernel_plugin_fn>(kernel_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return registry.has(backend_id);
+	}
+
+	return false;
 }

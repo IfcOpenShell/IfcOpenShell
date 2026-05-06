@@ -441,13 +441,6 @@ endif()
 
 message(STATUS "IFC SCHEMA_VERSIONS that will be used for the build: ${SCHEMA_VERSIONS}.")
 
-foreach(schema ${SCHEMA_VERSIONS})
-    add_definitions(-DHAS_SCHEMA_${schema})
-endforeach()
-
-string(REPLACE ";" ")(" schema_version_seq "(${SCHEMA_VERSIONS})")
-add_definitions(-DSCHEMA_SEQ=${schema_version_seq})
-
 if(COMPILE_SCHEMA)
     # @todo, this appears to be untested at the moment
     find_package(PythonInterp)

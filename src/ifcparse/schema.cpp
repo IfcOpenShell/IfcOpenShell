@@ -23,43 +23,8 @@
 
 #include <map>
 #include <mutex>
+#include <set>
 
-#ifdef HAS_SCHEMA_2x3
-#include "schemas/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-#include "schemas/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-#include "schemas/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-#include "schemas/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-#include "schemas/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-#include "schemas/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-#include "schemas/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-#include "schemas/Ifc4x3_rc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x3
-#include "schemas/Ifc4x3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-#include "schemas/Ifc4x3_tc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-#include "schemas/Ifc4x3_add1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-#include "schemas/Ifc4x3_add2.h"
-#endif
 #include "schemas/Header_section_schema.h"
 
 bool ifcopenshell::declaration::is(const std::string& name) const {
@@ -130,6 +95,8 @@ ifcopenshell::entity::~entity() {
     }
 }
 namespace {
+	constexpr const char* schema_plugin_prefix = "parse.schema.";
+
 	std::string schema_key(const std::string& schema_name) {
 		return boost::to_upper_copy(schema_name);
 	}
@@ -144,42 +111,28 @@ namespace {
 
 	void register_builtin_schemas(ifcopenshell::schema_registry& registry) {
 		registry.bind("HEADER_SECTION_SCHEMA", &Header_section_schema::get_schema, &Header_section_schema::clear_schema, builtin_schema_module("HEADER_SECTION_SCHEMA"));
-#ifdef HAS_SCHEMA_2x3
-		registry.bind("IFC2X3", &Ifc2x3::get_schema, &Ifc2x3::clear_schema, builtin_schema_module("IFC2X3"));
-#endif
-#ifdef HAS_SCHEMA_4
-		registry.bind("IFC4", &Ifc4::get_schema, &Ifc4::clear_schema, builtin_schema_module("IFC4"));
-#endif
-#ifdef HAS_SCHEMA_4x1
-		registry.bind("IFC4X1", &Ifc4x1::get_schema, &Ifc4x1::clear_schema, builtin_schema_module("IFC4X1"));
-#endif
-#ifdef HAS_SCHEMA_4x2
-		registry.bind("IFC4X2", &Ifc4x2::get_schema, &Ifc4x2::clear_schema, builtin_schema_module("IFC4X2"));
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-		registry.bind("IFC4X3_RC1", &Ifc4x3_rc1::get_schema, &Ifc4x3_rc1::clear_schema, builtin_schema_module("IFC4X3_RC1"));
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-		registry.bind("IFC4X3_RC2", &Ifc4x3_rc2::get_schema, &Ifc4x3_rc2::clear_schema, builtin_schema_module("IFC4X3_RC2"));
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-		registry.bind("IFC4X3_RC3", &Ifc4x3_rc3::get_schema, &Ifc4x3_rc3::clear_schema, builtin_schema_module("IFC4X3_RC3"));
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-		registry.bind("IFC4X3_RC4", &Ifc4x3_rc4::get_schema, &Ifc4x3_rc4::clear_schema, builtin_schema_module("IFC4X3_RC4"));
-#endif
-#ifdef HAS_SCHEMA_4x3
-		registry.bind("IFC4X3", &Ifc4x3::get_schema, &Ifc4x3::clear_schema, builtin_schema_module("IFC4X3"));
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-		registry.bind("IFC4X3_TC1", &Ifc4x3_tc1::get_schema, &Ifc4x3_tc1::clear_schema, builtin_schema_module("IFC4X3_TC1"));
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-		registry.bind("IFC4X3_ADD1", &Ifc4x3_add1::get_schema, &Ifc4x3_add1::clear_schema, builtin_schema_module("IFC4X3_ADD1"));
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-		registry.bind("IFC4X3_ADD2", &Ifc4x3_add2::get_schema, &Ifc4x3_add2::clear_schema, builtin_schema_module("IFC4X3_ADD2"));
-#endif
+	}
+
+	bool load_schema_plugin(ifcopenshell::schema_registry& registry, const std::string& schema_name) {
+		ifcopenshell::plugin::manager manager;
+		manager.add_search_path(ifcopenshell::schema_plugin_directory());
+
+		const auto expected_key = schema_key(schema_name);
+		const auto basename = std::string(schema_plugin_prefix) + boost::to_lower_copy(schema_name);
+
+		for (const auto& path : manager.discover_exact(basename)) {
+			auto module = manager.load(path);
+			if (module.meta().kind_ != ifcopenshell::plugin::kind::parse_schema ||
+				schema_key(module.meta().schema) != expected_key) {
+				continue;
+			}
+
+			auto register_plugin = module.get_alias<ifcopenshell::schema_registry::register_schema_plugin_fn>(ifcopenshell::schema_plugin_registration_symbol());
+			register_plugin(registry, module);
+			return true;
+		}
+
+		return false;
 	}
 
 }
@@ -225,6 +178,37 @@ ifcopenshell::schema_registry& ifcopenshell::schema_registry_instance() {
 	return registry;
 }
 
+const char* ifcopenshell::schema_plugin_registration_symbol() {
+	return "ifcopenshell_register_schema_plugin_v1";
+}
+
+ifcopenshell::plugin::metadata ifcopenshell::schema_plugin_metadata(const std::string& schema_name) {
+	plugin::metadata metadata;
+	metadata.kind_ = plugin::kind::parse_schema;
+	metadata.id = schema_plugin_prefix + boost::to_lower_copy(schema_name);
+	metadata.schema = boost::to_upper_copy(schema_name);
+	return metadata;
+}
+
+std::filesystem::path ifcopenshell::schema_plugin_directory() {
+	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::load_schema_plugins));
+}
+
+void ifcopenshell::load_schema_plugins(schema_registry& registry) {
+	plugin::manager manager;
+	manager.add_search_path(schema_plugin_directory());
+
+	for (const auto& path : manager.discover(schema_plugin_prefix)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::parse_schema) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<schema_registry::register_schema_plugin_fn>(schema_plugin_registration_symbol());
+		register_plugin(registry, module);
+	}
+}
+
 void ifcopenshell::schema_registry::bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const plugin::module& module) {
 	auto& entry = entries_[schema_key(schema_name)];
 	entry.get_ = get;
@@ -238,7 +222,12 @@ void ifcopenshell::schema_registry::bind(schema_definition* schema) {
 }
 
 const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const std::string& schema_name) {
-	auto iter = entries_.find(schema_key(schema_name));
+	const auto key = schema_key(schema_name);
+	auto iter = entries_.find(key);
+	if (iter == entries_.end()) {
+		load_schema_plugin(*this, schema_name);
+		iter = entries_.find(key);
+	}
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No schema named " + schema_name);
 	}
@@ -251,11 +240,22 @@ const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const 
 	return iter->second.schema_;
 }
 
-std::vector<std::string> ifcopenshell::schema_registry::names() const {
-	std::vector<std::string> names;
+std::vector<std::string> ifcopenshell::schema_registry::names() {
+	std::set<std::string> seen;
 	for (const auto& pair : entries_) {
-		names.push_back(pair.first);
+		seen.insert(pair.first);
 	}
+
+	plugin::manager manager;
+	manager.add_search_path(schema_plugin_directory());
+	for (const auto& path : manager.discover(schema_plugin_prefix)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ == plugin::kind::parse_schema && !module.meta().schema.empty()) {
+			seen.insert(schema_key(module.meta().schema));
+		}
+	}
+
+	std::vector<std::string> names(seen.begin(), seen.end());
 	return names;
 }
 

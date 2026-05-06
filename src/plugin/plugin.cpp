@@ -68,6 +68,35 @@ namespace {
 		return true;
 #endif
 	}
+
+	std::string decorated_basename(const std::string& basename) {
+		return boost::algorithm::istarts_with(basename, "ifcopenshell.") ? basename : "ifcopenshell." + basename;
+	}
+
+	std::vector<std::string> platform_basenames(const std::string& basename) {
+		const auto decorated = decorated_basename(basename);
+		return {
+			decorated,
+			"lib" + decorated
+		};
+	}
+
+#ifdef _WIN32
+	struct dll_error_mode_guard {
+		DWORD previous_ = 0;
+		bool changed_ = false;
+
+		dll_error_mode_guard() {
+			changed_ = SetThreadErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX, &previous_) != 0;
+		}
+
+		~dll_error_mode_guard() {
+			if (changed_) {
+				SetThreadErrorMode(previous_, nullptr);
+			}
+		}
+	};
+#endif
 }
 
 struct ifcopenshell::plugin::module::data {
@@ -130,7 +159,7 @@ const std::vector<std::filesystem::path>& ifcopenshell::plugin::manager::search_
 std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const std::string& basename_prefix) const {
 	std::vector<std::filesystem::path> result;
 	const auto suffix = boost::dll::shared_library::suffix().string();
-	const auto prefixed_basename = "lib" + basename_prefix;
+	const auto basename_prefixes = platform_basenames(basename_prefix);
 
 	for (const auto& search_path : search_paths_) {
 		if (!std::filesystem::exists(search_path) || !std::filesystem::is_directory(search_path)) {
@@ -146,8 +175,11 @@ std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const
 			if (!boost::algorithm::iends_with(filename, suffix)) {
 				continue;
 			}
-			if (!boost::algorithm::istarts_with(filename, basename_prefix) &&
-				!boost::algorithm::istarts_with(filename, prefixed_basename)) {
+
+			const auto basename = filename.substr(0, filename.size() - suffix.size());
+			if (!std::any_of(basename_prefixes.begin(), basename_prefixes.end(), [&basename](const std::string& prefix) {
+				return boost::algorithm::istarts_with(basename, prefix);
+			})) {
 				continue;
 			}
 
@@ -160,8 +192,37 @@ std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover(const
 	return result;
 }
 
+std::vector<std::filesystem::path> ifcopenshell::plugin::manager::discover_exact(const std::string& basename) const {
+	std::vector<std::filesystem::path> result;
+	const auto suffix = boost::dll::shared_library::suffix().string();
+	const auto basename_candidates = platform_basenames(basename);
+
+	for (const auto& search_path : search_paths_) {
+		if (!std::filesystem::exists(search_path) || !std::filesystem::is_directory(search_path)) {
+			continue;
+		}
+
+		for (const auto& candidate : basename_candidates) {
+			const auto path = search_path / (candidate + suffix);
+			if (std::filesystem::is_regular_file(path)) {
+				result.push_back(path);
+			}
+		}
+	}
+
+	std::sort(result.begin(), result.end());
+	result.erase(std::unique(result.begin(), result.end()), result.end());
+	return result;
+}
+
 ifcopenshell::plugin::module ifcopenshell::plugin::manager::load(const std::filesystem::path& path) const {
-	auto library = std::make_shared<boost::dll::shared_library>(path, boost::dll::load_mode::default_mode);
+#ifdef _WIN32
+	dll_error_mode_guard error_mode_guard;
+	const auto load_mode = boost::dll::load_mode::load_with_altered_search_path;
+#else
+	const auto load_mode = boost::dll::load_mode::default_mode;
+#endif
+	auto library = std::make_shared<boost::dll::shared_library>(path, load_mode);
 	auto abi = library->get_alias<plugin_abi_fn>("ifcopenshell_plugin_abi_v1")();
 	validate_abi(abi);
 	auto metadata = library->get_alias<plugin_metadata_fn>("ifcopenshell_plugin_metadata_v1")();

@@ -2,11 +2,12 @@
 add_executable(IfcConvert IfcConvert.cpp)
 
 target_link_libraries(IfcConvert PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES})
-if(kernel_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
-    add_dependencies(IfcConvert ${kernel_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
+if(schema_libraries OR kernel_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
+    add_dependencies(IfcConvert ${schema_libraries} ${kernel_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
 endif()
 
 set(_plugin_targets
+    ${schema_libraries}
     ${kernel_libraries}
     ${mapping_libraries}
     ${geometry_serializer_libraries}

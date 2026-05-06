@@ -24,8 +24,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <mutex>
-
 namespace {
 	std::string tree_key(const std::string& backend_id) {
 		return boost::to_lower_copy(backend_id);
@@ -134,11 +132,13 @@ std::unique_ptr<ifcopenshell::geometry::trees::abstract_tree> ifcopenshell::geom
 
 ifcopenshell::geometry::trees::tree_registry& ifcopenshell::geometry::trees::tree_registry_instance() {
 	static tree_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_tree_plugins, std::ref(registry));
 	return registry;
 }
 
 std::unique_ptr<ifcopenshell::geometry::trees::abstract_tree> ifcopenshell::geometry::trees::construct(const std::string& backend_id) {
-	return tree_registry_instance().create(backend_id);
+	auto& registry = tree_registry_instance();
+	if (!registry.has(backend_id)) {
+		load_tree_plugin(registry, backend_id);
+	}
+	return registry.create(backend_id);
 }

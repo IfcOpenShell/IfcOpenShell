@@ -6,8 +6,6 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
-#include <mutex>
-
 namespace {
 	std::string writer_schema_key(const std::string& schema_name) {
 		return boost::to_upper_copy(schema_name);
@@ -16,8 +14,6 @@ namespace {
 
 IfcGeom::opencascade_geometry_ifc_writer_registry& IfcGeom::opencascade_geometry_ifc_writer_registry_instance() {
 	static opencascade_geometry_ifc_writer_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_opencascade_geometry_ifc_writer_plugins, std::ref(registry));
 	return registry;
 }
 
@@ -30,7 +26,11 @@ void IfcGeom::opencascade_geometry_ifc_writer_registry::bind(const std::string& 
 }
 
 express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::tesselate(ifcopenshell::file& f, const ConversionResultShape& shape, double deflection) const {
-	const auto iter = entries_.find(writer_schema_key(f.schema()->name()));
+	auto iter = entries_.find(writer_schema_key(f.schema()->name()));
+	if (iter == entries_.end()) {
+		load_opencascade_geometry_ifc_writer_plugin(const_cast<opencascade_geometry_ifc_writer_registry&>(*this), f.schema()->name());
+		iter = entries_.find(writer_schema_key(f.schema()->name()));
+	}
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry serialization available for " + f.schema()->name());
 	}
@@ -38,7 +38,11 @@ express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::tesselate(ifcop
 }
 
 express::Base IfcGeom::opencascade_geometry_ifc_writer_registry::serialise(ifcopenshell::file& f, const ConversionResultShape& shape, bool advanced) const {
-	const auto iter = entries_.find(writer_schema_key(f.schema()->name()));
+	auto iter = entries_.find(writer_schema_key(f.schema()->name()));
+	if (iter == entries_.end()) {
+		load_opencascade_geometry_ifc_writer_plugin(const_cast<opencascade_geometry_ifc_writer_registry&>(*this), f.schema()->name());
+		iter = entries_.find(writer_schema_key(f.schema()->name()));
+	}
 	if (iter == entries_.end()) {
 		throw ifcopenshell::exception("No geometry serialization available for " + f.schema()->name());
 	}

@@ -28,7 +28,30 @@ namespace ifcopenshell {
 IFC_PARSE_API double si_prefix_to_value(const std::string& prefix);
 
 template <typename Schema>
-IFC_PARSE_API double get_SI_equivalent(const typename Schema::IfcNamedUnit& unit);
+double get_SI_equivalent(const typename Schema::IfcNamedUnit& named_unit) {
+    double scale = 1.;
+    typename Schema::IfcSIUnit si_unit;
+
+    if (auto conv_unit = named_unit.template as<typename Schema::IfcConversionBasedUnit>()) {
+        auto factor = conv_unit.ConversionFactor();
+        auto component = factor.UnitComponent();
+        if (si_unit = component.concrete().template as<typename Schema::IfcSIUnit>()) {
+            auto value = factor.ValueComponent();
+            scale = value.get_attribute_value(0);
+        }
+    } else {
+        si_unit = named_unit.template as<typename Schema::IfcSIUnit>();
+    }
+    if (si_unit) {
+        if (si_unit.Prefix()) {
+            scale *= si_prefix_to_value(Schema::IfcSIPrefix::ToString(*si_unit.Prefix()));
+        }
+    } else {
+        scale = 0.;
+    }
+
+    return scale;
+}
 } // namespace ifcopenshell
 
 #endif

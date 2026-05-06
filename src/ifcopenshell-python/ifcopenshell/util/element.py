@@ -1675,14 +1675,14 @@ def remove_deep2(
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
-    subelement_queue = deque([element])
+    subelement_queue = [element]
 
     # Cache already processed entities to avoid traversing them multiple time.
     # E.g. lots of IFCINDEXEDPOLYCURVES may reference the same IFCCARTESIANPOINTLIST2D.
     processed_ids: set[int] = set()
 
     while subelement_queue:
-        subelement = subelement_queue.popleft()
+        subelement = subelement_queue.pop(0)
         subelement_id = subelement.id()
         if (
             subelement_id

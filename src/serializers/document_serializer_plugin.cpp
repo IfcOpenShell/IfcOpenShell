@@ -107,14 +107,24 @@ const ifcopenshell::serializers::document_serializer_registry::entry* ifcopenshe
 }
 
 const ifcopenshell::serializers::document_serializer_info* ifcopenshell::serializers::document_serializer_registry::find(const std::string& format, const std::string& schema_name) const {
+	auto* registry = const_cast<document_serializer_registry*>(this);
 	const auto* entry = find_entry_(format, schema_name);
+	if (!entry) {
+		load_document_serializer_plugin(*registry, format, schema_name);
+		entry = find_entry_(format, schema_name);
+	}
 	return entry ? &entry->info_ : nullptr;
 }
 
 boost::shared_ptr<Serializer> ifcopenshell::serializers::document_serializer_registry::create(const std::string& format, const document_serializer_context& context) const {
 	const auto schema_name = !context.schema_name.empty() ? context.schema_name :
 		(context.file ? context.file->schema()->name() : std::string());
+	auto* registry = const_cast<document_serializer_registry*>(this);
 	const auto* entry = find_entry_(format, schema_name);
+	if (!entry) {
+		load_document_serializer_plugin(*registry, format, schema_name);
+		entry = find_entry_(format, schema_name);
+	}
 	if (!entry) {
 		throw ifcopenshell::exception("No document serializer registered for " + format + (schema_name.empty() ? std::string() : " and schema " + schema_name));
 	}
@@ -132,6 +142,34 @@ std::vector<ifcopenshell::serializers::document_serializer_info> ifcopenshell::s
 				continue;
 			}
 			result.push_back(entry.info_);
+		}
+	}
+
+	ifcopenshell::plugin::manager manager;
+	add_document_serializer_search_paths(manager);
+	for (const auto& path : manager.discover(document_serializer_plugin_prefix())) {
+		ifcopenshell::plugin::module module;
+		try {
+			module = manager.load(path);
+		} catch (const std::exception& e) {
+			logger::error(e);
+			continue;
+		}
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer) {
+			continue;
+		}
+
+		document_serializer_registry plugin_registry;
+		auto register_plugin = module.get_alias<register_document_serializer_plugin_fn>(document_serializer_plugin_registration_symbol());
+		register_plugin(plugin_registry, module);
+		for (const auto& pair : plugin_registry.entries_) {
+			for (const auto& entry : pair.second) {
+				const auto key = entry.info_.format + "|" + entry.info_.schema_name;
+				if (!seen.insert(key).second) {
+					continue;
+				}
+				result.push_back(entry.info_);
+			}
 		}
 	}
 
@@ -179,9 +217,44 @@ void ifcopenshell::serializers::load_document_serializer_plugins(document_serial
 	}
 }
 
+bool ifcopenshell::serializers::load_document_serializer_plugin(document_serializer_registry& registry, const std::string& format, const std::string& schema_name) {
+	const auto format_key = document_serializer_key(format);
+	if (format_key.empty()) {
+		return false;
+	}
+
+	const auto schema_key = document_serializer_schema_key(schema_name);
+	auto basename = document_serializer_plugin_prefix(format_key);
+	if (!schema_key.empty()) {
+		basename += "." + boost::to_lower_copy(schema_key);
+	}
+
+	ifcopenshell::plugin::manager manager;
+	add_document_serializer_search_paths(manager);
+
+	for (const auto& path : manager.discover_exact(basename)) {
+		ifcopenshell::plugin::module module;
+		try {
+			module = manager.load(path);
+		} catch (const std::exception& e) {
+			logger::error(e);
+			continue;
+		}
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer ||
+			module.meta().format != format_key ||
+			document_serializer_schema_key(module.meta().schema) != schema_key) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_document_serializer_plugin_fn>(document_serializer_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return registry.find_entry_(format_key, schema_key) != nullptr;
+	}
+
+	return false;
+}
+
 ifcopenshell::serializers::document_serializer_registry& ifcopenshell::serializers::document_serializer_registry_instance() {
 	static document_serializer_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_document_serializer_plugins, std::ref(registry));
 	return registry;
 }

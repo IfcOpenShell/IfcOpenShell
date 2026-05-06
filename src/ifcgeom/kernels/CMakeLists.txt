@@ -31,7 +31,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
     set_target_properties(${KERNEL_TARGET} PROPERTIES
         COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
-        OUTPUT_NAME "geometry.kernel.${kernel}"
+        OUTPUT_NAME "ifcopenshell.geometry.kernel.${kernel}"
         RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
     )
@@ -50,7 +50,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
 
         set_target_properties(${KERNEL_TARGET_SIMPLE} PROPERTIES
             COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS"
-            OUTPUT_NAME "geometry.kernel.cgalsimple"
+            OUTPUT_NAME "ifcopenshell.geometry.kernel.cgalsimple"
             RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
             LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
         )
@@ -76,7 +76,7 @@ foreach(kernel ${GEOMETRY_KERNELS})
             )
             set_target_properties(${TREE_TARGET} PROPERTIES
                 COMPILE_FLAGS "-DIFC_GEOMLIBRARY_EXPORTS"
-                OUTPUT_NAME "geometry.tree.opencascade.${tree_backend}"
+                OUTPUT_NAME "ifcopenshell.geometry.tree.opencascade.${tree_backend}"
                 RUNTIME_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
                 LIBRARY_OUTPUT_DIRECTORY "${kernel_plugin_runtime_dir}"
             )

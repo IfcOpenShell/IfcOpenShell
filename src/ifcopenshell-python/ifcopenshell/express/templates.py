@@ -39,9 +39,9 @@ class spf_header;
 
 struct %(schema_name)s {
 
-IFC_PARSE_API static const ifcopenshell::schema_definition& get_schema();
+IFC_SCHEMA_API static const ifcopenshell::schema_definition& get_schema();
 
-IFC_PARSE_API static void clear_schema();
+IFC_SCHEMA_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -111,7 +111,7 @@ derived_field_statement = "    {std::set<int> idxs; %(statements)sderived_map[Ty
 derived_field_statement_attrs = "idxs.insert(%d); "
 
 simpletype = """%(documentation)s
-class IFC_PARSE_API %(name)s : public %(superclass)s {
+class IFC_SCHEMA_API %(name)s : public %(superclass)s {
 public:
     using %(superclass)s::%(superclass_2)s;
 
@@ -139,7 +139,7 @@ simpletype_impl_cast_templated = "std::vector<express::Base> es = get_attribute_
 simpletype_impl_declaration = "return *((ifcopenshell::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
 select = """%(documentation)s
-class IFC_PARSE_API %(name)s : public express::Select {
+class IFC_SCHEMA_API %(name)s : public express::Select {
 public:
     using express::Select::Select;
 
@@ -158,7 +158,7 @@ select_cast_function = """    %(name)s(const %(item_name)s& c) : express::Select
 """
 
 enumeration = """%(documentation)s
-class IFC_PARSE_API %(name)s : public express::DeclaredType {
+class IFC_SCHEMA_API %(name)s : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -174,7 +174,7 @@ public:
 """
 
 entity = """%(documentation)s
-class IFC_PARSE_API %(name)s : public %(superclass)s {
+class IFC_SCHEMA_API %(name)s : public %(superclass)s {
 public:
     using %(superclass)s::%(superclass_2)s;
 

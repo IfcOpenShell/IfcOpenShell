@@ -285,7 +285,7 @@ int main(int argc, char** argv) {
 	auto& document_serializer_registry = ifcopenshell::serializers::document_serializer_registry_instance();
 	auto& geometry_serializer_registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
 #ifdef WITH_HDF5
-	const bool supports_geometry_cache = geometry_serializer_registry.has(".h5");
+	const bool supports_geometry_cache = true;
 #else
 	const bool supports_geometry_cache = false;
 #endif
@@ -603,8 +603,7 @@ int main(int argc, char** argv) {
     
     const path_t IFC = ifcopenshell::path::from_utf8(".ifc");
 
-	const auto* document_serializer_info = document_serializer_registry.find(output_extension_utf8);
-	if (document_serializer_info) {
+	auto run_document_serializer = [&](const ifcopenshell::serializers::document_serializer_info* document_serializer_info) {
 		int exit_code = EXIT_FAILURE;
 		try {
 			const bool use_input_filename = vmap.count("stream") && document_serializer_info->supports_input_filename;
@@ -612,7 +611,7 @@ int main(int argc, char** argv) {
 				throw ifcopenshell::exception("Selected document serializer requires --stream");
 			}
 
-			if (use_input_filename || init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			if (use_input_filename || ifc_file || init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				if (!use_input_filename) {
 					document_serializer_info = document_serializer_registry.find(output_extension_utf8, ifc_file->schema()->name());
 					if (!document_serializer_info) {
@@ -651,6 +650,11 @@ int main(int argc, char** argv) {
 		}
 		write_log(!quiet);
 		return exit_code;
+	};
+
+	const auto* document_serializer_info = document_serializer_registry.find(output_extension_utf8);
+	if (document_serializer_info) {
+		return run_document_serializer(document_serializer_info);
 	} else if (output_extension == IFC) {
 		int exit_code = EXIT_FAILURE;
 		try {
@@ -679,6 +683,12 @@ int main(int argc, char** argv) {
 
 	const auto* geometry_serializer_info = geometry_serializer_registry.find(output_extension_utf8);
 	if (!geometry_serializer_info) {
+		if (init_input_file(ifcopenshell::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+			document_serializer_info = document_serializer_registry.find(output_extension_utf8, ifc_file->schema()->name());
+			if (document_serializer_info) {
+				return run_document_serializer(document_serializer_info);
+			}
+		}
 		cerr_ << "[error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();

@@ -25,8 +25,9 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <algorithm>
 #include <cstring>
-#include <mutex>
+#include <vector>
 
 namespace {
 	std::string kernel_key(const std::string& backend_id) {
@@ -65,8 +66,6 @@ std::vector<ifcopenshell::geometry::kernels::kernel_info> ifcopenshell::geometry
 
 ifcopenshell::geometry::kernels::kernel_registry& ifcopenshell::geometry::kernels::kernel_registry_instance() {
 	static kernel_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_kernel_plugins, std::ref(registry));
 	return registry;
 }
 
@@ -74,6 +73,9 @@ std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> ifcopenshell::g
 	auto geometry_library_lower = boost::to_lower_copy(geometry_library);
 	auto& registry = kernel_registry_instance();
 
+	if (!registry.has(geometry_library_lower)) {
+		load_kernel_plugin(registry, geometry_library_lower);
+	}
 	if (registry.has(geometry_library_lower)) {
 		return registry.create(geometry_library_lower, file, settings);
 	}
@@ -86,6 +88,20 @@ std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> ifcopenshell::g
 				geometry_library_lower = geometry_library_lower.substr(strlen("-"));
 			} else {
 				throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
+			}
+
+			std::vector<std::string> candidates;
+			candidates.push_back(geometry_library_lower);
+			for (auto pos = geometry_library_lower.find('-'); pos != std::string::npos; pos = geometry_library_lower.find('-', pos + 1)) {
+				candidates.push_back(geometry_library_lower.substr(0, pos));
+			}
+			std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
+				return a.size() > b.size();
+			});
+			for (const auto& candidate : candidates) {
+				if (!registry.has(candidate) && load_kernel_plugin(registry, candidate)) {
+					break;
+				}
 			}
 
 			std::string matched_backend_id;

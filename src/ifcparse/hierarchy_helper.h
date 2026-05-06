@@ -32,334 +32,62 @@
 #include "logger.h"
 
 #include <map>
-
-#ifdef HAS_SCHEMA_2x3
-#include "schemas/Ifc2x3.h"
-#endif
-#ifdef HAS_SCHEMA_4
-#include "schemas/Ifc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x1
-#include "schemas/Ifc4x1.h"
-#endif
-#ifdef HAS_SCHEMA_4x2
-#include "schemas/Ifc4x2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc1
-#include "schemas/Ifc4x3_rc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc2
-#include "schemas/Ifc4x3_rc2.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc3
-#include "schemas/Ifc4x3_rc3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_rc4
-#include "schemas/Ifc4x3_rc4.h"
-#endif
-#ifdef HAS_SCHEMA_4x3
-#include "schemas/Ifc4x3.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_tc1
-#include "schemas/Ifc4x3_tc1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add1
-#include "schemas/Ifc4x3_add1.h"
-#endif
-#ifdef HAS_SCHEMA_4x3_add2
-#include "schemas/Ifc4x3_add2.h"
-#endif
+#include <type_traits>
+#include <vector>
 
 #include "file.h"
 #include "global_id.h"
 
-namespace {
-#ifdef HAS_SCHEMA_2x3
-Ifc2x3::IfcObjectDefinition get_parent_of_relation(const Ifc2x3::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc2x3::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc2x3::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc2x3::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc2x3::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc2x3::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc2x3::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4
-Ifc4::IfcObjectDefinition get_parent_of_relation(const Ifc4::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x1
-Ifc4x1::IfcObjectDefinition get_parent_of_relation(const Ifc4x1::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x1::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x1::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x1::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x1::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x1::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x1::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x2
-Ifc4x2::IfcObjectDefinition get_parent_of_relation(const Ifc4x2::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x2::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x2::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x2::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x2::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x2::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x2::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc1
-Ifc4x3_rc1::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_rc1::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc1::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc1::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_rc1::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_rc1::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_rc1::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_rc1::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc2
-Ifc4x3_rc2::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_rc2::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc2::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc2::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_rc2::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_rc2::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_rc2::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_rc2::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc3
-Ifc4x3_rc3::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_rc3::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc3::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc3::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_rc3::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_rc3::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_rc3::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_rc3::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc4
-Ifc4x3_rc4::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_rc4::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc4::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_rc4::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_rc4::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_rc4::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_rc4::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_rc4::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3
-Ifc4x3::IfcObjectDefinition get_parent_of_relation(const Ifc4x3::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3::IfcProduct>(children));
-}
+namespace ifcopenshell::hierarchy_detail {
 
-void set_children_of_relation(Ifc4x3::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3::IfcObjectDefinition>(children));
+inline const char* parent_attribute_name(const ifcopenshell::declaration& declaration) {
+    return declaration.name() == "IfcRelContainedInSpatialStructure" ? "RelatingStructure" : "RelatingObject";
 }
-#endif
 
-#ifdef HAS_SCHEMA_4x3_tc1
-Ifc4x3_tc1::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_tc1::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
+inline const char* children_attribute_name(const ifcopenshell::declaration& declaration) {
+    return declaration.name() == "IfcRelContainedInSpatialStructure" ? "RelatedElements" : "RelatedObjects";
 }
 
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_tc1::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
+template <typename Relation>
+express::Base get_parent_of_relation(const Relation& relation) {
+    return relation.template as<express::Entity>().get(parent_attribute_name(relation.declaration()));
 }
 
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_tc1::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
+template <typename Relation>
+std::vector<express::Base> get_children_of_relation(const Relation& relation) {
+    return relation.template as<express::Entity>().get(children_attribute_name(relation.declaration()));
 }
 
-void set_children_of_relation(Ifc4x3_tc1::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_tc1::IfcProduct>(children));
+template <typename Relation>
+void set_children_of_relation(Relation& relation, std::vector<express::Base>& children) {
+    relation.set_attribute_value(children_attribute_name(relation.declaration()), children);
 }
 
-void set_children_of_relation(Ifc4x3_tc1::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_tc1::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_add1
-Ifc4x3_add1::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_add1::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_add1::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_add1::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_add1::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_add1::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_add1::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_add1::IfcObjectDefinition>(children));
-}
-#endif
-
-#ifdef HAS_SCHEMA_4x3_add2
-Ifc4x3_add2::IfcObjectDefinition get_parent_of_relation(const Ifc4x3_add2::IfcRelContainedInSpatialStructure& relation) {
-    return relation.RelatingStructure();
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_add2::IfcRelContainedInSpatialStructure& relation) {
-    return cast_vector<express::Base>(relation.RelatedElements());
-}
+template <typename Schema, typename = void>
+struct styled_item_accepts_presentation_style : std::false_type {};
 
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_add2::IfcRelAggregates& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-std::vector<express::Base> get_children_of_relation(const Ifc4x3_add2::IfcRelNests& relation) {
-    return cast_vector<express::Base>(relation.RelatedObjects());
-}
-
-void set_children_of_relation(Ifc4x3_add2::IfcRelContainedInSpatialStructure& relation, std::vector<express::Base>& children) {
-    relation.setRelatedElements(cast_vector<Ifc4x3_add2::IfcProduct>(children));
-}
-
-void set_children_of_relation(Ifc4x3_add2::IfcRelAggregates& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_add2::IfcObjectDefinition>(children));
-}
-
-void set_children_of_relation(Ifc4x3_add2::IfcRelNests& relation, std::vector<express::Base>& children) {
-    relation.setRelatedObjects(cast_vector<Ifc4x3_add2::IfcObjectDefinition>(children));
-}
-#endif
-
-express::Base get_parent_of_relation(const express::Base& relation) {
-    return relation.as<express::Entity>().get("RelatingObject");
-}
-
-std::vector<express::Base> get_children_of_relation(const express::Base& relation) {
-    return relation.as<express::Entity>().get("RelatedElements");
-}
-
-void set_children_of_relation(express::Base& relation, std::vector<express::Base>& children) {
-    return relation.set_attribute_value("RelatedElements", children);
-}
-} // namespace
 template <typename Schema>
-class IFC_PARSE_API hierarchy_helper : public ifcopenshell::file {
+struct styled_item_accepts_presentation_style<Schema,
+    std::void_t<decltype(std::declval<typename Schema::IfcStyledItem&>().setStyles(
+        std::declval<std::vector<typename Schema::IfcPresentationStyle>>()))>> : std::true_type {};
+
+template <typename Schema, bool DirectStyle = styled_item_accepts_presentation_style<Schema>::value>
+struct surface_style_type_selector {
+    using type = typename Schema::IfcPresentationStyleAssignment;
+};
+
+template <typename Schema>
+struct surface_style_type_selector<Schema, true> {
+    using type = typename Schema::IfcPresentationStyle;
+};
+
+template <typename Schema>
+using surface_style_type = typename surface_style_type_selector<Schema>::type;
+
+} // namespace ifcopenshell::hierarchy_detail
+
+template <typename Schema>
+class IFC_SCHEMA_API hierarchy_helper : public ifcopenshell::file {
   public:
     hierarchy_helper() : ifcopenshell::file(&Schema::get_schema()) {}
 
@@ -444,10 +172,10 @@ class IFC_PARSE_API hierarchy_helper : public ifcopenshell::file {
             bool found = false;
             for (auto& rel : li) {
                 try {
-                    if (get_parent_of_relation(rel) == relating_object) {
-                        auto products = get_children_of_relation(rel);
+                    if (ifcopenshell::hierarchy_detail::get_parent_of_relation(rel) == relating_object) {
+                        auto products = ifcopenshell::hierarchy_detail::get_children_of_relation(rel);
                         products.push_back(add_entity(related_object));
-                        set_children_of_relation(rel, products);
+                        ifcopenshell::hierarchy_detail::set_children_of_relation(rel, products);
                         found = true;
                         break;
                     }
@@ -533,101 +261,38 @@ class IFC_PARSE_API hierarchy_helper : public ifcopenshell::file {
     std::map<std::string, typename Schema::IfcGeometricRepresentationContext> contexts_;
 };
 
-#ifdef HAS_SCHEMA_2x3
-IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc2x3>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc2x3>& model, const Ifc2x3::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc2x3::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc2x3>& model, const Ifc2x3::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc2x3>& model, const Ifc2x3::IfcProductRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc2x3>& model, const Ifc2x3::IfcRepresentation& shape, const Ifc2x3::IfcPresentationStyleAssignment& style_assignment);
-#endif
+template <typename Schema>
+IFC_SCHEMA_API ifcopenshell::hierarchy_detail::surface_style_type<Schema>
+addStyleAssignment(hierarchy_helper<Schema>& model, double red, double green, double blue, double alpha = 1.0);
 
-#ifdef HAS_SCHEMA_4
-IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc4>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4>& model, const Ifc4::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4>& model, const Ifc4::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4>& model, const Ifc4::IfcProductRepresentation& shape, const Ifc4::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4>& model, const Ifc4::IfcRepresentation& shape, const Ifc4::IfcPresentationStyleAssignment& style_assignment);
-#endif
+template <typename Schema>
+IFC_SCHEMA_API ifcopenshell::hierarchy_detail::surface_style_type<Schema>
+setSurfaceColour(hierarchy_helper<Schema>& model,
+                 const typename Schema::IfcProductRepresentation& shape,
+                 double red,
+                 double green,
+                 double blue,
+                 double alpha = 1.0);
 
-#ifdef HAS_SCHEMA_4x1
-IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc4x1>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x1>& model, const Ifc4x1::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x1::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x1>& model, const Ifc4x1::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x1>& model, const Ifc4x1::IfcProductRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x1>& model, const Ifc4x1::IfcRepresentation& shape, const Ifc4x1::IfcPresentationStyleAssignment& style_assignment);
-#endif
+template <typename Schema>
+IFC_SCHEMA_API ifcopenshell::hierarchy_detail::surface_style_type<Schema>
+setSurfaceColour(hierarchy_helper<Schema>& model,
+                 const typename Schema::IfcRepresentation& shape,
+                 double red,
+                 double green,
+                 double blue,
+                 double alpha = 1.0);
 
-#ifdef HAS_SCHEMA_4x2
-IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc4x2>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x2>& model, const Ifc4x2::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x2::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x2>& model, const Ifc4x2::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x2>& model, const Ifc4x2::IfcProductRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x2>& model, const Ifc4x2::IfcRepresentation& shape, const Ifc4x2::IfcPresentationStyleAssignment& style_assignment);
-#endif
+template <typename Schema>
+IFC_SCHEMA_API void setSurfaceColour(
+    hierarchy_helper<Schema>& model,
+    const typename Schema::IfcProductRepresentation& shape,
+    const ifcopenshell::hierarchy_detail::surface_style_type<Schema>& style);
 
-#ifdef HAS_SCHEMA_4x3_rc1
-IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc4x3_rc1>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x3_rc1>& model, const Ifc4x3_rc1::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc1::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x3_rc1>& model, const Ifc4x3_rc1::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc1>& model, const Ifc4x3_rc1::IfcProductRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc1>& model, const Ifc4x3_rc1::IfcRepresentation& shape, const Ifc4x3_rc1::IfcPresentationStyleAssignment& style_assignment);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc2
-IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment addStyleAssignment(hierarchy_helper<Ifc4x3_rc2>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x3_rc2>& model, const Ifc4x3_rc2::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc2::IfcPresentationStyleAssignment setSurfaceColour(hierarchy_helper<Ifc4x3_rc2>& model, const Ifc4x3_rc2::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc2>& model, const Ifc4x3_rc2::IfcProductRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc2>& model, const Ifc4x3_rc2::IfcRepresentation& shape, const Ifc4x3_rc2::IfcPresentationStyleAssignment& style_assignment);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc3
-IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3_rc3>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_rc3>& model, const Ifc4x3_rc3::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc3::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_rc3>& model, const Ifc4x3_rc3::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc3>& model, const Ifc4x3_rc3::IfcProductRepresentation& shape, const Ifc4x3_rc3::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc3>& model, const Ifc4x3_rc3::IfcRepresentation& shape, const Ifc4x3_rc3::IfcPresentationStyle& style);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_rc4
-IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3_rc4>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_rc4>& model, const Ifc4x3_rc4::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_rc4::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_rc4>& model, const Ifc4x3_rc4::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc4>& model, const Ifc4x3_rc4::IfcProductRepresentation& shape, const Ifc4x3_rc4::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_rc4>& model, const Ifc4x3_rc4::IfcRepresentation& shape, const Ifc4x3_rc4::IfcPresentationStyle& style);
-#endif
-
-#ifdef HAS_SCHEMA_4x3
-IFC_PARSE_API Ifc4x3::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3>& model, const Ifc4x3::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3>& model, const Ifc4x3::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3>& model, const Ifc4x3::IfcProductRepresentation& shape, const Ifc4x3::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3>& model, const Ifc4x3::IfcRepresentation& shape, const Ifc4x3::IfcPresentationStyle& style);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_tc1
-IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3_tc1>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_tc1>& model, const Ifc4x3_tc1::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_tc1::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_tc1>& model, const Ifc4x3_tc1::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_tc1>& model, const Ifc4x3_tc1::IfcProductRepresentation& shape, const Ifc4x3_tc1::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_tc1>& model, const Ifc4x3_tc1::IfcRepresentation& shape, const Ifc4x3_tc1::IfcPresentationStyle& style);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_add1
-IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3_add1>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_add1>& model, const Ifc4x3_add1::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_add1>& model, const Ifc4x3_add1::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_add1>& model, const Ifc4x3_add1::IfcProductRepresentation& shape, const Ifc4x3_add1::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_add1>& model, const Ifc4x3_add1::IfcRepresentation& shape, const Ifc4x3_add1::IfcPresentationStyle& style);
-#endif
-
-#ifdef HAS_SCHEMA_4x3_add2
-IFC_PARSE_API Ifc4x3_add2::IfcPresentationStyle addStyleAssignment(hierarchy_helper<Ifc4x3_add2>& model, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcProductRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API Ifc4x3_add2::IfcPresentationStyle setSurfaceColour(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcRepresentation& shape, double red, double green, double blue, double alpha = 1.0);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcProductRepresentation& shape, const Ifc4x3_add2::IfcPresentationStyle& style);
-IFC_PARSE_API void setSurfaceColour(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcRepresentation& shape, const Ifc4x3_add2::IfcPresentationStyle& style);
-#endif
+template <typename Schema>
+IFC_SCHEMA_API void setSurfaceColour(
+    hierarchy_helper<Schema>& model,
+    const typename Schema::IfcRepresentation& shape,
+    const ifcopenshell::hierarchy_detail::surface_style_type<Schema>& style);
 
 #endif
-

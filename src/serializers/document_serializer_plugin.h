@@ -73,6 +73,8 @@ private:
 
 	const entry* find_entry_(const std::string& format, const std::string& schema_name) const;
 
+	friend SERIALIZERS_API bool load_document_serializer_plugin(document_serializer_registry& registry, const std::string& format, const std::string& schema_name);
+
 	std::map<std::string, std::vector<entry>> entries_;
 };
 
@@ -82,6 +84,7 @@ SERIALIZERS_API const char* document_serializer_plugin_registration_symbol();
 SERIALIZERS_API ifcopenshell::plugin::metadata document_serializer_plugin_metadata(const std::string& format, const std::string& schema_name = std::string());
 SERIALIZERS_API std::filesystem::path document_serializer_plugin_directory();
 SERIALIZERS_API void load_document_serializer_plugins(document_serializer_registry& registry);
+SERIALIZERS_API bool load_document_serializer_plugin(document_serializer_registry& registry, const std::string& format, const std::string& schema_name = std::string());
 SERIALIZERS_API document_serializer_registry& document_serializer_registry_instance();
 
 }

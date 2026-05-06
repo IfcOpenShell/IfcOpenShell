@@ -4,7 +4,6 @@
 #include "../ifcgeom/mapping_plugin.h"
 
 #include <boost/algorithm/string/case_conv.hpp>
-#include <mutex>
 
 namespace {
 	std::string mapping_key(const std::string& schema_name) {
@@ -15,8 +14,6 @@ namespace {
 
 ifcopenshell::geometry::impl::mapping_registry& ifcopenshell::geometry::impl::mapping_registry_instance() {
 	static mapping_registry registry;
-	static std::once_flag once;
-	std::call_once(once, load_mapping_plugins, std::ref(registry));
 	return registry;
 }
 
@@ -28,7 +25,11 @@ void ifcopenshell::geometry::impl::mapping_registry::bind(const std::string& sch
 
 ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_registry::construct(ifcopenshell::file* file, Settings& s) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
-	const auto it = entries_.find(schema_name_lower);
+	auto it = entries_.find(schema_name_lower);
+	if (it == entries_.end()) {
+		load_mapping_plugin(*this, file->schema()->name());
+		it = entries_.find(schema_name_lower);
+	}
 	if (it == entries_.end()) {
 		throw ifcopenshell::exception("No geometry mapping registered for " + schema_name_lower);
 	}

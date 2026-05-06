@@ -208,7 +208,7 @@ private:
 
 	std::vector<int> _get_inverse_indices(const express::Base& e) {
 		if (auto e_ = e.as<express::Entity>()) {
-			return $self->get_inverse_indices(e_.id());
+			return $self->get_inverse_indices_by_id(e_.id());
 		}
 		throw ifcopenshell::exception("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e.declaration().name() + "'.");
 	}

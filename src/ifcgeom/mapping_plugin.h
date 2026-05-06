@@ -34,6 +34,7 @@ namespace ifcopenshell {
 			IFC_GEOM_API ifcopenshell::plugin::metadata mapping_plugin_metadata(const std::string& schema_name);
 			IFC_GEOM_API std::filesystem::path mapping_plugin_directory();
 			IFC_GEOM_API void load_mapping_plugins(mapping_registry& registry);
+			IFC_GEOM_API bool load_mapping_plugin(mapping_registry& registry, const std::string& schema_name);
 
 		}
 	}

@@ -17,14 +17,23 @@ foreach(schema ${SCHEMA_VERSIONS})
     add_library(geometry_mapping_ifc${schema} SHARED ${IFCGEOM_FILES})
     set_target_properties(geometry_mapping_ifc${schema} PROPERTIES
         COMPILE_FLAGS "-DIfcSchema=Ifc${schema}"
-        OUTPUT_NAME "geometry.mapping.ifc${schema}"
+        OUTPUT_NAME "ifcopenshell.geometry.mapping.ifc${schema}"
         RUNTIME_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
         LIBRARY_OUTPUT_DIRECTORY "${mapping_plugin_runtime_dir}"
     )
 
     ifcopenshell_wasm_plugin_link_options(geometry_mapping_ifc${schema} ifcopenshell_register_mapping_plugin_v1)
+    if(WASM_BUILD)
+        target_link_options(geometry_mapping_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
+    endif()
 
-    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse Eigen3::Eigen)
+    if(NOT WASM_BUILD)
+        set(schema_plugin_library parse_schema_ifc${schema})
+    else()
+        set(schema_plugin_library)
+    endif()
+
+    target_link_libraries(geometry_mapping_ifc${schema} PRIVATE ${plugin_when_not_wasm} IfcGeom IfcParse ${schema_plugin_library} Eigen3::Eigen)
 
     list(APPEND mapping_libraries geometry_mapping_ifc${schema})
 

@@ -45,9 +45,9 @@ class spf_header;
 
 struct Ifc2x3 {
 
-IFC_PARSE_API static const ifcopenshell::schema_definition& get_schema();
+IFC_SCHEMA_API static const ifcopenshell::schema_definition& get_schema();
 
-IFC_PARSE_API static void clear_schema();
+IFC_SCHEMA_API static void clear_schema();
 
 static const char* const Identifier;
 
@@ -65,7 +65,7 @@ class Ifc2DCompositeCurve; class IfcActionRequest; class IfcActor; class IfcActo
 /// IfcOrganization An organization. 
 /// IfcPerson A person. 
 /// IfcPersonAndOrganization A person related to an organization.
-class IFC_PARSE_API IfcActorSelect : public express::Select {
+class IFC_SCHEMA_API IfcActorSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -103,7 +103,7 @@ public:
 /// Selecting IfcMeasureWithUnit allows the specification of both the actual figure for the value together with the currency in which the value is represented. 
 /// Selecting IfcMonetaryMeasure allows the specification only of the value, the currency being as set by the global context 
 /// Selecting IfcRatioMeasure assumes that the amount is a percentage or other REAL number. Note that if the amount is normally specified as -20%, then this figure will need to be converted to a multiplier of 0.8
-class IFC_PARSE_API IfcAppliedValueSelect : public express::Select {
+class IFC_SCHEMA_API IfcAppliedValueSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -132,7 +132,7 @@ public:
 /// NOTE: Corresponding STEP type: axis2_placement, please refer to ISO/IS 10303-42:1994, p. 19 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 1.5
-class IFC_PARSE_API IfcAxis2Placement : public express::Select {
+class IFC_SCHEMA_API IfcAxis2Placement : public express::Select {
 public:
     using express::Select::Select;
 
@@ -166,7 +166,7 @@ public:
 ///   (IfcSolidModel) are defined for being valid Boolean operands.
 /// 
 /// HISTORY: New Type in IFC Release 1.5.1
-class IFC_PARSE_API IfcBooleanOperand : public express::Select {
+class IFC_SCHEMA_API IfcBooleanOperand : public express::Select {
 public:
     using express::Select::Select;
 
@@ -204,7 +204,7 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The SELECT item IfcTextStyleForDefinedFont replaces the old IfcColour.
-class IFC_PARSE_API IfcCharacterStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcCharacterStyleSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -217,7 +217,7 @@ public:
 
 };
 
-class IFC_PARSE_API IfcClassificationNotationSelect : public express::Select {
+class IFC_SCHEMA_API IfcClassificationNotationSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -240,7 +240,7 @@ public:
 /// NOTE  Corresponding STEP name: colour. It has been made into a SELECT type in IFC to avoid multiple inheritance for pre defined colour. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcColour : public express::Select {
+class IFC_SCHEMA_API IfcColour : public express::Select {
 public:
     using express::Select::Select;
 
@@ -261,7 +261,7 @@ public:
 /// The IfcColourOrFactor enables the selection of either a RGB colour value or a scalar factor value for the use as values of the reflectance components.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcColourOrFactor : public express::Select {
+class IFC_SCHEMA_API IfcColourOrFactor : public express::Select {
 public:
     using express::Select::Select;
 
@@ -280,7 +280,7 @@ public:
 
 };
 
-class IFC_PARSE_API IfcConditionCriterionSelect : public express::Select {
+class IFC_SCHEMA_API IfcConditionCriterionSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -304,7 +304,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 type: csg_select, please refer to ISO/IS 10303-42:1994, p.168 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcCsgSelect : public express::Select {
+class IFC_SCHEMA_API IfcCsgSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -327,7 +327,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_font_or_scaled_curve_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveFontOrScaledCurveFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcCurveFontOrScaledCurveFontSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -365,7 +365,7 @@ public:
 ///   IfcEdgeCurve
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_PARSE_API IfcCurveOrEdgeCurve : public express::Select {
+class IFC_SCHEMA_API IfcCurveOrEdgeCurve : public express::Select {
 public:
     using express::Select::Select;
 
@@ -388,7 +388,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_style_font_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyleFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcCurveStyleFontSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -407,7 +407,7 @@ public:
 
 };
 
-class IFC_PARSE_API IfcDateTimeSelect : public express::Select {
+class IFC_SCHEMA_API IfcDateTimeSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -436,7 +436,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: defined_symbol_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcDefinedSymbolSelect : public express::Select {
+class IFC_SCHEMA_API IfcDefinedSymbolSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -528,7 +528,7 @@ public:
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 change: added IfcTemperatureRateOfChangeMeasure.
-class IFC_PARSE_API IfcDerivedMeasureValue : public express::Select {
+class IFC_SCHEMA_API IfcDerivedMeasureValue : public express::Select {
 public:
     using express::Select::Select;
 
@@ -950,7 +950,7 @@ public:
 /// 
 /// IfcDocumentInformation (for "metadata" of an external document)  
 /// IfcDocumentReference (for reference within a document)
-class IFC_PARSE_API IfcDocumentSelect : public express::Select {
+class IFC_SCHEMA_API IfcDocumentSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -969,7 +969,7 @@ public:
 
 };
 
-class IFC_PARSE_API IfcDraughtingCalloutElement : public express::Select {
+class IFC_SCHEMA_API IfcDraughtingCalloutElement : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1000,7 +1000,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: fill_area_style_tile_shape_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcFillAreaStyleTileShapeSelect : public express::Select {
+class IFC_SCHEMA_API IfcFillAreaStyleTileShapeSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1018,7 +1018,7 @@ public:
 /// the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcFillStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcFillStyleSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1065,7 +1065,7 @@ public:
 /// NOTE: Corresponding ISO 10303 type: geometric_set_select. Please refer to ISO/IS 10303-42:1994, p. 169 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC Release 2x.
-class IFC_PARSE_API IfcGeometricSetSelect : public express::Select {
+class IFC_SCHEMA_API IfcGeometricSetSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1092,7 +1092,7 @@ public:
 /// The IfcHatchLineDistanceSelect is a selection between different ways to determine the distance and potentially start point of hatch lines, either by an offset distance length measure or by a vector.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcHatchLineDistanceSelect : public express::Select {
+class IFC_SCHEMA_API IfcHatchLineDistanceSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1117,7 +1117,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: layered_item. It was called layered_things in the ISO/CD version and had been renamed to layered_item in the ISO/IS final version. Please refer to ISO/IS 10303-46:1994, p. 13 for the final definition of the formal standard.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcLayeredItem : public express::Select {
+class IFC_SCHEMA_API IfcLayeredItem : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1145,7 +1145,7 @@ public:
 /// IfcLibraryReference (for reference into a library of information by location)  
 /// 
 /// Generally, it is expected that selection will be IfcLibraryReference and only rarely IfcLibraryInformation. IfcLibraryInformation should only be selected in circumstances where there could be a need to indicate the libraries that will be used without making individual references. This may occur for higher level objects such as a project or building.
-class IFC_PARSE_API IfcLibrarySelect : public express::Select {
+class IFC_SCHEMA_API IfcLibrarySelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1185,7 +1185,7 @@ public:
 ///   directions covers all cases.  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcLightDistributionDataSourceSelect : public express::Select {
+class IFC_SCHEMA_API IfcLightDistributionDataSourceSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1229,7 +1229,7 @@ public:
 /// 
 /// IFC2x4 CHANGE The select now includes two new abstract entities IfcMaterialDefinition
 /// and IfcMaterialUsageDefinition with upward compatibility.  The use of IfcMaterialList is deprecated from IFC2x4 onwards.
-class IFC_PARSE_API IfcMaterialSelect : public express::Select {
+class IFC_SCHEMA_API IfcMaterialSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1274,7 +1274,7 @@ public:
 /// HISTORY New type in IFC Release 1.5.1.
 /// 
 /// IFC 2x4 change: added IfcNonNegativeLengthMeasure
-class IFC_PARSE_API IfcMeasureValue : public express::Select {
+class IFC_SCHEMA_API IfcMeasureValue : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1424,7 +1424,7 @@ public:
 ///   IfcTable 
 ///   IfcText 
 ///   IfcTimeSeries
-class IFC_PARSE_API IfcMetricValueSelect : public express::Select {
+class IFC_SCHEMA_API IfcMetricValueSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1487,7 +1487,7 @@ public:
 /// IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as properties within a property set. 
 /// 
 /// HISTORY  New select type in IFC Release 2.0.
-class IFC_PARSE_API IfcObjectReferenceSelect : public express::Select {
+class IFC_SCHEMA_API IfcObjectReferenceSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1572,7 +1572,7 @@ public:
 
 };
 
-class IFC_PARSE_API IfcOrientationSelect : public express::Select {
+class IFC_SCHEMA_API IfcOrientationSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1597,7 +1597,7 @@ public:
 ///   IfcVertexPoint
 /// 
 /// HISTORY  New select type in IFC2x Edition 3.
-class IFC_PARSE_API IfcPointOrVertexPoint : public express::Select {
+class IFC_SCHEMA_API IfcPointOrVertexPoint : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1623,7 +1623,7 @@ public:
 /// HISTORY New type in IFC2x2.
 /// 
 /// IFC2x4 CHANGE The select type has been deprecated.
-class IFC_PARSE_API IfcPresentationStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcPresentationStyleSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1676,7 +1676,7 @@ public:
 /// NOTE  Corresponding ISO 10303 type: shell. Please refer to ISO/IS 10303-42:1994, p. 127 for the final definition of the formal standard. Only the select items closed_shell (IfcClosedShell) and open_shell (IfcOpenShell) have been incorporated in the current IFC release. 
 /// 
 /// HISTORY  New type in IFC2x.
-class IFC_PARSE_API IfcShell : public express::Select {
+class IFC_SCHEMA_API IfcShell : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1713,7 +1713,7 @@ public:
 /// HISTORY New type in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Items IfcDateTime, IfcDate, IfcTime, IfcDuration added.
-class IFC_PARSE_API IfcSimpleValue : public express::Select {
+class IFC_SCHEMA_API IfcSimpleValue : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1773,7 +1773,7 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The SELECT item IfcMeasureWithUnit has been removed from the IfcSizeSelect, the IfcRatioMeasure and IfcDescriptiveMeasure has been added.
-class IFC_PARSE_API IfcSizeSelect : public express::Select {
+class IFC_SCHEMA_API IfcSizeSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1825,7 +1825,7 @@ public:
 /// For each surface side style only one of the two methods is needed for calculating the specular part of the equation.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcSpecularHighlightSelect : public express::Select {
+class IFC_SCHEMA_API IfcSpecularHighlightSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1852,7 +1852,7 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcStructuralActivityAssignmentSelect : public express::Select {
+class IFC_SCHEMA_API IfcStructuralActivityAssignmentSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1879,7 +1879,7 @@ public:
 ///   IfcFaceBasedSurfaceModel (a connected face set, representing a faceted surface as an approximation of a non planar, non rectangular bounded surface)
 /// 
 /// HISTORY  New select type in IFC2x3.
-class IFC_PARSE_API IfcSurfaceOrFaceSurface : public express::Select {
+class IFC_SCHEMA_API IfcSurfaceOrFaceSurface : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1912,7 +1912,7 @@ public:
 /// NOTE: Corresponding ISO 10303 type: surface_style_element_select. Please refer to ISO/IS 10303-46:1994, p. 85 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Select type in IFC2x2.
-class IFC_PARSE_API IfcSurfaceStyleElementSelect : public express::Select {
+class IFC_SCHEMA_API IfcSurfaceStyleElementSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1955,7 +1955,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: symbol_style_select. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcSymbolStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcSymbolStyleSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -1986,7 +1986,7 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The select type has been renamed from IfcFontSelect.
-class IFC_PARSE_API IfcTextFontSelect : public express::Select {
+class IFC_SCHEMA_API IfcTextFontSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2013,7 +2013,7 @@ public:
 /// HISTORY  New type in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The items within the IfcTextStyleSelect have changed to IfcTextStyleWithBoxCharacteristics and IfcTextStyleTextModel.
-class IFC_PARSE_API IfcTextStyleSelect : public express::Select {
+class IFC_SCHEMA_API IfcTextStyleSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2036,7 +2036,7 @@ public:
 /// NOTE Corresponding ISO 10303 type: trimming_select, please refer to ISO/IS 10303-42:1994, p. 20 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.0
-class IFC_PARSE_API IfcTrimmingSelect : public express::Select {
+class IFC_SCHEMA_API IfcTrimmingSelect : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2067,7 +2067,7 @@ public:
 /// IfcMonetaryUnit: A unit for defining currencies. 
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcUnit : public express::Select {
+class IFC_SCHEMA_API IfcUnit : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2101,7 +2101,7 @@ public:
 ///   IfcDerivedMeasureValue A select type for derived measure types.
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcValue : public express::Select {
+class IFC_SCHEMA_API IfcValue : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2715,7 +2715,7 @@ public:
 ///   definition of the formal standard.  
 ///   HISTORY New Type in IFC Release
 ///   1.5
-class IFC_PARSE_API IfcVectorOrDirection : public express::Select {
+class IFC_SCHEMA_API IfcVectorOrDirection : public express::Select {
 public:
     using express::Select::Select;
 
@@ -2738,7 +2738,7 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcActionSourceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActionSourceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2758,7 +2758,7 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcActionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActionTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2787,7 +2787,7 @@ public:
 /// 
 /// See property set of actuator common attributes for specification of
 ///   properties for hand operated actuators.
-class IFC_PARSE_API IfcActuatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcActuatorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2811,7 +2811,7 @@ public:
 ///   HOME A home address.
 ///   DISTRIBUTIONPOINT A postal distribution point address.
 ///   USERDEFINED A user defined address type to be provided.
-class IFC_PARSE_API IfcAddressTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAddressTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2825,7 +2825,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcAheadOrBehind : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAheadOrBehind : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2849,7 +2849,7 @@ public:
 ///   NOTDEFINED:					  Undefined terminal box.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_PARSE_API IfcAirTerminalBoxTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirTerminalBoxTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2875,7 +2875,7 @@ public:
 /// NOTE: Architectural louvres within doors or windows are defined by IfcPermeableCoveringProperties.
 /// 
 /// HISTORY: New enumeration in IFC R2x2.  Modified in IFC R2x4 to add LOUVRE and remove EYEBALL, IRIS, LINEARGRILLE, LINEARDIFFUSER
-class IFC_PARSE_API IfcAirTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2904,7 +2904,7 @@ public:
 ///   NOTDEFINED:  Undefined air to air heat recovery type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcAirToAirHeatRecoveryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAirToAirHeatRecoveryTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2931,7 +2931,7 @@ public:
 /// WHISTLE: An audible alarm.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcAlarmTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAlarmTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2950,7 +2950,7 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcAnalysisModelTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAnalysisModelTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2970,7 +2970,7 @@ public:
 /// 
 /// HISTORY: New type in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcAnalysisTheoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAnalysisTheoryTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -2995,7 +2995,7 @@ public:
 /// 
 /// Use definitions 
 /// There can be only one arithmetic operator for each applied value relationship. This is to enforce arithmetic consistency. Given this consistency, the cardinality of the IfcAppliedValueRelationship.Components attribute is a set of one to many applied values that are components of an applied value.
-class IFC_PARSE_API IfcArithmeticOperatorEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcArithmeticOperatorEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3020,7 +3020,7 @@ public:
 /// SITE - this assembly is assembled at site
 /// 
 /// FACTORY - this assembly is assembled in a factory
-class IFC_PARSE_API IfcAssemblyPlaceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAssemblyPlaceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3047,7 +3047,7 @@ public:
 /// NOTE Corresponding ISO 10303 type: b_spline_curve_form. Please refer to ISO/IS 10303-42:1994, p. 15 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in Release IFC2x2.
-class IFC_PARSE_API IfcBSplineCurveForm : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBSplineCurveForm : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3099,7 +3099,7 @@ public:
 /// IFC2x4 CHANGE The enumerators
 /// HOLLOWCORE and SPANDREL have been
 /// added.
-class IFC_PARSE_API IfcBeamTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBeamTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3152,7 +3152,7 @@ public:
 /// 
 /// NOTINCLUDEDIN 
 ///   Identifies that a value (individual item) must not be included (i.e. must be excluded) in the aggregation (set, list or table) set by the constraint.
-class IFC_PARSE_API IfcBenchmarkEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBenchmarkEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3174,7 +3174,7 @@ public:
 ///   NOTDEFINED:  Undefined Boiler type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcBoilerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBoilerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3196,7 +3196,7 @@ public:
 /// NOTE Corresponding STEP type: boolean_operator, please refer to ISO/IS 10303-42:1994, p.167 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcBooleanOperator : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBooleanOperator : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3220,7 +3220,7 @@ public:
 /// USERDEFINED
 /// 
 /// NOTDEFINED
-class IFC_PARSE_API IfcBuildingElementProxyTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBuildingElementProxyTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3243,7 +3243,7 @@ public:
 /// TEE: A fitting at which a branch is taken from the main route of the cable carrier. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcCableCarrierFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableCarrierFittingTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3266,7 +3266,7 @@ public:
 /// CONDUITSEGMENT: An enclosed tubular carrier segment through which cables are pulled.
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcCableCarrierSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableCarrierSegmentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3291,7 +3291,7 @@ public:
 /// CORESEGMENT: A self contained element of a  cable that comprises one or more conductors and sheathing.The core of one lead is normally single wired or multiwired which are intertwined.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcCableSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCableSegmentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3315,7 +3315,7 @@ public:
 /// Consider Application A will create an IFC dataset that it wants to publish to others for modification and have the ability to subsequently merge these changes back into the original model. Before publication, it may want to set the IfcChangeActionEnum to NOCHANGE to establish a baseline so that other application changes can be easily identified. Application B then receives this IFC dataset and adds a new object and sets IfcChangeActionEnum to ADDED with Application B defined as the OwningApplication. Application B then modifies an existing object and (re)defines the LastModifiedDate to the time of the modification, LastModifyingUser to the IfcPersonAndOrganization making the change, and sets the LastModifyingApplication to Application B. When Application A receives this modified dataset, it can determine which objects have been added and modified by Application B and either merge or reject these changes as necessary. Consequently, the intent is that an application only modifies the value of IfcChangeActionEnum when it does something to the object, with the further intent that a model server is responsible for clearing the IfcChangeActionEnum back to NOCHANGE when it is ready to be republished.
 /// 
 /// HISTORY: New enumeration in IFC R2.0. Modified in IFC2x4.
-class IFC_PARSE_API IfcChangeActionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcChangeActionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3338,7 +3338,7 @@ public:
 ///   NOTDEFINED: Undefined chiller type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcChillerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcChillerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3373,7 +3373,7 @@ public:
 /// NOTDEFINED:  Undefined coil type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcCoilTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoilTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3400,7 +3400,7 @@ public:
 /// future releases of IFC.
 /// HISTORY New Enumeration
 /// in Release IFC2x Edition 2.
-class IFC_PARSE_API IfcColumnTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcColumnTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3435,7 +3435,7 @@ public:
 ///   NOTDEFINED:  Undefined compressor type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcCompressorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCompressorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3461,7 +3461,7 @@ public:
 ///   NOTDEFINED:  Undefined condenser type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  WATERCOOLED added in IFC 2x4.
-class IFC_PARSE_API IfcCondenserTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCondenserTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3494,7 +3494,7 @@ public:
 ///   RelatedConnectionType: AtStart 
 /// 
 /// Figure 65 — Connection types</td
-class IFC_PARSE_API IfcConnectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConnectionTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3524,7 +3524,7 @@ public:
 /// 
 /// ADVISORY 
 ///   Qualifies a constraint such that it is advised that it is followed within or at the values set.
-class IFC_PARSE_API IfcConstraintEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcConstraintEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3551,7 +3551,7 @@ public:
 /// TWOPOSITION: Output can be either on or off
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcControllerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcControllerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3583,7 +3583,7 @@ public:
 /// NOTDEFINED:  Undefined cooled beam type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcCooledBeamTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCooledBeamTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3608,7 +3608,7 @@ public:
 ///   NOTDEFINED:  Undefined cooling tower type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcCoolingTowerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoolingTowerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3634,7 +3634,7 @@ public:
 /// SCHEDULEOFRATES: A listing of each type of goods forming construction or installation works with the cost of purchase, construction/installation, overheads and profit assigned so that additional items of that type can be costed.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcCostScheduleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCostScheduleTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3690,7 +3690,7 @@ public:
 /// covering
 /// NOTDEFINED: undefined type of
 /// covering
-class IFC_PARSE_API IfcCoveringTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCoveringTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3704,7 +3704,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcCurrencyEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurrencyEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3726,7 +3726,7 @@ public:
 /// are no specific enumerators defined, the IfcCurtainWallTypeEnum
 /// has
 /// been added for future extensions.
-class IFC_PARSE_API IfcCurtainWallTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurtainWallTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3756,7 +3756,7 @@ public:
 /// NOTDEFINED: Undefined damper.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_PARSE_API IfcDamperTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDamperTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3777,7 +3777,7 @@ public:
 ///   NOTDEFINED: The origin of the time data is undefined.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcDataOriginEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDataOriginEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3847,7 +3847,7 @@ public:
 /// HISTORY: New type in IFC Release 2.0.
 /// 
 /// IFC 2x4 change: added TEMPERATURERATEOFCHANGE.
-class IFC_PARSE_API IfcDerivedUnitEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDerivedUnitEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3861,7 +3861,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcDimensionExtentUsage : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDimensionExtentUsage : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3882,7 +3882,7 @@ public:
 /// NEGATIVE: Direction defined to be negative.
 /// 
 /// HISTORY New Type in IFC2x.
-class IFC_PARSE_API IfcDirectionSenseEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDirectionSenseEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3911,7 +3911,7 @@ public:
 /// NOTDEFINED: Undefined chamber type.
 /// 
 /// HISTORY: New enumeration in IFC R2x2
-class IFC_PARSE_API IfcDistributionChamberElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDistributionChamberElementTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3936,7 +3936,7 @@ public:
 /// PERSONAL: Document is personal to the author. 
 /// USERDEFINED 
 /// NOTDEFINED
-class IFC_PARSE_API IfcDocumentConfidentialityEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDocumentConfidentialityEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3952,7 +3952,7 @@ public:
 /// IfcDocumentStatusEnum enables selection of the status of document information from a list of choices.
 /// 
 /// HISTORY: New enumeration in IFC Release 2x.
-class IFC_PARSE_API IfcDocumentStatusEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDocumentStatusEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -3998,7 +3998,7 @@ public:
 /// Figure 165 — Door panel operations
 /// 
 /// NOTE  Figures (symbolic representation) depend on the national building code.  These figures are only shown as illustrations
-class IFC_PARSE_API IfcDoorPanelOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorPanelOperationEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4018,7 +4018,7 @@ public:
 /// Figure 166 shows the designation of a door panel with PanelPosition = LEFT and a door panel with PanelPosition = RIGHT within a door style with OperationType = DOUBLE_DOOR_SINGLE_SWING. The position is given as shown in the XZ plane of the local placement, looking into the direction of the positive Y axis. 
 /// 
 /// Figure 166 — Door panel positions
-class IFC_PARSE_API IfcDoorPanelPositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorPanelPositionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4038,7 +4038,7 @@ public:
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-class IFC_PARSE_API IfcDoorStyleConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorStyleConstructionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4220,7 +4220,7 @@ public:
 /// defined by the ObjectPlacement at IfcDoor,
 /// and the IfcDoorLiningProperties.LiningOffset
 /// parameter.
-class IFC_PARSE_API IfcDoorStyleOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoorStyleOperationEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4266,7 +4266,7 @@ public:
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_PARSE_API IfcDuctFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctFittingTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4294,7 +4294,7 @@ public:
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_PARSE_API IfcDuctSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctSegmentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4317,7 +4317,7 @@ public:
 ///   NOTDEFINED:  Undefined duct silencer type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcDuctSilencerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDuctSilencerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4359,7 +4359,7 @@ public:
 /// WASHINGMACHINE: An appliance that has the primary function of washing clothes. 	  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcElectricApplianceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricApplianceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4373,7 +4373,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcElectricCurrentEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricCurrentEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4387,7 +4387,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcElectricDistributionPointFunctionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricDistributionPointFunctionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4410,7 +4410,7 @@ public:
 /// UPS: A device that provides a time limited alternative source of power supply in the event of failure of the main supply.  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcElectricFlowStorageDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricFlowStorageDeviceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4433,7 +4433,7 @@ public:
 /// STANDALONE: Electrical generator which does not include its source of kinetic energy, that is, a motor, engine, or turbine is modeled by a separate object. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcElectricGeneratorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricGeneratorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4447,7 +4447,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcElectricHeaterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricHeaterTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4471,7 +4471,7 @@ public:
 /// SYNCHRONOUS: A motor that operates at a constant speed up to full load. The rotor speed is equal to the speed of the rotating magnetic field of the stator; there is no slip. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcElectricMotorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricMotorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4493,7 +4493,7 @@ public:
 /// RELAY: Electromagnetically operated contactor for making or breaking a control circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcElectricTimeControlTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricTimeControlTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4525,7 +4525,7 @@ public:
 ///   TRUSS: A structure built up of members with (quasi) pinned joints
 ///   USERDEFINED: User-defined element assembly
 ///   NOTDEFINED: Undefined element assembly
-class IFC_PARSE_API IfcElementAssemblyTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElementAssemblyTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4550,7 +4550,7 @@ public:
 /// 
 /// HISTORY New enumeration in
 ///   IFC Release 2.x
-class IFC_PARSE_API IfcElementCompositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElementCompositionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4564,7 +4564,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcEnergySequenceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEnergySequenceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4578,7 +4578,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcEnvironmentalImpactCategoryEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEnvironmentalImpactCategoryEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4607,7 +4607,7 @@ public:
 ///   NOTDEFINED:  Undefined evaporative cooler type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcEvaporativeCoolerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEvaporativeCoolerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4633,7 +4633,7 @@ public:
 ///   NOTDEFINED:  Undefined evaporator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcEvaporatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEvaporatorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4660,7 +4660,7 @@ public:
 ///   NOTDEFINED: Undefined fan type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcFanTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFanTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4686,7 +4686,7 @@ public:
 ///   NOTDEFINED:	Undefined filter type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  COMPRESSEDAIRFILTER added in IFC2x4.
-class IFC_PARSE_API IfcFilterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFilterTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4712,7 +4712,7 @@ public:
 /// SPRINKLERDEFLECTOR: Device attached to a sprinkler to deflect the water flow into a spread pattern to cover the required area. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Underined type.
-class IFC_PARSE_API IfcFireSuppressionTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFireSuppressionTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4733,7 +4733,7 @@ public:
 ///   NOTDEFINED:    Undefined flow direction.
 /// 
 /// HISTORY: New enumeration in IFC R2.0
-class IFC_PARSE_API IfcFlowDirectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowDirectionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4762,7 +4762,7 @@ public:
 /// VOLTMETER_RMS: A device that reads and displays the RMS (mean) voltage in an electrical circuit. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcFlowInstrumentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowInstrumentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4790,7 +4790,7 @@ public:
 /// NOTDEFINED:    Undefined meter type
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_PARSE_API IfcFlowMeterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFlowMeterTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4817,7 +4817,7 @@ public:
 ///   STRIP_FOOTING A linear element that transfers loads into the ground from either a continuous element, such as a wall, or from a series of elements, such as columns.
 ///   USERDEFINED Special types of footings which meet specific local requirements.
 ///   NOTDEFINED The type of footing is not defined.
-class IFC_PARSE_API IfcFootingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFootingTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4831,7 +4831,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcGasTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGasTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4885,7 +4885,7 @@ public:
 /// No specification given.
 /// 
 /// HISTORY: New Type in Release IFC2x2.
-class IFC_PARSE_API IfcGeometricProjectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGeometricProjectionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4904,7 +4904,7 @@ public:
 /// and is unique within the project. The local (or object) coordinate system is given by IfcProduct.ObjectPlacement and is used by all IfcRepresentation's within the IfcProduct.Representation.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcGlobalOrLocalEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGlobalOrLocalEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4926,7 +4926,7 @@ public:
 ///   NOTDEFINED:  Undefined heat exchanger type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcHeatExchangerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatExchangerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -4959,7 +4959,7 @@ public:
 ///   NOTDEFINED:  Undefined humidifier type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcHumidifierTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHumidifierTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5027,7 +5027,7 @@ public:
 /// applicable to IfcSpace. The following enumerators are
 /// added: EXTERNAL_EARTH, EXTERNAL_WATER,
 /// EXTERNAL_FIRE.
-class IFC_PARSE_API IfcInternalOrExternalEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInternalOrExternalEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5049,7 +5049,7 @@ public:
 /// FURNITUREINVENTORY: A collection of furniture instances of type IfcFurnishingElement 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcInventoryTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInventoryTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5069,7 +5069,7 @@ public:
 /// DATA: Contains cables, outlets, and/or switches for communications use.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcJunctionBoxTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcJunctionBoxTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5099,7 +5099,7 @@ public:
 /// TUNGSTENFILAMENT: A lamp that emits light by passing an electrical current through a tungsten wire filament in a near vacuum.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcLampTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLampTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5121,7 +5121,7 @@ public:
 /// AXIS3: Usually z-axis.
 /// 
 /// HISTORY: New Type in IFC2x.
-class IFC_PARSE_API IfcLayerSetDirectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLayerSetDirectionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5148,7 +5148,7 @@ public:
 /// Figure 302 — Light distribution curves
 /// 
 /// HISTORY  This is a new enumeration in IFC2x2.
-class IFC_PARSE_API IfcLightDistributionCurveEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightDistributionCurveEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5178,7 +5178,7 @@ public:
 /// METALHALIDE 
 /// TUNGSTENFILAMENT 
 /// NOTDEFINED
-class IFC_PARSE_API IfcLightEmissionSourceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightEmissionSourceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5202,7 +5202,7 @@ public:
 /// SECURITYLIGHTING: A light fixture having specific purpose of directing occupants in an emergency, such as an illuminated exit sign or emergency flood light. 
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcLightFixtureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLightFixtureTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5236,7 +5236,7 @@ public:
 /// HISTORY: New type in IFC 2x2.
 /// 
 /// IFC 2x4 change:  Obsolete item LOAD_COMBINATION_GROUP removed.  Load cases are directly assigned to load combinations with different factors for each load case—load combination pair by means of IfcRelAssignsToGroupByFactor.
-class IFC_PARSE_API IfcLoadGroupTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLoadGroupTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5493,7 +5493,7 @@ public:
 /// F
 /// F
 /// F
-class IFC_PARSE_API IfcLogicalOperatorEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLogicalOperatorEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5549,7 +5549,7 @@ public:
 /// are added.
 /// IFC2x Edition 3 CHANGE The additional identifier MULLION has
 /// been added.
-class IFC_PARSE_API IfcMemberTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMemberTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5571,7 +5571,7 @@ public:
 /// DIRECTDRIVE: A direct, physical connection made between the motor and the driven device. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcMotorConnectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMotorConnectionTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5592,7 +5592,7 @@ public:
 /// HISTORY  New enumeration in IFC2x2.
 /// 
 /// IFC2x4 CHANGE  The enumeration is deprecated.
-class IFC_PARSE_API IfcNullStyle : public express::DeclaredType {
+class IFC_SCHEMA_API IfcNullStyle : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5608,7 +5608,7 @@ public:
 /// This enumeration defines the applicable object categories, that is, the subtypes at the 2nd level of the IFC inheritance tree. Attached to an object, it indicates to which subtype of IfcObject the entity referencing it would otherwise comply with. 
 /// 
 /// HISTORY New entity in IFC Release 1.0, has been renamed from IfcProxyEnum in IFC 2x.
-class IFC_PARSE_API IfcObjectTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcObjectTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5650,7 +5650,7 @@ public:
 /// 
 /// TRIGGERCONDITION 
 ///   A constraint whose objective is to indicate a limiting value beyond which the condition of an object requires a particular form of attention.
-class IFC_PARSE_API IfcObjectiveEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcObjectiveEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5676,7 +5676,7 @@ public:
 /// TENANT: Actor renting the use of a property fro a period of time  
 /// USERDEFINED: User-defined type.  
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcOccupantTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcOccupantTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5702,7 +5702,7 @@ public:
 /// TELEPHONEOUTLET: An outlet used for connecting telephone communications equipment.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcOutletTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcOutletTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5737,7 +5737,7 @@ public:
 ///   no information available
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0
-class IFC_PARSE_API IfcPermeableCoveringOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPermeableCoveringOperationEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5773,7 +5773,7 @@ public:
 /// 
 /// HISTORY: New enumeration in
 ///   IFC Release 2.0
-class IFC_PARSE_API IfcPhysicalOrVirtualEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPhysicalOrVirtualEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5808,7 +5808,7 @@ public:
 ///   USERDEFINED Special types of pile construction which meet
 ///   specific local requirements. 
 ///   NOTDEFINED The type of pile construction is not defined.
-class IFC_PARSE_API IfcPileConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPileConstructionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5834,7 +5834,7 @@ public:
 ///   SUPPORT A support pile.
 ///   USERDEFINED The type of pile function is user defined.
 ///   NOTDEFINED The type of pile function is not defined.
-class IFC_PARSE_API IfcPileTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPileTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5878,7 +5878,7 @@ public:
 ///   NOTDEFINED:  Undefined fitting.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_PARSE_API IfcPipeFittingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPipeFittingTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5906,7 +5906,7 @@ public:
 ///   NOTDEFINED:  Undefined segment.
 /// 
 /// HISTORY: New enumeration in IFC 2x2
-class IFC_PARSE_API IfcPipeSegmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPipeSegmentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5937,7 +5937,7 @@ public:
 /// CHANGE  The additional identifiers CURTAIN_PANEL, SHEET have
 /// been
 /// added.
-class IFC_PARSE_API IfcPlateTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlateTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5964,7 +5964,7 @@ public:
 /// STARTUP: A procedure undertaken to start up the operation an artifact
 /// USERDEFINED
 /// NOTDEFINED
-class IFC_PARSE_API IfcProcedureTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProcedureTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5985,7 +5985,7 @@ public:
 /// 
 /// CURVE: The resulting geometric item is of type curve and closed (with the only exception of the curve created by the IfcArbitraryOpenProfileDef which resolves into an open curve). The resulting geometry after applying a sweeping operation is a swept surface. This can be used to define shapes with thin sheets, such as ducts, where the thickness is not appropriate for geometric representation.
 /// AREA: The resulting geometric item is of type surface. The resulting geometry after applying a sweeping operation is a swept solid with defined volume.
-class IFC_PARSE_API IfcProfileTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProfileTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -5999,7 +5999,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcProjectOrderRecordTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectOrderRecordTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6023,7 +6023,7 @@ public:
 /// WORKORDER: A general instruction to carry out work and a description of the work to be done. Note the difference between a work order generally and a maintenance work order. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcProjectOrderTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectOrderTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6042,7 +6042,7 @@ public:
 /// HISTORY  New type in IFC2x2. 
 /// 
 /// Figure 234 — Projected or true length
-class IFC_PARSE_API IfcProjectedOrTrueLengthEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProjectedOrTrueLengthEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6056,7 +6056,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcPropertySourceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPropertySourceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6084,7 +6084,7 @@ public:
 /// VARISTOR: A high voltage surge protection device.
 /// USERDEFINED: User-defined type.
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcProtectiveDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcProtectiveDeviceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6125,7 +6125,7 @@ public:
 /// NOTDEFINED:  Pump type has not been defined.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  SUBMERSIBLEPUMP and SUMPPUMP added in IFC2x4.
-class IFC_PARSE_API IfcPumpTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPumpTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6158,7 +6158,7 @@ public:
 ///   the user type is given by the attribute IfcRailing.ObjectType. 
 ///   NOTDEFINED: Undefined railing element, no type information
 ///   available.
-class IFC_PARSE_API IfcRailingTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRailingTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6182,7 +6182,7 @@ public:
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-class IFC_PARSE_API IfcRampFlightTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRampFlightTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6243,7 +6243,7 @@ public:
 ///     
 /// 
 /// Figure 67 — Ramp types
-class IFC_PARSE_API IfcRampTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRampTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6272,7 +6272,7 @@ public:
 /// PLASTIC: A reflectance model providing a specular effect which is similar to the Phong model. 
 /// STRAUSS: A reflectance model for metallic and non-metallic appearance based on a limited set of control parameter.
 /// NOTDEFINED
-class IFC_PARSE_API IfcReflectanceMethodEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReflectanceMethodEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6304,7 +6304,7 @@ public:
 ///   ANCHORING Anchoring reinforcement. 
 ///   USERDEFINED The type of reinforcement is user defined. 
 ///   NOTDEFINED The type of reinforcement is not defined.
-class IFC_PARSE_API IfcReinforcingBarRoleEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingBarRoleEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6326,7 +6326,7 @@ public:
 /// 
 /// PLAIN The reinforcing bar surface is plain. 
 ///   TEXTURED The reinforcing bar surface is textured (ribbed).
-class IFC_PARSE_API IfcReinforcingBarSurfaceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReinforcingBarSurfaceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6351,7 +6351,7 @@ public:
 /// NOTDEFINED: Undefined consumption.
 /// 
 /// HISTORY: New Enumeration in IFC Release 2.0.
-class IFC_PARSE_API IfcResourceConsumptionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcResourceConsumptionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6365,7 +6365,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcRibPlateDirectionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRibPlateDirectionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6407,7 +6407,7 @@ public:
 ///   FIELDCONSTRUCTIONMANAGER 
 ///   RESELLER
 ///   USERDEFINED User defined value to be provided.
-class IFC_PARSE_API IfcRoleEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoleEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6486,7 +6486,7 @@ public:
 ///     
 /// 
 /// Figure 68 — Roof types
-class IFC_PARSE_API IfcRoofTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRoofTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6526,7 +6526,7 @@ public:
 ///   ATTO: 10^-18. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcSIPrefix : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSIPrefix : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6578,7 +6578,7 @@ public:
 ///   WEBER: Unit for magnetic flux. 
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcSIUnitName : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSIUnitName : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6610,7 +6610,7 @@ public:
 /// WCSEAT: [Deprecated] Hinged seat that fits on the top of a water closet (WC) pan. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcSanitaryTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSanitaryTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6633,7 +6633,7 @@ public:
 /// UNIFORM The section is uniform in longitudinal direction.
 /// 
 /// TAPERED The section is tapered in longitudinal direction.
-class IFC_PARSE_API IfcSectionTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6674,7 +6674,7 @@ public:
 /// WINDSENSOR: A device that senses or detects airflow speed and direction. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcSensorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSensorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6692,7 +6692,7 @@ public:
 ///   time lag is applied to a sequence between two processes.
 /// 
 /// HISTORY  New entity in IFC 1.0
-class IFC_PARSE_API IfcSequenceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSequenceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6706,7 +6706,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcServiceLifeFactorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcServiceLifeFactorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6720,7 +6720,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcServiceLifeTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcServiceLifeTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6765,7 +6765,7 @@ public:
 /// 
 /// IFC2x3 CHANGE
 ///   new enumerator added.
-class IFC_PARSE_API IfcSlabTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSlabTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6779,7 +6779,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcSoundScaleEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundScaleEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6804,7 +6804,7 @@ public:
 /// NOTE: This enumeration was revised in IFC 2x4 and was renamed from IfcHydronicHeaterTypeEnum in IFC R2x.
 /// 
 /// HISTORY: New enumeration in IFC R2x.
-class IFC_PARSE_API IfcSpaceHeaterTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpaceHeaterTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6852,7 +6852,7 @@ public:
 /// NOTE the use is deprecated and
 /// only provided for backward compatibility
 /// purposes.
-class IFC_PARSE_API IfcSpaceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpaceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6874,7 +6874,7 @@ public:
 /// RAINWATERHOPPER: A box placed at the top of a rainwater downpipe to catch rainwater from guttering. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcStackTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStackTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -6902,7 +6902,7 @@ public:
 /// 
 /// HISTORY: New Enumeration in
 ///   Release IFC2x Edition 2.
-class IFC_PARSE_API IfcStairFlightTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStairFlightTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7008,7 +7008,7 @@ public:
 ///     
 /// 
 /// Figure 69 — Stair types
-class IFC_PARSE_API IfcStairTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStairTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7034,7 +7034,7 @@ public:
 /// HISTORY  New enumeration in IFC R2.0.
 /// 
 /// IFC2x3 CHANGE  This concept was initially introduced in IFC 2.0 as IfcModifiedFlag of type BINARY(3) FIXED and has been modified in R2x to an enumeration. It was initially introduced as a first step towards providing facilities for partial model exchange from a server as requested by the IFC implementers. It is intended for use primarily by a model server so that an application can identify the state of the object.
-class IFC_PARSE_API IfcStateEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStateEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7048,7 +7048,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcStructuralCurveTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralCurveTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7062,7 +7062,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcStructuralSurfaceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcStructuralSurfaceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7086,7 +7086,7 @@ public:
 /// NOTE Corresponding ISO 10303 type: surface_side. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New Enumeration in IFC 2.0
-class IFC_PARSE_API IfcSurfaceSide : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSurfaceSide : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7100,7 +7100,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcSurfaceTextureEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSurfaceTextureEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7129,7 +7129,7 @@ public:
 /// TOGGLESWITCH: A toggle switch has two positions, and may enable or isolate electrical power or other setting (according to the switched port type). 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcSwitchingDeviceTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSwitchingDeviceTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7165,7 +7165,7 @@ public:
 /// NOTDEFINED:  Undefined tank type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.  BASIN and VESSEL added in IFC2x4.
-class IFC_PARSE_API IfcTankTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTankTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7179,7 +7179,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcTendonTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTendonTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7199,7 +7199,7 @@ public:
 /// NOTE Corresponding ISO 10303 name:text_path . Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcTextPath : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextPath : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7213,7 +7213,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcThermalLoadSourceEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalLoadSourceEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7227,7 +7227,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcThermalLoadTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalLoadTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7251,7 +7251,7 @@ public:
 ///   NOTDEFINED: The time series data is not defined. 
 /// 
 /// HISTORY: New enumeration in IFC2x2.
-class IFC_PARSE_API IfcTimeSeriesDataTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeSeriesDataTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7265,7 +7265,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcTimeSeriesScheduleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeSeriesScheduleTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7289,7 +7289,7 @@ public:
 /// VOLTAGE: A transformer that changes the voltage between circuits.  
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcTransformerTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransformerTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7318,7 +7318,7 @@ public:
 /// CONTINUOUS: The segments join but no condition on their tangents is implied. 
 /// CONTSAMEGRADIENT: The segments join and their tangent vectors or tangent planes are parallel and have the same direction at the joint: equality of derivatives is not required. 
 /// CONTSAMEGRADIENTSAMECURVATURE: For a curve, the segments join, their tangent vectors are parallel and in the same direction and their curvatures are equal at the joint: equality of derivatives is not required. For a surface this implies that the principle curvatures are the same and the principle directions are coincident along the common boundary.
-class IFC_PARSE_API IfcTransitionCode : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransitionCode : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7355,7 +7355,7 @@ public:
 /// IFC2x4 CHANGE New enumerators
 /// CRANEWAY and LIFTINGGEAR added in
 /// IFC2x4.
-class IFC_PARSE_API IfcTransportElementTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTransportElementTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7379,7 +7379,7 @@ public:
 /// CARTESIAN: Indicates that trimming by Cartesian point is preferred. 
 /// PARAMETER: Indicates the preference for the parameter value. 
 /// UNSPECIFIED: Indicates that no preference is communicated.
-class IFC_PARSE_API IfcTrimmingPreference : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTrimmingPreference : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7400,7 +7400,7 @@ public:
 ///   NOTDEFINED:  Undefined tube bundle type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcTubeBundleTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTubeBundleTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7449,7 +7449,7 @@ public:
 ///   USERDEFINED: User defined unit type. The type of unit is only implied by its name or the usage context.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcUnitEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcUnitEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7474,7 +7474,7 @@ public:
 ///   NOTDEFINED:  Undefined unitary equipment type.
 /// 
 /// HISTORY: New enumeration in IFC R2x.  DEHUMIDIFIER added in IFC 2x4
-class IFC_PARSE_API IfcUnitaryEquipmentTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcUnitaryEquipmentTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7530,7 +7530,7 @@ public:
 ///   NOTDEFINED: Undefined valve type. 
 /// 
 /// HISTORY: New type in IFC R2.0
-class IFC_PARSE_API IfcValveTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcValveTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7552,7 +7552,7 @@ public:
 ///   NOTDEFINED:  Undefined vibration isolator type.
 /// 
 /// HISTORY: New enumeration in IFC 2x2.
-class IFC_PARSE_API IfcVibrationIsolatorTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVibrationIsolatorTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7602,7 +7602,7 @@ public:
 /// added.
 /// IFC2x4 CHANGE New enumerator
 /// MOVABLE has been added.
-class IFC_PARSE_API IfcWallTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWallTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7629,7 +7629,7 @@ public:
 /// WASTETRAP: Pipe fitting, set adjacent to a sanitary terminal, that retains liquid to prevent the passage of foul air. 
 /// USERDEFINED: User-defined type. 
 /// NOTDEFINED: Undefined type.
-class IFC_PARSE_API IfcWasteTerminalTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWasteTerminalTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7726,7 +7726,7 @@ public:
 ///   These figures are only shown as illustrations 
 /// 
 /// Figure 169 — Window panel directions
-class IFC_PARSE_API IfcWindowPanelOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowPanelOperationEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7803,7 +7803,7 @@ public:
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations.
-class IFC_PARSE_API IfcWindowPanelPositionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowPanelPositionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7823,7 +7823,7 @@ public:
 /// 
 /// HISTORY New Enumeration in
 ///   IFC Release 2x .
-class IFC_PARSE_API IfcWindowStyleConstructionEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowStyleConstructionEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7910,7 +7910,7 @@ public:
 ///   placement of the window, looking into the direction of the positive Y
 ///   axis. 
 ///   These figures are only shown as illustrations
-class IFC_PARSE_API IfcWindowStyleOperationEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWindowStyleOperationEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7924,7 +7924,7 @@ public:
     operator Value() const;
 };
 
-class IFC_PARSE_API IfcWorkControlTypeEnum : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWorkControlTypeEnum : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7942,7 +7942,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcAbsorbedDoseMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAbsorbedDoseMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7955,7 +7955,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcAccelerationMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAccelerationMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7971,7 +7971,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: amount_of_substance_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcAmountOfSubstanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAmountOfSubstanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7984,7 +7984,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcAngularVelocityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAngularVelocityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -7999,7 +7999,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: area_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcAreaMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcAreaMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8012,7 +8012,7 @@ public:
 /// Type: BOOLEAN
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcBoolean : public express::DeclaredType {
+class IFC_SCHEMA_API IfcBoolean : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8031,7 +8031,7 @@ public:
 /// Type: ARRAY [1:2] OF REAL
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcComplexNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcComplexNumber : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8087,7 +8087,7 @@ public:
 ///      + FORMAT(ABS(c[4]), '##');  -- -50° 58' 33" 110400
 /// 
 /// Another often encountered display format of latitudes and longitudes is to omit the signs and print N, S, E, W indicators instead, for example, 50°58'33"S.  When stored as IfcCompoundPlaneAngleMeasure however, a compound plane angle measure is always signed, with same sign of all components.
-class IFC_PARSE_API IfcCompoundPlaneAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCompoundPlaneAngleMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8101,7 +8101,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcContextDependentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcContextDependentMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8115,7 +8115,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: count_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcCountMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCountMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8130,7 +8130,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcCurvatureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcCurvatureMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8150,7 +8150,7 @@ public:
 /// Release 1.5.1.
 /// IFC2x4 CHANGE Where rule
 /// ValidRange added.
-class IFC_PARSE_API IfcDayInMonthNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDayInMonthNumber : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8159,7 +8159,7 @@ public:
     operator int() const;
 };
 
-class IFC_PARSE_API IfcDaylightSavingHour : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDaylightSavingHour : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8173,7 +8173,7 @@ public:
 /// NOTE Corresponding ISO 10303 name:descriptive_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcDescriptiveMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDescriptiveMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8188,7 +8188,7 @@ public:
 /// NOTE Corresponding ISO 10303 type: dimension_count, please refer to ISO/IS 10303-42:1994, p. 14 for the final definition of the formal standard.
 /// 
 /// HISTORY New Type in IFC Release 1.5
-class IFC_PARSE_API IfcDimensionCount : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDimensionCount : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8201,7 +8201,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcDoseEquivalentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDoseEquivalentMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8215,7 +8215,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcDynamicViscosityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcDynamicViscosityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8228,7 +8228,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricCapacitanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricCapacitanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8241,7 +8241,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricChargeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricChargeMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8254,7 +8254,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricConductanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricConductanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8269,7 +8269,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: electric_current_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcElectricCurrentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricCurrentMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8282,7 +8282,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcElectricResistanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricResistanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8295,7 +8295,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcElectricVoltageMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcElectricVoltageMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8308,7 +8308,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcEnergyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcEnergyMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8330,7 +8330,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-style.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcFontStyle : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontStyle : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8350,7 +8350,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-variant.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcFontVariant : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontVariant : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8381,7 +8381,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions is font-weight.
 /// 
 /// HISTORY  New type in IFC2x2 Addendum 2.
-class IFC_PARSE_API IfcFontWeight : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFontWeight : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8394,7 +8394,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcForceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8407,7 +8407,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcFrequencyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcFrequencyMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8428,7 +8428,7 @@ public:
 /// Refer to the BuildingSMART website (www.buildingsmart-tech.org) for more information and sample encoding algorithms.
 /// 
 /// HISTORY  New type in IFC R1.5.1.
-class IFC_PARSE_API IfcGloballyUniqueId : public express::DeclaredType {
+class IFC_SCHEMA_API IfcGloballyUniqueId : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8441,7 +8441,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcHeatFluxDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatFluxDensityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8452,7 +8452,7 @@ public:
 /// IfcHeatingValueMeasure defines the amount of energy released (usually in MJ/kg) when a fuel is burned.
 /// 
 /// HISTORY: This is new type in IFC2x2.
-class IFC_PARSE_API IfcHeatingValueMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHeatingValueMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8461,7 +8461,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcHourInDay : public express::DeclaredType {
+class IFC_SCHEMA_API IfcHourInDay : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8483,7 +8483,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcIdentifier is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the identifier.
-class IFC_PARSE_API IfcIdentifier : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIdentifier : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8496,7 +8496,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcIlluminanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIlluminanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8509,7 +8509,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcInductanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInductanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8524,7 +8524,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcInteger : public express::DeclaredType {
+class IFC_SCHEMA_API IfcInteger : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8539,7 +8539,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcIntegerCountRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIntegerCountRateMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8550,7 +8550,7 @@ public:
 /// IfcIonConcentrationMeasure is a measure of particular ion concentration in a liquid, given in mg/L.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcIonConcentrationMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIonConcentrationMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8563,7 +8563,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcIsothermalMoistureCapacityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcIsothermalMoistureCapacityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8576,7 +8576,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcKinematicViscosityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcKinematicViscosityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8598,7 +8598,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcLabel is restricted to 255 characters, the size in exchange files after encoding may be considerably larger than 255 octets, depending on the particular encoding and on the contents of the label.
-class IFC_PARSE_API IfcLabel : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLabel : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8613,7 +8613,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcLengthMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLengthMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8626,7 +8626,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearForceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8639,7 +8639,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearMomentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearMomentMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8652,7 +8652,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLinearStiffnessMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearStiffnessMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8665,7 +8665,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcLinearVelocityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLinearVelocityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8678,7 +8678,7 @@ public:
 /// Type: LOGICAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLogical : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLogical : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8691,7 +8691,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcLuminousFluxMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousFluxMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8706,7 +8706,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcLuminousIntensityDistributionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousIntensityDistributionMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8721,7 +8721,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: luminous_intensity_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcLuminousIntensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcLuminousIntensityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8734,7 +8734,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMagneticFluxDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMagneticFluxDensityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8747,7 +8747,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMagneticFluxMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMagneticFluxMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8760,7 +8760,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMassDensityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassDensityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8773,7 +8773,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMassFlowRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassFlowRateMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8788,7 +8788,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: mass_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcMassMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8803,7 +8803,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcMassPerLengthMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMassPerLengthMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8812,7 +8812,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcMinuteInHour : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMinuteInHour : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8825,7 +8825,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcModulusOfElasticityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfElasticityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8838,7 +8838,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcModulusOfLinearSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfLinearSubgradeReactionMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8851,7 +8851,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcModulusOfRotationalSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfRotationalSubgradeReactionMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8868,7 +8868,7 @@ public:
 /// Figure 290 illustrates elastic support of a planar member.
 /// 
 /// Figure 290 — Modulus of subgrade reaction measure
-class IFC_PARSE_API IfcModulusOfSubgradeReactionMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcModulusOfSubgradeReactionMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8881,7 +8881,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMoistureDiffusivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMoistureDiffusivityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8894,7 +8894,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMolecularWeightMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMolecularWeightMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8907,7 +8907,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcMomentOfInertiaMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMomentOfInertiaMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8919,7 +8919,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcMonetaryMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMonetaryMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8983,7 +8983,7 @@ public:
 /// standard.
 /// HISTORY New type in IFC
 /// Release 1.5.1.
-class IFC_PARSE_API IfcMonthInYearNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcMonthInYearNumber : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -8997,7 +8997,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: numeric_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcNumericMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcNumericMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9008,7 +9008,7 @@ public:
 /// IfcPHMeasure is a measure of the molar hydrogen ion concentration in a liquid (usually defined as the measure of acidity) in a range from 0 to 14.
 /// 
 /// HISTORY: New type in IFC 2x2.
-class IFC_PARSE_API IfcPHMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPHMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9023,7 +9023,7 @@ public:
 /// NOTE Corresponding STEP name: parameter_value, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcParameterValue : public express::DeclaredType {
+class IFC_SCHEMA_API IfcParameterValue : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9036,7 +9036,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcPlanarForceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlanarForceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9055,7 +9055,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPlaneAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPlaneAngleMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9069,7 +9069,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_length_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveLengthMeasure : public IfcLengthMeasure {
+class IFC_SCHEMA_API IfcPositiveLengthMeasure : public IfcLengthMeasure {
 public:
     using IfcLengthMeasure::IfcLengthMeasure;
 
@@ -9083,7 +9083,7 @@ public:
 /// NOTE Corresponding STEP name: positive_plane_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
+class IFC_SCHEMA_API IfcPositivePlaneAngleMeasure : public IfcPlaneAngleMeasure {
 public:
     using IfcPlaneAngleMeasure::IfcPlaneAngleMeasure;
 
@@ -9096,7 +9096,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcPowerMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPowerMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9113,7 +9113,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: presentable_text. Please refer to ISO/IS 10303-46:1994, p. 133 for the final definition of the formal standard.
 /// 
 /// HISTORY  New type in IFC2x2.
-class IFC_PARSE_API IfcPresentableText : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPresentableText : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9126,7 +9126,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcPressureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcPressureMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9139,7 +9139,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRadioActivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRadioActivityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9157,7 +9157,7 @@ public:
 /// NOTE Corresponding STEP name: ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcRatioMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRatioMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9172,7 +9172,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY: New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcReal : public express::DeclaredType {
+class IFC_SCHEMA_API IfcReal : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9185,7 +9185,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRotationalFrequencyMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalFrequencyMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9199,7 +9199,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcRotationalMassMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalMassMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9212,7 +9212,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcRotationalStiffnessMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcRotationalStiffnessMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9221,7 +9221,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcSecondInMinute : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSecondInMinute : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9234,7 +9234,7 @@ public:
 /// Type: REAL 
 /// 
 /// HISTORY New type in IFC Release 2x2.
-class IFC_PARSE_API IfcSectionModulusMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionModulusMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9247,7 +9247,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSectionalAreaIntegralMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSectionalAreaIntegralMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9260,7 +9260,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcShearModulusMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcShearModulusMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9275,7 +9275,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: solid_angle_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcSolidAngleMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSolidAngleMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9288,7 +9288,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSoundPowerMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPowerMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9301,7 +9301,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcSoundPressureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSoundPressureMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9314,7 +9314,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcSpecificHeatCapacityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecificHeatCapacityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9329,7 +9329,7 @@ public:
 /// NOTE: The datatype relates to the definition of specular_exponent in ISO 10303-46 entity surface_style_reflectance_ambient_diffuse_specular.
 /// 
 /// HISTORY: New type in IFC2x2.
-class IFC_PARSE_API IfcSpecularExponent : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecularExponent : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9346,7 +9346,7 @@ public:
 /// NOTE: The datatype relates to the definition of "shiness" in VRML97, which is the reciprocate value to the specular roughness.
 /// 
 /// HISTORY: New type in Release IFC2x2.
-class IFC_PARSE_API IfcSpecularRoughness : public express::DeclaredType {
+class IFC_SCHEMA_API IfcSpecularRoughness : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9359,7 +9359,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcTemperatureGradientMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTemperatureGradientMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9378,7 +9378,7 @@ public:
 /// Per ISO 10303-11, the set of characters that may appear in STRINGs is defined in ISO 10646.  The encoding of characters in case of file-based exchange is defined in ISO 10303-21 (STEP physical files) and ISO 10303-28 (XML files).  Among else, these specifications define the encoding of 8-bit characters from ISO 8859-1...-16 and of 2-byte Unicode characters.
 /// 
 /// Note that while IfcText is not formally restricted in length, the size of a string in ISO 10303-21:2002 conforming exchange files must not exceed 32767 octets after encoding and escaping.
-class IFC_PARSE_API IfcText : public express::DeclaredType {
+class IFC_SCHEMA_API IfcText : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9396,7 +9396,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-align.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcTextAlignment : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextAlignment : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9417,7 +9417,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-decoration.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcTextDecoration : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextDecoration : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9444,7 +9444,7 @@ public:
 /// HISTORY  New type in IFC2x2 Addendum 2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE: The IfcFontFamily has been added.
-class IFC_PARSE_API IfcTextFontName : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextFontName : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9462,7 +9462,7 @@ public:
 /// NOTE  Corresponding CSS1 definition is text-transform.
 /// 
 /// HISTORY  New type in IFC2x3.
-class IFC_PARSE_API IfcTextTransformation : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTextTransformation : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9475,7 +9475,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalAdmittanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalAdmittanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9488,7 +9488,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcThermalConductivityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalConductivityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9500,7 +9500,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcThermalExpansionCoefficientMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalExpansionCoefficientMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9512,7 +9512,7 @@ public:
 /// Usually measured in m2 Kelvin/Watt.
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalResistanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalResistanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9525,7 +9525,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcThermalTransmittanceMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermalTransmittanceMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9540,7 +9540,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: thermodynamic_temperature_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcThermodynamicTemperatureMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcThermodynamicTemperatureMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9555,7 +9555,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: time_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcTimeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9567,7 +9567,7 @@ public:
 /// Type: INTEGER
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcTimeStamp : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTimeStamp : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9580,7 +9580,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcTorqueMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcTorqueMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9593,7 +9593,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcVaporPermeabilityMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVaporPermeabilityMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9608,7 +9608,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: volume_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcVolumeMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVolumeMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9621,7 +9621,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2.0.
-class IFC_PARSE_API IfcVolumetricFlowRateMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcVolumetricFlowRateMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9634,7 +9634,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcWarpingConstantMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWarpingConstantMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9647,7 +9647,7 @@ public:
 /// Type: REAL  
 /// 
 /// HISTORY New type in IFC2x2.
-class IFC_PARSE_API IfcWarpingMomentMeasure : public express::DeclaredType {
+class IFC_SCHEMA_API IfcWarpingMomentMeasure : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9656,7 +9656,7 @@ public:
     operator double() const;
 };
 
-class IFC_PARSE_API IfcYearNumber : public express::DeclaredType {
+class IFC_SCHEMA_API IfcYearNumber : public express::DeclaredType {
 public:
     using express::DeclaredType::DeclaredType;
 
@@ -9689,7 +9689,7 @@ public:
 /// HISTORY  New type in IFC2x2 Addendum2.
 /// 
 /// IFC2x3 CHANGE  The IfcBoxAlignment has been added.
-class IFC_PARSE_API IfcBoxAlignment : public IfcLabel {
+class IFC_SCHEMA_API IfcBoxAlignment : public IfcLabel {
 public:
     using IfcLabel::IfcLabel;
 
@@ -9702,7 +9702,7 @@ public:
 /// Type: REAL
 /// 
 /// HISTORY New type in IFC Release 2x.
-class IFC_PARSE_API IfcNormalisedRatioMeasure : public IfcRatioMeasure {
+class IFC_SCHEMA_API IfcNormalisedRatioMeasure : public IfcRatioMeasure {
 public:
     using IfcRatioMeasure::IfcRatioMeasure;
 
@@ -9716,7 +9716,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: positive_ratio_measure, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcPositiveRatioMeasure : public IfcRatioMeasure {
+class IFC_SCHEMA_API IfcPositiveRatioMeasure : public IfcRatioMeasure {
 public:
     using IfcRatioMeasure::IfcRatioMeasure;
 
@@ -9736,7 +9736,7 @@ public:
 /// Corresponds to the following entity in ISO-10303-41: organization_role and person_role.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IFC_PARSE_API IfcActorRole : public express::Entity {
+class IFC_SCHEMA_API IfcActorRole : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9762,7 +9762,7 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: address.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcAddress : public express::Entity {
+class IFC_SCHEMA_API IfcAddress : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9787,7 +9787,7 @@ public:
 /// IfcApplication holds the information about an IFC compliant application developed by an application developer. The IfcApplication utilizes a short identifying name as provided by the application developer.
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IFC_PARSE_API IfcApplication : public express::Entity {
+class IFC_SCHEMA_API IfcApplication : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9821,7 +9821,7 @@ public:
 /// An instance of IfcAppliedValue may have a unit basis asserted.  This is defined as an IfcMeasureWithUnit that determines the extent of the unit value for application purposes. It is assumed that when this attribute is asserted, then the value given to IfcAppliedValue is that for unit quantity. This is not enforced within the IFC schema and thus needs to be controlled within an application.
 /// 
 /// Applied values may be referenced from a document (such as a price list). The relationship between one or more occurrences of IfcAppliedValue (or its subtypes) is achieved through the use of the IfcExternalReferenceRelationship in which the document provides the IfcExternalReferenceRelationship.RelatingExtReference and the value occurrences are the IfcExternalReferenceRelationship.RelatedResourceObjects.
-class IFC_PARSE_API IfcAppliedValue : public express::Entity {
+class IFC_SCHEMA_API IfcAppliedValue : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9882,7 +9882,7 @@ public:
 /// Figure 240 illustrates two level aggregation of applied values. It is possible to develop more complex applied value specifications by creating hierarchies of applied value relationships. In the diagram, the development of a applied value is shown whereby, because B = E * F and D = G * H * J, then: A = ((E * F) + C + (G * H * J)).
 /// 
 /// Figure 240 — Applied value relationship multiple level
-class IFC_PARSE_API IfcAppliedValueRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcAppliedValueRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9908,7 +9908,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0
 /// 
 /// IFC2x Edition 4 CHANGE  Attributes Identifier and Name made optional, where rule added to require at least one of them being asserted. Inverse attributes ApprovedObjects, ApprovedResources and HasExternalReferences added. Inverse attribute Properties deleted (more general relationship via inverse ApprovedResources to be used instead).
-class IFC_PARSE_API IfcApproval : public express::Entity {
+class IFC_SCHEMA_API IfcApproval : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9937,7 +9937,7 @@ public:
     IfcApproval initialize(std::optional< std::string > v1_Description, ::Ifc2x3::IfcDateTimeSelect v2_ApprovalDateTime, std::optional< std::string > v3_ApprovalStatus, std::optional< std::string > v4_ApprovalLevel, std::optional< std::string > v5_ApprovalQualifier, std::string v6_Name, std::string v7_Identifier);
 };
 
-class IFC_PARSE_API IfcApprovalActorRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcApprovalActorRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9952,7 +9952,7 @@ public:
     IfcApprovalActorRelationship initialize(::Ifc2x3::IfcActorSelect v1_Actor, ::Ifc2x3::IfcApproval v2_Approval, ::Ifc2x3::IfcActorRole v3_Role);
 };
 
-class IFC_PARSE_API IfcApprovalPropertyRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcApprovalPropertyRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -9971,7 +9971,7 @@ public:
 /// HISTORY: New entity in Release IFC2x2.
 /// 
 /// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship, order of attributes changed.
-class IFC_PARSE_API IfcApprovalRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcApprovalRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10003,7 +10003,7 @@ public:
 /// HISTORY: New entity
 /// in Release IFC2x Edition
 /// 2.
-class IFC_PARSE_API IfcBoundaryCondition : public express::Entity {
+class IFC_SCHEMA_API IfcBoundaryCondition : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10024,7 +10024,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IFC_PARSE_API IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
+class IFC_SCHEMA_API IfcBoundaryEdgeCondition : public IfcBoundaryCondition {
 public:
     using IfcBoundaryCondition::IfcBoundaryCondition;
 
@@ -10057,7 +10057,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IFC_PARSE_API IfcBoundaryFaceCondition : public IfcBoundaryCondition {
+class IFC_SCHEMA_API IfcBoundaryFaceCondition : public IfcBoundaryCondition {
 public:
     using IfcBoundaryCondition::IfcBoundaryCondition;
 
@@ -10081,7 +10081,7 @@ public:
 /// IFC 2x4 change: Attributes LinearStiffnessX/Y/Z renamed to TranslationalStiffnessX/Y/Z.
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IFC_PARSE_API IfcBoundaryNodeCondition : public IfcBoundaryCondition {
+class IFC_SCHEMA_API IfcBoundaryNodeCondition : public IfcBoundaryCondition {
 public:
     using IfcBoundaryCondition::IfcBoundaryCondition;
 
@@ -10113,7 +10113,7 @@ public:
 /// HISTORY: New entity in IFC 2x2. 
 /// 
 /// IFC 2x4 change: All attribute data types changed from numeric to SELECT between Boolean and numeric.  Stiffnesses may now also be negative, for example to capture destabilizing effects in boundary conditions.  The IFC 2x3 convention of -1. representing infinite stiffness is no longer valid and must not be used.  Infinite stiffness, i.e. fixed supports, are now modeled by the Boolean value TRUE.
-class IFC_PARSE_API IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
+class IFC_SCHEMA_API IfcBoundaryNodeConditionWarping : public IfcBoundaryNodeCondition {
 public:
     using IfcBoundaryNodeCondition::IfcBoundaryNodeCondition;
 
@@ -10125,7 +10125,7 @@ public:
     IfcBoundaryNodeConditionWarping initialize(std::optional< std::string > v1_Name, std::optional< double > v2_LinearStiffnessX, std::optional< double > v3_LinearStiffnessY, std::optional< double > v4_LinearStiffnessZ, std::optional< double > v5_RotationalStiffnessX, std::optional< double > v6_RotationalStiffnessY, std::optional< double > v7_RotationalStiffnessZ, std::optional< double > v8_WarpingStiffness);
 };
 
-class IFC_PARSE_API IfcCalendarDate : public express::Entity {
+class IFC_SCHEMA_API IfcCalendarDate : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10154,7 +10154,7 @@ public:
 /// 
 /// Including the classification system structure within the dataset: Here a hierarchical tree of IfcClassificationItem's is included that defines the classification system including the relationship between the classification items. An IfcClassificationNotation is used to classify an object.
 /// Referencing the classification system by a classification key or id: Here the IfcClassificationReference is used to assign a classification id or key to each classified object.
-class IFC_PARSE_API IfcClassification : public express::Entity {
+class IFC_SCHEMA_API IfcClassification : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10188,7 +10188,7 @@ public:
     IfcClassification initialize(std::string v1_Source, std::string v2_Edition, ::Ifc2x3::IfcCalendarDate v3_EditionDate, std::string v4_Name);
 };
 
-class IFC_PARSE_API IfcClassificationItem : public express::Entity {
+class IFC_SCHEMA_API IfcClassificationItem : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10205,7 +10205,7 @@ public:
     IfcClassificationItem initialize(::Ifc2x3::IfcClassificationNotationFacet v1_Notation, ::Ifc2x3::IfcClassification v2_ItemOf, std::string v3_Title);
 };
 
-class IFC_PARSE_API IfcClassificationItemRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcClassificationItemRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10218,7 +10218,7 @@ public:
     IfcClassificationItemRelationship initialize(::Ifc2x3::IfcClassificationItem v1_RelatingItem, std::vector< ::Ifc2x3::IfcClassificationItem > v2_RelatedItems);
 };
 
-class IFC_PARSE_API IfcClassificationNotation : public express::Entity {
+class IFC_SCHEMA_API IfcClassificationNotation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10229,7 +10229,7 @@ public:
     IfcClassificationNotation initialize(std::vector< ::Ifc2x3::IfcClassificationNotationFacet > v1_NotationFacets);
 };
 
-class IFC_PARSE_API IfcClassificationNotationFacet : public express::Entity {
+class IFC_SCHEMA_API IfcClassificationNotationFacet : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10244,7 +10244,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: colour_specification. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcColourSpecification : public express::Entity {
+class IFC_SCHEMA_API IfcColourSpecification : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10272,7 +10272,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x Edition 3 CHANGE  The definition of the subtypes has been enhanced by allowing either geometric representation items (point | curve | surface) or topological representation items with associated geometry (vertex point | edge curve | face  surface).
-class IFC_PARSE_API IfcConnectionGeometry : public express::Entity {
+class IFC_SCHEMA_API IfcConnectionGeometry : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10296,7 +10296,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connect. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute. If both point coordinates are not identical within a common parent coordinate system (ultimately within the world coordinate system), the subtype IfcConnectionPointEccentricity shall be used.
-class IFC_PARSE_API IfcConnectionPointGeometry : public IfcConnectionGeometry {
+class IFC_SCHEMA_API IfcConnectionPointGeometry : public IfcConnectionGeometry {
 public:
     using IfcConnectionGeometry::IfcConnectionGeometry;
 
@@ -10311,7 +10311,7 @@ public:
     IfcConnectionPointGeometry initialize(::Ifc2x3::IfcPointOrVertexPoint v1_PointOnRelatingElement, ::Ifc2x3::IfcPointOrVertexPoint v2_PointOnRelatedElement);
 };
 
-class IFC_PARSE_API IfcConnectionPortGeometry : public IfcConnectionGeometry {
+class IFC_SCHEMA_API IfcConnectionPortGeometry : public IfcConnectionGeometry {
 public:
     using IfcConnectionGeometry::IfcConnectionGeometry;
 
@@ -10333,7 +10333,7 @@ public:
 /// 
 /// Geometry use definitions 
 /// The IfcSurface (or the IfcFaceSurface with an associated IfcSurface) at the SurfaceOnRelatingElement attribute defines the surface where the basic geometry items of the connected elements connects. The surface geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnectsSubtype that utilizes the IfcConnectionSurfaceGeometry. Optionally, the same surface geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the SurfaceOnRelatedElement attribute.
-class IFC_PARSE_API IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
+class IFC_SCHEMA_API IfcConnectionSurfaceGeometry : public IfcConnectionGeometry {
 public:
     using IfcConnectionGeometry::IfcConnectionGeometry;
 
@@ -10359,7 +10359,7 @@ public:
 /// A constraint must have a name applied through the IfcConstraint.Name attribute and optionally, a description through IfcConstraint.Description. The grade of the constraint (hard, soft, advisory) must be specified through IfcConstraint.ConstraintGrade or IfcConstraint.UserDefinedGrade whilst the source, creating actor and time at which the constraint is created may be optionally asserted through IfcConstraint.ConstraintSource, IfcConstraint.CreatingActor and IfcConstraint.CreationTime. 
 /// 
 /// A constraint may also have additional external information (such as classification or document information) associated to it by IfcExternalReferenceRelationship, accessible through inverse attribute IfcConstraint.HasExternalReferences
-class IFC_PARSE_API IfcConstraint : public express::Entity {
+class IFC_SCHEMA_API IfcConstraint : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10408,7 +10408,7 @@ public:
 /// Figure 237 illustrates constraint aggregation.
 /// 
 /// Figure 237 — Constraint aggregation
-class IFC_PARSE_API IfcConstraintAggregationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcConstraintAggregationRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10428,7 +10428,7 @@ public:
     IfcConstraintAggregationRelationship initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint v3_RelatingConstraint, std::vector< ::Ifc2x3::IfcConstraint > v4_RelatedConstraints, ::Ifc2x3::IfcLogicalOperatorEnum::Value v5_LogicalAggregator);
 };
 
-class IFC_PARSE_API IfcConstraintClassificationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcConstraintClassificationRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10449,7 +10449,7 @@ public:
 /// HISTORY  New entity in Release IFC2x2 (Addendum 1).
 /// 
 /// IFC2x4 CHANGE  Subtyped from IfcResourceLevelRelationship.
-class IFC_PARSE_API IfcConstraintRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcConstraintRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10468,7 +10468,7 @@ public:
     IfcConstraintRelationship initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraint v3_RelatingConstraint, std::vector< ::Ifc2x3::IfcConstraint > v4_RelatedConstraints);
 };
 
-class IFC_PARSE_API IfcCoordinatedUniversalTimeOffset : public express::Entity {
+class IFC_SCHEMA_API IfcCoordinatedUniversalTimeOffset : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10524,7 +10524,7 @@ public:
 /// Whole life
 /// 
 /// In the absence of any well-defined standard, it is recommended that local agreements should be made to define allowable and understandable cost value types within a project or region.
-class IFC_PARSE_API IfcCostValue : public IfcAppliedValue {
+class IFC_SCHEMA_API IfcCostValue : public IfcAppliedValue {
 public:
     using IfcAppliedValue::IfcAppliedValue;
 
@@ -10553,7 +10553,7 @@ public:
 /// Use definitions
 /// An IfcCurrencyRelationship is used where there may be a need to reference an IfcCostValue in one currency to an IfcCostValue in another currency. It takes account of fact that currency exchange rates may vary by requiring the recording the date and time of the currency exchange rate used and the source that publishes the rate. There may be many sources and there are different strategies for currency conversion (spot rate, forward buying of currency at a fixed rate).
 /// The source for the currency exchange is defined as an instance of IfcLibraryInformation that includes a name and a URL.
-class IFC_PARSE_API IfcCurrencyRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcCurrencyRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10583,7 +10583,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: curve_style_font. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyleFont : public express::Entity {
+class IFC_SCHEMA_API IfcCurveStyleFont : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10608,7 +10608,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: curve_style_font_and_scaling. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyleFontAndScaling : public express::Entity {
+class IFC_SCHEMA_API IfcCurveStyleFontAndScaling : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10630,7 +10630,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: curve_style_font_pattern. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyleFontPattern : public express::Entity {
+class IFC_SCHEMA_API IfcCurveStyleFontPattern : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10649,7 +10649,7 @@ public:
     IfcCurveStyleFontPattern initialize(double v1_VisibleSegmentLength, double v2_InvisibleSegmentLength);
 };
 
-class IFC_PARSE_API IfcDateAndTime : public express::Entity {
+class IFC_SCHEMA_API IfcDateAndTime : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10668,7 +10668,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcDerivedUnit : public express::Entity {
+class IFC_SCHEMA_API IfcDerivedUnit : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10693,7 +10693,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: derived_unit_element, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcDerivedUnitElement : public express::Entity {
+class IFC_SCHEMA_API IfcDerivedUnitElement : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10724,7 +10724,7 @@ public:
 ///   for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcDimensionalExponents : public express::Entity {
+class IFC_SCHEMA_API IfcDimensionalExponents : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10756,7 +10756,7 @@ public:
 /// IfcDocumentElectronicFormat captures the type of document being referenced as an external source, and for which metadata is specified by IfcDocumentInformation. 
 /// 
 /// HISTORY: New entity in IFC 2x
-class IFC_PARSE_API IfcDocumentElectronicFormat : public express::Entity {
+class IFC_SCHEMA_API IfcDocumentElectronicFormat : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10776,7 +10776,7 @@ public:
 /// IfcDocumentInformation captures "metadata" of an external document. The actual content of the document is not defined in IFC; instead, it can be found following the reference given to IfcDocumentReference. 
 /// 
 /// HISTORY: New entity in IFC 2x.
-class IFC_PARSE_API IfcDocumentInformation : public express::Entity {
+class IFC_SCHEMA_API IfcDocumentInformation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10856,7 +10856,7 @@ public:
 /// 
 /// Use definitions
 /// This class can be used to describe relationships in which one document may reference one or more other sub documents or where a document is used as a replacement for another document (but where both the original and the replacing document need to be retained).
-class IFC_PARSE_API IfcDocumentInformationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcDocumentInformationRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10874,7 +10874,7 @@ public:
     IfcDocumentInformationRelationship initialize(::Ifc2x3::IfcDocumentInformation v1_RelatingDocument, std::vector< ::Ifc2x3::IfcDocumentInformation > v2_RelatedDocuments, std::optional< std::string > v3_RelationshipType);
 };
 
-class IFC_PARSE_API IfcDraughtingCalloutRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcDraughtingCalloutRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10891,7 +10891,7 @@ public:
     IfcDraughtingCalloutRelationship initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout);
 };
 
-class IFC_PARSE_API IfcEnvironmentalImpactValue : public IfcAppliedValue {
+class IFC_SCHEMA_API IfcEnvironmentalImpactValue : public IfcAppliedValue {
 public:
     using IfcAppliedValue::IfcAppliedValue;
 
@@ -10914,7 +10914,7 @@ public:
 /// IfcExternalReference is an abstract supertype of all external reference entities.
 /// 
 /// HISTORY New entity in IFC2x.
-class IFC_PARSE_API IfcExternalReference : public express::Entity {
+class IFC_SCHEMA_API IfcExternalReference : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -10940,7 +10940,7 @@ public:
 /// the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcExternallyDefinedHatchStyle : public IfcExternalReference {
+class IFC_SCHEMA_API IfcExternallyDefinedHatchStyle : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -10955,7 +10955,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The spelling has been corrected from IfcExternallyDefinedSufaceStyle with no upward compatibility.
-class IFC_PARSE_API IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
+class IFC_SCHEMA_API IfcExternallyDefinedSurfaceStyle : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -10972,7 +10972,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: externally_defined_symbol. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcExternallyDefinedSymbol : public IfcExternalReference {
+class IFC_SCHEMA_API IfcExternallyDefinedSymbol : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -10987,7 +10987,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: externally_defined_text_font. Please refer to ISO/IS 10303-46:1994, p. 137 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcExternallyDefinedTextFont : public IfcExternalReference {
+class IFC_SCHEMA_API IfcExternallyDefinedTextFont : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -11018,7 +11018,7 @@ public:
 /// underlying AxisCurve supports this concept.
 /// 
 /// Figure 242 — Grid axis
-class IFC_PARSE_API IfcGridAxis : public express::Entity {
+class IFC_SCHEMA_API IfcGridAxis : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11042,7 +11042,7 @@ public:
 /// The IfcIrregularTimeSeriesValue describes a value (or set of values) at a particular time point. 
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcIrregularTimeSeriesValue : public express::Entity {
+class IFC_SCHEMA_API IfcIrregularTimeSeriesValue : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11064,7 +11064,7 @@ public:
 /// Entity in IFC2x.
 /// 
 /// IFC2x4 CHANGE  Location attribute added, HasLibraryReferences inverse attribute added (previous LibraryReference changed to inverse).
-class IFC_PARSE_API IfcLibraryInformation : public express::Entity {
+class IFC_SCHEMA_API IfcLibraryInformation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11095,7 +11095,7 @@ public:
 /// HISTORY  New Entity in IFC2.0.
 /// 
 /// IFC2x4 CHANGE  Description and Language attribute added; ReferencedLibrary attribute added (reversing previous ReferenceIntoLibrary inverse relationship).
-class IFC_PARSE_API IfcLibraryReference : public IfcExternalReference {
+class IFC_SCHEMA_API IfcLibraryReference : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -11119,7 +11119,7 @@ public:
 /// For each pair of MainPlaneAngle and SecondaryPlaneAngle the LuminousIntensity is provided (the unit is given by the IfcUnitAssignment referring to the LuminousIntensityDistributionUnit, normally cd/klm). 
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcLightDistributionData : public express::Entity {
+class IFC_SCHEMA_API IfcLightDistributionData : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11141,7 +11141,7 @@ public:
 /// IfcLightIntensityDistribution defines the the luminous intensity of a light source that changes according to the direction of the ray. It is based on some standardized light distribution curves, which are defined by the LightDistributionCurve attribute. 
 /// 
 /// New entity in IFC2x2.
-class IFC_PARSE_API IfcLightIntensityDistribution : public express::Entity {
+class IFC_SCHEMA_API IfcLightIntensityDistribution : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11156,7 +11156,7 @@ public:
     IfcLightIntensityDistribution initialize(::Ifc2x3::IfcLightDistributionCurveEnum::Value v1_LightDistributionCurve, std::vector< ::Ifc2x3::IfcLightDistributionData > v2_DistributionData);
 };
 
-class IFC_PARSE_API IfcLocalTime : public express::Entity {
+class IFC_SCHEMA_API IfcLocalTime : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11201,7 +11201,7 @@ public:
 /// HISTORYNew entity in IFC2x4
 /// 
 /// IFC2x4 CHANGE The attributes Description and Category have been added.
-class IFC_PARSE_API IfcMaterial : public express::Entity {
+class IFC_SCHEMA_API IfcMaterial : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11223,7 +11223,7 @@ public:
 /// HISTORY New entity in IFC2x.
 /// 
 /// IFC2x4 CHANGE The entity IfcMaterialClassificationRelationship is deprecated since IFC2x4 and shall no longer be used. Use IfcExternalReferenceRelationship instead.
-class IFC_PARSE_API IfcMaterialClassificationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialClassificationRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11260,7 +11260,7 @@ public:
 /// HISTORY  New entity in IFC 1.5
 /// 
 /// IFC2x4 CHANGE  The attributes Name, Description, Category, Priority have been added at the end of attribute list. Data type of LayerThickness relaxed to IfcNonNegativeLengthMeasure.
-class IFC_PARSE_API IfcMaterialLayer : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialLayer : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11319,7 +11319,7 @@ public:
 /// placed on top of the previous (no gaps or overlaps).
 /// 
 /// Figure 285 — Material layer set
-class IFC_PARSE_API IfcMaterialLayerSet : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialLayerSet : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11433,7 +11433,7 @@ public:
 /// geometry.
 /// 
 /// Figure 288 — Material layer set usage for roof slab
-class IFC_PARSE_API IfcMaterialLayerSetUsage : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialLayerSetUsage : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11475,7 +11475,7 @@ public:
 /// 
 /// IFC2x4 CHANGE The entity IfcMaterialList is deprecated and shall no longer
 /// be used. Use IfcMaterialConstituentSet instead.
-class IFC_PARSE_API IfcMaterialList : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialList : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11508,7 +11508,7 @@ public:
 /// HISTORY  New Entity in IFC 2x.
 /// 
 /// IFC2x4 CHANGE  The subtypes that represented a fixed list of statically defined material properties, IfcMechanicalMaterialProperties, IfcThermalMaterialProperties, IfcHygroscopicMaterialProperties, IfcGeneralMaterialProperties, IfcOpticalMaterialProperties, IfcWaterProperties, IfcFuelProperties, IfcProductsOfCombustionProperties have been deleted, use the generic IfcExtendedMaterialProperties instead.
-class IFC_PARSE_API IfcMaterialProperties : public express::Entity {
+class IFC_SCHEMA_API IfcMaterialProperties : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11531,7 +11531,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: measure_with_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcMeasureWithUnit : public express::Entity {
+class IFC_SCHEMA_API IfcMeasureWithUnit : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11546,7 +11546,7 @@ public:
     IfcMeasureWithUnit initialize(::Ifc2x3::IfcValue v1_ValueComponent, ::Ifc2x3::IfcUnit v2_UnitComponent);
 };
 
-class IFC_PARSE_API IfcMechanicalMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcMechanicalMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -11565,7 +11565,7 @@ public:
     IfcMechanicalMaterialProperties initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_DynamicViscosity, std::optional< double > v3_YoungModulus, std::optional< double > v4_ShearModulus, std::optional< double > v5_PoissonRatio, std::optional< double > v6_ThermalExpansionCoefficient);
 };
 
-class IFC_PARSE_API IfcMechanicalSteelMaterialProperties : public IfcMechanicalMaterialProperties {
+class IFC_SCHEMA_API IfcMechanicalSteelMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
     using IfcMechanicalMaterialProperties::IfcMechanicalMaterialProperties;
 
@@ -11639,7 +11639,7 @@ public:
 ///   HARD 
 /// 
 /// This constraint (instantiated as IfcMetric) uses a Date/Time value in IfcMetric.DataValue through IfcMetricValueSelect. An appropriate benchmark is applied according to the requirement of the constraint (as indicated) by IfcMetric.Benchmark. The grade of the constraint (hard, soft, advisory) must be specified through		IfcConstraint.ConstraintGrade whilst the time at which the constraint is	created may be optionally asserted through IfcConstraint.CreationTime.
-class IFC_PARSE_API IfcMetric : public IfcConstraint {
+class IFC_SCHEMA_API IfcMetric : public IfcConstraint {
 public:
     using IfcConstraint::IfcConstraint;
 
@@ -11661,7 +11661,7 @@ public:
 /// HISTORY: New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE: Type of the attribute Currency changed.
-class IFC_PARSE_API IfcMonetaryUnit : public express::Entity {
+class IFC_SCHEMA_API IfcMonetaryUnit : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11677,7 +11677,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: named_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New type in IFC Release 1.5.1.
-class IFC_PARSE_API IfcNamedUnit : public express::Entity {
+class IFC_SCHEMA_API IfcNamedUnit : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11702,7 +11702,7 @@ public:
 /// In any case the object placement has to unambiguously define the object coordinate system as either two-dimensional axis placement (IfcAxis2Placement2D) or three-dimensional axis placement (IfcAxis2Placement3D). The axis placement may have to be calculated.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IFC_PARSE_API IfcObjectPlacement : public express::Entity {
+class IFC_SCHEMA_API IfcObjectPlacement : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11721,7 +11721,7 @@ public:
 /// IfcObjective is a subtype of IfcConstraint and may be associated with any subtype of IfcRoot through the IfcRelAssociatesConstraint relationship in the IfcControlExtension schema, or may be associated with IfcProperty by IfcPropertyConstraintRelationship.
 /// 
 /// The aim of IfcObjective is to specify the purpose for which the constraint is applied and to capture the values of the constraint. These may be both the benchmark values that are intended to indicate the constraint extent and the resulting values in use that enable performance comparisons to be applied.
-class IFC_PARSE_API IfcObjective : public IfcConstraint {
+class IFC_SCHEMA_API IfcObjective : public IfcConstraint {
 public:
     using IfcConstraint::IfcConstraint;
 
@@ -11742,7 +11742,7 @@ public:
     IfcObjective initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcConstraintEnum::Value v3_ConstraintGrade, std::optional< std::string > v4_ConstraintSource, ::Ifc2x3::IfcActorSelect v5_CreatingActor, ::Ifc2x3::IfcDateTimeSelect v6_CreationTime, std::optional< std::string > v7_UserDefinedGrade, ::Ifc2x3::IfcMetric v8_BenchmarkValues, ::Ifc2x3::IfcMetric v9_ResultValues, ::Ifc2x3::IfcObjectiveEnum::Value v10_ObjectiveQualifier, std::optional< std::string > v11_UserDefinedQualifier);
 };
 
-class IFC_PARSE_API IfcOpticalMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcOpticalMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -11776,7 +11776,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.
-class IFC_PARSE_API IfcOrganization : public express::Entity {
+class IFC_SCHEMA_API IfcOrganization : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11808,7 +11808,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 2x.
 /// IFC 2x4 change: attribute Name made optional.
-class IFC_PARSE_API IfcOrganizationRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcOrganizationRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11838,7 +11838,7 @@ public:
 /// 
 /// If LastModifiedDate is defined but ChangeAction is not asserted, then the state of ChangeAction is assumed to be UNDEFINED.	  
 /// If both LastModifiedDate and ChangeAction are asserted, then the state of ChangeAction applies to the value asserted in LastModifiedDate.
-class IFC_PARSE_API IfcOwnerHistory : public express::Entity {
+class IFC_SCHEMA_API IfcOwnerHistory : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11879,7 +11879,7 @@ public:
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
 /// IFC 2x4 change: attribute Id renamed to Identification.  WHERE rule relaxed to allow omission of names if Identification is provided.
-class IFC_PARSE_API IfcPerson : public express::Entity {
+class IFC_SCHEMA_API IfcPerson : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11922,7 +11922,7 @@ public:
 /// NOTE Corresponds to the following entity in ISO-10303-41: person_and_organization.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1
-class IFC_PARSE_API IfcPersonAndOrganization : public express::Entity {
+class IFC_SCHEMA_API IfcPersonAndOrganization : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11944,7 +11944,7 @@ public:
 /// The Name attribute defines the actual usage or kind of measure. The interpretation of the name label has to be established within the actual exchange context. In addition an informative text may be associated to each quantity by the Description attribute. 
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcPhysicalQuantity : public express::Entity {
+class IFC_SCHEMA_API IfcPhysicalQuantity : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -11968,7 +11968,7 @@ public:
 /// HISTORY New entity in IFC2x2 Addendum 1.
 /// 
 /// IFC2x2 ADDENDUM 1 CHANGE  The abstract entity IfcPhysicalSimpleQuantity has been added. Upward compatibility for file based exchange is guaranteed.
-class IFC_PARSE_API IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
+class IFC_SCHEMA_API IfcPhysicalSimpleQuantity : public IfcPhysicalQuantity {
 public:
     using IfcPhysicalQuantity::IfcPhysicalQuantity;
 
@@ -11982,7 +11982,7 @@ public:
 /// Definition: The address for delivery of paper based mail.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IFC_PARSE_API IfcPostalAddress : public IfcAddress {
+class IFC_SCHEMA_API IfcPostalAddress : public IfcAddress {
 public:
     using IfcAddress::IfcAddress;
 
@@ -12024,7 +12024,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_item. Please refer to ISO/IS 10303-41:1994, page 137 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcPreDefinedItem : public express::Entity {
+class IFC_SCHEMA_API IfcPreDefinedItem : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12042,7 +12042,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: pre_defined_symbol. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcPreDefinedSymbol : public IfcPreDefinedItem {
+class IFC_SCHEMA_API IfcPreDefinedSymbol : public IfcPreDefinedItem {
 public:
     using IfcPreDefinedItem::IfcPreDefinedItem;
 
@@ -12051,7 +12051,7 @@ public:
     IfcPreDefinedSymbol initialize(std::string v1_Name);
 };
 
-class IFC_PARSE_API IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
+class IFC_SCHEMA_API IfcPreDefinedTerminatorSymbol : public IfcPreDefinedSymbol {
 public:
     using IfcPreDefinedSymbol::IfcPreDefinedSymbol;
 
@@ -12070,7 +12070,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyleFontModel has been added as new subtype.
-class IFC_PARSE_API IfcPreDefinedTextFont : public IfcPreDefinedItem {
+class IFC_SCHEMA_API IfcPreDefinedTextFont : public IfcPreDefinedItem {
 public:
     using IfcPreDefinedItem::IfcPreDefinedItem;
 
@@ -12093,7 +12093,7 @@ public:
 /// Figure 305 illustrates assignment of items by shape representation or representation item. The set of AssignedItems can either include a whole shape representation, or individual geometric representation items. If both, the IfcShapeRepresentation has a layer assignment, and an individual geometric representation item in the set of IfcShapeRepresentation.Items, then the layer assignment of the IfcGeometricRepresentationItem overides the layer assignment of the IfcShapeRepresentation.
 /// 
 /// Figure 305 — Presentation layer assignment
-class IFC_PARSE_API IfcPresentationLayerAssignment : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationLayerAssignment : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12126,7 +12126,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The attributes have been modified without upward compatibility.
-class IFC_PARSE_API IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
+class IFC_SCHEMA_API IfcPresentationLayerWithStyle : public IfcPresentationLayerAssignment {
 public:
     using IfcPresentationLayerAssignment::IfcPresentationLayerAssignment;
 
@@ -12155,7 +12155,7 @@ public:
 /// Each subtype of  IfcPresentationStyle can be assigned to IfcGeometricRepresentationItem's via the IfcPresentationStyleAssignment through an intermediate IfcStyledItem or one of its subtypes.
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_PARSE_API IfcPresentationStyle : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationStyle : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12171,7 +12171,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: presentation_style_assignment. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in Release IFC2x2.
-class IFC_PARSE_API IfcPresentationStyleAssignment : public express::Entity {
+class IFC_SCHEMA_API IfcPresentationStyleAssignment : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12199,7 +12199,7 @@ public:
 /// IFC2x3 NOTE Users should not instantiate the entity from IFC2x Edition 3 onwards.
 /// 
 /// IFC2x4 CHANGE  Entity made abstract.
-class IFC_PARSE_API IfcProductRepresentation : public express::Entity {
+class IFC_SCHEMA_API IfcProductRepresentation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12217,7 +12217,7 @@ public:
     IfcProductRepresentation initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcRepresentation > v3_Representations);
 };
 
-class IFC_PARSE_API IfcProductsOfCombustionProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcProductsOfCombustionProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -12403,7 +12403,7 @@ public:
 /// possible to directly instantiate IfcProfileDef and further specify
 /// the profile only by external reference or by profile properties. The latter
 /// are tracked by the inverse attribute HasProperties.
-class IFC_PARSE_API IfcProfileDef : public express::Entity {
+class IFC_SCHEMA_API IfcProfileDef : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12428,7 +12428,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x4 CHANGE  Entity made non-abstract.  Subtypes IfcGeneralProfileProperties, IfcStructuralProfileProperties, and IfcStructuralSteelProfileProperties deleted. Attribute ProfileName deleted, use ProfileDefinition.ProfileName instead. Attribute ProfileDefinition made mandatory. Attributes Name, Description, and HasProperties added.
-class IFC_PARSE_API IfcProfileProperties : public express::Entity {
+class IFC_SCHEMA_API IfcProfileProperties : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12444,7 +12444,7 @@ public:
 /// IfcProperty is an abstract generalization for all types of properties that can be associated with IFC objects through the property set mechanism. 
 /// 
 /// HISTORY  New entity in IFC Release 1.0.
-class IFC_PARSE_API IfcProperty : public express::Entity {
+class IFC_SCHEMA_API IfcProperty : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12462,7 +12462,7 @@ public:
     IfcProperty initialize(std::string v1_Name, std::optional< std::string > v2_Description);
 };
 
-class IFC_PARSE_API IfcPropertyConstraintRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcPropertyConstraintRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12486,7 +12486,7 @@ public:
 /// 
 /// Use Definition
 /// Whilst the IfcPropertyDependencyRelationship may be used to describe the dependency, and it may do so in terms of the expression of how the dependency operates, it is not possible through the current IFC model for the value of the related property to be actually derived from the value of the relating property. The determination of value according to the dependency is required to be performed by an application that can then use the Expression attribute to flag the form of the dependency.
-class IFC_PARSE_API IfcPropertyDependencyRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcPropertyDependencyRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12553,7 +12553,7 @@ public:
 ///    
 /// 
 /// HISTORY  New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x. Entity has been renamed from IfcEnumeration in IFC Release 2x.
-class IFC_PARSE_API IfcPropertyEnumeration : public express::Entity {
+class IFC_SCHEMA_API IfcPropertyEnumeration : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12575,7 +12575,7 @@ public:
 /// EXAMPLE  An opening may have an opening area used to deduct it from the wall surface area. The actual size of the area depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcQuantityArea : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityArea : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12591,7 +12591,7 @@ public:
 /// EXAMPLE  An radiator may be measured according to its number of coils. The actual counting method depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcQuantityCount : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityCount : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12607,7 +12607,7 @@ public:
 /// EXAMPLE  A rafter within a roof construction may be measured according to its length (taking a common cross section into account). The actual size of the length depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC Release 2.x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcQuantityLength : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityLength : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12623,7 +12623,7 @@ public:
 /// EXAMPLE  The amount of time needed to pour concrete for a wall is given as a time quantity for the labor part of the recipe information.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcQuantityTime : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityTime : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12639,7 +12639,7 @@ public:
 /// EXAMPLE  A thick brick wall may be measured according to its volume. The actual size of the volume depends on the method of measurement used.
 /// 
 /// HISTORY New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityVolume : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12655,7 +12655,7 @@ public:
 /// EXAMPLE  The amount of reinforcement used within a building element may be measured according to its weight. The actual size of the weight depends on the method of measurement used.
 /// 
 /// HISTORY  New entity in IFC2x. It replaces the calcXxx attributes used in previous IFC Releases.
-class IFC_PARSE_API IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
+class IFC_SCHEMA_API IfcQuantityWeight : public IfcPhysicalSimpleQuantity {
 public:
     using IfcPhysicalSimpleQuantity::IfcPhysicalSimpleQuantity;
 
@@ -12667,7 +12667,7 @@ public:
     IfcQuantityWeight initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcNamedUnit v3_Unit, double v4_WeightValue);
 };
 
-class IFC_PARSE_API IfcReferencesValueDocument : public express::Entity {
+class IFC_SCHEMA_API IfcReferencesValueDocument : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12688,7 +12688,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// The total cross section area for the specific steel grade is always provided. Additionally also general reinforcing bar configurations as a count of bars may be provided as defined in attribute BarCount. In this case the nominal bar diameter should be identical for all given bars as defined in attribute NominalBarDiameter.
-class IFC_PARSE_API IfcReinforcementBarProperties : public express::Entity {
+class IFC_SCHEMA_API IfcReinforcementBarProperties : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12715,7 +12715,7 @@ public:
     IfcReinforcementBarProperties initialize(double v1_TotalCrossSectionArea, std::string v2_SteelGrade, std::optional< ::Ifc2x3::IfcReinforcingBarSurfaceEnum::Value > v3_BarSurface, std::optional< double > v4_EffectiveDepth, std::optional< double > v5_NominalBarDiameter, std::optional< double > v6_BarCount);
 };
 
-class IFC_PARSE_API IfcRelaxation : public express::Entity {
+class IFC_SCHEMA_API IfcRelaxation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12773,7 +12773,7 @@ public:
 /// IFC2x4 CHANGE  Entity
 ///   IfcRepresentation has been changed into an ABSTRACT
 ///   supertype.
-class IFC_PARSE_API IfcRepresentation : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentation : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12807,7 +12807,7 @@ public:
 /// 
 /// IFC2x4 CHANGE Entity made abstract, had been deprecated from instantiation since
 /// IFC2x2.
-class IFC_PARSE_API IfcRepresentationContext : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationContext : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12854,7 +12854,7 @@ public:
 /// HISTORY  New entity in IFC Release 2x.
 /// 
 /// IFC2x3 CHANGE  The inverse attributes StyledByItem and LayerAssignments have been added. Upward compatibility for file based exchange is guaranteed.
-class IFC_PARSE_API IfcRepresentationItem : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationItem : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12875,7 +12875,7 @@ public:
 /// NOTE  The definition of a mapping which is used to specify a new representation item comprises a representation map and a mapped item entity. Without both entities, the mapping is not fully defined. Two entities are specified to allow the same source representation to be mapped into multiple new representations.
 /// 
 /// HISTORY  New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRepresentationMap : public express::Entity {
+class IFC_SCHEMA_API IfcRepresentationMap : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12892,7 +12892,7 @@ public:
     IfcRepresentationMap initialize(::Ifc2x3::IfcAxis2Placement v1_MappingOrigin, ::Ifc2x3::IfcRepresentation v2_MappedRepresentation);
 };
 
-class IFC_PARSE_API IfcRibPlateProfileProperties : public IfcProfileProperties {
+class IFC_SCHEMA_API IfcRibPlateProfileProperties : public IfcProfileProperties {
 public:
     using IfcProfileProperties::IfcProfileProperties;
 
@@ -12919,7 +12919,7 @@ public:
 /// HISTORY New entity in IFC Release 1.0
 /// 
 /// IFC2x4 CHANGE The attribute OwnerHistory has been made OPTIONAL.
-class IFC_PARSE_API IfcRoot : public express::Entity {
+class IFC_SCHEMA_API IfcRoot : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12950,7 +12950,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: si_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcSIUnit : public IfcNamedUnit {
+class IFC_SCHEMA_API IfcSIUnit : public IfcNamedUnit {
 public:
     using IfcNamedUnit::IfcNamedUnit;
 
@@ -12971,7 +12971,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// The section piece may be either uniform or tapered. In the latter case an end profile should also be provided. The start and end profiles are assumed to be of the same profile type. Generally only rectangular or circular cross section profiles are assumed to be used.
-class IFC_PARSE_API IfcSectionProperties : public express::Entity {
+class IFC_SCHEMA_API IfcSectionProperties : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -12995,7 +12995,7 @@ public:
 /// Several sets of cross section reinforcement properties represented by instances of IfcReinforcementProperties may be attached to the section reinforcement properties
 /// (IfcReinforcementDefinitionProperties of IfcStructuralElementsDomain schema),
 /// one for each combination of steel grades and reinforcement bar types and sizes.
-class IFC_PARSE_API IfcSectionReinforcementProperties : public express::Entity {
+class IFC_SCHEMA_API IfcSectionReinforcementProperties : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13058,7 +13058,7 @@ public:
 ///   IfcRepresentationMap's that are used by an
 ///   IfcTypeProduct through the
 ///   RepresentationMaps attribute.
-class IFC_PARSE_API IfcShapeAspect : public express::Entity {
+class IFC_SCHEMA_API IfcShapeAspect : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13103,7 +13103,7 @@ public:
 /// shape (via IfcShapeAspect).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_PARSE_API IfcShapeModel : public IfcRepresentation {
+class IFC_SCHEMA_API IfcShapeModel : public IfcRepresentation {
 public:
     using IfcRepresentation::IfcRepresentation;
 
@@ -13247,7 +13247,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5.
 /// 
 /// IFC2x4 CHANGE  The RepresentationType's 'Curve3D', 'Surface2D', 'Surface3D', 'AdvancedBrep', 'LightSource', and the RepresentationIdentifier 'Lighting' have been added.
-class IFC_PARSE_API IfcShapeRepresentation : public IfcShapeModel {
+class IFC_SCHEMA_API IfcShapeRepresentation : public IfcShapeModel {
 public:
     using IfcShapeModel::IfcShapeModel;
 
@@ -13258,7 +13258,7 @@ public:
 /// IfcSimpleProperty is a generalization of a single property object. The various subtypes of IfcSimpleProperty establish different ways in which a property value can be set. 
 /// 
 /// HISTORY  New Entity in IFC Release 1.0, definition changed in IFC Release 2x.
-class IFC_PARSE_API IfcSimpleProperty : public IfcProperty {
+class IFC_SCHEMA_API IfcSimpleProperty : public IfcProperty {
 public:
     using IfcProperty::IfcProperty;
 
@@ -13269,7 +13269,7 @@ public:
 /// Definition from IAI: Describe more rarely needed connection properties.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcStructuralConnectionCondition : public express::Entity {
+class IFC_SCHEMA_API IfcStructuralConnectionCondition : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13283,7 +13283,7 @@ public:
 /// Definition from IAI: The abstract entity IfcStructuralLoadOrResult is the supertype of all loads (actions or reactions) or of certain requirements resulting from structural analysis, or certain provisions which influence structural analysis.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcStructuralLoad : public express::Entity {
+class IFC_SCHEMA_API IfcStructuralLoad : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13297,7 +13297,7 @@ public:
 /// Definition from IAI: The abstract entity IfcStructuralLoadStatic is the supertype of all static loads (actions or reactions) which can be defined.  Within scope are single i.e. concentrated forces and moments, linear i.e. one-dimensionally distributed forces and moments, planar i.e. two-dimensionally distributed forces, furthermore displacements and temperature loads.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcStructuralLoadStatic : public IfcStructuralLoad {
+class IFC_SCHEMA_API IfcStructuralLoadStatic : public IfcStructuralLoad {
 public:
     using IfcStructuralLoad::IfcStructuralLoad;
 
@@ -13310,7 +13310,7 @@ public:
 /// HISTORY  New entity in IFC2x2. 
 /// 
 /// Figure 332 — Structural load temperature
-class IFC_PARSE_API IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
+class IFC_SCHEMA_API IfcStructuralLoadTemperature : public IfcStructuralLoadStatic {
 public:
     using IfcStructuralLoadStatic::IfcStructuralLoadStatic;
 
@@ -13329,7 +13329,7 @@ public:
 /// IfcStyleModel can be a style representation (presentation style) of a material (via IfcMaterialDefinitionRepresentation), potentially differentiated for different representation contexts (for example, different material hatching depending on the scale of the target representation context).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_PARSE_API IfcStyleModel : public IfcRepresentation {
+class IFC_SCHEMA_API IfcStyleModel : public IfcRepresentation {
 public:
     using IfcRepresentation::IfcRepresentation;
 
@@ -13365,7 +13365,7 @@ public:
 /// NOTE  The new IfcStyleAssignmentSelect allows the direct assignment styles, such as IfcCurveStyle, IfcSurfaceStyle without using the intermediate IfcPresentationStyleAssignment
 /// 
 /// Figure 293 — Styled item
-class IFC_PARSE_API IfcStyledItem : public IfcRepresentationItem {
+class IFC_SCHEMA_API IfcStyledItem : public IfcRepresentationItem {
 public:
     using IfcRepresentationItem::IfcRepresentationItem;
 
@@ -13396,7 +13396,7 @@ public:
 /// A styled representation has to include one or several styled items with the associated style information (curve, symbol, text, fill area, or surface styles). It shall not contain the geometric representation items that are styled.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcStyledRepresentation : public IfcStyleModel {
+class IFC_SCHEMA_API IfcStyledRepresentation : public IfcStyleModel {
 public:
     using IfcStyleModel::IfcStyleModel;
 
@@ -13411,7 +13411,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: surface_style_usage and surface_side_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. The surface style definition in regard to support of rendering has been greatly expanded beyond the scope of ISO/IS 10303-46.
 /// 
 /// HISTORY New Entity in IFC 2.x.
-class IFC_PARSE_API IfcSurfaceStyle : public IfcPresentationStyle {
+class IFC_SCHEMA_API IfcSurfaceStyle : public IfcPresentationStyle {
 public:
     using IfcPresentationStyle::IfcPresentationStyle;
 
@@ -13436,7 +13436,7 @@ public:
 /// EXAMPLE  A green glass transmits only green light, so its transmission factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue. A green surface reflects only green light, so the reflectance factor is 0.0 for red, between 0.0 and 1.0 for green and 0.0 for blue.
 /// 
 /// HISTORY  New entity in IFC 2x2.
-class IFC_PARSE_API IfcSurfaceStyleLighting : public express::Entity {
+class IFC_SCHEMA_API IfcSurfaceStyleLighting : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13465,7 +13465,7 @@ public:
 /// NOTE: If such refraction properties are used, the IfcSurfaceStyle should include within its set of Styles (depending on whether rendering or lighting is used) an instance of IfcSurfaceStyleLighting and IfcSurfaceStyleRefraction, or an instance of IfcSurfaceStyleRendering and IfcSurfaceStyleRefraction.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcSurfaceStyleRefraction : public express::Entity {
+class IFC_SCHEMA_API IfcSurfaceStyleRefraction : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13486,7 +13486,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: surface_style_rendering. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard. No rendering method is defined for each surface style (such as constant, colour, dot or normal shading), therefore the attribute rendering_method has been omitted.
 /// 
 /// HISTORY: New entity in IFC 2x.
-class IFC_PARSE_API IfcSurfaceStyleShading : public express::Entity {
+class IFC_SCHEMA_API IfcSurfaceStyleShading : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13515,7 +13515,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  inverse attribute HasTextureCoordinates deleted.
-class IFC_PARSE_API IfcSurfaceStyleWithTextures : public express::Entity {
+class IFC_SCHEMA_API IfcSurfaceStyleWithTextures : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13618,7 +13618,7 @@ public:
 /// HISTORY  New entity in IFC 2x2.
 /// 
 /// IFC2x4 CHANGE  Attribute TextureType replaces by Mode, attributes Parameter and MapsTo aded, new inverse attribute UsedInStyle.
-class IFC_PARSE_API IfcSurfaceTexture : public express::Entity {
+class IFC_SCHEMA_API IfcSurfaceTexture : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13644,7 +13644,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: symbol_style. Please refer to ISO/IS 10303-46:1994, p. 124 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in Release IFC2x2.
-class IFC_PARSE_API IfcSymbolStyle : public IfcPresentationStyle {
+class IFC_SCHEMA_API IfcSymbolStyle : public IfcPresentationStyle {
 public:
     using IfcPresentationStyle::IfcPresentationStyle;
 
@@ -13670,7 +13670,7 @@ public:
 /// HISTORY  New entity in IFC R1.5.
 /// 
 /// IFC2x4 CHANGE  Columns attribute added.
-class IFC_PARSE_API IfcTable : public express::Entity {
+class IFC_SCHEMA_API IfcTable : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13697,7 +13697,7 @@ public:
 /// Figure 338 — Table row use alternative
 /// 
 /// HISTORY  New entity in IFC R1.5.
-class IFC_PARSE_API IfcTableRow : public express::Entity {
+class IFC_SCHEMA_API IfcTableRow : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13718,7 +13718,7 @@ public:
 /// 
 /// IFC 2x4 change:  Added attribute MessagingIDs.
 /// Type of attribute WWWHomePageURL compatibly changed from IfcLabel to IfcURIReference.
-class IFC_PARSE_API IfcTelecomAddress : public IfcAddress {
+class IFC_SCHEMA_API IfcTelecomAddress : public IfcAddress {
 public:
     using IfcAddress::IfcAddress;
 
@@ -13772,7 +13772,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyle has been changed by adding TextFontStyle and different data types for TextStyle and IfcCharacterStyleSelect.
-class IFC_PARSE_API IfcTextStyle : public IfcPresentationStyle {
+class IFC_SCHEMA_API IfcTextStyle : public IfcPresentationStyle {
 public:
     using IfcPresentationStyle::IfcPresentationStyle;
 
@@ -13860,7 +13860,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions are Font properties ('font-family', 'font-style', 'font-variant',  'font-weight').
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_PARSE_API IfcTextStyleFontModel : public IfcPreDefinedTextFont {
+class IFC_SCHEMA_API IfcTextStyleFontModel : public IfcPreDefinedTextFont {
 public:
     using IfcPreDefinedTextFont::IfcPreDefinedTextFont;
 
@@ -13903,7 +13903,7 @@ public:
 /// HISTORY  New entity in IFC2x3.
 /// 
 /// IFC2x3 CHANGE  The IfcTextStyleForDefinedFont has been added and replaces IfcColour at the IfcCharacterStyleSelect.
-class IFC_PARSE_API IfcTextStyleForDefinedFont : public express::Entity {
+class IFC_SCHEMA_API IfcTextStyleForDefinedFont : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13924,7 +13924,7 @@ public:
 /// NOTE  Corresponding CSS1 definitions are Text properties (word-spacing, letter-spacing, text-decoration, vertical-align, text-transform, text-align, text-indent, line-height).
 /// 
 /// HISTORY  New entity in IFC2x3.
-class IFC_PARSE_API IfcTextStyleTextModel : public express::Entity {
+class IFC_SCHEMA_API IfcTextStyleTextModel : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -13977,7 +13977,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The attribute item CharacterSpacing has been added.
-class IFC_PARSE_API IfcTextStyleWithBoxCharacteristics : public express::Entity {
+class IFC_SCHEMA_API IfcTextStyleWithBoxCharacteristics : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14011,7 +14011,7 @@ public:
 /// IFC2x3 CHANGE  The attribute Texture is deleted.
 /// 
 /// IFC2x4 CHANGE  The inverse attribute AnnotatedSurface is deleted, and the inverse AppliesTextures is added.
-class IFC_PARSE_API IfcTextureCoordinate : public express::Entity {
+class IFC_SCHEMA_API IfcTextureCoordinate : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14046,7 +14046,7 @@ public:
 /// HISTORY New entity in IFC2x2.
 /// 
 /// IFC2x2 Addendum 2 CHANGE  The attribute Texturehas been deleted.
-class IFC_PARSE_API IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
+class IFC_SCHEMA_API IfcTextureCoordinateGenerator : public IfcTextureCoordinate {
 public:
     using IfcTextureCoordinate::IfcTextureCoordinate;
 
@@ -14115,7 +14115,7 @@ public:
 /// Informal propositions:
 /// 
 /// The FaceBound referenced in AppliedTo shall be used by the vertex based geometry, to which this texture map is assigned to by through the IfcStyledItem.
-class IFC_PARSE_API IfcTextureMap : public IfcTextureCoordinate {
+class IFC_SCHEMA_API IfcTextureMap : public IfcTextureCoordinate {
 public:
     using IfcTextureCoordinate::IfcTextureCoordinate;
 
@@ -14152,7 +14152,7 @@ public:
 /// Texture coordinates may be transformed (scaled, rotated, translated) by supplying a TextureTransform as a component of the texture's definition. 
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcTextureVertex : public express::Entity {
+class IFC_SCHEMA_API IfcTextureVertex : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14164,7 +14164,7 @@ public:
     IfcTextureVertex initialize(std::vector< double > /*[2:2]*/ v1_Coordinates);
 };
 
-class IFC_PARSE_API IfcThermalMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcThermalMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -14185,7 +14185,7 @@ public:
 /// The modeling of buildings and their performance involves data that are generated and recorded over a period of time.  Such data cover a large spectrum, from weather data to schedules of all kinds to status measurements to reporting to everything else that has a time related aspect. Their correct placement in time is essential for their proper understanding and use, and the IfcTimeSeries subtypes provide the appropriate data structures to accommodate these types of data.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcTimeSeries : public express::Entity {
+class IFC_SCHEMA_API IfcTimeSeries : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14219,7 +14219,7 @@ public:
     IfcTimeSeries initialize(std::string v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDateTimeSelect v3_StartTime, ::Ifc2x3::IfcDateTimeSelect v4_EndTime, ::Ifc2x3::IfcTimeSeriesDataTypeEnum::Value v5_TimeSeriesDataType, ::Ifc2x3::IfcDataOriginEnum::Value v6_DataOrigin, std::optional< std::string > v7_UserDefinedDataOrigin, ::Ifc2x3::IfcUnit v8_Unit);
 };
 
-class IFC_PARSE_API IfcTimeSeriesReferenceRelationship : public express::Entity {
+class IFC_SCHEMA_API IfcTimeSeriesReferenceRelationship : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14240,7 +14240,7 @@ public:
 /// Figure 241 — Time series value 
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcTimeSeriesValue : public express::Entity {
+class IFC_SCHEMA_API IfcTimeSeriesValue : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14256,7 +14256,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: topological_representation_item. Please refer to ISO/IS 10303-42:1994, p.129 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IFC_PARSE_API IfcTopologicalRepresentationItem : public IfcRepresentationItem {
+class IFC_SCHEMA_API IfcTopologicalRepresentationItem : public IfcRepresentationItem {
 public:
     using IfcRepresentationItem::IfcRepresentationItem;
 
@@ -14298,7 +14298,7 @@ public:
 /// given as a string value at the inherited attribute 'RepresentationType'.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcTopologyRepresentation : public IfcShapeModel {
+class IFC_SCHEMA_API IfcTopologyRepresentation : public IfcShapeModel {
 public:
     using IfcShapeModel::IfcShapeModel;
 
@@ -14311,7 +14311,7 @@ public:
 /// NOTE  A project (IfcProject) has a unit assignment which establishes a set of units which will be used globally within the project, if not otherwise defined. Other objects may have local unit assignments if there is a requirement for them to make use of units which do not fall within the project unit assignment.
 /// 
 /// HISTORY  New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcUnitAssignment : public express::Entity {
+class IFC_SCHEMA_API IfcUnitAssignment : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14332,7 +14332,7 @@ public:
 /// 
 /// The vertex has dimensionality 0. This is a fundamental property of the vertex.
 /// The extent of a vertex is defined to be zero.
-class IFC_PARSE_API IfcVertex : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcVertex : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -14341,7 +14341,7 @@ public:
     IfcVertex initialize();
 };
 
-class IFC_PARSE_API IfcVertexBasedTextureMap : public express::Entity {
+class IFC_SCHEMA_API IfcVertexBasedTextureMap : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14362,7 +14362,7 @@ public:
 /// Informal proposition: 
 /// 
 /// The domain of the vertex is formally defined to be the domain of its vertex point.
-class IFC_PARSE_API IfcVertexPoint : public IfcVertex {
+class IFC_SCHEMA_API IfcVertexPoint : public IfcVertex {
 public:
     using IfcVertex::IfcVertex;
 
@@ -14432,7 +14432,7 @@ public:
 /// OffsetDistances[1] is a negative length measure
 /// 
 /// Figure 248 — Virtual grid intersection negative offset
-class IFC_PARSE_API IfcVirtualGridIntersection : public express::Entity {
+class IFC_SCHEMA_API IfcVirtualGridIntersection : public express::Entity {
 public:
     using express::Entity::Entity;
 
@@ -14447,7 +14447,7 @@ public:
     IfcVirtualGridIntersection initialize(std::vector< ::Ifc2x3::IfcGridAxis > v1_IntersectingAxes, std::vector< double > /*[2:3]*/ v2_OffsetDistances);
 };
 
-class IFC_PARSE_API IfcWaterProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcWaterProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -14470,7 +14470,7 @@ public:
     IfcWaterProperties initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< bool > v2_IsPotable, std::optional< double > v3_Hardness, std::optional< double > v4_AlkalinityConcentration, std::optional< double > v5_AcidityConcentration, std::optional< double > v6_ImpuritiesContent, std::optional< double > v7_PHLevel, std::optional< double > v8_DissolvedSolidsContent);
 };
 
-class IFC_PARSE_API IfcAnnotationOccurrence : public IfcStyledItem {
+class IFC_SCHEMA_API IfcAnnotationOccurrence : public IfcStyledItem {
 public:
     using IfcStyledItem::IfcStyledItem;
 
@@ -14479,7 +14479,7 @@ public:
     IfcAnnotationOccurrence initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
-class IFC_PARSE_API IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
+class IFC_SCHEMA_API IfcAnnotationSurfaceOccurrence : public IfcAnnotationOccurrence {
 public:
     using IfcAnnotationOccurrence::IfcAnnotationOccurrence;
 
@@ -14488,7 +14488,7 @@ public:
     IfcAnnotationSurfaceOccurrence initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
-class IFC_PARSE_API IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
+class IFC_SCHEMA_API IfcAnnotationSymbolOccurrence : public IfcAnnotationOccurrence {
 public:
     using IfcAnnotationOccurrence::IfcAnnotationOccurrence;
 
@@ -14497,7 +14497,7 @@ public:
     IfcAnnotationSymbolOccurrence initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
-class IFC_PARSE_API IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
+class IFC_SCHEMA_API IfcAnnotationTextOccurrence : public IfcAnnotationOccurrence {
 public:
     using IfcAnnotationOccurrence::IfcAnnotationOccurrence;
 
@@ -14523,7 +14523,7 @@ public:
 /// attribute defines a two dimensional closed bounded curve.
 /// 
 /// Figure 307 — Arbitrary closed profile
-class IFC_PARSE_API IfcArbitraryClosedProfileDef : public IfcProfileDef {
+class IFC_SCHEMA_API IfcArbitraryClosedProfileDef : public IfcProfileDef {
 public:
     using IfcProfileDef::IfcProfileDef;
 
@@ -14549,7 +14549,7 @@ public:
 /// The Curve attribute defines a two dimensional open bounded curve.
 /// 
 /// Figure 308 — Arbitrary open profile
-class IFC_PARSE_API IfcArbitraryOpenProfileDef : public IfcProfileDef {
+class IFC_SCHEMA_API IfcArbitraryOpenProfileDef : public IfcProfileDef {
 public:
     using IfcProfileDef::IfcProfileDef;
 
@@ -14579,7 +14579,7 @@ public:
 /// or in case of sectioned spines the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions.  The OuterCurve attribute defines a two dimensional closed bounded curve, the InnerCurves define a set of two dimensional closed bounded curves.
 /// 
 /// Figure 309 — Arbitrary profile with voids
-class IFC_PARSE_API IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
+class IFC_SCHEMA_API IfcArbitraryProfileDefWithVoids : public IfcArbitraryClosedProfileDef {
 public:
     using IfcArbitraryClosedProfileDef::IfcArbitraryClosedProfileDef;
 
@@ -14599,7 +14599,7 @@ public:
 /// HISTORY  New class in IFC2x3.
 /// 
 /// IFC2x4 CHANGE  Data type of RasterCode has been corrected to BINARY.
-class IFC_PARSE_API IfcBlobTexture : public IfcSurfaceTexture {
+class IFC_SCHEMA_API IfcBlobTexture : public IfcSurfaceTexture {
 public:
     using IfcSurfaceTexture::IfcSurfaceTexture;
 
@@ -14642,7 +14642,7 @@ public:
 /// The Curve attribute defines a two dimensional open bounded curve. The Thickness attribute defines a constant thickness along the curve.
 /// 
 /// Figure 311 — Centerline profile
-class IFC_PARSE_API IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
+class IFC_SCHEMA_API IfcCenterLineProfileDef : public IfcArbitraryOpenProfileDef {
 public:
     using IfcArbitraryOpenProfileDef::IfcArbitraryOpenProfileDef;
 
@@ -14674,7 +14674,7 @@ public:
 /// The IfcClassificationReference can be used to only assign classification keys to objects, or to hold a fully classification hierarchy. The first is refered to as "lightweight classification", and the second as "full classification"
 /// 
 /// The IfcClassificationReference can be used as a form of 'lightweight' classification through the 'Identification' attribute inherited from the abstract IfcExternalReference class. In this case, the 'Identification' could take (for instance) the Uniclass notation "L6814" which, if the classification was well understood by all parties and was known to be taken from a particular classification source, would be sufficient. The Name attribute could be the title "Tanking". This would remove the need for the overhead of the more complete classification structure of the model.
-class IFC_PARSE_API IfcClassificationReference : public IfcExternalReference {
+class IFC_SCHEMA_API IfcClassificationReference : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -14693,7 +14693,7 @@ public:
 /// refer to ISO/IS 10303-46:1994, p. 138 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcColourRgb : public IfcColourSpecification {
+class IFC_SCHEMA_API IfcColourRgb : public IfcColourSpecification {
 public:
     using IfcColourSpecification::IfcColourSpecification;
 
@@ -14721,7 +14721,7 @@ public:
 /// NOTE  Since an IfcComplexProperty may contain other complex properties, sets of properties can be nested. This nesting may be restricted by view definitions and implementer agreements.
 /// 
 /// HISTORY New Entity in IFC Release 2.0, capabilities enhanced in IFC Release 2x.
-class IFC_PARSE_API IfcComplexProperty : public IfcProperty {
+class IFC_SCHEMA_API IfcComplexProperty : public IfcProperty {
 public:
     using IfcProperty::IfcProperty;
 
@@ -14772,7 +14772,7 @@ public:
 ///  
 /// double_L : IfcCompositeProfileDef := IfcCompositeProfileDef(AREA, 'double angle',
 ///     (single_L, IfcMirroredProfileDef(AREA, ?, single_L, ?)), 'twin profile');
-class IFC_PARSE_API IfcCompositeProfileDef : public IfcProfileDef {
+class IFC_SCHEMA_API IfcCompositeProfileDef : public IfcProfileDef {
 public:
     using IfcProfileDef::IfcProfileDef;
 
@@ -14795,7 +14795,7 @@ public:
 /// Informal proposition: 
 /// 
 /// The union of the domains of the faces and their bounding loops shall be arcwise connected.
-class IFC_PARSE_API IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcConnectedFaceSet : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -14819,7 +14819,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcCurve (or the IfcEdgeCurve with an associated IfcCurve) at the CurveOnRelatingElement attribute defines the curve where the basic geometry items of the connected elements connects. The curve geometry and coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects Subtype that utilizes the IfcConnectionCurveGeometry. Optionally, the same curve geometry and coordinates can also be provided within the local coordinate system of the RelatedElement by using the CurveOnRelatedElement attribute.
-class IFC_PARSE_API IfcConnectionCurveGeometry : public IfcConnectionGeometry {
+class IFC_SCHEMA_API IfcConnectionCurveGeometry : public IfcConnectionGeometry {
 public:
     using IfcConnectionGeometry::IfcConnectionGeometry;
 
@@ -14852,7 +14852,7 @@ public:
 /// 
 /// Geometry use definitions
 /// The IfcPoint (or the IfcVertexPoint with an associated IfcPoint) at the PointOnRelatingElement attribute defines the point where the basic geometry items of the connected elements connects. The point coordinates are provided within the local coordinate system of the RelatingElement, as specified at the IfcRelConnects subtype that utilizes the IfcConnectionPointGeometry. Optionally, the same point coordinates can also be provided within the local coordinate system of the RelatedElement by using the PointOnRelatedElement attribute, otherwise the distance to the point at the RelatedElement has to be given by the three eccentricity values.
-class IFC_PARSE_API IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
+class IFC_SCHEMA_API IfcConnectionPointEccentricity : public IfcConnectionPointGeometry {
 public:
     using IfcConnectionPointGeometry::IfcConnectionPointGeometry;
 
@@ -14876,7 +14876,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: context_dependent_unit, please refer to ISO/IS 10303-41 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5.1.
-class IFC_PARSE_API IfcContextDependentUnit : public IfcNamedUnit {
+class IFC_SCHEMA_API IfcContextDependentUnit : public IfcNamedUnit {
 public:
     using IfcNamedUnit::IfcNamedUnit;
 
@@ -14934,7 +14934,7 @@ public:
 ///   'hour'		Time measure equal to 3600 s
 ///   'day'		Time measure equal to 86400 s
 ///   'btu'		Energy measure equal to 1055.056 J, British Thermal Unit
-class IFC_PARSE_API IfcConversionBasedUnit : public IfcNamedUnit {
+class IFC_SCHEMA_API IfcConversionBasedUnit : public IfcNamedUnit {
 public:
     using IfcNamedUnit::IfcNamedUnit;
 
@@ -14965,7 +14965,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: curve_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcCurveStyle : public IfcPresentationStyle {
+class IFC_SCHEMA_API IfcCurveStyle : public IfcPresentationStyle {
 public:
     using IfcPresentationStyle::IfcPresentationStyle;
 
@@ -15066,7 +15066,7 @@ public:
 ///   show the position coordinate system of the derived profile
 /// 
 /// Figure 316 — Derived profile
-class IFC_PARSE_API IfcDerivedProfileDef : public IfcProfileDef {
+class IFC_SCHEMA_API IfcDerivedProfileDef : public IfcProfileDef {
 public:
     using IfcProfileDef::IfcProfileDef;
 
@@ -15084,7 +15084,7 @@ public:
     IfcDerivedProfileDef initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcProfileDef v3_ParentProfile, ::Ifc2x3::IfcCartesianTransformationOperator2D v4_Operator, std::optional< std::string > v5_Label);
 };
 
-class IFC_PARSE_API IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
+class IFC_SCHEMA_API IfcDimensionCalloutRelationship : public IfcDraughtingCalloutRelationship {
 public:
     using IfcDraughtingCalloutRelationship::IfcDraughtingCalloutRelationship;
 
@@ -15093,7 +15093,7 @@ public:
     IfcDimensionCalloutRelationship initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, ::Ifc2x3::IfcDraughtingCallout v3_RelatingDraughtingCallout, ::Ifc2x3::IfcDraughtingCallout v4_RelatedDraughtingCallout);
 };
 
-class IFC_PARSE_API IfcDimensionPair : public IfcDraughtingCalloutRelationship {
+class IFC_SCHEMA_API IfcDimensionPair : public IfcDraughtingCalloutRelationship {
 public:
     using IfcDraughtingCalloutRelationship::IfcDraughtingCalloutRelationship;
 
@@ -15112,7 +15112,7 @@ public:
 /// 
 /// HISTORY: New Entity in IFC Release 2.0.
 ///   Modified in IFC 2x.
-class IFC_PARSE_API IfcDocumentReference : public IfcExternalReference {
+class IFC_SCHEMA_API IfcDocumentReference : public IfcExternalReference {
 public:
     using IfcExternalReference::IfcExternalReference;
 
@@ -15131,7 +15131,7 @@ public:
 /// NOTE  The IfcDraughtingPreDefinedTextFont is an entity that had been adopted from ISO 10303, Industrial automation systems and integration—Product data representation and exchange, Part 202: Application protocol: Associative draughting. Corresponding ISO 10303 name: draughting_pre_defined_text_font. Please refer to ISO/IS 10303-202:1994 page 196 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
+class IFC_SCHEMA_API IfcDraughtingPreDefinedTextFont : public IfcPreDefinedTextFont {
 public:
     using IfcPreDefinedTextFont::IfcPreDefinedTextFont;
 
@@ -15188,7 +15188,7 @@ public:
 /// 
 /// The edge has dimensionality 1.
 /// The extend of an edge shall be finite and nonzero.
-class IFC_PARSE_API IfcEdge : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcEdge : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -15235,7 +15235,7 @@ public:
 /// The edge start is not a part of the edge domain.
 /// The edge end is not a part of the edge domain.
 /// Vertex geometry shall be consistent with edge geometry.
-class IFC_PARSE_API IfcEdgeCurve : public IfcEdge {
+class IFC_SCHEMA_API IfcEdgeCurve : public IfcEdge {
 public:
     using IfcEdge::IfcEdge;
 
@@ -15284,7 +15284,7 @@ public:
 /// General Fuel Properties
 /// General Products of Combustion Properties
 /// General Energy Calculation Properties
-class IFC_PARSE_API IfcExtendedMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcExtendedMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -15342,7 +15342,7 @@ public:
 ///   intersect.  
 ///   The face shall satisfy the Euler Equation: (number of vertices) -
 ///   (number of edges) - (number of loops) + (sum of genus for loops) = 0.
-class IFC_PARSE_API IfcFace : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcFace : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -15358,7 +15358,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: face_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
 /// HISTORY  New class in IFC Release 1.0
-class IFC_PARSE_API IfcFaceBound : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcFaceBound : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -15377,7 +15377,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: face_outer_bound. Please refer to ISO/IS 10303-42:1994, p. 139 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IFC_PARSE_API IfcFaceOuterBound : public IfcFaceBound {
+class IFC_SCHEMA_API IfcFaceOuterBound : public IfcFaceBound {
 public:
     using IfcFaceBound::IfcFaceBound;
 
@@ -15421,7 +15421,7 @@ public:
 ///   that any edge - curves or vertex points used in defining the loops bounding the
 ///   face surface shall lie on the face geometry.
 ///   The loops of the face shall not intersect.
-class IFC_PARSE_API IfcFaceSurface : public IfcFace {
+class IFC_SCHEMA_API IfcFaceSurface : public IfcFace {
 public:
     using IfcFace::IfcFace;
 
@@ -15442,7 +15442,7 @@ public:
 /// Point supports and connections.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
+class IFC_SCHEMA_API IfcFailureConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     using IfcStructuralConnectionCondition::IfcStructuralConnectionCondition;
 
@@ -15502,7 +15502,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: fill_area_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcFillAreaStyle : public IfcPresentationStyle {
+class IFC_SCHEMA_API IfcFillAreaStyle : public IfcPresentationStyle {
 public:
     using IfcPresentationStyle::IfcPresentationStyle;
 
@@ -15514,7 +15514,7 @@ public:
     IfcFillAreaStyle initialize(std::optional< std::string > v1_Name, std::vector< ::Ifc2x3::IfcFillStyleSelect > v2_FillStyles);
 };
 
-class IFC_PARSE_API IfcFuelProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcFuelProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -15531,7 +15531,7 @@ public:
     IfcFuelProperties initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_CombustionTemperature, std::optional< double > v3_CarbonContent, std::optional< double > v4_LowerHeatingValue, std::optional< double > v5_HigherHeatingValue);
 };
 
-class IFC_PARSE_API IfcGeneralMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcGeneralMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -15546,7 +15546,7 @@ public:
     IfcGeneralMaterialProperties initialize(::Ifc2x3::IfcMaterial v1_Material, std::optional< double > v2_MolecularWeight, std::optional< double > v3_Porosity, std::optional< double > v4_MassDensity);
 };
 
-class IFC_PARSE_API IfcGeneralProfileProperties : public IfcProfileProperties {
+class IFC_SCHEMA_API IfcGeneralProfileProperties : public IfcProfileProperties {
 public:
     using IfcProfileProperties::IfcProfileProperties;
 
@@ -15611,7 +15611,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0
 /// 
 /// IFC2x3 CHANGE Applicable values for ContextType are only 'Model', 'Plan', and'NotDefined'. All other sub contexts are now handled by the new subtype in IFC2x Edition 2 IfcGeometricRepresentationSubContext. Upward compatibility for file based exchange is guaranteed.
-class IFC_PARSE_API IfcGeometricRepresentationContext : public IfcRepresentationContext {
+class IFC_SCHEMA_API IfcGeometricRepresentationContext : public IfcRepresentationContext {
 public:
     using IfcRepresentationContext::IfcRepresentationContext;
 
@@ -15653,7 +15653,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 22 for the final definition of the formal standard. The following changes have been made: It does not inherit from ISO/IS 10303-43:1994 entity representation_item. The derived attribute Dim is demoted to the appropriate subtypes. The WR1 has not been incorporated. Not all subtypes that are in ISO/IS 10303-42:1994 have been added to the current IFC Release.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IFC_PARSE_API IfcGeometricRepresentationItem : public IfcRepresentationItem {
+class IFC_SCHEMA_API IfcGeometricRepresentationItem : public IfcRepresentationItem {
 public:
     using IfcRepresentationItem::IfcRepresentationItem;
 
@@ -15674,7 +15674,7 @@ public:
 /// EXAMPLE  Instances of IfcGeometricRepresentationSubContext can be used to handle the multi-view blocks or macros, which are used in CAD programs to store several scale and/or view dependent geometric representations of the same object.
 /// 
 /// HISTORY  New entity in Release IFC 2x2.
-class IFC_PARSE_API IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
+class IFC_SCHEMA_API IfcGeometricRepresentationSubContext : public IfcGeometricRepresentationContext {
 public:
     using IfcGeometricRepresentationContext::IfcGeometricRepresentationContext;
 
@@ -15711,7 +15711,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: geometric_set. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 190 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcGeometricSet : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcGeometricSet : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -15767,7 +15767,7 @@ public:
 /// its x-axis direction: given by the tangent of the line between the virtual grid intersection of the PlacementLocation and the virtual grid intersection of the PlacementRefDirection.
 /// 
 /// Figure 245 — Grid placement with intersection
-class IFC_PARSE_API IfcGridPlacement : public IfcObjectPlacement {
+class IFC_SCHEMA_API IfcGridPlacement : public IfcObjectPlacement {
 public:
     using IfcObjectPlacement::IfcObjectPlacement;
 
@@ -15798,7 +15798,7 @@ public:
 /// Figure 258 illustrates the definition of the IfcHalfSpaceSolid within a given coordinate system. The base surface is given by an unbounded plane, the red boundary is shown for visualization purposes only. 
 /// 
 /// Figure 258 — Half space solid geometry
-class IFC_PARSE_API IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcHalfSpaceSolid : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -15813,7 +15813,7 @@ public:
     IfcHalfSpaceSolid initialize(::Ifc2x3::IfcSurface v1_BaseSurface, bool v2_AgreementFlag);
 };
 
-class IFC_PARSE_API IfcHygroscopicMaterialProperties : public IfcMaterialProperties {
+class IFC_SCHEMA_API IfcHygroscopicMaterialProperties : public IfcMaterialProperties {
 public:
     using IfcMaterialProperties::IfcMaterialProperties;
 
@@ -15866,7 +15866,7 @@ public:
 /// NOTE  The definitions of texturing within this standard have been developed in dependence on the texture component of X3D. See ISO/IEC 19775-1.2:2008 X3D Architecture and base components Edition 2, Part 1, 18 Texturing component for the definitions in the international standard.
 /// 
 /// HISTORY  New entity in Release IFC2x2.
-class IFC_PARSE_API IfcImageTexture : public IfcSurfaceTexture {
+class IFC_SCHEMA_API IfcImageTexture : public IfcSurfaceTexture {
 public:
     using IfcSurfaceTexture::IfcSurfaceTexture;
 
@@ -15882,7 +15882,7 @@ public:
 /// EXAMPLE: A circulating pump cycles on and off at unpredictable times as dictated by the demands on the piping system; the amount of light in a classroom varies depending on when the lights are manually switched on and off and and how many lamps are controlled by each switch.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcIrregularTimeSeries : public IfcTimeSeries {
+class IFC_SCHEMA_API IfcIrregularTimeSeries : public IfcTimeSeries {
 public:
     using IfcTimeSeries::IfcTimeSeries;
 
@@ -15900,7 +15900,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO10303-46 the following additional properties from ISO/IEC 14772-1:1997 (VRML) are added: ambientIntensity and Intensity. The attribute Name has been added as well (as it is not inherited via representation_item).
 /// 
 /// HISTORY: This is a new Entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IFC_PARSE_API IfcLightSource : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcLightSource : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -15928,7 +15928,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO 10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) AmbientIntensity is inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IFC_PARSE_API IfcLightSourceAmbient : public IfcLightSource {
+class IFC_SCHEMA_API IfcLightSourceAmbient : public IfcLightSource {
 public:
     using IfcLightSource::IfcLightSource;
 
@@ -15945,7 +15945,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO 10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IFC_PARSE_API IfcLightSourceDirectional : public IfcLightSource {
+class IFC_SCHEMA_API IfcLightSourceDirectional : public IfcLightSource {
 public:
     using IfcLightSource::IfcLightSource;
 
@@ -15964,7 +15964,7 @@ public:
 /// Figure 303 — Light source goniometric
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcLightSourceGoniometric : public IfcLightSource {
+class IFC_SCHEMA_API IfcLightSourceGoniometric : public IfcLightSource {
 public:
     using IfcLightSource::IfcLightSource;
 
@@ -16005,7 +16005,7 @@ public:
 /// NOTE: In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY: This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IFC_PARSE_API IfcLightSourcePositional : public IfcLightSource {
+class IFC_SCHEMA_API IfcLightSourcePositional : public IfcLightSource {
 public:
     using IfcLightSource::IfcLightSource;
 
@@ -16045,7 +16045,7 @@ public:
 /// NOTE  In addition to the attributes as defined in ISO10303-46 the additional property from ISO/IEC 14772-1:1997 (VRML) Radius, BeamWidth, and QuadricAttenuation are added to this subtype and the AmbientIntensity and Intensity are inherited from the supertype.
 /// 
 /// HISTORY  This is a new entity in IFC 2x, renamed and enhanced in IFC2x2.
-class IFC_PARSE_API IfcLightSourceSpot : public IfcLightSourcePositional {
+class IFC_SCHEMA_API IfcLightSourceSpot : public IfcLightSourcePositional {
 public:
     using IfcLightSourcePositional::IfcLightSourcePositional;
 
@@ -16120,7 +16120,7 @@ public:
 /// 
 /// If the PlacementRelTo relationship is not given, then it defaults to an absolute placement within the world
 /// coordinate system established by the referenced geometric representation context within the project.
-class IFC_PARSE_API IfcLocalPlacement : public IfcObjectPlacement {
+class IFC_SCHEMA_API IfcLocalPlacement : public IfcObjectPlacement {
 public:
     using IfcObjectPlacement::IfcObjectPlacement;
 
@@ -16160,7 +16160,7 @@ public:
 /// A loop has a finite extent. 
 ///   A loop describes a closed (topological) curve with coincident start
 ///   and end vertices.
-class IFC_PARSE_API IfcLoop : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcLoop : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -16187,7 +16187,7 @@ public:
 /// 
 /// A mapped item shall not be self-defining by participating in the definition of the representation being mapped.
 ///   The dimensionality of the mapping source and the mapping target has to be the same, if the mapping source is a geometric representation item.
-class IFC_PARSE_API IfcMappedItem : public IfcRepresentationItem {
+class IFC_SCHEMA_API IfcMappedItem : public IfcRepresentationItem {
 public:
     using IfcRepresentationItem::IfcRepresentationItem;
 
@@ -16231,7 +16231,7 @@ public:
 /// As shown in Figure 331, the presentation assignment can be specific to a representation context by adding one and more IfcStyledRepresentation's. Each of them includes a single IfcStyledItem with exactly zero or one style for either curve, fill area, surface, text or symbol style that is applicable.
 /// 
 /// Figure 331 — Material definition representation
-class IFC_PARSE_API IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
+class IFC_SCHEMA_API IfcMaterialDefinitionRepresentation : public IfcProductRepresentation {
 public:
     using IfcProductRepresentation::IfcProductRepresentation;
 
@@ -16243,7 +16243,7 @@ public:
     IfcMaterialDefinitionRepresentation initialize(std::optional< std::string > v1_Name, std::optional< std::string > v2_Description, std::vector< ::Ifc2x3::IfcRepresentation > v3_Representations, ::Ifc2x3::IfcMaterial v4_RepresentedMaterial);
 };
 
-class IFC_PARSE_API IfcMechanicalConcreteMaterialProperties : public IfcMechanicalMaterialProperties {
+class IFC_SCHEMA_API IfcMechanicalConcreteMaterialProperties : public IfcMechanicalMaterialProperties {
 public:
     using IfcMechanicalMaterialProperties::IfcMechanicalMaterialProperties;
 
@@ -16313,7 +16313,7 @@ public:
 /// HISTORY New abstract entity in IFC2x3.
 /// 
 /// IFC2x4 CHANGE The new subtype IfcContext and the relationship to context HasContext has been added . The decomposition relationship is split into ordered nesting (Nests, IsNestedBy) and un-ordered aggregating (Decomposes, IsDecomposedBy).
-class IFC_PARSE_API IfcObjectDefinition : public IfcRoot {
+class IFC_SCHEMA_API IfcObjectDefinition : public IfcRoot {
 public:
     using IfcRoot::IfcRoot;
 
@@ -16332,7 +16332,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: one_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994, p. 112 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcOneDirectionRepeatFactor : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcOneDirectionRepeatFactor : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -16402,7 +16402,7 @@ public:
 /// 
 /// The Euler equation shall be satisfied. Note: Please refer to ISO/IS
 ///   10303-42:1994, p.148 for the equation.
-class IFC_PARSE_API IfcOpenShell : public IfcConnectedFaceSet {
+class IFC_SCHEMA_API IfcOpenShell : public IfcConnectedFaceSet {
 public:
     using IfcConnectedFaceSet::IfcConnectedFaceSet;
 
@@ -16417,7 +16417,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: oriented_edge. Please refer to ISO/IS 10303-42:1994, p. 133 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC Release 2.0.
-class IFC_PARSE_API IfcOrientedEdge : public IfcEdge {
+class IFC_SCHEMA_API IfcOrientedEdge : public IfcEdge {
 public:
     using IfcEdge::IfcEdge;
 
@@ -16473,7 +16473,7 @@ public:
 /// IFC2x4 CHANGE  Position attribute made optional (default: identity transformation).
 /// Several radius parameters in subtypes have been changed from optional IfcPositiveLengthMeasure (assumed default: 0.) to optional IfcNonNegativeLengthMeasure (default: unspecified).  This change allows to explicitly specify zero radius.  Sending systems shall export 0. values if parameters are known to be 0.
 /// Subtypes IfcCraneRailAShapeProfileDef and IfcCraneRailFShapeProfileDef deleted.  Rail profiles shall be modeled as IfcArbitraryClosedProfileDef or as IfcAsymmetricIShapeProfileDef together with appropriate external reference.
-class IFC_PARSE_API IfcParameterizedProfileDef : public IfcProfileDef {
+class IFC_SCHEMA_API IfcParameterizedProfileDef : public IfcProfileDef {
 public:
     using IfcProfileDef::IfcProfileDef;
 
@@ -16498,7 +16498,7 @@ public:
 /// A path is arcwise connected.
 /// The edges of the path do not intersect except at common vertices.
 /// A path has a finite, non-zero extent.
-class IFC_PARSE_API IfcPath : public IfcTopologicalRepresentationItem {
+class IFC_SCHEMA_API IfcPath : public IfcTopologicalRepresentationItem {
 public:
     using IfcTopologicalRepresentationItem::IfcTopologicalRepresentationItem;
 
@@ -16518,7 +16518,7 @@ public:
 /// HISTORY  New entity in IFC2x2 Addendum 1.
 /// 
 /// IFC2x2 ADDENDUM 1 CHANGE  The entity IfcPhysicalComplexQuantity has been added. Upward compatibility for file based exchange is guaranteed.
-class IFC_PARSE_API IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
+class IFC_SCHEMA_API IfcPhysicalComplexQuantity : public IfcPhysicalQuantity {
 public:
     using IfcPhysicalQuantity::IfcPhysicalQuantity;
 
@@ -16556,7 +16556,7 @@ public:
 /// Note that alpha equals (1.0 -transparency), if alpha and transparency each range from 0.0 to 1.0.
 /// 
 /// HISTORY: New class in IFC2x2.
-class IFC_PARSE_API IfcPixelTexture : public IfcSurfaceTexture {
+class IFC_SCHEMA_API IfcPixelTexture : public IfcSurfaceTexture {
 public:
     using IfcSurfaceTexture::IfcSurfaceTexture;
 
@@ -16587,7 +16587,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: placement. Please refer to ISO/IS 10303-42:1994, p. 27 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IFC_PARSE_API IfcPlacement : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcPlacement : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -16603,7 +16603,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: planar_extent. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcPlanarExtent : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcPlanarExtent : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -16622,7 +16622,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: point. Only the subtypes cartesian_point, point_on_curve, point_on_surface have been incorporated in the current release of IFC. Please refer to ISO/IS 10303-42:1994, p. 22 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IFC_PARSE_API IfcPoint : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcPoint : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -16639,7 +16639,7 @@ public:
 /// Informal Propositions: 
 /// 
 /// The value of the point parameter shall not be outside the parametric range of the curve.
-class IFC_PARSE_API IfcPointOnCurve : public IfcPoint {
+class IFC_SCHEMA_API IfcPointOnCurve : public IfcPoint {
 public:
     using IfcPoint::IfcPoint;
 
@@ -16662,7 +16662,7 @@ public:
 /// Informal Propositions: 
 /// 
 /// The parametric values specified for u and v shall not be outside the parametric range of the basis surface.
-class IFC_PARSE_API IfcPointOnSurface : public IfcPoint {
+class IFC_SCHEMA_API IfcPointOnSurface : public IfcPoint {
 public:
     using IfcPoint::IfcPoint;
 
@@ -16718,7 +16718,7 @@ public:
 /// 
 /// All the points in the polygon defining the poly loop shall be coplanar.
 ///   The first and the last Polygon shall be different by value.
-class IFC_PARSE_API IfcPolyLoop : public IfcLoop {
+class IFC_SCHEMA_API IfcPolyLoop : public IfcLoop {
 public:
     using IfcLoop::IfcLoop;
 
@@ -16785,7 +16785,7 @@ public:
 /// bounds the effectiveness of the half space in Boolean expressions. The BaseSurface
 /// is defined by a plane, and the normal of the plane together with the AgreementFlag
 /// defines the side of the material of the half space.
-class IFC_PARSE_API IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
+class IFC_SCHEMA_API IfcPolygonalBoundedHalfSpace : public IfcHalfSpaceSolid {
 public:
     using IfcHalfSpaceSolid::IfcHalfSpaceSolid;
 
@@ -16806,7 +16806,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_colour. It has been made into an abstract entity in IFC. Please refer to ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcPreDefinedColour : public IfcPreDefinedItem {
+class IFC_SCHEMA_API IfcPreDefinedColour : public IfcPreDefinedItem {
 public:
     using IfcPreDefinedItem::IfcPreDefinedItem;
 
@@ -16821,7 +16821,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994, p. 103 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcPreDefinedCurveFont : public IfcPreDefinedItem {
+class IFC_SCHEMA_API IfcPreDefinedCurveFont : public IfcPreDefinedItem {
 public:
     using IfcPreDefinedItem::IfcPreDefinedItem;
 
@@ -16830,7 +16830,7 @@ public:
     IfcPreDefinedCurveFont initialize(std::string v1_Name);
 };
 
-class IFC_PARSE_API IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
+class IFC_SCHEMA_API IfcPreDefinedDimensionSymbol : public IfcPreDefinedSymbol {
 public:
     using IfcPreDefinedSymbol::IfcPreDefinedSymbol;
 
@@ -16839,7 +16839,7 @@ public:
     IfcPreDefinedDimensionSymbol initialize(std::string v1_Name);
 };
 
-class IFC_PARSE_API IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
+class IFC_SCHEMA_API IfcPreDefinedPointMarkerSymbol : public IfcPreDefinedSymbol {
 public:
     using IfcPreDefinedSymbol::IfcPreDefinedSymbol;
 
@@ -16859,7 +16859,7 @@ public:
 /// NOTE  The definition of this entity relates to the ISO 10303 entity product_definition_shape. Please refer to ISO/IS 10303-41:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC Release 1.5
-class IFC_PARSE_API IfcProductDefinitionShape : public IfcProductRepresentation {
+class IFC_SCHEMA_API IfcProductDefinitionShape : public IfcProductRepresentation {
 public:
     using IfcProductRepresentation::IfcProductRepresentation;
 
@@ -16973,7 +16973,7 @@ public:
 /// If the measure type for the upper and lover bound value
 ///   is a numeric measure, then the following shall be true: 
 ///   UpperBoundValue > LowerBoundValue.
-class IFC_PARSE_API IfcPropertyBoundedValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertyBoundedValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17040,7 +17040,7 @@ public:
 /// Subtypes are included in more specific relationships, see
 /// IfcPropertySetDefinition and
 /// IfcPropertyTemplateDefinition for details.
-class IFC_PARSE_API IfcPropertyDefinition : public IfcRoot {
+class IFC_SCHEMA_API IfcPropertyDefinition : public IfcRoot {
 public:
     using IfcRoot::IfcRoot;
 
@@ -17126,7 +17126,7 @@ public:
 /// 
 /// IFC2x4 CHANGE Attribute EnumerationValues has been made OPTIONAL with upward
 /// compatibility for file based exchange.
-class IFC_PARSE_API IfcPropertyEnumeratedValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertyEnumeratedValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17207,7 +17207,7 @@ public:
 /// HISTORY  New Entity in Release IFC 2x Edition 2.
 /// 
 /// IFC2x4 CHANGE  Attribute ListValues has been made OPTIONAL with upward compatibility for file based exchange.
-class IFC_PARSE_API IfcPropertyListValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertyListValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17238,7 +17238,7 @@ public:
 /// IFC2x4 CHANGE  Attribute
 ///   PropertyReference has been made OPTIONAL with upward
 ///   compatibility for file based exchange.
-class IFC_PARSE_API IfcPropertyReferenceValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertyReferenceValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17296,7 +17296,7 @@ public:
 /// with all included properties, to the object occurrence.
 /// 
 /// NOTE  Properties assigned to object occurrences may override properties assigned to the object type. See IfcRelDefinesByType for further information.
-class IFC_PARSE_API IfcPropertySetDefinition : public IfcPropertyDefinition {
+class IFC_SCHEMA_API IfcPropertySetDefinition : public IfcPropertyDefinition {
 public:
     using IfcPropertyDefinition::IfcPropertyDefinition;
 
@@ -17350,7 +17350,7 @@ public:
 /// HISTORY New entity in IFC Release 1.0. The entity has been renamed from IfcSimpleProperty in IFC Release 2x.
 /// 
 /// IFC2x3 CHANGE Attribute NominalValue has been made OPTIONAL with upward compatibility for file based exchange.
-class IFC_PARSE_API IfcPropertySingleValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertySingleValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17484,7 +17484,7 @@ public:
 /// 
 /// The list of DefinedValues and the list of
 ///   DefiningValues are corresponding lists.
-class IFC_PARSE_API IfcPropertyTableValue : public IfcSimpleProperty {
+class IFC_SCHEMA_API IfcPropertyTableValue : public IfcSimpleProperty {
 public:
     using IfcSimpleProperty::IfcSimpleProperty;
 
@@ -17545,7 +17545,7 @@ public:
 /// rectangle (half along the positive y-axis).
 /// 
 /// Figure 323 — Rectangle profile
-class IFC_PARSE_API IfcRectangleProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcRectangleProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -17564,7 +17564,7 @@ public:
 /// EXAMPLE: A smoke detector samples the concentration of particulates in a space at a fixed rate (for example, every six seconds); a control system measures the outside air temperature every hour.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcRegularTimeSeries : public IfcTimeSeries {
+class IFC_SCHEMA_API IfcRegularTimeSeries : public IfcTimeSeries {
 public:
     using IfcTimeSeries::IfcTimeSeries;
 
@@ -17604,7 +17604,7 @@ public:
 ///   bar role), which in turn have a section cross section property defined as a
 ///   profile and a number of reinforcement properties, one for each steel grade /
 ///   bar type.
-class IFC_PARSE_API IfcReinforcementDefinitionProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcReinforcementDefinitionProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -17626,7 +17626,7 @@ public:
 /// In case of the 1-to-many relationship, the related side of the relationship shall be an aggregate SET 1:N 
 /// 
 /// HISTORY: New entity in IFC Release 1.0.
-class IFC_PARSE_API IfcRelationship : public IfcRoot {
+class IFC_SCHEMA_API IfcRelationship : public IfcRoot {
 public:
     using IfcRoot::IfcRoot;
 
@@ -17671,7 +17671,7 @@ public:
 /// of curvature in all four corners of the rectangle.
 /// 
 /// Figure 324 — Rounded rectangle profile
-class IFC_PARSE_API IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
+class IFC_SCHEMA_API IfcRoundedRectangleProfileDef : public IfcRectangleProfileDef {
 public:
     using IfcRectangleProfileDef::IfcRectangleProfileDef;
 
@@ -17735,7 +17735,7 @@ public:
 /// none of the cross sections, after being placed by the cross section positions, shall intersect
 /// none of the cross sections, after being placed by the cross section positions, shall lie in the same plane
 /// the local origin of each cross section position shall lie at the beginning or end of a composite curve segment.
-class IFC_PARSE_API IfcSectionedSpine : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcSectionedSpine : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -17753,7 +17753,7 @@ public:
     IfcSectionedSpine initialize(::Ifc2x3::IfcCompositeCurve v1_SpineCurve, std::vector< ::Ifc2x3::IfcProfileDef > v2_CrossSections, std::vector< ::Ifc2x3::IfcAxis2Placement3D > v3_CrossSectionPositions);
 };
 
-class IFC_PARSE_API IfcServiceLifeFactor : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcServiceLifeFactor : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -17781,7 +17781,7 @@ public:
 /// 
 /// The dimensionality of the shell based surface model is 2.  
 /// The shells shall not overlap or intersect except at common faces, edges or vertices.
-class IFC_PARSE_API IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcShellBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -17800,7 +17800,7 @@ public:
 ///   surface supports and connections.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
+class IFC_SCHEMA_API IfcSlippageConnectionCondition : public IfcStructuralConnectionCondition {
 public:
     using IfcStructuralConnectionCondition::IfcStructuralConnectionCondition;
 
@@ -17822,7 +17822,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: solid_model, only three subtypes have been incorporated into the current IFC Release - subset of manifold_solid_brep (IfcManifoldSolidBrep, constraint to faceted B-rep), swept_area_solid (IfcSweptAreaSolid), the swept_disk_solid (IfcSweptDiskSolid) and subset of csg_solid (IfcCsgSolid). The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 170 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.5
-class IFC_PARSE_API IfcSolidModel : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcSolidModel : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -17831,7 +17831,7 @@ public:
     IfcSolidModel initialize();
 };
 
-class IFC_PARSE_API IfcSoundProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcSoundProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -17846,7 +17846,7 @@ public:
     IfcSoundProperties initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, bool v5_IsAttenuating, std::optional< ::Ifc2x3::IfcSoundScaleEnum::Value > v6_SoundScale, std::vector< ::Ifc2x3::IfcSoundValue > v7_SoundValues);
 };
 
-class IFC_PARSE_API IfcSoundValue : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcSoundValue : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -17861,7 +17861,7 @@ public:
     IfcSoundValue initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcTimeSeries v5_SoundLevelTimeSeries, double v6_Frequency, ::Ifc2x3::IfcDerivedMeasureValue v7_SoundLevelSingleValue);
 };
 
-class IFC_PARSE_API IfcSpaceThermalLoadProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcSpaceThermalLoadProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -17894,7 +17894,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IFC_PARSE_API IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
+class IFC_SCHEMA_API IfcStructuralLoadLinearForce : public IfcStructuralLoadStatic {
 public:
     using IfcStructuralLoadStatic::IfcStructuralLoadStatic;
 
@@ -17925,7 +17925,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IFC_PARSE_API IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
+class IFC_SCHEMA_API IfcStructuralLoadPlanarForce : public IfcStructuralLoadStatic {
 public:
     using IfcStructuralLoadStatic::IfcStructuralLoadStatic;
 
@@ -17947,7 +17947,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IFC_PARSE_API IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
+class IFC_SCHEMA_API IfcStructuralLoadSingleDisplacement : public IfcStructuralLoadStatic {
 public:
     using IfcStructuralLoadStatic::IfcStructuralLoadStatic;
 
@@ -17976,7 +17976,7 @@ public:
 /// Definition from IAI: Defines a displacement with warping.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
+class IFC_SCHEMA_API IfcStructuralLoadSingleDisplacementDistortion : public IfcStructuralLoadSingleDisplacement {
 public:
     using IfcStructuralLoadSingleDisplacement::IfcStructuralLoadSingleDisplacement;
 
@@ -17993,7 +17993,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IFC_PARSE_API IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
+class IFC_SCHEMA_API IfcStructuralLoadSingleForce : public IfcStructuralLoadStatic {
 public:
     using IfcStructuralLoadStatic::IfcStructuralLoadStatic;
 
@@ -18027,7 +18027,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   edition 2.
-class IFC_PARSE_API IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
+class IFC_SCHEMA_API IfcStructuralLoadSingleForceWarping : public IfcStructuralLoadSingleForce {
 public:
     using IfcStructuralLoadSingleForce::IfcStructuralLoadSingleForce;
 
@@ -18039,7 +18039,7 @@ public:
     IfcStructuralLoadSingleForceWarping initialize(std::optional< std::string > v1_Name, std::optional< double > v2_ForceX, std::optional< double > v3_ForceY, std::optional< double > v4_ForceZ, std::optional< double > v5_MomentX, std::optional< double > v6_MomentY, std::optional< double > v7_MomentZ, std::optional< double > v8_WarpingMoment);
 };
 
-class IFC_PARSE_API IfcStructuralProfileProperties : public IfcGeneralProfileProperties {
+class IFC_SCHEMA_API IfcStructuralProfileProperties : public IfcGeneralProfileProperties {
 public:
     using IfcGeneralProfileProperties::IfcGeneralProfileProperties;
 
@@ -18080,7 +18080,7 @@ public:
     IfcStructuralProfileProperties initialize(std::optional< std::string > v1_ProfileName, ::Ifc2x3::IfcProfileDef v2_ProfileDefinition, std::optional< double > v3_PhysicalWeight, std::optional< double > v4_Perimeter, std::optional< double > v5_MinimumPlateThickness, std::optional< double > v6_MaximumPlateThickness, std::optional< double > v7_CrossSectionArea, std::optional< double > v8_TorsionalConstantX, std::optional< double > v9_MomentOfInertiaYZ, std::optional< double > v10_MomentOfInertiaY, std::optional< double > v11_MomentOfInertiaZ, std::optional< double > v12_WarpingConstant, std::optional< double > v13_ShearCentreZ, std::optional< double > v14_ShearCentreY, std::optional< double > v15_ShearDeformationAreaZ, std::optional< double > v16_ShearDeformationAreaY, std::optional< double > v17_MaximumSectionModulusY, std::optional< double > v18_MinimumSectionModulusY, std::optional< double > v19_MaximumSectionModulusZ, std::optional< double > v20_MinimumSectionModulusZ, std::optional< double > v21_TorsionalSectionModulus, std::optional< double > v22_CentreOfGravityInX, std::optional< double > v23_CentreOfGravityInY);
 };
 
-class IFC_PARSE_API IfcStructuralSteelProfileProperties : public IfcStructuralProfileProperties {
+class IFC_SCHEMA_API IfcStructuralSteelProfileProperties : public IfcStructuralProfileProperties {
 public:
     using IfcStructuralProfileProperties::IfcStructuralProfileProperties;
 
@@ -18106,7 +18106,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: subedge. Please refer to ISO/DIS 10303-42:1999(E), p. 194 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcSubedge : public IfcEdge {
+class IFC_SCHEMA_API IfcSubedge : public IfcEdge {
 public:
     using IfcEdge::IfcEdge;
 
@@ -18127,7 +18127,7 @@ public:
 /// 
 /// A surface has non zero area. 
 /// A surface is arcwise connected.
-class IFC_PARSE_API IfcSurface : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcSurface : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -18180,7 +18180,7 @@ public:
 /// In addition to the attributes as defined in ISO 10303-46, (ambient_reflectance, diffuse_reflectance, specular_reflectance, specular_exponent, and specular_colour), the current IFC definition adds other colours, reflectance factors and specular roughness.
 /// 
 /// HISTORY: New Entity in IFC 2x.
-class IFC_PARSE_API IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
+class IFC_SCHEMA_API IfcSurfaceStyleRendering : public IfcSurfaceStyleShading {
 public:
     using IfcSurfaceStyleShading::IfcSurfaceStyleShading;
 
@@ -18241,7 +18241,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: swept_area_solid, The data type of SweptArea is modified and given by a profile definition (IfcProfileDef). A position coordinate system is defined by the Position attribute has been added. Please refer to ISO/IS 10303-42:1994, p. 183 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 1.5, the capabilities have been enhanced in IFC Release 2x.
-class IFC_PARSE_API IfcSweptAreaSolid : public IfcSolidModel {
+class IFC_SCHEMA_API IfcSweptAreaSolid : public IfcSolidModel {
 public:
     using IfcSolidModel::IfcSolidModel;
 
@@ -18308,7 +18308,7 @@ public:
 /// disk Radius
 /// The Directrix shall not be based on an intersecting
 /// curve.
-class IFC_PARSE_API IfcSweptDiskSolid : public IfcSolidModel {
+class IFC_SCHEMA_API IfcSweptDiskSolid : public IfcSolidModel {
 public:
     using IfcSolidModel::IfcSolidModel;
 
@@ -18340,7 +18340,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: swept_surface. Please refer to ISO/IS 10303-42:1994, p.76 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcSweptSurface : public IfcSurface {
+class IFC_SCHEMA_API IfcSweptSurface : public IfcSurface {
 public:
     using IfcSurface::IfcSurface;
 
@@ -18382,7 +18382,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 326 — T-shape profile
-class IFC_PARSE_API IfcTShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcTShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -18420,7 +18420,7 @@ public:
     IfcTShapeProfileDef initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, std::optional< double > v9_FlangeEdgeRadius, std::optional< double > v10_WebEdgeRadius, std::optional< double > v11_WebSlope, std::optional< double > v12_FlangeSlope, std::optional< double > v13_CentreOfGravityInY);
 };
 
-class IFC_PARSE_API IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
+class IFC_SCHEMA_API IfcTerminatorSymbol : public IfcAnnotationSymbolOccurrence {
 public:
     using IfcAnnotationSymbolOccurrence::IfcAnnotationSymbolOccurrence;
 
@@ -18440,7 +18440,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextLiteral has been changed by removing Font and Alignment.
-class IFC_PARSE_API IfcTextLiteral : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcTextLiteral : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -18467,7 +18467,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcTextLiteralWithExtent has been changed by adding BoxAlignment.
-class IFC_PARSE_API IfcTextLiteralWithExtent : public IfcTextLiteral {
+class IFC_SCHEMA_API IfcTextLiteralWithExtent : public IfcTextLiteral {
 public:
     using IfcTextLiteral::IfcTextLiteral;
 
@@ -18519,7 +18519,7 @@ public:
 /// the positive x-axis.
 /// 
 /// Figure 325 — Trapezium profile
-class IFC_PARSE_API IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcTrapeziumProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -18547,7 +18547,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: two_direction_repeat_factor. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcTwoDirectionRepeatFactor : public IfcOneDirectionRepeatFactor {
+class IFC_SCHEMA_API IfcTwoDirectionRepeatFactor : public IfcOneDirectionRepeatFactor {
 public:
     using IfcOneDirectionRepeatFactor::IfcOneDirectionRepeatFactor;
 
@@ -18589,7 +18589,7 @@ public:
 /// IFC2x3 CHANGE The IfcTypeObject is now subtyped from the new supertype IfcObjectDefinition, and the attribute HasPropertySets has been changed from a LIST into a SET.
 /// 
 /// IFC2x4 CHANGE (1) The entity IfcTypeObject shall not be instantiated from IFC2x4 onwards. It will be changed into an ABSTRACT supertype in future releases of IFC. (2) The inverse attribute Types has been renamed from ObjectTypeOf.
-class IFC_PARSE_API IfcTypeObject : public IfcObjectDefinition {
+class IFC_SCHEMA_API IfcTypeObject : public IfcObjectDefinition {
 public:
     using IfcObjectDefinition::IfcObjectDefinition;
 
@@ -18678,7 +18678,7 @@ public:
 /// multiple placement.
 /// 
 /// Figure 11 — Product type geometry with multiple placement
-class IFC_PARSE_API IfcTypeProduct : public IfcTypeObject {
+class IFC_SCHEMA_API IfcTypeProduct : public IfcTypeObject {
 public:
     using IfcTypeObject::IfcTypeObject;
 
@@ -18720,7 +18720,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 327 — U-shape profile
-class IFC_PARSE_API IfcUShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcUShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -18758,7 +18758,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: vector. Please refer to ISO/IS 10303-42:1994, p.27 for the final definition of the formal standard. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem).
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IFC_PARSE_API IfcVector : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcVector : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -18784,7 +18784,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: vertex_loop. Please refer to ISO/IS 10303-42:1994, p. 121 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC2x2.
-class IFC_PARSE_API IfcVertexLoop : public IfcLoop {
+class IFC_SCHEMA_API IfcVertexLoop : public IfcLoop {
 public:
     using IfcLoop::IfcLoop;
 
@@ -18893,7 +18893,7 @@ public:
 /// NOTE
 /// 
 /// All offsets are given as a normalized ratio measure.
-class IFC_PARSE_API IfcWindowLiningProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcWindowLiningProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -18975,7 +18975,7 @@ public:
 /// As shown in Figure 176, the panel is applied to the position within the lining as defined by the panel position attribute. The following parameter apply to that panel: FrameDepth, FrameThickness.
 /// 
 /// Figure 176 — Window panel properties
-class IFC_PARSE_API IfcWindowPanelProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcWindowPanelProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -19018,7 +19018,7 @@ public:
 /// The IfcWindowStyleOperationTypeEnum defines the general layout of the window style. Depending on the enumerator, the
 /// appropriate instances of IfcWindowLiningProperties and IfcWindowPanelProperties are attached in the list of
 /// HasPropertySets. See geometry use definitions there.
-class IFC_PARSE_API IfcWindowStyle : public IfcTypeProduct {
+class IFC_SCHEMA_API IfcWindowStyle : public IfcTypeProduct {
 public:
     using IfcTypeProduct::IfcTypeProduct;
 
@@ -19063,7 +19063,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 328 — Z-shape profile
-class IFC_PARSE_API IfcZShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcZShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -19090,7 +19090,7 @@ public:
     IfcZShapeProfileDef initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_Depth, double v5_FlangeWidth, double v6_WebThickness, double v7_FlangeThickness, std::optional< double > v8_FilletRadius, std::optional< double > v9_EdgeRadius);
 };
 
-class IFC_PARSE_API IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
+class IFC_SCHEMA_API IfcAnnotationCurveOccurrence : public IfcAnnotationOccurrence {
 public:
     using IfcAnnotationOccurrence::IfcAnnotationOccurrence;
 
@@ -19118,7 +19118,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The two attributes OuterBoundary and InnerBoundaries are added and replace the previous single boundary.
-class IFC_PARSE_API IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcAnnotationFillArea : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19137,7 +19137,7 @@ public:
     IfcAnnotationFillArea initialize(::Ifc2x3::IfcCurve v1_OuterBoundary, std::optional< std::vector< ::Ifc2x3::IfcCurve > > v2_InnerBoundaries);
 };
 
-class IFC_PARSE_API IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
+class IFC_SCHEMA_API IfcAnnotationFillAreaOccurrence : public IfcAnnotationOccurrence {
 public:
     using IfcAnnotationOccurrence::IfcAnnotationOccurrence;
 
@@ -19150,7 +19150,7 @@ public:
     IfcAnnotationFillAreaOccurrence initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name, ::Ifc2x3::IfcPoint v4_FillStyleTarget, std::optional< ::Ifc2x3::IfcGlobalOrLocalEnum::Value > v5_GlobalOrLocal);
 };
 
-class IFC_PARSE_API IfcAnnotationSurface : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcAnnotationSurface : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19171,7 +19171,7 @@ public:
 /// Figure 274 illustrates the definition of the IfcAxis1Placement within the three-dimensional coordinate system.
 /// 
 /// Figure 274 — Axis1 placement
-class IFC_PARSE_API IfcAxis1Placement : public IfcPlacement {
+class IFC_SCHEMA_API IfcAxis1Placement : public IfcPlacement {
 public:
     using IfcPlacement::IfcPlacement;
 
@@ -19193,7 +19193,7 @@ public:
 /// Figure 275 illustrates the definition of the IfcAxis2Placement2D within the two-dimensional coordinate system. 
 /// 
 /// Figure 275 — Axis2 placement 2D
-class IFC_PARSE_API IfcAxis2Placement2D : public IfcPlacement {
+class IFC_SCHEMA_API IfcAxis2Placement2D : public IfcPlacement {
 public:
     using IfcPlacement::IfcPlacement;
 
@@ -19217,7 +19217,7 @@ public:
 /// Figure 276 illustrates the definition of the IfcAxis2Placement3D within the three-dimensional coordinate system.
 /// 
 /// Figure 276 — Axis2 placement 3D
-class IFC_PARSE_API IfcAxis2Placement3D : public IfcPlacement {
+class IFC_SCHEMA_API IfcAxis2Placement3D : public IfcPlacement {
 public:
     using IfcPlacement::IfcPlacement;
 
@@ -19257,7 +19257,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: boolean_result. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p.175 for the final definition of the formal standard.
 /// 
 /// HISTORY: New class in IFC Release 1.5.1.
-class IFC_PARSE_API IfcBooleanResult : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcBooleanResult : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19286,7 +19286,7 @@ public:
 /// 
 /// A bounded surface has finite non-zero surface area.
 /// A bounded surface has boundary curves.
-class IFC_PARSE_API IfcBoundedSurface : public IfcSurface {
+class IFC_SCHEMA_API IfcBoundedSurface : public IfcSurface {
 public:
     using IfcSurface::IfcSurface;
 
@@ -19316,7 +19316,7 @@ public:
 /// As shown in Figure 252, the IfcBoundingBox is defined with its own location which can be used to place the IfcBoundingBox relative to the geometric coordinate system. The IfcBoundingBox is defined by the lower left corner (Corner) and the upper right corner (XDim, YDim, ZDim measured within the parent co-ordinate system).
 /// 
 /// Figure 252 — Bounding box
-class IFC_PARSE_API IfcBoundingBox : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcBoundingBox : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19366,7 +19366,7 @@ public:
 /// The Enclosure therefore helps to prevent dealing with infinite-size related issues. The enclosure box is positioned within the object coordinate system, established by the ObjectPlacement of the element represented (for example, by IfcLocalPlacement).  Figure 254 shows the Enclosure box being sufficiently large to fully enclose the Boolean result.
 /// 
 /// Figure 254 — Boxed half space geometry
-class IFC_PARSE_API IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
+class IFC_SCHEMA_API IfcBoxedHalfSpace : public IfcHalfSpaceSolid {
 public:
     using IfcHalfSpaceSolid::IfcHalfSpaceSolid;
 
@@ -19399,7 +19399,7 @@ public:
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. The parameterized profile is defined by a set of parameter attributes. In the illustrated example, the 'CentreOfGravityInX' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
 /// Figure 315 — C-shape profile
-class IFC_PARSE_API IfcCShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcCShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -19431,7 +19431,7 @@ public:
 /// NOTE: Corresponding STEP entity: cartesian_point, please refer to ISO/IS 10303-42:1994, p. 23 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IFC_PARSE_API IfcCartesianPoint : public IfcPoint {
+class IFC_SCHEMA_API IfcCartesianPoint : public IfcPoint {
 public:
     using IfcPoint::IfcPoint;
 
@@ -19472,7 +19472,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: cartesian_transformation_operator, please refer to ISO/IS 10303-42:1994, p. 32 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcCartesianTransformationOperator : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19497,7 +19497,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity : cartesian_transformation_operator_2d, please refer to ISO/IS 10303-42:1994, p. 36 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
+class IFC_SCHEMA_API IfcCartesianTransformationOperator2D : public IfcCartesianTransformationOperator {
 public:
     using IfcCartesianTransformationOperator::IfcCartesianTransformationOperator;
 
@@ -19515,7 +19515,7 @@ public:
 /// NOTE: The scale factor (Scl) defined at the supertype IfcCartesianTransformationOperator is used to express the calculated Scale factor (normally x axis scale factor).
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
+class IFC_SCHEMA_API IfcCartesianTransformationOperator2DnonUniform : public IfcCartesianTransformationOperator2D {
 public:
     using IfcCartesianTransformationOperator2D::IfcCartesianTransformationOperator2D;
 
@@ -19531,7 +19531,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: cartesian_transformation_operator_3d, please refer to ISO/IS 10303-42:1994, p. 33 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
+class IFC_SCHEMA_API IfcCartesianTransformationOperator3D : public IfcCartesianTransformationOperator {
 public:
     using IfcCartesianTransformationOperator::IfcCartesianTransformationOperator;
 
@@ -19553,7 +19553,7 @@ public:
 /// NOTE: The scale factor (Scl) defined at the supertype IfcCartesianTransformationOperator is used to express the calculated Scale factor (normally x axis scale factor).
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
+class IFC_SCHEMA_API IfcCartesianTransformationOperator3DnonUniform : public IfcCartesianTransformationOperator3D {
 public:
     using IfcCartesianTransformationOperator3D::IfcCartesianTransformationOperator3D;
 
@@ -19579,7 +19579,7 @@ public:
 /// Or in case of sectioned spines, it is the xy plane of each list member of IfcSectionedSpine.CrossSectionPositions. By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (e.g. upper-left bound). The Position attribute defines the 2D position coordinate system of the circle. The Radius attribute defines the radius of the circle.
 /// 
 /// Figure 313 — Circle profile
-class IFC_PARSE_API IfcCircleProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcCircleProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -19639,7 +19639,7 @@ public:
 ///   The closed shell shall be an oriented arcwise connected 2-manifold. 
 ///   The Euler equation shall be satisfied. Note: Please refer to ISO/IS
 ///   10303-42:1994, p.149 for the equation.
-class IFC_PARSE_API IfcClosedShell : public IfcConnectedFaceSet {
+class IFC_SCHEMA_API IfcClosedShell : public IfcConnectedFaceSet {
 public:
     using IfcConnectedFaceSet::IfcConnectedFaceSet;
 
@@ -19654,7 +19654,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: composite_curve_segment. Please refer to ISO/IS 10303-42:1994, p.57 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IFC_PARSE_API IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcCompositeCurveSegment : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19675,7 +19675,7 @@ public:
     IfcCompositeCurveSegment initialize(::Ifc2x3::IfcTransitionCode::Value v1_Transition, bool v2_SameSense, ::Ifc2x3::IfcCurve v3_ParentCurve);
 };
 
-class IFC_PARSE_API IfcCraneRailAShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcCraneRailAShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -19708,7 +19708,7 @@ public:
     IfcCraneRailAShapeProfileDef initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_OverallHeight, double v5_BaseWidth2, std::optional< double > v6_Radius, double v7_HeadWidth, double v8_HeadDepth2, double v9_HeadDepth3, double v10_WebThickness, double v11_BaseWidth4, double v12_BaseDepth1, double v13_BaseDepth2, double v14_BaseDepth3, std::optional< double > v15_CentreOfGravityInY);
 };
 
-class IFC_PARSE_API IfcCraneRailFShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcCraneRailFShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -19739,7 +19739,7 @@ public:
 /// NOTE No directly corresponding ISO 10303-42 entity, the select type primitive_3d covers the same individual 3D CSG primitives, the position attribute has been added to apply equally to all subtypes. Please refer to ISO/IS 10303-42:1994, p. 234 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x3.
-class IFC_PARSE_API IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcCsgPrimitive3D : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19791,7 +19791,7 @@ public:
 /// NOTE Corresponding ISO 10303-42 entity: csg_solid, please refer to ISO/IS 10303-42:1994, p.174 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5.1
-class IFC_PARSE_API IfcCsgSolid : public IfcSolidModel {
+class IFC_SCHEMA_API IfcCsgSolid : public IfcSolidModel {
 public:
     using IfcSolidModel::IfcSolidModel;
 
@@ -19812,7 +19812,7 @@ public:
 /// 
 /// A curve shall be arcwise connected 
 /// A curve shall have an arc length greater than zero.
-class IFC_PARSE_API IfcCurve : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcCurve : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19833,7 +19833,7 @@ public:
 /// HISTORY  New entity in IFC Release 1.5
 /// 
 /// IFC2x PLATFORM CHANGE: The data type of the attribute OuterBoundary and InnerBoundaries has been changed from Ifc2DCompositeCurve to its supertype IfcCurve with upward compatibility for file based exchange.
-class IFC_PARSE_API IfcCurveBoundedPlane : public IfcBoundedSurface {
+class IFC_SCHEMA_API IfcCurveBoundedPlane : public IfcBoundedSurface {
 public:
     using IfcBoundedSurface::IfcBoundedSurface;
 
@@ -19857,7 +19857,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: defined_symbol. The target attribute used the 2d Cartesian transformation operator, including the non-uniform subtype, which is available in IFC (instead of the symbol_target). Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcDefinedSymbol : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcDefinedSymbol : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -19872,7 +19872,7 @@ public:
     IfcDefinedSymbol initialize(::Ifc2x3::IfcDefinedSymbolSelect v1_Definition, ::Ifc2x3::IfcCartesianTransformationOperator2D v2_Target);
 };
 
-class IFC_PARSE_API IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
+class IFC_SCHEMA_API IfcDimensionCurve : public IfcAnnotationCurveOccurrence {
 public:
     using IfcAnnotationCurveOccurrence::IfcAnnotationCurveOccurrence;
 
@@ -19882,7 +19882,7 @@ public:
     IfcDimensionCurve initialize(::Ifc2x3::IfcRepresentationItem v1_Item, std::vector< ::Ifc2x3::IfcPresentationStyleAssignment > v2_Styles, std::optional< std::string > v3_Name);
 };
 
-class IFC_PARSE_API IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
+class IFC_SCHEMA_API IfcDimensionCurveTerminator : public IfcTerminatorSymbol {
 public:
     using IfcTerminatorSymbol::IfcTerminatorSymbol;
 
@@ -19899,7 +19899,7 @@ public:
 /// NOTE: Corresponding ISO 10303 entity: direction. Please refer to ISO/IS 10303-42:1994, p.26 for the final definition of the formal standard. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem).
 /// 
 /// HISTORY: New entity in IFC Release 1.0
-class IFC_PARSE_API IfcDirection : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcDirection : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20005,7 +20005,7 @@ public:
 /// Figure 172 — Door lining properties
 /// 
 /// NOTE LiningDepth describes the length of the lining along the reveal of the door opening. It can be given by an absolute value if the door lining has a specific depth depending on the door style. However often it is equal to the wall thickness. If the same door style is used (like the same type of single swing door), but inserted into different walls with different thicknesses, it would be necessary to create a special door style for each wall thickness. Therefore several CAD systems allow to set the value to "automatically aligned" to wall thickness. This should be exchanged by leaving the optional attribute LiningDepth unassigned. The same agreement applies to ThresholdDepth.
-class IFC_PARSE_API IfcDoorLiningProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcDoorLiningProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -20093,7 +20093,7 @@ public:
 /// PanelWidth
 /// 
 /// Figure 173 — Door panel properties
-class IFC_PARSE_API IfcDoorPanelProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcDoorPanelProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -20144,7 +20144,7 @@ public:
 /// operation (swinging, sliding, folding, etc.)and the number of panels.
 /// 
 /// See geometry use definitions at IfcDoorStyleOperationTypeEnum for the correct usage of opening symbols for different operation types.
-class IFC_PARSE_API IfcDoorStyle : public IfcTypeProduct {
+class IFC_SCHEMA_API IfcDoorStyle : public IfcTypeProduct {
 public:
     using IfcTypeProduct::IfcTypeProduct;
 
@@ -20165,7 +20165,7 @@ public:
     IfcDoorStyle initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcDoorStyleOperationEnum::Value v9_OperationType, ::Ifc2x3::IfcDoorStyleConstructionEnum::Value v10_ConstructionType, bool v11_ParameterTakesPrecedence, bool v12_Sizeable);
 };
 
-class IFC_PARSE_API IfcDraughtingCallout : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcDraughtingCallout : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20249,7 +20249,7 @@ public:
 /// Informal proposition
 /// 
 /// The value 'by layer' shall only be inserted, if the geometric representation item using the colour definition has an association to IfcPresentationLayerWithStyle, and if that instance of IfcPresentationLayerWithStyle has a valid colour definition for IfcCurveStyle, IfcSymbolStyle, or IfcSurfaceStyle (depending on what is applicable).
-class IFC_PARSE_API IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
+class IFC_SCHEMA_API IfcDraughtingPreDefinedColour : public IfcPreDefinedColour {
 public:
     using IfcPreDefinedColour::IfcPreDefinedColour;
 
@@ -20270,7 +20270,7 @@ public:
 /// NOTE  Corresponding ISO 10303 name: pre_defined_curve_font. Please refer to ISO/IS 10303-46:1994 TC2, page 12 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
+class IFC_SCHEMA_API IfcDraughtingPreDefinedCurveFont : public IfcPreDefinedCurveFont {
 public:
     using IfcPreDefinedCurveFont::IfcPreDefinedCurveFont;
 
@@ -20289,7 +20289,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: edge_loop. Please refer to ISO/IS 10303-42:1994, p. 122 for the final definition of the formal standard.
 /// 
 /// HISTORY  New Entity in IFC2x2.
-class IFC_PARSE_API IfcEdgeLoop : public IfcLoop {
+class IFC_SCHEMA_API IfcEdgeLoop : public IfcLoop {
 public:
     using IfcLoop::IfcLoop;
 
@@ -20377,7 +20377,7 @@ public:
 /// IfcElementQuantity.Quantities = SET of subtypes of
 /// IfcPhysicalSimpleQuantity with values for the Name
 /// attribute as published as part of the IFC specifciation.
-class IFC_PARSE_API IfcElementQuantity : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcElementQuantity : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -20415,7 +20415,7 @@ public:
 /// 
 /// HISTORY New entity in
 ///   Release IFC2x Edition 2
-class IFC_PARSE_API IfcElementType : public IfcTypeProduct {
+class IFC_SCHEMA_API IfcElementType : public IfcTypeProduct {
 public:
     using IfcTypeProduct::IfcTypeProduct;
 
@@ -20431,7 +20431,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: elementary_surface. Only the subtype plane is incorporated as IfcPlane. The derived attribute Dim has been added (see also note at IfcGeometricRepresentationItem). Please refer to ISO/IS 10303-42:1994, p. 69 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5
-class IFC_PARSE_API IfcElementarySurface : public IfcSurface {
+class IFC_SCHEMA_API IfcElementarySurface : public IfcSurface {
 public:
     using IfcSurface::IfcSurface;
 
@@ -20458,7 +20458,7 @@ public:
 /// NOTE  The semi axes of the ellipse are rectangular to each other by definition.
 /// 
 /// Figure 317 — Ellipse profile
-class IFC_PARSE_API IfcEllipseProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcEllipseProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -20473,7 +20473,7 @@ public:
     IfcEllipseProfileDef initialize(::Ifc2x3::IfcProfileTypeEnum::Value v1_ProfileType, std::optional< std::string > v2_ProfileName, ::Ifc2x3::IfcAxis2Placement2D v3_Position, double v4_SemiAxis1, double v5_SemiAxis2);
 };
 
-class IFC_PARSE_API IfcEnergyProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcEnergyProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -20553,7 +20553,7 @@ public:
 /// -0.5*IfcIShapeProfileDef.OverallDepth).
 /// 
 /// Figure 256 — Extruded area solid textures
-class IFC_PARSE_API IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
+class IFC_SCHEMA_API IfcExtrudedAreaSolid : public IfcSweptAreaSolid {
 public:
     using IfcSweptAreaSolid::IfcSweptAreaSolid;
 
@@ -20580,7 +20580,7 @@ public:
 /// 
 /// The connected face sets shall not overlap or intersect except at common faces, edges or vertices.
 /// The fbsm faces have dimensionality 2.
-class IFC_PARSE_API IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcFaceBasedSurfaceModel : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20638,7 +20638,7 @@ public:
 /// HISTORY  New entity in IFC2x2.
 /// 
 /// IFC2x3 CHANGE  The IfcFillAreaStyleHatching has been changed by making the attributes PatternStart and PointOfReferenceHatchLine OPTIONAL. The attribute StartOfNextHatchLine has changed to a SELECT with the additional choice of IfcPositiveLengthMeasure. Upward compatibility for file based exchange is guaranteed.
-class IFC_PARSE_API IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcFillAreaStyleHatching : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20676,7 +20676,7 @@ public:
 /// NOTE: Corresponding ISO 10303 name: fill_area_style_tile_symbol_with_style. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcFillAreaStyleTileSymbolWithStyle : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcFillAreaStyleTileSymbolWithStyle : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20696,7 +20696,7 @@ public:
 /// NOTE Corresponding ISO 10303 name: fill_area_style_tiles. Please refer to ISO/IS 10303-46:1994 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC2x2.
-class IFC_PARSE_API IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
+class IFC_SCHEMA_API IfcFillAreaStyleTiles : public IfcGeometricRepresentationItem {
 public:
     using IfcGeometricRepresentationItem::IfcGeometricRepresentationItem;
 
@@ -20714,7 +20714,7 @@ public:
     IfcFillAreaStyleTiles initialize(::Ifc2x3::IfcOneDirectionRepeatFactor v1_TilingPattern, std::vector< ::Ifc2x3::IfcFillAreaStyleTileShapeSelect > v2_Tiles, double v3_TilingScale);
 };
 
-class IFC_PARSE_API IfcFluidFlowProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcFluidFlowProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -20780,7 +20780,7 @@ public:
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
 /// IFC2x4.
-class IFC_PARSE_API IfcFurnishingElementType : public IfcElementType {
+class IFC_SCHEMA_API IfcFurnishingElementType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -20825,7 +20825,7 @@ public:
 /// The IfcFurnitureType may be decomposed into components using IfcRelAggregates where RelatingObject refers to the enclosing IfcFurnitureType and RelatedObjects contains one or more components.  Components are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Composition use is defined for the following predefined types:
 /// 
 /// (All Types): May contain IfcSystemFurnitureElement components.  Modular furniture may be aggregated into components.
-class IFC_PARSE_API IfcFurnitureType : public IfcFurnishingElementType {
+class IFC_SCHEMA_API IfcFurnitureType : public IfcFurnishingElementType {
 public:
     using IfcFurnishingElementType::IfcFurnishingElementType;
 
@@ -20843,7 +20843,7 @@ public:
 /// NOTE: Corresponding ISO 10303-42 entity: geometric_set. Please refer to ISO/IS 10303-42:1994, p. 190 for the final definition of the formal standard.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcGeometricCurveSet : public IfcGeometricSet {
+class IFC_SCHEMA_API IfcGeometricCurveSet : public IfcGeometricSet {
 public:
     using IfcGeometricSet::IfcGeometricSet;
 
@@ -20914,7 +20914,7 @@ public:
 /// and flanges.
 /// 
 /// Figure 318 — I-shape profile
-class IFC_PARSE_API IfcIShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcIShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -20988,7 +20988,7 @@ public:
 /// In the illustrated example, the x and y value of Position.Location, i.e. the measures |CentreOfGravityInX| and |CentreOfGravityInY| are both positive.  On the other hand, the properties named 'CentreOfGravityInX' and 'CentreOfGravityInY' in IfcExtendedProfileProperties, if provided, must both be set to 0 now because the centre of gravity of the resulting profile definition is located in the coordinate origin.
 /// 
 /// Figure 319 — L-shape profile
-class IFC_PARSE_API IfcLShapeProfileDef : public IfcParameterizedProfileDef {
+class IFC_SCHEMA_API IfcLShapeProfileDef : public IfcParameterizedProfileDef {
 public:
     using IfcParameterizedProfileDef::IfcParameterizedProfileDef;
 
@@ -21031,7 +21031,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: line. Please refer to ISO/IS 10303-42:1994, p.37 for the final definition of the formal standard. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IFC_PARSE_API IfcLine : public IfcCurve {
+class IFC_SCHEMA_API IfcLine : public IfcCurve {
 public:
     using IfcCurve::IfcCurve;
 
@@ -21108,7 +21108,7 @@ public:
 /// The Euler equation shall be satisfied for the boundary
 /// representation, where the genus term "shell term" us the sum of
 /// the genus values for the shells of the brep.
-class IFC_PARSE_API IfcManifoldSolidBrep : public IfcSolidModel {
+class IFC_SCHEMA_API IfcManifoldSolidBrep : public IfcSolidModel {
 public:
     using IfcSolidModel::IfcSolidModel;
 
@@ -21201,7 +21201,7 @@ public:
 /// IsDeclaredBy, or Declares shall only be used, if
 /// the object is part of a decomposition, i.e. if either
 /// IsDecomposedBy, or Decomposes is exerted.
-class IFC_PARSE_API IfcObject : public IfcObjectDefinition {
+class IFC_SCHEMA_API IfcObject : public IfcObjectDefinition {
 public:
     using IfcObjectDefinition::IfcObjectDefinition;
 
@@ -21224,7 +21224,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: offset_curve_2d, Please refer to ISO/IS 10303-42:1994, p.65 for the final definition of the formal standard.
 /// 
 /// HISTORY New entity in IFC Release 2.x
-class IFC_PARSE_API IfcOffsetCurve2D : public IfcCurve {
+class IFC_SCHEMA_API IfcOffsetCurve2D : public IfcCurve {
 public:
     using IfcCurve::IfcCurve;
 
@@ -21256,7 +21256,7 @@ public:
 /// Informal propositions: 
 /// 
 /// At no point on the curve shall ref direction be parallel, or opposite to, the direction of the tangent vector.
-class IFC_PARSE_API IfcOffsetCurve3D : public IfcCurve {
+class IFC_SCHEMA_API IfcOffsetCurve3D : public IfcCurve {
 public:
     using IfcCurve::IfcCurve;
 
@@ -21307,7 +21307,7 @@ public:
 /// As shown in Figure 174, the panel is applied to the position within the lining, as defined by the panel position attribute. The following parameters apply to that panel: FrameDepth, FrameThickness.
 /// 
 /// Figure 174 — Permeable covering properties
-class IFC_PARSE_API IfcPermeableCoveringProperties : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcPermeableCoveringProperties : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -21336,7 +21336,7 @@ public:
 /// ISO/IS 10303-46:1994, p. 141 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in IFC2x2.
-class IFC_PARSE_API IfcPlanarBox : public IfcPlanarExtent {
+class IFC_SCHEMA_API IfcPlanarBox : public IfcPlanarExtent {
 public:
     using IfcPlanarExtent::IfcPlanarExtent;
 
@@ -21384,7 +21384,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: plane. Please refer to ISO/IS 10303-42:1994, p.69 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.5
-class IFC_PARSE_API IfcPlane : public IfcElementarySurface {
+class IFC_SCHEMA_API IfcPlane : public IfcElementarySurface {
 public:
     using IfcElementarySurface::IfcElementarySurface;
 
@@ -21432,7 +21432,7 @@ public:
 /// control onto the process can be assigned to a process, such as for cost management (a cost item assigned to a work task).
 /// Having a resource assigned to the process as consumed by the process : IfcRelAssignsToProcess - Items that act
 /// as a mechanism to a process, such as labor, material and equipment in cost calculations.
-class IFC_PARSE_API IfcProcess : public IfcObject {
+class IFC_SCHEMA_API IfcProcess : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -21534,7 +21534,7 @@ public:
 /// IfcProductDefinitionShape being either a geometric shape
 /// representation, or a topology representation (with or without
 /// underlying geometry of the topological items).
-class IFC_PARSE_API IfcProduct : public IfcObject {
+class IFC_SCHEMA_API IfcProduct : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -21593,7 +21593,7 @@ public:
 /// Informal propositions:
 /// 
 /// There shall only be one project within the exchange context. This is enforced by the global rule IfcSingleProjectInstance.
-class IFC_PARSE_API IfcProject : public IfcObject {
+class IFC_SCHEMA_API IfcProject : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -21610,7 +21610,7 @@ public:
     IfcProject initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::optional< std::string > v6_LongName, std::optional< std::string > v7_Phase, std::vector< ::Ifc2x3::IfcRepresentationContext > v8_RepresentationContexts, ::Ifc2x3::IfcUnitAssignment v9_UnitsInContext);
 };
 
-class IFC_PARSE_API IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
+class IFC_SCHEMA_API IfcProjectionCurve : public IfcAnnotationCurveOccurrence {
 public:
     using IfcAnnotationCurveOccurrence::IfcAnnotationCurveOccurrence;
 
@@ -21671,7 +21671,7 @@ public:
 /// Property sets that are not declared as part of the IFC
 /// specification shall have a Name value not including the
 /// "Pset_" prefix.
-class IFC_PARSE_API IfcPropertySet : public IfcPropertySetDefinition {
+class IFC_SCHEMA_API IfcPropertySet : public IfcPropertySetDefinition {
 public:
     using IfcPropertySetDefinition::IfcPropertySetDefinition;
 
@@ -21698,7 +21698,7 @@ public:
 /// representations assigned.
 /// 
 /// HISTORY  New entity in IFC Release 1.5.
-class IFC_PARSE_API IfcProxy : public IfcProduct {
+class IFC_SCHEMA_API IfcProxy : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -21732,7 +21732,7 @@ public:
 /// relative to the profile.
 /// 
 /// Figure 322 — Rectangle hollow profile
-class IFC_PARSE_API IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
+class IFC_SCHEMA_API IfcRectangleHollowProfileDef : public IfcRectangleProfileDef {
 public:
     using IfcRectangleProfileDef::IfcRectangleProfileDef;
 
@@ -21837,7 +21837,7 @@ public:
 /// +Y
 /// 
 /// Figure 261 — Right circular cone textures
-class IFC_PARSE_API IfcRectangularPyramid : public IfcCsgPrimitive3D {
+class IFC_SCHEMA_API IfcRectangularPyramid : public IfcCsgPrimitive3D {
 public:
     using IfcCsgPrimitive3D::IfcCsgPrimitive3D;
 
@@ -21869,7 +21869,7 @@ public:
 /// Informal propositions: 
 /// 
 /// The domain of the trimmed surface shall be within the domain of the surface being trimmed.
-class IFC_PARSE_API IfcRectangularTrimmedSurface : public IfcBoundedSurface {
+class IFC_SCHEMA_API IfcRectangularTrimmedSurface : public IfcBoundedSurface {
 public:
     using IfcBoundedSurface::IfcBoundedSurface;
 
@@ -21909,7 +21909,7 @@ public:
 /// The assignment relationship establishs a bi-directional relationship among the participating objects and does not imply any dependency. The subtypes of IfcRelAssigns establishes the particular semantic meaning of the assignment relationship.
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssigns : public IfcRelationship {
+class IFC_SCHEMA_API IfcRelAssigns : public IfcRelationship {
 public:
     using IfcRelationship::IfcRelationship;
 
@@ -21933,7 +21933,7 @@ public:
 /// Reference to the objects (or single object) on which the actor acts upon in a certain role (if given) is specified in the inherited RelatedObjects attribute.  
 /// 
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelActsUpon in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssignsToActor : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToActor : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -21952,7 +21952,7 @@ public:
 /// EXAMPLE The assignment of a performance history (as subtype of IfcControl) for a building service element (as subtype of IfcObject) is an application of this generic relationship.
 /// 
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelControls in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssignsToControl : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToControl : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -21976,7 +21976,7 @@ public:
 /// The group assignment relationship shall be acyclic, that is, a group shall not participate in its own grouping relationship.
 /// 
 /// HISTORY New entity in IFC Release 1.0. It has been renamed from IfcRelGroups in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssignsToGroup : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToGroup : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -22009,7 +22009,7 @@ public:
 /// HISTORY New entity in IFC Release 1.5. Has been renamed from IfcRelProcessOperatesOn in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The data type RelatingProcess has been extended to cover also IfcTypeProcess
-class IFC_PARSE_API IfcRelAssignsToProcess : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToProcess : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -22033,7 +22033,7 @@ public:
 /// HISTORY New Entity in IFC Release 2x
 /// 
 /// IFC2x3 CHANGE The reference of a product within a spatial structure is now handled by a new relationship object IfcRelReferencedInSpatialStructure. The IfcRelAssignsToProduct shall not be used to represent this relation from IFC2x3 onwards.
-class IFC_PARSE_API IfcRelAssignsToProduct : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToProduct : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -22047,7 +22047,7 @@ public:
     IfcRelAssignsToProduct initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcProduct v7_RelatingProduct);
 };
 
-class IFC_PARSE_API IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
+class IFC_SCHEMA_API IfcRelAssignsToProjectOrder : public IfcRelAssignsToControl {
 public:
     using IfcRelAssignsToControl::IfcRelAssignsToControl;
 
@@ -22061,7 +22061,7 @@ public:
 /// EXAMPLE The assignment of a resource usage to a construction resource is an application of this generic relationship. It could be an actor, as person or organization assigned to a labor resource, or a raw product assigned to a construction product or material resource).
 /// 
 /// HISTORY New Entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssignsToResource : public IfcRelAssigns {
+class IFC_SCHEMA_API IfcRelAssignsToResource : public IfcRelAssigns {
 public:
     using IfcRelAssigns::IfcRelAssigns;
 
@@ -22115,7 +22115,7 @@ public:
 /// HISTORY New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE Entity has been changed into an ABSTRACT supertype
-class IFC_PARSE_API IfcRelAssociates : public IfcRelationship {
+class IFC_SCHEMA_API IfcRelAssociates : public IfcRelationship {
 public:
     using IfcRelationship::IfcRelationship;
 
@@ -22129,7 +22129,7 @@ public:
     IfcRelAssociates initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects);
 };
 
-class IFC_PARSE_API IfcRelAssociatesAppliedValue : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesAppliedValue : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22142,7 +22142,7 @@ public:
 /// The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcRelAssociatesApproval : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesApproval : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22183,7 +22183,7 @@ public:
 /// multiple objects.
 /// 
 /// HISTORY New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssociatesClassification : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesClassification : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22197,7 +22197,7 @@ public:
 /// The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.
 /// 
 /// HISTORY: New entity in IFC2x2.
-class IFC_PARSE_API IfcRelAssociatesConstraint : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesConstraint : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22218,7 +22218,7 @@ public:
 /// The inherited attribute RelatedObjects define the objects to which the document association is applied. The attribute RelatingDocument is the reference to a document reference, applied to the object(s). 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssociatesDocument : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesDocument : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22236,7 +22236,7 @@ public:
 /// The inherited attribute RelatedObjects define the items to which the library association is applied. The attribute RelatingLibrary is the reference to a library reference, applied to the item(s). 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelAssociatesLibrary : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesLibrary : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22341,7 +22341,7 @@ public:
 /// An IfcMaterialProfileSetUsage shall not be associated
 /// with a subtype of IfcElementType, it should only be
 /// associated with individual occurrences
-class IFC_PARSE_API IfcRelAssociatesMaterial : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesMaterial : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22353,7 +22353,7 @@ public:
     IfcRelAssociatesMaterial initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcRoot > v5_RelatedObjects, ::Ifc2x3::IfcMaterialSelect v6_RelatingMaterial);
 };
 
-class IFC_PARSE_API IfcRelAssociatesProfileProperties : public IfcRelAssociates {
+class IFC_SCHEMA_API IfcRelAssociatesProfileProperties : public IfcRelAssociates {
 public:
     using IfcRelAssociates::IfcRelAssociates;
 
@@ -22370,7 +22370,7 @@ public:
 /// IfcRelConnects is a connectivity relationship that connects objects under some criteria. As a general connectivity it does not imply constraints, however subtypes of the relationship define the applicable object types for the connectivity relationship and the semantics of the particular connectivity. 
 /// 
 /// HISTORY: New entity in IFC Release 2x.
-class IFC_PARSE_API IfcRelConnects : public IfcRelationship {
+class IFC_SCHEMA_API IfcRelConnects : public IfcRelationship {
 public:
     using IfcRelationship::IfcRelationship;
 
@@ -22400,7 +22400,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   Release 1.0.
-class IFC_PARSE_API IfcRelConnectsElements : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsElements : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22447,7 +22447,7 @@ public:
 /// 
 /// Figure 116 — Path connection T-Type
 /// Figure 117 — Path connection L-Type
-class IFC_PARSE_API IfcRelConnectsPathElements : public IfcRelConnectsElements {
+class IFC_SCHEMA_API IfcRelConnectsPathElements : public IfcRelConnectsElements {
 public:
     using IfcRelConnectsElements::IfcRelConnectsElements;
 
@@ -22492,7 +22492,7 @@ public:
 /// entity in Release IFC2x Edition 2.
 /// IFC2x4 CHANGE  The
 /// definition has been extended to include element types.
-class IFC_PARSE_API IfcRelConnectsPortToElement : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsPortToElement : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22521,7 +22521,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   2.0, modified in IFC2x.
-class IFC_PARSE_API IfcRelConnectsPorts : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsPorts : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22541,7 +22541,7 @@ public:
 /// Definition from IAI: The IfcRelConnectsStructuralActivity relationship connects a structural activity (either an action or reaction) to a structural member, structural connection, or element.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcRelConnectsStructuralActivity : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsStructuralActivity : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22556,7 +22556,7 @@ public:
     IfcRelConnectsStructuralActivity initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcStructuralActivityAssignmentSelect v5_RelatingElement, ::Ifc2x3::IfcStructuralActivity v6_RelatedStructuralActivity);
 };
 
-class IFC_PARSE_API IfcRelConnectsStructuralElement : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsStructuralElement : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22592,7 +22592,7 @@ public:
 /// Figure 235 illustrates the appropriate definition of support lengths.
 /// 
 /// Figure 235 — Structural member support lengths
-class IFC_PARSE_API IfcRelConnectsStructuralMember : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelConnectsStructuralMember : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22635,7 +22635,7 @@ public:
 /// 
 /// Surface Connection
 /// ConnectionConstraint shall be of type IfcConnectionSurfaceGeometry and shall refer to two instances of IfcFaceSurface.
-class IFC_PARSE_API IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
+class IFC_SCHEMA_API IfcRelConnectsWithEccentricity : public IfcRelConnectsStructuralMember {
 public:
     using IfcRelConnectsStructuralMember::IfcRelConnectsStructuralMember;
 
@@ -22669,7 +22669,7 @@ public:
 /// 
 /// HISTORY: New entity in
 ///   Release IFC2x Edition 2.
-class IFC_PARSE_API IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
+class IFC_SCHEMA_API IfcRelConnectsWithRealizingElements : public IfcRelConnectsElements {
 public:
     using IfcRelConnectsElements::IfcRelConnectsElements;
 
@@ -22743,7 +22743,7 @@ public:
 ///   Figure 39 shows the use of IfcRelContainedInSpatialStructure to assign a stair and two walls to two different levels within the spatial structure.
 /// 
 /// Figure 39 — Relationship for spatial structure containment
-class IFC_PARSE_API IfcRelContainedInSpatialStructure : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelContainedInSpatialStructure : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22775,7 +22775,7 @@ public:
 /// type of the attribute RelatingElement has been changed
 /// from IfcElement to its subtype
 /// IfcBuildingElement.
-class IFC_PARSE_API IfcRelCoversBldgElements : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelCoversBldgElements : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22817,7 +22817,7 @@ public:
 /// 
 /// HISTORY New Entity in Release
 ///   IFC 2x Edition 3.
-class IFC_PARSE_API IfcRelCoversSpaces : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelCoversSpaces : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -22860,7 +22860,7 @@ public:
 /// HISTORY New entity in IFC Release 1.5, it is a generalisation of the IFC2.0 entity IfcRelNests.
 /// 
 /// IFC2x4 CHANGE The differentiation between the aggregation and nesting is determined to be a non-ordered or an ordered collection of parts. The attributes RelatingObject and RelatedObjects have been demoted to the subtypes.
-class IFC_PARSE_API IfcRelDecomposes : public IfcRelationship {
+class IFC_SCHEMA_API IfcRelDecomposes : public IfcRelationship {
 public:
     using IfcRelationship::IfcRelationship;
 
@@ -22899,7 +22899,7 @@ public:
 /// 
 /// IFC2x4 CHANGE The attribute RelatedObjects had been demoted to the subtypes IfcRelDefinesByProperties and
 /// IfcRelDefinesByType.
-class IFC_PARSE_API IfcRelDefines : public IfcRelationship {
+class IFC_SCHEMA_API IfcRelDefines : public IfcRelationship {
 public:
     using IfcRelationship::IfcRelationship;
 
@@ -22924,7 +22924,7 @@ public:
 /// HISTORY New Entity in IFC Release 2.0. Has been renamed from IfcRelAssignsProperties in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The attribute RelatedObjects had been demoted from the supertype IfcRelDefines to IfcRelDefinesByProperties.
-class IFC_PARSE_API IfcRelDefinesByProperties : public IfcRelDefines {
+class IFC_SCHEMA_API IfcRelDefinesByProperties : public IfcRelDefines {
 public:
     using IfcRelDefines::IfcRelDefines;
 
@@ -23004,7 +23004,7 @@ public:
 /// -ExtendToStructure = FALSE
 /// -ExtendToStructure = TRUE
 /// FALSE
-class IFC_PARSE_API IfcRelDefinesByType : public IfcRelDefines {
+class IFC_SCHEMA_API IfcRelDefinesByType : public IfcRelDefines {
 public:
     using IfcRelDefines::IfcRelDefines;
 
@@ -23024,7 +23024,7 @@ public:
 /// As shown in Figure 40, the insertion of a door into a wall is represented by two separate relationships. First the door opening is created within the wall by IfcWall(StandardCase) o-- IfcRelVoidsElement --o IfcOpeningElement, then the door is inserted within the opening by IfcOpeningElement o-- IfcRelFillsElement --o IfcDoor.
 /// 
 /// Figure 40 — Relationships for element filling
-class IFC_PARSE_API IfcRelFillsElement : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelFillsElement : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23047,7 +23047,7 @@ public:
 /// This relationship implies a sensing or controlling relationship; if elements are merely connected without any control relationship, then IfcRelConnectsElements should be used.
 /// 
 /// HISTORY: New entity in IFC R2x.
-class IFC_PARSE_API IfcRelFlowControlElements : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelFlowControlElements : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23062,7 +23062,7 @@ public:
     IfcRelFlowControlElements initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcDistributionControlElement > v5_RelatedControlElements, ::Ifc2x3::IfcDistributionFlowElement v6_RelatingFlowElement);
 };
 
-class IFC_PARSE_API IfcRelInteractionRequirements : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelInteractionRequirements : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23105,7 +23105,7 @@ public:
 /// HISTORY New entity in IFC Release 2.0
 /// 
 /// IFC2x4 CHANGE The attributes RelatingObject and RelatedObjects are demoted from the supertype IfcRelDecomposes, and RelatedObjects is refined to be a list. The use of IfcRelNests is repurposed to be a nesting of an ordered collections of parts.
-class IFC_PARSE_API IfcRelNests : public IfcRelDecomposes {
+class IFC_SCHEMA_API IfcRelNests : public IfcRelDecomposes {
 public:
     using IfcRelDecomposes::IfcRelDecomposes;
 
@@ -23114,7 +23114,7 @@ public:
     IfcRelNests initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition v5_RelatingObject, std::vector< ::Ifc2x3::IfcObjectDefinition > v6_RelatedObjects);
 };
 
-class IFC_PARSE_API IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
+class IFC_SCHEMA_API IfcRelOccupiesSpaces : public IfcRelAssignsToActor {
 public:
     using IfcRelAssignsToActor::IfcRelAssignsToActor;
 
@@ -23123,7 +23123,7 @@ public:
     IfcRelOccupiesSpaces initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcObjectDefinition > v5_RelatedObjects, std::optional< ::Ifc2x3::IfcObjectTypeEnum::Value > v6_RelatedObjectsType, ::Ifc2x3::IfcActor v7_RelatingActor, ::Ifc2x3::IfcActorRole v8_ActingRole);
 };
 
-class IFC_PARSE_API IfcRelOverridesProperties : public IfcRelDefinesByProperties {
+class IFC_SCHEMA_API IfcRelOverridesProperties : public IfcRelDefinesByProperties {
 public:
     using IfcRelDefinesByProperties::IfcRelDefinesByProperties;
 
@@ -23165,7 +23165,7 @@ public:
 /// Release IFC2x Edition 2.
 /// IFC2x4 CHANGE 
 /// Supertype changed to IfcRelDecomposes.
-class IFC_PARSE_API IfcRelProjectsElement : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelProjectsElement : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23228,7 +23228,7 @@ public:
 /// Figure 41 shows the use of IfcRelContainedInSpatialStructure and IfcRelReferencedInSpatialStructure to assign an IfcCurtainWallto two different levels within the spatial structure. It is primarily contained within the ground floor, and additionally referenced within the first and second floor.
 /// 
 /// Figure 41 — Relationship for spatial structure referencing
-class IFC_PARSE_API IfcRelReferencedInSpatialStructure : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelReferencedInSpatialStructure : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23246,7 +23246,7 @@ public:
     IfcRelReferencedInSpatialStructure initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::vector< ::Ifc2x3::IfcProduct > v5_RelatedElements, ::Ifc2x3::IfcSpatialStructureElement v6_RelatingStructure);
 };
 
-class IFC_PARSE_API IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
+class IFC_SCHEMA_API IfcRelSchedulesCostItems : public IfcRelAssignsToControl {
 public:
     using IfcRelAssignsToControl::IfcRelAssignsToControl;
 
@@ -23308,7 +23308,7 @@ public:
 ///   depending on the setting of the sequence type since there
 ///   is no checking that the time lag value is in keeping with
 ///   the sequence type set.
-class IFC_PARSE_API IfcRelSequence : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelSequence : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23351,7 +23351,7 @@ public:
 ///   for file based exchange. The name
 ///   IfcRelServicesBuildings is a knownanomaly, as the
 ///   relationship is not restricted to buildings anymore.
-class IFC_PARSE_API IfcRelServicesBuildings : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelServicesBuildings : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23531,7 +23531,7 @@ public:
 /// 
 /// Curve: IfcPolyline, IfcTrimmedCurve or
 /// IfcCompositeCurve
-class IFC_PARSE_API IfcRelSpaceBoundary : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelSpaceBoundary : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23567,7 +23567,7 @@ public:
 /// Figure 50 — Relationship for element voiding
 /// 
 /// HISTORY New entity in IFC Release 1.0
-class IFC_PARSE_API IfcRelVoidsElement : public IfcRelConnects {
+class IFC_SCHEMA_API IfcRelVoidsElement : public IfcRelConnects {
 public:
     using IfcRelConnects::IfcRelConnects;
 
@@ -23592,7 +23592,7 @@ public:
 /// HISTORY New entity in IFC Release 1.0
 /// 
 /// IFC2x PLATFORM CHANGE: The attributes BaseUnit and ResourceConsumption have been removed from the abstract entity; they are reintroduced at a lower level in the hierarchy.
-class IFC_PARSE_API IfcResource : public IfcObject {
+class IFC_SCHEMA_API IfcResource : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -23677,7 +23677,7 @@ public:
 /// Figure 263 illustrates default texture mapping with a repeated texture (RepeatS=True and RepeatT=True). The image on the left shows the texture where the S axis points to the right and the T axis points up. The image on the right shows the texture applied to the geometry where the X axis points back to the right, the Y axis points back to the left, and the Z axis points up. For an IfcRevolvedAreaSolid having a profile of IfcTShapeProfileDef and revolved at 22.5 degrees, the side texture coordinate origin is the first corner counter-clockwise from the +Y axis, which equals (-0.5*IfcTShapeProfileDef.OverallWidth, +0.5*IfcTShapeProfileDef.OverallDepth), while the top (end cap) texture coordinates start at (-0.5*IfcTShapeProfileDef.OverallWidth, -0.5*IfcTShapeProfileDef.OverallDepth).
 /// 
 /// Figure 263 — Revolved area solid textures
-class IFC_PARSE_API IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
+class IFC_SCHEMA_API IfcRevolvedAreaSolid : public IfcSweptAreaSolid {
 public:
     using IfcSweptAreaSolid::IfcSweptAreaSolid;
 
@@ -23756,7 +23756,7 @@ public:
 /// +Y
 /// 
 /// Figure 265 — Right circular cone textures
-class IFC_PARSE_API IfcRightCircularCone : public IfcCsgPrimitive3D {
+class IFC_SCHEMA_API IfcRightCircularCone : public IfcCsgPrimitive3D {
 public:
     using IfcCsgPrimitive3D::IfcCsgPrimitive3D;
 
@@ -23851,7 +23851,7 @@ public:
 /// +Y
 /// 
 /// Figure 267 — Right circular cylinder textures
-class IFC_PARSE_API IfcRightCircularCylinder : public IfcCsgPrimitive3D {
+class IFC_SCHEMA_API IfcRightCircularCylinder : public IfcCsgPrimitive3D {
 public:
     using IfcCsgPrimitive3D::IfcCsgPrimitive3D;
 
@@ -23939,7 +23939,7 @@ public:
 /// Figure 62 shows the use of IfcRelAggregates to establish a spatial structure including site, building, building section and storey. More information is provided at the level of the subtypes.
 /// 
 /// Figure 62 — Spatial structure element composition
-class IFC_PARSE_API IfcSpatialStructureElement : public IfcProduct {
+class IFC_SCHEMA_API IfcSpatialStructureElement : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -23992,7 +23992,7 @@ public:
 /// 
 /// HISTORY New entity in
 ///   Release IFC2x Edition 3.
-class IFC_PARSE_API IfcSpatialStructureElementType : public IfcElementType {
+class IFC_SCHEMA_API IfcSpatialStructureElementType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -24050,7 +24050,7 @@ public:
 /// (+Y, then curving towards top)
 /// 
 /// Figure 271 — Sphere textures
-class IFC_PARSE_API IfcSphere : public IfcCsgPrimitive3D {
+class IFC_SCHEMA_API IfcSphere : public IfcCsgPrimitive3D {
 public:
     using IfcCsgPrimitive3D::IfcCsgPrimitive3D;
 
@@ -24154,7 +24154,7 @@ public:
 /// 
 /// RepresentationIdentifier: 'Level set'
 ///   RepresentationType: 'GeometricCurveSet'
-class IFC_PARSE_API IfcStructuralActivity : public IfcProduct {
+class IFC_SCHEMA_API IfcStructuralActivity : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -24274,7 +24274,7 @@ public:
 /// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
 /// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
-class IFC_PARSE_API IfcStructuralItem : public IfcProduct {
+class IFC_SCHEMA_API IfcStructuralItem : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -24287,7 +24287,7 @@ public:
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// IFC 2x4 change:  Use definitions moved to supertype and subtypes.
-class IFC_PARSE_API IfcStructuralMember : public IfcStructuralItem {
+class IFC_SCHEMA_API IfcStructuralMember : public IfcStructuralItem {
 public:
     using IfcStructuralItem::IfcStructuralItem;
 
@@ -24317,7 +24317,7 @@ public:
 /// IfcRelAssignsToProduct relationship object.  IfcRelAssignsToProduct.Name is set to
 /// 'Causes' and IfcRelAssignsToProduct.RelatingProduct refers to an instance of a subtype of
 /// IfcStructuralAction.
-class IFC_PARSE_API IfcStructuralReaction : public IfcStructuralActivity {
+class IFC_SCHEMA_API IfcStructuralReaction : public IfcStructuralActivity {
 public:
     using IfcStructuralActivity::IfcStructuralActivity;
 
@@ -24346,7 +24346,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Direct instances of IfcStructuralSurfaceMember shall have a topology representation which consists of one IfcFaceSurface, representing the reference surface of the surface member.  See definitions at IfcStructuralItem for further specifications.
-class IFC_PARSE_API IfcStructuralSurfaceMember : public IfcStructuralMember {
+class IFC_SCHEMA_API IfcStructuralSurfaceMember : public IfcStructuralMember {
 public:
     using IfcStructuralMember::IfcStructuralMember;
 
@@ -24378,7 +24378,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// In case of aggregation, instances of IfcStructuralSurfaceMemberVarying may have a topology representation which contains a single IfcConnectedFaceSet, based upon the faces of the parts.  Otherwise, definitions at IfcStructuralSurfaceMember apply.
-class IFC_PARSE_API IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
+class IFC_SCHEMA_API IfcStructuralSurfaceMemberVarying : public IfcStructuralSurfaceMember {
 public:
     using IfcStructuralSurfaceMember::IfcStructuralSurfaceMember;
 
@@ -24391,7 +24391,7 @@ public:
     IfcStructuralSurfaceMemberVarying initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralSurfaceTypeEnum::Value v8_PredefinedType, std::optional< double > v9_Thickness, std::vector< double > /*[2:?]*/ v10_SubsequentThickness, ::Ifc2x3::IfcShapeAspect v11_VaryingThicknessLocation);
 };
 
-class IFC_PARSE_API IfcStructuredDimensionCallout : public IfcDraughtingCallout {
+class IFC_SCHEMA_API IfcStructuredDimensionCallout : public IfcDraughtingCallout {
 public:
     using IfcDraughtingCallout::IfcDraughtingCallout;
 
@@ -24461,7 +24461,7 @@ public:
 /// The SweptArea shall lie in the plane z = 0.
 /// The Directrix shall lie on the
 /// ReferenceSurface.
-class IFC_PARSE_API IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
+class IFC_SCHEMA_API IfcSurfaceCurveSweptAreaSolid : public IfcSweptAreaSolid {
 public:
     using IfcSweptAreaSolid::IfcSweptAreaSolid;
 
@@ -24498,7 +24498,7 @@ public:
 /// Informal propositions: 
 /// 
 /// The surface shall not self-intersect
-class IFC_PARSE_API IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
+class IFC_SCHEMA_API IfcSurfaceOfLinearExtrusion : public IfcSweptSurface {
 public:
     using IfcSweptSurface::IfcSweptSurface;
 
@@ -24529,7 +24529,7 @@ public:
 /// 
 /// The surface shall not self-intersect 
 /// The swept curve shall not be coincident with the axis line for any finite part of its legth.
-class IFC_PARSE_API IfcSurfaceOfRevolution : public IfcSweptSurface {
+class IFC_SCHEMA_API IfcSurfaceOfRevolution : public IfcSweptSurface {
 public:
     using IfcSweptSurface::IfcSweptSurface;
 
@@ -24570,7 +24570,7 @@ public:
 /// 'Hardware': Finish hardware such as knobs or handles. 
 /// 'Padding': Padding such as cushions. 
 /// 'Panel': Panels such as glass.
-class IFC_PARSE_API IfcSystemFurnitureElementType : public IfcFurnishingElementType {
+class IFC_SCHEMA_API IfcSystemFurnitureElementType : public IfcFurnishingElementType {
 public:
     using IfcFurnishingElementType::IfcFurnishingElementType;
 
@@ -24823,7 +24823,7 @@ public:
 ///   require attention.
 ///   Use LongDescription or else identify sub-tasks to
 ///   track punch list items individually via IfcRelNests.
-class IFC_PARSE_API IfcTask : public IfcProcess {
+class IFC_SCHEMA_API IfcTask : public IfcProcess {
 public:
     using IfcProcess::IfcProcess;
 
@@ -24924,7 +24924,7 @@ public:
 /// RepresentationIdentifier and RepresentationType of
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcTransportElementType.
-class IFC_PARSE_API IfcTransportElementType : public IfcElementType {
+class IFC_SCHEMA_API IfcTransportElementType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -24950,7 +24950,7 @@ public:
 /// IfcRelDefinesByProperties relationship. They are accessible by the inverse IsDefinedBy relationship. The following property set definitions specific to IfcActor are part of this IFC release:
 /// 
 /// Pset_ActorCommon: common property set for all actor occurrences
-class IFC_PARSE_API IfcActor : public IfcObject {
+class IFC_SCHEMA_API IfcActor : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -25135,7 +25135,7 @@ public:
 /// RepresentationIdentifier : 'Annotation'
 /// 
 /// RepresentationType : 'GeometricSet'
-class IFC_PARSE_API IfcAnnotation : public IfcProduct {
+class IFC_SCHEMA_API IfcAnnotation : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -25181,7 +25181,7 @@ public:
 /// relative to the profile. The parameterized profile is defined by a set of parameter attributes.  In the illustrated example, the 'CentreOfGravityInY' property in IfcExtendedProfileProperties, if provided, is negative.
 /// 
 /// Figure 310 — Assymetric I-shape profile
-class IFC_PARSE_API IfcAsymmetricIShapeProfileDef : public IfcIShapeProfileDef {
+class IFC_SCHEMA_API IfcAsymmetricIShapeProfileDef : public IfcIShapeProfileDef {
 public:
     using IfcIShapeProfileDef::IfcIShapeProfileDef;
 
@@ -25297,7 +25297,7 @@ public:
 /// +Y
 /// 
 /// Figure 251 — Block textures
-class IFC_PARSE_API IfcBlock : public IfcCsgPrimitive3D {
+class IFC_SCHEMA_API IfcBlock : public IfcCsgPrimitive3D {
 public:
     using IfcCsgPrimitive3D::IfcCsgPrimitive3D;
 
@@ -25321,7 +25321,7 @@ public:
 /// NOTE The IfcBooleanClippingResult is defined as a special case of the boolean_result, as defined in ISO 10303-42:1994, p. 175. It has been added to apply further constraints to the CSG representation type.
 /// 
 /// HISTORY New entity in IFC Release 2.x.
-class IFC_PARSE_API IfcBooleanClippingResult : public IfcBooleanResult {
+class IFC_SCHEMA_API IfcBooleanClippingResult : public IfcBooleanResult {
 public:
     using IfcBooleanResult::IfcBooleanResult;
 
@@ -25339,7 +25339,7 @@ public:
 /// 
 /// A bounded curve has finite arc length. 
 /// A bounded curve has a start point and an end point.
-class IFC_PARSE_API IfcBoundedCurve : public IfcCurve {
+class IFC_SCHEMA_API IfcBoundedCurve : public IfcCurve {
 public:
     using IfcCurve::IfcCurve;
 
@@ -25521,7 +25521,7 @@ public:
 /// building elements, an independent shape representation shall only
 /// be given, if the building is exposed independently from its
 /// constituting elements.
-class IFC_PARSE_API IfcBuilding : public IfcSpatialStructureElement {
+class IFC_SCHEMA_API IfcBuilding : public IfcSpatialStructureElement {
 public:
     using IfcSpatialStructureElement::IfcSpatialStructureElement;
 
@@ -25567,7 +25567,7 @@ public:
 /// 
 /// HISTORY  New entity in
 ///   Release IFC2x Edition 2.
-class IFC_PARSE_API IfcBuildingElementType : public IfcElementType {
+class IFC_SCHEMA_API IfcBuildingElementType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -25752,7 +25752,7 @@ public:
 /// exterior building elements, an independent shape representation
 /// shall only be given, if the building storey is exposed
 /// independently from its constituting elements.
-class IFC_PARSE_API IfcBuildingStorey : public IfcSpatialStructureElement {
+class IFC_SCHEMA_API IfcBuildingStorey : public IfcSpatialStructureElement {
 public:
     using IfcSpatialStructureElement::IfcSpatialStructureElement;
 
@@ -25781,7 +25781,7 @@ public:
 /// By using offsets of the position location, the parameterized profile can be positioned centric (using x,y offsets = 0.), or at any position relative to the profile. Explicit coordinate offsets are used to define cardinal points (for example, upper-left bound). The parameterized profile is defined by a set of parameter attributes.
 /// 
 /// Figure 312 — Circle hollow profile
-class IFC_PARSE_API IfcCircleHollowProfileDef : public IfcCircleProfileDef {
+class IFC_SCHEMA_API IfcCircleHollowProfileDef : public IfcCircleProfileDef {
 public:
     using IfcCircleProfileDef::IfcCircleProfileDef;
 
@@ -25890,7 +25890,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcColumn and
 /// IfcColumnStandardCase
-class IFC_PARSE_API IfcColumnType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcColumnType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -25967,7 +25967,7 @@ public:
 ///   correctly specifies the senses of the component curves.
 ///   When traversed in the direction indicated by
 ///   SameSense, the segments shall join end-to-end.
-class IFC_PARSE_API IfcCompositeCurve : public IfcBoundedCurve {
+class IFC_SCHEMA_API IfcCompositeCurve : public IfcBoundedCurve {
 public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
@@ -25986,7 +25986,7 @@ public:
 /// NOTE Corresponding ISO 10303 entity: conic, only the following subtypes have been incorporated into IFC 1.0, 1.5 & 2.0: circle as IfcCircle, ellipse as IfcEllipse. The derived attribute Dim has been added at this level and was therefore demoted from the geometric_representation_item. Please refer to ISO/IS 10303-42:1994, p. 38 for the final definition of the formal standard.
 /// 
 /// HISTORY New class in IFC Release 1.0
-class IFC_PARSE_API IfcConic : public IfcCurve {
+class IFC_SCHEMA_API IfcConic : public IfcCurve {
 public:
     using IfcCurve::IfcCurve;
 
@@ -26069,7 +26069,7 @@ public:
 /// IfcWorkSchedule.Name indicating the name of the baseline.
 /// 
 /// Figure 192 — Construction resource baseline use
-class IFC_PARSE_API IfcConstructionResource : public IfcResource {
+class IFC_SCHEMA_API IfcConstructionResource : public IfcResource {
 public:
     using IfcResource::IfcResource;
 
@@ -26096,7 +26096,7 @@ public:
 /// 
 /// Relationship use definition
 /// Controls have assignments from products, processes, or other objects by using the relationship object IfcRelAssignsToControl.
-class IFC_PARSE_API IfcControl : public IfcObject {
+class IFC_SCHEMA_API IfcControl : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -26141,7 +26141,7 @@ public:
 /// Figure 158 illustrates cost item assignment derived from building elements.  The IfcRelAssignsToControl relationship indicates building elements for which quantities are derived.  Not shown, costs may also be derived from building elements by traversing assignment relationships from the assigned IfcProduct to IfcProcess to IfcResource, where all costs ultimately originate at resources.  It is also possible for cost items to have assignments from processes or resources directly.
 /// 
 /// Figure 168 — Cost assignment
-class IFC_PARSE_API IfcCostItem : public IfcControl {
+class IFC_SCHEMA_API IfcCostItem : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -26172,7 +26172,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcCostSchedule.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IFC_PARSE_API IfcCostSchedule : public IfcControl {
+class IFC_SCHEMA_API IfcCostSchedule : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -26291,7 +26291,7 @@ public:
 /// RepresentationIdentifier and RepresentationType of
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcCoveringType.
-class IFC_PARSE_API IfcCoveringType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcCoveringType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -26312,7 +26312,7 @@ public:
 /// 
 /// Type use definition
 /// IfcCrewResource defines the occurrence of any crew resource; common information about crew resource types is handled by IfcCrewResourceType.  The IfcCrewResourceType (if present) may establish the common type name, common properties, and common productivities for various task types using IfcRelAssignsToProcess.  The IfcCrewResourceType is attached using the IfcRelDefinesByType.RelatingType objectified relationship and is accessible by the inverse IsTypedBy attribute.
-class IFC_PARSE_API IfcCrewResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcCrewResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -26341,7 +26341,7 @@ public:
 /// 
 /// HISTORY
 /// New entity in Release IFC2x Editon 3.
-class IFC_PARSE_API IfcCurtainWallType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcCurtainWallType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -26353,7 +26353,7 @@ public:
     IfcCurtainWallType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCurtainWallTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
+class IFC_SCHEMA_API IfcDimensionCurveDirectedCallout : public IfcDraughtingCallout {
 public:
     using IfcDraughtingCallout::IfcDraughtingCallout;
 
@@ -26389,7 +26389,7 @@ public:
 /// IFC2x4 CHANGE The entity is marked
 /// as deprecated for instantiation - will be made ABSTRACT after
 /// IFC2x4.
-class IFC_PARSE_API IfcDistributionElementType : public IfcElementType {
+class IFC_SCHEMA_API IfcDistributionElementType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -26462,7 +26462,7 @@ public:
 /// If an element type is defined parametrically (such as a flow segment type defining common material profile but no particular length or path), then no representations shall be asserted at the type.
 /// 
 /// NOTE: The product representations are defined as representation maps (at the level of the supertype IfcTypeProduct, which get assigned by an element occurrence instance through the IfcShapeRepresentation.Item[1] being an IfcMappedItem.
-class IFC_PARSE_API IfcDistributionFlowElementType : public IfcDistributionElementType {
+class IFC_SCHEMA_API IfcDistributionFlowElementType : public IfcDistributionElementType {
 public:
     using IfcDistributionElementType::IfcDistributionElementType;
 
@@ -26471,7 +26471,7 @@ public:
     IfcDistributionFlowElementType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 
-class IFC_PARSE_API IfcElectricalBaseProperties : public IfcEnergyProperties {
+class IFC_SCHEMA_API IfcElectricalBaseProperties : public IfcEnergyProperties {
 public:
     using IfcEnergyProperties::IfcEnergyProperties;
 
@@ -26548,7 +26548,7 @@ public:
 /// representations. A detailed specification for the local placement
 /// and shape representaion is introduced at the level of subtypes of
 /// IfcElement.
-class IFC_PARSE_API IfcElement : public IfcProduct {
+class IFC_SCHEMA_API IfcElement : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -26665,7 +26665,7 @@ public:
 /// The IfcElementAssembly shall have an aggregation
 /// relationship to the contained parts, i.e. the (INV)
 /// IsDecomposedBy relationship shall be utilzed.
-class IFC_PARSE_API IfcElementAssembly : public IfcElement {
+class IFC_SCHEMA_API IfcElementAssembly : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -26758,7 +26758,7 @@ public:
 /// Representation identifier and type are the same as in single mapped representation.
 /// The number of mapped items in the representation corresponds with the count of
 /// element components in the IfcElementQuantity.
-class IFC_PARSE_API IfcElementComponent : public IfcElement {
+class IFC_SCHEMA_API IfcElementComponent : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -26775,7 +26775,7 @@ public:
 /// 
 /// HISTORY New entity in IFC
 ///   Release 2x2
-class IFC_PARSE_API IfcElementComponentType : public IfcElementType {
+class IFC_SCHEMA_API IfcElementComponentType : public IfcElementType {
 public:
     using IfcElementType::IfcElementType;
 
@@ -26810,7 +26810,7 @@ public:
 /// Figure 280 illustrates the definition of the IfcEllipse within the (in this case three-dimensional) position coordinate system. 
 /// 
 /// Figure 280 — Ellipse geometry
-class IFC_PARSE_API IfcEllipse : public IfcConic {
+class IFC_SCHEMA_API IfcEllipse : public IfcConic {
 public:
     using IfcConic::IfcConic;
 
@@ -26847,7 +26847,7 @@ public:
 ///   by instances of IfcEnergyConversionDevice. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcEnergyConversionDeviceType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -26856,7 +26856,7 @@ public:
     IfcEnergyConversionDeviceType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType);
 };
 
-class IFC_PARSE_API IfcEquipmentElement : public IfcElement {
+class IFC_SCHEMA_API IfcEquipmentElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -26865,7 +26865,7 @@ public:
     IfcEquipmentElement initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcEquipmentStandard : public IfcControl {
+class IFC_SCHEMA_API IfcEquipmentStandard : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -26899,7 +26899,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcEvaporativeCoolerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcEvaporativeCooler for standard port definitions.
-class IFC_PARSE_API IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcEvaporativeCoolerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -26936,7 +26936,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcEvaporatorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcEvaporator for standard port definitions.
-class IFC_PARSE_API IfcEvaporatorType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcEvaporatorType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -26971,7 +26971,7 @@ public:
 /// Figure 257 illustrates use of IfcFacetedBrep for boundary representation models with planar surfaces only. The diagram shows the topological and geometric representation items that are used for faceted breps. Each IfcCartesianPoint, used within the IfcFacetedBrep shall be referenced three times by an IfcPolyLoop bounding a different IfcFace.
 /// 
 /// Figure 257 — Faceted B-rep
-class IFC_PARSE_API IfcFacetedBrep : public IfcManifoldSolidBrep {
+class IFC_SCHEMA_API IfcFacetedBrep : public IfcManifoldSolidBrep {
 public:
     using IfcManifoldSolidBrep::IfcManifoldSolidBrep;
 
@@ -27003,7 +27003,7 @@ public:
 /// All the bounding loops of all the faces of all the shells in
 /// the IfcFacetedBrep shall be of type
 /// IfcPolyLoop.
-class IFC_PARSE_API IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
+class IFC_SCHEMA_API IfcFacetedBrepWithVoids : public IfcManifoldSolidBrep {
 public:
     using IfcManifoldSolidBrep::IfcManifoldSolidBrep;
 
@@ -27022,7 +27022,7 @@ public:
 /// 
 /// IFC 2x4 change:
 /// Attribute PredefinedType added.
-class IFC_PARSE_API IfcFastener : public IfcElementComponent {
+class IFC_SCHEMA_API IfcFastener : public IfcElementComponent {
 public:
     using IfcElementComponent::IfcElementComponent;
 
@@ -27053,7 +27053,7 @@ public:
 /// The following property set definitions are applicable to this entity according to the PredefinedType attribute:
 /// 
 /// Pset_FastenerWeld (WELD)
-class IFC_PARSE_API IfcFastenerType : public IfcElementComponentType {
+class IFC_SCHEMA_API IfcFastenerType : public IfcElementComponentType {
 public:
     using IfcElementComponentType::IfcElementComponentType;
 
@@ -27155,7 +27155,7 @@ public:
 /// In some cases it may be useful to also expose a simple
 /// representation as a bounding box representation of the same
 /// complex shape.
-class IFC_PARSE_API IfcFeatureElement : public IfcElement {
+class IFC_SCHEMA_API IfcFeatureElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -27218,7 +27218,7 @@ public:
 /// The geometry use definitions for the shape representation
 ///   of the IfcFeatureElementAddition is given at the
 ///   level of its subtypes.
-class IFC_PARSE_API IfcFeatureElementAddition : public IfcFeatureElement {
+class IFC_SCHEMA_API IfcFeatureElementAddition : public IfcFeatureElement {
 public:
     using IfcFeatureElement::IfcFeatureElement;
 
@@ -27277,7 +27277,7 @@ public:
 /// The geometry use definitions for the shape representation of the
 /// IfcFeatureElementSubtraction is given at the level of its
 /// subtypes.
-class IFC_PARSE_API IfcFeatureElementSubtraction : public IfcFeatureElement {
+class IFC_SCHEMA_API IfcFeatureElementSubtraction : public IfcFeatureElement {
 public:
     using IfcFeatureElement::IfcFeatureElement;
 
@@ -27308,7 +27308,7 @@ public:
 ///   by instances of IfcFlowController or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowControllerType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowControllerType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27339,7 +27339,7 @@ public:
 ///   by instances of IfcFlowFitting or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowFittingType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowFittingType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27379,7 +27379,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFlowMeterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFlowMeter for standard port definitions.
-class IFC_PARSE_API IfcFlowMeterType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcFlowMeterType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -27412,7 +27412,7 @@ public:
 ///   by instances of IfcFlowMovingDevice. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowMovingDeviceType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27451,7 +27451,7 @@ public:
 /// IfcMaterialConstituentSet : For elements containing multiple materials where profiles are not applicable, this indicates materials at named aspects.
 /// 
 /// IfcMaterial : For elements comprised of a single material where profiles are not applicable, this indicates the material.
-class IFC_PARSE_API IfcFlowSegmentType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowSegmentType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27466,7 +27466,7 @@ public:
 /// The occurrences of the IfcFlowStorageDeviceType are represented by instances of IfcFlowStorageDevice or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowStorageDeviceType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27481,7 +27481,7 @@ public:
 /// The occurrences of the IfcFlowTerminalType are represented by instances of IfcFlowTerminal or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowTerminalType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowTerminalType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27497,7 +27497,7 @@ public:
 /// The occurrences of the IfcFlowTreatmentDeviceType are represented by instances of IfcFlowTreatmentDevice or its subtypes. 
 /// 
 /// HISTORY: New entity in IFC Release 2x2.
-class IFC_PARSE_API IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcFlowTreatmentDeviceType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -27609,7 +27609,7 @@ public:
 /// 'FootPrint', or 'Body' (depending of the representation map)
 /// IfcShapeRepresentation.RepresentationType =
 /// 'MappedRepresentation'
-class IFC_PARSE_API IfcFurnishingElement : public IfcElement {
+class IFC_SCHEMA_API IfcFurnishingElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -27618,7 +27618,7 @@ public:
     IfcFurnishingElement initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcFurnitureStandard : public IfcControl {
+class IFC_SCHEMA_API IfcFurnitureStandard : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -27627,7 +27627,7 @@ public:
     IfcFurnitureStandard initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
-class IFC_PARSE_API IfcGasTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcGasTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -27733,7 +27733,7 @@ public:
 /// As shown in Figure 33, the attributes UAxes and VAxes define lists of IfcGridAxis within the context of the grid. Each instance of IfcGridAxis refers to the same instance of IfcCurve (here the subtype IfcPolyline) that is contained within the IfcGeometricCurveSet that represents the IfcGrid.
 /// 
 /// Figure 33 — Grid representation
-class IFC_PARSE_API IfcGrid : public IfcProduct {
+class IFC_SCHEMA_API IfcGrid : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -27781,7 +27781,7 @@ public:
 /// Groups can be subjected to a control. The control information is then assigned:
 /// 
 /// Controls: affecting the group using IfcRelAssignsToControl
-class IFC_PARSE_API IfcGroup : public IfcObject {
+class IFC_SCHEMA_API IfcGroup : public IfcObject {
 public:
     using IfcObject::IfcObject;
 
@@ -27819,7 +27819,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcHeatExchangerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcHeatExchanger for standard port definitions.
-class IFC_PARSE_API IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcHeatExchangerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -27856,7 +27856,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcHumidifierType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcHumidifier for standard port definitions.
-class IFC_PARSE_API IfcHumidifierType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcHumidifierType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -27878,7 +27878,7 @@ public:
 /// IfcElement: Elements such as furniture included in the inventory.
 /// 
 /// IfcSpace: Spaces included in the inventory.
-class IFC_PARSE_API IfcInventory : public IfcGroup {
+class IFC_SCHEMA_API IfcInventory : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -27932,7 +27932,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcJunctionBoxType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcJunctionBox for standard port definitions.
-class IFC_PARSE_API IfcJunctionBoxType : public IfcFlowFittingType {
+class IFC_SCHEMA_API IfcJunctionBoxType : public IfcFlowFittingType {
 public:
     using IfcFlowFittingType::IfcFlowFittingType;
 
@@ -27967,7 +27967,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a labor resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcLaborResource and RelatedObjects contains one or more IfcActor subtypes as shown in Figure 194.  Such relationship indicates the specific people used as input for the resource.  Such actors are nested according to organizational structure with the root organization assigned to the IfcProject.  The IfcActor entity is used to represent the people or organizations.
 /// 
 /// Figure 194 — Labor resource assignment use
-class IFC_PARSE_API IfcLaborResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcLaborResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -28006,7 +28006,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcLampType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcLamp for standard port definitions.
-class IFC_PARSE_API IfcLampType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcLampType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -28048,7 +28048,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcLightFixtureType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcLightFixture for standard port definitions.
-class IFC_PARSE_API IfcLightFixtureType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcLightFixtureType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -28060,7 +28060,7 @@ public:
     IfcLightFixtureType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcLightFixtureTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
+class IFC_SCHEMA_API IfcLinearDimension : public IfcDimensionCurveDirectedCallout {
 public:
     using IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout;
 
@@ -28097,7 +28097,7 @@ public:
 /// the IfcMechanicalFastener via IfcRelDefinesByProperties.  The quantity should contain an
 /// IfcQuantityCount named 'Count' with the number of fasteners and an IfcQuantityLength
 /// named 'Spacing' which expresses the center-to-center distances of fasteners.
-class IFC_PARSE_API IfcMechanicalFastener : public IfcFastener {
+class IFC_SCHEMA_API IfcMechanicalFastener : public IfcFastener {
 public:
     using IfcFastener::IfcFastener;
 
@@ -28144,7 +28144,7 @@ public:
 /// The following property set definitions are applicable to this entity according to the PredefinedType attribute:
 /// 
 /// Pset_MechanicalFastenerBolt (BOLT)
-class IFC_PARSE_API IfcMechanicalFastenerType : public IfcFastenerType {
+class IFC_SCHEMA_API IfcMechanicalFastenerType : public IfcFastenerType {
 public:
     using IfcFastenerType::IfcFastenerType;
 
@@ -28253,7 +28253,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcMember and
 /// IfcMemberStandardCase
-class IFC_PARSE_API IfcMemberType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcMemberType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -28291,7 +28291,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcMotorConnectionType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcMotorConnection for standard port definitions.
-class IFC_PARSE_API IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcMotorConnectionType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -28303,7 +28303,7 @@ public:
     IfcMotorConnectionType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcMotorConnectionTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcMove : public IfcTask {
+class IFC_SCHEMA_API IfcMove : public IfcTask {
 public:
     using IfcTask::IfcTask;
 
@@ -28324,7 +28324,7 @@ public:
 /// Assignment Use Definition 
 ///   The IfcOccupant may have assignments of its own using the IfcRelAssignsToActor relationship where RelatingActor refers to the IfcOccupant and RelatedObjects contains one or more objects of the following types:  
 /// IfcSpatialStructureElement: Indicates the property to be occupied. Particular details of the agreement relating to the occupancy of a property are dealt within the Pset_PropertyAgreement that is defined for the instance of IfcSpatialStructureElement. This means that an occupant may be related to a site, building, building storey or space through the IfcSpatialStructureElement.ElementComposition attribute. For instance, if the property concerned is several office spaces on a building storey, it might be appropriate to reference IfcBuildingStorey.ElementComposition=PARTIAL.  Occupants of a property may be considered to be the parties to an agreement. The roles that the occupant may play in respect to an agreement are defined in the IfcOccupantTypeEnum enumeration. If the role is not specified by the predefined contents of this enumeration, the value USERDEFINED may be set and the ObjectType attribute asserted.
-class IFC_PARSE_API IfcOccupant : public IfcActor {
+class IFC_SCHEMA_API IfcOccupant : public IfcActor {
 public:
     using IfcActor::IfcActor;
 
@@ -28539,7 +28539,7 @@ public:
 /// NOTE  The local placement directions for the IfcOpeningElement are only given as an example, other directions are valid as well.
 /// 
 /// Figure 36 — Opening with multiple extrusions
-class IFC_PARSE_API IfcOpeningElement : public IfcFeatureElementSubtraction {
+class IFC_SCHEMA_API IfcOpeningElement : public IfcFeatureElementSubtraction {
 public:
     using IfcFeatureElementSubtraction::IfcFeatureElementSubtraction;
 
@@ -28549,7 +28549,7 @@ public:
     IfcOpeningElement initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcOrderAction : public IfcTask {
+class IFC_SCHEMA_API IfcOrderAction : public IfcTask {
 public:
     using IfcTask::IfcTask;
 
@@ -28588,7 +28588,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcOutletType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcOutlet for standard port definitions.
-class IFC_PARSE_API IfcOutletType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcOutletType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -28604,7 +28604,7 @@ public:
 /// IfcPerformanceHistory is assigned to other objects (represented by subtypes of IfcObjectDefinition, excluding subtypes of IfcControl), by the objectified relationship IfcRelAssignsToControl.
 /// 
 /// HISTORY: New entity in Release IFC2x Edition 2.
-class IFC_PARSE_API IfcPerformanceHistory : public IfcControl {
+class IFC_SCHEMA_API IfcPerformanceHistory : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -28652,7 +28652,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcPermit.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IFC_PARSE_API IfcPermit : public IfcControl {
+class IFC_SCHEMA_API IfcPermit : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -28691,7 +28691,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPipeFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPipeFitting for standard port definitions.
-class IFC_PARSE_API IfcPipeFittingType : public IfcFlowFittingType {
+class IFC_SCHEMA_API IfcPipeFittingType : public IfcFlowFittingType {
 public:
     using IfcFlowFittingType::IfcFlowFittingType;
 
@@ -28735,7 +28735,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPipeSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPipeSegment for standard port definitions.
-class IFC_PARSE_API IfcPipeSegmentType : public IfcFlowSegmentType {
+class IFC_SCHEMA_API IfcPipeSegmentType : public IfcFlowSegmentType {
 public:
     using IfcFlowSegmentType::IfcFlowSegmentType;
 
@@ -28823,7 +28823,7 @@ public:
 /// 
 /// Pset_PlateCommon: common property set for all
 /// plate types.
-class IFC_PARSE_API IfcPlateType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcPlateType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -28848,7 +28848,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: polyline. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
 /// HISTORY  New class in IFC Release 1.0
-class IFC_PARSE_API IfcPolyline : public IfcBoundedCurve {
+class IFC_SCHEMA_API IfcPolyline : public IfcBoundedCurve {
 public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
@@ -28912,7 +28912,7 @@ public:
 /// The geometry use definitions for the shape representation
 ///   of the IfcPort is given at the level of
 ///   its subtypes.
-class IFC_PARSE_API IfcPort : public IfcProduct {
+class IFC_SCHEMA_API IfcPort : public IfcProduct {
 public:
     using IfcProduct::IfcProduct;
 
@@ -29027,7 +29027,7 @@ public:
 ///   item as a whole but provides inner detail of the item.
 /// 
 /// Figure 12 — Procedure relationships
-class IFC_PARSE_API IfcProcedure : public IfcProcess {
+class IFC_SCHEMA_API IfcProcedure : public IfcProcess {
 public:
     using IfcProcess::IfcProcess;
 
@@ -29084,7 +29084,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcProjectOrder.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IFC_PARSE_API IfcProjectOrder : public IfcControl {
+class IFC_SCHEMA_API IfcProjectOrder : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -29111,7 +29111,7 @@ public:
     IfcProjectOrder initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, std::string v6_ID, ::Ifc2x3::IfcProjectOrderTypeEnum::Value v7_PredefinedType, std::optional< std::string > v8_Status);
 };
 
-class IFC_PARSE_API IfcProjectOrderRecord : public IfcControl {
+class IFC_SCHEMA_API IfcProjectOrderRecord : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -29230,7 +29230,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'Brep'
-class IFC_PARSE_API IfcProjectionElement : public IfcFeatureElementAddition {
+class IFC_SCHEMA_API IfcProjectionElement : public IfcFeatureElementAddition {
 public:
     using IfcFeatureElementAddition::IfcFeatureElementAddition;
 
@@ -29273,7 +29273,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcProtectiveDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcProtectiveDevice for standard port definitions.
-class IFC_PARSE_API IfcProtectiveDeviceType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcProtectiveDeviceType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -29312,7 +29312,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcPumpType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcPump for standard port definitions.
-class IFC_PARSE_API IfcPumpType : public IfcFlowMovingDeviceType {
+class IFC_SCHEMA_API IfcPumpType : public IfcFlowMovingDeviceType {
 public:
     using IfcFlowMovingDeviceType::IfcFlowMovingDeviceType;
 
@@ -29324,7 +29324,7 @@ public:
     IfcPumpType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcPumpTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
+class IFC_SCHEMA_API IfcRadiusDimension : public IfcDimensionCurveDirectedCallout {
 public:
     using IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout;
 
@@ -29352,7 +29352,7 @@ public:
 /// 
 /// HISTORY New entity in Release IFC2x
 ///   Editon 2.
-class IFC_PARSE_API IfcRailingType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcRailingType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -29383,7 +29383,7 @@ public:
 /// 
 /// HISTORY New entity in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcRampFlightType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcRampFlightType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -29416,7 +29416,7 @@ public:
 /// HISTORY New entity in IFC Release 2x.
 /// 
 /// IFC2x4 CHANGE The attributes RelatingObject and RelatedObjects are demoted from the supertype IfcRelDecomposes.
-class IFC_PARSE_API IfcRelAggregates : public IfcRelDecomposes {
+class IFC_SCHEMA_API IfcRelAggregates : public IfcRelDecomposes {
 public:
     using IfcRelDecomposes::IfcRelDecomposes;
 
@@ -29425,7 +29425,7 @@ public:
     IfcRelAggregates initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, ::Ifc2x3::IfcObjectDefinition v5_RelatingObject, std::vector< ::Ifc2x3::IfcObjectDefinition > v6_RelatedObjects);
 };
 
-class IFC_PARSE_API IfcRelAssignsTasks : public IfcRelAssignsToControl {
+class IFC_SCHEMA_API IfcRelAssignsTasks : public IfcRelAssignsToControl {
 public:
     using IfcRelAssignsToControl::IfcRelAssignsToControl;
 
@@ -29472,7 +29472,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSanitaryTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSanitaryTerminal for standard port definitions.
-class IFC_PARSE_API IfcSanitaryTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcSanitaryTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -29484,7 +29484,7 @@ public:
     IfcSanitaryTerminalType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSanitaryTerminalTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcScheduleTimeControl : public IfcControl {
+class IFC_SCHEMA_API IfcScheduleTimeControl : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -29530,7 +29530,7 @@ public:
     IfcScheduleTimeControl initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcDateTimeSelect v6_ActualStart, ::Ifc2x3::IfcDateTimeSelect v7_EarlyStart, ::Ifc2x3::IfcDateTimeSelect v8_LateStart, ::Ifc2x3::IfcDateTimeSelect v9_ScheduleStart, ::Ifc2x3::IfcDateTimeSelect v10_ActualFinish, ::Ifc2x3::IfcDateTimeSelect v11_EarlyFinish, ::Ifc2x3::IfcDateTimeSelect v12_LateFinish, ::Ifc2x3::IfcDateTimeSelect v13_ScheduleFinish, std::optional< double > v14_ScheduleDuration, std::optional< double > v15_ActualDuration, std::optional< double > v16_RemainingTime, std::optional< double > v17_FreeFloat, std::optional< double > v18_TotalFloat, std::optional< bool > v19_IsCritical, ::Ifc2x3::IfcDateTimeSelect v20_StatusTime, std::optional< double > v21_StartFloat, std::optional< double > v22_FinishFloat, std::optional< double > v23_Completion);
 };
 
-class IFC_PARSE_API IfcServiceLife : public IfcControl {
+class IFC_SCHEMA_API IfcServiceLife : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -29731,7 +29731,7 @@ public:
 /// 'Body'
 /// IfcShapeRepresentation.RepresentationType = 'Brep', or
 /// 'SurfaceModel'
-class IFC_PARSE_API IfcSite : public IfcSpatialStructureElement {
+class IFC_SCHEMA_API IfcSite : public IfcSpatialStructureElement {
 public:
     using IfcSpatialStructureElement::IfcSpatialStructureElement;
 
@@ -29834,7 +29834,7 @@ public:
 /// 
 /// Pset_SlabCommon: common property set for all
 /// slab types.
-class IFC_PARSE_API IfcSlabType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcSlabType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -30095,7 +30095,7 @@ public:
 /// 'Body'
 /// IfcShapeRepresentation.RepresentationType :
 /// 'Brep'
-class IFC_PARSE_API IfcSpace : public IfcSpatialStructureElement {
+class IFC_SCHEMA_API IfcSpace : public IfcSpatialStructureElement {
 public:
     using IfcSpatialStructureElement::IfcSpatialStructureElement;
 
@@ -30140,7 +30140,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSpaceHeaterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSpaceHeater for standard port definitions.
-class IFC_PARSE_API IfcSpaceHeaterType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcSpaceHeaterType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -30152,7 +30152,7 @@ public:
     IfcSpaceHeaterType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcSpaceHeaterTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcSpaceProgram : public IfcControl {
+class IFC_SCHEMA_API IfcSpaceProgram : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -30253,7 +30253,7 @@ public:
 /// agreements may prevent the usage of shared geometry for
 /// spaces.
 /// .
-class IFC_PARSE_API IfcSpaceType : public IfcSpatialStructureElementType {
+class IFC_SCHEMA_API IfcSpaceType : public IfcSpatialStructureElementType {
 public:
     using IfcSpatialStructureElementType::IfcSpatialStructureElementType;
 
@@ -30290,7 +30290,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcStackTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcStackTerminal for standard port definitions.
-class IFC_PARSE_API IfcStackTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcStackTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -30321,7 +30321,7 @@ public:
 /// 
 /// HISTORY: New entity in Release IFC2x
 ///   Edition 2.
-class IFC_PARSE_API IfcStairFlightType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcStairFlightType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -30351,7 +30351,7 @@ public:
 /// IfcRelAssignsToProduct relationship object.  IfcRelAssignsToProduct.Name is set to
 /// 'Causes' and IfcRelAssignsToProduct.RelatedObjects refers to an instance of a subtype of
 /// IfcStructuralReaction.
-class IFC_PARSE_API IfcStructuralAction : public IfcStructuralActivity {
+class IFC_SCHEMA_API IfcStructuralAction : public IfcStructuralActivity {
 public:
     using IfcStructuralActivity::IfcStructuralActivity;
 
@@ -30367,7 +30367,7 @@ public:
 /// Definition from IAI: An IfcStructuralConnection represents a structural connection object (node i.e. vertex connection, or edge connection, or surface connection) or supports.
 /// 
 /// HISTORY: New entity in IFC 2x2.
-class IFC_PARSE_API IfcStructuralConnection : public IfcStructuralItem {
+class IFC_SCHEMA_API IfcStructuralConnection : public IfcStructuralItem {
 public:
     using IfcStructuralItem::IfcStructuralItem;
 
@@ -30396,7 +30396,7 @@ public:
 /// Informal propositions:
 /// 
 /// The reference curve must not be parallel with Axis at any point within the curve connections's domain.
-class IFC_PARSE_API IfcStructuralCurveConnection : public IfcStructuralConnection {
+class IFC_SCHEMA_API IfcStructuralCurveConnection : public IfcStructuralConnection {
 public:
     using IfcStructuralConnection::IfcStructuralConnection;
 
@@ -30441,7 +30441,7 @@ public:
 /// Informal propositions:
 /// 
 /// The reference curve must not be parallel with Axis at any point within the curve member's domain.
-class IFC_PARSE_API IfcStructuralCurveMember : public IfcStructuralMember {
+class IFC_SCHEMA_API IfcStructuralCurveMember : public IfcStructuralMember {
 public:
     using IfcStructuralMember::IfcStructuralMember;
 
@@ -30472,7 +30472,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralCurveMemberVarying may have a topology representation which contains a single IfcEdgeLoop, based upon the edges of the parts.
-class IFC_PARSE_API IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
+class IFC_SCHEMA_API IfcStructuralCurveMemberVarying : public IfcStructuralCurveMember {
 public:
     using IfcStructuralCurveMember::IfcStructuralCurveMember;
 
@@ -30487,7 +30487,7 @@ public:
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralCurveAction inserted.  Derived attribute PredefinedType added.
 /// 
 /// NOTE  Like its supertype IfcStructuralCurveAction, this action type may also act on curved edges.
-class IFC_PARSE_API IfcStructuralLinearAction : public IfcStructuralAction {
+class IFC_SCHEMA_API IfcStructuralLinearAction : public IfcStructuralAction {
 public:
     using IfcStructuralAction::IfcStructuralAction;
 
@@ -30498,7 +30498,7 @@ public:
     IfcStructuralLinearAction initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
 };
 
-class IFC_PARSE_API IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
+class IFC_SCHEMA_API IfcStructuralLinearActionVarying : public IfcStructuralLinearAction {
 public:
     using IfcStructuralLinearAction::IfcStructuralLinearAction;
 
@@ -30543,7 +30543,7 @@ public:
 ///   Instances of IfcStructuralLoadCase shall only contain instances of IfcStructuralAction
 ///   or/ and instances of IfcStructuralLoadGroup of type LOAD_GROUP.
 ///   Load groups of type LOAD_COMBINATION shall only contain instances of IfcStructuralLoadCase.
-class IFC_PARSE_API IfcStructuralLoadGroup : public IfcGroup {
+class IFC_SCHEMA_API IfcStructuralLoadGroup : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -30575,7 +30575,7 @@ public:
 /// IFC 2x4 change:  Intermediate supertype IfcStructuralSurfaceAction inserted.  Derived attribute PredefinedType added.
 /// 
 /// NOTE  Like its supertype IfcStructuralSurfaceAction, this action type may also act on curved faces.
-class IFC_PARSE_API IfcStructuralPlanarAction : public IfcStructuralAction {
+class IFC_SCHEMA_API IfcStructuralPlanarAction : public IfcStructuralAction {
 public:
     using IfcStructuralAction::IfcStructuralAction;
 
@@ -30586,7 +30586,7 @@ public:
     IfcStructuralPlanarAction initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, ::Ifc2x3::IfcStructuralLoad v8_AppliedLoad, ::Ifc2x3::IfcGlobalOrLocalEnum::Value v9_GlobalOrLocal, bool v10_DestabilizingLoad, ::Ifc2x3::IfcStructuralReaction v11_CausedBy, ::Ifc2x3::IfcProjectedOrTrueLengthEnum::Value v12_ProjectedOrTrue);
 };
 
-class IFC_PARSE_API IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
+class IFC_SCHEMA_API IfcStructuralPlanarActionVarying : public IfcStructuralPlanarAction {
 public:
     using IfcStructuralPlanarAction::IfcStructuralPlanarAction;
 
@@ -30643,7 +30643,7 @@ public:
 /// SELF\IfcStructuralActivity.AppliedLoad shall be of type
 ///   IfcStructuralLoadSingleForce or
 ///   IfcStructuralLoadSingleDisplacement.
-class IFC_PARSE_API IfcStructuralPointAction : public IfcStructuralAction {
+class IFC_SCHEMA_API IfcStructuralPointAction : public IfcStructuralAction {
 public:
     using IfcStructuralAction::IfcStructuralAction;
 
@@ -30664,7 +30664,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralPointConnection shall have a topology representation which consists of one IfcVertexPoint, representing the reference point of the point connection.  See definitions at IfcStructuralItem for further specifications.
-class IFC_PARSE_API IfcStructuralPointConnection : public IfcStructuralConnection {
+class IFC_SCHEMA_API IfcStructuralPointConnection : public IfcStructuralConnection {
 public:
     using IfcStructuralConnection::IfcStructuralConnection;
 
@@ -30715,7 +30715,7 @@ public:
 /// SELF\IfcStructuralActivity.AppliedLoad shall be of type
 ///   IfcStructuralLoadSingleForce or
 ///   IfcStructuralLoadSingleDisplacement.
-class IFC_PARSE_API IfcStructuralPointReaction : public IfcStructuralReaction {
+class IFC_SCHEMA_API IfcStructuralPointReaction : public IfcStructuralReaction {
 public:
     using IfcStructuralReaction::IfcStructuralReaction;
 
@@ -30727,7 +30727,7 @@ public:
 /// 
 /// HISTORY: New entity in IFC 2x2.
 /// IFC 2x4 change: WHERE rule added.
-class IFC_PARSE_API IfcStructuralResultGroup : public IfcGroup {
+class IFC_SCHEMA_API IfcStructuralResultGroup : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -30757,7 +30757,7 @@ public:
 /// Topology Use Definitions:
 /// 
 /// Instances of IfcStructuralSurfaceConnection shall have a topology representation which consists of one IfcFaceSurface, representing the reference surface of the surface connection.  See definitions at IfcStructuralItem for further specifications.
-class IFC_PARSE_API IfcStructuralSurfaceConnection : public IfcStructuralConnection {
+class IFC_SCHEMA_API IfcStructuralSurfaceConnection : public IfcStructuralConnection {
 public:
     using IfcStructuralConnection::IfcStructuralConnection;
 
@@ -30789,7 +30789,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a subcontract resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcSubContractResource and RelatedObjects contains one or more IfcActor, IfcCostSchedule, and/or IfcWorkOrder objects as shown in Figure 195.  An IfcActor indicates a specific organization to be considered to fulfill the resource or invited to bid on the resource.  An IfcCostSchedule indicates a bid or price quote made on behalf of an organization.  An IfcProjectOrder indicates a specific work order committed to fulfill the resource.
 /// 
 /// Figure 195 — Subcontract assignment use
-class IFC_PARSE_API IfcSubContractResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcSubContractResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -30841,7 +30841,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSwitchingDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSwitchingDevice for standard port definitions.
-class IFC_PARSE_API IfcSwitchingDeviceType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcSwitchingDeviceType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -30869,7 +30869,7 @@ public:
 /// 
 /// HISTORY: New entity in
 ///   IFC Release 1.0
-class IFC_PARSE_API IfcSystem : public IfcGroup {
+class IFC_SCHEMA_API IfcSystem : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -30910,7 +30910,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTankType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTank for standard port definitions.
-class IFC_PARSE_API IfcTankType : public IfcFlowStorageDeviceType {
+class IFC_SCHEMA_API IfcTankType : public IfcFlowStorageDeviceType {
 public:
     using IfcFlowStorageDeviceType::IfcFlowStorageDeviceType;
 
@@ -30922,7 +30922,7 @@ public:
     IfcTankType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcTankTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcTimeSeriesSchedule : public IfcControl {
+class IFC_SCHEMA_API IfcTimeSeriesSchedule : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -30963,7 +30963,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTransformerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTransformer for standard port definitions.
-class IFC_PARSE_API IfcTransformerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcTransformerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -31090,7 +31090,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'MappedRepresentation'
-class IFC_PARSE_API IfcTransportElement : public IfcElement {
+class IFC_SCHEMA_API IfcTransportElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -31184,7 +31184,7 @@ public:
 /// required to be consistent with the parameter values of Trim1
 /// and Trim1, so the rule (sense = parameter 1
 /// < parameter 2) may not be fulfilled.
-class IFC_PARSE_API IfcTrimmedCurve : public IfcBoundedCurve {
+class IFC_SCHEMA_API IfcTrimmedCurve : public IfcBoundedCurve {
 public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
@@ -31236,7 +31236,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcTubeBundleType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcTubeBundle for standard port definitions.
-class IFC_PARSE_API IfcTubeBundleType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcTubeBundleType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -31275,7 +31275,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcUnitaryEquipmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcUnitaryEquipment for standard port definitions.
-class IFC_PARSE_API IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcUnitaryEquipmentType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -31324,7 +31324,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcValveType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcValve for standard port definitions.
-class IFC_PARSE_API IfcValveType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcValveType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -31421,7 +31421,7 @@ public:
 /// 
 /// 'GeometricSet': a list of 3D surfaces within the constraints
 /// shown above.
-class IFC_PARSE_API IfcVirtualElement : public IfcElement {
+class IFC_SCHEMA_API IfcVirtualElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -31513,7 +31513,7 @@ public:
 /// 
 /// Pset_WallCommon: common property set for all
 /// wall types.
-class IFC_PARSE_API IfcWallType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcWallType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -31560,7 +31560,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcWasteTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcWasteTerminal for standard port definitions.
-class IFC_PARSE_API IfcWasteTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcWasteTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -31615,7 +31615,7 @@ public:
 /// 
 /// Pset_WorkControlCommon: common
 ///   property set for work control
-class IFC_PARSE_API IfcWorkControl : public IfcControl {
+class IFC_SCHEMA_API IfcWorkControl : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -31675,7 +31675,7 @@ public:
 ///   through IfcRelAssignsToControl.
 /// 
 /// Figure 18 — Work plan relationships
-class IFC_PARSE_API IfcWorkPlan : public IfcWorkControl {
+class IFC_SCHEMA_API IfcWorkPlan : public IfcWorkControl {
 public:
     using IfcWorkControl::IfcWorkControl;
 
@@ -31723,7 +31723,7 @@ public:
 ///   task and not the work schedule.
 /// 
 /// Figure 19 — Work schedule relationships
-class IFC_PARSE_API IfcWorkSchedule : public IfcWorkControl {
+class IFC_SCHEMA_API IfcWorkSchedule : public IfcWorkControl {
 public:
     using IfcWorkControl::IfcWorkControl;
 
@@ -31816,7 +31816,7 @@ public:
 /// Pset_SpaceThermalRequirements: common
 /// property set for all types of zones to capture the thermal
 /// requirements
-class IFC_PARSE_API IfcZone : public IfcGroup {
+class IFC_SCHEMA_API IfcZone : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -31825,7 +31825,7 @@ public:
     IfcZone initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
-class IFC_PARSE_API Ifc2DCompositeCurve : public IfcCompositeCurve {
+class IFC_SCHEMA_API Ifc2DCompositeCurve : public IfcCompositeCurve {
 public:
     using IfcCompositeCurve::IfcCompositeCurve;
 
@@ -31871,7 +31871,7 @@ public:
 /// 
 /// Approval Use Definition 
 /// Approvals may be associated to indicate the status of acceptance or rejection using the IfcRelAssociatesApproval relationship where RelatingApproval refers to an IfcApproval and RelatedObjects contains the IfcActionRequest.  Approvals may be split into sub-approvals using IfcApprovalRelationship to track approval status separately for each party where RelatingApproval refers to the higher-level approval and RelatedApprovals contains one or more lower-level approvals.  The hierarchy of approvals implies sequencing such that a higher-level approval is not executed until all of its lower-level approvals have been accepted.
-class IFC_PARSE_API IfcActionRequest : public IfcControl {
+class IFC_SCHEMA_API IfcActionRequest : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -31907,7 +31907,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirTerminalBoxType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirTerminalBox for standard port definitions.
-class IFC_PARSE_API IfcAirTerminalBoxType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcAirTerminalBoxType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -31944,7 +31944,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirTerminal for standard port definitions.
-class IFC_PARSE_API IfcAirTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcAirTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -31980,7 +31980,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAirToAirHeatRecoveryType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAirToAirHeatRecovery for standard port definitions.
-class IFC_PARSE_API IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcAirToAirHeatRecoveryType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -31992,7 +31992,7 @@ public:
     IfcAirToAirHeatRecoveryType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcAirToAirHeatRecoveryTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
+class IFC_SCHEMA_API IfcAngularDimension : public IfcDimensionCurveDirectedCallout {
 public:
     using IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout;
 
@@ -32024,7 +32024,7 @@ public:
 /// 
 /// The IfcAsset may have assignments of its own using the IfcRelAssignsToGroup relationship where RelatingGroup refers to the IfcAsset and RelatedObjects contains one or more objects of the following types:  
 /// IfcElement: Physical elements that comprise the asset.
-class IFC_PARSE_API IfcAsset : public IfcGroup {
+class IFC_SCHEMA_API IfcAsset : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -32111,7 +32111,7 @@ public:
 /// NOTE  Corresponding ISO 10303 entity: b_spline_curve. Please refer to ISO/IS 10303-42:1994, p. 45 for the final definition of the formal standard.
 /// 
 /// HISTORY  New entity in Release IFC2x2.
-class IFC_PARSE_API IfcBSplineCurve : public IfcBoundedCurve {
+class IFC_SCHEMA_API IfcBSplineCurve : public IfcBoundedCurve {
 public:
     using IfcBoundedCurve::IfcBoundedCurve;
 
@@ -32232,7 +32232,7 @@ public:
 /// IfcShapeRepresentation are restricted in the same way as
 /// those for IfcBeam and
 /// IfcBeamStandardCase
-class IFC_PARSE_API IfcBeamType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcBeamType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -32244,7 +32244,7 @@ public:
     IfcBeamType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcBeamTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcBezierCurve : public IfcBSplineCurve {
+class IFC_SCHEMA_API IfcBezierCurve : public IfcBSplineCurve {
 public:
     using IfcBSplineCurve::IfcBSplineCurve;
 
@@ -32281,7 +32281,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcBoilerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcBoiler for standard port definitions.
-class IFC_PARSE_API IfcBoilerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcBoilerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -32655,7 +32655,7 @@ public:
 /// 'AdvancedBrep' geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IFC_PARSE_API IfcBuildingElement : public IfcElement {
+class IFC_SCHEMA_API IfcBuildingElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -32664,7 +32664,7 @@ public:
     IfcBuildingElement initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcBuildingElementComponent : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcBuildingElementComponent : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -32689,7 +32689,7 @@ public:
 /// Moved from from IfcStructuralElementsDomain schema to
 /// IfcSharedComponentElements schema, compatible change of supertype,
 /// attribute PredefinedType added.
-class IFC_PARSE_API IfcBuildingElementPart : public IfcBuildingElementComponent {
+class IFC_SCHEMA_API IfcBuildingElementPart : public IfcBuildingElementComponent {
 public:
     using IfcBuildingElementComponent::IfcBuildingElementComponent;
 
@@ -32887,7 +32887,7 @@ public:
 /// 
 /// No further restrictions (e.g., for the depths of the CSG tree)
 /// are defined at this level.
-class IFC_PARSE_API IfcBuildingElementProxy : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcBuildingElementProxy : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -32931,7 +32931,7 @@ public:
 /// 
 /// HISTORY New entity in
 ///   Release IFC2x Edition 3.
-class IFC_PARSE_API IfcBuildingElementProxyType : public IfcBuildingElementType {
+class IFC_SCHEMA_API IfcBuildingElementProxyType : public IfcBuildingElementType {
 public:
     using IfcBuildingElementType::IfcBuildingElementType;
 
@@ -32968,7 +32968,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableCarrierFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableCarrierFitting for standard port definitions.
-class IFC_PARSE_API IfcCableCarrierFittingType : public IfcFlowFittingType {
+class IFC_SCHEMA_API IfcCableCarrierFittingType : public IfcFlowFittingType {
 public:
     using IfcFlowFittingType::IfcFlowFittingType;
 
@@ -33011,7 +33011,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableCarrierSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableCarrierSegment for standard port definitions.
-class IFC_PARSE_API IfcCableCarrierSegmentType : public IfcFlowSegmentType {
+class IFC_SCHEMA_API IfcCableCarrierSegmentType : public IfcFlowSegmentType {
 public:
     using IfcFlowSegmentType::IfcFlowSegmentType;
 
@@ -33063,7 +33063,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCableSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCableSegment for standard port definitions.
-class IFC_PARSE_API IfcCableSegmentType : public IfcFlowSegmentType {
+class IFC_SCHEMA_API IfcCableSegmentType : public IfcFlowSegmentType {
 public:
     using IfcFlowSegmentType::IfcFlowSegmentType;
 
@@ -33106,7 +33106,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcChillerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcChiller for standard port definitions.
-class IFC_PARSE_API IfcChillerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcChillerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -33144,7 +33144,7 @@ public:
 /// Figure 278 illustrates the definition of the IfcCircle within the (in this case three-dimensional) position coordinate system. 
 /// 
 /// Figure 278 — Circle geometry
-class IFC_PARSE_API IfcCircle : public IfcConic {
+class IFC_SCHEMA_API IfcCircle : public IfcConic {
 public:
     using IfcConic::IfcConic;
 
@@ -33182,7 +33182,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCoilType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCoil for standard port definitions.
-class IFC_PARSE_API IfcCoilType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcCoilType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -33464,7 +33464,7 @@ public:
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IFC_PARSE_API IfcColumn : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcColumn : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -33499,7 +33499,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCompressorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCompressor for standard port definitions.
-class IFC_PARSE_API IfcCompressorType : public IfcFlowMovingDeviceType {
+class IFC_SCHEMA_API IfcCompressorType : public IfcFlowMovingDeviceType {
 public:
     using IfcFlowMovingDeviceType::IfcFlowMovingDeviceType;
 
@@ -33537,7 +33537,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCondenserType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCondenser for standard port definitions.
-class IFC_PARSE_API IfcCondenserType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcCondenserType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -33549,7 +33549,7 @@ public:
     IfcCondenserType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcCondenserTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcCondition : public IfcGroup {
+class IFC_SCHEMA_API IfcCondition : public IfcGroup {
 public:
     using IfcGroup::IfcGroup;
 
@@ -33558,7 +33558,7 @@ public:
     IfcCondition initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
-class IFC_PARSE_API IfcConditionCriterion : public IfcControl {
+class IFC_SCHEMA_API IfcConditionCriterion : public IfcControl {
 public:
     using IfcControl::IfcControl;
 
@@ -33592,7 +33592,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction equipment resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionEquipmentResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 183.  Such relationship indicates the equipment used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned equipment may have their own task and resource assignments for assembling such equipment.
 /// 
 /// Figure 183 — Construction equipment resource assignment
-class IFC_PARSE_API IfcConstructionEquipmentResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcConstructionEquipmentResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -33626,7 +33626,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction material resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionMaterialResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 184.  Such relationship indicates the physical material used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  The IfcGeographicElement object is used to represent the physical material occurrence, which may optionally have placement and representation indicating intended storage on the construction site.  There may be multiple chains of production such that the assigned product material(s) may have their own task and resource assignments for transporting or extracting such material.
 /// 
 /// Figure 184 — Construction material resource assignment
-class IFC_PARSE_API IfcConstructionMaterialResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcConstructionMaterialResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -33653,7 +33653,7 @@ public:
 /// In addition to assignments specified at the base class IfcConstructionResource, a construction product resource may have assignments of its own using IfcRelAssignsToResource where RelatingResource refers to the IfcConstructionProductResource and RelatedObjects contains one or more IfcProduct subtypes as shown in Figure 185.  Such relationship indicates the products used as input for the resource.  Such products are not contained within a building structure but are referenced within a construction spatial zone, specifically IfcSpatialZone with PredefinedType=CONSTRUCTION, which is aggregated within the IfcProject.  There may be multiple chains of production such that the assigned products may have their own task and resource assignments.
 /// 
 /// Figure 185 — Construction product resource assignment
-class IFC_PARSE_API IfcConstructionProductResource : public IfcConstructionResource {
+class IFC_SCHEMA_API IfcConstructionProductResource : public IfcConstructionResource {
 public:
     using IfcConstructionResource::IfcConstructionResource;
 
@@ -33690,7 +33690,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCooledBeamType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCooledBeam for standard port definitions.
-class IFC_PARSE_API IfcCooledBeamType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcCooledBeamType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -33734,7 +33734,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcCoolingTowerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcCoolingTower for standard port definitions.
-class IFC_PARSE_API IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcCoolingTowerType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -33969,7 +33969,7 @@ public:
 /// IfcArbitraryClosedProfileDef - in cases of faceted representation also a closed IfcPolyline). It is extruded along the plane of the base surface using the Depth parameter of the IfcSurfaceOfLinearExtrusion.
 /// 
 /// Figure 95 — Covering body circular
-class IFC_PARSE_API IfcCovering : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcCovering : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -34120,7 +34120,7 @@ public:
 /// 
 /// An own 'Body' representation shall only be included if no
 /// components of the curtain wall are defined.
-class IFC_PARSE_API IfcCurtainWall : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcCurtainWall : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -34162,7 +34162,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDamperType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDamper for standard port definitions.
-class IFC_PARSE_API IfcDamperType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcDamperType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -34174,7 +34174,7 @@ public:
     IfcDamperType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDamperTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
+class IFC_SCHEMA_API IfcDiameterDimension : public IfcDimensionCurveDirectedCallout {
 public:
     using IfcDimensionCurveDirectedCallout::IfcDimensionCurveDirectedCallout;
 
@@ -34355,7 +34355,7 @@ public:
 /// 'Support section' 
 ///   A section of material that is used as an intermediate support upon
 ///   which multiple brackets can be mounted.
-class IFC_PARSE_API IfcDiscreteAccessory : public IfcElementComponent {
+class IFC_SCHEMA_API IfcDiscreteAccessory : public IfcElementComponent {
 public:
     using IfcElementComponent::IfcElementComponent;
 
@@ -34551,7 +34551,7 @@ public:
 /// 'Support section' 
 ///   A section of material that is used as an intermediate support upon
 ///   which multiple brackets can be mounted.
-class IFC_PARSE_API IfcDiscreteAccessoryType : public IfcElementComponentType {
+class IFC_SCHEMA_API IfcDiscreteAccessoryType : public IfcElementComponentType {
 public:
     using IfcElementComponentType::IfcElementComponentType;
 
@@ -34596,7 +34596,7 @@ public:
 /// 'Cover': The material from which the access cover to the chamber is constructed.
 /// 'Fill': The material that is used to fill the duct (where used).
 /// 'Wall': The material from which the wall of the duct is constructed.
-class IFC_PARSE_API IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
+class IFC_SCHEMA_API IfcDistributionChamberElementType : public IfcDistributionFlowElementType {
 public:
     using IfcDistributionFlowElementType::IfcDistributionFlowElementType;
 
@@ -34661,7 +34661,7 @@ public:
 /// 'Clearance': Represents the 3D clearance volume of the item having RepresentationType of 'Surface3D'.  Such clearance region indicates space that should not intersect with the 'Body' representation between element occurrences, though may intersect with the 'Clearance' representation of other element occurrences.  The particular use of clearance space may be for safety, maintenance, or other purpose.
 /// 
 /// NOTE: The product representations are defined as representation maps (at the level of the supertype IfcTypeProduct, which get assigned by an element occurrence instance through the IfcShapeRepresentation.Item[1] being an IfcMappedItem.
-class IFC_PARSE_API IfcDistributionControlElementType : public IfcDistributionElementType {
+class IFC_SCHEMA_API IfcDistributionControlElementType : public IfcDistributionElementType {
 public:
     using IfcDistributionElementType::IfcDistributionElementType;
 
@@ -34831,7 +34831,7 @@ public:
 /// 
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SectionedSpine'
-class IFC_PARSE_API IfcDistributionElement : public IfcElement {
+class IFC_SCHEMA_API IfcDistributionElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -34907,7 +34907,7 @@ public:
 /// If materials are defined, geometry of each representation (most typically the 'Body' representation) may be organized into shape aspects where styles may be derived by correlating IfcShapeAspect.Name to a corresponding material (IfcMaterialConstituent.Name or IfcMaterialProfile.Name).
 /// 
 /// Representations are further defined at subtypes; for example, parametric flow segments align material profiles with the 'Axis' representation.
-class IFC_PARSE_API IfcDistributionFlowElement : public IfcDistributionElement {
+class IFC_SCHEMA_API IfcDistributionFlowElement : public IfcDistributionElement {
 public:
     using IfcDistributionElement::IfcDistributionElement;
 
@@ -34998,7 +34998,7 @@ public:
 /// IfcShapeRepresentation: The optional shape representation describes the connection volume and supports indication of the port position and orientation.  The position is typically the midpoint of the physical connection, and the orientation points in the flow direction normal to the physical connection. Upon connecting elements through ports with rigid connections, each object is aligned such that the effective Location, Axis, and RefDirection of each port is aligned to be equal.
 /// 
 /// 'Body': The shape of the port.
-class IFC_PARSE_API IfcDistributionPort : public IfcPort {
+class IFC_SCHEMA_API IfcDistributionPort : public IfcPort {
 public:
     using IfcPort::IfcPort;
 
@@ -35365,7 +35365,7 @@ public:
 /// pictures).
 /// 
 /// Figure 97 — Door swing
-class IFC_PARSE_API IfcDoor : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcDoor : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -35412,7 +35412,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctFittingType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctFitting for standard port definitions.
-class IFC_PARSE_API IfcDuctFittingType : public IfcFlowFittingType {
+class IFC_SCHEMA_API IfcDuctFittingType : public IfcFlowFittingType {
 public:
     using IfcFlowFittingType::IfcFlowFittingType;
 
@@ -35452,7 +35452,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctSegmentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctSegment for standard port definitions.
-class IFC_PARSE_API IfcDuctSegmentType : public IfcFlowSegmentType {
+class IFC_SCHEMA_API IfcDuctSegmentType : public IfcFlowSegmentType {
 public:
     using IfcFlowSegmentType::IfcFlowSegmentType;
 
@@ -35489,7 +35489,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcDuctSilencerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcDuctSilencer for standard port definitions.
-class IFC_PARSE_API IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
+class IFC_SCHEMA_API IfcDuctSilencerType : public IfcFlowTreatmentDeviceType {
 public:
     using IfcFlowTreatmentDeviceType::IfcFlowTreatmentDeviceType;
 
@@ -35501,7 +35501,7 @@ public:
     IfcDuctSilencerType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcDuctSilencerTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcEdgeFeature : public IfcFeatureElementSubtraction {
+class IFC_SCHEMA_API IfcEdgeFeature : public IfcFeatureElementSubtraction {
 public:
     using IfcFeatureElementSubtraction::IfcFeatureElementSubtraction;
 
@@ -35540,7 +35540,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricApplianceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricAppliance for standard port definitions.
-class IFC_PARSE_API IfcElectricApplianceType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcElectricApplianceType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -35578,7 +35578,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricFlowStorageDeviceType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricFlowStorageDevice for standard port definitions.
-class IFC_PARSE_API IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
+class IFC_SCHEMA_API IfcElectricFlowStorageDeviceType : public IfcFlowStorageDeviceType {
 public:
     using IfcFlowStorageDeviceType::IfcFlowStorageDeviceType;
 
@@ -35621,7 +35621,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricGeneratorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricGenerator for standard port definitions.
-class IFC_PARSE_API IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcElectricGeneratorType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -35633,7 +35633,7 @@ public:
     IfcElectricGeneratorType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricGeneratorTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcElectricHeaterType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcElectricHeaterType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -35670,7 +35670,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricMotorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricMotor for standard port definitions.
-class IFC_PARSE_API IfcElectricMotorType : public IfcEnergyConversionDeviceType {
+class IFC_SCHEMA_API IfcElectricMotorType : public IfcEnergyConversionDeviceType {
 public:
     using IfcEnergyConversionDeviceType::IfcEnergyConversionDeviceType;
 
@@ -35708,7 +35708,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcElectricTimeControlType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcElectricTimeControl for standard port definitions.
-class IFC_PARSE_API IfcElectricTimeControlType : public IfcFlowControllerType {
+class IFC_SCHEMA_API IfcElectricTimeControlType : public IfcFlowControllerType {
 public:
     using IfcFlowControllerType::IfcFlowControllerType;
 
@@ -35720,7 +35720,7 @@ public:
     IfcElectricTimeControlType initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ApplicableOccurrence, std::optional< std::vector< ::Ifc2x3::IfcPropertySetDefinition > > v6_HasPropertySets, std::optional< std::vector< ::Ifc2x3::IfcRepresentationMap > > v7_RepresentationMaps, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ElementType, ::Ifc2x3::IfcElectricTimeControlTypeEnum::Value v10_PredefinedType);
 };
 
-class IFC_PARSE_API IfcElectricalCircuit : public IfcSystem {
+class IFC_SCHEMA_API IfcElectricalCircuit : public IfcSystem {
 public:
     using IfcSystem::IfcSystem;
 
@@ -35729,7 +35729,7 @@ public:
     IfcElectricalCircuit initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType);
 };
 
-class IFC_PARSE_API IfcElectricalElement : public IfcElement {
+class IFC_SCHEMA_API IfcElectricalElement : public IfcElement {
 public:
     using IfcElement::IfcElement;
 
@@ -35746,7 +35746,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcEnergyConversionDevice : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcEnergyConversionDevice : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -35782,7 +35782,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFanType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFan for standard port definitions.
-class IFC_PARSE_API IfcFanType : public IfcFlowMovingDeviceType {
+class IFC_SCHEMA_API IfcFanType : public IfcFlowMovingDeviceType {
 public:
     using IfcFlowMovingDeviceType::IfcFlowMovingDeviceType;
 
@@ -35822,7 +35822,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFilterType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFilter for standard port definitions.
-class IFC_PARSE_API IfcFilterType : public IfcFlowTreatmentDeviceType {
+class IFC_SCHEMA_API IfcFilterType : public IfcFlowTreatmentDeviceType {
 public:
     using IfcFlowTreatmentDeviceType::IfcFlowTreatmentDeviceType;
 
@@ -35866,7 +35866,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFireSuppressionTerminalType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFireSuppressionTerminal for standard port definitions.
-class IFC_PARSE_API IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
+class IFC_SCHEMA_API IfcFireSuppressionTerminalType : public IfcFlowTerminalType {
 public:
     using IfcFlowTerminalType::IfcFlowTerminalType;
 
@@ -35886,7 +35886,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowController : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowController : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -35899,7 +35899,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowFitting : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowFitting : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -35937,7 +35937,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcFlowInstrumentType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcFlowInstrument for standard port definitions.
-class IFC_PARSE_API IfcFlowInstrumentType : public IfcDistributionControlElementType {
+class IFC_SCHEMA_API IfcFlowInstrumentType : public IfcDistributionControlElementType {
 public:
     using IfcDistributionControlElementType::IfcDistributionControlElementType;
 
@@ -35953,7 +35953,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowMovingDevice : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowMovingDevice : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -35984,7 +35984,7 @@ public:
 /// Representation Use Definition
 /// 
 /// Standard representations are defined at the supertype IfcDistrubutionFlowElement.  For parametric flow segments where IfcMaterialProfileSetUsage is defined and an 'Axis' representation is defined, then the 'Body' representation may be generated using the 'SweptSolid' or 'AdvancedSweptSolid' representation types by sweeping the profile(s) along the axis.
-class IFC_PARSE_API IfcFlowSegment : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowSegment : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -36001,7 +36001,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowStorageDevice : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowStorageDevice : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -36020,7 +36020,7 @@ public:
 /// HISTORY: New entity in IFC R2.0.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowTerminal : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowTerminal : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -36033,7 +36033,7 @@ public:
 /// HISTORY: New entity in IFC R2x.
 /// 
 /// IFC 2x4 NOTE: This entity has been deprecated for instantiation and will become ABSTRACT in a future release; new subtypes should now be used instead.
-class IFC_PARSE_API IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcFlowTreatmentDevice : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -36063,7 +36063,7 @@ public:
 /// Geometry Use Definition
 /// 
 /// Local placement and product representations are defined by the supertype IfcBuildingElement.  Standard representations as defined at IfcBeamStandardCase or IfcSlabStandardCase should be used when applicable.
-class IFC_PARSE_API IfcFooting : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcFooting : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -36326,7 +36326,7 @@ public:
 /// geometric representation, shall apply to the
 /// MappedRepresentation of the
 /// IfcRepresentationMap.
-class IFC_PARSE_API IfcMember : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcMember : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -36352,7 +36352,7 @@ public:
 /// Geometry Use Definition
 /// 
 /// Local placement and product representations are defined by the supertype IfcBuildingElement.  Standard representations as defined at IfcColumnStandardCase should be used when applicable.
-class IFC_PARSE_API IfcPile : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcPile : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -36598,7 +36598,7 @@ public:
 /// 'Clipping', 'SurfaceModel', and 'Brep' geometric representation,
 /// shall apply to the MappedRepresentation of the
 /// IfcRepresentationMap.
-class IFC_PARSE_API IfcPlate : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcPlate : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -36738,7 +36738,7 @@ public:
 /// RepresentationIdentifier : 'Body'
 /// RepresentationType : 'SurfaceModel', 'Brep',
 /// 'MappedRepresentation'
-class IFC_PARSE_API IfcRailing : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcRailing : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -36884,7 +36884,7 @@ public:
 /// Figure 111 illustrates IfcRamp defining the local placement for all components.
 /// 
 /// Figure 111 — Ramp placement
-class IFC_PARSE_API IfcRamp : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcRamp : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -37082,7 +37082,7 @@ public:
 /// Figure 114 illustrates the body representation.
 /// 
 /// Figure 114 — Ramp flight body
-class IFC_PARSE_API IfcRampFlight : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcRampFlight : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -37091,7 +37091,7 @@ public:
     IfcRampFlight initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcRationalBezierCurve : public IfcBezierCurve {
+class IFC_SCHEMA_API IfcRationalBezierCurve : public IfcBezierCurve {
 public:
     using IfcBezierCurve::IfcBezierCurve;
 
@@ -37109,7 +37109,7 @@ public:
 /// Subtypes IfcTendon and IfcTendonAnchor removed.
 /// Attribute SteelGrade removed.
 /// Attributes PredefinedType and Role added.
-class IFC_PARSE_API IfcReinforcingElement : public IfcBuildingElementComponent {
+class IFC_SCHEMA_API IfcReinforcingElement : public IfcBuildingElementComponent {
 public:
     using IfcBuildingElementComponent::IfcBuildingElementComponent;
 
@@ -37143,7 +37143,7 @@ public:
 /// 
 /// Simplified Geometric Representation
 /// Simplified geometric representations may be used based on local agreements.
-class IFC_PARSE_API IfcReinforcingMesh : public IfcReinforcingElement {
+class IFC_SCHEMA_API IfcReinforcingMesh : public IfcReinforcingElement {
 public:
     using IfcReinforcingElement::IfcReinforcingElement;
 
@@ -37312,7 +37312,7 @@ public:
 /// Figure 119 illustrates roof placement, with an IfcRoof defining the local placement for all aggregated elements.
 /// 
 /// Figure 119 — Roof placement
-class IFC_PARSE_API IfcRoof : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcRoof : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -37323,7 +37323,7 @@ public:
     IfcRoof initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, ::Ifc2x3::IfcRoofTypeEnum::Value v9_ShapeType);
 };
 
-class IFC_PARSE_API IfcRoundedEdgeFeature : public IfcEdgeFeature {
+class IFC_SCHEMA_API IfcRoundedEdgeFeature : public IfcEdgeFeature {
 public:
     using IfcEdgeFeature::IfcEdgeFeature;
 
@@ -37381,7 +37381,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcSensorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcSensor for standard port definitions.
-class IFC_PARSE_API IfcSensorType : public IfcDistributionControlElementType {
+class IFC_SCHEMA_API IfcSensorType : public IfcDistributionControlElementType {
 public:
     using IfcDistributionControlElementType::IfcDistributionControlElementType;
 
@@ -37652,7 +37652,7 @@ public:
 /// geometric representation. The profile is extruded non-perpendicular and the slab body is clipped at the eave.
 /// 
 /// Figure 121 — Slab body clipping
-class IFC_PARSE_API IfcSlab : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcSlab : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -37831,7 +37831,7 @@ public:
 /// Figure 128 illustrates stair placement, where the IfcStair defines the local placement for all components and the common 'Axis' representation, and each component has its own 'Body' representation.
 /// 
 /// Figure 128 — Stair placement
-class IFC_PARSE_API IfcStair : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcStair : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -38008,7 +38008,7 @@ public:
 /// Figure 131 illustrates the body representation.
 /// 
 /// Figure 131 — Stair flight body
-class IFC_PARSE_API IfcStairFlight : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcStairFlight : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -38059,7 +38059,7 @@ public:
 /// NOTE  This rule is necessary to achieve consistent topology representations.  The topology representations of structural items in an analysis model are meant to share vertices and edges und must therefore have the same object placement.
 /// 
 /// NOTE  A structural item may be grouped into more than one analysis model.  In this case, all these models must use the same instance of IfcObjectPlacement.
-class IFC_PARSE_API IfcStructuralAnalysisModel : public IfcSystem {
+class IFC_SCHEMA_API IfcStructuralAnalysisModel : public IfcSystem {
 public:
     using IfcSystem::IfcSystem;
 
@@ -38089,7 +38089,7 @@ public:
     IfcStructuralAnalysisModel initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcAnalysisModelTypeEnum::Value v6_PredefinedType, ::Ifc2x3::IfcAxis2Placement3D v7_OrientationOf2DPlane, std::optional< std::vector< ::Ifc2x3::IfcStructuralLoadGroup > > v8_LoadedBy, std::optional< std::vector< ::Ifc2x3::IfcStructuralResultGroup > > v9_HasResults);
 };
 
-class IFC_PARSE_API IfcTendon : public IfcReinforcingElement {
+class IFC_SCHEMA_API IfcTendon : public IfcReinforcingElement {
 public:
     using IfcReinforcingElement::IfcReinforcingElement;
 
@@ -38114,7 +38114,7 @@ public:
     IfcTendon initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_SteelGrade, ::Ifc2x3::IfcTendonTypeEnum::Value v10_PredefinedType, double v11_NominalDiameter, double v12_CrossSectionArea, std::optional< double > v13_TensionForce, std::optional< double > v14_PreStress, std::optional< double > v15_FrictionCoefficient, std::optional< double > v16_AnchorageSlip, std::optional< double > v17_MinCurvatureRadius);
 };
 
-class IFC_PARSE_API IfcTendonAnchor : public IfcReinforcingElement {
+class IFC_SCHEMA_API IfcTendonAnchor : public IfcReinforcingElement {
 public:
     using IfcReinforcingElement::IfcReinforcingElement;
 
@@ -38144,7 +38144,7 @@ public:
 /// The material of the IfcVibrationIsolatorType is defined by IfcMaterialConstituentSet or as a fallback by IfcMaterial, and attached by the RelatingMaterial attribute on the IfcRelAssociatesMaterial relationship.  It is accessible by the HasAssociations inverse attribute.    The following keywords for IfcMaterialConstituentSet.MaterialConstituents[n].Name shall be used: 
 /// 
 /// 'Damping': Material from which the damping element of the vibration isolator is constructed.
-class IFC_PARSE_API IfcVibrationIsolatorType : public IfcDiscreteAccessoryType {
+class IFC_SCHEMA_API IfcVibrationIsolatorType : public IfcDiscreteAccessoryType {
 public:
     using IfcDiscreteAccessoryType::IfcDiscreteAccessoryType;
 
@@ -38397,7 +38397,7 @@ public:
 /// that relationship object is defined at the level of the subtypes
 /// of IfcWall and at the
 /// IfcRelConnectsPathElements.
-class IFC_PARSE_API IfcWall : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcWall : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -38607,7 +38607,7 @@ public:
 /// 
 /// Figure 139 — Wall body clipping straight
 /// Figure 140 — Wall body clipping curved
-class IFC_PARSE_API IfcWallStandardCase : public IfcWall {
+class IFC_SCHEMA_API IfcWallStandardCase : public IfcWall {
 public:
     using IfcWall::IfcWall;
 
@@ -38973,7 +38973,7 @@ public:
 /// .
 /// 
 /// Figure 144 — Window operations
-class IFC_PARSE_API IfcWindow : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcWindow : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -39022,7 +39022,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcActuatorType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcActuator for standard port definitions.
-class IFC_PARSE_API IfcActuatorType : public IfcDistributionControlElementType {
+class IFC_SCHEMA_API IfcActuatorType : public IfcDistributionControlElementType {
 public:
     using IfcDistributionControlElementType::IfcDistributionControlElementType;
 
@@ -39059,7 +39059,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcAlarmType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcAlarm for standard port definitions.
-class IFC_PARSE_API IfcAlarmType : public IfcDistributionControlElementType {
+class IFC_SCHEMA_API IfcAlarmType : public IfcDistributionControlElementType {
 public:
     using IfcDistributionControlElementType::IfcDistributionControlElementType;
 
@@ -39307,7 +39307,7 @@ public:
 /// 'AdvancedSweptSolid', 'SurfaceModel', and 'Brep' geometric
 /// representation, shall apply to the MappedRepresentation of
 /// the IfcRepresentationMap.
-class IFC_PARSE_API IfcBeam : public IfcBuildingElement {
+class IFC_SCHEMA_API IfcBeam : public IfcBuildingElement {
 public:
     using IfcBuildingElement::IfcBuildingElement;
 
@@ -39316,7 +39316,7 @@ public:
     IfcBeam initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag);
 };
 
-class IFC_PARSE_API IfcChamferEdgeFeature : public IfcEdgeFeature {
+class IFC_SCHEMA_API IfcChamferEdgeFeature : public IfcEdgeFeature {
 public:
     using IfcEdgeFeature::IfcEdgeFeature;
 
@@ -39364,7 +39364,7 @@ public:
 /// 
 /// Port Use Definition 
 /// The distribution ports relating to the IfcControllerType type are defined by IfcDistributionPort and attached by the IfcRelConnectsPortToElement relationship.  Ports are reflected at occurrences of this type using the IfcRelDefinesByObject relationship.  Refer to the documentation at IfcController for standard port definitions.
-class IFC_PARSE_API IfcControllerType : public IfcDistributionControlElementType {
+class IFC_SCHEMA_API IfcControllerType : public IfcDistributionControlElementType {
 public:
     using IfcDistributionControlElementType::IfcDistributionControlElementType;
 
@@ -39406,7 +39406,7 @@ public:
 /// 'Cover': The material from which the access cover to the chamber is constructed.
 /// 'Fill': The material that is used to fill the duct (where used).
 /// 'Wall': The material from which the wall of the duct is constructed.
-class IFC_PARSE_API IfcDistributionChamberElement : public IfcDistributionFlowElement {
+class IFC_SCHEMA_API IfcDistributionChamberElement : public IfcDistributionFlowElement {
 public:
     using IfcDistributionFlowElement::IfcDistributionFlowElement;
 
@@ -39492,7 +39492,7 @@ public:
 /// For all representations, if a IfcDistributionControlElement occurrence is defined by a IfcDistributionControlElementType having a representation of the same identifier, then 'MappedRepresentation' should be used at the occurrence unless overridden.
 /// 
 /// If materials are defined, geometry of each representation (most typically the 'Body' representation) may be organized into shape aspects where styles may be derived by correlating IfcShapeAspect.Name to a corresponding material (IfcMaterialConstituent.Name).
-class IFC_PARSE_API IfcDistributionControlElement : public IfcDistributionElement {
+class IFC_SCHEMA_API IfcDistributionControlElement : public IfcDistributionElement {
 public:
     using IfcDistributionElement::IfcDistributionElement;
 
@@ -39504,7 +39504,7 @@ public:
     IfcDistributionControlElement initialize(std::string v1_GlobalId, ::Ifc2x3::IfcOwnerHistory v2_OwnerHistory, std::optional< std::string > v3_Name, std::optional< std::string > v4_Description, std::optional< std::string > v5_ObjectType, ::Ifc2x3::IfcObjectPlacement v6_ObjectPlacement, ::Ifc2x3::IfcProductRepresentation v7_Representation, std::optional< std::string > v8_Tag, std::optional< std::string > v9_ControlElementId);
 };
 
-class IFC_PARSE_API IfcElectricDistributionPoint : public IfcFlowController {
+class IFC_SCHEMA_API IfcElectricDistributionPoint : public IfcFlowController {
 public:
     using IfcFlowController::IfcFlowController;
 
@@ -39544,7 +39544,7 @@ public:
 /// 
 /// Simplified Geometric Representation
 /// Simplified geometric representations may be used based on local agreements.
-class IFC_PARSE_API IfcReinforcingBar : public IfcReinforcingElement {
+class IFC_SCHEMA_API IfcReinforcingBar : public IfcReinforcingElement {
 public:
     using IfcReinforcingElement::IfcReinforcingElement;
 

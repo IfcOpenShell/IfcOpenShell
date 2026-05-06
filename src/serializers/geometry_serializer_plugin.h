@@ -76,6 +76,8 @@ private:
 		ifcopenshell::plugin::module module_;
 	};
 
+	friend SERIALIZERS_API bool load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension);
+
 	std::map<std::string, entry> entries_;
 };
 
@@ -85,6 +87,7 @@ SERIALIZERS_API const char* geometry_serializer_plugin_registration_symbol();
 SERIALIZERS_API ifcopenshell::plugin::metadata geometry_serializer_plugin_metadata(const std::string& format);
 SERIALIZERS_API std::filesystem::path geometry_serializer_plugin_directory();
 SERIALIZERS_API void load_geometry_serializer_plugins(geometry_serializer_registry& registry);
+SERIALIZERS_API bool load_geometry_serializer_plugin(geometry_serializer_registry& registry, const std::string& extension);
 SERIALIZERS_API geometry_serializer_registry& geometry_serializer_registry_instance();
 
 }

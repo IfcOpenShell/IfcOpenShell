@@ -55,3 +55,25 @@ void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_
 		register_plugin(registry, module);
 	}
 }
+
+bool IfcGeom::load_opencascade_geometry_ifc_writer_plugin(opencascade_geometry_ifc_writer_registry& registry, const std::string& schema_name) {
+	ifcopenshell::plugin::manager manager;
+	manager.add_search_path(opencascade_geometry_ifc_writer_plugin_directory());
+
+	const auto expected_schema = boost::to_upper_copy(schema_name);
+	const auto basename = std::string(opencascade_geometry_ifc_writer_plugin_prefix) + boost::to_lower_copy(schema_name);
+
+	for (const auto& path : manager.discover_exact(basename)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != ifcopenshell::plugin::kind::opencascade_geometry_ifc_writer ||
+			module.meta().schema != expected_schema) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_opencascade_geometry_ifc_writer_plugin_fn>(opencascade_geometry_ifc_writer_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return true;
+	}
+
+	return false;
+}

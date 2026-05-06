@@ -55,3 +55,25 @@ void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& regist
 		register_plugin(registry, module);
 	}
 }
+
+bool ifcopenshell::geometry::impl::load_mapping_plugin(mapping_registry& registry, const std::string& schema_name) {
+	plugin::manager manager;
+	manager.add_search_path(mapping_plugin_directory());
+
+	const auto expected_schema = boost::to_upper_copy(schema_name);
+	const auto basename = std::string(mapping_plugin_prefix) + boost::to_lower_copy(schema_name);
+
+	for (const auto& path : manager.discover_exact(basename)) {
+		auto module = manager.load(path);
+		if (module.meta().kind_ != plugin::kind::mapping ||
+			module.meta().schema != expected_schema) {
+			continue;
+		}
+
+		auto register_plugin = module.get_alias<register_mapping_plugin_fn>(mapping_plugin_registration_symbol());
+		register_plugin(registry, module);
+		return true;
+	}
+
+	return false;
+}

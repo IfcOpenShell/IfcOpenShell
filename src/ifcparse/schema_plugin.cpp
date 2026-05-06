@@ -17,23 +17,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCOPENSHELL_OPENCASCADE_GEOMETRY_IFC_WRITER_PLUGIN_H
-#define IFCOPENSHELL_OPENCASCADE_GEOMETRY_IFC_WRITER_PLUGIN_H
+// This file was generated with the assistance of an AI coding tool.
 
-#include "Serialization.h"
+#include "schema.h"
 
-#include <filesystem>
+#include "hierarchy_helper.h"
+#include "macros.h"
+#include "si_prefix.h"
 
-namespace IfcGeom {
+#define INCLUDE_SCHEMA(x) STRINGIFY(schemas/x.h)
+#include INCLUDE_SCHEMA(IfcSchema)
+#undef INCLUDE_SCHEMA
 
-typedef void register_opencascade_geometry_ifc_writer_plugin_fn(opencascade_geometry_ifc_writer_registry&, const ifcopenshell::plugin::module&);
+#include <boost/dll/alias.hpp>
 
-IFC_GEOMSERIALIZATION_API const char* opencascade_geometry_ifc_writer_plugin_registration_symbol();
-IFC_GEOMSERIALIZATION_API ifcopenshell::plugin::metadata opencascade_geometry_ifc_writer_plugin_metadata(const std::string& schema_name);
-IFC_GEOMSERIALIZATION_API std::filesystem::path opencascade_geometry_ifc_writer_plugin_directory();
-IFC_GEOMSERIALIZATION_API void load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry);
-IFC_GEOMSERIALIZATION_API bool load_opencascade_geometry_ifc_writer_plugin(opencascade_geometry_ifc_writer_registry& registry, const std::string& schema_name);
+namespace ifcopenshell {
+namespace schema_plugin {
 
+plugin::abi_info plugin_abi() {
+	return plugin::host_abi();
 }
 
-#endif
+plugin::metadata plugin_metadata() {
+	return schema_plugin_metadata(IfcSchema::Identifier);
+}
+
+void register_plugin(schema_registry& registry, const plugin::module& module) {
+	registry.bind(IfcSchema::Identifier, &IfcSchema::get_schema, &IfcSchema::clear_schema, module);
+}
+
+}
+}
+
+template IFC_SCHEMA_API double ifcopenshell::get_SI_equivalent<IfcSchema>(const IfcSchema::IfcNamedUnit&);
+
+#include "hierarchy_helper.i"
+
+BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_abi, ifcopenshell_plugin_abi_v1)
+BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::plugin_metadata, ifcopenshell_plugin_metadata_v1)
+BOOST_DLL_ALIAS(ifcopenshell::schema_plugin::register_plugin, ifcopenshell_register_schema_plugin_v1)

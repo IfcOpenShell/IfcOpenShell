@@ -504,11 +504,12 @@ class IFC_PARSE_API schema_registry {
   public:
     typedef const schema_definition& (*get_schema_fn)();
     typedef void (*clear_schema_fn)();
+    typedef void register_schema_plugin_fn(schema_registry&, const ifcopenshell::plugin::module&);
 
     void bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
     void bind(schema_definition* schema);
     const schema_definition* get(const std::string& schema_name);
-    std::vector<std::string> names() const;
+    std::vector<std::string> names();
     void clear();
 
   private:
@@ -523,6 +524,14 @@ class IFC_PARSE_API schema_registry {
 };
 
 IFC_PARSE_API schema_registry& schema_registry_instance();
+
+IFC_PARSE_API const char* schema_plugin_registration_symbol();
+
+IFC_PARSE_API ifcopenshell::plugin::metadata schema_plugin_metadata(const std::string& schema_name);
+
+IFC_PARSE_API std::filesystem::path schema_plugin_directory();
+
+IFC_PARSE_API void load_schema_plugins(schema_registry& registry);
 
 IFC_PARSE_API const schema_definition* schema_by_name(const std::string& schema_name);
 
