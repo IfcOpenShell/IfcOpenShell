@@ -30,7 +30,6 @@ class QDockWidget;
 class QStackedWidget;
 class QToolButton;
 class Federation;
-class ViewportWindow;
 class SceneLoader;
 namespace ifcinterface { class ElementRegistry; }
 namespace ifcinterface::components { class TabBar; }
@@ -40,6 +39,8 @@ namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelW
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcinterface::panels::properties { class PropertiesPanelWidget; }
 namespace ifcinterface::panels::properties { class PropertiesPanelView; }
+namespace ifcinterface::panels::viewport { class ViewportController; }
+namespace ifcinterface::panels::viewport { class ViewportWidget; }
 
 namespace ifcinterface::shell {
 
@@ -81,6 +82,8 @@ private slots:
     void onLoadCancelled(uint32_t mid);
     void onLoadError(uint32_t mid, QString message);
     void onAllLoadsFinished();
+    void onSetHomeView();
+    void onGoHomeView();
     void onNewProject();
     void onOpenProject();
     void onSaveProject();
@@ -93,10 +96,10 @@ private:
     QLabel* status_perf_label_ = nullptr;
     ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
-    ViewportWindow* viewport_ = nullptr;
+    ifcinterface::panels::viewport::ViewportWidget* viewport_widget_ = nullptr;
+    ifcinterface::panels::viewport::ViewportController* viewport_controller_ = nullptr;
     SceneLoader* loader_ = nullptr;
     ifcinterface::ElementRegistry* element_registry_ = nullptr;
-    QWidget* viewport_container_ = nullptr;
     ifcinterface::panels::models::ModelsPanelWidget* models_panel_ = nullptr;
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;

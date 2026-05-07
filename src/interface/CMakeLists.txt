@@ -66,6 +66,10 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
 )
 

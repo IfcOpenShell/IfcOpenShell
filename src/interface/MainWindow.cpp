@@ -38,11 +38,12 @@
 #include "panels/settings/Dialog.h"
 #include "panels/spatial_hierarchy/View.h"
 #include "panels/spatial_hierarchy/Widget.h"
+#include "panels/viewport/Controller.h"
+#include "panels/viewport/Widget.h"
 
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFrame>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
@@ -163,33 +164,29 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     row->setSpacing(0);
 
     auto* set_home = makeRibbonAction("Set Home", ":/icons/home.svg");
-    connect(set_home, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Camera", "Set home view coming soon");
-    });
+    connect(set_home, &QToolButton::clicked, this, &MainWindow::onSetHomeView);
     auto* go_home = makeRibbonAction("Go Home", ":/icons/home-alt.svg");
-    connect(go_home, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Camera", "Go to home view coming soon");
-    });
+    connect(go_home, &QToolButton::clicked, this, &MainWindow::onGoHomeView);
     auto* view_all = makeRibbonAction("View All", ":/icons/cube-scan.svg");
     connect(view_all, &QToolButton::clicked, this, [this]() {
-        if (viewport_) viewport_->viewAll();
+        if (viewport_widget_) viewport_widget_->viewport()->viewAll();
     });
     auto* view_selected = makeRibbonAction("View Selected", ":/icons/cube-scan-solid.svg");
     connect(view_selected, &QToolButton::clicked, this, [this]() {
-        if (viewport_) viewport_->focusOnSelectedObject();
+        if (viewport_widget_) viewport_widget_->viewport()->focusOnSelectedObject();
     });
 
     auto* plan_view = makeRibbonAction("Plan", ":/icons/planimetry.svg");
     connect(plan_view, &QToolButton::clicked, this, [this]() {
-        if (viewport_) viewport_->setStandardView(90.0f, 90.0f);
+        if (viewport_widget_) viewport_widget_->viewport()->setStandardView(90.0f, 90.0f);
     });
     auto* front_view = makeRibbonAction("Front", ":/icons/city.svg");
     connect(front_view, &QToolButton::clicked, this, [this]() {
-        if (viewport_) viewport_->setStandardView(0.0f, 0.0f);
+        if (viewport_widget_) viewport_widget_->viewport()->setStandardView(0.0f, 0.0f);
     });
     auto* side_view = makeRibbonAction("Side", ":/icons/building.svg");
     connect(side_view, &QToolButton::clicked, this, [this]() {
-        if (viewport_) viewport_->setStandardView(90.0f, 0.0f);
+        if (viewport_widget_) viewport_widget_->viewport()->setStandardView(90.0f, 0.0f);
     });
     auto* align_object = makeRibbonAction("Align Object", ":/icons/cellar.svg");
     connect(align_object, &QToolButton::clicked, this, [this]() {
@@ -197,9 +194,10 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     });
     auto* projection_button = makeRibbonAction("Perspective", ":/icons/perspective-view.svg");
     connect(projection_button, &QToolButton::clicked, this, [this, projection_button]() {
-        if (!viewport_) return;
-        viewport_->toggleProjection();
-        projection_button->setText(viewport_->projectionOrtho() ? "Ortho" : "Perspective");
+        if (!viewport_widget_) return;
+        viewport_widget_->viewport()->toggleProjection();
+        projection_button->setText(
+            viewport_widget_->viewport()->projectionOrtho() ? "Ortho" : "Perspective");
     });
 
     auto* orbit_mode = makeRibbonAction("Orbit", ":/icons/rotate-camera-right.svg");
@@ -326,25 +324,8 @@ void MainWindow::setupRibbon() {
 }
 
 void MainWindow::setupViewport() {
-    viewport_ = new ViewportWindow();
-    viewport_container_ = QWidget::createWindowContainer(viewport_, this);
-    viewport_container_->setMinimumSize(400, 300);
-    viewport_container_->setFocusPolicy(Qt::StrongFocus);
-
-    auto* shell = new QFrame(this);
-    shell->setObjectName("viewportShell");
-    auto* root = new QVBoxLayout(shell);
-    root->setContentsMargins(10, 10, 10, 10);
-    root->setSpacing(0);
-
-    auto* frame = new QFrame(shell);
-    frame->setObjectName("viewportFrame");
-    auto* frame_layout = new QVBoxLayout(frame);
-    frame_layout->setContentsMargins(0, 0, 0, 0);
-    frame_layout->addWidget(viewport_container_);
-
-    root->addWidget(frame);
-    setCentralWidget(shell);
+    viewport_widget_ = new panels::viewport::ViewportWidget(this);
+    setCentralWidget(viewport_widget_);
 }
 
 void MainWindow::setupPanels() {
@@ -355,7 +336,7 @@ void MainWindow::setupPanels() {
     models_view_ = new panels::models::ModelsPanelView(models_panel_, this);
     spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, this);
     properties_view_ = new panels::properties::PropertiesPanelView(
-        properties_panel_, viewport_, element_registry_, this);
+        properties_panel_, viewport_widget_->viewport(), element_registry_, this);
 
     connect(models_view_, &panels::models::ModelsPanelView::statusMessageRequested,
             this, &MainWindow::setStatusMessage);
@@ -425,8 +406,11 @@ void MainWindow::setupStatus() {
 }
 
 void MainWindow::setupLoader() {
-    loader_ = new SceneLoader(viewport_, this);
+    loader_ = new SceneLoader(viewport_widget_->viewport(), this);
     element_registry_->bindLoader(loader_);
+    viewport_controller_ = new panels::viewport::ViewportController(
+        federation_, loader_, viewport_widget_->viewport(),
+        &fed_id_to_model_id_, &model_id_to_fed_id_, this);
     connect(loader_, &SceneLoader::loadStarted, this, &MainWindow::onLoadStarted);
     connect(loader_, &SceneLoader::loadedFromSidecar, this, &MainWindow::onLoadedFromSidecar);
     connect(loader_, &SceneLoader::loadedFromStream, this, &MainWindow::onLoadedFromStream);
@@ -434,7 +418,7 @@ void MainWindow::setupLoader() {
     connect(loader_, &SceneLoader::loadError, this, &MainWindow::onLoadError);
     connect(loader_, &SceneLoader::allLoadsFinished, this, &MainWindow::onAllLoadsFinished);
 
-    connect(viewport_, &ViewportWindow::frameStatsUpdated, this,
+    connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& s) {
         if (!status_perf_label_->isVisible()) return;
         status_perf_label_->setText(
@@ -447,6 +431,7 @@ void MainWindow::setupLoader() {
                 .arg(s.total_triangles)
                 .arg(s.gl_draw_calls));
     });
+
 }
 
 void MainWindow::addFiles(const QStringList& paths) {
@@ -518,12 +503,12 @@ void MainWindow::onAddFiles() {
 }
 
 void MainWindow::clearScene() {
-    if (viewport_) viewport_->setSelectedObjectId(0);
+    if (viewport_widget_) viewport_widget_->viewport()->setSelectedObjectId(0);
     if (properties_view_) properties_view_->clearSelection();
 
     const auto model_ids = model_id_to_fed_id_.keys();
     for (uint32_t mid : model_ids) {
-        viewport_->removeModel(mid);
+        viewport_widget_->viewport()->removeModel(mid);
         loader_->removeModel(mid);
     }
 
@@ -595,10 +580,11 @@ bool MainWindow::openProject(const QString& path) {
     }
 
     federation_->markClean();
+    viewport_controller_->applyFederatedFalseOrigin();
     if (federation_->hasHomeView()) {
         const auto& hv = federation_->homeView();
-        viewport_->setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
-                             hv.distance, hv.yaw, hv.pitch);
+        viewport_widget_->viewport()->setCamera(
+            hv.target.x(), hv.target.y(), hv.target.z(), hv.distance, hv.yaw, hv.pitch);
     }
     updateWindowTitle();
     setStatusMessage("Project", QFileInfo(path).fileName());
@@ -665,6 +651,7 @@ void MainWindow::onNewProject() {
     if (!confirmDiscardIfDirty()) return;
     clearScene();
     federation_->clear();
+    viewport_controller_->applyFederatedFalseOrigin();
     updateWindowTitle();
     setStatusMessage("Project", "Untitled");
 }
@@ -686,6 +673,31 @@ void MainWindow::onSaveProject() {
 
 void MainWindow::onSaveProjectAs() {
     saveProjectAs();
+}
+
+void MainWindow::onSetHomeView() {
+    auto camera = viewport_widget_->viewport()->cameraState();
+    Federation::HomeView home_view;
+    home_view.target = camera.target;
+    home_view.distance = camera.distance;
+    home_view.yaw = camera.yaw;
+    home_view.pitch = camera.pitch;
+    federation_->setHomeView(home_view);
+    updateWindowTitle();
+    setStatusMessage("Camera", "Home view updated");
+}
+
+void MainWindow::onGoHomeView() {
+    if (!federation_->hasHomeView()) {
+        setStatusMessage("Camera", "No home view set for this project");
+        return;
+    }
+
+    const auto& home_view = federation_->homeView();
+    viewport_widget_->viewport()->setCamera(
+        home_view.target.x(), home_view.target.y(), home_view.target.z(),
+        home_view.distance, home_view.yaw, home_view.pitch);
+    setStatusMessage("Camera", "Home view restored");
 }
 
 void MainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {
