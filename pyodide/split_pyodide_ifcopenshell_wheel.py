@@ -44,8 +44,12 @@ def wheel_escape(value: str) -> str:
     return re.sub(r"[^\w\d.]+", "_", value, flags=re.UNICODE)
 
 
+def wheel_version_escape(value: str) -> str:
+    return re.sub(r"[^\w\d.+]+", "_", value, flags=re.UNICODE)
+
+
 def dist_info_dir(name: str, version: str) -> str:
-    return f"{wheel_escape(name)}-{wheel_escape(version)}.dist-info"
+    return f"{wheel_escape(name)}-{wheel_version_escape(version)}.dist-info"
 
 
 def sha256_record_value(data: bytes) -> str:
@@ -115,7 +119,7 @@ def build_wheel(
     license_files: dict[str, bytes],
 ) -> Path:
     di = dist_info_dir(package_name, version)
-    wheel_name = f"{wheel_escape(package_name)}-{wheel_escape(version)}-{tag}.whl"
+    wheel_name = f"{wheel_escape(package_name)}-{wheel_version_escape(version)}-{tag}.whl"
     out = output_dir / wheel_name
     record_name = f"{di}/RECORD"
     entries: dict[str, bytes | None] = {}
