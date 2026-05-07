@@ -40,6 +40,10 @@ jobs:
           NEW_FILE=`echo $FILE | sed "s/-/+${GITHUB_SHA:0:7}-/2"`
           mv $FILE $NEW_FILE
 
+      - name: Order wheel shared objects
+        run: |
+          python ./IfcOpenShell/pyodide/order_pyodide_wheel_shared_objects.py dist/ifcopenshell-*.whl
+
       - name: Split packages
         run: |
           VERSION=v`cat ./IfcOpenShell/VERSION`
