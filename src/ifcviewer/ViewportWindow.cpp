@@ -3747,3 +3747,65 @@ void ViewportWindow::printSelectedObjectCoords() {
     qInfo("printSelectedObjectCoords: object_id %u not found in any model",
           selected_object_id_);
 }
+
+bool ViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+                                            MeshTriangles& out) {
+    out.positions.clear();
+    out.indices.clear();
+    if (!gl_initialized_) return false;
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return false;
+    const ModelGpuData& m = it->second;
+    if (!m.finalized) return false;
+    if (mesh_id >= m.meshes.size()) return false;
+    const MeshInfo& mi = m.meshes[mesh_id];
+    if (mi.vertex_count == 0 || mi.index_count == 0) return false;
+
+    context_->makeCurrent(this);
+
+    // Vertices: stride is INSTANCED_VERTEX_STRIDE_BYTES (12), positions are
+    // the first 6 bytes (3 x uint16) of each vertex.  Read the full range
+    // and stride through it — simpler than chasing a position-only buffer.
+    std::vector<uint8_t> raw(size_t(mi.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES);
+    gl_->glGetNamedBufferSubData(m.vbo, mi.vbo_byte_offset,
+                                 GLsizeiptr(raw.size()), raw.data());
+
+    out.positions.resize(size_t(mi.vertex_count) * 3);
+    const float ox = mi.local_aabb_min[0];
+    const float oy = mi.local_aabb_min[1];
+    const float oz = mi.local_aabb_min[2];
+    const float sx = (mi.local_aabb_max[0] - mi.local_aabb_min[0]) / 65535.0f;
+    const float sy = (mi.local_aabb_max[1] - mi.local_aabb_min[1]) / 65535.0f;
+    const float sz = (mi.local_aabb_max[2] - mi.local_aabb_min[2]) / 65535.0f;
+    for (uint32_t i = 0; i < mi.vertex_count; ++i) {
+        const uint16_t* p = reinterpret_cast<const uint16_t*>(
+            raw.data() + size_t(i) * INSTANCED_VERTEX_STRIDE_BYTES);
+        out.positions[3 * i + 0] = ox + sx * float(p[0]);
+        out.positions[3 * i + 1] = oy + sy * float(p[1]);
+        out.positions[3 * i + 2] = oz + sz * float(p[2]);
+    }
+
+    // Indices: LOD0 only — measurements should use the full-resolution mesh.
+    out.indices.resize(mi.index_count);
+    gl_->glGetNamedBufferSubData(m.ebo, mi.ebo_byte_offset,
+                                 GLsizeiptr(mi.index_count * sizeof(uint32_t)),
+                                 out.indices.data());
+    return true;
+}
+
+bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
+    if (object_id == 0) return false;
+    for (const auto& kv : models_gpu_) {
+        const ModelGpuData& m = kv.second;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id != object_id) continue;
+            out.model_id = inst.model_id;
+            out.mesh_id  = inst.mesh_id;
+            std::memcpy(out.placement_transformation,
+                        inst.placement_transformation,
+                        sizeof(out.placement_transformation));
+            return true;
+        }
+    }
+    return false;
+}

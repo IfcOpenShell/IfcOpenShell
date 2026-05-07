@@ -183,6 +183,31 @@ public:
     // (CoordinateOperation · placement_transformation), in metres.
     void printSelectedObjectCoords();
 
+    // Mesh-local CPU triangles read back from the VBO/EBO.  Positions are
+    // dequantised against the mesh's local AABB; units match the streamer
+    // (metres).  Indices are mesh-local (0..vertex_count-1).
+    struct MeshTriangles {
+        std::vector<float>    positions;  // 3 * vertex_count
+        std::vector<uint32_t> indices;    // 3 * triangle_count
+    };
+
+    // Lazy GPU readback of one mesh's triangles.  Fails if model_id /
+    // mesh_id aren't live, the model isn't finalised, or GL isn't ready.
+    // Stalls the GL pipeline for the readback — call from the main thread
+    // and not from inside render().
+    bool readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+                               MeshTriangles& out);
+
+    // Pure CPU lookup: object_id → owning model + mesh + raw streamer
+    // placement matrix (column-major, pre-CoordinateOperation /
+    // FederatedFalseOrigin / ModelTransformation).
+    struct InstanceLookup {
+        uint32_t model_id = 0;
+        uint32_t mesh_id  = 0;
+        float    placement_transformation[16]{};
+    };
+    bool findInstance(uint32_t object_id, InstanceLookup& out) const;
+
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
     //                                              · placement_transformation

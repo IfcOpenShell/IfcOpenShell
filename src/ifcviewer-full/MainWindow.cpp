@@ -21,6 +21,7 @@
 #include "AppSettings.h"
 #include "Federation.h"
 #include "FederationSettingsDialog.h"
+#include "Measurement.h"
 #include "ModelTransformationDialog.h"
 #include "SettingsWindow.h"
 #include "LodBuilder.h"
@@ -871,6 +872,11 @@ void MainWindow::onObjectPicked(uint32_t object_id) {
     }
 
     populateProperties(object_id);
+
+    if (object_id != 0) {
+        const double v = volumeOfObjects(*viewport_, {object_id});
+        qInfo("Volume of object %u: %.6f m^3", object_id, v);
+    }
 }
 
 void MainWindow::onTreeSelectionChanged() {
