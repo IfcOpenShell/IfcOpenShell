@@ -92,6 +92,7 @@ IF %VS_VER%==2008 set PATH=C:\Windows\Microsoft.NET\Framework\v3.5;%PATH%
 
 :: User-configurable build options
 IF NOT DEFINED IFCOS_INSTALL_PYTHON set IFCOS_INSTALL_PYTHON=TRUE
+IF NOT DEFINED IFCOS_INSTALL_QT6 set IFCOS_INSTALL_QT6=TRUE
 
 IF NOT DEFINED IFCOS_NUM_BUILD_PROCS set IFCOS_NUM_BUILD_PROCS=%NUMBER_OF_PROCESSORS%
 
@@ -153,6 +154,10 @@ echo   - Download and install Python.
 echo     Set to something other than TRUE if you wish to use an already installed version of Python.
 echo     But then you'll need to set PYTHONHOME env variable to your Python installation before running run-cmake.bat
 echo     to your Python installation path.
+call cecho.cmd 0 13 "* IFCOS_INSTALL_QT6`t= %IFCOS_INSTALL_QT6%"
+echo   - Download and install Qt6 using aqtinstall.
+echo     Set to something other than TRUE if you wish to use an already installed version of Qt6.
+echo     But then you'll need to set QT_DIR env variable to your Qt6 installation before running run-cmake.bat.
 call cecho.cmd 0 13 "* IFCOS_NUM_BUILD_PROCS`t= %IFCOS_NUM_BUILD_PROCS%"
 echo   - How many MSBuild.exe processes may be run in parallel.
 echo     Defaults to NUMBER_OF_PROCESSORS. Used also by other IfcOpenShell build scripts.
@@ -180,6 +185,11 @@ cd "%DEPS_DIR%"
 :: Don't use HDF5 1.13.0, because it has a broken cmake package path.
 set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
+IF DEFINED QT6_VERSION (
+    echo Using overridden QT6_VERSION: '%QT6_VERSION%'
+) else (
+    set QT6_VERSION=6.8.3
+)
 IF DEFINED PYTHON_VERSION (
     echo Using overridden PYTHON_VERSION: '%PYTHON_VERSION%'
 ) else (
@@ -203,11 +213,10 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: executed by jumping (using goto) to different labels.
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo QT6_VERSION=%QT6_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
-
-goto :manifold
 
 :nuget
 set DEPENDENCY_NAME=nuget
@@ -728,7 +737,7 @@ set ROCKSDB_VERSION=9.11.2
 set ROCKSDB_ZIP=rocksdb-%ROCKSDB_VERSION%.zip
 set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%-%ROCKSDB_VERSION%
 set DEPENDENCY_INSTALL_NAME=%DEPENDENCY_NAME%
-set NEXT_DEPENDENCY_LABEL=Successful
+set NEXT_DEPENDENCY_LABEL=qt6
 
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
@@ -766,6 +775,71 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :MarkInstallation
+
+:qt6
+set DEPENDENCY_NAME=Qt6 %QT6_VERSION%
+
+set QT6_MSVC_YEAR=%VS_VER%
+IF /I "%VS_TOOLSET%"=="v141" set QT6_MSVC_YEAR=2017
+IF /I "%VS_TOOLSET%"=="v142" set QT6_MSVC_YEAR=2019
+IF /I "%VS_TOOLSET%"=="v143" set QT6_MSVC_YEAR=2022
+IF /I "%VS_TOOLSET%"=="v145" set QT6_MSVC_YEAR=2026
+
+set QT6_ARCH=
+set QT6_INSTALL_SUFFIX=
+IF /I "%TARGET_ARCH%"=="x64" (
+    set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
+    set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
+)
+IF /I "%TARGET_ARCH%"=="arm64" (
+    set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64_cross_compiled
+    set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_arm64
+)
+
+IF "%QT6_ARCH%"=="" (
+    call cecho.cmd 0 12 "Automatic Qt6 installation is only supported for x64 and arm64 builds."
+    GOTO :Error
+)
+
+set DEPENDENCY_INSTALL_NAME=qt6-%QT6_VERSION%-%QT6_INSTALL_SUFFIX%
+set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
+set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
+set QT_DIR=%QT6_INSTALL_DIR%
+set NEXT_DEPENDENCY_LABEL=Successful
+
+IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
+    call cecho.cmd 0 13 "IFCOS_INSTALL_QT6 not 'TRUE', skipping installation of Qt6."
+    goto :Successful
+)
+
+echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+
+call :CheckInstallation
+if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
+
+IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
+    echo Found existing "%QT6_INSTALL_DIR%", skipping
+    call :MarkInstallation
+    goto :Successful
+)
+
+set AQT_PYTHON=python
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" IF EXIST "%PYTHONHOME%\python.exe" set AQT_PYTHON="%PYTHONHOME%\python.exe"
+
+%AQT_PYTHON% -m pip install --upgrade aqtinstall
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+%AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
+    call cecho.cmd 0 12 "Qt6 installation did not produce Qt6Config.cmake at %QT6_INSTALL_DIR%."
+    GOTO :Error
+)
+
+call :MarkInstallation
+goto :Successful
 
 :manifold
 set DEPENDENCY_NAME=manifold
@@ -990,7 +1064,7 @@ exit /b 0
 :: if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 :: ```
 :CheckInstallation
-%PWSH_TOOLS% check_installation %DEPENDENCY_NAME% "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
+%PWSH_TOOLS% check_installation "%DEPENDENCY_NAME%" "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%"
 set RET=%ERRORLEVEL%
 if %RET%==200 echo Found existing "%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%" for %BUILD_CFG%, skipping && exit /b 200
 if %RET% NEQ 404 GOTO :Error
