@@ -18,25 +18,22 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_COMPONENTS_DIALOG_H
+#define IFCINTERFACE_COMPONENTS_DIALOG_H
 
-#include <QDockWidget>
+#include <QDialog>
 
-class QWidget;
 class QVBoxLayout;
+class QWidget;
 
 namespace ifcinterface::components {
 
-class Panel : public QDockWidget {
+class Dialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
+    explicit Dialog(QWidget* parent = nullptr,
+                    bool scrollable = false);
 
     void addBodyWidget(QWidget* widget);
 

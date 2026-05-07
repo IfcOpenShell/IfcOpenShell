@@ -21,12 +21,15 @@
 #include "MainWindow.h"
 
 #include "../ifcviewer/AppSettings.h"
+#include "../ifcviewer/Federation.h"
 #include "../ifcviewer/SceneLoader.h"
 #include "../ifcviewer/ViewportWindow.h"
 #include "ElementRegistry.h"
+#include "components/Buttons.h"
 #include "components/Panel.h"
 #include "components/Style.h"
-#include "components/SvgIcon.h"
+#include "components/Tabs.h"
+#include "panels/add_model/Dialog.h"
 #include "panels/todo/Widget.h"
 #include "panels/models/View.h"
 #include "panels/models/Widget.h"
@@ -38,15 +41,17 @@
 
 #include <QDockWidget>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QListView>
 #include <QMessageBox>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
-#include <QTabBar>
+#include <QTreeView>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -55,7 +60,12 @@ namespace ifcinterface::shell {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
+    federation_ = new Federation(this);
     element_registry_ = new ifcinterface::ElementRegistry(this);
+    connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
+        setWindowModified(dirty);
+        updateWindowTitle();
+    });
     setupChrome();
     setupViewport();
     setupPanels();
@@ -67,46 +77,18 @@ MainWindow::MainWindow(QWidget* parent)
 
 void MainWindow::setupChrome() {
     setObjectName("appWindow");
-    setWindowTitle("IfcOpenShell Interface");
     setDockOptions(QMainWindow::AllowNestedDocks |
                    QMainWindow::AllowTabbedDocks |
                    QMainWindow::GroupedDragging);
-    setStyleSheet(components::style::buildAppStyleSheet());
+    updateWindowTitle();
 }
 
 QToolButton* MainWindow::makeRibbonAction(const QString& text, const QString& icon_path) {
-    auto* button = new QToolButton(this);
-    button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    button->setIcon(icon_path.endsWith(".svg")
-                        ? components::icons::makeTintedSvgIcon(icon_path)
-                        : QIcon(icon_path));
-    button->setIconSize(QSize(20, 20));
-    button->setText(text);
-    button->setMinimumSize(QSize(68, 54));
-    button->setObjectName("ribbonButton");
-    button->setAutoRaise(false);
-    return button;
+    return components::buttons::makeButton(text, icon_path, this, QSize(90, 54));
 }
 
 QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons) {
-    auto* group = new QFrame(this);
-    group->setObjectName("ribbonGroup");
-    auto* group_layout = new QVBoxLayout(group);
-    group_layout->setContentsMargins(8, 6, 8, 4);
-    group_layout->setSpacing(4);
-    auto* button_row = new QHBoxLayout();
-    button_row->setContentsMargins(0, 0, 0, 0);
-    button_row->setSpacing(4);
-    for (auto* button : buttons) {
-        button_row->addWidget(button);
-    }
-    auto* label = new QLabel(title, group);
-    label->setObjectName("ribbonGroupLabel");
-    label->setProperty("textRole", "secondary");
-    label->setAlignment(Qt::AlignCenter);
-    group_layout->addLayout(button_row);
-    group_layout->addWidget(label);
-    return group;
+    return components::buttons::makeButtonGroup(title, buttons, this);
 }
 
 void MainWindow::setStatusMessage(const QString& mode, const QString& detail) {
@@ -137,13 +119,9 @@ QWidget* MainWindow::buildHomeRibbonPage() {
     row->setSpacing(0);
 
     auto* new_project = makeRibbonAction("New Project", ":/icons/plus-square.svg");
-    connect(new_project, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Project", "New Project coming soon");
-    });
+    connect(new_project, &QToolButton::clicked, this, &MainWindow::onNewProject);
     auto* open_project = makeRibbonAction("Open Project", ":/icons/download-square.svg");
-    connect(open_project, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Project", "Open Project coming soon");
-    });
+    connect(open_project, &QToolButton::clicked, this, &MainWindow::onOpenProject);
     auto* open_cloud = makeRibbonAction("Open Cloud", ":/icons/cloud-square.svg");
     connect(open_cloud, &QToolButton::clicked, this, [this]() {
         setStatusMessage("Project", "Open Cloud Project coming soon");
@@ -153,13 +131,9 @@ QWidget* MainWindow::buildHomeRibbonPage() {
         setStatusMessage("Project", "Open Recent coming soon");
     });
     auto* save_project = makeRibbonAction("Save Project", ":/icons/floppy-disk.svg");
-    connect(save_project, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Project", "Save Project coming soon");
-    });
+    connect(save_project, &QToolButton::clicked, this, &MainWindow::onSaveProject);
     auto* save_project_as = makeRibbonAction("Save As", ":/icons/floppy-disk-arrow-in.svg");
-    connect(save_project_as, &QToolButton::clicked, this, [this]() {
-        setStatusMessage("Project", "Save Project As coming soon");
-    });
+    connect(save_project_as, &QToolButton::clicked, this, &MainWindow::onSaveProjectAs);
 
     auto* add_model = makeRibbonAction("Add Model", ":/icons/cube.svg");
     connect(add_model, &QToolButton::clicked, this, &MainWindow::onAddFiles);
@@ -322,14 +296,12 @@ void MainWindow::setupRibbon() {
     shell_layout->setContentsMargins(0, 0, 0, 0);
     shell_layout->setSpacing(0);
 
-    ribbon_tabs_ = new QTabBar(shell);
+    ribbon_tabs_ = new components::TabBar(shell);
     ribbon_tabs_->addTab("Home");
     ribbon_tabs_->addTab("Navigate");
     ribbon_tabs_->addTab("Inspect");
     ribbon_tabs_->addTab("Panels");
     ribbon_tabs_->setCurrentIndex(0);
-    ribbon_tabs_->setExpanding(false);
-    ribbon_tabs_->setDrawBase(false);
 
     auto* ribbon_band = new QFrame(shell);
     ribbon_band->setObjectName("ribbonBand");
@@ -347,7 +319,7 @@ void MainWindow::setupRibbon() {
     shell_layout->addWidget(ribbon_tabs_);
     shell_layout->addWidget(ribbon_band);
 
-    connect(ribbon_tabs_, &QTabBar::currentChanged,
+    connect(ribbon_tabs_, &components::TabBar::currentChanged,
             ribbon_pages_, &QStackedWidget::setCurrentIndex);
 
     setMenuWidget(shell);
@@ -481,8 +453,16 @@ void MainWindow::setupLoader() {
 }
 
 void MainWindow::addFiles(const QStringList& paths) {
-    if (paths.isEmpty()) return;
-    loader_->addFiles(paths);
+    QStringList accepted_paths;
+    QStringList accepted_fed_ids;
+    for (const auto& path : paths) {
+        const QString fed_id = federation_->addModel(path);
+        if (fed_id.isEmpty()) continue;
+        accepted_paths << path;
+        accepted_fed_ids << fed_id;
+    }
+    loadModelsFromPaths(accepted_paths, accepted_fed_ids);
+    updateWindowTitle();
 }
 
 QString MainWindow::formatElapsed(qint64 ms) const {
@@ -492,10 +472,223 @@ QString MainWindow::formatElapsed(qint64 ms) const {
 }
 
 void MainWindow::onAddFiles() {
-    const QStringList paths = QFileDialog::getOpenFileNames(
-        this, "Add IFC Files", QString(),
-        "IFC Viewer Cache (*.ifcview)");
+    panels::add_model::AddModelDialog dialog(this);
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    QStringList paths;
+    switch (dialog.selectedMode()) {
+    case panels::add_model::SourceMode::IfcFile: {
+        QFileDialog file_dialog(this, "Add IFC Files");
+        file_dialog.setFileMode(QFileDialog::ExistingFiles);
+        file_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
+        file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+        if (file_dialog.exec() == QDialog::Accepted) {
+            paths = file_dialog.selectedFiles();
+        }
+        break;
+    }
+    case panels::add_model::SourceMode::IfcDatabase: {
+        QFileDialog database_dialog(this, "Add IFC Databases");
+        database_dialog.setFileMode(QFileDialog::Directory);
+        database_dialog.setOption(QFileDialog::ShowDirsOnly, true);
+        database_dialog.setOption(QFileDialog::DontResolveSymlinks, true);
+        database_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+        if (auto* list = database_dialog.findChild<QListView*>("listView")) {
+            list->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        }
+        if (auto* tree = database_dialog.findChild<QTreeView*>()) {
+            tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        }
+        if (database_dialog.exec() == QDialog::Accepted) {
+            paths = database_dialog.selectedFiles();
+        }
+        break;
+    }
+    case panels::add_model::SourceMode::GeometryOnly: {
+        QFileDialog file_dialog(this, "Add Geometry Only");
+        file_dialog.setFileMode(QFileDialog::ExistingFiles);
+        file_dialog.setNameFilter("IFC Viewer Cache (*.ifcview);;All Files (*)");
+        file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+        if (file_dialog.exec() == QDialog::Accepted) {
+            paths = file_dialog.selectedFiles();
+        }
+        break;
+    }
+    case panels::add_model::SourceMode::None:
+        return;
+    }
     addFiles(paths);
+}
+
+void MainWindow::clearScene() {
+    if (viewport_) viewport_->setSelectedObjectId(0);
+    if (properties_view_) properties_view_->clearSelection();
+
+    const auto model_ids = model_id_to_fed_id_.keys();
+    for (uint32_t mid : model_ids) {
+        viewport_->removeModel(mid);
+        loader_->removeModel(mid);
+    }
+
+    fed_id_to_model_id_.clear();
+    model_id_to_fed_id_.clear();
+    element_registry_->clear();
+}
+
+bool MainWindow::confirmDiscardIfDirty() {
+    if (!federation_->isDirty()) return true;
+    const auto result = QMessageBox::question(
+        this, "Unsaved Project",
+        "The current project has unsaved changes. Save before continuing?",
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
+    if (result == QMessageBox::Cancel) return false;
+    if (result == QMessageBox::Save) return saveProject();
+    return true;
+}
+
+void MainWindow::loadModelsFromPaths(const QStringList& paths, const QStringList& fed_ids) {
+    if (paths.isEmpty()) return;
+    const auto ids = loader_->addFiles(paths);
+    for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()) && i < fed_ids.size(); ++i) {
+        fed_id_to_model_id_[fed_ids[i]] = ids[i];
+        model_id_to_fed_id_[ids[i]] = fed_ids[i];
+    }
+}
+
+bool MainWindow::openProject(const QString& path) {
+    if (loader_ && loader_->isLoading()) {
+        QMessageBox::information(
+            this, "Open Project",
+            "Wait until the current model load finishes before opening another project.");
+        return false;
+    }
+    if (!confirmDiscardIfDirty()) return false;
+
+    QStringList warnings;
+    QString err;
+    if (!federation_->load(path, &warnings, &err)) {
+        QMessageBox::warning(this, "Open Project",
+                             QString("Could not open project:\n%1").arg(err));
+        return false;
+    }
+
+    clearScene();
+
+    QStringList paths;
+    QStringList fed_ids;
+    QStringList missing;
+    for (const auto& model : federation_->models()) {
+        if (model.source_kind != "local") continue;
+        if (!QFileInfo::exists(model.source_path)) {
+            missing << model.source_path;
+            continue;
+        }
+        paths << model.source_path;
+        fed_ids << model.id;
+    }
+    loadModelsFromPaths(paths, fed_ids);
+
+    for (const auto& msg : missing) {
+        warnings << QString("Source not found, kept in project: %1").arg(msg);
+    }
+    if (!warnings.isEmpty()) {
+        QMessageBox::warning(this, "Open Project",
+                             "Project opened with warnings:\n\n" + warnings.join("\n"));
+    }
+
+    federation_->markClean();
+    if (federation_->hasHomeView()) {
+        const auto& hv = federation_->homeView();
+        viewport_->setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
+                             hv.distance, hv.yaw, hv.pitch);
+    }
+    updateWindowTitle();
+    setStatusMessage("Project", QFileInfo(path).fileName());
+    return true;
+}
+
+bool MainWindow::saveProject() {
+    if (federation_->filePath().isEmpty()) return saveProjectAs();
+
+    QString err;
+    if (!federation_->save(federation_->filePath(), &err)) {
+        QMessageBox::warning(this, "Save Project",
+                             QString("Could not save project:\n%1").arg(err));
+        return false;
+    }
+    updateWindowTitle();
+    setStatusMessage("Project", QFileInfo(federation_->filePath()).fileName());
+    return true;
+}
+
+bool MainWindow::saveProjectAs() {
+    QString suggested = federation_->filePath();
+    if (suggested.isEmpty()) suggested = "project.ifcfed";
+
+    QFileDialog file_dialog(this, "Save Project As", suggested);
+    file_dialog.setAcceptMode(QFileDialog::AcceptSave);
+    file_dialog.setFileMode(QFileDialog::AnyFile);
+    file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
+    file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (file_dialog.exec() != QDialog::Accepted) return false;
+    QString path = file_dialog.selectedFiles().value(0);
+    if (path.isEmpty()) return false;
+    if (!path.endsWith(".ifcfed", Qt::CaseInsensitive)) path += ".ifcfed";
+
+    QString err;
+    if (!federation_->save(path, &err)) {
+        QMessageBox::warning(this, "Save Project",
+                             QString("Could not save project:\n%1").arg(err));
+        return false;
+    }
+    updateWindowTitle();
+    setStatusMessage("Project", QFileInfo(path).fileName());
+    return true;
+}
+
+void MainWindow::updateWindowTitle() {
+    const QString project_path = federation_ ? federation_->filePath() : QString();
+    if (project_path.isEmpty() && (!federation_ || federation_->models().empty())) {
+        setWindowTitle("IfcOpenShell Interface");
+    } else if (project_path.isEmpty()) {
+        setWindowTitle("untitled[*] - IfcOpenShell Interface");
+    } else {
+        setWindowTitle(QFileInfo(project_path).fileName() + "[*] - IfcOpenShell Interface");
+    }
+}
+
+void MainWindow::onNewProject() {
+    if (loader_ && loader_->isLoading()) {
+        QMessageBox::information(
+            this, "New Project",
+            "Wait until the current model load finishes before creating a new project.");
+        return;
+    }
+    if (!confirmDiscardIfDirty()) return;
+    clearScene();
+    federation_->clear();
+    updateWindowTitle();
+    setStatusMessage("Project", "Untitled");
+}
+
+void MainWindow::onOpenProject() {
+    QFileDialog file_dialog(this, "Open Project");
+    file_dialog.setFileMode(QFileDialog::ExistingFile);
+    file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
+    file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (file_dialog.exec() != QDialog::Accepted) return;
+    const QString path = file_dialog.selectedFiles().value(0);
+    if (path.isEmpty()) return;
+    openProject(path);
+}
+
+void MainWindow::onSaveProject() {
+    saveProject();
+}
+
+void MainWindow::onSaveProjectAs() {
+    saveProjectAs();
 }
 
 void MainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {

@@ -23,6 +23,7 @@
 
 #include "Types.h"
 
+#include <QString>
 #include <QWidget>
 
 class QVBoxLayout;
@@ -42,19 +43,14 @@ public:
 
 private:
     QVBoxLayout* content_layout_ = nullptr;
-    QLabel* entity_class_label_ = nullptr;
-    QLabel* entity_type_label_ = nullptr;
-    components::Section* entity_section_ = nullptr;
-    components::Section* attributes_section_ = nullptr;
-    components::Section* relationships_section_ = nullptr;
-    components::Section* properties_section_ = nullptr;
-    components::Section* quantities_section_ = nullptr;
-    QWidget* properties_filter_wrapper_ = nullptr;
-    QWidget* quantities_filter_wrapper_ = nullptr;
-    QLineEdit* properties_filter_field_ = nullptr;
-    QLineEdit* quantities_filter_field_ = nullptr;
-    QToolButton* properties_filter_toggle_ = nullptr;
-    QToolButton* quantities_filter_toggle_ = nullptr;
+    bool attributes_expanded_ = true;
+    bool relationships_expanded_ = true;
+    bool properties_expanded_ = true;
+    bool quantities_expanded_ = true;
+    bool properties_filter_visible_ = false;
+    bool quantities_filter_visible_ = false;
+    QString properties_filter_text_;
+    QString quantities_filter_text_;
 };
 
 } // namespace ifcinterface::panels::properties

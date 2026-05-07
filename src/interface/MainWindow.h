@@ -21,17 +21,19 @@
 #ifndef IFCINTERFACE_SHELL_MAINWINDOW_H
 #define IFCINTERFACE_SHELL_MAINWINDOW_H
 
+#include <QHash>
 #include <QMainWindow>
 #include <QStringList>
 
 class QLabel;
 class QDockWidget;
 class QStackedWidget;
-class QTabBar;
 class QToolButton;
+class Federation;
 class ViewportWindow;
 class SceneLoader;
 namespace ifcinterface { class ElementRegistry; }
+namespace ifcinterface::components { class TabBar; }
 namespace ifcinterface::panels::models { class ModelsPanelView; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcinterface::panels::properties { class PropertiesPanelView; }
@@ -54,6 +56,13 @@ private:
     QWidget* buildNavigateRibbonPage();
     QWidget* buildInspectRibbonPage();
     QWidget* buildPanelsRibbonPage();
+    void clearScene();
+    bool confirmDiscardIfDirty();
+    void loadModelsFromPaths(const QStringList& paths, const QStringList& fed_ids);
+    bool openProject(const QString& path);
+    bool saveProject();
+    bool saveProjectAs();
+    void updateWindowTitle();
     QToolButton* makeRibbonAction(const QString& text, const QString& icon_path);
     QWidget* makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons);
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
@@ -69,12 +78,17 @@ private slots:
     void onLoadCancelled(uint32_t mid);
     void onLoadError(uint32_t mid, QString message);
     void onAllLoadsFinished();
+    void onNewProject();
+    void onOpenProject();
+    void onSaveProject();
+    void onSaveProjectAs();
 
 private:
+    Federation* federation_ = nullptr;
     QLabel* status_mode_label_ = nullptr;
     QLabel* status_selection_label_ = nullptr;
     QLabel* status_perf_label_ = nullptr;
-    QTabBar* ribbon_tabs_ = nullptr;
+    ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
     SceneLoader* loader_ = nullptr;
@@ -93,6 +107,8 @@ private:
     ifcinterface::panels::models::ModelsPanelView* models_view_ = nullptr;
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
     ifcinterface::panels::properties::PropertiesPanelView* properties_view_ = nullptr;
+    QHash<QString, uint32_t> fed_id_to_model_id_;
+    QHash<uint32_t, QString> model_id_to_fed_id_;
 };
 
 } // namespace ifcinterface::shell

@@ -40,6 +40,10 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget,
     refresh(0);
 }
 
+void PropertiesPanelView::clearSelection() {
+    refresh(0);
+}
+
 void PropertiesPanelView::refresh(uint32_t object_id) {
     PropertiesPanelState state;
     state.entity = {"IfcWall", "SOLIDWALL"};

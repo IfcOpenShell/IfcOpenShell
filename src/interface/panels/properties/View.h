@@ -38,6 +38,7 @@ public:
                                  ViewportWindow* viewport,
                                  ifcinterface::ElementRegistry* registry,
                                  QObject* parent = nullptr);
+    void clearSelection();
 
 private:
     void refresh(uint32_t object_id);

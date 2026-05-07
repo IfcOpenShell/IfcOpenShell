@@ -21,9 +21,11 @@
 #include "Dialog.h"
 
 #include "../../../ifcviewer/AppSettings.h"
+#include "../../components/Dialog.h"
 #include "../../components/Section.h"
 #include "../../components/Style.h"
 #include "../../components/SvgIcon.h"
+#include "../../components/Tabs.h"
 
 #include <QCheckBox>
 #include <QDialogButtonBox>
@@ -35,13 +37,12 @@
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSpinBox>
-#include <QTabWidget>
 #include <QVBoxLayout>
 
 namespace ifcinterface::panels::settings {
 
 SettingsDialog::SettingsDialog(QWidget* parent)
-    : QDialog(parent)
+    : components::Dialog(parent)
 {
     setObjectName("appDialog");
     setWindowTitle("Settings");
@@ -57,23 +58,12 @@ void SettingsDialog::showEvent(QShowEvent* event) {
 }
 
 void SettingsDialog::setupUi() {
-    auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(12, 12, 12, 12);
-    root->setSpacing(0);
-
-    auto* panel = new QFrame(this);
-    panel->setObjectName("panel");
-    auto* panel_layout = new QVBoxLayout(panel);
-    panel_layout->setContentsMargins(0, components::style::metrics::section_body_padding, 0,
-                                     components::style::metrics::section_body_padding);
-    panel_layout->setSpacing(12);
-
-    auto* tabs = new QTabWidget(panel);
+    auto* tabs = new components::TabWidget(this);
 
     auto* graphics_tab = new QWidget(tabs);
     auto* graphics_layout = new QVBoxLayout(graphics_tab);
     graphics_layout->setContentsMargins(0, 0, 0, 0);
-    graphics_layout->setSpacing(12);
+    graphics_layout->setSpacing(components::style::metrics::padding);
 
     auto* general_section = new components::Section("General", components::SectionHeaderMode::Visible, graphics_tab);
     auto* general_body = new QWidget(general_section);
@@ -148,7 +138,7 @@ void SettingsDialog::setupUi() {
         auto* tab = new QWidget(tabs);
         auto* layout = new QVBoxLayout(tab);
         layout->setContentsMargins(0, 0, 0, 0);
-        layout->setSpacing(12);
+        layout->setSpacing(components::style::metrics::padding);
 
         auto* section = new components::Section(title, components::SectionHeaderMode::Visible, tab);
         auto* body = new QWidget(section);
@@ -179,7 +169,7 @@ void SettingsDialog::setupUi() {
     tabs->addTab(make_placeholder_tab("About", "Version, credits, and environment information will live here."),
                  "About");
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, panel);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
         ok->setText("OK");
         ok->setIcon(components::icons::makeSvgIcon(":/icons/check.svg"));
@@ -191,9 +181,11 @@ void SettingsDialog::setupUi() {
     connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::onAccepted);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    panel_layout->addWidget(tabs);
-    panel_layout->addWidget(buttons);
-    root->addWidget(panel);
+    auto* actions_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
+    actions_section->addBodyWidget(buttons);
+
+    addBodyWidget(tabs);
+    addBodyWidget(actions_section);
 }
 
 void SettingsDialog::syncFromSettings() {

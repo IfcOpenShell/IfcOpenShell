@@ -18,32 +18,28 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_COMPONENTS_BUTTONS_H
+#define IFCINTERFACE_COMPONENTS_BUTTONS_H
 
-#include <QDockWidget>
+#include <QList>
+#include <QSize>
 
+class QToolButton;
 class QWidget;
-class QVBoxLayout;
 
-namespace ifcinterface::components {
+namespace ifcinterface::components::buttons {
 
-class Panel : public QDockWidget {
-    Q_OBJECT
+QToolButton* makeButton(const QString& text,
+                        const QString& icon_path,
+                        QWidget* parent,
+                        const QSize& minimum_size = QSize(90, 54));
 
-public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
+QWidget* makeButtonGroup(const QString& title,
+                         const QList<QToolButton*>& buttons,
+                         QWidget* parent,
+                         bool trailing_separator = true,
+                         int vertical_spacing = 4);
 
-    void addBodyWidget(QWidget* widget);
-
-private:
-    QVBoxLayout* body_layout_ = nullptr;
-};
-
-} // namespace ifcinterface::components
+} // namespace ifcinterface::components::buttons
 
 #endif

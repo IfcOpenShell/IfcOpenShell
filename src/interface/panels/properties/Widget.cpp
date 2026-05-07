@@ -35,6 +35,13 @@
 
 namespace {
 
+void clearLayout(QVBoxLayout* layout) {
+    while (auto* item = layout->takeAt(0)) {
+        if (auto* widget = item->widget()) widget->deleteLater();
+        delete item;
+    }
+}
+
 QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
     group->setObjectName("propertySetBox");
@@ -91,6 +98,34 @@ QWidget* makeFilterWrapper(QLineEdit** field_out, QWidget* parent = nullptr) {
     return wrapper;
 }
 
+QFrame* makeEntityBox(const ifcinterface::panels::properties::EntitySummary& entity, QWidget* parent = nullptr) {
+    auto* entity_box = new QFrame(parent);
+    entity_box->setObjectName("entityClassBox");
+    auto* entity_layout = new QHBoxLayout(entity_box);
+    entity_layout->setContentsMargins(10, 8, 10, 8);
+    entity_layout->setSpacing(10);
+
+    auto* entity_icon = new QLabel(entity_box);
+    entity_icon->setPixmap(ifcinterface::components::icons::makeSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
+    entity_icon->setAlignment(Qt::AlignCenter);
+
+    auto* entity_text = new QWidget(entity_box);
+    auto* entity_text_layout = new QVBoxLayout(entity_text);
+    entity_text_layout->setContentsMargins(0, 0, 0, 0);
+    entity_text_layout->setSpacing(2);
+
+    auto* entity_class_label = new QLabel(entity.entity_class, entity_text);
+    entity_class_label->setObjectName("entityClassLabel");
+    auto* entity_type_label = new QLabel(entity.predefined_type, entity_text);
+    entity_type_label->setProperty("textRole", "secondary");
+
+    entity_text_layout->addWidget(entity_class_label);
+    entity_text_layout->addWidget(entity_type_label);
+    entity_layout->addWidget(entity_icon, 0, Qt::AlignVCenter);
+    entity_layout->addWidget(entity_text, 1, Qt::AlignVCenter);
+    return entity_box;
+}
+
 } // namespace
 
 namespace ifcinterface::panels::properties {
@@ -101,93 +136,10 @@ PropertiesPanelWidget::PropertiesPanelWidget(QWidget* parent)
     content_layout_ = new QVBoxLayout(this);
     content_layout_->setContentsMargins(0, 0, 0, 0);
     content_layout_->setSpacing(12);
-
-    auto* entity_box = new QFrame(this);
-    entity_box->setObjectName("entityClassBox");
-    auto* entity_layout = new QHBoxLayout(entity_box);
-    entity_layout->setContentsMargins(10, 8, 10, 8);
-    entity_layout->setSpacing(10);
-    auto* entity_icon = new QLabel(entity_box);
-    entity_icon->setPixmap(components::icons::makeSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
-    entity_icon->setAlignment(Qt::AlignCenter);
-    auto* entity_text = new QWidget(entity_box);
-    auto* entity_text_layout = new QVBoxLayout(entity_text);
-    entity_text_layout->setContentsMargins(0, 0, 0, 0);
-    entity_text_layout->setSpacing(2);
-    entity_class_label_ = new QLabel(entity_text);
-    entity_class_label_->setObjectName("entityClassLabel");
-    entity_type_label_ = new QLabel(entity_text);
-    entity_type_label_->setProperty("textRole", "secondary");
-    entity_text_layout->addWidget(entity_class_label_);
-    entity_text_layout->addWidget(entity_type_label_);
-    entity_layout->addWidget(entity_icon, 0, Qt::AlignVCenter);
-    entity_layout->addWidget(entity_text, 1, Qt::AlignVCenter);
-
-    entity_section_ = new components::Section("", components::SectionHeaderMode::Hidden, this);
-    entity_section_->addBodyWidget(entity_box);
-    attributes_section_ = new components::Section("Attributes", components::SectionHeaderMode::Visible, this);
-    relationships_section_ = new components::Section("Relationships", components::SectionHeaderMode::Visible, this);
-    properties_section_ = new components::Section("Properties", components::SectionHeaderMode::Visible, this);
-    quantities_section_ = new components::Section("Quantities", components::SectionHeaderMode::Visible, this);
-
-    properties_filter_toggle_ = new QToolButton(properties_section_);
-    properties_filter_toggle_->setObjectName("panelSectionFilterToggle");
-    properties_filter_toggle_->setCheckable(true);
-    properties_filter_toggle_->setIcon(components::icons::makeSvgIcon(":/icons/filter.svg"));
-    properties_filter_toggle_->setAutoRaise(true);
-    properties_section_->addHeaderWidget(properties_filter_toggle_);
-
-    quantities_filter_toggle_ = new QToolButton(quantities_section_);
-    quantities_filter_toggle_->setObjectName("panelSectionFilterToggle");
-    quantities_filter_toggle_->setCheckable(true);
-    quantities_filter_toggle_->setIcon(components::icons::makeSvgIcon(":/icons/filter.svg"));
-    quantities_filter_toggle_->setAutoRaise(true);
-    quantities_section_->addHeaderWidget(quantities_filter_toggle_);
-
-    properties_filter_wrapper_ = makeFilterWrapper(&properties_filter_field_, properties_section_);
-    properties_filter_field_->setPlaceholderText("Filter properties or sets");
-    quantities_filter_wrapper_ = makeFilterWrapper(&quantities_filter_field_, quantities_section_);
-    quantities_filter_field_->setPlaceholderText("Filter quantities or sets");
-
-    connect(properties_filter_toggle_, &QToolButton::toggled, properties_filter_field_, [this](bool visible) {
-        properties_filter_field_->setVisible(visible);
-        properties_filter_wrapper_->setVisible(visible);
-        if (visible) properties_filter_field_->setFocus();
-    });
-    connect(quantities_filter_toggle_, &QToolButton::toggled, quantities_filter_field_, [this](bool visible) {
-        quantities_filter_field_->setVisible(visible);
-        quantities_filter_wrapper_->setVisible(visible);
-        if (visible) quantities_filter_field_->setFocus();
-    });
-
-    properties_filter_wrapper_->setVisible(false);
-    quantities_filter_wrapper_->setVisible(false);
-
-    content_layout_->addWidget(entity_section_);
-    content_layout_->addWidget(attributes_section_);
-    content_layout_->addWidget(relationships_section_);
-    content_layout_->addWidget(properties_section_);
-    content_layout_->addWidget(quantities_section_);
-    content_layout_->addStretch(1);
 }
 
 void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
-    const bool attributes_expanded = attributes_section_->isExpanded();
-    const bool relationships_expanded = relationships_section_->isExpanded();
-    const bool properties_expanded = properties_section_->isExpanded();
-    const bool quantities_expanded = quantities_section_->isExpanded();
-    const bool properties_filter_visible = properties_filter_toggle_->isChecked();
-    const bool quantities_filter_visible = quantities_filter_toggle_->isChecked();
-    const QString properties_filter_text = properties_filter_field_->text();
-    const QString quantities_filter_text = quantities_filter_field_->text();
-
-    entity_class_label_->setText(state.entity.entity_class);
-    entity_type_label_->setText(state.entity.predefined_type);
-
-    attributes_section_->clearBody();
-    relationships_section_->clearBody();
-    properties_section_->clearBody();
-    quantities_section_->clearBody();
+    clearLayout(content_layout_);
 
     QList<QWidget*> property_set_widgets;
     for (const auto& property_set : state.property_sets) {
@@ -199,21 +151,98 @@ void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
         quantity_set_widgets.append(makePropertySetPanel(property_set, this));
     }
 
-    attributes_section_->addBodyWidget(makeAttributeList(state.attributes, this));
-    relationships_section_->addBodyWidget(makeRelationshipList(state.relationships, this));
-    properties_section_->addBodyWidget(properties_filter_wrapper_);
-    for (auto* widget : property_set_widgets) properties_section_->addBodyWidget(widget);
-    quantities_section_->addBodyWidget(quantities_filter_wrapper_);
-    for (auto* widget : quantity_set_widgets) quantities_section_->addBodyWidget(widget);
+    auto* entity_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
+    entity_section->addBodyWidget(makeEntityBox(state.entity, this));
 
-    attributes_section_->setExpanded(attributes_expanded);
-    relationships_section_->setExpanded(relationships_expanded);
-    properties_section_->setExpanded(properties_expanded);
-    quantities_section_->setExpanded(quantities_expanded);
-    properties_filter_field_->setText(properties_filter_text);
-    quantities_filter_field_->setText(quantities_filter_text);
-    properties_filter_toggle_->setChecked(properties_filter_visible);
-    quantities_filter_toggle_->setChecked(quantities_filter_visible);
+    auto* attributes_section = new components::Section("Attributes", components::SectionHeaderMode::Visible, this);
+    attributes_section->addBodyWidget(makeAttributeList(state.attributes, this));
+    attributes_section->setExpanded(attributes_expanded_);
+
+    auto* relationships_section = new components::Section("Relationships", components::SectionHeaderMode::Visible, this);
+    relationships_section->addBodyWidget(makeRelationshipList(state.relationships, this));
+    relationships_section->setExpanded(relationships_expanded_);
+
+    auto* properties_section = new components::Section("Properties", components::SectionHeaderMode::Visible, this);
+    auto* properties_filter_toggle = new QToolButton(properties_section);
+    properties_filter_toggle->setObjectName("panelSectionFilterToggle");
+    properties_filter_toggle->setCheckable(true);
+    properties_filter_toggle->setIcon(components::icons::makeSvgIcon(":/icons/filter.svg"));
+    properties_filter_toggle->setAutoRaise(true);
+    properties_section->addHeaderWidget(properties_filter_toggle);
+    QLineEdit* properties_filter_field = nullptr;
+    auto* properties_filter_wrapper = makeFilterWrapper(&properties_filter_field, properties_section);
+    properties_filter_field->setPlaceholderText("Filter properties or sets");
+    properties_filter_field->setText(properties_filter_text_);
+    properties_filter_wrapper->setVisible(properties_filter_visible_);
+    properties_filter_field->setVisible(properties_filter_visible_);
+    connect(properties_filter_toggle, &QToolButton::toggled, properties_filter_field, [this, properties_filter_field, properties_filter_wrapper](bool visible) {
+        properties_filter_visible_ = visible;
+        properties_filter_field->setVisible(visible);
+        properties_filter_wrapper->setVisible(visible);
+        if (visible) properties_filter_field->setFocus();
+    });
+    connect(properties_filter_field, &QLineEdit::textChanged, this, [this](const QString& text) {
+        properties_filter_text_ = text;
+    });
+    properties_section->addBodyWidget(properties_filter_wrapper);
+    for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
+    properties_section->setExpanded(properties_expanded_);
+    properties_filter_toggle->setChecked(properties_filter_visible_);
+
+    auto* quantities_section = new components::Section("Quantities", components::SectionHeaderMode::Visible, this);
+    auto* quantities_filter_toggle = new QToolButton(quantities_section);
+    quantities_filter_toggle->setObjectName("panelSectionFilterToggle");
+    quantities_filter_toggle->setCheckable(true);
+    quantities_filter_toggle->setIcon(components::icons::makeSvgIcon(":/icons/filter.svg"));
+    quantities_filter_toggle->setAutoRaise(true);
+    quantities_section->addHeaderWidget(quantities_filter_toggle);
+    QLineEdit* quantities_filter_field = nullptr;
+    auto* quantities_filter_wrapper = makeFilterWrapper(&quantities_filter_field, quantities_section);
+    quantities_filter_field->setPlaceholderText("Filter quantities or sets");
+    quantities_filter_field->setText(quantities_filter_text_);
+    quantities_filter_wrapper->setVisible(quantities_filter_visible_);
+    quantities_filter_field->setVisible(quantities_filter_visible_);
+    connect(quantities_filter_toggle, &QToolButton::toggled, quantities_filter_field, [this, quantities_filter_field, quantities_filter_wrapper](bool visible) {
+        quantities_filter_visible_ = visible;
+        quantities_filter_field->setVisible(visible);
+        quantities_filter_wrapper->setVisible(visible);
+        if (visible) quantities_filter_field->setFocus();
+    });
+    connect(quantities_filter_field, &QLineEdit::textChanged, this, [this](const QString& text) {
+        quantities_filter_text_ = text;
+    });
+    quantities_section->addBodyWidget(quantities_filter_wrapper);
+    for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
+    quantities_section->setExpanded(quantities_expanded_);
+    quantities_filter_toggle->setChecked(quantities_filter_visible_);
+
+    if (auto* button = attributes_section->findChild<QToolButton*>("panelSectionHeaderButton")) {
+        connect(button, &QToolButton::toggled, this, [this](bool expanded) {
+            attributes_expanded_ = expanded;
+        });
+    }
+    if (auto* button = relationships_section->findChild<QToolButton*>("panelSectionHeaderButton")) {
+        connect(button, &QToolButton::toggled, this, [this](bool expanded) {
+            relationships_expanded_ = expanded;
+        });
+    }
+    if (auto* button = properties_section->findChild<QToolButton*>("panelSectionHeaderButton")) {
+        connect(button, &QToolButton::toggled, this, [this](bool expanded) {
+            properties_expanded_ = expanded;
+        });
+    }
+    if (auto* button = quantities_section->findChild<QToolButton*>("panelSectionHeaderButton")) {
+        connect(button, &QToolButton::toggled, this, [this](bool expanded) {
+            quantities_expanded_ = expanded;
+        });
+    }
+
+    content_layout_->addWidget(entity_section);
+    content_layout_->addWidget(attributes_section);
+    content_layout_->addWidget(relationships_section);
+    content_layout_->addWidget(properties_section);
+    content_layout_->addWidget(quantities_section);
+    content_layout_->addStretch(1);
 }
 
 } // namespace ifcinterface::panels::properties

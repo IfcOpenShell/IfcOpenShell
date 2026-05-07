@@ -21,7 +21,7 @@
 #ifndef IFCINTERFACE_PANELS_SETTINGSDIALOG_H
 #define IFCINTERFACE_PANELS_SETTINGSDIALOG_H
 
-#include <QDialog>
+#include "../../components/Dialog.h"
 
 class QCheckBox;
 class QDoubleSpinBox;
@@ -31,7 +31,7 @@ class QSpinBox;
 
 namespace ifcinterface::panels::settings {
 
-class SettingsDialog : public QDialog {
+class SettingsDialog : public components::Dialog {
     Q_OBJECT
 public:
     explicit SettingsDialog(QWidget* parent = nullptr);

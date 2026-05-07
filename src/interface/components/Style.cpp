@@ -34,29 +34,39 @@ QString buildAppStyleSheet() {
             background: ${app_background};
             color: ${primary_text};
         }
+        QFileDialog,
+        QFileDialog QWidget,
+        QFileDialog QStackedWidget,
+        QFileDialog QSplitter {
+            background: ${app_background};
+            color: ${primary_text};
+        }
         QFrame#ribbonShell {
             background: ${ribbon_shell_background};
             border-bottom: 1px solid ${border};
         }
-        QTabBar::tab {
+        QTabBar#appTabBar {
+            background: ${ribbon_shell_background};
+        }
+        QTabBar#appTabBar::tab {
             background: transparent;
             color: ${secondary_text};
             padding: 8px 14px;
             margin-right: 2px;
             border-bottom: 2px solid transparent;
         }
-        QTabBar::tab:selected {
+        QTabBar#appTabBar::tab:selected {
             color: ${primary_text};
             border-bottom: 2px solid ${selection_background};
         }
-        QTabBar::tab:hover {
+        QTabBar#appTabBar::tab:hover {
             color: ${ribbon_tab_hover_text};
         }
         QFrame#ribbonBand {
             background: ${ribbon_band_background};
             border-top: 1px solid ${border};
         }
-        QTabWidget::pane {
+        QTabWidget#appTabWidget::pane {
             border: none;
             background: transparent;
         }
@@ -66,6 +76,9 @@ QString buildAppStyleSheet() {
         QFrame#ribbonGroup {
             background: transparent;
             border-right: 1px solid ${border};
+        }
+        QFrame#ribbonGroup[separator="false"] {
+            border-right: none;
         }
         QLabel#ribbonGroupLabel {
             font-size: 9px;
@@ -105,6 +118,7 @@ QString buildAppStyleSheet() {
         QListWidget,
         QTableWidget,
         QLineEdit,
+        QComboBox,
         QSpinBox,
         QDoubleSpinBox,
         QCheckBox,
@@ -178,6 +192,21 @@ QString buildAppStyleSheet() {
         }
         QLineEdit:focus {
             border: 1px solid ${control_border_focus};
+        }
+        QComboBox {
+            background: ${control_background};
+            border: 1px solid ${border};
+            border-radius: ${panel_radius}px;
+            padding: ${padding}px ${padding}px;
+        }
+        QComboBox:focus {
+            border: 1px solid ${control_border_focus};
+        }
+        QComboBox QAbstractItemView {
+            background: ${panel_background};
+            border: 1px solid ${border};
+            selection-background-color: ${selection_background};
+            selection-color: ${selection_text};
         }
         QSpinBox, QDoubleSpinBox {
             background: ${control_background};

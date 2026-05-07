@@ -19,6 +19,7 @@
  ********************************************************************************/
 
 #include "MainWindow.h"
+#include "components/Style.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -70,6 +71,7 @@ int main(int argc, char* argv[]) {
     parser.process(app);
 
     installUiFont();
+    app.setStyleSheet(ifcinterface::components::style::buildAppStyleSheet());
 
     ifcinterface::shell::MainWindow window;
     window.show();

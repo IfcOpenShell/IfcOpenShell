@@ -51,6 +51,7 @@ public:
     explicit ElementRegistry(QObject* parent = nullptr);
 
     void bindLoader(SceneLoader* loader);
+    void clear();
     std::optional<BasicElementInfo> findBasicElementInfo(uint32_t object_id) const;
     std::optional<express::Base> findEntity(uint32_t object_id) const;
 

@@ -39,6 +39,10 @@ void ElementRegistry::bindLoader(SceneLoader* loader) {
             this, &ElementRegistry::onStreamedElementsReady);
 }
 
+void ElementRegistry::clear() {
+    elements_.clear();
+}
+
 std::optional<BasicElementInfo> ElementRegistry::findBasicElementInfo(uint32_t object_id) const {
     auto it = elements_.find(object_id);
     if (it == elements_.end()) return std::nullopt;

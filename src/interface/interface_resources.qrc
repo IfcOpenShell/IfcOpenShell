@@ -43,5 +43,8 @@
         <file alias="sidebar-expand.svg">icons/sidebar-expand.svg</file>
         <file alias="check.svg">icons/check.svg</file>
         <file alias="xmark-circle.svg">icons/xmark-circle.svg</file>
+        <file alias="database.svg">icons/database.svg</file>
+        <file alias="database-restore.svg">icons/database-restore.svg</file>
+        <file alias="cube-bandage.svg">icons/cube-bandage.svg</file>
     </qresource>
 </RCC>

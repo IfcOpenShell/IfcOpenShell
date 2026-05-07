@@ -18,32 +18,23 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-
-#include <QDockWidget>
-
-class QWidget;
-class QVBoxLayout;
+#include "Tabs.h"
 
 namespace ifcinterface::components {
 
-class Panel : public QDockWidget {
-    Q_OBJECT
+TabBar::TabBar(QWidget* parent)
+    : QTabBar(parent)
+{
+    setObjectName("appTabBar");
+    setExpanding(false);
+    setDrawBase(false);
+}
 
-public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
-
-    void addBodyWidget(QWidget* widget);
-
-private:
-    QVBoxLayout* body_layout_ = nullptr;
-};
+TabWidget::TabWidget(QWidget* parent)
+    : QTabWidget(parent)
+{
+    setObjectName("appTabWidget");
+    setTabBar(new TabBar(this));
+}
 
 } // namespace ifcinterface::components
-
-#endif
