@@ -29,6 +29,10 @@
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
 
+#define CAT(a, b) a##b
+#define EXPAND_AND_CAT(a, b) CAT(a, b)
+#define schema_plugin EXPAND_AND_CAT(schema_plugin_, IfcSchema)
+
 #include <boost/dll/alias.hpp>
 
 namespace ifcopenshell {
