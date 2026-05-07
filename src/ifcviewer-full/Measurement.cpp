@@ -207,6 +207,7 @@ void AreaMeasurement::clear(ViewportWindow& vp) {
     selected_.clear();
     total_area_m2_ = 0.0;
     vp.setHighlightTriangles({}, 0, 0, 0, 0);
+    vp.setOverlayLabels({});
 }
 
 void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
@@ -236,6 +237,92 @@ void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
     }
     // Translucent cyan-ish tint — readable on both light and dark surfaces.
     vp.setHighlightTriangles(world_xyz, 0.20f, 0.85f, 1.00f, 0.45f);
+
+    // Per-patch labels: connected-components sweep over the selected
+    // triangles (using the mesh's full edge adjacency, restricted to
+    // edges where both incident tris are in the selection).  Each
+    // component → one label at its area-weighted centroid in world
+    // space, with the patch area in m².  Two clicks on different walls
+    // → two distinct components → two labels; one click that BFS-grew
+    // 200 tris of one wall face → one label.
+    std::unordered_map<uint32_t, std::vector<const SelectedTri*>> by_object;
+    for (const auto& [key, sel] : selected_) {
+        const uint32_t object_id = uint32_t(key >> 32);
+        by_object[object_id].push_back(&sel);
+    }
+
+    std::vector<OverlayRenderer::Label> labels;
+    for (const auto& [obj_id, sels] : by_object) {
+        if (sels.empty()) continue;
+        // All tris belonging to one object share its mesh + transform.
+        const SelectedTri& any = *sels[0];
+        const uint64_t cache_key = (uint64_t(any.model_id) << 32)
+                                 | uint64_t(any.mesh_id);
+        auto cit = mesh_cache_.find(cache_key);
+        if (cit == mesh_cache_.end()) continue;
+        const MeshCache& c = cit->second;
+
+        // Selected-tri set restricted to this object.
+        std::unordered_set<uint32_t> remaining;
+        remaining.reserve(sels.size());
+        for (const SelectedTri* s : sels) remaining.insert(s->tri);
+
+        // Find each connected component via BFS over shared edges,
+        // accepting only neighbours that are themselves selected.
+        while (!remaining.empty()) {
+            const uint32_t start = *remaining.begin();
+            std::unordered_set<uint32_t> in_comp{start};
+            std::queue<uint32_t> frontier;
+            frontier.push(start);
+            std::vector<uint32_t> component;
+            while (!frontier.empty()) {
+                const uint32_t t = frontier.front(); frontier.pop();
+                component.push_back(t);
+                if (size_t(t) * 3 + 2 >= c.indices.size()) continue;
+                for (int e = 0; e < 3; ++e) {
+                    const uint32_t ia = c.indices[3 * t + e];
+                    const uint32_t ib = c.indices[3 * t + (e + 1) % 3];
+                    auto it = c.edges.find(edgeKey(ia, ib));
+                    if (it == c.edges.end()) continue;
+                    for (uint32_t nt : it->second) {
+                        if (in_comp.count(nt) || remaining.count(nt) == 0) continue;
+                        in_comp.insert(nt);
+                        frontier.push(nt);
+                    }
+                }
+            }
+            for (uint32_t t : component) remaining.erase(t);
+
+            // Area + area-weighted centroid (mesh-local).
+            double area = 0.0, cx = 0.0, cy = 0.0, cz = 0.0;
+            for (uint32_t t : component) {
+                if (size_t(t) >= c.tri_areas.size()) continue;
+                const double a = c.tri_areas[t];
+                area += a;
+                const uint32_t ia = c.indices[3 * t + 0];
+                const uint32_t ib = c.indices[3 * t + 1];
+                const uint32_t ic = c.indices[3 * t + 2];
+                const float* va = &c.positions[3 * ia];
+                const float* vb = &c.positions[3 * ib];
+                const float* vc = &c.positions[3 * ic];
+                cx += a * (double(va[0]) + vb[0] + vc[0]) / 3.0;
+                cy += a * (double(va[1]) + vb[1] + vc[1]) / 3.0;
+                cz += a * (double(va[2]) + vb[2] + vc[2]) / 3.0;
+            }
+            if (area <= 0.0) continue;
+            cx /= area; cy /= area; cz /= area;
+
+            // Centroid → world via the instance's composed transform.
+            const float* M = any.composed_transform;
+            OverlayRenderer::Label lbl;
+            lbl.world_pos[0] = float(M[0]*cx + M[4]*cy + M[8]*cz  + M[12]);
+            lbl.world_pos[1] = float(M[1]*cx + M[5]*cy + M[9]*cz  + M[13]);
+            lbl.world_pos[2] = float(M[2]*cx + M[6]*cy + M[10]*cz + M[14]);
+            lbl.text = QString::number(area, 'f', 4) + " m²";
+            labels.push_back(std::move(lbl));
+        }
+    }
+    vp.setOverlayLabels(labels);
 }
 
 AreaMeasurement::MeshCache* AreaMeasurement::meshCache(ViewportWindow& vp,
@@ -638,7 +725,17 @@ void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
                 const double aby = double(b[1]) - a[1];
                 const double abz = double(b[2]) - a[2];
                 const double perp = abx*n_avg[0] + aby*n_avg[1] + abz*n_avg[2];
-                if (std::abs(perp) > 1e-6) {
+                const double abs_perp = std::abs(perp);
+                // Skip the perpendicular dimension when it collapses onto
+                // an existing axis-aligned leg — happens when the surface
+                // normal lines up with a world axis, in which case
+                // ΔX / ΔY / ΔZ already shows the same number.
+                constexpr double kAxisCollapseTol = 1e-3;  // 1mm
+                const bool redundant =
+                       std::abs(abs_perp - dx) < kAxisCollapseTol
+                    || std::abs(abs_perp - dy) < kAxisCollapseTol
+                    || std::abs(abs_perp - dz) < kAxisCollapseTol;
+                if (abs_perp > 1e-6 && !redundant) {
                     const std::array<float, 3> tip = {
                         float(a[0] + perp * n_avg[0]),
                         float(a[1] + perp * n_avg[1]),
@@ -649,7 +746,7 @@ void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
                         1.0f, 1.0f, 1.0f, /*dashed*/ true);
                     groups.push_back(perp_grp);
                     labels.push_back(makeLabel(a, tip,
-                        "perp: " + QString::number(std::abs(perp), 'f', 3) + " m"));
+                        "perp: " + QString::number(abs_perp, 'f', 3) + " m"));
                 }
             }
         }
