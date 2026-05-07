@@ -19,7 +19,9 @@
 
 #include "LodBuilder.h"
 
+#ifdef WITH_MESH_OPTIMIZER
 #include <meshoptimizer.h>
+#endif
 
 #include <algorithm>
 #include <cstdio>
@@ -31,6 +33,13 @@ void buildLods(SidecarData& sd,
                int min_triangles,
                float target_ratio,
                float target_error) {
+#ifndef WITH_MESH_OPTIMIZER
+    (void)sd;
+    (void)min_triangles;
+    (void)target_ratio;
+    (void)target_error;
+    return;
+#else
     if (sd.meshes.empty() || sd.vertices.empty() || sd.indices.empty()) return;
 
     const size_t vtx_stride_bytes   = INSTANCED_VERTEX_STRIDE_BYTES;
@@ -165,6 +174,7 @@ void buildLods(SidecarData& sd,
             dbg_accepted, dbg_rejected_noreduce, dbg_rejected_savings,
             target_error, target_ratio, min_savings);
     }
+#endif
 }
 
 LodStats summariseLods(const SidecarData& sd) {

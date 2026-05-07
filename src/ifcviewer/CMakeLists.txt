@@ -26,7 +26,6 @@ set(QT_VERSION 6 CACHE STRING "Qt version")
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets OpenGL REQUIRED PATHS ${QT_DIR})
 
 find_package(OpenGL REQUIRED)
-find_package(meshoptimizer REQUIRED)
 
 file(GLOB IFCVIEWER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
@@ -39,6 +38,12 @@ set_target_properties(IfcViewer PROPERTIES
     VERSION "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
+
+if (WITH_MESH_OPTIMIZER)
+find_package(meshoptimizer REQUIRED)
+set(MESH_OPTIMIZER_LIB meshoptimizer::meshoptimizer)
+target_compile_definitions(IfcViewer PUBLIC -DWITH_MESH_OPTIMIZER)
+endif()
 
 # Consumers include headers as `#include "ViewportWindow.h"`, so expose this
 # directory on the public interface.
@@ -57,7 +62,7 @@ target_link_libraries(IfcViewer PUBLIC
     Qt${QT_VERSION}::Widgets
     Qt${QT_VERSION}::OpenGL
     OpenGL::GL
-    meshoptimizer::meshoptimizer
+    ${MESH_OPTIMIZER_LIB}
 )
 
 if(UNIX AND NOT APPLE)
