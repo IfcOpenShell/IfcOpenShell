@@ -57,7 +57,7 @@ Dialog::Dialog(QWidget* parent, bool scrollable)
         scroll_body->setObjectName("panelScrollBody");
         body_layout_ = new QVBoxLayout(scroll_body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
 
         scroll->setWidget(scroll_body);
         frame_layout->addWidget(scroll);
@@ -65,7 +65,7 @@ Dialog::Dialog(QWidget* parent, bool scrollable)
         auto* body = new QWidget(frame);
         body_layout_ = new QVBoxLayout(body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
         frame_layout->addWidget(body);
     }
 

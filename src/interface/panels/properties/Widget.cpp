@@ -35,13 +35,6 @@
 
 namespace {
 
-void clearLayout(QVBoxLayout* layout) {
-    while (auto* item = layout->takeAt(0)) {
-        if (auto* widget = item->widget()) widget->deleteLater();
-        delete item;
-    }
-}
-
 QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
     group->setObjectName("propertySetBox");
@@ -131,15 +124,12 @@ QFrame* makeEntityBox(const ifcinterface::panels::properties::EntitySummary& ent
 namespace ifcinterface::panels::properties {
 
 PropertiesPanelWidget::PropertiesPanelWidget(QWidget* parent)
-    : QWidget(parent)
+    : components::Panel("Properties", nullptr, parent, false, true)
 {
-    content_layout_ = new QVBoxLayout(this);
-    content_layout_->setContentsMargins(0, 0, 0, 0);
-    content_layout_->setSpacing(12);
 }
 
 void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
-    clearLayout(content_layout_);
+    clearBodyWidgets();
 
     QList<QWidget*> property_set_widgets;
     for (const auto& property_set : state.property_sets) {
@@ -237,12 +227,11 @@ void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
         });
     }
 
-    content_layout_->addWidget(entity_section);
-    content_layout_->addWidget(attributes_section);
-    content_layout_->addWidget(relationships_section);
-    content_layout_->addWidget(properties_section);
-    content_layout_->addWidget(quantities_section);
-    content_layout_->addStretch(1);
+    addBodyWidget(entity_section);
+    addBodyWidget(attributes_section);
+    addBodyWidget(relationships_section);
+    addBodyWidget(properties_section);
+    addBodyWidget(quantities_section);
 }
 
 } // namespace ifcinterface::panels::properties

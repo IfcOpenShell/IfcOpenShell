@@ -23,14 +23,14 @@
 
 #include "Types.h"
 
-#include <QWidget>
+#include "../../components/Panel.h"
 
 class QTreeWidget;
 class QTreeWidgetItem;
 
 namespace ifcinterface::panels::spatial_hierarchy {
 
-class SpatialHierarchyPanelWidget : public QWidget {
+class SpatialHierarchyPanelWidget : public components::Panel {
     Q_OBJECT
 public:
     explicit SpatialHierarchyPanelWidget(QWidget* parent = nullptr);

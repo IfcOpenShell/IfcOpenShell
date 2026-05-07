@@ -34,8 +34,11 @@ class ViewportWindow;
 class SceneLoader;
 namespace ifcinterface { class ElementRegistry; }
 namespace ifcinterface::components { class TabBar; }
+namespace ifcinterface::panels::models { class ModelsPanelWidget; }
 namespace ifcinterface::panels::models { class ModelsPanelView; }
+namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelWidget; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
+namespace ifcinterface::panels::properties { class PropertiesPanelWidget; }
 namespace ifcinterface::panels::properties { class PropertiesPanelView; }
 
 namespace ifcinterface::shell {
@@ -94,10 +97,10 @@ private:
     SceneLoader* loader_ = nullptr;
     ifcinterface::ElementRegistry* element_registry_ = nullptr;
     QWidget* viewport_container_ = nullptr;
-    QDockWidget* models_panel_ = nullptr;
-    QDockWidget* spatial_panel_ = nullptr;
+    ifcinterface::panels::models::ModelsPanelWidget* models_panel_ = nullptr;
+    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;
-    QDockWidget* properties_panel_ = nullptr;
+    ifcinterface::panels::properties::PropertiesPanelWidget* properties_panel_ = nullptr;
     QDockWidget* stored_views_panel_ = nullptr;
     QDockWidget* search_panel_ = nullptr;
     QDockWidget* spreadsheet_panel_ = nullptr;

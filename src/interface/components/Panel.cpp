@@ -97,7 +97,7 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
         scroll_body->setObjectName("panelScrollBody");
         body_layout_ = new QVBoxLayout(scroll_body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
 
         scroll->setWidget(scroll_body);
         frame_layout->addWidget(scroll);
@@ -105,7 +105,7 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
         auto* body = new QWidget(frame);
         body_layout_ = new QVBoxLayout(body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
         frame_layout->addWidget(body);
     }
 
@@ -124,6 +124,13 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
 
 void Panel::addBodyWidget(QWidget* widget) {
     body_layout_->addWidget(widget);
+}
+
+void Panel::clearBodyWidgets() {
+    while (auto* item = body_layout_->takeAt(0)) {
+        if (auto* widget = item->widget()) widget->deleteLater();
+        delete item;
+    }
 }
 
 } // namespace ifcinterface::components

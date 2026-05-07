@@ -23,18 +23,17 @@
 
 #include "Types.h"
 
-#include <QString>
-#include <QWidget>
+#include "../../components/Panel.h"
 
-class QVBoxLayout;
+#include <QString>
+
 class QLabel;
 class QLineEdit;
 class QToolButton;
-namespace ifcinterface::components { class Section; }
 
 namespace ifcinterface::panels::properties {
 
-class PropertiesPanelWidget : public QWidget {
+class PropertiesPanelWidget : public components::Panel {
     Q_OBJECT
 public:
     explicit PropertiesPanelWidget(QWidget* parent = nullptr);
@@ -42,7 +41,6 @@ public:
     void render(const PropertiesPanelState& state);
 
 private:
-    QVBoxLayout* content_layout_ = nullptr;
     bool attributes_expanded_ = true;
     bool relationships_expanded_ = true;
     bool properties_expanded_ = true;

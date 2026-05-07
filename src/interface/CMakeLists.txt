@@ -33,12 +33,20 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Style.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Style.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Dialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Tabs.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Tabs.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/KeyValueTable.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/KeyValueTable.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Buttons.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/components/Buttons.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Types.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.h

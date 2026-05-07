@@ -348,23 +348,20 @@ void MainWindow::setupViewport() {
 }
 
 void MainWindow::setupPanels() {
-    auto* models_widget = new panels::models::ModelsPanelWidget(this);
-    auto* spatial_widget = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
-    auto* properties_widget = new panels::properties::PropertiesPanelWidget(this);
+    models_panel_ = new panels::models::ModelsPanelWidget(this);
+    spatial_panel_ = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
+    properties_panel_ = new panels::properties::PropertiesPanelWidget(this);
 
-    models_view_ = new panels::models::ModelsPanelView(models_widget, this);
-    spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_widget, this);
+    models_view_ = new panels::models::ModelsPanelView(models_panel_, this);
+    spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, this);
     properties_view_ = new panels::properties::PropertiesPanelView(
-        properties_widget, viewport_, element_registry_, this);
+        properties_panel_, viewport_, element_registry_, this);
 
     connect(models_view_, &panels::models::ModelsPanelView::statusMessageRequested,
             this, &MainWindow::setStatusMessage);
     connect(spatial_view_, &panels::spatial_hierarchy::SpatialHierarchyPanelView::statusMessageRequested,
             this, &MainWindow::setStatusMessage);
 
-    models_panel_ = new components::Panel("Models", models_widget, this, true);
-    spatial_panel_ = new components::Panel("Spatial Hierarchy", spatial_widget, this);
-    properties_panel_ = new components::Panel("Properties", properties_widget, this, false, true);
     layers_panel_ = new components::Panel("Layers", new panels::todo::TodoPanelWidget("Layers", this), this);
     stored_views_panel_ = new components::Panel(
         "Stored Views", new panels::todo::TodoPanelWidget("Stored Views", this), this);

@@ -34,6 +34,12 @@ QString buildAppStyleSheet() {
             background: ${app_background};
             color: ${primary_text};
         }
+        QMessageBox,
+        QMessageBox QWidget,
+        QMessageBox QLabel {
+            background: ${app_background};
+            color: ${primary_text};
+        }
         QFileDialog,
         QFileDialog QWidget,
         QFileDialog QStackedWidget,

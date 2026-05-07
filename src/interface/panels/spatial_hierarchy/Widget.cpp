@@ -26,17 +26,12 @@
 #include <QHeaderView>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
-#include <QVBoxLayout>
 
 namespace ifcinterface::panels::spatial_hierarchy {
 
 SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
-    : QWidget(parent)
+    : components::Panel("Spatial Hierarchy", nullptr, parent)
 {
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
 
     tree_ = new QTreeWidget(section);
@@ -51,7 +46,7 @@ SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
     tree_->header()->resizeSection(1, 28);
     tree_->header()->hide();
     section->addBodyWidget(tree_);
-    layout->addWidget(section);
+    addBodyWidget(section);
 
     connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
         if (!item || column != 1) return;

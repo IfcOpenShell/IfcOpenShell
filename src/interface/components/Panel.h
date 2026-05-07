@@ -39,6 +39,7 @@ public:
                    bool scrollable = false);
 
     void addBodyWidget(QWidget* widget);
+    void clearBodyWidgets();
 
 private:
     QVBoxLayout* body_layout_ = nullptr;
