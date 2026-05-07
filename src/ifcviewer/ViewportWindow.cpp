@@ -670,6 +670,7 @@ ViewportWindow::~ViewportWindow() {
             if (hiz_resolve_depth_tex_) gl_->glDeleteTextures(1, &hiz_resolve_depth_tex_);
             if (hiz_downsample_program_) gl_->glDeleteProgram(hiz_downsample_program_);
             if (hiz_downsample_vao_) gl_->glDeleteVertexArrays(1, &hiz_downsample_vao_);
+            overlay_renderer_.release();
         }
         context_->doneCurrent();
     }
@@ -690,6 +691,7 @@ void ViewportWindow::initGL() {
     buildAxisGizmo();
     buildPivotIndicator();
     buildSectionPlaneGizmo();
+    overlay_renderer_.initialize(gl_);
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
@@ -2726,6 +2728,16 @@ void ViewportWindow::render() {
     renderEdgePass();
     renderPivotIndicator();
     renderSectionPlanes();
+    // Overlay handles highlight tris + HUD text; renderAxisGizmo() must
+    // come after because it shrinks glViewport to the corner badge and
+    // does not restore.
+    {
+        const qreal dpr = devicePixelRatio();
+        overlay_renderer_.render(vp.constData(),
+                                 int(width()  * dpr),
+                                 int(height() * dpr),
+                                 dpr);
+    }
     renderAxisGizmo();
 
     // Build HiZ from this frame's resolved depth for next frame's cull.
@@ -3848,6 +3860,8 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
             out.world_normal[0] = world_normal.x();
             out.world_normal[1] = world_normal.y();
             out.world_normal[2] = world_normal.z();
+            std::memcpy(out.composed_transform, inst.transform,
+                        sizeof(out.composed_transform));
             return true;
         }
     }
@@ -3857,4 +3871,17 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
 void ViewportWindow::toggleAreaTool() {
     area_tool_active_ = !area_tool_active_;
     emit areaToolToggled(area_tool_active_);
+}
+
+void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
+                                            float r, float g, float b, float a) {
+    if (!gl_initialized_) return;
+    context_->makeCurrent(this);
+    overlay_renderer_.setHighlightTriangles(world_xyz, r, g, b, a);
+    requestUpdate();
+}
+
+void ViewportWindow::setHudText(const QString& text) {
+    overlay_renderer_.setHudText(text);
+    requestUpdate();
 }

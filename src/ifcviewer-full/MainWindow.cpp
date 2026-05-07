@@ -210,11 +210,20 @@ void MainWindow::setupUi() {
             [this](int x, int y, int modifiers) {
         const bool alt = (modifiers & Qt::AltModifier) != 0;
         area_measurement_.onPick(*viewport_, x, y, alt);
+        viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
+            .arg(area_measurement_.totalArea(), 0, 'f', 4)
+            .arg(area_measurement_.triangleCount()));
     });
     connect(viewport_, &ViewportWindow::areaToolToggled, this,
             [this](bool active) {
-        area_measurement_.clear();
-        qInfo("Area tool %s", active ? "on (LMB to add patch, Alt+LMB single tri, click again to remove, Esc exits)" : "off");
+        area_measurement_.clear(*viewport_);
+        if (active) {
+            viewport_->setHudText("Area: 0.0000 m²  (0 tris)");
+            status_label_->setText("Area tool: LMB add, Alt+LMB single tri, click again to remove, Esc exits");
+        } else {
+            viewport_->setHudText(QString());
+            status_label_->setText("Ready");
+        }
     });
 
     auto* tree_dock = new QDockWidget("Elements", this);

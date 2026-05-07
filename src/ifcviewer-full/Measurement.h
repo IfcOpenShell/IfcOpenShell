@@ -22,7 +22,6 @@
 
 #include <cstdint>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 class ViewportWindow;
@@ -38,14 +37,16 @@ double volumeOfObjects(ViewportWindow& vp,
                        const std::vector<uint32_t>& object_ids);
 
 // Click-to-accumulate area measurement.  Each pick resolves the screen
-// click to a (model, mesh, triangle) using ViewportWindow's primitives,
+// click to a (instance, triangle) using ViewportWindow's primitives,
 // expands it into the connected coplanar patch (BFS over shared edges,
 // dot(normal, seed_normal) > 0.9999), then either adds or removes that
 // patch from the running set depending on whether the seed triangle was
 // already in.  Alt-click skips the BFS expansion (single-triangle).
-// Picks across different meshes are kept as separate patches and their
-// areas are summed.
+// Picks on different instances (even of the same mesh) are kept as
+// separate patches and their areas are summed.
 //
+// On every pick the world-space triangles of the running set are pushed
+// to ViewportWindow::setHighlightTriangles for in-viewport shading.
 // State is cleared on construction, on clear(), and is expected to be
 // reset by the host (e.g. when the viewport's area tool toggles off).
 class AreaMeasurement {
@@ -57,8 +58,9 @@ public:
     // via qInfo.  Misses are silent.
     void onPick(ViewportWindow& vp, int x, int y, bool alt);
 
-    // Wipe all accumulated triangles and per-mesh adjacency caches.
-    void clear();
+    // Wipe all accumulated triangles, per-mesh adjacency caches, and the
+    // viewport overlay.
+    void clear(ViewportWindow& vp);
 
     double totalArea() const { return total_area_m2_; }
     size_t triangleCount() const { return selected_.size(); }
@@ -77,16 +79,29 @@ private:
     };
     MeshCache* meshCache(ViewportWindow& vp, uint32_t model_id, uint32_t mesh_id);
 
-    // Selection key: (uint64) packing model_id (high 24), mesh_id (mid 24),
-    // triangle index (low 16).  16 bits is enough — meshes with > 65k tris
-    // are rare and the streamer chunks them anyway.
-    static uint64_t triKey(uint32_t model_id, uint32_t mesh_id, uint32_t tri) {
-        return (uint64_t(model_id) << 40) | (uint64_t(mesh_id) << 16) | uint64_t(tri);
+    // Per-selected-triangle record.  The composed transform is captured at
+    // pick time so the overlay rebuild doesn't have to re-query the
+    // viewport for it (and so the overlay keeps working if the picked
+    // instance later goes hidden).
+    struct SelectedTri {
+        uint32_t model_id;
+        uint32_t mesh_id;
+        uint32_t tri;
+        float    composed_transform[16];
+    };
+
+    // Selection key: object_id (high 32) | tri index (low 32).  Packing
+    // by object_id rather than mesh_id means two distinct instances of
+    // the same mesh contribute independently, as the user spec'd.
+    static uint64_t triKey(uint32_t object_id, uint32_t tri) {
+        return (uint64_t(object_id) << 32) | uint64_t(tri);
     }
 
-    std::unordered_map<uint64_t, MeshCache> mesh_cache_;
-    std::unordered_set<uint64_t>            selected_;
-    double                                  total_area_m2_ = 0.0;
+    void rebuildHighlight(ViewportWindow& vp);
+
+    std::unordered_map<uint64_t, MeshCache>    mesh_cache_;
+    std::unordered_map<uint64_t, SelectedTri>  selected_;
+    double                                     total_area_m2_ = 0.0;
 };
 
 #endif // IFCVIEWER_FULL_MEASUREMENT_H

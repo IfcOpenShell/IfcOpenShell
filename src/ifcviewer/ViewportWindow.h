@@ -45,6 +45,7 @@ QT_END_NAMESPACE
 
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
+#include "OverlayRenderer.h"
 #include "SidecarCache.h"
 
 // Matches GL_DRAW_INDIRECT_BUFFER layout for glMultiDrawElementsIndirect.
@@ -221,6 +222,11 @@ public:
         float    mesh_local[3]  = {0, 0, 0};
         float    world_pos[3]   = {0, 0, 0};
         float    world_normal[3]= {0, 0, 0};
+        // The instance's composed (FederatedFalseOrigin · ModelTransformation
+        // · CoordinateOperation · placement_transformation) matrix in
+        // column-major form.  Mesh-local positions × this = world.  Caching
+        // by callers becomes stale if any federation matrix is later edited.
+        float    composed_transform[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
     };
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
@@ -230,6 +236,19 @@ public:
     // accumulating triangle area).  Esc exits.
     void toggleAreaTool();
     bool areaToolActive() const { return area_tool_active_; }
+
+    // Replace the overlay highlight-triangle list rendered after the main
+    // pass.  `world_xyz` is 3 floats per vertex, 3 verts per triangle, in
+    // world space.  Empty disables the overlay.  Triggers a viewport
+    // update so the change becomes visible immediately.
+    void setHighlightTriangles(const std::vector<float>& world_xyz,
+                               float r, float g, float b, float a);
+
+    // Top-left HUD text drawn via QPainter on top of the GL surface at
+    // the end of each frame.  Empty hides the HUD.  Used today by the
+    // area-measurement tool for the running total; later tools can pile
+    // additional readouts in by extending this with a multi-line API.
+    void setHudText(const QString& text);
 
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
@@ -634,6 +653,11 @@ private:
 
     // Area-measurement tool: see toggleAreaTool / surfacePickedInTool.
     bool   area_tool_active_         = false;
+
+    // Renders any client-supplied overlay primitives (highlight triangles
+    // today; lines/points/labels later) in their own pass after the main
+    // geometry, with depth-test on / depth-write off.
+    OverlayRenderer overlay_renderer_;
 
     // Active section planes.  Uploaded as uniform array each frame to the
     // main + pick programs; capped at MaxSectionPlanes.

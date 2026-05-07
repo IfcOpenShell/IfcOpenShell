@@ -201,10 +201,40 @@ constexpr double kCoplanarDot = 0.9999;  // ~0.81° tolerance
 
 AreaMeasurement::AreaMeasurement() = default;
 
-void AreaMeasurement::clear() {
+void AreaMeasurement::clear(ViewportWindow& vp) {
     mesh_cache_.clear();
     selected_.clear();
     total_area_m2_ = 0.0;
+    vp.setHighlightTriangles({}, 0, 0, 0, 0);
+}
+
+void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
+    // Push every selected triangle's three world-space vertices to the
+    // overlay.  Mesh-local positions × per-instance composed transform.
+    std::vector<float> world_xyz;
+    world_xyz.reserve(selected_.size() * 9);
+    for (const auto& [key, sel] : selected_) {
+        const uint64_t cache_key = (uint64_t(sel.model_id) << 32)
+                                 | uint64_t(sel.mesh_id);
+        auto cit = mesh_cache_.find(cache_key);
+        if (cit == mesh_cache_.end()) continue;
+        const MeshCache& c = cit->second;
+        if (size_t(sel.tri) * 3 + 2 >= c.indices.size()) continue;
+        const float* M = sel.composed_transform;  // column-major
+        for (int e = 0; e < 3; ++e) {
+            const uint32_t vi = c.indices[3 * sel.tri + e];
+            const float* p = &c.positions[3 * vi];
+            // World = M * (p, 1).  Column-major: M[col*4 + row].
+            const float wx = M[0]*p[0] + M[4]*p[1] + M[8]*p[2]  + M[12];
+            const float wy = M[1]*p[0] + M[5]*p[1] + M[9]*p[2]  + M[13];
+            const float wz = M[2]*p[0] + M[6]*p[1] + M[10]*p[2] + M[14];
+            world_xyz.push_back(wx);
+            world_xyz.push_back(wy);
+            world_xyz.push_back(wz);
+        }
+    }
+    // Translucent cyan-ish tint — readable on both light and dark surfaces.
+    vp.setHighlightTriangles(world_xyz, 0.20f, 0.85f, 1.00f, 0.45f);
 }
 
 AreaMeasurement::MeshCache* AreaMeasurement::meshCache(ViewportWindow& vp,
@@ -304,18 +334,32 @@ void AreaMeasurement::onPick(ViewportWindow& vp, int x, int y, bool alt) {
 
     // Toggle: if the seed was already in the set, remove the patch;
     // otherwise add it.
-    const uint64_t seed_key = triKey(pick.model_id, pick.mesh_id, seed);
+    const uint64_t seed_key = triKey(pick.object_id, seed);
     const bool removing = selected_.count(seed_key) > 0;
     double delta = 0.0;
     for (uint32_t t : patch) {
-        const uint64_t k = triKey(pick.model_id, pick.mesh_id, t);
+        const uint64_t k = triKey(pick.object_id, t);
         if (removing) {
-            if (selected_.erase(k) > 0) delta -= cache->tri_areas[t];
+            auto it = selected_.find(k);
+            if (it != selected_.end()) {
+                delta -= cache->tri_areas[t];
+                selected_.erase(it);
+            }
         } else {
-            if (selected_.insert(k).second) delta += cache->tri_areas[t];
+            SelectedTri sel;
+            sel.model_id = pick.model_id;
+            sel.mesh_id  = pick.mesh_id;
+            sel.tri      = t;
+            std::memcpy(sel.composed_transform, pick.composed_transform,
+                        sizeof(sel.composed_transform));
+            if (selected_.emplace(k, sel).second) {
+                delta += cache->tri_areas[t];
+            }
         }
     }
     total_area_m2_ += delta;
+
+    rebuildHighlight(vp);
 
     qInfo("Area %s%.6f m^2  (total: %.6f m^2, %zu tris)",
           delta >= 0.0 ? "+" : "", delta,
