@@ -43,6 +43,16 @@ void ElementRegistry::clear() {
     elements_.clear();
 }
 
+void ElementRegistry::removeModel(uint32_t model_id) {
+    for (auto it = elements_.begin(); it != elements_.end();) {
+        if (it->second.model_id == model_id) {
+            it = elements_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
 std::optional<BasicElementInfo> ElementRegistry::findBasicElementInfo(uint32_t object_id) const {
     auto it = elements_.find(object_id);
     if (it == elements_.end()) return std::nullopt;

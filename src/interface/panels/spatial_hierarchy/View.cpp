@@ -22,6 +22,8 @@
 
 #include "Widget.h"
 
+#include "../../SessionState.h"
+
 namespace ifcinterface::panels::spatial_hierarchy {
 
 namespace {
@@ -37,8 +39,10 @@ TreeNode* findNodeRecursive(QList<TreeNode>& nodes, const NodePath& path, int de
 
 } // namespace
 
-SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget, QObject* parent)
-    : QObject(parent), widget_(widget)
+SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget,
+                                                     ifcinterface::SessionState* session_state,
+                                                     QObject* parent)
+    : QObject(parent), widget_(widget), session_state_(session_state)
 {
     nodes_ = {
         {"Site A", ItemKind::Site, true,
@@ -52,7 +56,7 @@ SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget
         if (auto* node = findNode(path)) {
             node->visible = !node->visible;
             reload();
-            emit statusMessageRequested("Spatial", node->visible ? "Item shown" : "Item hidden");
+            session_state_->setStatusMessage("Spatial", node->visible ? "Item shown" : "Item hidden");
         }
     });
 

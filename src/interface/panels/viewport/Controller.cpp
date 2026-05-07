@@ -20,6 +20,7 @@
 
 #include "Controller.h"
 
+#include "../../SessionState.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
@@ -29,61 +30,74 @@
 
 namespace ifcinterface::panels::viewport {
 
-ViewportController::ViewportController(Federation* federation,
-                                       SceneLoader* loader,
+ViewportController::ViewportController(ifcinterface::SessionState* session_state,
                                        ViewportWindow* viewport,
-                                       const QHash<QString, uint32_t>* fed_id_to_model_id,
-                                       const QHash<uint32_t, QString>* model_id_to_fed_id,
                                        QObject* parent)
     : QObject(parent)
-    , federation_(federation)
-    , loader_(loader)
+    , session_state_(session_state)
     , viewport_(viewport)
-    , fed_id_to_model_id_(fed_id_to_model_id)
-    , model_id_to_fed_id_(model_id_to_fed_id)
 {
-    connect(federation_, &Federation::federatedFalseOriginChanged,
+    Federation* federation = session_state_->federation();
+    SceneLoader* loader = session_state_->loader();
+    connect(federation, &Federation::federatedFalseOriginChanged,
             this, &ViewportController::applyFederatedFalseOrigin);
-    connect(federation_, &Federation::configChanged, this, [this]() {
+    connect(federation, &Federation::configChanged, this, [this]() {
         applyFederatedFalseOrigin();
-        for (auto it = model_id_to_fed_id_->cbegin(); it != model_id_to_fed_id_->cend(); ++it) {
-            applyModelTransformation(it.key());
+        for (uint32_t mid : session_state_->modelIds()) {
+            applyModelTransformation(mid);
         }
     });
-    connect(federation_, &Federation::modelTransformationChanged,
+    connect(federation, &Federation::modelTransformationChanged,
             this, [this](const QString& fed_id) {
-        auto it = fed_id_to_model_id_->find(fed_id);
-        if (it != fed_id_to_model_id_->end()) {
-            applyModelTransformation(it.value());
+        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
+        if (mid != 0) applyModelTransformation(mid);
+    });
+    connect(federation, &Federation::modelVisibilityChanged,
+            this, [this](const QString& fed_id, bool /*visible*/) {
+        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
+        if (mid != 0) applyModelVisibility(mid);
+    });
+    connect(federation, &Federation::modelGroupChanged,
+            this, [this](const QString& fed_id, const QString& /*group_id*/) {
+        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
+        if (mid != 0) applyModelVisibility(mid);
+    });
+    connect(federation, &Federation::groupVisibilityChanged,
+            this, [this](const QString&, bool /*visible*/) {
+        for (uint32_t mid : session_state_->modelIds()) {
+            applyModelVisibility(mid);
         }
     });
-    connect(loader_, &SceneLoader::loadedFromSidecar, this,
+    connect(loader, &SceneLoader::loadedFromSidecar, this,
             [this](uint32_t mid, qint64 /*elapsed_ms*/) {
         applyCoordinateOperation(mid);
+        applyModelVisibility(mid);
         maybeGuessFederatedFalseOrigin(mid);
     });
-    connect(loader_, &SceneLoader::dataSourceReady, this,
+    connect(loader, &SceneLoader::dataSourceReady, this,
             [this](uint32_t mid) {
         applyCoordinateOperation(mid);
     });
-    connect(loader_, &SceneLoader::loadedFromStream, this,
+    connect(loader, &SceneLoader::loadedFromStream, this,
             [this](uint32_t mid, qint64 /*elapsed_ms*/) {
         applyCoordinateOperation(mid);
+        applyModelVisibility(mid);
         maybeGuessFederatedFalseOrigin(mid);
     });
     connect(&AppSettings::instance(),
             &AppSettings::applyCoordinateOperationChanged,
             this, [this](bool /*enabled*/) {
-        for (auto it = model_id_to_fed_id_->cbegin(); it != model_id_to_fed_id_->cend(); ++it) {
-            applyCoordinateOperation(it.key());
+        for (uint32_t mid : session_state_->modelIds()) {
+            applyCoordinateOperation(mid);
         }
     });
 }
 
 void ViewportController::applyCoordinateOperation(uint32_t mid) {
+    SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
     if (AppSettings::instance().applyCoordinateOperation()) {
-        if (const ModelGeoref* georef = loader_->modelGeoref(mid)) {
+        if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
             if (georef->has_coordinate_operation) {
                 matrix = georef->coordinate_operation_meters;
             }
@@ -94,13 +108,15 @@ void ViewportController::applyCoordinateOperation(uint32_t mid) {
 }
 
 void ViewportController::applyModelTransformation(uint32_t mid) {
+    Federation* federation = session_state_->federation();
+    SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    auto fed_it = model_id_to_fed_id_->find(mid);
-    if (fed_it != model_id_to_fed_id_->end()) {
-        if (const Federation::Model* model = federation_->findById(fed_it.value())) {
+    const QString fed_id = session_state_->fedIdForModelId(mid);
+    if (!fed_id.isEmpty()) {
+        if (const Federation::Model* model = federation->findById(fed_id)) {
             ModelUnits units;
             Eigen::Matrix4d coordinate_operation = Eigen::Matrix4d::Identity();
-            if (const ModelGeoref* georef = loader_->modelGeoref(mid)) {
+            if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
                 units = georef->units;
                 if (AppSettings::instance().applyCoordinateOperation() &&
                     georef->has_coordinate_operation) {
@@ -108,30 +124,45 @@ void ViewportController::applyModelTransformation(uint32_t mid) {
                 }
             }
             matrix = composeModelTransformation(
-                model->model_transformation, federation_->config(), units, coordinate_operation);
+                model->model_transformation, federation->config(), units, coordinate_operation);
         }
     }
     viewport_->setModelTransformation(mid, matrix);
 }
 
+void ViewportController::applyModelVisibility(uint32_t mid) {
+    Federation* federation = session_state_->federation();
+    const QString fed_id = session_state_->fedIdForModelId(mid);
+    if (fed_id.isEmpty()) return;
+
+    if (federation->isModelEffectivelyVisible(fed_id)) {
+        viewport_->showModel(mid);
+    } else {
+        viewport_->hideModel(mid);
+    }
+}
+
 void ViewportController::applyFederatedFalseOrigin() {
+    Federation* federation = session_state_->federation();
     viewport_->setFederatedFalseOrigin(
-        composeFederatedFalseOrigin(federation_->federatedFalseOrigin(), federation_->config()));
+        composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
 }
 
 void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
-    if (!federation_->filePath().isEmpty()) return;
+    Federation* federation = session_state_->federation();
+    SceneLoader* loader = session_state_->loader();
+    if (!federation->filePath().isEmpty()) return;
 
-    const FederatedFalseOrigin& current = federation_->federatedFalseOrigin();
+    const FederatedFalseOrigin& current = federation->federatedFalseOrigin();
     const FederatedFalseOrigin defaults;
     if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
 
-    const Eigen::Matrix4d* placement = loader_->firstPlacement(mid);
-    const ModelGeoref* georef = loader_->modelGeoref(mid);
+    const Eigen::Matrix4d* placement = loader->firstPlacement(mid);
+    const ModelGeoref* georef = loader->modelGeoref(mid);
     if (placement == nullptr || georef == nullptr) return;
 
-    federation_->setFederatedFalseOrigin(guessFederatedFalseOrigin(
-        *placement, *georef, federation_->config(),
+    federation->setFederatedFalseOrigin(guessFederatedFalseOrigin(
+        *placement, *georef, federation->config(),
         AppSettings::instance().applyCoordinateOperation()));
 }
 

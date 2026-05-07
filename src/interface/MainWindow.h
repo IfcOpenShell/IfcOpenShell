@@ -32,7 +32,9 @@ class QToolButton;
 class Federation;
 class SceneLoader;
 namespace ifcinterface { class ElementRegistry; }
+namespace ifcinterface { class SessionState; }
 namespace ifcinterface::components { class TabBar; }
+namespace ifcinterface::panels::models { class ModelsPanelController; }
 namespace ifcinterface::panels::models { class ModelsPanelWidget; }
 namespace ifcinterface::panels::models { class ModelsPanelView; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelWidget; }
@@ -70,7 +72,6 @@ private:
     QToolButton* makeRibbonAction(const QString& text, const QString& icon_path);
     QWidget* makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons);
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
-    void setStatusMessage(const QString& mode, const QString& detail);
     void addFiles(const QStringList& paths);
     QString formatElapsed(qint64 ms) const;
 
@@ -100,6 +101,7 @@ private:
     ifcinterface::panels::viewport::ViewportController* viewport_controller_ = nullptr;
     SceneLoader* loader_ = nullptr;
     ifcinterface::ElementRegistry* element_registry_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
     ifcinterface::panels::models::ModelsPanelWidget* models_panel_ = nullptr;
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;
@@ -110,11 +112,10 @@ private:
     QDockWidget* audit_panel_ = nullptr;
     QDockWidget* clash_panel_ = nullptr;
     QDockWidget* issues_panel_ = nullptr;
+    ifcinterface::panels::models::ModelsPanelController* models_controller_ = nullptr;
     ifcinterface::panels::models::ModelsPanelView* models_view_ = nullptr;
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
     ifcinterface::panels::properties::PropertiesPanelView* properties_view_ = nullptr;
-    QHash<QString, uint32_t> fed_id_to_model_id_;
-    QHash<uint32_t, QString> model_id_to_fed_id_;
 };
 
 } // namespace ifcinterface::shell

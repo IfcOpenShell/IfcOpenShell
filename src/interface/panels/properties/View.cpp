@@ -23,28 +23,27 @@
 #include "Widget.h"
 
 #include "../../ElementRegistry.h"
+#include "../../SessionState.h"
 #include "../../../ifcviewer/AppSettings.h"
-#include "../../../ifcviewer/ViewportWindow.h"
 
 namespace ifcinterface::panels::properties {
 
 PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget,
-                                         ViewportWindow* viewport,
-                                         ifcinterface::ElementRegistry* registry,
+                                         ifcinterface::SessionState* session_state,
                                          QObject* parent)
-    : QObject(parent), widget_(widget), registry_(registry)
+    : QObject(parent), widget_(widget), session_state_(session_state)
 {
-    connect(viewport, &ViewportWindow::objectPicked, this, [this](uint32_t object_id) {
+    connect(session_state_, &ifcinterface::SessionState::selectionChanged, this, [this](uint32_t object_id) {
         refresh(object_id);
+    });
+    connect(session_state_, &ifcinterface::SessionState::projectReset, this, [this]() {
+        refresh(0);
     });
     refresh(0);
 }
 
-void PropertiesPanelView::clearSelection() {
-    refresh(0);
-}
-
 void PropertiesPanelView::refresh(uint32_t object_id) {
+    auto* registry = session_state_->elementRegistry();
     PropertiesPanelState state;
     state.entity = {"IfcWall", "SOLIDWALL"};
     state.attributes = {
@@ -84,13 +83,13 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
           {"Paint Coverage", "42.78 m2"}}},
     };
 
-    if (!registry_) {
+    if (!registry) {
         widget_->render(state);
         return;
     }
 
     if (!AppSettings::instance().loadDataSource()) {
-        auto info = registry_->findBasicElementInfo(object_id);
+        auto info = registry->findBasicElementInfo(object_id);
         if (info && !info->type.isEmpty()) {
             state.entity.entity_class = info->type;
             if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
@@ -111,7 +110,7 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         return;
     }
 
-    auto entity = registry_->findEntity(object_id);
+    auto entity = registry->findEntity(object_id);
     if (entity) {
         state.entity.entity_class = QString::fromStdString(entity->declaration().name());
         if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {

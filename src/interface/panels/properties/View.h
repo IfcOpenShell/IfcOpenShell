@@ -25,8 +25,7 @@
 
 #include <QObject>
 
-namespace ifcinterface { class ElementRegistry; }
-class ViewportWindow;
+namespace ifcinterface { class SessionState; }
 namespace ifcinterface::panels::properties {
 
 class PropertiesPanelWidget;
@@ -35,16 +34,14 @@ class PropertiesPanelView : public QObject {
     Q_OBJECT
 public:
     explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ViewportWindow* viewport,
-                                 ifcinterface::ElementRegistry* registry,
+                                 ifcinterface::SessionState* session_state,
                                  QObject* parent = nullptr);
-    void clearSelection();
 
 private:
     void refresh(uint32_t object_id);
 
     PropertiesPanelWidget* widget_ = nullptr;
-    ifcinterface::ElementRegistry* registry_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
 };
 
 } // namespace ifcinterface::panels::properties

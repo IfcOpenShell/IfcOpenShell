@@ -21,11 +21,9 @@
 #ifndef IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
 #define IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
 
-#include <QHash>
 #include <QObject>
 
-class Federation;
-class SceneLoader;
+namespace ifcinterface { class SessionState; }
 class ViewportWindow;
 
 namespace ifcinterface::panels::viewport {
@@ -34,11 +32,8 @@ class ViewportController : public QObject {
     Q_OBJECT
 
 public:
-    explicit ViewportController(Federation* federation,
-                                SceneLoader* loader,
+    explicit ViewportController(ifcinterface::SessionState* session_state,
                                 ViewportWindow* viewport,
-                                const QHash<QString, uint32_t>* fed_id_to_model_id,
-                                const QHash<uint32_t, QString>* model_id_to_fed_id,
                                 QObject* parent = nullptr);
 
     void applyFederatedFalseOrigin();
@@ -46,13 +41,11 @@ public:
 private:
     void applyCoordinateOperation(uint32_t mid);
     void applyModelTransformation(uint32_t mid);
+    void applyModelVisibility(uint32_t mid);
     void maybeGuessFederatedFalseOrigin(uint32_t mid);
 
-    Federation* federation_ = nullptr;
-    SceneLoader* loader_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
-    const QHash<QString, uint32_t>* fed_id_to_model_id_ = nullptr;
-    const QHash<uint32_t, QString>* model_id_to_fed_id_ = nullptr;
 };
 
 } // namespace ifcinterface::panels::viewport

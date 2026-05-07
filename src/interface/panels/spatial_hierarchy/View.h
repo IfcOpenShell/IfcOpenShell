@@ -25,6 +25,7 @@
 
 #include <QObject>
 
+namespace ifcinterface { class SessionState; }
 namespace ifcinterface::panels::spatial_hierarchy {
 
 class SpatialHierarchyPanelWidget;
@@ -32,16 +33,16 @@ class SpatialHierarchyPanelWidget;
 class SpatialHierarchyPanelView : public QObject {
     Q_OBJECT
 public:
-    explicit SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget, QObject* parent = nullptr);
-
-signals:
-    void statusMessageRequested(const QString& mode, const QString& detail);
+    explicit SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget,
+                                       ifcinterface::SessionState* session_state,
+                                       QObject* parent = nullptr);
 
 private:
     void reload();
     TreeNode* findNode(const NodePath& path);
 
     SpatialHierarchyPanelWidget* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
     QList<TreeNode> nodes_;
 };
 

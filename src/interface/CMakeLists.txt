@@ -27,6 +27,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/SvgIcon.cpp
@@ -48,6 +50,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/View.cpp

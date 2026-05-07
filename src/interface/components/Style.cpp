@@ -253,6 +253,33 @@ QString buildAppStyleSheet() {
         QPushButton:pressed {
             background: ${ribbon_button_pressed};
         }
+        QMenu {
+            background: ${panel_background};
+            color: ${primary_text};
+            border: 1px solid ${border};
+            padding: 4px;
+        }
+        QMenu::item {
+            background: transparent;
+            color: ${primary_text};
+            padding: 6px 24px 6px 10px;
+            border-radius: ${panel_radius}px;
+        }
+        QMenu::item:selected {
+            background: ${selection_background};
+            color: ${selection_text};
+        }
+        QMenu::item:disabled {
+            color: ${disabled_text};
+        }
+        QMenu::separator {
+            height: 1px;
+            background: ${border};
+            margin: 4px 8px;
+        }
+        QMenu::icon {
+            padding-left: 2px;
+        }
         QFrame#entityClassBox,
         QGroupBox#propertySetBox {
             background: ${box_background};
