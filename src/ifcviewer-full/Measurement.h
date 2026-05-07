@@ -20,6 +20,9 @@
 #ifndef IFCVIEWER_FULL_MEASUREMENT_H
 #define IFCVIEWER_FULL_MEASUREMENT_H
 
+#include <QString>
+
+#include <array>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -102,6 +105,35 @@ private:
     std::unordered_map<uint64_t, MeshCache>    mesh_cache_;
     std::unordered_map<uint64_t, SelectedTri>  selected_;
     double                                     total_area_m2_ = 0.0;
+};
+
+// Click-to-place length / angle / area measurement.  Each pick appends a
+// world-space point.  The readout adapts to the point count:
+//
+//   1 point  → "click another point"
+//   2 points → straight-line distance plus axis-aligned ΔX/ΔY/ΔZ
+//   3 points → angle at the middle vertex plus the triangle's area
+//   4+       → polygon area: best-fit-plane shoelace if the points are
+//              near-coplanar (RMS plane distance < 1e-3 of the bounding
+//              box), else fan-triangulated from the first point
+//
+// Clicked points are pushed to the viewport overlay as small dots and
+// the connecting polyline; readouts go to the multi-line HUD.
+class LengthMeasurement {
+public:
+    LengthMeasurement();
+
+    void onPick(ViewportWindow& vp, int x, int y, bool alt);
+    void removeLastPoint(ViewportWindow& vp);
+    void clear(ViewportWindow& vp);
+
+    size_t pointCount() const { return points_.size(); }
+
+private:
+    void rebuildOverlay(ViewportWindow& vp);
+    QString formatReadout() const;
+
+    std::vector<std::array<float, 3>> points_;
 };
 
 #endif // IFCVIEWER_FULL_MEASUREMENT_H

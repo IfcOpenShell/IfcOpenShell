@@ -200,7 +200,8 @@ private:
     QString pending_camera_;
     int     pending_benchmark_ = 0;
 
-    AreaMeasurement area_measurement_;
+    AreaMeasurement   area_measurement_;
+    LengthMeasurement length_measurement_;
 };
 
 #endif // MAINWINDOW_H

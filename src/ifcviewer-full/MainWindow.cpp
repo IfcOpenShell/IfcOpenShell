@@ -209,20 +209,44 @@ void MainWindow::setupUi() {
     connect(viewport_, &ViewportWindow::surfacePickedInTool, this,
             [this](int x, int y, int modifiers) {
         const bool alt = (modifiers & Qt::AltModifier) != 0;
-        area_measurement_.onPick(*viewport_, x, y, alt);
-        viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
-            .arg(area_measurement_.totalArea(), 0, 'f', 4)
-            .arg(area_measurement_.triangleCount()));
+        switch (viewport_->toolMode()) {
+        case ViewportWindow::ToolMode::Area:
+            area_measurement_.onPick(*viewport_, x, y, alt);
+            viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
+                .arg(area_measurement_.totalArea(), 0, 'f', 4)
+                .arg(area_measurement_.triangleCount()));
+            break;
+        case ViewportWindow::ToolMode::Length:
+            length_measurement_.onPick(*viewport_, x, y, alt);
+            break;
+        case ViewportWindow::ToolMode::None:
+            break;
+        }
     });
-    connect(viewport_, &ViewportWindow::areaToolToggled, this,
-            [this](bool active) {
+    connect(viewport_, &ViewportWindow::toolModeChanged, this,
+            [this](ViewportWindow::ToolMode mode) {
+        // Always clear both — the previous tool's accumulator/overlay
+        // shouldn't bleed into the next one.
         area_measurement_.clear(*viewport_);
-        if (active) {
+        length_measurement_.clear(*viewport_);
+        switch (mode) {
+        case ViewportWindow::ToolMode::Area:
             viewport_->setHudText("Area: 0.0000 m²  (0 tris)");
             status_label_->setText("Area tool: LMB add, Alt+LMB single tri, click again to remove, Esc exits");
-        } else {
+            break;
+        case ViewportWindow::ToolMode::Length:
+            viewport_->setHudText("Length tool: click first point");
+            status_label_->setText("Length tool: LMB add point, Backspace remove last, Esc exits");
+            break;
+        case ViewportWindow::ToolMode::None:
             viewport_->setHudText(QString());
             status_label_->setText("Ready");
+            break;
+        }
+    });
+    connect(viewport_, &ViewportWindow::toolBackspacePressed, this, [this]() {
+        if (viewport_->toolMode() == ViewportWindow::ToolMode::Length) {
+            length_measurement_.removeLastPoint(*viewport_);
         }
     });
 
@@ -305,6 +329,9 @@ void MainWindow::setupMenus() {
     view_menu->addAction("&Measure Area", this, [this]() {
         viewport_->toggleAreaTool();
     }, QKeySequence("Ctrl+Shift+A"));
+    view_menu->addAction("Measure &Length", this, [this]() {
+        viewport_->toggleLengthTool();
+    }, QKeySequence("Ctrl+Shift+L"));
     view_menu->addSeparator();
     view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
     view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);

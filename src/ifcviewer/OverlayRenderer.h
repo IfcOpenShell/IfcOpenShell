@@ -44,6 +44,42 @@ public:
     void setHighlightTriangles(const std::vector<float>& world_xyz,
                                float r, float g, float b, float a);
 
+    // Replace the overlay-line list (3 floats per vertex, 2 verts per
+    // segment, world space).
+    //
+    // When stroke_a > 0, every segment is rendered twice — first a wider
+    // (line_width + 2*stroke_extra) stroke pass, then the inner line_width
+    // pass.  Most desktop GL drivers clamp glLineWidth at ~1, so the
+    // stroke pass on lines may visually collapse onto the inner; reliable
+    // two-tone outlining will need a screen-space-quad thick-line shader.
+    void setOverlayLines(const std::vector<float>& world_xyz,
+                         float r, float g, float b, float a,
+                         float line_width,
+                         float stroke_r, float stroke_g, float stroke_b, float stroke_a,
+                         float stroke_extra);
+
+    // Replace the overlay-point list (3 floats per point, world space).
+    // `pixel_size` is the inner-dot diameter in physical pixels.
+    //
+    // When stroke_a > 0, every point is rendered twice: a wider
+    // (pixel_size + 2*stroke_extra) outer dot in stroke_color, then the
+    // pixel_size inner dot in the main color — giving a crisp halo that
+    // reads on any background.
+    void setOverlayPoints(const std::vector<float>& world_xyz,
+                          float r, float g, float b, float a,
+                          float pixel_size,
+                          float stroke_r, float stroke_g, float stroke_b, float stroke_a,
+                          float stroke_extra);
+
+    // World-anchored text labels: each one is projected to screen space
+    // and drawn via QPainter at that pixel.  Used today for per-segment
+    // length readouts in the length tool.
+    struct Label {
+        float   world_pos[3];
+        QString text;
+    };
+    void setOverlayLabels(const std::vector<Label>& labels);
+
     // Top-left HUD text drawn via QPainter on the GL surface as part of
     // render().  Empty hides the HUD.
     void setHudText(const QString& text);
@@ -60,16 +96,86 @@ public:
                 int pixel_w, int pixel_h, qreal device_pixel_ratio);
 
 private:
+    // Triangle bundle: position-only VBO, single-color shader.
+    struct TriBundle {
+        GLuint  vao          = 0;
+        GLuint  vbo          = 0;
+        size_t  vbo_capacity = 0;
+        GLsizei vertex_count = 0;
+        float   color[4]     = {0, 0, 0, 0};
+    };
+
+    // Point bundle: position-only VBO, sprite shader uses gl_PointCoord
+    // to draw an antialiased disc with an outlined halo.
+    struct PointBundle {
+        GLuint  vao          = 0;
+        GLuint  vbo          = 0;
+        size_t  vbo_capacity = 0;
+        GLsizei vertex_count = 0;
+        float   inner_color[4]  = {0, 0, 0, 0};
+        float   stroke_color[4] = {0, 0, 0, 0};
+        float   pixel_size      = 8.0f;
+        float   stroke_extra    = 0.0f;
+    };
+
+    // Line bundle: each input segment is CPU-expanded into 6 vertices
+    // (a quad as 2 triangles), each carrying both endpoints and a
+    // (side, along) corner index.  The vertex shader projects to screen,
+    // computes the screen-space perpendicular, and offsets accordingly;
+    // the fragment shader uses the interpolated signed perpendicular
+    // distance to discard outside the half-width and to pick inner vs
+    // stroke color.  Result: real outlined lines independent of the
+    // driver's glLineWidth clamp.
+    struct LineBundle {
+        GLuint  vao          = 0;
+        GLuint  vbo          = 0;
+        size_t  vbo_capacity = 0;
+        GLsizei vertex_count = 0;
+        float   inner_color[4]  = {0, 0, 0, 0};
+        float   stroke_color[4] = {0, 0, 0, 0};
+        float   line_width      = 1.0f;
+        float   stroke_extra    = 0.0f;
+    };
+
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
-    GLuint  program_       = 0;
-    GLuint  vao_           = 0;
-    GLuint  vbo_           = 0;
-    size_t  vbo_capacity_  = 0;       // bytes
-    GLsizei vertex_count_  = 0;
-    float   color_[4]      = {0, 0, 0, 0};
-    GLint   u_view_proj_   = -1;
-    GLint   u_color_       = -1;
-    QString hud_text_;
+
+    // Triangle program (highlight tris).
+    GLuint program_tri_      = 0;
+    GLint  u_tri_view_proj_  = -1;
+    GLint  u_tri_color_      = -1;
+
+    // Point program (sprite).
+    GLuint program_pt_           = 0;
+    GLint  u_pt_view_proj_       = -1;
+    GLint  u_pt_point_size_      = -1;
+    GLint  u_pt_inner_color_     = -1;
+    GLint  u_pt_stroke_color_    = -1;
+    GLint  u_pt_inner_radius_    = -1;
+
+    // Line program (screen-space expanded quads).
+    GLuint program_ln_           = 0;
+    GLint  u_ln_view_proj_       = -1;
+    GLint  u_ln_screen_size_     = -1;
+    GLint  u_ln_half_width_      = -1;
+    GLint  u_ln_stroke_extra_    = -1;
+    GLint  u_ln_inner_color_     = -1;
+    GLint  u_ln_stroke_color_    = -1;
+
+    // Screen-space rect program (label + HUD backgrounds).  Vertex
+    // attribute is vec2 NDC; fragment outputs a uniform color.  Drawn
+    // with depth test off so rects stack on top of the entire scene.
+    GLuint program_rect_         = 0;
+    GLint  u_rect_color_         = -1;
+    GLuint vao_rect_             = 0;
+    GLuint vbo_rect_             = 0;
+    size_t vbo_rect_capacity_    = 0;
+
+    TriBundle   triangles_;
+    PointBundle points_;
+    LineBundle  lines_;
+
+    std::vector<Label> labels_;
+    QString            hud_text_;
 };
 
 #endif // IFCVIEWER_OVERLAYRENDERER_H

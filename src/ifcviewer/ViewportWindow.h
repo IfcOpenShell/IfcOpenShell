@@ -230,12 +230,18 @@ public:
     };
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
-    // Area tool: while active, LMB clicks emit surfacePickedInTool with
-    // the click coordinates instead of swapping object selection — the
-    // app interprets them (typically by calling pickMeshLocalAt and
-    // accumulating triangle area).  Esc exits.
+    // Measurement tool modes.  While any tool is active, LMB clicks emit
+    // surfacePickedInTool with the click coordinates (instead of swapping
+    // object selection); the app interprets them per-tool.  Esc exits the
+    // active tool.  Backspace/Delete in length mode emits
+    // toolBackspacePressed for "remove last point" semantics.
+    enum class ToolMode { None, Area, Length };
+    Q_ENUM(ToolMode)
+
     void toggleAreaTool();
-    bool areaToolActive() const { return area_tool_active_; }
+    void toggleLengthTool();
+    void setToolMode(ToolMode mode);
+    ToolMode toolMode() const { return tool_mode_; }
 
     // Replace the overlay highlight-triangle list rendered after the main
     // pass.  `world_xyz` is 3 floats per vertex, 3 verts per triangle, in
@@ -244,10 +250,35 @@ public:
     void setHighlightTriangles(const std::vector<float>& world_xyz,
                                float r, float g, float b, float a);
 
-    // Top-left HUD text drawn via QPainter on top of the GL surface at
-    // the end of each frame.  Empty hides the HUD.  Used today by the
-    // area-measurement tool for the running total; later tools can pile
-    // additional readouts in by extending this with a multi-line API.
+    // Replace the overlay-line list (3 floats per vertex, 2 verts per
+    // segment, world space).  When stroke_a > 0 each segment is rendered
+    // with a wider (line_width + 2*stroke_extra) halo behind the inner
+    // line_width — proper outlined lines via screen-space-quad shader.
+    void setOverlayLines(const std::vector<float>& world_xyz,
+                         float r, float g, float b, float a,
+                         float line_width,
+                         float stroke_r, float stroke_g, float stroke_b, float stroke_a,
+                         float stroke_extra);
+
+    // Replace the overlay-point list (3 floats per point, world space).
+    // pixel_size is the inner-disc diameter in physical pixels; when
+    // stroke_a > 0 the sprite is enlarged by 2*stroke_extra to draw a
+    // halo around the inner disc — proper outlined points via the
+    // sprite shader (no two-pass glPointSize trickery).
+    void setOverlayPoints(const std::vector<float>& world_xyz,
+                          float r, float g, float b, float a,
+                          float pixel_size,
+                          float stroke_r, float stroke_g, float stroke_b, float stroke_a,
+                          float stroke_extra);
+
+    // Replace the world-anchored label list — projected to screen space
+    // and drawn via QPainter inside the same overlay pass as the HUD.
+    // Used today for per-segment length readouts.
+    void setOverlayLabels(const std::vector<OverlayRenderer::Label>& labels);
+
+    // Multi-line HUD text drawn via QPainter on top of the GL surface at
+    // the end of each frame.  Empty hides the HUD.  Newlines split the
+    // string into separate rows in the same translucent box.
     void setHudText(const QString& text);
 
     // Federation pipeline: composed instance transform =
@@ -344,14 +375,17 @@ signals:
     void objectPicked(uint32_t object_id);
     void initialized();
     void frameStatsUpdated(const ViewportWindow::FrameStats& stats);
-    // Emitted instead of objectPicked when the area tool is active.  The
-    // app is expected to call pickMeshLocalAt(x, y, ...) and accumulate.
-    // modifiers carries the Qt::KeyboardModifiers held at click time so
-    // the app can branch on Alt etc.
+    // Emitted instead of objectPicked when any measurement tool is active.
+    // The app branches on toolMode() to decide what to do, calls
+    // pickMeshLocalAt(x, y, ...) for hit details, and accumulates.
+    // modifiers carries Qt::KeyboardModifiers at click time (Alt etc.).
     void surfacePickedInTool(int x, int y, int modifiers);
-    // Emitted whenever toggleAreaTool flips the mode.  The app uses this
-    // to reset accumulator state on entry/exit.
-    void areaToolToggled(bool active);
+    // Emitted whenever the active tool changes (incl. on→off transitions).
+    // The app uses this to reset accumulator state on entry/exit.
+    void toolModeChanged(ViewportWindow::ToolMode mode);
+    // Backspace/Delete pressed while a tool is active.  Used by the length
+    // tool to remove the last point; other tools may ignore it.
+    void toolBackspacePressed();
 
 protected:
     void exposeEvent(QExposeEvent* event) override;
@@ -651,8 +685,8 @@ private:
     // Selection
     uint32_t selected_object_id_ = 0;
 
-    // Area-measurement tool: see toggleAreaTool / surfacePickedInTool.
-    bool   area_tool_active_         = false;
+    // Active measurement tool: see ToolMode / surfacePickedInTool.
+    ToolMode tool_mode_              = ToolMode::None;
 
     // Renders any client-supplied overlay primitives (highlight triangles
     // today; lines/points/labels later) in their own pass after the main
