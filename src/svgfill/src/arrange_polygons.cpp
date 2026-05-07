@@ -1085,6 +1085,45 @@ bool aabb_overlap(const DBox& a, const DBox& b, double eps = 1.e-9) {
            a[1].y() + eps >= b[0].y();
 }
 
+std::pair<double, double> projected_interval_on_axis(const std::array<DPoint, 4>& points, const DDir& axis_u) {
+    auto u = unit(axis_u);
+    auto t0 = (points.front() - CGAL::ORIGIN) * u;
+    auto interval = std::make_pair(t0, t0);
+    for (auto& p : points) {
+        auto t = (p - CGAL::ORIGIN) * u;
+        interval.first = std::min(interval.first, t);
+        interval.second = std::max(interval.second, t);
+    }
+    return interval;
+}
+
+bool intervals_overlap(const std::pair<double, double>& a, const std::pair<double, double>& b, double eps = 1.e-9) {
+    return a.first <= b.second + eps && b.first <= a.second + eps;
+}
+
+bool obb_overlap(const std::array<DPoint, 4>& a, const std::array<DPoint, 4>& b, double eps = 1.e-9) {
+    auto has_separating_axis = [&](const std::array<DPoint, 4>& points) {
+        for (size_t i = 0; i < points.size(); ++i) {
+            auto edge = points[(i + 1) % points.size()] - points[i];
+            auto axis = unit(perpendicular(edge));
+            if (axis.squared_length() < 1.e-18) {
+                continue;
+            }
+            if (!intervals_overlap(projected_interval_on_axis(a, axis), projected_interval_on_axis(b, axis), eps)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    return !has_separating_axis(a) && !has_separating_axis(b);
+}
+
+template <typename T, typename U>
+bool obb_overlap(const T& a, const U& b, double eps = 1.e-9) {
+    return obb_overlap(a.corners, b.corners, eps);
+}
+
 CenterLineGraphData make_center_line_graph_data(
     const std::map<Point_2, std::vector<Point_2>>& line_graph,
     const std::map<Point_2, double>& midpoint_to_edge_length)
@@ -1376,6 +1415,9 @@ std::pair<double, double> merge_score(const MergedBoxRecord& a, const MergedBoxR
 
 bool clusters_can_merge(const BoxCluster& a, const BoxCluster& b, double angle_tol_deg = 5., double axis_overlap_ratio_limit = 0.5) {
     if (!aabb_overlap(a.box.bbox, b.box.bbox)) {
+        return false;
+    }
+    if (!obb_overlap(a.box, b.box)) {
         return false;
     }
     if (angle_between_dirs_deg(a.box.direction, b.box.direction) > angle_tol_deg) {
