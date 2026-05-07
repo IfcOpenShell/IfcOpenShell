@@ -474,12 +474,70 @@ PolygonAreaResult polygonArea(const std::vector<std::array<float, 3>>& pts) {
 
 LengthMeasurement::LengthMeasurement() = default;
 
+namespace {
+
+// Visual style — reused across all length-tool overlay paths.
+constexpr float LINE_WIDTH    = 1.5f;
+constexpr float LINE_HALO     = 0.5f;
+constexpr float DOT_SIZE      = 6.0f;
+constexpr float DOT_HALO      = 1.0f;
+constexpr float DASH_PERIOD   = 9.0f;   // px
+constexpr float DASH_ON_RATIO = 0.55f;  // 5 on, 4 off
+
+OverlayRenderer::LineGroup makeGroup(std::vector<float> xyz,
+                                     float r, float g, float b,
+                                     bool dashed = false) {
+    OverlayRenderer::LineGroup gp;
+    gp.world_xyz = std::move(xyz);
+    gp.color[0] = r; gp.color[1] = g; gp.color[2] = b; gp.color[3] = 1.0f;
+    gp.stroke_color[0] = 0.0f; gp.stroke_color[1] = 0.0f;
+    gp.stroke_color[2] = 0.0f; gp.stroke_color[3] = 1.0f;
+    gp.line_width      = LINE_WIDTH;
+    gp.stroke_extra    = LINE_HALO;
+    gp.dash_period_px  = dashed ? DASH_PERIOD : 0.0f;
+    gp.dash_on_ratio   = DASH_ON_RATIO;
+    return gp;
+}
+
+void pushDot(std::vector<float>& xyz, const std::array<float, 3>& p) {
+    xyz.push_back(p[0]);
+    xyz.push_back(p[1]);
+    xyz.push_back(p[2]);
+}
+
+void pushSeg(std::vector<float>& xyz,
+             const std::array<float, 3>& a,
+             const std::array<float, 3>& b) {
+    xyz.insert(xyz.end(), a.begin(), a.end());
+    xyz.insert(xyz.end(), b.begin(), b.end());
+}
+
+OverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
+                                  const std::array<float, 3>& b,
+                                  const QString& text) {
+    OverlayRenderer::Label lbl;
+    lbl.world_pos[0] = 0.5f * (a[0] + b[0]);
+    lbl.world_pos[1] = 0.5f * (a[1] + b[1]);
+    lbl.world_pos[2] = 0.5f * (a[2] + b[2]);
+    lbl.text = text;
+    return lbl;
+}
+
+void pushDots(ViewportWindow& vp, const std::vector<float>& xyz) {
+    vp.setOverlayPoints(xyz,
+                        /*inner*/  1.0f, 1.0f, 1.0f, 1.0f,
+                        /*size*/   DOT_SIZE,
+                        /*stroke*/ 0.0f, 0.0f, 0.0f, 1.0f,
+                        /*extra*/  DOT_HALO);
+}
+
+} // namespace
+
 void LengthMeasurement::clear(ViewportWindow& vp) {
     points_.clear();
-    vp.setOverlayPoints({}, 0,0,0,0, 0,
-                        0,0,0,0, 0);
-    vp.setOverlayLines({},  0,0,0,0, 0,
-                        0,0,0,0, 0);
+    normals_.clear();
+    vp.setOverlayPoints({}, 0,0,0,0, 0, 0,0,0,0, 0);
+    vp.setOverlayLines({});
     vp.setOverlayLabels({});
     vp.setHudText(QString());
 }
@@ -488,61 +546,350 @@ void LengthMeasurement::onPick(ViewportWindow& vp, int x, int y, bool /*alt*/) {
     ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x, y, pick)) return;
     points_.push_back({pick.world_pos[0], pick.world_pos[1], pick.world_pos[2]});
+    normals_.push_back({pick.world_normal[0], pick.world_normal[1], pick.world_normal[2]});
+    if (points_.size() == 1) {
+        first_pick_ = pick;  // record info the laser BFS needs
+    }
     rebuildOverlay(vp);
 }
 
 void LengthMeasurement::removeLastPoint(ViewportWindow& vp) {
     if (points_.empty()) return;
     points_.pop_back();
+    if (!normals_.empty()) normals_.pop_back();
     rebuildOverlay(vp);
 }
 
 void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
-    // Points: orange inner with thin black halo — readable on every
-    // background.  Inner 8px disc + 2px halo each side.
+    if (points_.size() == 1 && normals_.size() == 1) {
+        rebuildLaserOverlay(vp);
+        return;
+    }
+
     std::vector<float> pts_xyz;
     pts_xyz.reserve(points_.size() * 3);
-    for (const auto& p : points_) {
-        pts_xyz.push_back(p[0]);
-        pts_xyz.push_back(p[1]);
-        pts_xyz.push_back(p[2]);
-    }
-    vp.setOverlayPoints(pts_xyz,
-                        /*inner*/  1.00f, 1.00f, 1.00f, 1.00f,
-                        /*size*/   8.0f,
-                        /*stroke*/ 0.00f, 0.00f, 0.00f, 0.85f,
-                        /*extra*/  2.0f);
+    for (const auto& p : points_) pushDot(pts_xyz, p);
+    pushDots(vp, pts_xyz);
 
-    // Connecting polyline.  For 4+ points also close the polygon since
-    // that's the area-readout shape.  Same orange + halo treatment.
-    std::vector<float> seg_xyz;
+    std::vector<OverlayRenderer::LineGroup> groups;
     std::vector<OverlayRenderer::Label> labels;
+    const size_t n = points_.size();
 
-    if (points_.size() >= 2) {
-        const size_t n = points_.size();
+    if (n == 2) {
+        // Direct line A→B (white) + total-length label.
+        const auto& a = points_[0];
+        const auto& b = points_[1];
+        groups.push_back(makeGroup({a[0], a[1], a[2], b[0], b[1], b[2]},
+                                   1.0f, 1.0f, 1.0f));
+        labels.push_back(makeLabel(a, b,
+            QString::number(dist3(a, b), 'f', 3) + " m"));
+
+        // Axis-coloured stair-step A → (Bx,Ay,Az) → (Bx,By,Az) → B.
+        // Each leg gets its delta label (omit zero legs to keep the
+        // overlay clean when the points are axis-aligned).
+        const std::array<float, 3> kx = {b[0], a[1], a[2]};
+        const std::array<float, 3> ky = {b[0], b[1], a[2]};
+        const double dx = std::abs(double(b[0]) - a[0]);
+        const double dy = std::abs(double(b[1]) - a[1]);
+        const double dz = std::abs(double(b[2]) - a[2]);
+        if (dx > 1e-6) {
+            groups.push_back(makeGroup({a[0],a[1],a[2], kx[0],kx[1],kx[2]},
+                                       1.00f, 0.30f, 0.30f));
+            labels.push_back(makeLabel(a, kx,
+                "ΔX: " + QString::number(dx, 'f', 3) + " m"));
+        }
+        if (dy > 1e-6) {
+            groups.push_back(makeGroup({kx[0],kx[1],kx[2], ky[0],ky[1],ky[2]},
+                                       0.30f, 0.90f, 0.30f));
+            labels.push_back(makeLabel(kx, ky,
+                "ΔY: " + QString::number(dy, 'f', 3) + " m"));
+        }
+        if (dz > 1e-6) {
+            groups.push_back(makeGroup({ky[0],ky[1],ky[2], b[0],b[1],b[2]},
+                                       0.30f, 0.55f, 1.00f));
+            labels.push_back(makeLabel(ky, b,
+                "ΔZ: " + QString::number(dz, 'f', 3) + " m"));
+        }
+
+        // Perpendicular projection: only when both picks landed on
+        // surfaces with near-parallel normals (|n_a · n_b| > 0.95).  We
+        // pick the average normal (flipped to agree with n_a if needed)
+        // and project AB onto it.  Drawn dashed from A to A + perp·n.
+        if (normals_.size() == 2) {
+            const auto& na = normals_[0];
+            const auto& nb = normals_[1];
+            const double dot_nn = double(na[0])*nb[0]
+                                + double(na[1])*nb[1]
+                                + double(na[2])*nb[2];
+            if (std::abs(dot_nn) > 0.95) {
+                const float sign = dot_nn >= 0.0 ? 1.0f : -1.0f;
+                float n_avg[3] = {
+                    0.5f * (na[0] + sign * nb[0]),
+                    0.5f * (na[1] + sign * nb[1]),
+                    0.5f * (na[2] + sign * nb[2]),
+                };
+                const float len = std::sqrt(n_avg[0]*n_avg[0]
+                                           + n_avg[1]*n_avg[1]
+                                           + n_avg[2]*n_avg[2]);
+                if (len > 1e-6f) {
+                    n_avg[0] /= len; n_avg[1] /= len; n_avg[2] /= len;
+                }
+                const double abx = double(b[0]) - a[0];
+                const double aby = double(b[1]) - a[1];
+                const double abz = double(b[2]) - a[2];
+                const double perp = abx*n_avg[0] + aby*n_avg[1] + abz*n_avg[2];
+                if (std::abs(perp) > 1e-6) {
+                    const std::array<float, 3> tip = {
+                        float(a[0] + perp * n_avg[0]),
+                        float(a[1] + perp * n_avg[1]),
+                        float(a[2] + perp * n_avg[2]),
+                    };
+                    auto perp_grp = makeGroup(
+                        {a[0],a[1],a[2], tip[0],tip[1],tip[2]},
+                        1.0f, 1.0f, 1.0f, /*dashed*/ true);
+                    groups.push_back(perp_grp);
+                    labels.push_back(makeLabel(a, tip,
+                        "perp: " + QString::number(std::abs(perp), 'f', 3) + " m"));
+                }
+            }
+        }
+    } else if (n >= 3) {
+        // 3-pt and 4+pt: white connecting polyline (closed for 4+) with
+        // per-segment length labels.  HUD carries the angle/area readout.
+        std::vector<float> seg_xyz;
         seg_xyz.reserve(n * 6);
         labels.reserve(n);
-        auto pushSegment = [&](const std::array<float, 3>& a,
-                               const std::array<float, 3>& b) {
-            seg_xyz.insert(seg_xyz.end(), a.begin(), a.end());
-            seg_xyz.insert(seg_xyz.end(), b.begin(), b.end());
-            OverlayRenderer::Label lbl;
-            lbl.world_pos[0] = 0.5f * (a[0] + b[0]);
-            lbl.world_pos[1] = 0.5f * (a[1] + b[1]);
-            lbl.world_pos[2] = 0.5f * (a[2] + b[2]);
-            lbl.text = QString::number(dist3(a, b), 'f', 3) + " m";
-            labels.push_back(std::move(lbl));
+        auto addSeg = [&](const std::array<float, 3>& a,
+                          const std::array<float, 3>& b) {
+            pushSeg(seg_xyz, a, b);
+            labels.push_back(makeLabel(a, b,
+                QString::number(dist3(a, b), 'f', 3) + " m"));
         };
-        for (size_t i = 0; i + 1 < n; ++i) pushSegment(points_[i], points_[i + 1]);
-        if (n >= 4) pushSegment(points_[n - 1], points_[0]);
+        for (size_t i = 0; i + 1 < n; ++i) addSeg(points_[i], points_[i + 1]);
+        if (n >= 4) addSeg(points_[n - 1], points_[0]);
+        groups.push_back(makeGroup(std::move(seg_xyz), 1.0f, 1.0f, 1.0f));
     }
-    vp.setOverlayLines(seg_xyz,
-                       /*inner*/  1.00f, 1.00f, 1.00f, 1.00f,
-                       /*width*/  2.0f,
-                       /*stroke*/ 0.00f, 0.00f, 0.00f, 0.85f,
-                       /*extra*/  1.5f);
+
+    vp.setOverlayLines(groups);
     vp.setOverlayLabels(labels);
     vp.setHudText(formatReadout());
+}
+
+namespace {
+
+// Which world axis is `v` closest to?  Used to label the BFS extent
+// bars (X/Y/Z) without hard-coding wall vs floor convention.
+const char* dominantAxisLabel(const float v[3]) {
+    const float ax = std::abs(v[0]);
+    const float ay = std::abs(v[1]);
+    const float az = std::abs(v[2]);
+    if (az >= ax && az >= ay) return "Z";
+    if (ax >= ay) return "X";
+    return "Y";
+}
+
+} // namespace
+
+void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
+    const auto& wp = first_pick_.world_pos;       // float[3] world click
+    const auto& n  = first_pick_.world_normal;    // float[3] world normal
+
+    // ---------- Tangent basis in world ----------
+    // t1 = world-up Gram-Schmidt'd against n; fall back to world-X for
+    // near-horizontal surfaces so the basis never degenerates.
+    constexpr float WORLD_UP[3] = {0.0f, 0.0f, 1.0f};
+    const float dot_un = WORLD_UP[0]*n[0] + WORLD_UP[1]*n[1] + WORLD_UP[2]*n[2];
+    float t1[3] = {
+        WORLD_UP[0] - dot_un * n[0],
+        WORLD_UP[1] - dot_un * n[1],
+        WORLD_UP[2] - dot_un * n[2],
+    };
+    float t1_len = std::sqrt(t1[0]*t1[0] + t1[1]*t1[1] + t1[2]*t1[2]);
+    if (t1_len < 0.1f) {
+        constexpr float WORLD_X[3] = {1.0f, 0.0f, 0.0f};
+        const float dot_xn = WORLD_X[0]*n[0] + WORLD_X[1]*n[1] + WORLD_X[2]*n[2];
+        t1[0] = WORLD_X[0] - dot_xn * n[0];
+        t1[1] = WORLD_X[1] - dot_xn * n[1];
+        t1[2] = WORLD_X[2] - dot_xn * n[2];
+        t1_len = std::sqrt(t1[0]*t1[0] + t1[1]*t1[1] + t1[2]*t1[2]);
+    }
+    if (t1_len > 1e-6f) {
+        t1[0] /= t1_len; t1[1] /= t1_len; t1[2] /= t1_len;
+    }
+    const float t2[3] = {
+        n[1]*t1[2] - n[2]*t1[1],
+        n[2]*t1[0] - n[0]*t1[2],
+        n[0]*t1[1] - n[1]*t1[0],
+    };
+
+    std::vector<OverlayRenderer::LineGroup> groups;
+    std::vector<OverlayRenderer::Label> labels;
+    QStringList hud_lines;
+    hud_lines << QStringLiteral("Laser measure (click another point for distance)");
+
+    // ---------- Coplanar-patch BFS for face extent ----------
+    // Read back the seed mesh, transform every vertex into world space,
+    // build edge adjacency, BFS from the seed triangle keeping only
+    // co-normal neighbours, then project each patch vertex into the
+    // (t1, t2) basis to get the bounding extent of the face.  Stops
+    // exactly at the face edge (no overshoot into adjacent geometry).
+    ViewportWindow::MeshTriangles tris;
+    bool have_extent = false;
+    double min_t1 = 0.0, max_t1 = 0.0, min_t2 = 0.0, max_t2 = 0.0;
+    if (vp.readbackMeshTriangles(first_pick_.model_id, first_pick_.mesh_id, tris)) {
+        const size_t n_verts = tris.positions.size() / 3;
+        const size_t n_tris  = tris.indices.size() / 3;
+        if (n_tris > 0) {
+            // Vertices → world.
+            std::vector<float> wv(n_verts * 3);
+            const float* M = first_pick_.composed_transform;
+            for (size_t i = 0; i < n_verts; ++i) {
+                const float* p = &tris.positions[i * 3];
+                wv[i*3 + 0] = M[0]*p[0] + M[4]*p[1] + M[8]*p[2]  + M[12];
+                wv[i*3 + 1] = M[1]*p[0] + M[5]*p[1] + M[9]*p[2]  + M[13];
+                wv[i*3 + 2] = M[2]*p[0] + M[6]*p[1] + M[10]*p[2] + M[14];
+            }
+            // Per-tri world normals + edge adjacency.
+            std::vector<std::array<float, 3>> tri_n(n_tris);
+            std::unordered_map<uint64_t, std::vector<uint32_t>> edges;
+            edges.reserve(n_tris * 3);
+            for (size_t t = 0; t < n_tris; ++t) {
+                const uint32_t ia = tris.indices[3*t + 0];
+                const uint32_t ib = tris.indices[3*t + 1];
+                const uint32_t ic = tris.indices[3*t + 2];
+                const float* a = &wv[3*ia];
+                const float* b = &wv[3*ib];
+                const float* c = &wv[3*ic];
+                const float bax = b[0]-a[0], bay = b[1]-a[1], baz = b[2]-a[2];
+                const float cax = c[0]-a[0], cay = c[1]-a[1], caz = c[2]-a[2];
+                float nx = bay*caz - baz*cay;
+                float ny = baz*cax - bax*caz;
+                float nz = bax*cay - bay*cax;
+                const float nl = std::sqrt(nx*nx + ny*ny + nz*nz);
+                if (nl > 0.0f) { nx /= nl; ny /= nl; nz /= nl; }
+                tri_n[t] = {nx, ny, nz};
+                edges[edgeKey(ia, ib)].push_back(uint32_t(t));
+                edges[edgeKey(ib, ic)].push_back(uint32_t(t));
+                edges[edgeKey(ic, ia)].push_back(uint32_t(t));
+            }
+            // Seed = nearest triangle to world click.
+            uint32_t seed = 0;
+            double best = std::numeric_limits<double>::infinity();
+            for (size_t t = 0; t < n_tris; ++t) {
+                const uint32_t ia = tris.indices[3*t + 0];
+                const uint32_t ib = tris.indices[3*t + 1];
+                const uint32_t ic = tris.indices[3*t + 2];
+                const double d = pointTriangleDistSq(
+                    wp, &wv[3*ia], &wv[3*ib], &wv[3*ic]);
+                if (d < best) { best = d; seed = uint32_t(t); }
+            }
+            // BFS coplanar.
+            const auto& sn = tri_n[seed];
+            std::unordered_set<uint32_t> in_patch;
+            in_patch.insert(seed);
+            std::queue<uint32_t> frontier;
+            frontier.push(seed);
+            while (!frontier.empty()) {
+                const uint32_t t = frontier.front(); frontier.pop();
+                for (int e = 0; e < 3; ++e) {
+                    const uint32_t ia = tris.indices[3*t + e];
+                    const uint32_t ib = tris.indices[3*t + (e + 1) % 3];
+                    auto it = edges.find(edgeKey(ia, ib));
+                    if (it == edges.end()) continue;
+                    for (uint32_t nt : it->second) {
+                        if (nt == t || in_patch.count(nt)) continue;
+                        const auto& nn = tri_n[nt];
+                        const double dot = double(sn[0])*nn[0]
+                                         + double(sn[1])*nn[1]
+                                         + double(sn[2])*nn[2];
+                        if (dot < kCoplanarDot) continue;
+                        in_patch.insert(nt);
+                        frontier.push(nt);
+                    }
+                }
+            }
+            // Project unique patch vertices → tangent coords.
+            std::unordered_set<uint32_t> patch_verts;
+            for (uint32_t t : in_patch) {
+                patch_verts.insert(tris.indices[3*t + 0]);
+                patch_verts.insert(tris.indices[3*t + 1]);
+                patch_verts.insert(tris.indices[3*t + 2]);
+            }
+            for (uint32_t vi : patch_verts) {
+                const float* v = &wv[3 * vi];
+                const double dx = double(v[0]) - wp[0];
+                const double dy = double(v[1]) - wp[1];
+                const double dz = double(v[2]) - wp[2];
+                const double a1 = dx*t1[0] + dy*t1[1] + dz*t1[2];
+                const double a2 = dx*t2[0] + dy*t2[1] + dz*t2[2];
+                if (!have_extent) {
+                    min_t1 = max_t1 = a1;
+                    min_t2 = max_t2 = a2;
+                    have_extent = true;
+                } else {
+                    min_t1 = std::min(min_t1, a1); max_t1 = std::max(max_t1, a1);
+                    min_t2 = std::min(min_t2, a2); max_t2 = std::max(max_t2, a2);
+                }
+            }
+        }
+    }
+
+    auto pushBar = [&](const float t[3], double mn, double mx) {
+        const std::array<float, 3> a = {
+            float(wp[0] + mn * t[0]),
+            float(wp[1] + mn * t[1]),
+            float(wp[2] + mn * t[2]),
+        };
+        const std::array<float, 3> b = {
+            float(wp[0] + mx * t[0]),
+            float(wp[1] + mx * t[1]),
+            float(wp[2] + mx * t[2]),
+        };
+        const double extent = mx - mn;
+        const QString axis = QString::fromLatin1(dominantAxisLabel(t));
+        groups.push_back(makeGroup({a[0],a[1],a[2], b[0],b[1],b[2]},
+                                   1.0f, 1.0f, 1.0f, /*dashed*/ true));
+        labels.push_back(makeLabel(a, b,
+            QString("%1 extent: %2 m").arg(axis).arg(extent, 0, 'f', 3)));
+        hud_lines << QString("%1 extent: %2 m").arg(axis).arg(extent, 0, 'f', 3);
+    };
+    if (have_extent && (max_t1 - min_t1) > 1e-6) pushBar(t1, min_t1, max_t1);
+    if (have_extent && (max_t2 - min_t2) > 1e-6) pushBar(t2, min_t2, max_t2);
+
+    // ---------- Hybrid: vertical raycast for horizontal surfaces ----------
+    // For floors / ceilings (|n.z| close to 1) the BFS extents give the
+    // floor footprint; the *useful* extra dimension is the room height,
+    // which a single raycast in +n finds.  Skip on walls (|n.z| < 0.85)
+    // — there the BFS already covers the user's intent.
+    if (std::abs(n[2]) > 0.85f) {
+        constexpr float NUDGE = 1e-3f;
+        const float ro[3] = {
+            wp[0] + NUDGE * n[0],
+            wp[1] + NUDGE * n[1],
+            wp[2] + NUDGE * n[2],
+        };
+        ViewportWindow::RaycastHit hit;
+        if (vp.raycast(ro, n, hit)) {
+            const double dist = double(hit.distance) + double(NUDGE);
+            const std::array<float, 3> a = {wp[0], wp[1], wp[2]};
+            const std::array<float, 3> b = {hit.world_pos[0],
+                                             hit.world_pos[1],
+                                             hit.world_pos[2]};
+            const QString tag = (n[2] > 0.0f)
+                ? QStringLiteral("ceiling height")
+                : QStringLiteral("floor distance");
+            groups.push_back(makeGroup({a[0],a[1],a[2], b[0],b[1],b[2]},
+                                       1.0f, 1.0f, 1.0f, /*dashed*/ true));
+            labels.push_back(makeLabel(a, b,
+                QString("%1: %2 m").arg(tag).arg(dist, 0, 'f', 3)));
+            hud_lines << QString("%1: %2 m").arg(tag).arg(dist, 0, 'f', 3);
+        }
+    }
+
+    pushDots(vp, std::vector<float>(wp, wp + 3));
+    vp.setOverlayLines(groups);
+    vp.setOverlayLabels(labels);
+    vp.setHudText(hud_lines.join('\n'));
 }
 
 QString LengthMeasurement::formatReadout() const {
