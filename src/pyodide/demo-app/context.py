@@ -1,4 +1,10 @@
+from pathlib import Path
+
 import ifcopenshell
+
+ifcopenshell.set_plugin_search_paths([str(Path(ifcopenshell.__file__).parent)])
+model = ifcopenshell.file()
+
 import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context

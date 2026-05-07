@@ -89,6 +89,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     set_target_properties(${SCHEMA_PLUGIN_TARGET} PROPERTIES
         OUTPUT_NAME "ifcopenshell.parse.schema.ifc${schema}"
     )
+    ifcopenshell_plugin_target(${SCHEMA_PLUGIN_TARGET})
 
     if(WASM_BUILD)
         target_link_options(${SCHEMA_PLUGIN_TARGET} PRIVATE "SHELL:-s SIDE_MODULE=1" "-O1")

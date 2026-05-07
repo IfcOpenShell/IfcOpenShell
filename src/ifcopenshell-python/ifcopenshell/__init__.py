@@ -101,8 +101,11 @@ __all__ = [
     "entity_instance",
     "file",
     "guid",
+    "get_plugin_search_paths",
     "ifcopenshell_wrapper",
     "rocksdb_lazy_instance",
+    "clear_plugin_search_paths",
+    "set_plugin_search_paths",
     "sqlite",
     "sqlite_entity",
     "stream",
@@ -114,6 +117,18 @@ try:
     from .stream import stream as _stream  # ty: ignore[possibly-missing-import]
 except:
     pass
+
+
+def set_plugin_search_paths(paths: Sequence[Union[os.PathLike, str]]) -> None:
+    ifcopenshell_wrapper.set_plugin_search_paths([os.fspath(path) for path in paths])
+
+
+def get_plugin_search_paths() -> tuple[str, ...]:
+    return tuple(ifcopenshell_wrapper.get_plugin_search_paths())
+
+
+def clear_plugin_search_paths() -> None:
+    ifcopenshell_wrapper.clear_plugin_search_paths()
 
 
 class Error(Exception):

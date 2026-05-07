@@ -40,6 +40,14 @@ jobs:
           NEW_FILE=`echo $FILE | sed "s/-/+${GITHUB_SHA:0:7}-/2"`
           mv $FILE $NEW_FILE
 
+      - name: Split packages
+        run: |
+          VERSION=v`cat ./IfcOpenShell/VERSION`
+          mkdir -p dist-modular
+          python ./IfcOpenShell/pyodide/split_pyodide_ifcopenshell_wheel.py dist/ifcopenshell-*.whl ./dist-modular
+          cd dist-modular
+          zip -r -qq ifcopenshell-modular-${VERSION}-${GITHUB_SHA:0:7}-pyodide.zip *.whl
+
       - name: Upload Build Logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -86,3 +94,4 @@ jobs:
       - name: Upload .zip archives to S3
         run: |
           aws s3 cp dist s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.whl"
+          aws s3 cp dist-modular s3://ifcopenshell-builds/ --recursive --exclude "*" --include "*.zip"

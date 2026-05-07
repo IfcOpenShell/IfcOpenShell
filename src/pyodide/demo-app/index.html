@@ -77,7 +77,14 @@
             const micropip = pyodide.pyimport("micropip");
             await micropip.install("typing-extensions");
             document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
-            await micropip.install("wheels/ifcopenshell-0.8.3+34a1bc6-cp313-cp313-emscripten_4_0_9_wasm32.whl");
+
+            // await micropip.install("wheels/ifcopenshell-0.8.6-cp313-cp313-emscripten_4_0_9_wasm32.whl");
+
+            await micropip.install("wheels/split2/ifcopenshell-0.8.6-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/split2/ifcopenshell_parse_schema_ifc4-0.8.6-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/split2/ifcopenshell_pure_python-0.8.6-py3-none-any.whl");
+            await micropip.install("wheels/split2/ifcopenshell_geometry_kernel_cgalsimple-0.8.6-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/split2/ifcopenshell_geometry_kernel_opencascade-0.8.6-cp313-cp313-pyodide_2025_0_wasm32.whl");
 
             document.body.className = '';
 

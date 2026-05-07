@@ -21,6 +21,12 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 namespace {
 	constexpr const char* opencascade_geometry_ifc_writer_plugin_prefix = "geometry.serialization.";
 }
@@ -43,7 +49,7 @@ std::filesystem::path IfcGeom::opencascade_geometry_ifc_writer_plugin_directory(
 
 void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_ifc_writer_registry& registry) {
 	ifcopenshell::plugin::manager manager;
-	manager.add_search_path(opencascade_geometry_ifc_writer_plugin_directory());
+	ifcopenshell::plugin::add_search_paths_or_default(manager, &opencascade_geometry_ifc_writer_plugin_directory);
 
 	for (const auto& path : manager.discover(opencascade_geometry_ifc_writer_plugin_prefix)) {
 		auto module = manager.load(path);
@@ -58,7 +64,7 @@ void IfcGeom::load_opencascade_geometry_ifc_writer_plugins(opencascade_geometry_
 
 bool IfcGeom::load_opencascade_geometry_ifc_writer_plugin(opencascade_geometry_ifc_writer_registry& registry, const std::string& schema_name) {
 	ifcopenshell::plugin::manager manager;
-	manager.add_search_path(opencascade_geometry_ifc_writer_plugin_directory());
+	ifcopenshell::plugin::add_search_paths_or_default(manager, &opencascade_geometry_ifc_writer_plugin_directory);
 
 	const auto expected_schema = boost::to_upper_copy(schema_name);
 	const auto basename = std::string(opencascade_geometry_ifc_writer_plugin_prefix) + boost::to_lower_copy(schema_name);

@@ -26,6 +26,12 @@
 #include <mutex>
 #include <set>
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 namespace {
 
 std::string document_serializer_key(const std::string& format) {
@@ -50,8 +56,11 @@ std::string document_serializer_plugin_prefix(const std::string& format = std::s
 }
 
 void add_document_serializer_search_paths(ifcopenshell::plugin::manager& manager) {
-	const auto directory = ifcopenshell::serializers::document_serializer_plugin_directory();
-	manager.add_search_path(directory);
+	const auto directory = ifcopenshell::plugin::add_search_paths_or_default(
+		manager, &ifcopenshell::serializers::document_serializer_plugin_directory);
+	if (directory.empty()) {
+		return;
+	}
 
 	const auto sibling_directory = directory.parent_path().parent_path() / "serializers" / directory.filename();
 	if (sibling_directory != directory && std::filesystem::exists(sibling_directory)) {

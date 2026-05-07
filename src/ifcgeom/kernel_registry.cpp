@@ -27,13 +27,85 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iostream>
 #include <vector>
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 namespace {
+	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
+
 	std::string kernel_key(const std::string& backend_id) {
 		return boost::to_lower_copy(backend_id);
 	}
 
+	bool is_prefix(const std::string& text, const std::string& prefix) {
+		return !prefix.empty() && text.rfind(prefix, 0) == 0;
+	}
+
+	void register_kernel_module(ifcopenshell::geometry::kernels::kernel_registry& registry, const ifcopenshell::plugin::module& module) {
+		auto register_plugin = module.get_alias<ifcopenshell::geometry::kernels::register_kernel_plugin_fn>(
+			ifcopenshell::geometry::kernels::kernel_plugin_registration_symbol());
+		register_plugin(registry, module);
+	}
+
+	struct kernel_match {
+		std::string backend_id;
+		ifcopenshell::plugin::module module;
+		bool has_module = false;
+	};
+
+	void consider_kernel_info(kernel_match& match, const std::string& geometry_library_lower, const ifcopenshell::geometry::kernels::kernel_info& info) {
+		const auto backend_id = kernel_key(info.backend_id);
+		if (is_prefix(geometry_library_lower, backend_id) && backend_id.size() > match.backend_id.size()) {
+			match.backend_id = backend_id;
+			match.has_module = false;
+		}
+	}
+
+	kernel_match find_kernel_match(ifcopenshell::geometry::kernels::kernel_registry& registry, const std::string& geometry_library_lower) {
+		kernel_match match;
+
+		for (const auto& info : registry.kernels()) {
+			consider_kernel_info(match, geometry_library_lower, info);
+		}
+
+		ifcopenshell::plugin::manager manager;
+		ifcopenshell::plugin::add_search_paths_or_default(manager, &ifcopenshell::geometry::kernels::kernel_plugin_directory);
+		for (const auto& path : manager.discover(kernel_plugin_prefix)) {
+			ifcopenshell::plugin::module module;
+			try {
+				module = manager.load(path);
+			} catch (const std::exception& e) {
+				std::cerr << "[ifcopenshell.plugin] skip kernel plugin " << path << ": " << e.what() << std::endl;
+				continue;
+			}
+			if (module.meta().kind_ != ifcopenshell::plugin::kind::kernel) {
+				continue;
+			}
+
+			ifcopenshell::geometry::kernels::kernel_registry plugin_registry;
+			register_kernel_module(plugin_registry, module);
+			for (const auto& info : plugin_registry.kernels()) {
+				const auto backend_id = kernel_key(info.backend_id);
+				if (is_prefix(geometry_library_lower, backend_id) && backend_id.size() > match.backend_id.size()) {
+					match.backend_id = backend_id;
+					match.module = module;
+					match.has_module = true;
+				}
+			}
+		}
+
+		if (!match.backend_id.empty() && !registry.has(match.backend_id) && match.has_module) {
+			register_kernel_module(registry, match.module);
+		}
+
+		return match;
+	}
 }
 
 void ifcopenshell::geometry::kernels::kernel_registry::bind(const kernel_info& info, create_fn create, const plugin::module& module) {
@@ -90,30 +162,11 @@ std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> ifcopenshell::g
 				throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
 			}
 
-			std::vector<std::string> candidates;
-			candidates.push_back(geometry_library_lower);
-			for (auto pos = geometry_library_lower.find('-'); pos != std::string::npos; pos = geometry_library_lower.find('-', pos + 1)) {
-				candidates.push_back(geometry_library_lower.substr(0, pos));
-			}
-			std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
-				return a.size() > b.size();
-			});
-			for (const auto& candidate : candidates) {
-				if (!registry.has(candidate) && load_kernel_plugin(registry, candidate)) {
-					break;
-				}
-			}
-
-			std::string matched_backend_id;
-			for (const auto& info : registry.kernels()) {
-				const auto backend_id = kernel_key(info.backend_id);
-				if (geometry_library_lower.rfind(backend_id, 0) == 0 && backend_id.size() > matched_backend_id.size()) {
-					matched_backend_id = backend_id;
-				}
-			}
+			const auto match = find_kernel_match(registry, geometry_library_lower);
+			const auto& matched_backend_id = match.backend_id;
 
 			if (matched_backend_id.empty()) {
-				throw ifcopenshell::exception("Invalid hybrid kernel " + geometry_library);
+				throw ifcopenshell::exception("Invalid hybrid kernel; no match for prefix of " + geometry_library_lower);
 			}
 
 			kernels.push_back(registry.create(matched_backend_id, file, settings));

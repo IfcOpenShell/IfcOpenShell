@@ -24,6 +24,12 @@
 #include <algorithm>
 #include <stdexcept>
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 namespace {
 	constexpr const char* kernel_plugin_prefix = "geometry.kernel.";
 
@@ -51,7 +57,7 @@ std::filesystem::path ifcopenshell::geometry::kernels::kernel_plugin_directory()
 
 void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& registry) {
 	plugin::manager manager;
-	manager.add_search_path(kernel_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &kernel_plugin_directory);
 
 	for (const auto& path : manager.discover(kernel_plugin_prefix)) {
 		auto module = manager.load(path);
@@ -66,7 +72,7 @@ void ifcopenshell::geometry::kernels::load_kernel_plugins(kernel_registry& regis
 
 bool ifcopenshell::geometry::kernels::load_kernel_plugin(kernel_registry& registry, const std::string& backend_id) {
 	plugin::manager manager;
-	manager.add_search_path(kernel_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &kernel_plugin_directory);
 
 	const auto plugin_name = kernel_plugin_name(backend_id);
 	const auto basename = std::string(kernel_plugin_prefix) + plugin_name;

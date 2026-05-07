@@ -245,5 +245,31 @@
 	#include "../serializers/RocksDbSerializer.h"
 %}
 
+%{
+#include <string>
+#include <vector>
+namespace ifcopenshell {
+namespace plugin {
+void set_search_paths(const std::vector<std::string>& paths);
+std::vector<std::string> search_paths();
+void clear_search_paths();
+}
+}
+%}
+
+%inline %{
+void set_plugin_search_paths(const std::vector<std::string>& paths) {
+	ifcopenshell::plugin::set_search_paths(paths);
+}
+
+std::vector<std::string> get_plugin_search_paths() {
+	return ifcopenshell::plugin::search_paths();
+}
+
+void clear_plugin_search_paths() {
+	ifcopenshell::plugin::clear_search_paths();
+}
+%}
+
 %include "IfcGeomWrapper.i"
 %include "IfcParseWrapper.i"

@@ -21,6 +21,12 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 namespace {
 	constexpr const char* mapping_plugin_prefix = "geometry.mapping.";
 }
@@ -43,7 +49,7 @@ std::filesystem::path ifcopenshell::geometry::impl::mapping_plugin_directory() {
 
 void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& registry) {
 	plugin::manager manager;
-	manager.add_search_path(mapping_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &mapping_plugin_directory);
 
 	for (const auto& path : manager.discover(mapping_plugin_prefix)) {
 		auto module = manager.load(path);
@@ -58,7 +64,7 @@ void ifcopenshell::geometry::impl::load_mapping_plugins(mapping_registry& regist
 
 bool ifcopenshell::geometry::impl::load_mapping_plugin(mapping_registry& registry, const std::string& schema_name) {
 	plugin::manager manager;
-	manager.add_search_path(mapping_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &mapping_plugin_directory);
 
 	const auto expected_schema = boost::to_upper_copy(schema_name);
 	const auto basename = std::string(mapping_plugin_prefix) + boost::to_lower_copy(schema_name);

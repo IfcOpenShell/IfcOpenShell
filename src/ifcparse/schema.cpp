@@ -27,6 +27,12 @@
 
 #include "schemas/Header_section_schema.h"
 
+namespace ifcopenshell {
+namespace plugin {
+PLUGIN_API std::filesystem::path add_search_paths_or_default(manager& manager, std::filesystem::path (*default_search_path)());
+}
+}
+
 bool ifcopenshell::declaration::is(const std::string& name) const {
     const std::string* name_ptr = &name;
     if (std::any_of(name.begin(), name.end(), [](char character) { return std::islower(character); })) {
@@ -115,7 +121,7 @@ namespace {
 
 	bool load_schema_plugin(ifcopenshell::schema_registry& registry, const std::string& schema_name) {
 		ifcopenshell::plugin::manager manager;
-		manager.add_search_path(ifcopenshell::schema_plugin_directory());
+		ifcopenshell::plugin::add_search_paths_or_default(manager, &ifcopenshell::schema_plugin_directory);
 
 		const auto expected_key = schema_key(schema_name);
 		const auto basename = std::string(schema_plugin_prefix) + boost::to_lower_copy(schema_name);
@@ -196,7 +202,7 @@ std::filesystem::path ifcopenshell::schema_plugin_directory() {
 
 void ifcopenshell::load_schema_plugins(schema_registry& registry) {
 	plugin::manager manager;
-	manager.add_search_path(schema_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &schema_plugin_directory);
 
 	for (const auto& path : manager.discover(schema_plugin_prefix)) {
 		auto module = manager.load(path);
@@ -247,7 +253,7 @@ std::vector<std::string> ifcopenshell::schema_registry::names() {
 	}
 
 	plugin::manager manager;
-	manager.add_search_path(schema_plugin_directory());
+	plugin::add_search_paths_or_default(manager, &schema_plugin_directory);
 	for (const auto& path : manager.discover(schema_plugin_prefix)) {
 		auto module = manager.load(path);
 		if (module.meta().kind_ == plugin::kind::parse_schema && !module.meta().schema.empty()) {

@@ -41,7 +41,13 @@ macro(SET_INSTALL_RPATHS _target _paths)
     set_target_properties(${_target} PROPERTIES INSTALL_RPATH "${${_target}_rpaths}")
 endmacro()
 
+function(ifcopenshell_plugin_target TARGET)
+    set_target_properties(${TARGET} PROPERTIES PREFIX "")
+endfunction()
+
 function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
+    ifcopenshell_plugin_target(${TARGET})
+
     if(NOT WASM_BUILD)
         return()
     endif()

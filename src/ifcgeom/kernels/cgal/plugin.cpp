@@ -22,10 +22,14 @@
 
 #include <boost/dll/alias.hpp>
 
+#ifdef IFOPSH_SIMPLE_KERNEL
+#define cgal_plugin cgalsimple_plugin
+#endif
+
 namespace ifcopenshell {
 	namespace geometry {
 		namespace kernels {
-			namespace cgal_plugin {
+		    namespace cgal_plugin {
 
 #ifdef IFOPSH_SIMPLE_KERNEL
 				constexpr const char* plugin_name = "cgalsimple";
