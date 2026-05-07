@@ -166,26 +166,40 @@ void SceneLoader::startNextLoad() {
 
     std::string ifc_path = model.file_path.toStdString();
     uint32_t mid = loading_model_id_;
+    const bool is_sidecar_source =
+        QFileInfo(model.file_path).suffix().compare("ifcview", Qt::CaseInsensitive) == 0;
 
     // Sidecar read on a background thread so the UI stays responsive.
     joinSidecarThread();
-    sidecar_read_thread_ = std::thread([this, ifc_path, mid]() {
+    sidecar_read_thread_ = std::thread([this, ifc_path, mid, is_sidecar_source]() {
         QElapsedTimer rt; rt.start();
         auto cached = readSidecar(ifc_path);
         qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
-        QMetaObject::invokeMethod(this, [this, mid, result]() {
+        QMetaObject::invokeMethod(this, [this, mid, result, is_sidecar_source]() {
             if (*result && !(*result)->instances.empty()) {
                 applySidecarData(mid, std::move(**result));
-            } else {
-                auto it = models_.find(mid);
-                if (it == models_.end()) return;
-                auto& m = it->second;
-                connectStreamer(m.streamer);
-                element_poll_timer_.start();
-                m.streamer->loadFile(
-                    m.file_path.toStdString(), next_object_id_, loading_model_id_);
+                if (!is_sidecar_source) {
+                    startDataSourceLoad(mid);
+                }
+                return;
             }
+
+            auto it = models_.find(mid);
+            if (it == models_.end()) return;
+
+            if (is_sidecar_source) {
+                loading_model_id_ = 0;
+                emit loadError(mid, QString("Failed to read IFC Viewer cache:\n%1").arg(it->second.file_path));
+                QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
+                return;
+            }
+
+            auto& m = it->second;
+            connectStreamer(m.streamer);
+            element_poll_timer_.start();
+            m.streamer->loadFile(
+                m.file_path.toStdString(), next_object_id_, loading_model_id_);
         }, Qt::QueuedConnection);
     });
 }
@@ -257,23 +271,8 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
     qint64 ms = model.load_timer.elapsed();
     emit loadedFromSidecar(mid, ms);
 
-    startDataSourceLoad(mid);
-
     loading_model_id_ = 0;
     QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
-}
-
-// Match SidecarCache.cpp's sidecarPath() stem logic so we resolve the
-// data-source siblings against the same stem the sidecar was keyed on.
-static std::string pathStem(const std::string& path) {
-    std::string p = path;
-    while (!p.empty() && (p.back() == '/' || p.back() == '\\')) p.pop_back();
-    auto slash = p.find_last_of("/\\");
-    auto dot   = p.find_last_of('.');
-    return (dot != std::string::npos &&
-            (slash == std::string::npos || dot > slash))
-               ? p.substr(0, dot)
-               : p;
 }
 
 void SceneLoader::startDataSourceLoad(uint32_t mid) {
@@ -282,22 +281,7 @@ void SceneLoader::startDataSourceLoad(uint32_t mid) {
     auto it = models_.find(mid);
     if (it == models_.end()) return;
 
-    std::string original_path = it->second.file_path.toStdString();
-    std::string stem = pathStem(original_path);
-
-    // Prefer RocksDB (foo.rdb) over SPF (foo.ifc) for fast random lookups.
-    QString data_path;
-    const QString rdb_candidate = QString::fromStdString(stem + ".rdb");
-    const QString ifc_candidate = QString::fromStdString(stem + ".ifc");
-    if (QFileInfo::exists(rdb_candidate)) {
-        data_path = rdb_candidate;
-    } else if (QFileInfo::exists(ifc_candidate)) {
-        data_path = ifc_candidate;
-    } else {
-        return;
-    }
-
-    std::string data_path_std = data_path.toStdString();
+    std::string data_path_std = it->second.file_path.toStdString();
     data_source_threads_.emplace_back([this, mid, data_path_std]() {
         QElapsedTimer t; t.start();
         std::unique_ptr<ifcopenshell::file> file;
