@@ -1,0 +1,50 @@
+<!-- This file was generated with the assistance of an AI coding tool. -->
+<RCC>
+    <qresource prefix="/fonts">
+        <file alias="DMSans-VariableFont_opsz,wght.ttf">../ifctester/webapp/public/fonts/dmsans/DMSans-VariableFont_opsz,wght.ttf</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="plus-square.svg">icons/plus-square.svg</file>
+        <file alias="download-square.svg">icons/download-square.svg</file>
+        <file alias="cloud-square.svg">icons/cloud-square.svg</file>
+        <file alias="clock-rotate-right.svg">icons/clock-rotate-right.svg</file>
+        <file alias="floppy-disk.svg">icons/floppy-disk.svg</file>
+        <file alias="floppy-disk-arrow-in.svg">icons/floppy-disk-arrow-in.svg</file>
+        <file alias="cube.svg">icons/cube.svg</file>
+        <file alias="refresh-double.svg">icons/refresh-double.svg</file>
+        <file alias="settings.svg">icons/settings.svg</file>
+        <file alias="home.svg">icons/home.svg</file>
+        <file alias="home-alt.svg">icons/home-alt.svg</file>
+        <file alias="cube-scan.svg">icons/cube-scan.svg</file>
+        <file alias="cube-scan-solid.svg">icons/cube-scan-solid.svg</file>
+        <file alias="planimetry.svg">icons/planimetry.svg</file>
+        <file alias="city.svg">icons/city.svg</file>
+        <file alias="building.svg">icons/building.svg</file>
+        <file alias="cellar.svg">icons/cellar.svg</file>
+        <file alias="perspective-view.svg">icons/perspective-view.svg</file>
+        <file alias="rotate-camera-right.svg">icons/rotate-camera-right.svg</file>
+        <file alias="drone.svg">icons/drone.svg</file>
+        <file alias="folder-plus.svg">icons/folder-plus.svg</file>
+        <file alias="folder-minus.svg">icons/folder-minus.svg</file>
+        <file alias="folder.svg">icons/folder.svg</file>
+        <file alias="minus-square.svg">icons/minus-square.svg</file>
+        <file alias="eye-closed.svg">icons/eye-closed.svg</file>
+        <file alias="eye.svg">icons/eye.svg</file>
+        <file alias="eye-solid.svg">icons/eye-solid.svg</file>
+        <file alias="intersect.svg">icons/intersect.svg</file>
+        <file alias="select-edge3d.svg">icons/select-edge3d.svg</file>
+        <file alias="select-face3d.svg">icons/select-face3d.svg</file>
+        <file alias="select-point3d.svg">icons/select-point3d.svg</file>
+        <file alias="frame-alt.svg">icons/frame-alt.svg</file>
+        <file alias="square3d-from-center.svg">icons/square3d-from-center.svg</file>
+        <file alias="filter.svg">icons/filter.svg</file>
+        <file alias="cube-dots.svg">icons/cube-dots.svg</file>
+        <file alias="cursor-pointer.svg">icons/cursor-pointer.svg</file>
+        <file alias="sidebar-expand.svg">icons/sidebar-expand.svg</file>
+        <file alias="check.svg">icons/check.svg</file>
+        <file alias="xmark-circle.svg">icons/xmark-circle.svg</file>
+        <file alias="database.svg">icons/database.svg</file>
+        <file alias="database-restore.svg">icons/database-restore.svg</file>
+        <file alias="cube-bandage.svg">icons/cube-bandage.svg</file>
+    </qresource>
+</RCC>

@@ -467,6 +467,7 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](ifcopenshell::IfcBaseClass* v) { return v->identity(); })
 {
+    read_only_ = readonly;
 #ifdef IFOPSH_WITH_ROCKSDB
     wopts.disableWAL = true;
 #endif
@@ -475,18 +476,22 @@ ifcopenshell::impl::rocks_db_file_storage::rocks_db_file_storage(const std::stri
 ifcopenshell::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
 #ifdef IFOPSH_WITH_ROCKSDB
-    rocksdb::FlushOptions flush_options;
-    flush_options.allow_write_stall = true;
-    flush_options.wait = true; // Wait until flush completes.
-    rocksdb::Status s = db->Flush(flush_options);
+    if (db != nullptr) {
+        if (!read_only_) {
+            rocksdb::FlushOptions flush_options;
+            flush_options.allow_write_stall = true;
+            flush_options.wait = true; // Wait until flush completes.
+            rocksdb::Status s = db->Flush(flush_options);
 
-    // compact entire db
-    db->CompactRange(rocksdb::CompactRangeOptions{}, nullptr, nullptr);
+            // compact entire db
+            db->CompactRange(rocksdb::CompactRangeOptions{}, nullptr, nullptr);
 
-    assert(s.ok());
+            assert(s.ok());
+        }
 
-    db->Close();
-    delete db;
+        db->Close();
+        delete db;
+    }
 #endif
 }
 

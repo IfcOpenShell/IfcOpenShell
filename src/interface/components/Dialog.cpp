@@ -1,0 +1,79 @@
+// This file was generated with the assistance of an AI coding tool.
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#include "Dialog.h"
+
+#include "Style.h"
+
+#include <QDialog>
+#include <QFrame>
+#include <QScrollArea>
+#include <QVBoxLayout>
+
+namespace ifcinterface::components {
+
+Dialog::Dialog(QWidget* parent, bool scrollable)
+    : QDialog(parent)
+{
+    auto* outer_layout = new QVBoxLayout(this);
+    outer_layout->setContentsMargins(style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding);
+    outer_layout->setSpacing(0);
+
+    auto* frame = new QFrame(this);
+    frame->setObjectName("panel");
+    auto* frame_layout = new QVBoxLayout(frame);
+    frame_layout->setContentsMargins(0,
+                                     style::metrics::section_body_padding,
+                                     0,
+                                     style::metrics::section_body_padding);
+    frame_layout->setSpacing(0);
+
+    if (scrollable) {
+        auto* scroll = new QScrollArea(frame);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+
+        auto* scroll_body = new QWidget(scroll);
+        scroll_body->setObjectName("panelScrollBody");
+        body_layout_ = new QVBoxLayout(scroll_body);
+        body_layout_->setContentsMargins(0, 0, 0, 0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
+
+        scroll->setWidget(scroll_body);
+        frame_layout->addWidget(scroll);
+    } else {
+        auto* body = new QWidget(frame);
+        body_layout_ = new QVBoxLayout(body);
+        body_layout_->setContentsMargins(0, 0, 0, 0);
+        body_layout_->setSpacing(style::metrics::section_body_padding);
+        frame_layout->addWidget(body);
+    }
+
+    outer_layout->addWidget(frame);
+}
+
+void Dialog::addBodyWidget(QWidget* widget) {
+    body_layout_->addWidget(widget);
+}
+
+} // namespace ifcinterface::components

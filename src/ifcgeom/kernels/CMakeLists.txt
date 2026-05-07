@@ -1,6 +1,6 @@
 message(STATUS "GEOMETRY_KERNELS ${GEOMETRY_KERNELS}")
 
-set(kernel_plugin_runtime_dir "${CMAKE_BINARY_DIR}/ifcgeom/$<CONFIG>")
+set(kernel_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 
 if (NOT WASM_BUILD)
 # wasm-ld (?) trips up on multiple defined symbols. IfcParse already brings

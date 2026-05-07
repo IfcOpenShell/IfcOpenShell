@@ -8,17 +8,21 @@
 
 #include <rocksdb/db.h>
 
+#include <string>
+#include <vector>
+
 class SERIALIZERS_API RocksDbSerializer : public Serializer {
 private:
 	rocksdb::DB* db_;
 	std::string rocksdb_filename_;
 	std::variant<ifcopenshell::file*, std::string> file_;
 	ifcopenshell::file* output_file_;
+	std::vector<std::string> skip_supertypes_;
 
 	void write_streaming_();
 public:
 	RocksDbSerializer(ifcopenshell::file* file, const std::string& rocksdb_filename);
-	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream);
+	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, const std::vector<std::string>& skip_supertypes = {});
 
 	virtual ~RocksDbSerializer() {}
 

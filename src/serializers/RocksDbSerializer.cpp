@@ -23,9 +23,10 @@ RocksDbSerializer::RocksDbSerializer(ifcopenshell::file* file, const std::string
 	output_file_->calculate_unit_factors = false;
 }
 
-RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream)
+RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, const std::vector<std::string>& skip_supertypes)
 	: file_(input_filename)
 	, rocksdb_filename_(rocksdb_filename)
+	, skip_supertypes_(skip_supertypes)
 {
 }
 
@@ -143,6 +144,21 @@ void RocksDbSerializer::write_streaming_() {
 			const auto& data = std::get<2>(*inst);
 
 			const bool is_header = decl->schema() == &Header_section_schema::get_schema();
+
+			if (!is_header && decl->as_entity() && !skip_supertypes_.empty()) {
+				bool skip = false;
+				for (const auto& super : skip_supertypes_) {
+					if (decl->is(super)) {
+						skip = true;
+						break;
+					}
+				}
+				if (skip) {
+					streamer.references().clear();
+					streamer.inverses().clear();
+					continue;
+				}
+			}
 
 			std::vector<express::Base> simple_type_instances;
 

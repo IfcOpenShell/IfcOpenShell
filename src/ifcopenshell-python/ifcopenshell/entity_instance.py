@@ -213,8 +213,14 @@ class entity_instance_mixin:
         return value
 
     def __eq__(self, other: entity_instance_mixin) -> bool:
-        if not isinstance(self, type(other)):
+        if other is None or not isinstance(other, entity_instance_mixin):
             return False
+        else:
+            raise NotImplementedError
+
+    def __ne__(self, other: entity_instance_mixin) -> bool:
+        if other is None or not isinstance(other, entity_instance_mixin):
+            return True
         else:
             raise NotImplementedError
 
@@ -395,3 +401,45 @@ class entity_instance_mixin:
         assert return_type is dict
         assert len(ignore) == 0
         return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
+
+
+# Alias for backwards compatibility — external code imports this name.
+entity_instance = entity_instance_mixin
+
+
+# Monkey-patch SWIG's __eq__, __ne__, __lt__ on the generated entity_instance
+# class to guard against None / non-entity arguments. SWIG generates these
+# directly on the class (overriding the mixin), and they pass arguments straight
+# to C++ which rejects null references.
+# Deferred until after ifcopenshell_wrapper finishes loading to avoid circular import.
+_swig_comparisons_patched = False
+
+
+def _patch_swig_comparisons():
+    global _swig_comparisons_patched
+    if _swig_comparisons_patched:
+        return
+    _swig_cls = ifcopenshell_wrapper.entity_instance
+    _orig_eq = _swig_cls.__eq__
+    _orig_ne = _swig_cls.__ne__
+    _orig_lt = _swig_cls.__lt__
+
+    def _safe_eq(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_eq(self, other)
+
+    def _safe_ne(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_ne(self, other)
+
+    def _safe_lt(self, other):
+        if other is None or not isinstance(other, _swig_cls):
+            return NotImplemented
+        return _orig_lt(self, other)
+
+    _swig_cls.__eq__ = _safe_eq
+    _swig_cls.__ne__ = _safe_ne
+    _swig_cls.__lt__ = _safe_lt
+    _swig_comparisons_patched = True

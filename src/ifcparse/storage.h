@@ -31,6 +31,7 @@ namespace rocksdb {
 #include <iterator>
 #include <type_traits>
 #include <iostream>
+#include <deque>
 #include <vector>
 #include <deque>
 #include <list>
@@ -388,6 +389,8 @@ namespace ifcopenshell {
             };
             typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             entities_by_ref_t byref_excl_;
+
+            bool read_only_ = false;
 
             // @todo naming
             rocks_db_file_storage(const std::string& path, ifcopenshell::file* owner_file, bool read_only = false);
