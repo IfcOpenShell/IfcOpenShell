@@ -95,8 +95,8 @@ void main() {
 // half-sprite (so 1.0 = no stroke, smaller = thicker stroke).  The
 // fragment shader reads gl_PointCoord (range [0,1] across the sprite),
 // computes the distance from the centre normalised against the half-
-// sprite, and picks inner vs stroke from that.  ~1px AA at every band
-// boundary using fwidth-style smoothstep with a narrow ramp.
+// sprite, picks inner vs stroke with a sharp `step()` (no soft band),
+// then anti-aliases the *outer* edge only.
 const char* POINT_FS = R"(
 #version 450 core
 uniform vec4  u_inner_color;
@@ -107,10 +107,9 @@ void main() {
     vec2 c = gl_PointCoord - 0.5;
     float d = length(c) * 2.0;             // 0 at centre, 1 at sprite edge
     if (d > 1.0) discard;
-    float aa = fwidth(d) * 1.2;            // ~1px feather
-    float t_inner = smoothstep(u_inner_radius_norm - aa,
-                               u_inner_radius_norm + aa, d);
+    float t_inner = step(u_inner_radius_norm, d);
     vec4 col = mix(u_inner_color, u_stroke_color, t_inner);
+    float aa = fwidth(d);
     float outer_alpha = smoothstep(1.0, 1.0 - aa, d);
     frag_color = vec4(col.rgb, col.a * outer_alpha);
 }
@@ -136,6 +135,7 @@ uniform vec2  u_screen_size;               // physical pixels
 uniform float u_half_width;                // inner half-width (px)
 uniform float u_stroke_extra;              // halo per side (px)
 out float v_dist_px;
+out float v_along_px;                      // distance from segment start (px)
 void main() {
     vec4 clip_a = u_view_proj * vec4(in_a, 1.0);
     vec4 clip_b = u_view_proj * vec4(in_b, 1.0);
@@ -160,7 +160,8 @@ void main() {
     vec2 ndc_out = screen_self / (u_screen_size * 0.5);
     gl_Position = vec4(ndc_out * clip_self.w, clip_self.z, clip_self.w);
 
-    v_dist_px = in_side * total_half;
+    v_dist_px  = in_side * total_half;
+    v_along_px = in_along * len;
 }
 )";
 
@@ -190,18 +191,26 @@ void main() {
 const char* LINE_FS = R"(
 #version 450 core
 in float v_dist_px;
+in float v_along_px;
 uniform vec4  u_inner_color;
 uniform vec4  u_stroke_color;
 uniform float u_half_width;
 uniform float u_stroke_extra;
+uniform float u_dash_period;     // 0 = solid
+uniform float u_dash_on_ratio;
 out vec4 frag_color;
 void main() {
+    if (u_dash_period > 0.0) {
+        float t = mod(v_along_px, u_dash_period);
+        if (t > u_dash_period * u_dash_on_ratio) discard;
+    }
     float ad = abs(v_dist_px);
     float total = u_half_width + u_stroke_extra;
     if (ad > total) discard;
 
-    // ~1px AA on the inner/stroke boundary and the outer edge.
-    float t_stroke = smoothstep(u_half_width - 0.5, u_half_width + 0.5, ad);
+    // Sharp inner-to-stroke transition; AA only the outer halo edge so
+    // the line reads crisp instead of mushy.
+    float t_stroke = step(u_half_width, ad);
     vec4  col      = mix(u_inner_color, u_stroke_color, t_stroke);
     float outer_a  = smoothstep(total, total - 1.0, ad);
     frag_color = vec4(col.rgb, col.a * outer_a);
@@ -282,6 +291,8 @@ void OverlayRenderer::initialize(QOpenGLFunctions_4_5_Core* gl) {
         u_ln_stroke_extra_    = gl_->glGetUniformLocation(program_ln_, "u_stroke_extra");
         u_ln_inner_color_     = gl_->glGetUniformLocation(program_ln_, "u_inner_color");
         u_ln_stroke_color_    = gl_->glGetUniformLocation(program_ln_, "u_stroke_color");
+        u_ln_dash_period_     = gl_->glGetUniformLocation(program_ln_, "u_dash_period");
+        u_ln_dash_on_ratio_   = gl_->glGetUniformLocation(program_ln_, "u_dash_on_ratio");
     }
     // Screen-space rect program.
     {
@@ -310,22 +321,24 @@ void OverlayRenderer::initialize(QOpenGLFunctions_4_5_Core* gl) {
                                    0, 3 * sizeof(float));
 
     // Line VAO/VBO: 8 floats per vertex (a:vec3, b:vec3, side, along).
-    gl_->glCreateVertexArrays(1, &lines_.vao);
-    gl_->glCreateBuffers(1, &lines_.vbo);
+    // Shared across every group; line_draws_ records the (first, count)
+    // slice for each.
+    gl_->glCreateVertexArrays(1, &vao_lines_);
+    gl_->glCreateBuffers(1, &vbo_lines_);
     const GLsizei stride = 8 * sizeof(float);
-    gl_->glEnableVertexArrayAttrib(lines_.vao, 0);
-    gl_->glVertexArrayAttribFormat(lines_.vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
-    gl_->glVertexArrayAttribBinding(lines_.vao, 0, 0);
-    gl_->glEnableVertexArrayAttrib(lines_.vao, 1);
-    gl_->glVertexArrayAttribFormat(lines_.vao, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(lines_.vao, 1, 0);
-    gl_->glEnableVertexArrayAttrib(lines_.vao, 2);
-    gl_->glVertexArrayAttribFormat(lines_.vao, 2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(lines_.vao, 2, 0);
-    gl_->glEnableVertexArrayAttrib(lines_.vao, 3);
-    gl_->glVertexArrayAttribFormat(lines_.vao, 3, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float));
-    gl_->glVertexArrayAttribBinding(lines_.vao, 3, 0);
-    gl_->glVertexArrayVertexBuffer(lines_.vao, 0, lines_.vbo, 0, stride);
+    gl_->glEnableVertexArrayAttrib(vao_lines_, 0);
+    gl_->glVertexArrayAttribFormat(vao_lines_, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    gl_->glVertexArrayAttribBinding(vao_lines_, 0, 0);
+    gl_->glEnableVertexArrayAttrib(vao_lines_, 1);
+    gl_->glVertexArrayAttribFormat(vao_lines_, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao_lines_, 1, 0);
+    gl_->glEnableVertexArrayAttrib(vao_lines_, 2);
+    gl_->glVertexArrayAttribFormat(vao_lines_, 2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao_lines_, 2, 0);
+    gl_->glEnableVertexArrayAttrib(vao_lines_, 3);
+    gl_->glVertexArrayAttribFormat(vao_lines_, 3, 1, GL_FLOAT, GL_FALSE, 7 * sizeof(float));
+    gl_->glVertexArrayAttribBinding(vao_lines_, 3, 0);
+    gl_->glVertexArrayVertexBuffer(vao_lines_, 0, vbo_lines_, 0, stride);
 
     // Screen-rect VAO/VBO: 2 floats per vertex (vec2 NDC).
     gl_->glCreateVertexArrays(1, &vao_rect_);
@@ -342,8 +355,8 @@ void OverlayRenderer::release() {
     if (triangles_.vao) gl_->glDeleteVertexArrays(1, &triangles_.vao);
     if (points_.vbo)    gl_->glDeleteBuffers(1, &points_.vbo);
     if (points_.vao)    gl_->glDeleteVertexArrays(1, &points_.vao);
-    if (lines_.vbo)     gl_->glDeleteBuffers(1, &lines_.vbo);
-    if (lines_.vao)     gl_->glDeleteVertexArrays(1, &lines_.vao);
+    if (vbo_lines_)     gl_->glDeleteBuffers(1, &vbo_lines_);
+    if (vao_lines_)     gl_->glDeleteVertexArrays(1, &vao_lines_);
     if (vbo_rect_)      gl_->glDeleteBuffers(1, &vbo_rect_);
     if (vao_rect_)      gl_->glDeleteVertexArrays(1, &vao_rect_);
     if (program_tri_)   gl_->glDeleteProgram(program_tri_);
@@ -352,7 +365,9 @@ void OverlayRenderer::release() {
     if (program_rect_)  gl_->glDeleteProgram(program_rect_);
     triangles_ = {};
     points_    = {};
-    lines_     = {};
+    line_draws_.clear();
+    vao_lines_ = vbo_lines_ = 0;
+    vbo_lines_capacity_ = 0;
     vao_rect_  = vbo_rect_ = 0;
     vbo_rect_capacity_ = 0;
     program_tri_ = program_pt_ = program_ln_ = program_rect_ = 0;
@@ -392,23 +407,31 @@ void OverlayRenderer::setOverlayPoints(const std::vector<float>& world_xyz,
     uploadFloats(gl_, points_.vbo, points_.vbo_capacity, world_xyz);
 }
 
-void OverlayRenderer::setOverlayLines(const std::vector<float>& world_xyz,
-                                       float r, float g, float b, float a,
-                                       float line_width,
-                                       float sr, float sg, float sb, float sa,
-                                       float stroke_extra) {
+void OverlayRenderer::setOverlayLines(const std::vector<LineGroup>& groups) {
     if (!gl_) return;
-    lines_.inner_color[0]  = r;  lines_.inner_color[1]  = g;
-    lines_.inner_color[2]  = b;  lines_.inner_color[3]  = a;
-    lines_.stroke_color[0] = sr; lines_.stroke_color[1] = sg;
-    lines_.stroke_color[2] = sb; lines_.stroke_color[3] = sa;
-    lines_.line_width      = line_width;
-    lines_.stroke_extra    = stroke_extra;
+    line_draws_.clear();
 
-    std::vector<float> expanded;
-    expandLineSegments(world_xyz, expanded);
-    lines_.vertex_count = GLsizei(expanded.size() / 8);
-    uploadFloats(gl_, lines_.vbo, lines_.vbo_capacity, expanded);
+    // Concatenate every group's CPU-expanded vertices into one big buffer
+    // and remember each group's (first, count) slice + style so render()
+    // can iterate without re-expanding.
+    std::vector<float> combined;
+    for (const auto& g : groups) {
+        std::vector<float> exp;
+        expandLineSegments(g.world_xyz, exp);
+        if (exp.empty()) continue;
+        LineDrawCall dc;
+        std::memcpy(dc.color,        g.color,        sizeof(dc.color));
+        std::memcpy(dc.stroke_color, g.stroke_color, sizeof(dc.stroke_color));
+        dc.line_width     = g.line_width;
+        dc.stroke_extra   = g.stroke_extra;
+        dc.dash_period_px = g.dash_period_px;
+        dc.dash_on_ratio  = g.dash_on_ratio;
+        dc.first          = GLint(combined.size() / 8);
+        dc.count          = GLsizei(exp.size() / 8);
+        line_draws_.push_back(dc);
+        combined.insert(combined.end(), exp.begin(), exp.end());
+    }
+    uploadFloats(gl_, vbo_lines_, vbo_lines_capacity_, combined);
 }
 
 void OverlayRenderer::render(const float view_proj[16],
@@ -447,16 +470,21 @@ void OverlayRenderer::render(const float view_proj[16],
     // pass — the standard CAD convention.  GL_ALWAYS wins every depth
     // compare; GL_LEQUAL is restored at the end of the function.
     gl_->glDepthFunc(GL_ALWAYS);
-    if (lines_.vertex_count > 0 && lines_.inner_color[3] > 0.0f) {
+    if (!line_draws_.empty()) {
         gl_->glUseProgram(program_ln_);
         gl_->glUniformMatrix4fv(u_ln_view_proj_, 1, GL_FALSE, view_proj);
         gl_->glUniform2f(u_ln_screen_size_, float(pixel_w), float(pixel_h));
-        gl_->glUniform1f(u_ln_half_width_,   lines_.line_width * 0.5f);
-        gl_->glUniform1f(u_ln_stroke_extra_, lines_.stroke_extra);
-        gl_->glUniform4fv(u_ln_inner_color_,  1, lines_.inner_color);
-        gl_->glUniform4fv(u_ln_stroke_color_, 1, lines_.stroke_color);
-        gl_->glBindVertexArray(lines_.vao);
-        gl_->glDrawArrays(GL_TRIANGLES, 0, lines_.vertex_count);
+        gl_->glBindVertexArray(vao_lines_);
+        for (const auto& dc : line_draws_) {
+            if (dc.count == 0 || dc.color[3] <= 0.0f) continue;
+            gl_->glUniform1f(u_ln_half_width_,    dc.line_width * 0.5f);
+            gl_->glUniform1f(u_ln_stroke_extra_,  dc.stroke_extra);
+            gl_->glUniform4fv(u_ln_inner_color_,  1, dc.color);
+            gl_->glUniform4fv(u_ln_stroke_color_, 1, dc.stroke_color);
+            gl_->glUniform1f(u_ln_dash_period_,   dc.dash_period_px);
+            gl_->glUniform1f(u_ln_dash_on_ratio_, dc.dash_on_ratio);
+            gl_->glDrawArrays(GL_TRIANGLES, dc.first, dc.count);
+        }
     }
     if (points_.vertex_count > 0 && points_.inner_color[3] > 0.0f) {
         // Inner-radius ratio in [0, 1]: how much of the sprite is the

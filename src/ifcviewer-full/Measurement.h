@@ -21,13 +21,12 @@
 #define IFCVIEWER_FULL_MEASUREMENT_H
 
 #include <cstddef>
+#include "ViewportWindow.h"
 #include <QString>
 #include <array>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
-
-class ViewportWindow;
 
 // Sum of mesh-local volumes (m³) of every instance whose object_id is in
 // `object_ids`.  Groups by (model, mesh) so each unique mesh is read back
@@ -110,7 +109,12 @@ private:
 // Click-to-place length / angle / area measurement.  Each pick appends a
 // world-space point.  The readout adapts to the point count:
 //
-//   1 point  → "click another point"
+//   1 point  → "laser-measure" mode: 6 rays (±surface-normal, ±tangent₁,
+//              ±tangent₂ in the surface's own basis) trace into the scene.
+//              On a wall this gives thickness + floor-to-ceiling height +
+//              length-along-wall in one click.  Tangent₁ is world up
+//              projected onto the surface plane (Gram-Schmidt against the
+//              normal); tangent₂ = normal × tangent₁.
 //   2 points → straight-line distance plus axis-aligned ΔX/ΔY/ΔZ
 //   3 points → angle at the middle vertex plus the triangle's area
 //   4+       → polygon area: best-fit-plane shoelace if the points are
@@ -118,7 +122,8 @@ private:
 //              box), else fan-triangulated from the first point
 //
 // Clicked points are pushed to the viewport overlay as small dots and
-// the connecting polyline; readouts go to the multi-line HUD.
+// the connecting polyline (or the laser rays for 1-point); readouts
+// go to the multi-line HUD.
 class LengthMeasurement {
 public:
     LengthMeasurement();
@@ -131,9 +136,17 @@ public:
 
 private:
     void rebuildOverlay(ViewportWindow& vp);
+    void rebuildLaserOverlay(ViewportWindow& vp);
     QString formatReadout() const;
 
     std::vector<std::array<float, 3>> points_;
+    std::vector<std::array<float, 3>> normals_;  // surface normal at each pick
+
+    // Captured at the very first pick of a fresh sequence and never
+    // updated afterwards.  Used by the 1-pt laser BFS to re-locate the
+    // mesh-local position of points_[0] without re-picking.  Stays valid
+    // while points_[0] does (pop_back never touches the first element).
+    ViewportWindow::MeshLocalPick first_pick_{};
 };
 
 #endif // IFCVIEWER_FULL_MEASUREMENT_H

@@ -230,6 +230,24 @@ public:
     };
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
+    // CPU raycast against the per-model BVHs.  Walks the BVH for each
+    // finalised model, transforms the world ray into mesh-local space
+    // for each candidate instance, reads back its triangles, and runs
+    // Möller-Trumbore against them.  Returns the closest hit overall.
+    //
+    // `dir` MUST be a unit vector — distance is reported as the t value
+    // along the ray, which equals world distance only when |dir|=1.
+    // Stalls the GL pipeline once per unique (model, mesh) candidate
+    // because triangle data is read back lazily; budget ~1ms for
+    // typical BIM scenes.
+    struct RaycastHit {
+        uint32_t object_id      = 0;
+        float    distance       = 0.0f;
+        float    world_pos[3]   = {0, 0, 0};
+        float    world_normal[3]= {0, 0, 0};
+    };
+    bool raycast(const float origin[3], const float dir[3], RaycastHit& out);
+
     // Measurement tool modes.  While any tool is active, LMB clicks emit
     // surfacePickedInTool with the click coordinates (instead of swapping
     // object selection); the app interprets them per-tool.  Esc exits the
@@ -250,15 +268,10 @@ public:
     void setHighlightTriangles(const std::vector<float>& world_xyz,
                                float r, float g, float b, float a);
 
-    // Replace the overlay-line list (3 floats per vertex, 2 verts per
-    // segment, world space).  When stroke_a > 0 each segment is rendered
-    // with a wider (line_width + 2*stroke_extra) halo behind the inner
-    // line_width — proper outlined lines via screen-space-quad shader.
-    void setOverlayLines(const std::vector<float>& world_xyz,
-                         float r, float g, float b, float a,
-                         float line_width,
-                         float stroke_r, float stroke_g, float stroke_b, float stroke_a,
-                         float stroke_extra);
+    // Replace the overlay line groups.  Each group has its own segments
+    // + style (color/halo/width/dash) — see OverlayRenderer::LineGroup.
+    // Empty disables every line.
+    void setOverlayLines(const std::vector<OverlayRenderer::LineGroup>& groups);
 
     // Replace the overlay-point list (3 floats per point, world space).
     // pixel_size is the inner-disc diameter in physical pixels; when

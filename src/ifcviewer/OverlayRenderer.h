@@ -44,19 +44,21 @@ public:
     void setHighlightTriangles(const std::vector<float>& world_xyz,
                                float r, float g, float b, float a);
 
-    // Replace the overlay-line list (3 floats per vertex, 2 verts per
-    // segment, world space).
-    //
-    // When stroke_a > 0, every segment is rendered twice — first a wider
-    // (line_width + 2*stroke_extra) stroke pass, then the inner line_width
-    // pass.  Most desktop GL drivers clamp glLineWidth at ~1, so the
-    // stroke pass on lines may visually collapse onto the inner; reliable
-    // two-tone outlining will need a screen-space-quad thick-line shader.
-    void setOverlayLines(const std::vector<float>& world_xyz,
-                         float r, float g, float b, float a,
-                         float line_width,
-                         float stroke_r, float stroke_g, float stroke_b, float stroke_a,
-                         float stroke_extra);
+    // One stylistic group of line segments rendered through the
+    // outlined / optionally-dashed line shader.  Multiple groups in a
+    // single setOverlayLines call let the caller mix solid + dashed +
+    // axis-coloured legs in one frame (e.g. the length tool's white
+    // total line + RGB XYZ stair-step + dashed perpendicular).
+    struct LineGroup {
+        std::vector<float> world_xyz;         // 6 floats per segment (a, b)
+        float color[4]        = {1, 1, 1, 1}; // inner color
+        float stroke_color[4] = {0, 0, 0, 1}; // outline (0 alpha = no outline)
+        float line_width      = 1.5f;         // pixels (inner)
+        float stroke_extra    = 0.5f;         // pixels per side outside inner
+        float dash_period_px  = 0.0f;         // 0 = solid; else screen-space dash period
+        float dash_on_ratio   = 0.6f;         // [0..1], used only when period > 0
+    };
+    void setOverlayLines(const std::vector<LineGroup>& groups);
 
     // Replace the overlay-point list (3 floats per point, world space).
     // `pixel_size` is the inner-dot diameter in physical pixels.
@@ -118,23 +120,19 @@ private:
         float   stroke_extra    = 0.0f;
     };
 
-    // Line bundle: each input segment is CPU-expanded into 6 vertices
-    // (a quad as 2 triangles), each carrying both endpoints and a
-    // (side, along) corner index.  The vertex shader projects to screen,
-    // computes the screen-space perpendicular, and offsets accordingly;
-    // the fragment shader uses the interpolated signed perpendicular
-    // distance to discard outside the half-width and to pick inner vs
-    // stroke color.  Result: real outlined lines independent of the
-    // driver's glLineWidth clamp.
-    struct LineBundle {
-        GLuint  vao          = 0;
-        GLuint  vbo          = 0;
-        size_t  vbo_capacity = 0;
-        GLsizei vertex_count = 0;
-        float   inner_color[4]  = {0, 0, 0, 0};
-        float   stroke_color[4] = {0, 0, 0, 0};
-        float   line_width      = 1.0f;
-        float   stroke_extra    = 0.0f;
+    // Per-group draw-call record.  setOverlayLines populates one of these
+    // per LineGroup, with `first` indexing into a shared expanded-vertex
+    // VBO.  At render time we iterate them, set per-group uniforms, and
+    // issue one glDrawArrays each.
+    struct LineDrawCall {
+        float color[4]        = {1, 1, 1, 1};
+        float stroke_color[4] = {0, 0, 0, 0};
+        float line_width      = 1.5f;
+        float stroke_extra    = 0.5f;
+        float dash_period_px  = 0.0f;
+        float dash_on_ratio   = 0.6f;
+        GLint   first         = 0;
+        GLsizei count         = 0;
     };
 
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
@@ -160,6 +158,8 @@ private:
     GLint  u_ln_stroke_extra_    = -1;
     GLint  u_ln_inner_color_     = -1;
     GLint  u_ln_stroke_color_    = -1;
+    GLint  u_ln_dash_period_     = -1;
+    GLint  u_ln_dash_on_ratio_   = -1;
 
     // Screen-space rect program (label + HUD backgrounds).  Vertex
     // attribute is vec2 NDC; fragment outputs a uniform color.  Drawn
@@ -172,7 +172,13 @@ private:
 
     TriBundle   triangles_;
     PointBundle points_;
-    LineBundle  lines_;
+
+    // Lines: one shared VAO/VBO holding the concatenated expanded
+    // vertices of every group; line_draws_ records each group's slice.
+    GLuint vao_lines_           = 0;
+    GLuint vbo_lines_           = 0;
+    size_t vbo_lines_capacity_  = 0;
+    std::vector<LineDrawCall> line_draws_;
 
     std::vector<Label> labels_;
     QString            hud_text_;

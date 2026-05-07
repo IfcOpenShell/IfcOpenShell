@@ -3881,6 +3881,169 @@ void ViewportWindow::setToolMode(ToolMode mode) {
     emit toolModeChanged(mode);
 }
 
+namespace {
+
+// Slab method ray-AABB.  inv_d is precomputed 1/dir per axis.
+bool rayAabb(const float ro[3], const float inv_d[3],
+             const float bmin[3], const float bmax[3]) {
+    float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
+    for (int i = 0; i < 3; ++i) {
+        float t1 = (bmin[i] - ro[i]) * inv_d[i];
+        float t2 = (bmax[i] - ro[i]) * inv_d[i];
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    }
+    return tmax >= tmin && tmax >= 0.0f;
+}
+
+// Möller-Trumbore.  Returns true on hit; t is in dir-units.
+bool rayTri(const float ro[3], const float rd[3],
+            const float v0[3], const float v1[3], const float v2[3],
+            float& t_out) {
+    constexpr float EPS = 1e-7f;
+    float e1[3] = {v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2]};
+    float e2[3] = {v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2]};
+    float h[3]  = {
+        rd[1]*e2[2] - rd[2]*e2[1],
+        rd[2]*e2[0] - rd[0]*e2[2],
+        rd[0]*e2[1] - rd[1]*e2[0]
+    };
+    float a = e1[0]*h[0] + e1[1]*h[1] + e1[2]*h[2];
+    if (a > -EPS && a < EPS) return false;
+    float f = 1.0f / a;
+    float s[3] = {ro[0]-v0[0], ro[1]-v0[1], ro[2]-v0[2]};
+    float u = f * (s[0]*h[0] + s[1]*h[1] + s[2]*h[2]);
+    if (u < 0.0f || u > 1.0f) return false;
+    float q[3] = {
+        s[1]*e1[2] - s[2]*e1[1],
+        s[2]*e1[0] - s[0]*e1[2],
+        s[0]*e1[1] - s[1]*e1[0]
+    };
+    float v = f * (rd[0]*q[0] + rd[1]*q[1] + rd[2]*q[2]);
+    if (v < 0.0f || u + v > 1.0f) return false;
+    float t = f * (e2[0]*q[0] + e2[1]*q[1] + e2[2]*q[2]);
+    if (t > EPS) { t_out = t; return true; }
+    return false;
+}
+
+// Stack-based BVH walk — collects the item indices of every leaf whose
+// AABB the ray intersects.  Caller filters down to actual triangle hits.
+void bvhCollectRayCandidates(const ModelBvh& bvh,
+                              const float ro[3], const float inv_d[3],
+                              std::vector<uint32_t>& out) {
+    if (bvh.nodes.empty()) return;
+    std::vector<uint32_t> stack;
+    stack.reserve(64);
+    stack.push_back(0);
+    while (!stack.empty()) {
+        uint32_t idx = stack.back(); stack.pop_back();
+        const BvhNode& node = bvh.nodes[idx];
+        if (!rayAabb(ro, inv_d, node.aabb_min, node.aabb_max)) continue;
+        if (node.count > 0) {
+            for (uint32_t i = 0; i < node.count; ++i) {
+                out.push_back(bvh.item_indices[node.right_or_first + i]);
+            }
+        } else {
+            stack.push_back(idx + 1);                    // left child
+            stack.push_back(node.right_or_first);        // right child
+        }
+    }
+}
+
+} // namespace
+
+bool ViewportWindow::raycast(const float origin[3], const float dir[3],
+                              RaycastHit& out) {
+    if (!gl_initialized_) return false;
+
+    float inv_d[3];
+    for (int i = 0; i < 3; ++i) {
+        inv_d[i] = (std::abs(dir[i]) > 1e-12f)
+            ? 1.0f / dir[i] : std::numeric_limits<float>::infinity();
+    }
+
+    // Local mesh-triangle cache shared across candidate instances of the
+    // same mesh in this single call.  Avoids re-stalling the GL pipeline
+    // for repeated readbacks of the same VBO/EBO range.
+    std::unordered_map<uint64_t, MeshTriangles> mesh_cache;
+
+    float closest_t = std::numeric_limits<float>::infinity();
+    bool any_hit = false;
+    using Mat4f = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+
+    for (auto& kv : models_gpu_) {
+        ModelGpuData& m = kv.second;
+        if (!m.finalized || m.bvh.nodes.empty()) continue;
+
+        std::vector<uint32_t> candidates;
+        bvhCollectRayCandidates(m.bvh, origin, inv_d, candidates);
+        if (candidates.empty()) continue;
+
+        for (uint32_t inst_idx : candidates) {
+            if (inst_idx >= m.instances.size()) continue;
+            const InstanceCpu& inst = m.instances[inst_idx];
+
+            // Transform ray into this instance's mesh-local space.  The
+            // returned t parameter is identical in world and mesh-local
+            // (both are along the same parametric line) so we don't need
+            // to convert it back — assumes caller passed a unit world dir.
+            const Eigen::Matrix4f T  = Eigen::Map<const Mat4f>(inst.transform);
+            const Eigen::Matrix4f Ti = T.inverse();
+            const Eigen::Vector4f wo(origin[0], origin[1], origin[2], 1.0f);
+            const Eigen::Vector4f wd(dir[0],    dir[1],    dir[2],    0.0f);
+            const Eigen::Vector4f lo = Ti * wo;
+            const Eigen::Vector4f ld = Ti * wd;
+            const float ro_l[3] = {lo.x(), lo.y(), lo.z()};
+            const float rd_l[3] = {ld.x(), ld.y(), ld.z()};
+
+            const uint64_t key = (uint64_t(inst.model_id) << 32) | inst.mesh_id;
+            auto it = mesh_cache.find(key);
+            if (it == mesh_cache.end()) {
+                MeshTriangles tris;
+                if (!readbackMeshTriangles(inst.model_id, inst.mesh_id, tris)) continue;
+                it = mesh_cache.emplace(key, std::move(tris)).first;
+            }
+            const MeshTriangles& tris = it->second;
+
+            // Möller-Trumbore against every triangle.  No per-mesh BVH
+            // here yet — buildings rarely have meshes with > a few
+            // thousand tris; if this becomes a hotspot we can add one.
+            for (size_t i = 0; i + 2 < tris.indices.size(); i += 3) {
+                const uint32_t ia = tris.indices[i + 0];
+                const uint32_t ib = tris.indices[i + 1];
+                const uint32_t ic = tris.indices[i + 2];
+                const float* a = &tris.positions[3 * ia];
+                const float* b = &tris.positions[3 * ib];
+                const float* c = &tris.positions[3 * ic];
+                float t;
+                if (!rayTri(ro_l, rd_l, a, b, c, t)) continue;
+                if (t >= closest_t) continue;
+                closest_t = t;
+                any_hit = true;
+                out.object_id = inst.object_id;
+                out.distance  = t;
+                out.world_pos[0] = origin[0] + t * dir[0];
+                out.world_pos[1] = origin[1] + t * dir[1];
+                out.world_pos[2] = origin[2] + t * dir[2];
+                // World normal: triangle normal in mesh-local, transformed
+                // by inverse-transpose of the 3x3.
+                const float e1x = b[0]-a[0], e1y = b[1]-a[1], e1z = b[2]-a[2];
+                const float e2x = c[0]-a[0], e2y = c[1]-a[1], e2z = c[2]-a[2];
+                Eigen::Vector3f n_local(
+                    e1y*e2z - e1z*e2y,
+                    e1z*e2x - e1x*e2z,
+                    e1x*e2y - e1y*e2x);
+                Eigen::Matrix3f N = T.block<3, 3>(0, 0).inverse().transpose();
+                Eigen::Vector3f world_n = (N * n_local).normalized();
+                out.world_normal[0] = world_n.x();
+                out.world_normal[1] = world_n.y();
+                out.world_normal[2] = world_n.z();
+            }
+        }
+    }
+    return any_hit;
+}
+
 void ViewportWindow::toggleAreaTool() {
     setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::None : ToolMode::Area);
 }
@@ -3897,15 +4060,10 @@ void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
     requestUpdate();
 }
 
-void ViewportWindow::setOverlayLines(const std::vector<float>& world_xyz,
-                                      float r, float g, float b, float a,
-                                      float line_width,
-                                      float sr, float sg, float sb, float sa,
-                                      float stroke_extra) {
+void ViewportWindow::setOverlayLines(const std::vector<OverlayRenderer::LineGroup>& groups) {
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
-    overlay_renderer_.setOverlayLines(world_xyz, r, g, b, a, line_width,
-                                      sr, sg, sb, sa, stroke_extra);
+    overlay_renderer_.setOverlayLines(groups);
     requestUpdate();
 }
 
