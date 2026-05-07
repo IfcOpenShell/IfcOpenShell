@@ -22,6 +22,7 @@
 #include "ViewportWindow.h"
 
 #include <QtGlobal>
+#include <Eigen/Dense>
 
 #include <algorithm>
 #include <cmath>
@@ -364,4 +365,239 @@ void AreaMeasurement::onPick(ViewportWindow& vp, int x, int y, bool alt) {
     qInfo("Area %s%.6f m^2  (total: %.6f m^2, %zu tris)",
           delta >= 0.0 ? "+" : "", delta,
           total_area_m2_, selected_.size());
+}
+
+// ----- LengthMeasurement -----------------------------------------------------
+
+namespace {
+
+double dist3(const std::array<float, 3>& a, const std::array<float, 3>& b) {
+    const double dx = double(b[0]) - a[0];
+    const double dy = double(b[1]) - a[1];
+    const double dz = double(b[2]) - a[2];
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+double triArea3(const std::array<float, 3>& a,
+                const std::array<float, 3>& b,
+                const std::array<float, 3>& c) {
+    const double bax = double(b[0]) - a[0];
+    const double bay = double(b[1]) - a[1];
+    const double baz = double(b[2]) - a[2];
+    const double cax = double(c[0]) - a[0];
+    const double cay = double(c[1]) - a[1];
+    const double caz = double(c[2]) - a[2];
+    const double nx = bay * caz - baz * cay;
+    const double ny = baz * cax - bax * caz;
+    const double nz = bax * cay - bay * cax;
+    return 0.5 * std::sqrt(nx*nx + ny*ny + nz*nz);
+}
+
+// Polygon area via best-fit plane + shoelace, falling back to fan
+// triangulation when the points stray off the plane.  Returns the
+// resulting area and a label naming which path was taken.
+struct PolygonAreaResult {
+    double      area_m2;
+    const char* method;
+};
+
+PolygonAreaResult polygonArea(const std::vector<std::array<float, 3>>& pts) {
+    using Vec3d = Eigen::Vector3d;
+    using Mat3d = Eigen::Matrix3d;
+    const size_t n = pts.size();
+
+    // Centroid + bounding box (for the planarity threshold).
+    Vec3d centroid = Vec3d::Zero();
+    Vec3d bbox_min = Vec3d::Constant(std::numeric_limits<double>::infinity());
+    Vec3d bbox_max = Vec3d::Constant(-std::numeric_limits<double>::infinity());
+    for (const auto& p : pts) {
+        const Vec3d v(p[0], p[1], p[2]);
+        centroid += v;
+        bbox_min = bbox_min.cwiseMin(v);
+        bbox_max = bbox_max.cwiseMax(v);
+    }
+    centroid /= double(n);
+    const double bbox_diag = (bbox_max - bbox_min).norm();
+
+    // 3x3 covariance.  Smallest eigenvector of this is the plane normal.
+    Mat3d cov = Mat3d::Zero();
+    for (const auto& p : pts) {
+        const Vec3d d = Vec3d(p[0], p[1], p[2]) - centroid;
+        cov += d * d.transpose();
+    }
+
+    Eigen::SelfAdjointEigenSolver<Mat3d> es(cov);
+    const Vec3d normal = es.eigenvectors().col(0);  // smallest eigenvalue
+
+    // RMS plane distance, normalised against the bounding-box diagonal.
+    double sq_sum = 0.0;
+    for (const auto& p : pts) {
+        const double d = (Vec3d(p[0], p[1], p[2]) - centroid).dot(normal);
+        sq_sum += d * d;
+    }
+    const double rms = std::sqrt(sq_sum / double(n));
+    const bool planar = bbox_diag > 0.0 && (rms / bbox_diag) < 1e-3;
+
+    if (planar) {
+        // Build an in-plane orthonormal basis.
+        Vec3d u = normal.cross(Vec3d::UnitX());
+        if (u.squaredNorm() < 1e-6) u = normal.cross(Vec3d::UnitY());
+        u.normalize();
+        const Vec3d v = normal.cross(u);
+
+        // Project + shoelace.
+        std::vector<std::array<double, 2>> uv(n);
+        for (size_t i = 0; i < n; ++i) {
+            const Vec3d d = Vec3d(pts[i][0], pts[i][1], pts[i][2]) - centroid;
+            uv[i][0] = d.dot(u);
+            uv[i][1] = d.dot(v);
+        }
+        double s = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            const auto& a = uv[i];
+            const auto& b = uv[(i + 1) % n];
+            s += a[0] * b[1] - b[0] * a[1];
+        }
+        return { 0.5 * std::abs(s), "planar" };
+    }
+
+    // Fan from p0.  Works for star-shaped polygons; for genuinely twisted
+    // 3D point sets it's a heuristic — flagged in the method label.
+    double area = 0.0;
+    for (size_t i = 1; i + 1 < n; ++i) {
+        area += triArea3(pts[0], pts[i], pts[i + 1]);
+    }
+    return { area, "fan-triangulated (non-planar)" };
+}
+
+} // namespace
+
+LengthMeasurement::LengthMeasurement() = default;
+
+void LengthMeasurement::clear(ViewportWindow& vp) {
+    points_.clear();
+    vp.setOverlayPoints({}, 0,0,0,0, 0,
+                        0,0,0,0, 0);
+    vp.setOverlayLines({},  0,0,0,0, 0,
+                        0,0,0,0, 0);
+    vp.setOverlayLabels({});
+    vp.setHudText(QString());
+}
+
+void LengthMeasurement::onPick(ViewportWindow& vp, int x, int y, bool /*alt*/) {
+    ViewportWindow::MeshLocalPick pick;
+    if (!vp.pickMeshLocalAt(x, y, pick)) return;
+    points_.push_back({pick.world_pos[0], pick.world_pos[1], pick.world_pos[2]});
+    rebuildOverlay(vp);
+}
+
+void LengthMeasurement::removeLastPoint(ViewportWindow& vp) {
+    if (points_.empty()) return;
+    points_.pop_back();
+    rebuildOverlay(vp);
+}
+
+void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
+    // Points: orange inner with thin black halo — readable on every
+    // background.  Inner 8px disc + 2px halo each side.
+    std::vector<float> pts_xyz;
+    pts_xyz.reserve(points_.size() * 3);
+    for (const auto& p : points_) {
+        pts_xyz.push_back(p[0]);
+        pts_xyz.push_back(p[1]);
+        pts_xyz.push_back(p[2]);
+    }
+    vp.setOverlayPoints(pts_xyz,
+                        /*inner*/  1.00f, 1.00f, 1.00f, 1.00f,
+                        /*size*/   8.0f,
+                        /*stroke*/ 0.00f, 0.00f, 0.00f, 0.85f,
+                        /*extra*/  2.0f);
+
+    // Connecting polyline.  For 4+ points also close the polygon since
+    // that's the area-readout shape.  Same orange + halo treatment.
+    std::vector<float> seg_xyz;
+    std::vector<OverlayRenderer::Label> labels;
+
+    if (points_.size() >= 2) {
+        const size_t n = points_.size();
+        seg_xyz.reserve(n * 6);
+        labels.reserve(n);
+        auto pushSegment = [&](const std::array<float, 3>& a,
+                               const std::array<float, 3>& b) {
+            seg_xyz.insert(seg_xyz.end(), a.begin(), a.end());
+            seg_xyz.insert(seg_xyz.end(), b.begin(), b.end());
+            OverlayRenderer::Label lbl;
+            lbl.world_pos[0] = 0.5f * (a[0] + b[0]);
+            lbl.world_pos[1] = 0.5f * (a[1] + b[1]);
+            lbl.world_pos[2] = 0.5f * (a[2] + b[2]);
+            lbl.text = QString::number(dist3(a, b), 'f', 3) + " m";
+            labels.push_back(std::move(lbl));
+        };
+        for (size_t i = 0; i + 1 < n; ++i) pushSegment(points_[i], points_[i + 1]);
+        if (n >= 4) pushSegment(points_[n - 1], points_[0]);
+    }
+    vp.setOverlayLines(seg_xyz,
+                       /*inner*/  1.00f, 1.00f, 1.00f, 1.00f,
+                       /*width*/  2.0f,
+                       /*stroke*/ 0.00f, 0.00f, 0.00f, 0.85f,
+                       /*extra*/  1.5f);
+    vp.setOverlayLabels(labels);
+    vp.setHudText(formatReadout());
+}
+
+QString LengthMeasurement::formatReadout() const {
+    const size_t n = points_.size();
+    if (n == 0) return QStringLiteral("Length tool: click first point");
+    if (n == 1) return QStringLiteral("1 point  (click another)");
+
+    if (n == 2) {
+        const auto& a = points_[0];
+        const auto& b = points_[1];
+        const double d  = dist3(a, b);
+        const double dx = std::abs(double(b[0]) - a[0]);
+        const double dy = std::abs(double(b[1]) - a[1]);
+        const double dz = std::abs(double(b[2]) - a[2]);
+        return QString("Length: %1 m\nΔX: %2  ΔY: %3  ΔZ: %4 m")
+            .arg(d, 0, 'f', 4)
+            .arg(dx, 0, 'f', 4)
+            .arg(dy, 0, 'f', 4)
+            .arg(dz, 0, 'f', 4);
+    }
+
+    if (n == 3) {
+        const auto& a = points_[0];
+        const auto& b = points_[1];
+        const auto& c = points_[2];
+        // Angle at b (the middle-clicked vertex).
+        const double bax = double(a[0]) - b[0];
+        const double bay = double(a[1]) - b[1];
+        const double baz = double(a[2]) - b[2];
+        const double bcx = double(c[0]) - b[0];
+        const double bcy = double(c[1]) - b[1];
+        const double bcz = double(c[2]) - b[2];
+        const double la = std::sqrt(bax*bax + bay*bay + baz*baz);
+        const double lc = std::sqrt(bcx*bcx + bcy*bcy + bcz*bcz);
+        double angle_deg = 0.0;
+        if (la > 0.0 && lc > 0.0) {
+            const double cosang = std::clamp(
+                (bax*bcx + bay*bcy + baz*bcz) / (la * lc), -1.0, 1.0);
+            angle_deg = std::acos(cosang) * 180.0 / M_PI;
+        }
+        return QString("Angle at pt 2: %1°\nTriangle area: %2 m²\nPerimeter: %3 m")
+            .arg(angle_deg, 0, 'f', 2)
+            .arg(triArea3(a, b, c), 0, 'f', 4)
+            .arg(dist3(a, b) + dist3(b, c) + dist3(c, a), 0, 'f', 4);
+    }
+
+    // 4+ points: polygon area.
+    const PolygonAreaResult r = polygonArea(points_);
+    double perimeter = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+        perimeter += dist3(points_[i], points_[(i + 1) % n]);
+    }
+    return QString("Polygon (%1 pts, %2)\nArea: %3 m²\nPerimeter: %4 m")
+        .arg(n)
+        .arg(r.method)
+        .arg(r.area_m2, 0, 'f', 4)
+        .arg(perimeter, 0, 'f', 4);
 }

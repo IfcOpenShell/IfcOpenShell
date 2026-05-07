@@ -1690,12 +1690,19 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
             return;
         }
     }
-    // Esc also exits the area tool.
-    if (area_tool_active_
-        && key == Qt::Key_Escape
-        && !event->isAutoRepeat()) {
-        toggleAreaTool();
-        return;
+    // Esc exits any active measurement tool.  Backspace/Delete in length
+    // mode removes the last point — emitted as a signal because the
+    // library doesn't track per-tool semantic state.
+    if (tool_mode_ != ToolMode::None && !event->isAutoRepeat()) {
+        if (key == Qt::Key_Escape) {
+            setToolMode(ToolMode::None);
+            return;
+        }
+        if (tool_mode_ == ToolMode::Length
+            && (key == Qt::Key_Backspace || key == Qt::Key_Delete)) {
+            emit toolBackspacePressed();
+            return;
+        }
     }
     QWindow::keyPressEvent(event);
 }
@@ -3492,7 +3499,7 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
     if (active_button_ == Qt::LeftButton
         && !section_tool_active_
         && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
-        if (area_tool_active_) {
+        if (tool_mode_ != ToolMode::None) {
             emit surfacePickedInTool(e->pos().x(), e->pos().y(),
                                      int(e->modifiers()));
         } else {
@@ -3868,9 +3875,18 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     return false;
 }
 
+void ViewportWindow::setToolMode(ToolMode mode) {
+    if (tool_mode_ == mode) return;
+    tool_mode_ = mode;
+    emit toolModeChanged(mode);
+}
+
 void ViewportWindow::toggleAreaTool() {
-    area_tool_active_ = !area_tool_active_;
-    emit areaToolToggled(area_tool_active_);
+    setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::None : ToolMode::Area);
+}
+
+void ViewportWindow::toggleLengthTool() {
+    setToolMode(tool_mode_ == ToolMode::Length ? ToolMode::None : ToolMode::Length);
 }
 
 void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
@@ -3878,6 +3894,35 @@ void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
     if (!gl_initialized_) return;
     context_->makeCurrent(this);
     overlay_renderer_.setHighlightTriangles(world_xyz, r, g, b, a);
+    requestUpdate();
+}
+
+void ViewportWindow::setOverlayLines(const std::vector<float>& world_xyz,
+                                      float r, float g, float b, float a,
+                                      float line_width,
+                                      float sr, float sg, float sb, float sa,
+                                      float stroke_extra) {
+    if (!gl_initialized_) return;
+    context_->makeCurrent(this);
+    overlay_renderer_.setOverlayLines(world_xyz, r, g, b, a, line_width,
+                                      sr, sg, sb, sa, stroke_extra);
+    requestUpdate();
+}
+
+void ViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
+                                       float r, float g, float b, float a,
+                                       float pixel_size,
+                                       float sr, float sg, float sb, float sa,
+                                       float stroke_extra) {
+    if (!gl_initialized_) return;
+    context_->makeCurrent(this);
+    overlay_renderer_.setOverlayPoints(world_xyz, r, g, b, a, pixel_size,
+                                       sr, sg, sb, sa, stroke_extra);
+    requestUpdate();
+}
+
+void ViewportWindow::setOverlayLabels(const std::vector<OverlayRenderer::Label>& labels) {
+    overlay_renderer_.setOverlayLabels(labels);
     requestUpdate();
 }
 
