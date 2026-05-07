@@ -206,6 +206,16 @@ void MainWindow::setupUi() {
     setCentralWidget(viewport_container_);
 
     connect(viewport_, &ViewportWindow::objectPicked, this, &MainWindow::onObjectPicked);
+    connect(viewport_, &ViewportWindow::surfacePickedInTool, this,
+            [this](int x, int y, int modifiers) {
+        const bool alt = (modifiers & Qt::AltModifier) != 0;
+        area_measurement_.onPick(*viewport_, x, y, alt);
+    });
+    connect(viewport_, &ViewportWindow::areaToolToggled, this,
+            [this](bool active) {
+        area_measurement_.clear();
+        qInfo("Area tool %s", active ? "on (LMB to add patch, Alt+LMB single tri, click again to remove, Esc exits)" : "off");
+    });
 
     auto* tree_dock = new QDockWidget("Elements", this);
     tree_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -283,6 +293,9 @@ void MainWindow::setupMenus() {
     view_menu->addAction("Print Selected &Coords", this, [this]() {
         viewport_->printSelectedObjectCoords();
     }, QKeySequence("Ctrl+Shift+P"));
+    view_menu->addAction("&Measure Area", this, [this]() {
+        viewport_->toggleAreaTool();
+    }, QKeySequence("Ctrl+Shift+A"));
     view_menu->addSeparator();
     view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
     view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);

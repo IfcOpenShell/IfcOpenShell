@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Measurement.h"
 #include "ViewportWindow.h"
 #include "SceneLoader.h"
 
@@ -198,6 +199,8 @@ private:
 
     QString pending_camera_;
     int     pending_benchmark_ = 0;
+
+    AreaMeasurement area_measurement_;
 };
 
 #endif // MAINWINDOW_H

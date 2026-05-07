@@ -208,6 +208,29 @@ public:
     };
     bool findInstance(uint32_t object_id, InstanceLookup& out) const;
 
+    // Pick + resolve to mesh-local space.  Runs pickSurfaceAt to get the
+    // world-space hit, then inverts the instance's composed transform
+    // (FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+    // · placement_transformation) to express the hit in the mesh's own
+    // coordinates — what readbackMeshTriangles returns.  Returns false if
+    // the click missed geometry or its object_id has no live instance.
+    struct MeshLocalPick {
+        uint32_t object_id      = 0;
+        uint32_t model_id       = 0;
+        uint32_t mesh_id        = 0;
+        float    mesh_local[3]  = {0, 0, 0};
+        float    world_pos[3]   = {0, 0, 0};
+        float    world_normal[3]= {0, 0, 0};
+    };
+    bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
+
+    // Area tool: while active, LMB clicks emit surfacePickedInTool with
+    // the click coordinates instead of swapping object selection — the
+    // app interprets them (typically by calling pickMeshLocalAt and
+    // accumulating triangle area).  Esc exits.
+    void toggleAreaTool();
+    bool areaToolActive() const { return area_tool_active_; }
+
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
     //                                              · placement_transformation
@@ -302,6 +325,14 @@ signals:
     void objectPicked(uint32_t object_id);
     void initialized();
     void frameStatsUpdated(const ViewportWindow::FrameStats& stats);
+    // Emitted instead of objectPicked when the area tool is active.  The
+    // app is expected to call pickMeshLocalAt(x, y, ...) and accumulate.
+    // modifiers carries the Qt::KeyboardModifiers held at click time so
+    // the app can branch on Alt etc.
+    void surfacePickedInTool(int x, int y, int modifiers);
+    // Emitted whenever toggleAreaTool flips the mode.  The app uses this
+    // to reset accumulator state on entry/exit.
+    void areaToolToggled(bool active);
 
 protected:
     void exposeEvent(QExposeEvent* event) override;
@@ -600,6 +631,9 @@ private:
 
     // Selection
     uint32_t selected_object_id_ = 0;
+
+    // Area-measurement tool: see toggleAreaTool / surfacePickedInTool.
+    bool   area_tool_active_         = false;
 
     // Active section planes.  Uploaded as uniform array each frame to the
     // main + pick programs; capped at MaxSectionPlanes.

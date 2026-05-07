@@ -1688,6 +1688,13 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
             return;
         }
     }
+    // Esc also exits the area tool.
+    if (area_tool_active_
+        && key == Qt::Key_Escape
+        && !event->isAutoRepeat()) {
+        toggleAreaTool();
+        return;
+    }
     QWindow::keyPressEvent(event);
 }
 
@@ -3473,10 +3480,15 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
     if (active_button_ == Qt::LeftButton
         && !section_tool_active_
         && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
-        uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
-        selected_object_id_ = id;
-        emit objectPicked(id);
-        requestUpdate();  // selection highlight changed
+        if (area_tool_active_) {
+            emit surfacePickedInTool(e->pos().x(), e->pos().y(),
+                                     int(e->modifiers()));
+        } else {
+            uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
+            selected_object_id_ = id;
+            emit objectPicked(id);
+            requestUpdate();  // selection highlight changed
+        }
     }
     const bool was_navigating = (active_button_ == Qt::MiddleButton);
     active_button_ = Qt::NoButton;
@@ -3808,4 +3820,41 @@ bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const
         }
     }
     return false;
+}
+
+bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
+    uint32_t  obj_id = 0;
+    QVector3D world_pos, world_normal;
+    if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
+
+    for (const auto& kv : models_gpu_) {
+        const ModelGpuData& m = kv.second;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id != obj_id) continue;
+            using Mat4f = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+            const Eigen::Matrix4f T  = Eigen::Map<const Mat4f>(inst.transform);
+            const Eigen::Matrix4f Ti = T.inverse();
+            const Eigen::Vector4f wp(world_pos.x(), world_pos.y(), world_pos.z(), 1.0f);
+            const Eigen::Vector4f mp = Ti * wp;
+            out.object_id     = obj_id;
+            out.model_id      = inst.model_id;
+            out.mesh_id       = inst.mesh_id;
+            out.mesh_local[0] = mp.x();
+            out.mesh_local[1] = mp.y();
+            out.mesh_local[2] = mp.z();
+            out.world_pos[0]  = world_pos.x();
+            out.world_pos[1]  = world_pos.y();
+            out.world_pos[2]  = world_pos.z();
+            out.world_normal[0] = world_normal.x();
+            out.world_normal[1] = world_normal.y();
+            out.world_normal[2] = world_normal.z();
+            return true;
+        }
+    }
+    return false;
+}
+
+void ViewportWindow::toggleAreaTool() {
+    area_tool_active_ = !area_tool_active_;
+    emit areaToolToggled(area_tool_active_);
 }
