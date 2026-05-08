@@ -141,7 +141,10 @@ function extract_file {
         return
     }
     . $cecho 0 13 "Extracting $dependency_name into '$destination_dir' from '$filename'."
-    7za x "$filename" -o"$destination_dir"
+    7z x -bso0 -bsp0 "$filename" -o"$destination_dir"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to extract '$filename' for '$dependency_name' with 7z exit code $LASTEXITCODE."
+    }
 }
 
 

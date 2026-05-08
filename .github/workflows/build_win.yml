@@ -48,7 +48,11 @@ jobs:
         run: |
           cd ${{ matrix.deps_dir }}
           Get-ChildItem -Path . -Filter 'cache-*.zip' | ForEach-Object {
-            7z x $_.FullName
+            Write-Host "Extracting $($_.Name)"
+            7z x -bso0 -bsp0 $_.FullName
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to extract $($_.Name) with 7z exit code $LASTEXITCODE."
+            }
           }
 
       - name: ccache

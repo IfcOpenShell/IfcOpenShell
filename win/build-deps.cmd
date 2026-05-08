@@ -105,7 +105,7 @@ set MSBUILD_CMD=MSBuild.exe /nologo %MSBUILD_MULTIPROC%
 echo.
 
 :: Check that required tools are in PATH
-FOR %%i IN (powershell git cmake) DO (
+FOR %%i IN (powershell git cmake 7z) DO (
     where.exe %%i 1> NUL 2> NUL || call cecho.cmd 0 12 "Required tool `'%%i`' not installed or not added to PATH" && goto :ErrorAndPrintUsage
 )
 
@@ -1068,9 +1068,11 @@ echo  2. Install Git and make sure 'git' is accessible from PATH.
 echo   - https://git-for-windows.github.io/
 echo  3. Install CMake and make sure 'cmake' is accessible from PATH.
 echo   - http://www.cmake.org/
-echo  4. Visual Studio 2013 or newer with C++ toolset.
+echo  4. Install 7-Zip and make sure '7z' is accessible from PATH.
+echo   - https://www.7-zip.org/
+echo  5. Visual Studio 2013 or newer with C++ toolset.
 echo   - https://www.visualstudio.com/
-echo  5. Run this batch script with Visual Studio environment variables set.
+echo  6. Run this batch script with Visual Studio environment variables set.
 echo   - https://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx
 echo.
 echo NB: This script needs to be ran from the directory directly containing it.
