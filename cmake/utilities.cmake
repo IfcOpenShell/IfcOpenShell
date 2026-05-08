@@ -83,6 +83,39 @@ function(ifcopenshell_deploy_qt_runtime TARGET)
         message(FATAL_ERROR "Qt runtime deployment target '${TARGET}' is not an executable.")
     endif()
 
+    if(NOT DEFINED QT_DEFAULT_MAJOR_VERSION)
+        if(DEFINED QT_VERSION)
+            set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION})
+        else()
+            set(QT_DEFAULT_MAJOR_VERSION 6)
+        endif()
+    endif()
+
+    if(NOT TARGET Qt${QT_DEFAULT_MAJOR_VERSION}::Core)
+        set(qt_find_args Qt${QT_DEFAULT_MAJOR_VERSION} COMPONENTS Core REQUIRED)
+        if(DEFINED QT_DIR AND NOT QT_DIR STREQUAL "")
+            list(APPEND qt_find_args PATHS ${QT_DIR})
+        endif()
+        find_package(${qt_find_args})
+    endif()
+
+    if(COMMAND _qt_internal_setup_deploy_support)
+        if(NOT DEFINED QT_CMAKE_EXPORT_NAMESPACE AND TARGET Qt${QT_DEFAULT_MAJOR_VERSION}::Core)
+            set(QT_CMAKE_EXPORT_NAMESPACE Qt${QT_DEFAULT_MAJOR_VERSION})
+        endif()
+
+        if(QT_DEFAULT_MAJOR_VERSION EQUAL 6 AND TARGET Qt6::Core)
+            get_target_property(qt_core_type Qt6::Core TYPE)
+            if(qt_core_type STREQUAL "SHARED_LIBRARY")
+                set(QT6_IS_SHARED_LIBS_BUILD ON)
+            else()
+                set(QT6_IS_SHARED_LIBS_BUILD OFF)
+            endif()
+        endif()
+
+        _qt_internal_setup_deploy_support()
+    endif()
+
     set(deploy_args
         TARGET ${TARGET}
         OUTPUT_SCRIPT deploy_script
