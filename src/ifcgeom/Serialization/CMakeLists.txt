@@ -3,8 +3,8 @@ set(geometry_serialization_plugin_runtime_dir "${CMAKE_CURRENT_BINARY_DIR}/$<CON
 add_subdirectory(schema)
 
 add_library(geometry_serializer Serialization.cpp opencascade_geometry_ifc_writer_plugin.cpp)
-add_library(opencascade_geometry_ifc_writer ALIAS geometry_serializer)
 set_target_properties(geometry_serializer PROPERTIES
+    OUTPUT_NAME "ifcopenshell.geometry.writer"
     COMPILE_FLAGS "-DIFC_GEOMSERIALIZATION_EXPORTS"
     RUNTIME_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"
     LIBRARY_OUTPUT_DIRECTORY "${geometry_serialization_plugin_runtime_dir}"

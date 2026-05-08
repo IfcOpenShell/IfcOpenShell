@@ -3,6 +3,7 @@ file(GLOB PLUGIN_CPP_FILES *.cpp)
 
 add_library(plugin ${PLUGIN_CPP_FILES} ${PLUGIN_H_FILES})
 set_target_properties(plugin PROPERTIES
+    OUTPUT_NAME "ifcopenshell.plugin"
     COMPILE_FLAGS "-DPLUGIN_EXPORTS")
 
 if (NOT CREATE_BUNDLE)
