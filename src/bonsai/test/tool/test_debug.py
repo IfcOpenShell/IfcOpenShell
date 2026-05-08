@@ -17,8 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from pathlib import Path
-
 import bpy
 import ifcopenshell
 import ifcopenshell.api.style
@@ -53,24 +51,6 @@ class TestLoadExpress(NewFile):
         schema = subject.load_express(schema_path)
         assert schema.name() == "IFCROGUE"
         os.remove(schema_path + ".cache.dat")
-
-
-class TestPurgeHdf5Cache(NewFile):
-    def test_run(self):
-        prefs = tool.Blender.get_addon_preferences()
-        cache_dir = Path(prefs.cache_dir)
-        test_file = cache_dir / "test.h5"
-        test_file.parent.mkdir(parents=True, exist_ok=True)
-        test_file.touch()
-
-        # Ensure it can skip currently loaded cache.
-        loaded_file_path = test_file.with_stem("test_loaded")
-        loaded_file = open(loaded_file_path, "w")
-
-        subject.purge_hdf5_cache()
-        # On Unix loaded files are not locked.
-        paths = [loaded_file_path] if os.name == "nt" else []
-        assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == paths
 
 
 class TestMergeIdenticalObject(NewFile):

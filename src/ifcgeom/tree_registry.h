@@ -70,9 +70,6 @@ namespace ifcopenshell {
 				virtual void enable_face_styles(bool enable);
 				virtual const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const;
 
-#ifdef WITH_HDF5
-				virtual void write_h5();
-#endif
 			};
 
 			class IFC_GEOM_API tree_registry {

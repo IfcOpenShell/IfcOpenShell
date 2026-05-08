@@ -555,8 +555,6 @@ def iterate(
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     *,
     with_progress: Literal[False] = False,
-    cache: Optional[str] = None,
-    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[IteratorOutput, None, None]: ...
 @overload
@@ -568,8 +566,6 @@ def iterate(
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     *,
     with_progress: Literal[True] = True,
-    cache: Optional[str] = None,
-    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[tuple[int, IteratorOutput], None, None]: ...
 @overload
@@ -581,8 +577,6 @@ def iterate(
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     *,
     with_progress: bool = False,
-    cache: Optional[str] = None,
-    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
 def iterate(
@@ -593,20 +587,10 @@ def iterate(
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
     *,
     with_progress: bool = False,
-    cache: Optional[str] = None,
-    serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
-    """Get a geometry iterator for the provided file.
-
-    :param cache: .h5 cache filepath (might not exist, will be created).
-    :param serializer_settings: Settings for cache serializer. Required if `cache` is provided.
-    """
+    """Get a geometry iterator for the provided file."""
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
-    if cache:
-        assert serializer_settings, "`serializer_settings` argument is not optional if `cache` is provided."
-        hdf5_cache = serializers.hdf5(cache, settings, serializer_settings)
-        it.set_cache(hdf5_cache)
     yield from consume_iterator(it, with_progress=with_progress)
 
 
@@ -677,9 +661,6 @@ class _serializers_meta(type):
         "ttl": "ttl",
         "gltf": "glb",
         "glb": "glb",
-        "hdf": "h5",
-        "hdf5": "h5",
-        "h5": "h5",
         "collada": "dae",
         "dae": "dae",
         "stp": "stp",
@@ -711,9 +692,6 @@ class serializers(metaclass=_serializers_meta):
         ext = filepath.rsplit(".", 1)[-1].lower()
         mapping = {
             "glb": "gltf",
-            "hdf": "hdf5",
-            "h5": "hdf5",
-            "hdf5": "hdf5",
             "obj": "obj",
             "svg": "svg",
             "ttl": "ttl",

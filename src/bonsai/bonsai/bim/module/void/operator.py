@@ -207,7 +207,6 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                     representation=representation,
                 )
         tool.Geometry.unlock_scale_object_with_openings(obj)
-        tool.Geometry.clear_cache(element)
         return {"FINISHED"}
 
 

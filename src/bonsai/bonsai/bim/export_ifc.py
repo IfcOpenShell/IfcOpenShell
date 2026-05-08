@@ -43,7 +43,6 @@ class IfcExporter:
     def export(self):
         self.file = tool.Ifc.get()
         self.set_header()
-        IfcStore.update_cache()
         self.sync_all_objects()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":

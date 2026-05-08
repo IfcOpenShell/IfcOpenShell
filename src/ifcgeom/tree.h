@@ -100,10 +100,6 @@ namespace IfcGeom {
 		void enable_face_styles(bool enable);
 		const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const;
 
-#ifdef WITH_HDF5
-		void write_h5();
-#endif
-
 		std::string uint8_to_b64(const std::vector<uint8_t>& uuids_array) const;
 		static bool is_manifold(const std::vector<int>& faces);
 

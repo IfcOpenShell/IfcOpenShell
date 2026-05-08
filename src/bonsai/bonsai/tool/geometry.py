@@ -73,7 +73,6 @@ import bonsai.core.style
 import bonsai.core.system
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.prop import (
@@ -108,16 +107,6 @@ class Geometry(bonsai.core.tool.Geometry):
         if getattr(old_data, "is_editmode", None):
             raise Exception("user_remap is not supported for meshes in EDIT mode")
         old_data.user_remap(new_data)
-
-    @classmethod
-    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
-        return IfcStore.get_cache()
-
-    @classmethod
-    def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
-        cache = IfcStore.get_cache()
-        if cache and hasattr(element, "GlobalId"):
-            cache.remove(element.GlobalId)
 
     @classmethod
     def clear_modifiers(cls, obj: bpy.types.Object) -> None:
@@ -818,7 +807,6 @@ class Geometry(bonsai.core.tool.Geometry):
             if not cls.has_data_users(old_data):
                 cls.delete_data(old_data)
             cls.clear_modifiers(obj)
-            cls.clear_cache(element)
 
         # Import swept disk solids as Blender curves if possible.
         elements_without_openings = {e for e in elements if not getattr(e, "HasOpenings", False)}

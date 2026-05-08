@@ -83,7 +83,6 @@ CLI Manual
       .json  JSON           Property definitions and decomposition tree in xeokit json format
       .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data
       .svg   SVG            Scalable Vector Graphics (2D floor plan)
-      .h5    HDF            Hierarchical Data Format storing positions, normals and indices
       .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry
       .ifc   IFC-SPF        Industry Foundation Classes
 

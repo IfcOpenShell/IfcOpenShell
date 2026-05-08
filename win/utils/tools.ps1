@@ -35,15 +35,7 @@ function mark_based_on_artifacts {
         [string]$installation_dir
     )
 
-    if ($dependency_name -eq "hdf5") {
-        if ($env:BUILD_CFG -eq "Debug") {
-            $artifact = "lib\libhdf5_D.lib"
-        }
-        else {
-            $artifact = "lib\libhdf5.lib"
-        }
-    }
-    elseif ($dependency_name -eq "opencollada") {
+    if ($dependency_name -eq "opencollada") {
         if ($env:BUILD_CFG -eq "Debug") {
             $artifact = "lib\opencollada\OpenCOLLADAFrameworkd.lib"
         }
@@ -109,7 +101,6 @@ function check_installation {
 
 
 # Dependencies Release/Debug configs compatibility:
-# - hdf5: incompatible
 # - OpenCASCADE: incompatible
 # - rocksdb: incompatible
 # - opencollada: incompatible

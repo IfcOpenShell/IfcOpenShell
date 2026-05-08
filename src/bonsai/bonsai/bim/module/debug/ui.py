@@ -65,9 +65,6 @@ class BIM_PT_debug(Panel):
         row.operator("bim.copy_debug_information")
 
         row = layout.row()
-        row.operator("bim.purge_hdf5_cache")
-
-        row = layout.row()
         row.operator("bim.update_representation", text="Manually Save Representation")
 
         row = layout.row()

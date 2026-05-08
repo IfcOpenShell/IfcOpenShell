@@ -207,8 +207,6 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_clean_mesh")
         row = self.layout.row()
-        row.prop(pprops, "should_cache")
-        row = self.layout.row()
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")

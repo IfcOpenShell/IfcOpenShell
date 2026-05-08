@@ -60,17 +60,6 @@ class Debug(bonsai.core.tool.Debug):
         return schema.schema
 
     @classmethod
-    def purge_hdf5_cache(cls) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        cache_dir = prefs.cache_dir
-        filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
-        for f in filelist:
-            try:
-                os.remove(os.path.join(cache_dir, f))
-            except PermissionError:
-                pass
-
-    @classmethod
     def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
         mesh = bpy.data.meshes.new("Debug")
         bm.to_mesh(mesh)

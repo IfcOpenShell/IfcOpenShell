@@ -18,9 +18,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
-import shutil
 import tempfile
 import traceback
 import uuid
@@ -31,7 +29,6 @@ from typing import Literal, NotRequired, Optional, TypedDict, Union
 
 import bpy
 import ifcopenshell
-import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 from ifcopenshell.file import UndoSystemError
 
@@ -72,8 +69,6 @@ class IfcStore:
     """Should be set only using ``tool.Ifc.set``."""
 
     schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
-    cache: Optional[ifcopenshell.ifcopenshell_wrapper.HdfSerializer] = None
-    cache_path: Optional[str] = None
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
     edited_objs: set[bpy.types.Object] = set()
@@ -95,8 +90,6 @@ class IfcStore:
         IfcStore.path = ""
         IfcStore.file = None
         IfcStore.schema = None
-        IfcStore.cache = None
-        IfcStore.cache_path = None
         IfcStore.id_map = {}
         IfcStore.guid_map = {}
         IfcStore.edited_objs = set()
@@ -129,74 +122,6 @@ class IfcStore:
         # Interpret relative paths as relative to .blend file.
         if IfcStore.path and not os.path.isabs(IfcStore.path):
             IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
-
-    @staticmethod
-    def generate_cache_path() -> str:
-        """Generate cache path based on the active file and it's path."""
-        assert IfcStore.file
-        ifc_key = IfcStore.path + IfcStore.file.header.file_name.time_stamp
-        ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        prefs = tool.Blender.get_addon_preferences()
-        cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
-        return cache_path
-
-    @staticmethod
-    def get_cache() -> ifcopenshell.geom.serializers.hdf5 | None:
-        """Get existing cache for the current file or create a new one.
-
-        .h5 cache name reflects IFC filepath and it's current header's timestamp.
-        """
-        if IfcStore.cache is None and IfcStore.path:
-            cache_path = IfcStore.generate_cache_path()
-            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
-            IfcStore.cache_path = cache_path
-            cache_path = Path(IfcStore.cache_path)
-            cache_settings = ifcopenshell.geom.settings()
-            serializer_settings = ifcopenshell.geom.serializer_settings()
-            cache_preexists = cache_path.exists()
-            try:
-                IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                    IfcStore.cache_path, cache_settings, serializer_settings
-                )
-                if cache_preexists:
-                    print(f"Successfully loaded existing cache: {cache_path.name}.")
-                else:
-                    print("New cache was created.")
-            except Exception as e:
-                if cache_preexists:
-                    print(f"Failed to create a cache from existing file '{cache_path.name}': {str(e)}.")
-                else:
-                    print(f"Failed to create a cache: {str(e)}.")
-                    # No point to trying again the same operation.
-                    return
-
-                os.remove(IfcStore.cache_path)
-                try:
-                    IfcStore.cache = ifcopenshell.geom.serializers.hdf5(
-                        IfcStore.cache_path, cache_settings, serializer_settings
-                    )
-                    print("New cache was created.")
-                except Exception as e:
-                    print(f"Failed to create a cache: {str(e)}.")
-                    return
-        return IfcStore.cache
-
-    @staticmethod
-    def update_cache() -> None:
-        """Update cache filename after timestamp was updated."""
-        if not IfcStore.cache:
-            return
-        assert IfcStore.cache_path
-        new_cache_path = IfcStore.generate_cache_path()
-        IfcStore.cache = None
-        try:
-            shutil.move(IfcStore.cache_path, new_cache_path)
-        except PermissionError:
-            try:
-                shutil.copy2(IfcStore.cache_path, new_cache_path)
-            except PermissionError:
-                pass  # Well we tried. No cache for you!
-        IfcStore.get_cache()
 
     @staticmethod
     def load_file(path: str) -> None:

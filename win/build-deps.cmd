@@ -182,8 +182,6 @@ echo.
 cd "%DEPS_DIR%"
 
 :: VERSIONS
-:: Don't use HDF5 1.13.0, because it has a broken cmake package path.
-set HDF5_VERSION=1_13_1
 set OCCT_VERSION=7.8.1
 IF DEFINED QT6_VERSION (
     echo Using overridden QT6_VERSION: '%QT6_VERSION%'
@@ -212,7 +210,6 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 :: This is consolidated at the beginning of the script so that the script can be partially
 :: executed by jumping (using goto) to different labels.
 if defined GEN_SHORTHAND echo GEN_SHORTHAND=%GEN_SHORTHAND%>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-echo HDF5_VERSION=%HDF5_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo QT6_VERSION=%QT6_VERSION%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
@@ -347,7 +344,7 @@ popd
 
 IF EXIST "%INSTALL_DIR%\mpfr" (
     echo Found existing "%INSTALL_DIR%\mpfr", skipping
-    goto :HDF5
+    goto :Boost
 )
 
 set DEPENDENCY_NAME=mpfr
@@ -379,39 +376,6 @@ IF NOT EXIST lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\mpfr.lib GOTO :Error
 IF NOT EXIST "%INSTALL_DIR%\mpfr". mkdir "%INSTALL_DIR%\mpfr"
 copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-popd
-
-:HDF5
-
-set DEPENDENCY_NAME=hdf5
-set DEPENDENCY_DIR=%DEPS_DIR%\hdf5-%HDF5_VERSION%
-set HDF5_CMAKE_ZIP=hdf5-%HDF5_VERSION%.zip
-set DEPENDENCY_INSTALL_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
-set HDF5_INSTALL_NAME=%DEPENDENCY_INSTALL_NAME%
-set NEXT_DEPENDENCY_LABEL=Boost
-
-call :CheckInstallation
-if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
-
-if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
-call :DownloadFile ^
-    https://github.com/HDFGroup/hdf5/archive/refs/tags/hdf5-%HDF5_VERSION%.zip ^
-    "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %HDF5_CMAKE_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\hdf5-%HDF5_VERSION%"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-if exist "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" ren "%DEPS_DIR%\hdf5-hdf5-%HDF5_VERSION%" "hdf5-%HDF5_VERSION%"
-pushd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\%HDF5_INSTALL_NAME%" ^
-               -DHDF5_ENABLE_Z_LIB_SUPPORT=OFF -DBUILD_TESTING=OFF ^
-               -DHDF5_BUILD_TOOLS=OFF -DHDF5_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DHDF5_BUILD_UTILS=OFF ^
-               -DHDF5_BUILD_CPP_LIB=ON
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :MarkInstallation
 popd
 
 :: Note all of the dependencies have appropriate label so that user can easily skip something if wanted

@@ -279,16 +279,10 @@ int main(int argc, char** argv) {
 	path_t filter_filename;
 	path_t default_material_filename;
 	path_t log_file;
-	path_t cache_file;
 	std::string log_format;
 	std::string geometry_kernel;
 	auto& document_serializer_registry = ifcopenshell::serializers::document_serializer_registry_instance();
 	auto& geometry_serializer_registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
-#ifdef WITH_HDF5
-	const bool supports_geometry_cache = true;
-#else
-	const bool supports_geometry_cache = false;
-#endif
 
     po::options_description generic_options("Command line options");
 	verbosity_counter vcounter;
@@ -302,10 +296,6 @@ int main(int argc, char** argv) {
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
-	if (supports_geometry_cache) {
-		generic_options.add_options()
-			("cache", "cache geometry creation. Use --cache-file to specify cache file path.");
-	}
 
     po::options_description fileio_options;
 	fileio_options.add_options()
@@ -316,10 +306,6 @@ int main(int argc, char** argv) {
 		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file")
 		("stream", "Use streaming conversion when supported (RocksDB uses it automatically)")
 		;
-	if (supports_geometry_cache) {
-		fileio_options.add_options()
-			("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file");
-	}
 
 	po::options_description ifc_options("IFC options");
 	ifc_options.add_options()
@@ -906,44 +892,6 @@ int main(int argc, char** argv) {
 	if (!elems_from_adaptor) {
 		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads));
 	}	
-
-#ifdef WITH_HDF5
-	boost::shared_ptr<GeometrySerializer> cache;
-	const bool use_cache = supports_geometry_cache && context_iterator && (vmap.count("cache-file") || vmap.count("cache"));
-	if (use_cache) {
-		const path_t CACHE = ifcopenshell::path::from_utf8(".cache");
-		const path_t HDF = ifcopenshell::path::from_utf8(".h5");
-		if (!vmap.count("cache-file")) {
-			cache_file = input_filename + CACHE + HDF;
-		}
-
-		try {
-			ifcopenshell::serializers::geometry_serializer_context cache_context{
-				ifcopenshell::path::to_utf8(cache_file),
-				ifcopenshell::path::to_utf8(cache_file),
-				geometry_settings,
-				serializer_settings
-			};
-			cache = geometry_serializer_registry.create(".h5", cache_context);
-		} catch (const std::exception& e) {
-			cerr_ << "[error] Unable to initialize geometry cache: " << e.what() << std::endl;
-			serializer.reset();
-			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
-			write_log(!quiet);
-			return EXIT_FAILURE;
-		}
-
-		if (!cache || !cache->ready()) {
-			cerr_ << "[error] Unable to initialize geometry cache serializer\n";
-			serializer.reset();
-			ifcopenshell::path::delete_file(ifcopenshell::path::to_utf8(output_temp_filename));
-			write_log(!quiet);
-			return EXIT_FAILURE;
-		}
-
-		context_iterator->set_cache(cache.get());
-	}
-#endif
 
 	logger::message(logger::LOG_PERF, "file geometry conversion");
 

@@ -230,6 +230,7 @@
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/ConversionResult.h"
 	#include "../ifcgeom/hybrid_kernel.h"
+	#include "../ifcgeom/GeometrySerializer.h"
 
 	#include "../ifcparse/express.h"
 	#include "../ifcparse/file.h"

@@ -91,7 +91,6 @@ option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
 option(WITH_MANIFOLD "Enable geometry interpretation using Manifold" OFF)
 option(COLLADA_SUPPORT "Build IfcConvert with COLLADA support (requires OpenCOLLADA)." ON)
 option(GLTF_SUPPORT "Build IfcConvert with glTF support (requires json.hpp)." OFF)
-option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 option(WITH_ROCKSDB "Support a RocksDB key-value store as a file backend in IfcOpenShell" OFF)
@@ -128,7 +127,6 @@ if(MINIMAL_BUILD)
     set(WITH_CGAL OFF)
     set(COLLADA_SUPPORT OFF)
     set(GLTF_SUPPORT OFF)
-    set(HDF5_SUPPORT OFF)
     set(USD_SUPPORT OFF)
 endif()
 
@@ -325,10 +323,6 @@ if(COLLADA_SUPPORT)
     find_package(OpenCOLLADA REQUIRED)
 endif()
 
-if(HDF5_SUPPORT)
-    find_package(HDF5 REQUIRED COMPONENTS C CXX)
-endif(HDF5_SUPPORT)
-
 if(ENABLE_BUILD_OPTIMIZATIONS)
     if(MSVC)
         # NOTE: RelWithDebInfo and Release use O2 (= /Ox /Gl /Gy/ = Og /Oi /Ot /Oy /Ob2 /Gs /GF /Gy) by default,
@@ -440,7 +434,7 @@ else()
 endif(MSVC)
 
 include_directories(${INCLUDE_DIRECTORIES}
-	${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR}
+	${Boost_INCLUDE_DIRS}
     ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR}
 )
 
@@ -737,7 +731,7 @@ endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3-dev, python3-pytest ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libpython3-dev, python3-pytest ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

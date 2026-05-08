@@ -9,7 +9,6 @@ class BlenderImporter:
 
     def __init__(self):
         self.file = ifcopenshell.open("/home/dion/untitled.ifc")
-        self.cache_path = "cache.h5"
         self.should_use_cpu_multiprocessing = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
@@ -82,9 +81,6 @@ class BlenderImporter:
             iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         else:
             iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
-        cache = self.get_cache()
-        if cache:
-            iterator.set_cache(cache)
         valid_file = iterator.initialize()
         if not valid_file:
             return results
@@ -112,14 +108,5 @@ class BlenderImporter:
                 break
         print("Done creating geometry")
         return results
-
-    def get_cache(self):
-        cache_settings = ifcopenshell.geom.settings()
-        serializer_settings = ifcopenshell.geom.serializer_settings()
-        try:
-            return ifcopenshell.geom.serializers.hdf5(self.cache_path, cache_settings, serializer_settings)
-        except:
-            return
-
 
 BlenderImporter().execute()

@@ -88,10 +88,6 @@ if(WITH_OPENCASCADE AND NOT WASM_BUILD)
     add_geometry_serializer_plugin(geometry_serializer_stp "geometry.stp" SOURCES geometry_stp_plugin.cpp OpenCascadeBasedSerializer.cpp LIBRARIES ${opencascade_geometry_serializer_libraries})
     add_geometry_serializer_plugin(geometry_serializer_igs "geometry.igs" SOURCES geometry_igs_plugin.cpp OpenCascadeBasedSerializer.cpp LIBRARIES ${opencascade_geometry_serializer_libraries})
     add_geometry_serializer_plugin(geometry_serializer_svg "geometry.svg" SOURCES geometry_svg_plugin.cpp SvgSerializer.cpp util.cpp LIBRARIES ${opencascade_geometry_serializer_libraries})
-
-    if(HDF5_SUPPORT)
-        add_geometry_serializer_plugin(geometry_serializer_hdf "geometry.h5" SOURCES geometry_hdf_plugin.cpp HdfSerializer.cpp LIBRARIES ${opencascade_geometry_serializer_libraries} ${HDF5_LIBRARIES})
-    endif()
 endif()
 
 install(TARGETS ${document_serializer_libraries} ${geometry_serializer_libraries})

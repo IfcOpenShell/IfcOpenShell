@@ -576,9 +576,6 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
             return
 
-        if not product.is_a("IfcGridAxis"):
-            tool.Geometry.clear_cache(product)
-
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
             tool.Model.create_axis_curve(obj, product)

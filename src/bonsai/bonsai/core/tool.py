@@ -283,7 +283,6 @@ class Cost:
 class Debug:
     def add_schema_identifier(cls, schema): pass
     def load_express(cls, filename): pass
-    def purge_hdf5_cache(cls): pass
 
 
 @interface
@@ -422,7 +421,6 @@ class Feature:
 @interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
-    def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def copy_data_links(cls, data, copied_entities) -> None: pass

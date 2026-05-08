@@ -362,7 +362,7 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 
 	logger::set_product(product);
 
-	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product.as<express::Entity>().get("GlobalId"), std::to_string(rep->item->instance.id()), [kernel, settings, product, place, rep]() {
+	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(create_processed_element_([kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 	}));
 
@@ -385,7 +385,7 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		const express::Base product2 = p.first;
 		const auto& place2 = p.second;
 
-		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2.as<express::Entity>().get("GlobalId"), std::to_string(rep->item->instance.id()), [kernel, settings, product2, place2, brep]() {
+		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(create_processed_element_([kernel, settings, product2, place2, brep]() {
 			return kernel->create_brep_for_processed_representation(product2, place2, brep);
 		}));
 		if (brep2) {
@@ -410,14 +410,7 @@ IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geo
 			return nullptr;
 		}
 	} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
-		// the part before the hyphen is the representation id
-		auto gid2 = elem->geometry().id();
-		auto hyphen = gid2.find("-");
-		if (hyphen != std::string::npos) {
-			gid2 = gid2.substr(0, hyphen);
-		}
-
-		return decorate_with_cache_(GeometrySerializer::READ_TRIANGULATION, elem->guid(), gid2, [elem, previous]() {
+		return create_processed_element_([elem, previous]() {
 			try {
 				if (!previous) {
 					return new TriangulationElement(*elem);

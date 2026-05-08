@@ -38,7 +38,7 @@ IfcOpenShell has a huge amount of unique features and capabilities not found in 
 - All tools can be used either as a developer library, through a command line interface, or using a rich graphical interface. Whether you're deploying headless server tools for your own pipeline, writing your own apps, or an end-user, there's something for you.
 - Supports IFC2X3, IFC4, and IFC4.3. Custom schemas (such as experimental or draft schemas) may be loaded at run-time instead of having to recompile.
 - Built-in IFC validation is possible from basic syntax validation to more detailed "Where Rule" checks. This is the same validation that powers the official buildingSMART validation engine.
-- Read and write IFC-SPF, IFCJSON, IFCXML, IFCHDF5, MySQL, and SQLite.
+- Read and write IFC-SPF, IFCJSON, IFCXML, MySQL, and SQLite.
 - High level API for hundreds of tasks. Perform complex authoring like copying objects, cost calculation, or 4D simulation with one line of code. Imagine a complete native IFC authoring and editing platform where every function is available to you as a library.
 - Convert parametric geometry into explicit geometry for any CAD system from booleans to complex sweeps. Geometry has been battle-tested over many years to accommodate complex geometric edge cases with an extensive test suite.
 - Geometry may be converted into voxels and analysed through voxels to resolve complex non-manifold geometry and precision issues. This analysis may be used from things like head height calculations, formwork analysis, to egress distances.

@@ -104,12 +104,6 @@ const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& ifcopenshell::g
 	unsupported_tree_operation(std::string(backend_id()), "styles()");
 }
 
-#ifdef WITH_HDF5
-void ifcopenshell::geometry::trees::abstract_tree::write_h5() {
-	unsupported_tree_operation(std::string(backend_id()), "write_h5()");
-}
-#endif
-
 void ifcopenshell::geometry::trees::tree_registry::bind(const tree_info& info, create_fn create, const plugin::module& module) {
 	entry entry;
 	entry.info_ = info;

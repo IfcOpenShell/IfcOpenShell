@@ -56,7 +56,6 @@ class draw_settings:
     space_areas: bool = False
     door_arcs: bool = False
     subtract_before_hlr: bool = False
-    cache: bool = False
     css: str = ""
     storey_heights: str = "none"
     storey_filter: str = ""
@@ -156,12 +155,6 @@ def main(
                 files,
             )
         )
-
-        if settings.cache:
-            serializer_settings = ifcopenshell.geom.serializer_settings()
-            cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings, serializer_settings)
-            for it in iterators:
-                it.set_cache(cache)
 
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()

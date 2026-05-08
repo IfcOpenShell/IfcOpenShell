@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import hashlib
 import json
 import logging
 import multiprocessing
@@ -901,10 +900,7 @@ class CreateDrawing(bpy.types.Operator):
                 # All very hackish whilst prototyping
                 exporter = bonsai.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
-                invalidated_elements = exporter.sync_all_objects()
-                invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
-                if cache := IfcStore.get_cache():
-                    [cache.remove(guid) for guid in invalidated_guids]
+                exporter.sync_all_objects()
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -922,7 +918,6 @@ class CreateDrawing(bpy.types.Operator):
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
-        prefs = tool.Blender.get_addon_preferences()
         files = {bim_props.ifc_file: tool.Ifc.get()}
 
         props = tool.Project.get_project_props()
@@ -935,12 +930,8 @@ class CreateDrawing(bpy.types.Operator):
         tree = ifcopenshell.geom.tree()
         tree.enable_face_styles(True)
 
-        for ifc_path, ifc in files.items():
+        for ifc in files.values():
             # Don't use draw.main() just whilst we're prototyping and experimenting
-            # TODO: hash paths are never used
-            ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(prefs.cache_dir, f"{ifc_hash}.h5")
-
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
 

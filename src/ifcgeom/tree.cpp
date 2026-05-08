@@ -227,12 +227,6 @@ const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& IfcGeom::tree::
 	return backend ? backend->styles() : empty_style_vector();
 }
 
-#ifdef WITH_HDF5
-void IfcGeom::tree::write_h5() {
-	impl_->backend(default_clash_backend_id).write_h5();
-}
-#endif
-
 std::string IfcGeom::tree::uint8_to_b64(const std::vector<uint8_t>& uuids_array) const {
 	std::string hex_str;
 	hex_str.reserve(uuids_array.size() * 2);

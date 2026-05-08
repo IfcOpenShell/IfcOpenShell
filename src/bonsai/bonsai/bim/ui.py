@@ -665,10 +665,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
-    should_always_cache: BoolProperty(
-        name="Always Cache Geometry",
-        description="Whether to always cache geometry regardless of 'Cache' setting during Advanced Project Load.",
-    )
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
@@ -777,7 +773,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
         should_stream: bool
-        should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
         gizmos: GizmoPreferences
@@ -976,7 +971,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
         layout.prop(self, "should_stream")
-        layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
         layout.prop(self, "bsdd_load_preview_dictionaries")
         layout.prop(self, "bsdd_load_inactive_dictionaries")

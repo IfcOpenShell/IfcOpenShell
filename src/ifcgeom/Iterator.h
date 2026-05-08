@@ -66,7 +66,6 @@
 #include "../ifcgeom/taxonomy.h"
 #include "../ifcgeom/Converter.h"
 #include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/GeometrySerializer.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -104,8 +103,6 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API Iterator {
 	private:
-		GeometrySerializer* cache_ = nullptr;
-
 		std::atomic<bool> finished_{ false };
 		std::atomic<bool> terminating_{ false };
 		std::atomic<bool> had_error_processing_elements_ { false };
@@ -153,44 +150,11 @@ namespace IfcGeom {
 
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
-		std::mutex caching_mutex_;
-
 		std::array<std::chrono::high_resolution_clock::time_point, 4> time_points;
 
 		template <typename Fn>
-		Element* decorate_with_cache_(GeometrySerializer::read_type rt, const std::string& product_guid, const std::string& representation_id, Fn f) {
-
-			bool read_from_cache = false;
-			Element* element = nullptr;
-
-#ifdef WITH_HDF5
-			if (cache_) {
-				std::lock_guard<std::mutex> lk(caching_mutex_);
-
-				auto from_cache = cache_->read(*ifc_file, product_guid, representation_id, rt);
-				if (from_cache) {
-					read_from_cache = true;
-					element = from_cache;
-				}
-			}
-#endif
-			if (!read_from_cache) {
-				element = f();
-			}
-
-#ifdef WITH_HDF5
-			if (cache_ && !read_from_cache && element) {
-				std::lock_guard<std::mutex> lk(caching_mutex_);
-
-				if (rt == GeometrySerializer::READ_TRIANGULATION) {
-					cache_->write((IfcGeom::TriangulationElement*)element);
-				} else {
-					cache_->write((IfcGeom::BRepElement*)element);
-				}
-			}
-#endif
-
-			return element;
+		Element* create_processed_element_(Fn f) {
+			return f();
 		}
 
 		express::Base create_shape_model_for_next_entity();
@@ -243,8 +207,6 @@ namespace IfcGeom {
 		}
 
 		~Iterator();
-
-		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
 		std::vector<ifcopenshell::geometry::taxonomy::item::ptr> get_task_items() const {
 			std::vector<ifcopenshell::geometry::taxonomy::item::ptr> items;

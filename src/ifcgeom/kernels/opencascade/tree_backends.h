@@ -164,12 +164,6 @@ namespace ifcopenshell {
 						return tree_.clash_clearance_many(set_a, set_b, clearance, check_all);
 					}
 
-#ifdef WITH_HDF5
-					void write_h5() override {
-						tree_.write_h5();
-					}
-#endif
-
 				private:
 					IfcGeom::opencascade_tree tree_;
 				};

@@ -31,7 +31,6 @@ occt = { version = "*", build = "*novtk*" }
 cgal-cpp = "*"
 numpy = "*"
 lark = "*"
-hdf5 = "*"
 eigen = "*"
 mpfr = "*"
 gmp = "*"

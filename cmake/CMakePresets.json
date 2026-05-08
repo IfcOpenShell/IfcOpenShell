@@ -15,7 +15,6 @@
         "BUILD_CONVERT": "ON",
         "BUILD_IFCMAX": "OFF",
         "IFCXML_SUPPORT": "ON",
-        "HDF5_SUPPORT": "ON",
         "SCHEMA_VERSIONS": "4x3_add2",
         "CMAKE_GENERATOR_PLATFORM": "",
         "CMAKE_GENERATOR_TOOLSET": ""
@@ -50,8 +49,6 @@
         "MPFR_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "Boost_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "Boost_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
-        "HDF5_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include",
-        "HDF5_LIBRARY_DIR": "$env{LIBRARY_PREFIX}/lib",
         "ZLIB_INCLUDE_DIR": "$env{LIBRARY_PREFIX}/include"
       }
     },

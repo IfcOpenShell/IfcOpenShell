@@ -150,8 +150,7 @@ cmake ../cmake \
     -DBUILD_DOCUMENTATION=OFF \
     -DBUILD_EXAMPLES=OFF \
     -DCOLLADA_SUPPORT=OFF \
-    -DGLTF_SUPPORT=OFF \
-    -DHDF5_SUPPORT=OFF
+    -DGLTF_SUPPORT=OFF
 
 make -j$(nproc) IfcViewer
 ```

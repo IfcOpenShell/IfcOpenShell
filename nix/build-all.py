@@ -107,7 +107,6 @@ import logging
 import multiprocessing
 import os
 import platform
-import re
 import shutil
 
 # @todo temporary for expired mpfr.org certificate on 2023-04-08
@@ -153,7 +152,6 @@ PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.13.8"
 SWIG_VERSION = "4.2.1"
 OPENCOLLADA_VERSION = "v1.6.68"
-HDF5_VERSION = "1.13.1"
 
 GMP_VERSION = "6.3.0"
 MPFR_VERSION = "3.1.6"  # latest is 4.1.0
@@ -331,7 +329,7 @@ cecho(""" - IFC Schemas to compile. If not provided, fallback to default provide
 """)
 
 dependency_tree: "dict[str, tuple[str, ...]]" = {
-    "IfcParse": ("boost", "libxml2", "hdf5", "rocksdb"),
+    "IfcParse": ("boost", "libxml2", "rocksdb"),
     "IfcGeom": ("IfcParse", "occ", "manifold", "json", "cgal", "eigen", "OpenCOLLADA"),
     "IfcConvert": ("IfcGeom",),
     "OpenCOLLADA": ("libxml2", "pcre"),
@@ -344,7 +342,6 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "occ": (),
     "pcre": (),
     "json": (),
-    "hdf5": (),
     "cgal": (),
     "eigen": (),
     "rocksdb": ("zstd",),
@@ -405,7 +402,6 @@ else:
 targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
 if WASM:
     SKIP_TARGETS_FOR_WASM = {
-        "hdf5",
         "rocksdb",
         "opencollada",
         "swig",
@@ -633,7 +629,6 @@ def build_dependency(
     mode: Literal[
         "cmake",
         "autoconf",
-        "ctest",
         "bjam",
     ],
     build_tool_args: "list[str]",
@@ -740,23 +735,7 @@ def build_dependency(
     if shell is not None:
         sp.run(shell, shell=True, check=True, cwd=extract_dir)
 
-    if mode == "ctest":
-        try:
-            run(
-                ["ctest", "-S", "HDF5config.cmake,BUILD_GENERATOR=Unix", "-C", BUILD_CFG, "-V", "-O", "hdf5.log"],
-                cwd=extract_dir,
-            )
-        except Exception as e:
-            print("-" * 70)
-            print(open(os.path.join(extract_dir, "hdf5.log")))
-            print("-" * 70)
-            raise e
-        run([tar, "-xf", kwargs["ctest_result"] + ".tar.gz"], cwd=os.path.join(extract_dir, "build"))
-        shutil.copytree(
-            os.path.join(extract_dir, "build", kwargs["ctest_result"], kwargs["ctest_result_path"]),
-            os.path.join(DEPS_DIR, "install", name),
-        )
-    elif mode != "bjam":
+    if mode != "bjam":
         extract_build_dir = os.path.join(extract_dir, *([cmake_dir] if cmake_dir else []), "build")
         if os.path.exists(extract_build_dir):
             shutil.rmtree(extract_build_dir)
@@ -851,37 +830,6 @@ os.environ["LDFLAGS"] = LDFLAGS
 # Some dependencies need a more recent CMake version than most distros provide
 # @tfk: this is no longer needed
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
-
-if "hdf5" in targets:
-    # not supported
-    orig = [os.environ[f] for f in compiler_flags]
-    for f in compiler_flags:
-        os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
-
-    HDF5_UNDERSCORE = "_".join(HDF5_VERSION.split("."))
-    HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
-    dependency_name = f"hdf5-{HDF5_VERSION}"
-    build_dependency(
-        name=dependency_name,
-        mode="cmake",
-        build_tool_args=[
-            f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/{dependency_name}",
-            "-DHDF5_ENABLE_Z_LIB_SUPPORT=OFF",
-            "-DBUILD_TESTING=OFF",
-            "-DHDF5_BUILD_TOOLS=OFF",
-            "-DHDF5_BUILD_EXAMPLES=OFF",
-            "-DBUILD_SHARED_LIBS=OFF",
-            "-DHDF5_BUILD_UTILS=OFF",
-            "-DHDF5_BUILD_CPP_LIB=ON",
-            *MAC_CROSS_COMPILE_INTEL_ARGS,
-        ],
-        download_url=f"https://github.com/HDFGroup/hdf5/archive/refs/tags/",
-        download_name=f"hdf5-{HDF5_UNDERSCORE}.tar.gz",
-    )
-
-    for f, o in zip(compiler_flags, orig):
-        os.environ[f] = o
-
 
 if "json" in targets:
     dependency_name = f"json-{JSON_VERSION}"
@@ -1411,11 +1359,6 @@ else:
 
 if "libxml2" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/libxml2-{LIBXML2_VERSION}")
-
-if "hdf5" in targets:
-    cmake_args_prefix_path.append(f"{DEPS_DIR}/install/hdf5-{HDF5_VERSION}")
-else:
-    cmake_args.append("-DHDF5_SUPPORT=Off")
 
 if "usd" in targets:
     cmake_args.append("-DUSD_SUPPORT=ON")

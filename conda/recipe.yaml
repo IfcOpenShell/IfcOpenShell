@@ -33,7 +33,6 @@ requirements:
     - occt
     - libxml2
     - cgal-cpp
-    - hdf5
     - eigen
     - mpfr
     - nlohmann_json

@@ -6,7 +6,7 @@
 # - `GMP_LIBRARY_DIR`
 # - `MPFR_INCLUDE_DIR`
 # - `MPFR_LIBRARY_DIR`
-# If input variables are not specified, try to find HDF5 config.
+# If input variables are not specified, try to find CGAL config.
 # Input variables could also be provided as environment variables.
 #
 # Output targets:
