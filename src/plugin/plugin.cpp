@@ -54,7 +54,11 @@ namespace {
 	}
 
 	void plugin_debug(const std::string& message) {
+#if defined(_MSC_VER) && defined(_UNICODE)
+        std::wcerr << "[ifcopenshell.plugin] " << message.c_str() << std::endl;
+#else
 		std::cerr << "[ifcopenshell.plugin] " << message << std::endl;
+#endif
 	}
 
 	const char* plugin_kind_name(ifcopenshell::plugin::kind kind) {
