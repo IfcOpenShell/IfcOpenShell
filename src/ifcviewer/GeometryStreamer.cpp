@@ -482,12 +482,15 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     QElapsedTimer stream_timer;
     stream_timer.start();
 
-    // Split the 0–100 progress range proportionally to element counts so
-    // the bar advances roughly with wall time across both passes.
+    // Drive the bar from yields across all passes/contexts.  Earlier the
+    // [0,100] range was carved evenly across N prioritised contexts, but
+    // in practice nearly every element yields from the first (Body)
+    // context, so smooth progress only ever filled 1/n of the bar before
+    // jumping to the next allocation — visually, a typical 5-context
+    // file looked like it capped at ~20%.
     const size_t total_count = net_ids.size() + gross_ids.size();
-    const int net_progress_end = total_count == 0
-        ? 100
-        : static_cast<int>(100.0 * net_ids.size() / total_count + 0.5);
+    size_t yielded_count = 0;
+    int last_emitted_progress = 0;
 
     // High-priority context first, so each element gets its preferred
     // representation; lower-priority contexts only pick up elements the
@@ -497,9 +500,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         prioritisedContextIds(ifc_file_.get());
 
     auto run_pass = [&](const std::set<int>& include_ids,
-                        bool is_gross,
-                        int progress_lo,
-                        int progress_hi) -> bool {
+                        bool is_gross) -> bool {
         if (include_ids.empty()) return true;
 
         ifcopenshell::geometry::Settings base_settings = settings;
@@ -510,8 +511,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         // Elements that haven't yet produced geometry from any context.
         std::set<int> remaining = include_ids;
 
-        auto run_iterator = [&](ifcopenshell::geometry::Settings& iter_settings,
-                                int sub_lo, int sub_hi) -> bool {
+        auto run_iterator = [&](ifcopenshell::geometry::Settings& iter_settings) -> bool {
             if (remaining.empty()) return true;
 
             std::vector<ifcopenshell::geometry::filter_t> filters;
@@ -535,13 +535,9 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
             if (!iterator->initialize()) {
                 // No geometry survived this context for the remaining ids.
-                // Still advance progress so the bar doesn't stall.
-                progress_ = sub_hi;
-                emit progressChanged(sub_hi);
+                // Subsequent contexts will pick them up; nothing to emit.
                 return true;
             }
-
-            int last_progress = sub_lo;
 
             do {
                 if (cancel_requested_.load()) break;
@@ -656,11 +652,13 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
                 emit instanceReady(std::move(inst));
                 total_shapes++;
+                yielded_count++;
 
-                const int p = sub_lo +
-                    (iterator->progress() * (sub_hi - sub_lo)) / 100;
-                if (p != last_progress) {
-                    last_progress = p;
+                const int p = total_count > 0
+                    ? static_cast<int>((100 * yielded_count) / total_count)
+                    : 100;
+                if (p != last_emitted_progress) {
+                    last_emitted_progress = p;
                     progress_ = p;
                     emit progressChanged(p);
                 }
@@ -672,12 +670,10 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         if (prioritised_contexts.empty()) {
             // No IfcGeometricRepresentationContext entities — fall back to
             // a single iterator pass without context-id filtering.
-            return run_iterator(base_settings, progress_lo, progress_hi);
+            return run_iterator(base_settings);
         }
 
-        const int range = progress_hi - progress_lo;
-        const int n = static_cast<int>(prioritised_contexts.size());
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < prioritised_contexts.size(); ++i) {
             if (cancel_requested_.load()) break;
             if (remaining.empty()) break;
 
@@ -685,22 +681,15 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
             iter_settings.set("context-ids",
                 std::set<int>{ prioritised_contexts[i] });
 
-            const int sub_lo = progress_lo + (range * i) / n;
-            const int sub_hi = (i + 1 == n)
-                ? progress_hi
-                : progress_lo + (range * (i + 1)) / n;
-
-            if (!run_iterator(iter_settings, sub_lo, sub_hi)) return false;
+            if (!run_iterator(iter_settings)) return false;
         }
 
-        progress_ = progress_hi;
-        emit progressChanged(progress_hi);
         return true;
     };
 
-    if (!run_pass(net_ids, /*is_gross=*/false, 0, net_progress_end)) return;
+    if (!run_pass(net_ids, /*is_gross=*/false)) return;
     if (!cancel_requested_.load()) {
-        run_pass(gross_ids, /*is_gross=*/true, net_progress_end, 100);
+        run_pass(gross_ids, /*is_gross=*/true);
     }
 
     progress_ = 100;
