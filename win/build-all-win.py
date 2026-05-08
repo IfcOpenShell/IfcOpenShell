@@ -189,6 +189,7 @@ def build() -> None:
                 build_generator(),
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
+                "-DBUILD_EXAMPLES=OFF",
             ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)
