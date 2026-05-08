@@ -64,10 +64,12 @@ public:
     void notifyFederationStructureChanged();
     void notifyVisibilityChanged();
     void notifyProjectOpened(const QString& path);
+    void notifyProjectSaved(const QString& path);
     void notifyProjectReset();
 
 signals:
     void projectOpened(const QString& path);
+    void projectSaved(const QString& path);
     void projectReset();
     void modelsChanged();
     void federationStructureChanged();

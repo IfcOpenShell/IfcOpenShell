@@ -22,7 +22,6 @@
 #define IFCINTERFACE_COMPONENTS_BUTTONS_H
 
 #include <QList>
-#include <QSize>
 
 class QToolButton;
 class QWidget;
@@ -31,8 +30,7 @@ namespace ifcinterface::components::buttons {
 
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
-                        QWidget* parent,
-                        const QSize& minimum_size = QSize(90, 54));
+                        QWidget* parent);
 
 QWidget* makeButtonGroup(const QString& title,
                          const QList<QToolButton*>& buttons,

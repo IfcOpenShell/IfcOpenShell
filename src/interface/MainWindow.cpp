@@ -30,11 +30,11 @@
 #include "components/Panel.h"
 #include "components/Style.h"
 #include "components/Tabs.h"
-#include "panels/add_model/Dialog.h"
 #include "panels/models/Controller.h"
 #include "panels/todo/Widget.h"
 #include "panels/models/View.h"
 #include "panels/models/Widget.h"
+#include "panels/project/Controller.h"
 #include "panels/properties/View.h"
 #include "panels/properties/Widget.h"
 #include "panels/settings/Dialog.h"
@@ -44,17 +44,14 @@
 #include "panels/viewport/Widget.h"
 
 #include <QDockWidget>
-#include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
-#include <QListView>
 #include <QMessageBox>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
-#include <QTreeView>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -72,6 +69,14 @@ MainWindow::MainWindow(QWidget* parent)
         setWindowModified(dirty);
         updateWindowTitle();
     });
+    connect(session_state_, &ifcinterface::SessionState::modelsChanged,
+            this, &MainWindow::updateWindowTitle);
+    connect(session_state_, &ifcinterface::SessionState::projectOpened,
+            this, [this](const QString&) { updateWindowTitle(); });
+    connect(session_state_, &ifcinterface::SessionState::projectSaved,
+            this, [this](const QString&) { updateWindowTitle(); });
+    connect(session_state_, &ifcinterface::SessionState::projectReset,
+            this, &MainWindow::updateWindowTitle);
     setupChrome();
     setupViewport();
     setupPanels();
@@ -89,16 +94,8 @@ void MainWindow::setupChrome() {
     updateWindowTitle();
 }
 
-QToolButton* MainWindow::makeRibbonAction(const QString& text, const QString& icon_path) {
-    return components::buttons::makeButton(text, icon_path, this, QSize(90, 54));
-}
-
-QWidget* MainWindow::makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons) {
-    return components::buttons::makeButtonGroup(title, buttons, this);
-}
-
 QToolButton* MainWindow::makePanelToggle(const QString& text, QDockWidget* dock) {
-    auto* button = makeRibbonAction(text, ":/icons/sidebar-expand.svg");
+    auto* button = components::buttons::makeButton(text, ":/icons/sidebar-expand.svg", this);
     button->setCheckable(true);
     button->setChecked(dock->isVisible());
     connect(button, &QToolButton::toggled, dock, [dock](bool checked) {
@@ -119,39 +116,49 @@ QWidget* MainWindow::buildHomeRibbonPage() {
     row->setContentsMargins(6, 4, 6, 4);
     row->setSpacing(0);
 
-    auto* new_project = makeRibbonAction("New Project", ":/icons/plus-square.svg");
-    connect(new_project, &QToolButton::clicked, this, &MainWindow::onNewProject);
-    auto* open_project = makeRibbonAction("Open Project", ":/icons/download-square.svg");
-    connect(open_project, &QToolButton::clicked, this, &MainWindow::onOpenProject);
-    auto* open_cloud = makeRibbonAction("Open Cloud", ":/icons/cloud-square.svg");
+    auto* new_project = components::buttons::makeButton("New Project", ":/icons/plus-square.svg", this);
+    connect(new_project, &QToolButton::clicked, this, [this]() {
+        project_controller_->newProject();
+    });
+    auto* open_project = components::buttons::makeButton("Open Project", ":/icons/download-square.svg", this);
+    connect(open_project, &QToolButton::clicked, this, [this]() {
+        project_controller_->openProject();
+    });
+    auto* open_cloud = components::buttons::makeButton("Open Cloud", ":/icons/cloud-square.svg", this);
     connect(open_cloud, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Project", "Open Cloud Project coming soon");
     });
-    auto* open_recent = makeRibbonAction("Open Recent", ":/icons/clock-rotate-right.svg");
+    auto* open_recent = components::buttons::makeButton("Open Recent", ":/icons/clock-rotate-right.svg", this);
     connect(open_recent, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Project", "Open Recent coming soon");
     });
-    auto* save_project = makeRibbonAction("Save Project", ":/icons/floppy-disk.svg");
-    connect(save_project, &QToolButton::clicked, this, &MainWindow::onSaveProject);
-    auto* save_project_as = makeRibbonAction("Save As", ":/icons/floppy-disk-arrow-in.svg");
-    connect(save_project_as, &QToolButton::clicked, this, &MainWindow::onSaveProjectAs);
+    auto* save_project = components::buttons::makeButton("Save Project", ":/icons/floppy-disk.svg", this);
+    connect(save_project, &QToolButton::clicked, this, [this]() {
+        project_controller_->saveProject();
+    });
+    auto* save_project_as = components::buttons::makeButton("Save As", ":/icons/floppy-disk-arrow-in.svg", this);
+    connect(save_project_as, &QToolButton::clicked, this, [this]() {
+        project_controller_->saveProjectAs();
+    });
 
-    auto* add_model = makeRibbonAction("Add Model", ":/icons/cube.svg");
-    connect(add_model, &QToolButton::clicked, this, &MainWindow::onAddFiles);
-    auto* sync_models = makeRibbonAction("Sync Models", ":/icons/refresh-double.svg");
+    auto* add_model = components::buttons::makeButton("Add Model", ":/icons/cube.svg", this);
+    connect(add_model, &QToolButton::clicked, this, [this]() {
+        models_controller_->addFiles();
+    });
+    auto* sync_models = components::buttons::makeButton("Sync Models", ":/icons/refresh-double.svg", this);
     connect(sync_models, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Models", "Sync models coming soon");
     });
 
-    auto* settings_button = makeRibbonAction("Settings", ":/icons/settings.svg");
+    auto* settings_button = components::buttons::makeButton("Settings", ":/icons/settings.svg", this);
     connect(settings_button, &QToolButton::clicked, this, [this]() {
         panels::settings::SettingsDialog dialog(this);
         dialog.exec();
     });
 
-    row->addWidget(makeRibbonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project, save_project_as}));
-    row->addWidget(makeRibbonGroup("MODELS", {add_model, sync_models}));
-    row->addWidget(makeRibbonGroup("SETTINGS", {settings_button}));
+    row->addWidget(components::buttons::makeButtonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project, save_project_as}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MODELS", {add_model, sync_models}, this));
+    row->addWidget(components::buttons::makeButtonGroup("SETTINGS", {settings_button}, this));
     row->addStretch(1);
     return page;
 }
@@ -163,36 +170,40 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     row->setContentsMargins(2, 4, 2, 4);
     row->setSpacing(0);
 
-    auto* set_home = makeRibbonAction("Set Home", ":/icons/home.svg");
-    connect(set_home, &QToolButton::clicked, this, &MainWindow::onSetHomeView);
-    auto* go_home = makeRibbonAction("Go Home", ":/icons/home-alt.svg");
-    connect(go_home, &QToolButton::clicked, this, &MainWindow::onGoHomeView);
-    auto* view_all = makeRibbonAction("View All", ":/icons/cube-scan.svg");
+    auto* set_home = components::buttons::makeButton("Set Home", ":/icons/home.svg", this);
+    connect(set_home, &QToolButton::clicked, this, [this]() {
+        viewport_controller_->setHomeView();
+    });
+    auto* go_home = components::buttons::makeButton("Go Home", ":/icons/home-alt.svg", this);
+    connect(go_home, &QToolButton::clicked, this, [this]() {
+        viewport_controller_->goHomeView();
+    });
+    auto* view_all = components::buttons::makeButton("View All", ":/icons/cube-scan.svg", this);
     connect(view_all, &QToolButton::clicked, this, [this]() {
         if (viewport_widget_) viewport_widget_->viewport()->viewAll();
     });
-    auto* view_selected = makeRibbonAction("View Selected", ":/icons/cube-scan-solid.svg");
+    auto* view_selected = components::buttons::makeButton("View Selected", ":/icons/cube-scan-solid.svg", this);
     connect(view_selected, &QToolButton::clicked, this, [this]() {
         if (viewport_widget_) viewport_widget_->viewport()->focusOnSelectedObject();
     });
 
-    auto* plan_view = makeRibbonAction("Plan", ":/icons/planimetry.svg");
+    auto* plan_view = components::buttons::makeButton("Plan", ":/icons/planimetry.svg", this);
     connect(plan_view, &QToolButton::clicked, this, [this]() {
         if (viewport_widget_) viewport_widget_->viewport()->setStandardView(90.0f, 90.0f);
     });
-    auto* front_view = makeRibbonAction("Front", ":/icons/city.svg");
+    auto* front_view = components::buttons::makeButton("Front", ":/icons/city.svg", this);
     connect(front_view, &QToolButton::clicked, this, [this]() {
         if (viewport_widget_) viewport_widget_->viewport()->setStandardView(0.0f, 0.0f);
     });
-    auto* side_view = makeRibbonAction("Side", ":/icons/building.svg");
+    auto* side_view = components::buttons::makeButton("Side", ":/icons/building.svg", this);
     connect(side_view, &QToolButton::clicked, this, [this]() {
         if (viewport_widget_) viewport_widget_->viewport()->setStandardView(90.0f, 0.0f);
     });
-    auto* align_object = makeRibbonAction("Align Object", ":/icons/cellar.svg");
+    auto* align_object = components::buttons::makeButton("Align Object", ":/icons/cellar.svg", this);
     connect(align_object, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Orientation", "Align to object coming soon");
     });
-    auto* projection_button = makeRibbonAction("Perspective", ":/icons/perspective-view.svg");
+    auto* projection_button = components::buttons::makeButton("Perspective", ":/icons/perspective-view.svg", this);
     connect(projection_button, &QToolButton::clicked, this, [this, projection_button]() {
         if (!viewport_widget_) return;
         viewport_widget_->viewport()->toggleProjection();
@@ -200,18 +211,18 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
             viewport_widget_->viewport()->projectionOrtho() ? "Ortho" : "Perspective");
     });
 
-    auto* orbit_mode = makeRibbonAction("Orbit", ":/icons/rotate-camera-right.svg");
+    auto* orbit_mode = components::buttons::makeButton("Orbit", ":/icons/rotate-camera-right.svg", this);
     connect(orbit_mode, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Mode", "Orbit mode active");
     });
-    auto* fly_mode = makeRibbonAction("Fly", ":/icons/drone.svg");
+    auto* fly_mode = components::buttons::makeButton("Fly", ":/icons/drone.svg", this);
     connect(fly_mode, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Mode", "Fly mode coming soon");
     });
 
-    row->addWidget(makeRibbonGroup("CAMERA", {set_home, go_home, view_all, view_selected}));
-    row->addWidget(makeRibbonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}));
-    row->addWidget(makeRibbonGroup("MODE", {orbit_mode, fly_mode}));
+    row->addWidget(components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this));
+    row->addWidget(components::buttons::makeButtonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MODE", {orbit_mode, fly_mode}, this));
     row->addStretch(1);
     return page;
 }
@@ -223,38 +234,38 @@ QWidget* MainWindow::buildInspectRibbonPage() {
     row->setContentsMargins(2, 4, 2, 4);
     row->setSpacing(0);
 
-    auto* hide_selected = makeRibbonAction("Hide", ":/icons/eye-closed.svg");
+    auto* hide_selected = components::buttons::makeButton("Hide", ":/icons/eye-closed.svg", this);
     connect(hide_selected, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Selection", "Hide selected coming soon");
     });
-    auto* isolate_selected = makeRibbonAction("Isolate", ":/icons/eye-solid.svg");
+    auto* isolate_selected = components::buttons::makeButton("Isolate", ":/icons/eye-solid.svg", this);
     connect(isolate_selected, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Selection", "Isolate selected coming soon");
     });
-    auto* show_all = makeRibbonAction("Show All", ":/icons/eye.svg");
+    auto* show_all = components::buttons::makeButton("Show All", ":/icons/eye.svg", this);
     connect(show_all, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Selection", "Show all coming soon");
     });
-    auto* invert_selection = makeRibbonAction("Invert", ":/icons/intersect.svg");
+    auto* invert_selection = components::buttons::makeButton("Invert", ":/icons/intersect.svg", this);
     connect(invert_selection, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Selection", "Invert selection coming soon");
     });
 
-    auto* distance = makeRibbonAction("Distance", ":/icons/select-edge3d.svg");
+    auto* distance = components::buttons::makeButton("Distance", ":/icons/select-edge3d.svg", this);
     connect(distance, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Measure", "Distance coming soon");
     });
-    auto* area = makeRibbonAction("Area", ":/icons/select-face3d.svg");
+    auto* area = components::buttons::makeButton("Area", ":/icons/select-face3d.svg", this);
     connect(area, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Measure", "Area coming soon");
     });
-    auto* volume = makeRibbonAction("Volume", ":/icons/select-point3d.svg");
+    auto* volume = components::buttons::makeButton("Volume", ":/icons/select-point3d.svg", this);
     connect(volume, &QToolButton::clicked, this, [this]() {
         session_state_->setStatusMessage("Measure", "Volume coming soon");
     });
 
-    row->addWidget(makeRibbonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}));
-    row->addWidget(makeRibbonGroup("MEASURE", {distance, area, volume}));
+    row->addWidget(components::buttons::makeButtonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MEASURE", {distance, area, volume}, this));
     row->addStretch(1);
     return page;
 }
@@ -266,22 +277,22 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
     row->setContentsMargins(2, 4, 2, 4);
     row->setSpacing(0);
 
-    row->addWidget(makeRibbonGroup("DATA", {
+    row->addWidget(components::buttons::makeButtonGroup("DATA", {
         makePanelToggle("Models", models_panel_),
         makePanelToggle("Spatial", spatial_panel_),
         makePanelToggle("Layers", layers_panel_),
         makePanelToggle("Properties", properties_panel_)
-    }));
-    row->addWidget(makeRibbonGroup("QUERY", {
+    }, this));
+    row->addWidget(components::buttons::makeButtonGroup("QUERY", {
         makePanelToggle("Views", stored_views_panel_),
         makePanelToggle("Search", search_panel_),
         makePanelToggle("Sheets", spreadsheet_panel_),
         makePanelToggle("Audit", audit_panel_)
-    }));
-    row->addWidget(makeRibbonGroup("COLLABORATE", {
+    }, this));
+    row->addWidget(components::buttons::makeButtonGroup("COLLABORATE", {
         makePanelToggle("Clash", clash_panel_),
         makePanelToggle("Issues", issues_panel_)
-    }));
+    }, this));
     row->addStretch(1);
     return page;
 }
@@ -334,7 +345,7 @@ void MainWindow::setupPanels() {
     properties_panel_ = new panels::properties::PropertiesPanelWidget(this);
 
     models_controller_ = new panels::models::ModelsPanelController(
-        models_panel_, session_state_, viewport_widget_->viewport(), element_registry_, this);
+        this, models_panel_, session_state_, viewport_widget_->viewport(), element_registry_, this);
     models_view_ = new panels::models::ModelsPanelView(models_panel_, session_state_, this);
     spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, session_state_, this);
     properties_view_ = new panels::properties::PropertiesPanelView(properties_panel_, session_state_, this);
@@ -411,14 +422,12 @@ void MainWindow::setupLoader() {
     loader_ = new SceneLoader(viewport_widget_->viewport(), this);
     element_registry_->bindLoader(loader_);
     session_state_->bindLoader(loader_);
+    models_controller_->bindLoader(loader_);
     viewport_controller_ = new panels::viewport::ViewportController(
         session_state_, viewport_widget_->viewport(), this);
-    connect(loader_, &SceneLoader::loadStarted, this, &MainWindow::onLoadStarted);
-    connect(loader_, &SceneLoader::loadedFromSidecar, this, &MainWindow::onLoadedFromSidecar);
-    connect(loader_, &SceneLoader::loadedFromStream, this, &MainWindow::onLoadedFromStream);
-    connect(loader_, &SceneLoader::loadCancelled, this, &MainWindow::onLoadCancelled);
-    connect(loader_, &SceneLoader::loadError, this, &MainWindow::onLoadError);
-    connect(loader_, &SceneLoader::allLoadsFinished, this, &MainWindow::onAllLoadsFinished);
+    project_controller_ = new panels::project::ProjectController(
+        this, federation_, session_state_, element_registry_,
+        viewport_widget_->viewport(), models_controller_, viewport_controller_, this);
 
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& s) {
@@ -440,204 +449,6 @@ void MainWindow::setupLoader() {
     });
 }
 
-void MainWindow::addFiles(const QStringList& paths) {
-    QStringList accepted_paths;
-    QStringList accepted_fed_ids;
-    for (const auto& path : paths) {
-        const QString fed_id = federation_->addModel(path);
-        if (fed_id.isEmpty()) continue;
-        accepted_paths << path;
-        accepted_fed_ids << fed_id;
-    }
-    loadModelsFromPaths(accepted_paths, accepted_fed_ids);
-    updateWindowTitle();
-}
-
-QString MainWindow::formatElapsed(qint64 ms) const {
-    return (ms >= 1000)
-        ? QString::number(ms / 1000.0, 'f', 2) + " s"
-        : QString::number(ms) + " ms";
-}
-
-void MainWindow::onAddFiles() {
-    panels::add_model::AddModelDialog dialog(this);
-    if (dialog.exec() != QDialog::Accepted) return;
-
-    QStringList paths;
-    switch (dialog.selectedMode()) {
-    case panels::add_model::SourceMode::IfcFile: {
-        QFileDialog file_dialog(this, "Add IFC Files");
-        file_dialog.setFileMode(QFileDialog::ExistingFiles);
-        file_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
-        file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
-        if (file_dialog.exec() == QDialog::Accepted) {
-            paths = file_dialog.selectedFiles();
-        }
-        break;
-    }
-    case panels::add_model::SourceMode::IfcDatabase: {
-        QFileDialog database_dialog(this, "Add IFC Databases");
-        database_dialog.setFileMode(QFileDialog::Directory);
-        database_dialog.setOption(QFileDialog::ShowDirsOnly, true);
-        database_dialog.setOption(QFileDialog::DontResolveSymlinks, true);
-        database_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
-        if (auto* list = database_dialog.findChild<QListView*>("listView")) {
-            list->setSelectionMode(QAbstractItemView::ExtendedSelection);
-        }
-        if (auto* tree = database_dialog.findChild<QTreeView*>()) {
-            tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-        }
-        if (database_dialog.exec() == QDialog::Accepted) {
-            paths = database_dialog.selectedFiles();
-        }
-        break;
-    }
-    case panels::add_model::SourceMode::GeometryOnly: {
-        QFileDialog file_dialog(this, "Add Geometry Only");
-        file_dialog.setFileMode(QFileDialog::ExistingFiles);
-        file_dialog.setNameFilter("IFC Viewer Cache (*.ifcview);;All Files (*)");
-        file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
-        if (file_dialog.exec() == QDialog::Accepted) {
-            paths = file_dialog.selectedFiles();
-        }
-        break;
-    }
-    case panels::add_model::SourceMode::None:
-        return;
-    }
-    addFiles(paths);
-}
-
-void MainWindow::clearScene() {
-    if (viewport_widget_) viewport_widget_->viewport()->setSelectedObjectId(0);
-    session_state_->setSelectedObjectId(0);
-    session_state_->notifySelectionChanged();
-
-    const auto model_ids = session_state_->modelIds();
-    for (uint32_t mid : model_ids) {
-        viewport_widget_->viewport()->removeModel(mid);
-        loader_->removeModel(mid);
-    }
-
-    session_state_->clearModelMappings();
-    element_registry_->clear();
-    session_state_->notifyModelsChanged();
-}
-
-bool MainWindow::confirmDiscardIfDirty() {
-    if (!federation_->isDirty()) return true;
-    const auto result = QMessageBox::question(
-        this, "Unsaved Project",
-        "The current project has unsaved changes. Save before continuing?",
-        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
-        QMessageBox::Save);
-    if (result == QMessageBox::Cancel) return false;
-    if (result == QMessageBox::Save) return saveProject();
-    return true;
-}
-
-void MainWindow::loadModelsFromPaths(const QStringList& paths, const QStringList& fed_ids) {
-    if (paths.isEmpty()) return;
-    const auto ids = loader_->addFiles(paths);
-    for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()) && i < fed_ids.size(); ++i) {
-        session_state_->setModelMapping(fed_ids[i], ids[i]);
-    }
-    session_state_->notifyModelsChanged();
-}
-
-bool MainWindow::openProject(const QString& path) {
-    if (loader_ && loader_->isLoading()) {
-        QMessageBox::information(
-            this, "Open Project",
-            "Wait until the current model load finishes before opening another project.");
-        return false;
-    }
-    if (!confirmDiscardIfDirty()) return false;
-
-    QStringList warnings;
-    QString err;
-    if (!federation_->load(path, &warnings, &err)) {
-        QMessageBox::warning(this, "Open Project",
-                             QString("Could not open project:\n%1").arg(err));
-        return false;
-    }
-
-    clearScene();
-
-    QStringList paths;
-    QStringList fed_ids;
-    QStringList missing;
-    for (const auto& model : federation_->models()) {
-        if (model.source_kind != "local") continue;
-        if (!QFileInfo::exists(model.source_path)) {
-            missing << model.source_path;
-            continue;
-        }
-        paths << model.source_path;
-        fed_ids << model.id;
-    }
-    loadModelsFromPaths(paths, fed_ids);
-
-    for (const auto& msg : missing) {
-        warnings << QString("Source not found, kept in project: %1").arg(msg);
-    }
-    if (!warnings.isEmpty()) {
-        QMessageBox::warning(this, "Open Project",
-                             "Project opened with warnings:\n\n" + warnings.join("\n"));
-    }
-
-    federation_->markClean();
-    viewport_controller_->applyFederatedFalseOrigin();
-    if (federation_->hasHomeView()) {
-        const auto& hv = federation_->homeView();
-        viewport_widget_->viewport()->setCamera(
-            hv.target.x(), hv.target.y(), hv.target.z(), hv.distance, hv.yaw, hv.pitch);
-    }
-    updateWindowTitle();
-    session_state_->setStatusMessage("Project", QFileInfo(path).fileName());
-    session_state_->notifyProjectOpened(path);
-    return true;
-}
-
-bool MainWindow::saveProject() {
-    if (federation_->filePath().isEmpty()) return saveProjectAs();
-
-    QString err;
-    if (!federation_->save(federation_->filePath(), &err)) {
-        QMessageBox::warning(this, "Save Project",
-                             QString("Could not save project:\n%1").arg(err));
-        return false;
-    }
-    updateWindowTitle();
-    session_state_->setStatusMessage("Project", QFileInfo(federation_->filePath()).fileName());
-    return true;
-}
-
-bool MainWindow::saveProjectAs() {
-    QString suggested = federation_->filePath();
-    if (suggested.isEmpty()) suggested = "project.ifcfed";
-
-    QFileDialog file_dialog(this, "Save Project As", suggested);
-    file_dialog.setAcceptMode(QFileDialog::AcceptSave);
-    file_dialog.setFileMode(QFileDialog::AnyFile);
-    file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
-    file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
-    if (file_dialog.exec() != QDialog::Accepted) return false;
-    QString path = file_dialog.selectedFiles().value(0);
-    if (path.isEmpty()) return false;
-    if (!path.endsWith(".ifcfed", Qt::CaseInsensitive)) path += ".ifcfed";
-
-    QString err;
-    if (!federation_->save(path, &err)) {
-        QMessageBox::warning(this, "Save Project",
-                             QString("Could not save project:\n%1").arg(err));
-        return false;
-    }
-    updateWindowTitle();
-    session_state_->setStatusMessage("Project", QFileInfo(path).fileName());
-    return true;
-}
-
 void MainWindow::updateWindowTitle() {
     const QString project_path = federation_ ? federation_->filePath() : QString();
     if (project_path.isEmpty() && (!federation_ || federation_->models().empty())) {
@@ -647,99 +458,6 @@ void MainWindow::updateWindowTitle() {
     } else {
         setWindowTitle(QFileInfo(project_path).fileName() + "[*] - IfcOpenShell Interface");
     }
-}
-
-void MainWindow::onNewProject() {
-    if (loader_ && loader_->isLoading()) {
-        QMessageBox::information(
-            this, "New Project",
-            "Wait until the current model load finishes before creating a new project.");
-        return;
-    }
-    if (!confirmDiscardIfDirty()) return;
-    clearScene();
-    federation_->clear();
-    viewport_controller_->applyFederatedFalseOrigin();
-    updateWindowTitle();
-    session_state_->setStatusMessage("Project", "Untitled");
-    session_state_->notifyProjectReset();
-}
-
-void MainWindow::onOpenProject() {
-    QFileDialog file_dialog(this, "Open Project");
-    file_dialog.setFileMode(QFileDialog::ExistingFile);
-    file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
-    file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
-    if (file_dialog.exec() != QDialog::Accepted) return;
-    const QString path = file_dialog.selectedFiles().value(0);
-    if (path.isEmpty()) return;
-    openProject(path);
-}
-
-void MainWindow::onSaveProject() {
-    saveProject();
-}
-
-void MainWindow::onSaveProjectAs() {
-    saveProjectAs();
-}
-
-void MainWindow::onSetHomeView() {
-    auto camera = viewport_widget_->viewport()->cameraState();
-    Federation::HomeView home_view;
-    home_view.target = camera.target;
-    home_view.distance = camera.distance;
-    home_view.yaw = camera.yaw;
-    home_view.pitch = camera.pitch;
-    federation_->setHomeView(home_view);
-    updateWindowTitle();
-    session_state_->setStatusMessage("Camera", "Home view updated");
-}
-
-void MainWindow::onGoHomeView() {
-    if (!federation_->hasHomeView()) {
-        session_state_->setStatusMessage("Camera", "No home view set for this project");
-        return;
-    }
-
-    const auto& home_view = federation_->homeView();
-    viewport_widget_->viewport()->setCamera(
-        home_view.target.x(), home_view.target.y(), home_view.target.z(),
-        home_view.distance, home_view.yaw, home_view.pitch);
-    session_state_->setStatusMessage("Camera", "Home view restored");
-}
-
-void MainWindow::onLoadStarted(uint32_t /*mid*/, QString display_name) {
-    session_state_->setStatusMessage("Loading", display_name);
-}
-
-void MainWindow::onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms) {
-    session_state_->setStatusMessage(
-        "Loaded",
-        QString("%1 from cache in %2")
-            .arg(loader_->displayName(mid))
-            .arg(formatElapsed(elapsed_ms)));
-}
-
-void MainWindow::onLoadedFromStream(uint32_t mid, qint64 elapsed_ms) {
-    session_state_->setStatusMessage(
-        "Loaded",
-        QString("%1 streamed in %2")
-            .arg(loader_->displayName(mid))
-            .arg(formatElapsed(elapsed_ms)));
-}
-
-void MainWindow::onLoadCancelled(uint32_t mid) {
-    session_state_->setStatusMessage("Cancelled", loader_->displayName(mid));
-}
-
-void MainWindow::onLoadError(uint32_t /*mid*/, QString message) {
-    session_state_->setStatusMessage("Error", message);
-    QMessageBox::warning(this, "IfcInterfaceMockup", message);
-}
-
-void MainWindow::onAllLoadsFinished() {
-    session_state_->setStatusMessage("Loaded", QString("%1 model(s)").arg(loader_->modelCount()));
 }
 
 } // namespace ifcinterface::shell

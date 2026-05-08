@@ -90,7 +90,7 @@ void AddModelDialog::setupUi() {
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(components::style::metrics::padding);
 
-    auto* add_ifc = components::buttons::makeButton("Add IFC File", ":/icons/cube.svg", choices, QSize(90, 68));
+    auto* add_ifc = components::buttons::makeButton("Add IFC File", ":/icons/cube.svg", choices);
     connect(add_ifc, &QToolButton::clicked, this, [this]() {
         selected_mode_ = SourceMode::IfcFile;
         accept();
@@ -100,7 +100,7 @@ void AddModelDialog::setupUi() {
         "Add IFC files and load both geometry and data.",
         default_description));
 
-    auto* add_database = components::buttons::makeButton("Add IFC\nDatabase", ":/icons/database.svg", choices, QSize(90, 68));
+    auto* add_database = components::buttons::makeButton("Add IFC\nDatabase", ":/icons/database.svg", choices);
     connect(add_database, &QToolButton::clicked, this, [this]() {
         selected_mode_ = SourceMode::IfcDatabase;
         accept();
@@ -110,7 +110,7 @@ void AddModelDialog::setupUi() {
         "Add IFC RDB databases for optimised performance",
         default_description));
 
-    auto* add_geometry = components::buttons::makeButton("Add Geometry", ":/icons/cube-bandage.svg", choices, QSize(90, 68));
+    auto* add_geometry = components::buttons::makeButton("Add Geometry", ":/icons/cube-bandage.svg", choices);
     connect(add_geometry, &QToolButton::clicked, this, [this]() {
         selected_mode_ = SourceMode::GeometryOnly;
         accept();
@@ -120,7 +120,7 @@ void AddModelDialog::setupUi() {
         "Add pure geometry for fast visualisation",
         default_description));
 
-    auto* convert_database = components::buttons::makeButton("Convert IFC File\nto Database", ":/icons/database-restore.svg", choices, QSize(90, 68));
+    auto* convert_database = components::buttons::makeButton("Convert IFC File\nto Database", ":/icons/database-restore.svg", choices);
     connect(convert_database, &QToolButton::clicked, this, [description]() {
         description->setText("IFC-to-database conversion is coming soon.");
     });

@@ -37,6 +37,7 @@ namespace ifcinterface::components { class TabBar; }
 namespace ifcinterface::panels::models { class ModelsPanelController; }
 namespace ifcinterface::panels::models { class ModelsPanelWidget; }
 namespace ifcinterface::panels::models { class ModelsPanelView; }
+namespace ifcinterface::panels::project { class ProjectController; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelWidget; }
 namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcinterface::panels::properties { class PropertiesPanelWidget; }
@@ -62,33 +63,8 @@ private:
     QWidget* buildNavigateRibbonPage();
     QWidget* buildInspectRibbonPage();
     QWidget* buildPanelsRibbonPage();
-    void clearScene();
-    bool confirmDiscardIfDirty();
-    void loadModelsFromPaths(const QStringList& paths, const QStringList& fed_ids);
-    bool openProject(const QString& path);
-    bool saveProject();
-    bool saveProjectAs();
     void updateWindowTitle();
-    QToolButton* makeRibbonAction(const QString& text, const QString& icon_path);
-    QWidget* makeRibbonGroup(const QString& title, const QList<QToolButton*>& buttons);
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
-    void addFiles(const QStringList& paths);
-    QString formatElapsed(qint64 ms) const;
-
-private slots:
-    void onAddFiles();
-    void onLoadStarted(uint32_t mid, QString display_name);
-    void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
-    void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
-    void onLoadCancelled(uint32_t mid);
-    void onLoadError(uint32_t mid, QString message);
-    void onAllLoadsFinished();
-    void onSetHomeView();
-    void onGoHomeView();
-    void onNewProject();
-    void onOpenProject();
-    void onSaveProject();
-    void onSaveProjectAs();
 
 private:
     Federation* federation_ = nullptr;
@@ -114,6 +90,7 @@ private:
     QDockWidget* issues_panel_ = nullptr;
     ifcinterface::panels::models::ModelsPanelController* models_controller_ = nullptr;
     ifcinterface::panels::models::ModelsPanelView* models_view_ = nullptr;
+    ifcinterface::panels::project::ProjectController* project_controller_ = nullptr;
     ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
     ifcinterface::panels::properties::PropertiesPanelView* properties_view_ = nullptr;
 };

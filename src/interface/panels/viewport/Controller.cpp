@@ -148,6 +148,31 @@ void ViewportController::applyFederatedFalseOrigin() {
         composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
 }
 
+void ViewportController::setHomeView() {
+    auto camera = viewport_->cameraState();
+    Federation::HomeView home_view;
+    home_view.target = camera.target;
+    home_view.distance = camera.distance;
+    home_view.yaw = camera.yaw;
+    home_view.pitch = camera.pitch;
+    session_state_->federation()->setHomeView(home_view);
+    session_state_->setStatusMessage("Camera", "Home view updated");
+}
+
+void ViewportController::goHomeView() {
+    Federation* federation = session_state_->federation();
+    if (!federation->hasHomeView()) {
+        session_state_->setStatusMessage("Camera", "No home view set for this project");
+        return;
+    }
+
+    const auto& home_view = federation->homeView();
+    viewport_->setCamera(
+        home_view.target.x(), home_view.target.y(), home_view.target.z(),
+        home_view.distance, home_view.yaw, home_view.pitch);
+    session_state_->setStatusMessage("Camera", "Home view restored");
+}
+
 void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
