@@ -410,7 +410,7 @@ def convert_path_to_rocksdb(
         instances become dangling - reads that walk into them will fail.
     """
     skip = list(skip_supertypes) if skip_supertypes else []
-    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True, skip)
+    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), skip)
     ser.finalize()
 
 

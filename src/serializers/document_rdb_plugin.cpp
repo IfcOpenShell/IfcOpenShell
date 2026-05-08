@@ -28,10 +28,10 @@
 namespace {
 
 boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers::document_serializer_context& context) {
-	if (!context.stream || context.input_filename.empty()) {
-		throw ifcopenshell::exception("RocksDB document serializer requires --stream input");
+	if (context.input_filename.empty()) {
+		throw ifcopenshell::exception("RocksDB document serializer requires an input filename");
 	}
-	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename, true);
+	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename);
 }
 
 }

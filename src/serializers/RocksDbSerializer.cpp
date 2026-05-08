@@ -6,25 +6,8 @@
 
 #include "../ifcparse/logger.h"
 
-RocksDbSerializer::RocksDbSerializer(ifcopenshell::file* file, const std::string& rocksdb_filename)
-	: file_(file)
-	, rocksdb_filename_(rocksdb_filename)
-{
-	/*rocksdb::Options options;
-	options.create_if_missing = true;
-	options.merge_operator.reset(new ConcatenateIdMergeOperator());
-	rocksdb::status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
-
-	output_file_ = new ifcopenshell::file(file->schema(), ifcopenshell::FT_ROCKSDB, rocksdb_filename_);
-
-	// We promise never to add the same instance twice
-	output_file_->check_existance_before_adding = false;
-	// We only copy one file into an empty container so units will match
-	output_file_->calculate_unit_factors = false;
-}
-
-RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, const std::vector<std::string>& skip_supertypes)
-	: file_(input_filename)
+RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes)
+	: input_filename_(input_filename)
 	, rocksdb_filename_(rocksdb_filename)
 	, skip_supertypes_(skip_supertypes)
 {
@@ -123,13 +106,11 @@ namespace {
 }
 
 void RocksDbSerializer::write_streaming_() {
-	const auto& input_filename = std::get<std::string>(file_);
-
 	ifcopenshell::impl::rocks_db_file_storage storage(rocksdb_filename_, nullptr);
 
 	std::string tmp;
 
-	ifcopenshell::instance_streamer streamer(input_filename);
+	ifcopenshell::instance_streamer streamer(input_filename_);
 
 	// We do not want to coerce attribute counts here, because we want
 	// to store exactly what is in the file for validation purposes
@@ -304,11 +285,7 @@ void RocksDbSerializer::write_streaming_() {
 }
 
 void RocksDbSerializer::finalize() {
-	if (file_.index() == 0) {
-        throw std::runtime_error("Non-streaming mode no longer supported");
-	} else {
-		write_streaming_();
-	}
+	write_streaming_();
 }
 
 

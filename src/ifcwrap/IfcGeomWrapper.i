@@ -265,6 +265,109 @@ namespace {
 %include "../ifcgeom/taxonomy.h"
 %include "../ifcgeom/function_item_evaluator.h"
 
+%{
+#include "../serializers/geometry_serializer_plugin.h"
+
+class PythonPluginGeometrySerializer : public GeometrySerializer {
+public:
+	PythonPluginGeometrySerializer(
+		const std::string& extension,
+		const std::string& output_filename,
+		const std::string& output_temp_filename,
+		ifcopenshell::geometry::Settings& geometry_settings,
+		const ifcopenshell::geometry::SerializerSettings& serializer_settings
+	)
+		: GeometrySerializer(geometry_settings, serializer_settings)
+	{
+		ifcopenshell::serializers::geometry_serializer_context context{
+			output_filename,
+			output_temp_filename.empty() ? output_filename : output_temp_filename,
+			geometry_settings,
+			serializer_settings
+		};
+
+		auto& registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
+		registry.configure(extension, context);
+		geometry_settings_ = context.geometry_settings;
+		serializer_ = registry.create(extension, context);
+	}
+
+	bool ready() override {
+		return serializer_->ready();
+	}
+
+	bool is_streaming() const override {
+		return serializer_->is_streaming();
+	}
+
+	void writeHeader() override {
+		serializer_->writeHeader();
+	}
+
+	void finalize() override {
+		serializer_->finalize();
+	}
+
+	void setFile(ifcopenshell::file* file) override {
+		serializer_->setFile(file);
+	}
+
+	bool isTesselated() const override {
+		return serializer_->isTesselated();
+	}
+
+	void write(const IfcGeom::TriangulationElement* element) override {
+		serializer_->write(element);
+	}
+
+	void write(const IfcGeom::BRepElement* element) override {
+		serializer_->write(element);
+	}
+
+	void setUnitNameAndMagnitude(const std::string& name, float magnitude) override {
+		serializer_->setUnitNameAndMagnitude(name, magnitude);
+	}
+
+	IfcGeom::Element* read(
+		ifcopenshell::file& file,
+		const std::string& guid,
+		const std::string& representation_id,
+		read_type rt = READ_BREP
+	) override {
+		return serializer_->read(file, guid, representation_id, rt);
+	}
+
+	std::string object_id(const IfcGeom::Element* element) override {
+		return serializer_->object_id(element);
+	}
+
+private:
+	boost::shared_ptr<GeometrySerializer> serializer_;
+};
+%}
+
+%extend GeometrySerializer {
+	bool ready() {
+		return $self->ready();
+	}
+
+	bool is_streaming() const {
+		return $self->is_streaming();
+	}
+
+	void writeHeader() {
+		$self->writeHeader();
+	}
+
+	void finalize() {
+		$self->finalize();
+	}
+
+	void setFile(ifcopenshell::file* file) {
+		$self->setFile(file);
+	}
+}
+
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
 		if (!self->instance) {

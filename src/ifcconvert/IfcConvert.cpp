@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
 #endif
 		("input-file", new po::typed_value<path_t, char_t>(0), "input IFC file")
 		("output-file", new po::typed_value<path_t, char_t>(0), "output geometry file")
-		("stream", "Use streaming conversion (currently supported with conversion to RocksDB)")
+		("stream", "Use streaming conversion when supported (RocksDB uses it automatically)")
 		;
 	if (supports_geometry_cache) {
 		fileio_options.add_options()
@@ -606,7 +606,8 @@ int main(int argc, char** argv) {
 	auto run_document_serializer = [&](const ifcopenshell::serializers::document_serializer_info* document_serializer_info) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			const bool use_input_filename = vmap.count("stream") && document_serializer_info->supports_input_filename;
+			const bool use_input_filename = document_serializer_info->supports_input_filename &&
+				(vmap.count("stream") || !document_serializer_info->supports_ifc_file);
 			if (!use_input_filename && !document_serializer_info->supports_ifc_file) {
 				throw ifcopenshell::exception("Selected document serializer requires --stream");
 			}
@@ -623,13 +624,16 @@ int main(int argc, char** argv) {
 				time(&start);
 
 				ifcopenshell::serializers::document_serializer_context context;
-				context.file = ifc_file;
+				context.file = use_input_filename ? nullptr : ifc_file;
 				context.input_filename = ifcopenshell::path::to_utf8(input_filename);
 				context.output_filename = ifcopenshell::path::to_utf8(document_serializer_info->writes_final_output ? output_filename : output_temp_filename);
 				context.schema_name = ifc_file ? ifc_file->schema()->name() : document_serializer_info->schema_name;
 				context.stream = use_input_filename;
 
 				boost::shared_ptr<Serializer> serializer = document_serializer_registry.create(output_extension_utf8, context);
+				if (serializer->is_streaming() != use_input_filename) {
+					throw ifcopenshell::exception("Selected document serializer streaming mode does not match its registry metadata");
+				}
 				logger::status("Writing " + boost::to_upper_copy(document_serializer_info->format) + " output...");
 				serializer->finalize();
 				serializer.reset();

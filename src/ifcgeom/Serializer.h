@@ -28,6 +28,7 @@ public:
 	virtual ~Serializer() {}
 
 	virtual bool ready() = 0;
+	virtual bool is_streaming() const { return false; }
 	virtual void writeHeader() = 0;
 	virtual void finalize() = 0;
 	virtual void setFile(ifcopenshell::file*) = 0;

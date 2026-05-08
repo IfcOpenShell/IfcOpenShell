@@ -4,33 +4,28 @@
 
 #include "../serializers/serializers_api.h"
 #include "../ifcgeom/Serializer.h"
-#include "../ifcparse/file.h"
-
-#include <rocksdb/db.h>
 
 #include <string>
 #include <vector>
 
 class SERIALIZERS_API RocksDbSerializer : public Serializer {
 private:
-	rocksdb::DB* db_;
+	std::string input_filename_;
 	std::string rocksdb_filename_;
-	std::variant<ifcopenshell::file*, std::string> file_;
-	ifcopenshell::file* output_file_;
 	std::vector<std::string> skip_supertypes_;
 
 	void write_streaming_();
 public:
-	RocksDbSerializer(ifcopenshell::file* file, const std::string& rocksdb_filename);
-	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, const std::vector<std::string>& skip_supertypes = {});
+	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes = {});
 
 	virtual ~RocksDbSerializer() {}
 
-	bool ready() { return true; }
-	void writeHeader() {}
+	bool ready() override { return true; }
+	bool is_streaming() const override { return true; }
+	void writeHeader() override {}
 
-	void finalize();
-	void setFile(ifcopenshell::file*) { throw ifcopenshell::exception("Should be supplied on construction"); }
+	void finalize() override;
+	void setFile(ifcopenshell::file*) override { throw ifcopenshell::exception("Streaming serializer uses input filename supplied on construction"); }
 };
 
 #endif
