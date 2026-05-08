@@ -56,6 +56,11 @@ function mark_based_on_artifacts {
             $artifact = "lib\rocksdb.lib"
         }
     }
+    elseif ($dependency_name -eq "qt6") {
+        # Qt has a nested install layout, so build-deps.cmd validates its
+        # Release/Debug artifacts before marking the installation.
+        return
+    }
     else {
         throw "Unexpected dependency name '$dependency_name'."
     }
@@ -104,6 +109,7 @@ function check_installation {
 # - OpenCASCADE: incompatible
 # - rocksdb: incompatible
 # - opencollada: incompatible
+# - Qt6: compatible when both Release and Debug artifacts are installed
 # - zstd: compatible
 
 function setup_build_cfg {

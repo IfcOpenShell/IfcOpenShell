@@ -741,7 +741,7 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :MarkInstallation
 
 :qt6
-set DEPENDENCY_NAME=Qt6 %QT6_VERSION%
+set DEPENDENCY_NAME=qt6
 
 set QT6_MSVC_YEAR=%VS_VER%
 IF /I "%VS_TOOLSET%"=="v141" set QT6_MSVC_YEAR=2017
@@ -769,6 +769,10 @@ set DEPENDENCY_INSTALL_NAME=qt6-%QT6_VERSION%-%QT6_INSTALL_SUFFIX%
 set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
 set QT_DIR=%QT6_INSTALL_DIR%
+set QT6_CONFIG_DLL=Qt6Core.dll
+IF /I "%BUILD_CFG%"=="Debug" (
+    set QT6_CONFIG_DLL=Qt6Cored.dll
+)
 set NEXT_DEPENDENCY_LABEL=Successful
 
 IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
@@ -782,8 +786,8 @@ echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 call :CheckInstallation
 if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
 
-IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
-    echo Found existing "%QT6_INSTALL_DIR%", skipping
+IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
+    echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
     call :MarkInstallation
     goto :Successful
 )
@@ -799,6 +803,11 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
     call cecho.cmd 0 12 "Qt6 installation did not produce Qt6Config.cmake at %QT6_INSTALL_DIR%."
+    GOTO :Error
+)
+
+IF NOT EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
+    call cecho.cmd 0 12 "Qt6 installation did not produce %BUILD_CFG% runtime %QT6_CONFIG_DLL% at %QT6_INSTALL_DIR%\bin."
     GOTO :Error
 )
 
