@@ -1342,9 +1342,9 @@ elif "occ" in targets:
     occ_library_dir = f"{DEPS_DIR}/install/oce-{OCE_VERSION}/lib"
     cmake_args.extend(["-DOCC_INCLUDE_DIR=" + occ_include_dir, "-DOCC_LIBRARY_DIR=" + occ_library_dir])
 
-# if "manifold" in targets:
-#      cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
-#      cmake_args.append("-DWITH_MANIFOLD=On")
+if "manifold" in targets:
+     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/manifold-{MANIFOLD_VERSION}")
+     cmake_args.append("-DWITH_MANIFOLD=On")
 
 if "OpenCOLLADA" in targets:
     # pcre is a dependency of OpenCOLLADA, but since we `find_package`,
