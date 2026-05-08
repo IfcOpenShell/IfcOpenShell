@@ -361,6 +361,8 @@ ifcopenshell::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type co
 
 express::Base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
 #ifdef IFOPSH_WITH_ROCKSDB
+    std::lock_guard<std::mutex> lock(instance_cache_mutex_);
+
     if (r == ifcopenshell::impl::rocks_db_file_storage::entityinstance_ref) {
         auto it = instance_cache_.find(number);
         if (it != instance_cache_.end()) {

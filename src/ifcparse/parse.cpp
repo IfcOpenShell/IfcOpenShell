@@ -2872,6 +2872,7 @@ void ifcopenshell::file::unbatch() {
 void ifcopenshell::file::reset_identity_cache() {
     std::visit([](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
+            std::lock_guard<std::mutex> lock(x.instance_cache_mutex_);
             x.instance_cache_.clear();
             x.type_instance_cache_.clear();
         }

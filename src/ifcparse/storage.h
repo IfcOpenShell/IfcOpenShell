@@ -35,6 +35,7 @@ namespace rocksdb {
 #include <vector>
 #include <deque>
 #include <list>
+#include <mutex>
 #include <set>
 
 #ifndef SWIG
@@ -354,6 +355,7 @@ namespace ifcopenshell {
             // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the file side?
             typedef std::map<uint32_t, std::shared_ptr<instance_data>> entity_by_iden_cache_t;
             entity_by_iden_cache_t instance_cache_, type_instance_cache_;
+            std::mutex instance_cache_mutex_;
 
             // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
