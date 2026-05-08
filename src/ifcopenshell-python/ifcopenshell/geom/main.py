@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator, Iterable
+from os import PathLike, fspath
 from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
 
 from .. import ifcopenshell_wrapper, open
@@ -630,69 +631,84 @@ def make_shape_function(fn):
 # tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
 
 
-def transform_string(v: Union[str, serializers.buffer]) -> serializers.buffer:
-    if isinstance(v, str):
-        return ifcopenshell_wrapper.buffer(v)
-    return v
+class _serializer_factory:
+    def __init__(self, name: str, extension: str):
+        self.name = name
+        self.extension = extension
+        self.__name__ = name
+
+    def __call__(self, out_filename: Union[str, PathLike[str]], *args: Any) -> ifcopenshell_wrapper.GeometrySerializer:
+        if self.name == "obj" and len(args) == 3:
+            output_filename = args[0]
+            output_temp_filename = out_filename
+            geometry_settings, serializer_settings = args[1], args[2]
+        elif len(args) == 2:
+            output_filename = out_filename
+            output_temp_filename = out_filename
+            geometry_settings, serializer_settings = args
+        else:
+            obj_signature = " or (out_filename, mtl_filename, geometry_settings, serializer_settings)"
+            raise TypeError(
+                f"serializers.{self.name}() expects (out_filename, geometry_settings, serializer_settings)"
+                + (obj_signature if self.name == "obj" else "")
+            )
+
+        output_filename = self._path(output_filename)
+        output_temp_filename = self._path(output_temp_filename)
+
+        return ifcopenshell_wrapper.create_geometry_serializer(
+            self.extension, output_filename, output_temp_filename, geometry_settings, serializer_settings
+        )
+
+    def _path(self, value: Union[str, PathLike[str]]) -> str:
+        try:
+            path = fspath(value)
+        except TypeError:
+            raise TypeError(f"serializers.{self.name}() requires a filesystem path") from None
+        if not isinstance(path, str):
+            raise TypeError(f"serializers.{self.name}() requires a text filesystem path")
+        return path
 
 
-class serializers:
-    # Python does not have automatic casts. The C++ serializers accept a stream_or_filename
-    # which in C++ can be automatically constructed from a filename string. In Python we
-    # have to implement this cast/construction explicitly by transform_string.
-    @staticmethod
-    def obj(
-        out_filename: Union[str, serializers.buffer],
-        mtl_filename: Union[str, serializers.buffer],
-        geometry_settings: settings,
-        settings: serializer_settings,
-    ) -> ifcopenshell_wrapper.WaveFrontOBJSerializer:
-        out_filename = transform_string(out_filename)
-        mtl_filename = transform_string(mtl_filename)
-        return ifcopenshell_wrapper.WaveFrontOBJSerializer(out_filename, mtl_filename, geometry_settings, settings)
+class _serializers_meta(type):
+    _extensions = {
+        "obj": "obj",
+        "svg": "svg",
+        "ttl": "ttl",
+        "gltf": "glb",
+        "glb": "glb",
+        "hdf": "h5",
+        "hdf5": "h5",
+        "h5": "h5",
+        "collada": "dae",
+        "dae": "dae",
+        "stp": "stp",
+        "step": "stp",
+        "igs": "igs",
+        "iges": "igs",
+        "usd": "usd",
+        "usda": "usd",
+        "usdc": "usd",
+    }
 
-    @staticmethod
-    def svg(
-        out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
-    ) -> ifcopenshell_wrapper.SvgSerializer:
-        out_filename = transform_string(out_filename)
-        return ifcopenshell_wrapper.SvgSerializer(out_filename, geometry_settings, settings)
+    def __getattr__(cls, name: str) -> _serializer_factory:
+        extension = cls._extensions.get(name)
+        if extension is None:
+            raise AttributeError(f"type object 'serializers' has no attribute '{name}'")
+        factory = _serializer_factory(name, extension)
+        setattr(cls, name, factory)
+        return factory
 
-    # Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
-    # so no wrap_buffer_creation() for these serializers
-    # xml = ifcopenshell_wrapper.XmlSerializer
+    def __dir__(cls) -> list[str]:
+        return sorted(set(super().__dir__()) | set(cls._extensions))
+
+
+class serializers(metaclass=_serializers_meta):
     buffer = ifcopenshell_wrapper.buffer
-    # gltf, hdf5, collada and json availability depend on IfcOpenShell configuration settings
-    try:
-        gltf = ifcopenshell_wrapper.GltfSerializer
-    except:
-        pass
-    try:
-        hdf5 = ifcopenshell_wrapper.HdfSerializer
-    except:
-        pass
-    try:
-        collada = ifcopenshell_wrapper.ColladaSerializer
-    except:
-        pass
-    try:
-        json = ifcopenshell_wrapper.JsonSerializer
-    except:
-        pass
-    # ttl is always available since it doesn't depend on any C++ libraries,
-    # just people might be using an outdated binary
-    if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
-
-        @staticmethod
-        def ttl(
-            out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
-        ) -> ifcopenshell_wrapper.SvgSerializer:
-            out_filename = transform_string(out_filename)
-            return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)
 
     @classmethod
     def guess_from_extension(cls, filepath: str):
-        ext = filepath.split(".")[-1]
+        ext = filepath.rsplit(".", 1)[-1].lower()
         mapping = {
             "glb": "gltf",
             "hdf": "hdf5",
@@ -701,8 +717,14 @@ class serializers:
             "obj": "obj",
             "svg": "svg",
             "ttl": "ttl",
-            "xml": "xml",
             "dae": "collada",
+            "stp": "stp",
+            "step": "step",
+            "igs": "igs",
+            "iges": "iges",
+            "usd": "usd",
+            "usda": "usda",
+            "usdc": "usdc",
         }
         serializer_name = mapping.get(ext)
         if not serializer_name:

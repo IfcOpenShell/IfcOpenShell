@@ -638,10 +638,27 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %newobject construct_iterator_with_include_exclude;
 %newobject construct_iterator_with_include_exclude_globalid;
 %newobject construct_iterator_with_include_exclude_id;
+%newobject create_geometry_serializer;
 
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
+	GeometrySerializer* create_geometry_serializer(
+		const std::string& extension,
+		const std::string& output_filename,
+		const std::string& output_temp_filename,
+		ifcopenshell::geometry::Settings& geometry_settings,
+		const ifcopenshell::geometry::SerializerSettings& serializer_settings
+	) {
+		return new PythonPluginGeometrySerializer(
+			extension,
+			output_filename,
+			output_temp_filename,
+			geometry_settings,
+			serializer_settings
+		);
+	}
+
 	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, int num_threads) {
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, num_threads);
 	}
