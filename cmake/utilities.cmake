@@ -69,6 +69,47 @@ function(ifcopenshell_wasm_plugin_link_options TARGET REGISTRATION_SYMBOL)
     endforeach()
 endfunction()
 
+function(ifcopenshell_deploy_qt_runtime TARGET)
+    if(NOT IFCOPENSHELL_DEPLOY_QT_RUNTIME)
+        return()
+    endif()
+
+    if(NOT TARGET ${TARGET})
+        message(FATAL_ERROR "Cannot deploy Qt runtime for unknown target '${TARGET}'.")
+    endif()
+
+    get_target_property(target_type ${TARGET} TYPE)
+    if(NOT target_type STREQUAL "EXECUTABLE")
+        message(FATAL_ERROR "Qt runtime deployment target '${TARGET}' is not an executable.")
+    endif()
+
+    set(deploy_args
+        TARGET ${TARGET}
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+
+    if(NOT IFCOPENSHELL_DEPLOY_QT_TRANSLATIONS)
+        list(APPEND deploy_args NO_TRANSLATIONS)
+    endif()
+
+    list(APPEND deploy_args ${ARGN})
+
+    if(COMMAND qt_generate_deploy_app_script)
+        qt_generate_deploy_app_script(${deploy_args})
+    elseif(COMMAND qt6_generate_deploy_app_script)
+        qt6_generate_deploy_app_script(${deploy_args})
+    else()
+        message(WARNING
+            "Qt runtime deployment requested for '${TARGET}', but this Qt version "
+            "does not provide qt_generate_deploy_app_script()."
+        )
+        return()
+    endif()
+
+    install(SCRIPT ${deploy_script})
+endfunction()
+
 # Get a list of all OPTION flags from the CMakeLists.txt and store in an output LIST
 function(get_all_option_flags output_list)
     # Read the contents of the CMakeLists.txt

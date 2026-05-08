@@ -34,3 +34,4 @@ set_target_properties(IfcViewerFull PROPERTIES
 target_link_libraries(IfcViewerFull PRIVATE IfcViewer)
 
 install(TARGETS IfcViewerFull EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+ifcopenshell_deploy_qt_runtime(IfcViewerFull)

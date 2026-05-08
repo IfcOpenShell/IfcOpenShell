@@ -101,3 +101,4 @@ get_target_property(targetIncludeDirs ${targetName} INCLUDE_DIRECTORIES)
 message(STATUS "target_include_directories: ${targetIncludeDirs}")
 
 install(TARGETS ${targetName})
+ifcopenshell_deploy_qt_runtime(${targetName})

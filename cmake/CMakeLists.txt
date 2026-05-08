@@ -75,6 +75,17 @@ option(BUILD_IFCVIEWER "Build IfcViewer, a high-performance IFC viewer" OFF) # R
 option(BUILD_IFCVIEWER_TESTS "Build unit tests for IfcViewer (fetches Catch2 v3)" OFF)
 option(BUILD_PACKAGE "" OFF)
 
+option(
+    IFCOPENSHELL_DEPLOY_QT_RUNTIME
+    "Deploy Qt runtime dependencies for installed Qt applications."
+    ON
+)
+option(
+    IFCOPENSHELL_DEPLOY_QT_TRANSLATIONS
+    "Deploy Qt translation catalogs with installed Qt applications."
+    OFF
+)
+
 option(WITH_OPENCASCADE "Enable geometry interpretation using Open CASCADE" ON)
 option(WITH_CGAL "Enable geometry interpretation using CGAL" ON)
 option(WITH_MANIFOLD "Enable geometry interpretation using Manifold" OFF)

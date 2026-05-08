@@ -34,3 +34,4 @@ set_target_properties(IfcViewerMinimal PROPERTIES
 target_link_libraries(IfcViewerMinimal PRIVATE IfcViewer)
 
 install(TARGETS IfcViewerMinimal EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+ifcopenshell_deploy_qt_runtime(IfcViewerMinimal)
