@@ -63,6 +63,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/project/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/panels/project/Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Types.h

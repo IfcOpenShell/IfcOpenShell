@@ -100,6 +100,10 @@ void SessionState::notifyProjectOpened(const QString& path) {
     emit projectOpened(path);
 }
 
+void SessionState::notifyProjectSaved(const QString& path) {
+    emit projectSaved(path);
+}
+
 void SessionState::notifyProjectReset() {
     emit projectReset();
 }

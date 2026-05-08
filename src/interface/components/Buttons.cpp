@@ -32,15 +32,14 @@ namespace ifcinterface::components::buttons {
 
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
-                        QWidget* parent,
-                        const QSize& minimum_size) {
+                        QWidget* parent) {
     auto* button = new QToolButton(parent);
     button->setObjectName("ribbonButton");
     button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     button->setIcon(components::icons::makeTintedSvgIcon(icon_path));
     button->setIconSize(QSize(20, 20));
     button->setText(text);
-    button->setMinimumSize(minimum_size);
+    button->setMinimumSize(QSize(90, 68));
     button->setAutoRaise(false);
     return button;
 }
