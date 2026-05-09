@@ -18,33 +18,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
-#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#include "Panel.h"
 
-#include "../../components/Dialog.h"
+#include "../../components/Section.h"
 
-namespace ifcinterface::panels::add_model {
+#include <QLabel>
+#include <QVBoxLayout>
 
-enum class SourceMode {
-    None,
-    IfcFile,
-    IfcDatabase,
-    GeometryOnly,
-};
+namespace ifcinterface::modules::todo {
 
-class AddModelDialog : public components::Dialog {
-    Q_OBJECT
-public:
-    explicit AddModelDialog(QWidget* parent = nullptr);
+TodoPanel::TodoPanel(const QString& title, QWidget* parent)
+    : QWidget(parent)
+{
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
-    SourceMode selectedMode() const { return selected_mode_; }
+    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
 
-private:
-    void setupUi();
+    auto* body = new QWidget(section);
+    auto* body_layout = new QVBoxLayout(body);
+    body_layout->setContentsMargins(0, 12, 0, 12);
+    body_layout->setSpacing(12);
 
-    SourceMode selected_mode_ = SourceMode::None;
-};
+    auto* heading = new QLabel(title, body);
 
-} // namespace ifcinterface::panels::add_model
+    auto* content = new QLabel("Coming soon", body);
+    content->setProperty("textRole", "disabled");
+    content->setAlignment(Qt::AlignCenter);
 
-#endif
+    body_layout->addWidget(heading);
+    body_layout->addStretch(1);
+    body_layout->addWidget(content);
+    body_layout->addStretch(1);
+
+    section->addBodyWidget(body);
+    layout->addWidget(section);
+}
+
+} // namespace ifcinterface::modules::todo

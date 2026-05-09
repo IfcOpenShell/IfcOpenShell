@@ -18,7 +18,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Widget.h"
+#include "Panel.h"
 
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
@@ -27,9 +27,9 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
-namespace ifcinterface::panels::spatial_hierarchy {
+namespace ifcinterface::modules::spatial_hierarchy {
 
-SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
+SpatialHierarchyPanel::SpatialHierarchyPanel(QWidget* parent)
     : components::Panel("Spatial Hierarchy", nullptr, parent)
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
@@ -54,7 +54,7 @@ SpatialHierarchyPanelWidget::SpatialHierarchyPanelWidget(QWidget* parent)
     });
 }
 
-void SpatialHierarchyPanelWidget::setNodes(const QList<TreeNode>& nodes) {
+void SpatialHierarchyPanel::setNodes(const QList<TreeNode>& nodes) {
     tree_->clear();
     for (const auto& node : nodes) {
         addNode(tree_->invisibleRootItem(), node);
@@ -62,7 +62,7 @@ void SpatialHierarchyPanelWidget::setNodes(const QList<TreeNode>& nodes) {
     tree_->expandAll();
 }
 
-void SpatialHierarchyPanelWidget::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
+void SpatialHierarchyPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
     auto* item = new QTreeWidgetItem(parent, {node.name, ""});
     item->setData(1, Qt::UserRole, node.visible);
     item->setSizeHint(0, QSize(0, 24));
@@ -73,7 +73,7 @@ void SpatialHierarchyPanelWidget::addNode(QTreeWidgetItem* parent, const TreeNod
     }
 }
 
-NodePath SpatialHierarchyPanelWidget::itemPath(QTreeWidgetItem* item) const {
+NodePath SpatialHierarchyPanel::itemPath(QTreeWidgetItem* item) const {
     NodePath path;
     while (item) {
         path.prepend(item->text(0));
@@ -82,7 +82,7 @@ NodePath SpatialHierarchyPanelWidget::itemPath(QTreeWidgetItem* item) const {
     return path;
 }
 
-QString SpatialHierarchyPanelWidget::iconPath(ItemKind kind) const {
+QString SpatialHierarchyPanel::iconPath(ItemKind kind) const {
     switch (kind) {
     case ItemKind::Site: return ":/icons/frame-alt.svg";
     case ItemKind::Building: return ":/icons/city.svg";
@@ -92,4 +92,4 @@ QString SpatialHierarchyPanelWidget::iconPath(ItemKind kind) const {
     return ":/icons/frame-alt.svg";
 }
 
-} // namespace ifcinterface::panels::spatial_hierarchy
+} // namespace ifcinterface::modules::spatial_hierarchy

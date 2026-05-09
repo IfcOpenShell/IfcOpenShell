@@ -34,16 +34,16 @@ class SceneLoader;
 namespace ifcinterface { class ElementRegistry; }
 namespace ifcinterface { class SessionState; }
 namespace ifcinterface::components { class TabBar; }
-namespace ifcinterface::panels::models { class ModelsPanelController; }
-namespace ifcinterface::panels::models { class ModelsPanelWidget; }
-namespace ifcinterface::panels::models { class ModelsPanelView; }
-namespace ifcinterface::panels::project { class ProjectController; }
-namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelWidget; }
-namespace ifcinterface::panels::spatial_hierarchy { class SpatialHierarchyPanelView; }
-namespace ifcinterface::panels::properties { class PropertiesPanelWidget; }
-namespace ifcinterface::panels::properties { class PropertiesPanelView; }
-namespace ifcinterface::panels::viewport { class ViewportController; }
-namespace ifcinterface::panels::viewport { class ViewportWidget; }
+namespace ifcinterface::modules::models { class ModelsPanelController; }
+namespace ifcinterface::modules::models { class ModelsPanel; }
+namespace ifcinterface::modules::models { class ModelsPanelView; }
+namespace ifcinterface::modules::project { class ProjectController; }
+namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanel; }
+namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
+namespace ifcinterface::modules::properties { class PropertiesPanel; }
+namespace ifcinterface::modules::properties { class PropertiesPanelView; }
+namespace ifcinterface::modules::viewport { class ViewportController; }
+namespace ifcinterface::modules::viewport { class ViewportPanel; }
 
 namespace ifcinterface::shell {
 
@@ -73,26 +73,26 @@ private:
     QLabel* status_perf_label_ = nullptr;
     ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
-    ifcinterface::panels::viewport::ViewportWidget* viewport_widget_ = nullptr;
-    ifcinterface::panels::viewport::ViewportController* viewport_controller_ = nullptr;
+    ifcinterface::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
+    ifcinterface::modules::viewport::ViewportController* viewport_controller_ = nullptr;
     SceneLoader* loader_ = nullptr;
     ifcinterface::ElementRegistry* element_registry_ = nullptr;
     ifcinterface::SessionState* session_state_ = nullptr;
-    ifcinterface::panels::models::ModelsPanelWidget* models_panel_ = nullptr;
-    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelWidget* spatial_panel_ = nullptr;
+    ifcinterface::modules::models::ModelsPanel* models_panel_ = nullptr;
+    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;
-    ifcinterface::panels::properties::PropertiesPanelWidget* properties_panel_ = nullptr;
+    ifcinterface::modules::properties::PropertiesPanel* properties_panel_ = nullptr;
     QDockWidget* stored_views_panel_ = nullptr;
     QDockWidget* search_panel_ = nullptr;
     QDockWidget* spreadsheet_panel_ = nullptr;
     QDockWidget* audit_panel_ = nullptr;
     QDockWidget* clash_panel_ = nullptr;
     QDockWidget* issues_panel_ = nullptr;
-    ifcinterface::panels::models::ModelsPanelController* models_controller_ = nullptr;
-    ifcinterface::panels::models::ModelsPanelView* models_view_ = nullptr;
-    ifcinterface::panels::project::ProjectController* project_controller_ = nullptr;
-    ifcinterface::panels::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
-    ifcinterface::panels::properties::PropertiesPanelView* properties_view_ = nullptr;
+    ifcinterface::modules::models::ModelsPanelController* models_controller_ = nullptr;
+    ifcinterface::modules::models::ModelsPanelView* models_view_ = nullptr;
+    ifcinterface::modules::project::ProjectController* project_controller_ = nullptr;
+    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
+    ifcinterface::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
 };
 
 } // namespace ifcinterface::shell

@@ -20,15 +20,15 @@
 
 #include "View.h"
 
-#include "Widget.h"
+#include "Panel.h"
 
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/AppSettings.h"
 
-namespace ifcinterface::panels::properties {
+namespace ifcinterface::modules::properties {
 
-PropertiesPanelView::PropertiesPanelView(PropertiesPanelWidget* widget,
+PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
                                          ifcinterface::SessionState* session_state,
                                          QObject* parent)
     : QObject(parent), widget_(widget), session_state_(session_state)
@@ -120,4 +120,4 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
     widget_->render(state);
 }
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::modules::properties

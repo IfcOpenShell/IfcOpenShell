@@ -32,15 +32,15 @@
 #include <QFileInfo>
 #include <QMessageBox>
 
-namespace ifcinterface::panels::project {
+namespace ifcinterface::modules::project {
 
 ProjectController::ProjectController(QWidget* host,
                                      Federation* federation,
                                      ifcinterface::SessionState* session_state,
                                      ifcinterface::ElementRegistry* element_registry,
                                      ViewportWindow* viewport,
-                                     ifcinterface::panels::models::ModelsPanelController* models_controller,
-                                     ifcinterface::panels::viewport::ViewportController* viewport_controller,
+                                     ifcinterface::modules::models::ModelsPanelController* models_controller,
+                                     ifcinterface::modules::viewport::ViewportController* viewport_controller,
                                      QObject* parent)
     : QObject(parent)
     , host_(host)
@@ -204,4 +204,4 @@ bool ProjectController::confirmDiscardIfDirty() {
     return true;
 }
 
-} // namespace ifcinterface::panels::project
+} // namespace ifcinterface::modules::project

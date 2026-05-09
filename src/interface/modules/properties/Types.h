@@ -18,39 +18,43 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELWIDGET_H
+#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELTYPES_H
+#define IFCINTERFACE_PANELS_PROPERTIESPANELTYPES_H
 
-#include "Types.h"
-
-#include "../../components/Panel.h"
-
+#include <QList>
+#include <QPair>
 #include <QString>
 
-class QLabel;
-class QLineEdit;
-class QToolButton;
+namespace ifcinterface::modules::properties {
 
-namespace ifcinterface::panels::properties {
-
-class PropertiesPanelWidget : public components::Panel {
-    Q_OBJECT
-public:
-    explicit PropertiesPanelWidget(QWidget* parent = nullptr);
-
-    void render(const PropertiesPanelState& state);
-
-private:
-    bool attributes_expanded_ = true;
-    bool relationships_expanded_ = true;
-    bool properties_expanded_ = true;
-    bool quantities_expanded_ = true;
-    bool properties_filter_visible_ = false;
-    bool quantities_filter_visible_ = false;
-    QString properties_filter_text_;
-    QString quantities_filter_text_;
+struct KeyValueRow {
+    QString key;
+    QString value;
 };
 
-} // namespace ifcinterface::panels::properties
+struct RelationshipRow {
+    QString key;
+    QString value;
+};
+
+struct PropertySet {
+    QString title;
+    QList<KeyValueRow> rows;
+};
+
+struct EntitySummary {
+    QString entity_class;
+    QString predefined_type;
+};
+
+struct PropertiesPanelState {
+    EntitySummary entity;
+    QList<KeyValueRow> attributes;
+    QList<RelationshipRow> relationships;
+    QList<PropertySet> property_sets;
+    QList<PropertySet> quantity_sets;
+};
+
+} // namespace ifcinterface::modules::properties
 
 #endif

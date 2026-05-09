@@ -18,31 +18,19 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELTYPES_H
-#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELTYPES_H
+#ifndef IFCINTERFACE_MODULES_TODO_PANEL_H
+#define IFCINTERFACE_MODULES_TODO_PANEL_H
 
-#include <QList>
-#include <QString>
-#include <QStringList>
+#include <QWidget>
 
-namespace ifcinterface::panels::spatial_hierarchy {
+namespace ifcinterface::modules::todo {
 
-enum class ItemKind {
-    Site,
-    Building,
-    Storey,
-    Space,
+class TodoPanel : public QWidget {
+    Q_OBJECT
+public:
+    explicit TodoPanel(const QString& title, QWidget* parent = nullptr);
 };
 
-struct TreeNode {
-    QString name;
-    ItemKind kind = ItemKind::Space;
-    bool visible = true;
-    QList<TreeNode> children;
-};
-
-using NodePath = QStringList;
-
-} // namespace ifcinterface::panels::spatial_hierarchy
+} // namespace ifcinterface::modules::todo
 
 #endif

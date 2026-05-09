@@ -20,11 +20,11 @@
 
 #include "View.h"
 
-#include "Widget.h"
+#include "Panel.h"
 
 #include "../../SessionState.h"
 
-namespace ifcinterface::panels::spatial_hierarchy {
+namespace ifcinterface::modules::spatial_hierarchy {
 
 namespace {
 
@@ -39,7 +39,7 @@ TreeNode* findNodeRecursive(QList<TreeNode>& nodes, const NodePath& path, int de
 
 } // namespace
 
-SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget,
+SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanel* widget,
                                                      ifcinterface::SessionState* session_state,
                                                      QObject* parent)
     : QObject(parent), widget_(widget), session_state_(session_state)
@@ -52,7 +52,7 @@ SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanelWidget
               {"Core", ItemKind::Space, true, {}}}}}}}},
     };
 
-    connect(widget_, &SpatialHierarchyPanelWidget::visibilityToggleRequested, this, [this](const NodePath& path) {
+    connect(widget_, &SpatialHierarchyPanel::visibilityToggleRequested, this, [this](const NodePath& path) {
         if (auto* node = findNode(path)) {
             node->visible = !node->visible;
             reload();
@@ -72,4 +72,4 @@ TreeNode* SpatialHierarchyPanelView::findNode(const NodePath& path) {
     return findNodeRecursive(nodes_, path, 0);
 }
 
-} // namespace ifcinterface::panels::spatial_hierarchy
+} // namespace ifcinterface::modules::spatial_hierarchy

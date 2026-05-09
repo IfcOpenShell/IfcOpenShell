@@ -18,42 +18,36 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Widget.h"
+#ifndef IFCINTERFACE_MODULES_SPATIAL_HIERARCHY_PANEL_H
+#define IFCINTERFACE_MODULES_SPATIAL_HIERARCHY_PANEL_H
 
-#include "../../components/Section.h"
+#include "Types.h"
 
-#include <QLabel>
-#include <QVBoxLayout>
+#include "../../components/Panel.h"
 
-namespace ifcinterface::panels::todo {
+class QTreeWidget;
+class QTreeWidgetItem;
 
-TodoPanelWidget::TodoPanelWidget(const QString& title, QWidget* parent)
-    : QWidget(parent)
-{
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
+namespace ifcinterface::modules::spatial_hierarchy {
 
-    auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
+class SpatialHierarchyPanel : public components::Panel {
+    Q_OBJECT
+public:
+    explicit SpatialHierarchyPanel(QWidget* parent = nullptr);
 
-    auto* body = new QWidget(section);
-    auto* body_layout = new QVBoxLayout(body);
-    body_layout->setContentsMargins(0, 12, 0, 12);
-    body_layout->setSpacing(12);
+    void setNodes(const QList<TreeNode>& nodes);
 
-    auto* heading = new QLabel(title, body);
+signals:
+    void visibilityToggleRequested(const NodePath& path);
 
-    auto* content = new QLabel("Coming soon", body);
-    content->setProperty("textRole", "disabled");
-    content->setAlignment(Qt::AlignCenter);
+private:
+    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
+    NodePath itemPath(QTreeWidgetItem* item) const;
+    QString iconPath(ItemKind kind) const;
 
-    body_layout->addWidget(heading);
-    body_layout->addStretch(1);
-    body_layout->addWidget(content);
-    body_layout->addStretch(1);
+    QTreeWidget* tree_ = nullptr;
+};
 
-    section->addBodyWidget(body);
-    layout->addWidget(section);
-}
+} // namespace ifcinterface::modules::spatial_hierarchy
 
-} // namespace ifcinterface::panels::todo
+#endif

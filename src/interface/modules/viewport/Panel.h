@@ -18,43 +18,28 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELTYPES_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELTYPES_H
+#ifndef IFCINTERFACE_MODULES_VIEWPORT_PANEL_H
+#define IFCINTERFACE_MODULES_VIEWPORT_PANEL_H
 
-#include <QList>
-#include <QPair>
-#include <QString>
+#include <QWidget>
 
-namespace ifcinterface::panels::properties {
+class ViewportWindow;
 
-struct KeyValueRow {
-    QString key;
-    QString value;
+namespace ifcinterface::modules::viewport {
+
+class ViewportPanel : public QWidget {
+    Q_OBJECT
+
+public:
+    explicit ViewportPanel(QWidget* parent = nullptr);
+
+    ViewportWindow* viewport() const { return viewport_; }
+
+private:
+    ViewportWindow* viewport_ = nullptr;
+    QWidget* viewport_container_ = nullptr;
 };
 
-struct RelationshipRow {
-    QString key;
-    QString value;
-};
-
-struct PropertySet {
-    QString title;
-    QList<KeyValueRow> rows;
-};
-
-struct EntitySummary {
-    QString entity_class;
-    QString predefined_type;
-};
-
-struct PropertiesPanelState {
-    EntitySummary entity;
-    QList<KeyValueRow> attributes;
-    QList<RelationshipRow> relationships;
-    QList<PropertySet> property_sets;
-    QList<PropertySet> quantity_sets;
-};
-
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::modules::viewport
 
 #endif

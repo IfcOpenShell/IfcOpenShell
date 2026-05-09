@@ -28,7 +28,7 @@
 
 #include <Eigen/Dense>
 
-namespace ifcinterface::panels::viewport {
+namespace ifcinterface::modules::viewport {
 
 ViewportController::ViewportController(ifcinterface::SessionState* session_state,
                                        ViewportWindow* viewport,
@@ -191,4 +191,4 @@ void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
         AppSettings::instance().applyCoordinateOperation()));
 }
 
-} // namespace ifcinterface::panels::viewport
+} // namespace ifcinterface::modules::viewport

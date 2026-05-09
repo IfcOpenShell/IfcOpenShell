@@ -18,28 +18,32 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_VIEWPORT_WIDGET_H
-#define IFCINTERFACE_PANELS_VIEWPORT_WIDGET_H
+#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
+#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
 
-#include <QWidget>
+#include "Types.h"
 
-class ViewportWindow;
+#include <QObject>
 
-namespace ifcinterface::panels::viewport {
+namespace ifcinterface { class SessionState; }
+namespace ifcinterface::modules::properties {
 
-class ViewportWidget : public QWidget {
+class PropertiesPanel;
+
+class PropertiesPanelView : public QObject {
     Q_OBJECT
-
 public:
-    explicit ViewportWidget(QWidget* parent = nullptr);
-
-    ViewportWindow* viewport() const { return viewport_; }
+    explicit PropertiesPanelView(PropertiesPanel* widget,
+                                 ifcinterface::SessionState* session_state,
+                                 QObject* parent = nullptr);
 
 private:
-    ViewportWindow* viewport_ = nullptr;
-    QWidget* viewport_container_ = nullptr;
+    void refresh(uint32_t object_id);
+
+    PropertiesPanel* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::viewport
+} // namespace ifcinterface::modules::properties
 
 #endif

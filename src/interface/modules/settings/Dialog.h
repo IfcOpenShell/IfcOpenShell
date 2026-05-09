@@ -18,34 +18,42 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
-#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
+#ifndef IFCINTERFACE_PANELS_SETTINGSDIALOG_H
+#define IFCINTERFACE_PANELS_SETTINGSDIALOG_H
 
-#include "Types.h"
+#include "../../components/Dialog.h"
 
-#include <QObject>
+class QCheckBox;
+class QDoubleSpinBox;
+class QLineEdit;
+class QShowEvent;
+class QSpinBox;
 
-namespace ifcinterface { class SessionState; }
-namespace ifcinterface::panels::spatial_hierarchy {
+namespace ifcinterface::modules::settings {
 
-class SpatialHierarchyPanelWidget;
-
-class SpatialHierarchyPanelView : public QObject {
+class SettingsDialog : public components::Dialog {
     Q_OBJECT
 public:
-    explicit SpatialHierarchyPanelView(SpatialHierarchyPanelWidget* widget,
-                                       ifcinterface::SessionState* session_state,
-                                       QObject* parent = nullptr);
+    explicit SettingsDialog(QWidget* parent = nullptr);
+
+protected:
+    void showEvent(QShowEvent* event) override;
 
 private:
-    void reload();
-    TreeNode* findNode(const NodePath& path);
+    void setupUi();
+    void syncFromSettings();
+    void onAccepted();
 
-    SpatialHierarchyPanelWidget* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
-    QList<TreeNode> nodes_;
+    QLineEdit* geometry_library_edit_ = nullptr;
+    QCheckBox* show_stats_check_ = nullptr;
+    QCheckBox* backface_culling_check_ = nullptr;
+    QCheckBox* load_data_source_checkbox_ = nullptr;
+    QCheckBox* apply_coordinate_operation_check_ = nullptr;
+    QSpinBox* void_limit_spin_ = nullptr;
+    QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
+    QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::spatial_hierarchy
+} // namespace ifcinterface::modules::settings
 
 #endif
