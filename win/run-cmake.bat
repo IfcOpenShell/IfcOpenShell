@@ -127,6 +127,7 @@ set USD_INSTALL_DIR=%INSTALL_DIR%\usd
 set ROCKSDB_INSTALL_DIR=%INSTALL_DIR%\rocksdb
 set ZSTD_INSTALL_DIR=%INSTALL_DIR%\zstd
 if not defined QT_DIR if defined QT6_INSTALL_DIR set QT_DIR=%QT6_INSTALL_DIR%
+if not defined QT_HOST_PATH if defined QT6_HOST_INSTALL_DIR set QT_HOST_PATH=%QT6_HOST_INSTALL_DIR%
 
 echo.
 call cecho.cmd 0 10 "Script configuration:"
@@ -161,6 +162,7 @@ echo    USD_INSTALL_DIR         = %USD_INSTALL_DIR%
 echo    ROCKSDB_INSTALL_DIR     = %ROCKSDB_INSTALL_DIR%
 echo    ZSTD_INSTALL_DIR        = %ZSTD_INSTALL_DIR%
 echo    QT_DIR                  = %QT_DIR%
+echo    QT_HOST_PATH            = %QT_HOST_PATH%
 echo    CCACHE_INSTALL_DIR      = %CCACHE_INSTALL_DIR%
 echo.
 echo    CMAKE_INSTALL_PREFIX    = %CMAKE_INSTALL_PREFIX%
@@ -181,6 +183,8 @@ if defined QT_DIR set CMAKE_PREFIX_PATH=%CMAKE_PREFIX_PATH%;%QT_DIR%
 
 set QT_DIR_OPTION=
 if defined QT_DIR set QT_DIR_OPTION=-DQT_DIR="%QT_DIR%"
+set QT_HOST_PATH_OPTION=
+if defined QT_HOST_PATH set QT_HOST_PATH_OPTION=-DQT_HOST_PATH="%QT_HOST_PATH%"
 
 :: Not fully supported - not available from install-ifcopenshell
 :: and some logs are still showing Visual Studio generators.
@@ -202,6 +206,7 @@ cmake.exe %CMAKELISTS_DIR% -G %GENERATOR% %ARCH_OPTION% %VS_TOOLSET_OPTION% ^
     -DWITH_ROCKSDB=On -DWITH_ZSTD=On ^
     -DCMAKE_PREFIX_PATH="%CMAKE_PREFIX_PATH%" ^
     %QT_DIR_OPTION% ^
+    %QT_HOST_PATH_OPTION% ^
     -DADD_COMMIT_SHA=%ADD_COMMIT_SHA% -DVERSION_OVERRIDE=%VERSION_OVERRIDE% ^
     %ARGUMENTS%
 

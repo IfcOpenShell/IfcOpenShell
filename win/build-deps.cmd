@@ -751,6 +751,8 @@ IF /I "%VS_TOOLSET%"=="v145" set QT6_MSVC_YEAR=2026
 
 set QT6_ARCH=
 set QT6_INSTALL_SUFFIX=
+set QT6_HOST_ARCH=
+set QT6_HOST_INSTALL_SUFFIX=
 IF /I "%TARGET_ARCH%"=="x64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
@@ -758,6 +760,12 @@ IF /I "%TARGET_ARCH%"=="x64" (
 IF /I "%TARGET_ARCH%"=="arm64" (
     set QT6_ARCH=win64_msvc%QT6_MSVC_YEAR%_arm64_cross_compiled
     set QT6_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_arm64
+    REM Qt publishes Windows ARM64 packages as cross-compiled Qt. Even on the
+    REM windows-11-arm runner, Qt CMake requires host tools such as moc/rcc.
+    REM Use the x64 host tools; Windows 11 on Arm runs them through x64
+    REM emulation while cl.exe still builds ARM64 binaries against target Qt.
+    set QT6_HOST_ARCH=win64_msvc%QT6_MSVC_YEAR%_64
+    set QT6_HOST_INSTALL_SUFFIX=msvc%QT6_MSVC_YEAR%_64
 )
 
 IF "%QT6_ARCH%"=="" (
@@ -769,6 +777,14 @@ set DEPENDENCY_INSTALL_NAME=qt6-%QT6_VERSION%-%QT6_INSTALL_SUFFIX%
 set QT6_AQT_OUTPUT_DIR=%INSTALL_DIR%\%DEPENDENCY_INSTALL_NAME%
 set QT6_INSTALL_DIR=%QT6_AQT_OUTPUT_DIR%\%QT6_VERSION%\%QT6_INSTALL_SUFFIX%
 set QT_DIR=%QT6_INSTALL_DIR%
+set QT6_HOST_AQT_OUTPUT_DIR=
+set QT6_HOST_INSTALL_DIR=
+set QT_HOST_PATH=
+IF NOT "%QT6_HOST_INSTALL_SUFFIX%"=="" (
+    set QT6_HOST_AQT_OUTPUT_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%
+    set QT6_HOST_INSTALL_DIR=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
+    set QT_HOST_PATH=%INSTALL_DIR%\qt6-%QT6_VERSION%-%QT6_HOST_INSTALL_SUFFIX%\%QT6_VERSION%\%QT6_HOST_INSTALL_SUFFIX%
+)
 set QT6_CONFIG_DLL=Qt6Core.dll
 IF /I "%BUILD_CFG%"=="Debug" (
     set QT6_CONFIG_DLL=Qt6Cored.dll
@@ -782,12 +798,22 @@ IF NOT "%IFCOS_INSTALL_QT6%"=="TRUE" (
 
 echo QT6_INSTALL_DIR=%QT6_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 echo QT_DIR=%QT_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+IF DEFINED QT6_HOST_INSTALL_DIR (
+    echo QT6_HOST_INSTALL_DIR=%QT6_HOST_INSTALL_DIR%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+    echo QT_HOST_PATH=%QT_HOST_PATH%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
+)
 
-call :CheckInstallation
-if %ERRORLEVEL%==200 GOTO %NEXT_DEPENDENCY_LABEL%
+set QT6_TARGET_INSTALLED=FALSE
+IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" set QT6_TARGET_INSTALLED=TRUE
+set QT6_HOST_INSTALLED=TRUE
+IF DEFINED QT6_HOST_INSTALL_DIR (
+    set QT6_HOST_INSTALLED=FALSE
+    IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" set QT6_HOST_INSTALLED=TRUE
+)
 
-IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
+IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
     echo Found existing "%QT6_INSTALL_DIR%" for %BUILD_CFG%, skipping
+    IF DEFINED QT6_HOST_INSTALL_DIR echo Found existing Qt host tools at "%QT6_HOST_INSTALL_DIR%", skipping
     call :MarkInstallation
     goto :Successful
 )
@@ -798,8 +824,17 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" IF EXIST "%PYTHONHOME%\python.exe" set AQT_P
 %AQT_PYTHON% -m pip install --upgrade aqtinstall
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
-%AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase
-IF NOT %ERRORLEVEL%==0 GOTO :Error
+IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
+    %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase
+    IF ERRORLEVEL 1 GOTO :Error
+)
+
+IF DEFINED QT6_HOST_INSTALL_DIR (
+    IF NOT "%QT6_HOST_INSTALLED%"=="TRUE" (
+        %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_HOST_ARCH% -O "%QT6_HOST_AQT_OUTPUT_DIR%" --archives qtbase
+        IF ERRORLEVEL 1 GOTO :Error
+    )
+)
 
 IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
     call cecho.cmd 0 12 "Qt6 installation did not produce Qt6Config.cmake at %QT6_INSTALL_DIR%."
@@ -809,6 +844,21 @@ IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
 IF NOT EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
     call cecho.cmd 0 12 "Qt6 installation did not produce %BUILD_CFG% runtime %QT6_CONFIG_DLL% at %QT6_INSTALL_DIR%\bin."
     GOTO :Error
+)
+
+IF DEFINED QT6_HOST_INSTALL_DIR (
+    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce Qt6Config.cmake at %QT6_HOST_INSTALL_DIR%."
+        GOTO :Error
+    )
+    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce moc.exe at %QT6_HOST_INSTALL_DIR%\bin."
+        GOTO :Error
+    )
+    IF NOT EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" (
+        call cecho.cmd 0 12 "Qt6 host installation did not produce rcc.exe at %QT6_HOST_INSTALL_DIR%\bin."
+        GOTO :Error
+    )
 )
 
 call :MarkInstallation
