@@ -30,18 +30,18 @@
 #include "components/Panel.h"
 #include "components/Style.h"
 #include "components/Tabs.h"
-#include "panels/models/Controller.h"
-#include "panels/todo/Widget.h"
-#include "panels/models/View.h"
-#include "panels/models/Widget.h"
-#include "panels/project/Controller.h"
-#include "panels/properties/View.h"
-#include "panels/properties/Widget.h"
-#include "panels/settings/Dialog.h"
-#include "panels/spatial_hierarchy/View.h"
-#include "panels/spatial_hierarchy/Widget.h"
-#include "panels/viewport/Controller.h"
-#include "panels/viewport/Widget.h"
+#include "modules/models/Controller.h"
+#include "modules/todo/Panel.h"
+#include "modules/models/View.h"
+#include "modules/models/Panel.h"
+#include "modules/project/Controller.h"
+#include "modules/properties/View.h"
+#include "modules/properties/Panel.h"
+#include "modules/settings/Dialog.h"
+#include "modules/spatial_hierarchy/View.h"
+#include "modules/spatial_hierarchy/Panel.h"
+#include "modules/viewport/Controller.h"
+#include "modules/viewport/Panel.h"
 
 #include <QDockWidget>
 #include <QFileInfo>
@@ -152,7 +152,7 @@ QWidget* MainWindow::buildHomeRibbonPage() {
 
     auto* settings_button = components::buttons::makeButton("Settings", ":/icons/settings.svg", this);
     connect(settings_button, &QToolButton::clicked, this, [this]() {
-        panels::settings::SettingsDialog dialog(this);
+        modules::settings::SettingsDialog dialog(this);
         dialog.exec();
     });
 
@@ -335,31 +335,31 @@ void MainWindow::setupRibbon() {
 }
 
 void MainWindow::setupViewport() {
-    viewport_widget_ = new panels::viewport::ViewportWidget(this);
+    viewport_widget_ = new modules::viewport::ViewportPanel(this);
     setCentralWidget(viewport_widget_);
 }
 
 void MainWindow::setupPanels() {
-    models_panel_ = new panels::models::ModelsPanelWidget(this);
-    spatial_panel_ = new panels::spatial_hierarchy::SpatialHierarchyPanelWidget(this);
-    properties_panel_ = new panels::properties::PropertiesPanelWidget(this);
+    models_panel_ = new modules::models::ModelsPanel(this);
+    spatial_panel_ = new modules::spatial_hierarchy::SpatialHierarchyPanel(this);
+    properties_panel_ = new modules::properties::PropertiesPanel(this);
 
-    models_controller_ = new panels::models::ModelsPanelController(
-        this, models_panel_, session_state_, viewport_widget_->viewport(), element_registry_, this);
-    models_view_ = new panels::models::ModelsPanelView(models_panel_, session_state_, this);
-    spatial_view_ = new panels::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, session_state_, this);
-    properties_view_ = new panels::properties::PropertiesPanelView(properties_panel_, session_state_, this);
+    models_controller_ = new modules::models::ModelsPanelController(
+        this, models_panel_, session_state_, viewport_widget_->viewport(), this);
+    models_view_ = new modules::models::ModelsPanelView(models_panel_, session_state_, this);
+    spatial_view_ = new modules::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, session_state_, this);
+    properties_view_ = new modules::properties::PropertiesPanelView(properties_panel_, session_state_, this);
 
-    layers_panel_ = new components::Panel("Layers", new panels::todo::TodoPanelWidget("Layers", this), this);
+    layers_panel_ = new components::Panel("Layers", new modules::todo::TodoPanel("Layers", this), this);
     stored_views_panel_ = new components::Panel(
-        "Stored Views", new panels::todo::TodoPanelWidget("Stored Views", this), this);
+        "Stored Views", new modules::todo::TodoPanel("Stored Views", this), this);
     search_panel_ = new components::Panel(
-        "Search and Query", new panels::todo::TodoPanelWidget("Search and Query", this), this);
+        "Search and Query", new modules::todo::TodoPanel("Search and Query", this), this);
     spreadsheet_panel_ = new components::Panel(
-        "Spreadsheet", new panels::todo::TodoPanelWidget("Spreadsheet", this), this);
-    audit_panel_ = new components::Panel("Audit", new panels::todo::TodoPanelWidget("Audit", this), this);
-    clash_panel_ = new components::Panel("Clash", new panels::todo::TodoPanelWidget("Clash", this), this);
-    issues_panel_ = new components::Panel("Issues", new panels::todo::TodoPanelWidget("Issues", this), this);
+        "Spreadsheet", new modules::todo::TodoPanel("Spreadsheet", this), this);
+    audit_panel_ = new components::Panel("Audit", new modules::todo::TodoPanel("Audit", this), this);
+    clash_panel_ = new components::Panel("Clash", new modules::todo::TodoPanel("Clash", this), this);
+    issues_panel_ = new components::Panel("Issues", new modules::todo::TodoPanel("Issues", this), this);
 
     addDockWidget(Qt::LeftDockWidgetArea, models_panel_);
     addDockWidget(Qt::LeftDockWidgetArea, spatial_panel_);
@@ -423,9 +423,9 @@ void MainWindow::setupLoader() {
     element_registry_->bindLoader(loader_);
     session_state_->bindLoader(loader_);
     models_controller_->bindLoader(loader_);
-    viewport_controller_ = new panels::viewport::ViewportController(
+    viewport_controller_ = new modules::viewport::ViewportController(
         session_state_, viewport_widget_->viewport(), this);
-    project_controller_ = new panels::project::ProjectController(
+    project_controller_ = new modules::project::ProjectController(
         this, federation_, session_state_, element_registry_,
         viewport_widget_->viewport(), models_controller_, viewport_controller_, this);
 

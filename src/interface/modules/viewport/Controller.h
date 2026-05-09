@@ -18,32 +18,38 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-#define IFCINTERFACE_PANELS_PROPERTIESPANELVIEW_H
-
-#include "Types.h"
+#ifndef IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
+#define IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
 
 #include <QObject>
 
 namespace ifcinterface { class SessionState; }
-namespace ifcinterface::panels::properties {
+class ViewportWindow;
 
-class PropertiesPanelWidget;
+namespace ifcinterface::modules::viewport {
 
-class PropertiesPanelView : public QObject {
+class ViewportController : public QObject {
     Q_OBJECT
+
 public:
-    explicit PropertiesPanelView(PropertiesPanelWidget* widget,
-                                 ifcinterface::SessionState* session_state,
-                                 QObject* parent = nullptr);
+    explicit ViewportController(ifcinterface::SessionState* session_state,
+                                ViewportWindow* viewport,
+                                QObject* parent = nullptr);
+
+    void applyFederatedFalseOrigin();
+    void setHomeView();
+    void goHomeView();
 
 private:
-    void refresh(uint32_t object_id);
+    void applyCoordinateOperation(uint32_t mid);
+    void applyModelTransformation(uint32_t mid);
+    void applyModelVisibility(uint32_t mid);
+    void maybeGuessFederatedFalseOrigin(uint32_t mid);
 
-    PropertiesPanelWidget* widget_ = nullptr;
     ifcinterface::SessionState* session_state_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::modules::viewport
 
 #endif

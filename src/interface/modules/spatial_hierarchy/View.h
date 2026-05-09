@@ -18,19 +18,34 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_TODO_TODOPANELWIDGET_H
-#define IFCINTERFACE_PANELS_TODO_TODOPANELWIDGET_H
+#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
+#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELVIEW_H
 
-#include <QWidget>
+#include "Types.h"
 
-namespace ifcinterface::panels::todo {
+#include <QObject>
 
-class TodoPanelWidget : public QWidget {
+namespace ifcinterface { class SessionState; }
+namespace ifcinterface::modules::spatial_hierarchy {
+
+class SpatialHierarchyPanel;
+
+class SpatialHierarchyPanelView : public QObject {
     Q_OBJECT
 public:
-    explicit TodoPanelWidget(const QString& title, QWidget* parent = nullptr);
+    explicit SpatialHierarchyPanelView(SpatialHierarchyPanel* widget,
+                                       ifcinterface::SessionState* session_state,
+                                       QObject* parent = nullptr);
+
+private:
+    void reload();
+    TreeNode* findNode(const NodePath& path);
+
+    SpatialHierarchyPanel* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
+    QList<TreeNode> nodes_;
 };
 
-} // namespace ifcinterface::panels::todo
+} // namespace ifcinterface::modules::spatial_hierarchy
 
 #endif

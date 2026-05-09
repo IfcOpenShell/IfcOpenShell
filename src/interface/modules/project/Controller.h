@@ -28,10 +28,10 @@ class Federation;
 class ViewportWindow;
 namespace ifcinterface { class ElementRegistry; }
 namespace ifcinterface { class SessionState; }
-namespace ifcinterface::panels::models { class ModelsPanelController; }
-namespace ifcinterface::panels::viewport { class ViewportController; }
+namespace ifcinterface::modules::models { class ModelsPanelController; }
+namespace ifcinterface::modules::viewport { class ViewportController; }
 
-namespace ifcinterface::panels::project {
+namespace ifcinterface::modules::project {
 
 class ProjectController : public QObject {
     Q_OBJECT
@@ -42,8 +42,8 @@ public:
                                ifcinterface::SessionState* session_state,
                                ifcinterface::ElementRegistry* element_registry,
                                ViewportWindow* viewport,
-                               ifcinterface::panels::models::ModelsPanelController* models_controller,
-                               ifcinterface::panels::viewport::ViewportController* viewport_controller,
+                               ifcinterface::modules::models::ModelsPanelController* models_controller,
+                               ifcinterface::modules::viewport::ViewportController* viewport_controller,
                                QObject* parent = nullptr);
 
     bool newProject();
@@ -62,10 +62,10 @@ private:
     ifcinterface::SessionState* session_state_ = nullptr;
     ifcinterface::ElementRegistry* element_registry_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
-    ifcinterface::panels::models::ModelsPanelController* models_controller_ = nullptr;
-    ifcinterface::panels::viewport::ViewportController* viewport_controller_ = nullptr;
+    ifcinterface::modules::models::ModelsPanelController* models_controller_ = nullptr;
+    ifcinterface::modules::viewport::ViewportController* viewport_controller_ = nullptr;
 };
 
-} // namespace ifcinterface::panels::project
+} // namespace ifcinterface::modules::project
 
 #endif

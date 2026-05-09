@@ -18,42 +18,39 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SETTINGSDIALOG_H
-#define IFCINTERFACE_PANELS_SETTINGSDIALOG_H
+#ifndef IFCINTERFACE_MODULES_PROPERTIES_PANEL_H
+#define IFCINTERFACE_MODULES_PROPERTIES_PANEL_H
 
-#include "../../components/Dialog.h"
+#include "Types.h"
 
-class QCheckBox;
-class QDoubleSpinBox;
+#include "../../components/Panel.h"
+
+#include <QString>
+
+class QLabel;
 class QLineEdit;
-class QShowEvent;
-class QSpinBox;
+class QToolButton;
 
-namespace ifcinterface::panels::settings {
+namespace ifcinterface::modules::properties {
 
-class SettingsDialog : public components::Dialog {
+class PropertiesPanel : public components::Panel {
     Q_OBJECT
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit PropertiesPanel(QWidget* parent = nullptr);
 
-protected:
-    void showEvent(QShowEvent* event) override;
+    void render(const PropertiesPanelState& state);
 
 private:
-    void setupUi();
-    void syncFromSettings();
-    void onAccepted();
-
-    QLineEdit* geometry_library_edit_ = nullptr;
-    QCheckBox* show_stats_check_ = nullptr;
-    QCheckBox* backface_culling_check_ = nullptr;
-    QCheckBox* load_data_source_checkbox_ = nullptr;
-    QCheckBox* apply_coordinate_operation_check_ = nullptr;
-    QSpinBox* void_limit_spin_ = nullptr;
-    QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
-    QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
+    bool attributes_expanded_ = true;
+    bool relationships_expanded_ = true;
+    bool properties_expanded_ = true;
+    bool quantities_expanded_ = true;
+    bool properties_filter_visible_ = false;
+    bool quantities_filter_visible_ = false;
+    QString properties_filter_text_;
+    QString quantities_filter_text_;
 };
 
-} // namespace ifcinterface::panels::settings
+} // namespace ifcinterface::modules::properties
 
 #endif

@@ -18,36 +18,43 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
-#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELWIDGET_H
+#include "Panel.h"
 
-#include "Types.h"
+#include "../../../ifcviewer/ViewportWindow.h"
 
-#include "../../components/Panel.h"
+#include <QFrame>
+#include <QVBoxLayout>
+#include <QWidget>
 
-class QTreeWidget;
-class QTreeWidgetItem;
+namespace ifcinterface::modules::viewport {
 
-namespace ifcinterface::panels::spatial_hierarchy {
+ViewportPanel::ViewportPanel(QWidget* parent)
+    : QWidget(parent)
+{
+    auto* root = new QVBoxLayout(this);
+    root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(0);
 
-class SpatialHierarchyPanelWidget : public components::Panel {
-    Q_OBJECT
-public:
-    explicit SpatialHierarchyPanelWidget(QWidget* parent = nullptr);
+    auto* shell = new QFrame(this);
+    shell->setObjectName("viewportShell");
+    auto* shell_layout = new QVBoxLayout(shell);
+    shell_layout->setContentsMargins(10, 10, 10, 10);
+    shell_layout->setSpacing(0);
 
-    void setNodes(const QList<TreeNode>& nodes);
+    auto* frame = new QFrame(shell);
+    frame->setObjectName("viewportFrame");
+    auto* frame_layout = new QVBoxLayout(frame);
+    frame_layout->setContentsMargins(0, 0, 0, 0);
+    frame_layout->setSpacing(0);
 
-signals:
-    void visibilityToggleRequested(const NodePath& path);
+    viewport_ = new ViewportWindow();
+    viewport_container_ = QWidget::createWindowContainer(viewport_, frame);
+    viewport_container_->setMinimumSize(400, 300);
+    viewport_container_->setFocusPolicy(Qt::StrongFocus);
 
-private:
-    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
-    NodePath itemPath(QTreeWidgetItem* item) const;
-    QString iconPath(ItemKind kind) const;
+    frame_layout->addWidget(viewport_container_);
+    shell_layout->addWidget(frame);
+    root->addWidget(shell);
+}
 
-    QTreeWidget* tree_ = nullptr;
-};
-
-} // namespace ifcinterface::panels::spatial_hierarchy
-
-#endif
+} // namespace ifcinterface::modules::viewport

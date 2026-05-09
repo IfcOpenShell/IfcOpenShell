@@ -39,7 +39,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 
-namespace ifcinterface::panels::settings {
+namespace ifcinterface::modules::settings {
 
 SettingsDialog::SettingsDialog(QWidget* parent)
     : components::Dialog(parent)
@@ -211,4 +211,4 @@ void SettingsDialog::onAccepted() {
     accept();
 }
 
-} // namespace ifcinterface::panels::settings
+} // namespace ifcinterface::modules::settings

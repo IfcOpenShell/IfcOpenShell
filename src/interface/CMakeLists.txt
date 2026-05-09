@@ -47,35 +47,35 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/add_model/Dialog.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Controller.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/Widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/View.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/models/View.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/Widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/todo/Widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/Widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/properties/View.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/project/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/project/Controller.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/settings/Dialog.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/Widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/spatial_hierarchy/View.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Widget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Widget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/panels/viewport/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/todo/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/todo/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Types.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/View.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.h
     ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
 )
 

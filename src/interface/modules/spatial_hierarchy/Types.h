@@ -18,43 +18,31 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Widget.h"
+#ifndef IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELTYPES_H
+#define IFCINTERFACE_PANELS_SPATIALHIERARCHYPANELTYPES_H
 
-#include "../../../ifcviewer/ViewportWindow.h"
+#include <QList>
+#include <QString>
+#include <QStringList>
 
-#include <QFrame>
-#include <QVBoxLayout>
-#include <QWidget>
+namespace ifcinterface::modules::spatial_hierarchy {
 
-namespace ifcinterface::panels::viewport {
+enum class ItemKind {
+    Site,
+    Building,
+    Storey,
+    Space,
+};
 
-ViewportWidget::ViewportWidget(QWidget* parent)
-    : QWidget(parent)
-{
-    auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
+struct TreeNode {
+    QString name;
+    ItemKind kind = ItemKind::Space;
+    bool visible = true;
+    QList<TreeNode> children;
+};
 
-    auto* shell = new QFrame(this);
-    shell->setObjectName("viewportShell");
-    auto* shell_layout = new QVBoxLayout(shell);
-    shell_layout->setContentsMargins(10, 10, 10, 10);
-    shell_layout->setSpacing(0);
+using NodePath = QStringList;
 
-    auto* frame = new QFrame(shell);
-    frame->setObjectName("viewportFrame");
-    auto* frame_layout = new QVBoxLayout(frame);
-    frame_layout->setContentsMargins(0, 0, 0, 0);
-    frame_layout->setSpacing(0);
+} // namespace ifcinterface::modules::spatial_hierarchy
 
-    viewport_ = new ViewportWindow();
-    viewport_container_ = QWidget::createWindowContainer(viewport_, frame);
-    viewport_container_->setMinimumSize(400, 300);
-    viewport_container_->setFocusPolicy(Qt::StrongFocus);
-
-    frame_layout->addWidget(viewport_container_);
-    shell_layout->addWidget(frame);
-    root->addWidget(shell);
-}
-
-} // namespace ifcinterface::panels::viewport
+#endif

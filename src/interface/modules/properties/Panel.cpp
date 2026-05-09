@@ -18,7 +18,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Widget.h"
+#include "Panel.h"
 
 #include "../../components/KeyValueTable.h"
 #include "../../components/Section.h"
@@ -35,7 +35,7 @@
 
 namespace {
 
-QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySet& property_set, QWidget* parent = nullptr) {
+QWidget* makePropertySetPanel(const ifcinterface::modules::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
     group->setObjectName("propertySetBox");
     auto* layout = new QVBoxLayout(group);
@@ -50,7 +50,7 @@ QWidget* makePropertySetPanel(const ifcinterface::panels::properties::PropertySe
     return group;
 }
 
-QWidget* makeAttributeList(const QList<ifcinterface::panels::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
+QWidget* makeAttributeList(const QList<ifcinterface::modules::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
     QList<ifcinterface::components::KeyValueTableRow> table_rows;
     for (const auto& row : rows) {
         table_rows.append({row.key, row.value, "keyValueValueLabel", "", "", 0});
@@ -58,7 +58,7 @@ QWidget* makeAttributeList(const QList<ifcinterface::panels::properties::KeyValu
     return new ifcinterface::components::KeyValueTable(table_rows, parent);
 }
 
-QWidget* makeRelationshipList(const QList<ifcinterface::panels::properties::RelationshipRow>& rows, QWidget* parent = nullptr) {
+QWidget* makeRelationshipList(const QList<ifcinterface::modules::properties::RelationshipRow>& rows, QWidget* parent = nullptr) {
     QList<ifcinterface::components::KeyValueTableRow> table_rows;
     for (const auto& row_data : rows) {
         table_rows.append({row_data.key,
@@ -91,7 +91,7 @@ QWidget* makeFilterWrapper(QLineEdit** field_out, QWidget* parent = nullptr) {
     return wrapper;
 }
 
-QFrame* makeEntityBox(const ifcinterface::panels::properties::EntitySummary& entity, QWidget* parent = nullptr) {
+QFrame* makeEntityBox(const ifcinterface::modules::properties::EntitySummary& entity, QWidget* parent = nullptr) {
     auto* entity_box = new QFrame(parent);
     entity_box->setObjectName("entityClassBox");
     auto* entity_layout = new QHBoxLayout(entity_box);
@@ -121,14 +121,14 @@ QFrame* makeEntityBox(const ifcinterface::panels::properties::EntitySummary& ent
 
 } // namespace
 
-namespace ifcinterface::panels::properties {
+namespace ifcinterface::modules::properties {
 
-PropertiesPanelWidget::PropertiesPanelWidget(QWidget* parent)
+PropertiesPanel::PropertiesPanel(QWidget* parent)
     : components::Panel("Properties", nullptr, parent, false, true)
 {
 }
 
-void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
+void PropertiesPanel::render(const PropertiesPanelState& state) {
     clearBodyWidgets();
 
     QList<QWidget*> property_set_widgets;
@@ -234,4 +234,4 @@ void PropertiesPanelWidget::render(const PropertiesPanelState& state) {
     addBodyWidget(quantities_section);
 }
 
-} // namespace ifcinterface::panels::properties
+} // namespace ifcinterface::modules::properties
