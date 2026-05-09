@@ -951,6 +951,9 @@ elif "occ" in targets:
 
 if "manifold" in targets:
     dependency_name = f"manifold-{MANIFOLD_VERSION}"
+    patches = []
+    if WASM:
+        patches.append("./patches/manifold/install-metadata-for-emscripten.patch")
     build_dependency(
         name=dependency_name,
         mode="cmake",
@@ -970,6 +973,7 @@ if "manifold" in targets:
         download_name="manifold",
         download_tool=download_tool_git,
         revision=f"v{MANIFOLD_VERSION}",
+        patch=patches,
     )
 
 if "libxml2" in targets:
