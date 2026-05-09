@@ -38,6 +38,10 @@ plugin::metadata plugin_metadata() {
 }
 
 boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+	if (context.output_temp_stream) {
+		return boost::make_shared<SvgSerializer>(
+			*context.output_temp_stream, context.geometry_settings, context.serializer_settings);
+	}
 	return boost::make_shared<SvgSerializer>(context.output_temp_filename, context.geometry_settings, context.serializer_settings);
 }
 

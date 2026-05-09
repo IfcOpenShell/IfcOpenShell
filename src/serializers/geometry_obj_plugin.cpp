@@ -50,6 +50,16 @@ plugin::metadata plugin_metadata() {
 }
 
 boost::shared_ptr<GeometrySerializer> create_serializer(const geometry_serializer_context& context) {
+	if (context.output_temp_stream || context.output_stream) {
+		stream_or_filename obj_filename = context.output_temp_stream
+			? *context.output_temp_stream
+			: stream_or_filename(context.output_temp_filename);
+		stream_or_filename mtl_filename = context.output_stream
+			? *context.output_stream
+			: stream_or_filename(obj_mtl_filename(context.output_filename));
+		return boost::make_shared<WaveFrontOBJSerializer>(
+			obj_filename, mtl_filename, context.geometry_settings, context.serializer_settings);
+	}
 	return boost::make_shared<WaveFrontOBJSerializer>(context.output_temp_filename, obj_mtl_filename(context.output_filename), context.geometry_settings, context.serializer_settings);
 }
 

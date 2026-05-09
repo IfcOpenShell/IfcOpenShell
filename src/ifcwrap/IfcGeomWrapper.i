@@ -286,11 +286,44 @@ public:
 			serializer_settings
 		};
 
+		initialize_serializer(extension, context);
+	}
+
+	PythonPluginGeometrySerializer(
+		const std::string& extension,
+		const stream_or_filename& output_filename,
+		const stream_or_filename& output_temp_filename,
+		ifcopenshell::geometry::Settings& geometry_settings,
+		const ifcopenshell::geometry::SerializerSettings& serializer_settings
+	)
+		: GeometrySerializer(geometry_settings, serializer_settings)
+	{
+		const auto output_filename_string = output_filename.filename().value_or("");
+		const auto output_temp_filename_string = output_temp_filename.filename().value_or(output_filename_string);
+		ifcopenshell::serializers::geometry_serializer_context context{
+			output_filename_string,
+			output_temp_filename_string,
+			geometry_settings,
+			serializer_settings,
+			&output_filename,
+			&output_temp_filename
+		};
+
+		initialize_serializer(extension, context);
+	}
+
+private:
+	void initialize_serializer(
+		const std::string& extension,
+		ifcopenshell::serializers::geometry_serializer_context& context
+	) {
 		auto& registry = ifcopenshell::serializers::geometry_serializer_registry_instance();
 		registry.configure(extension, context);
 		geometry_settings_ = context.geometry_settings;
 		serializer_ = registry.create(extension, context);
 	}
+
+public:
 
 	bool ready() override {
 		return serializer_->ready();
@@ -647,6 +680,22 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		const std::string& extension,
 		const std::string& output_filename,
 		const std::string& output_temp_filename,
+		ifcopenshell::geometry::Settings& geometry_settings,
+		const ifcopenshell::geometry::SerializerSettings& serializer_settings
+	) {
+		return new PythonPluginGeometrySerializer(
+			extension,
+			output_filename,
+			output_temp_filename,
+			geometry_settings,
+			serializer_settings
+		);
+	}
+
+	GeometrySerializer* create_geometry_serializer(
+		const std::string& extension,
+		const stream_or_filename& output_filename,
+		const stream_or_filename& output_temp_filename,
 		ifcopenshell::geometry::Settings& geometry_settings,
 		const ifcopenshell::geometry::SerializerSettings& serializer_settings
 	) {

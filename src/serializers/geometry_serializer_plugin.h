@@ -54,6 +54,8 @@ struct SERIALIZERS_API geometry_serializer_context {
 	std::string output_temp_filename;
 	ifcopenshell::geometry::Settings& geometry_settings;
 	const ifcopenshell::geometry::SerializerSettings& serializer_settings;
+	const stream_or_filename* output_stream = nullptr;
+	const stream_or_filename* output_temp_stream = nullptr;
 };
 
 class SERIALIZERS_API geometry_serializer_registry {

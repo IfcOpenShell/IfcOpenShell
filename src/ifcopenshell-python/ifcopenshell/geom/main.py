@@ -616,6 +616,8 @@ def make_shape_function(fn):
 
 
 class _serializer_factory:
+    _stream_serializers = {"obj", "svg", "ttl"}
+
     def __init__(self, name: str, extension: str):
         self.name = name
         self.extension = extension
@@ -637,12 +639,26 @@ class _serializer_factory:
                 + (obj_signature if self.name == "obj" else "")
             )
 
-        output_filename = self._path(output_filename)
-        output_temp_filename = self._path(output_temp_filename)
+        if self._is_buffer(output_filename) or self._is_buffer(output_temp_filename):
+            if self.name not in self._stream_serializers:
+                raise TypeError(f"serializers.{self.name}() requires a filesystem path")
+            output_filename = self._buffer(output_filename)
+            output_temp_filename = self._buffer(output_temp_filename)
+        else:
+            output_filename = self._path(output_filename)
+            output_temp_filename = self._path(output_temp_filename)
 
         return ifcopenshell_wrapper.create_geometry_serializer(
             self.extension, output_filename, output_temp_filename, geometry_settings, serializer_settings
         )
+
+    def _is_buffer(self, value: Any) -> bool:
+        return isinstance(value, ifcopenshell_wrapper.buffer)
+
+    def _buffer(self, value: Union[str, PathLike[str], ifcopenshell_wrapper.buffer]) -> ifcopenshell_wrapper.buffer:
+        if self._is_buffer(value):
+            return value
+        return ifcopenshell_wrapper.buffer(self._path(value))
 
     def _path(self, value: Union[str, PathLike[str]]) -> str:
         try:

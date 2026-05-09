@@ -282,6 +282,7 @@ public:
 
 	stream_or_filename(const std::string& fn)
 		: ofs_(new std::ofstream(ifcopenshell::path::from_utf8(fn).c_str()))
+		, filename_(fn)
 		, stream(*ofs_)
 	{}
 
