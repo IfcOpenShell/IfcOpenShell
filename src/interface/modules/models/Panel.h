@@ -18,36 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_MODULES_MODELS_PANEL_H
+#define IFCINTERFACE_MODULES_MODELS_PANEL_H
 
-#include <QDockWidget>
+#include "Types.h"
 
-class QWidget;
-class QVBoxLayout;
+#include "../../components/Panel.h"
 
-namespace ifcinterface::components {
+class QTreeWidget;
+class QTreeWidgetItem;
 
-class Panel : public QDockWidget {
+namespace ifcinterface::modules::models {
+
+class ModelsPanel : public components::Panel {
     Q_OBJECT
-
 public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
+    explicit ModelsPanel(QWidget* parent = nullptr);
 
-    void addBodyWidget(QWidget* widget);
-    void clearBodyWidgets();
+    void setNodes(const QList<TreeNode>& nodes);
 
 signals:
-    void settingsRequested();
+    void visibilityToggleRequested(ItemKind kind, const QString& id);
+    void addGroupRequested(const QString& parent_group_id, const QString& name);
+    void removeGroupRequested(const QString& id);
+    void removeModelRequested(const QString& id);
 
 private:
-    QVBoxLayout* body_layout_ = nullptr;
+    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
+
+    QTreeWidget* tree_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcinterface::modules::models
 
 #endif

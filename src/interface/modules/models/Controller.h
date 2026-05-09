@@ -18,36 +18,49 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_PANELS_MODELSPANELCONTROLLER_H
+#define IFCINTERFACE_PANELS_MODELSPANELCONTROLLER_H
 
-#include <QDockWidget>
+#include "Types.h"
+
+#include <QObject>
+#include <QStringList>
 
 class QWidget;
-class QVBoxLayout;
+namespace ifcinterface { class SessionState; }
+class ViewportWindow;
+class SceneLoader;
 
-namespace ifcinterface::components {
+namespace ifcinterface::modules::models {
 
-class Panel : public QDockWidget {
+class ModelsPanel;
+
+class ModelsPanelController : public QObject {
     Q_OBJECT
 
 public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
+    explicit ModelsPanelController(QWidget* host,
+                                   ModelsPanel* widget,
+                                   ifcinterface::SessionState* session_state,
+                                   ViewportWindow* viewport,
+                                   QObject* parent = nullptr);
 
-    void addBodyWidget(QWidget* widget);
-    void clearBodyWidgets();
-
-signals:
-    void settingsRequested();
+    void bindLoader(SceneLoader* loader);
+    void addFiles();
+    void addFiles(const QStringList& paths);
+    void loadModels(const QStringList& paths, const QStringList& fed_ids);
+    void removeLoadedModel(const QString& fed_id);
+    void openSettings();
 
 private:
-    QVBoxLayout* body_layout_ = nullptr;
+    QString formatElapsed(qint64 ms) const;
+
+    QWidget* host_ = nullptr;
+    ModelsPanel* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcinterface::modules::models
 
 #endif

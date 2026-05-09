@@ -18,36 +18,33 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
 
-#include <QDockWidget>
+#include "../../components/Dialog.h"
 
-class QWidget;
-class QVBoxLayout;
+namespace ifcinterface::modules::models {
 
-namespace ifcinterface::components {
-
-class Panel : public QDockWidget {
-    Q_OBJECT
-
-public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
-
-    void addBodyWidget(QWidget* widget);
-    void clearBodyWidgets();
-
-signals:
-    void settingsRequested();
-
-private:
-    QVBoxLayout* body_layout_ = nullptr;
+enum class SourceMode {
+    None,
+    IfcFile,
+    IfcDatabase,
+    GeometryOnly,
 };
 
-} // namespace ifcinterface::components
+class AddModelDialog : public components::Dialog {
+    Q_OBJECT
+public:
+    explicit AddModelDialog(QWidget* parent = nullptr);
+
+    SourceMode selectedMode() const { return selected_mode_; }
+
+private:
+    void setupUi();
+
+    SourceMode selected_mode_ = SourceMode::None;
+};
+
+} // namespace ifcinterface::modules::models
 
 #endif

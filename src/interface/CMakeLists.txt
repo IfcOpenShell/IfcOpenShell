@@ -49,6 +49,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Types.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.h
