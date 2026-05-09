@@ -64,10 +64,6 @@ INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
-if (WITH_CGAL)
-    set(LIBSVGFILL svgfill)
-endif()
-
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
 SET_PROPERTY(
@@ -120,6 +116,9 @@ else()
 endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
+if(WITH_CGAL)
+    target_sources(ifcopenshell_wrapper PRIVATE ../svgfill/src/linework_processing_facade.cpp)
+endif()
 if(WITH_ROCKSDB)
     target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
 endif()
@@ -144,9 +143,9 @@ if (WASM_BUILD)
         PRIVATE "SHELL:-s EXPORTED_FUNCTIONS=_PyInit__ifcopenshell_wrapper -s SIDE_MODULE=2" -O1
     )
 endif()
-target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES} ${LIBSVGFILL})
-if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries)
-    add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries})
+target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBRARIES})
+if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries OR linework_processing_libraries)
+    add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries} ${linework_processing_libraries})
 endif()
 if(NOT WIN32)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -221,7 +220,7 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
                 ${mapping_libraries}
                 ${geometry_serializer_libraries}
                 ${document_serializer_libraries}
-                ${LIBSVGFILL}
+                ${linework_processing_libraries}
                 plugin
             )
 

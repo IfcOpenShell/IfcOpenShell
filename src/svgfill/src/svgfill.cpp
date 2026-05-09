@@ -19,6 +19,7 @@
  ****************************************************************************/
 
 #include "svgfill.h"
+#include "linework_processing_plugin.h"
 
 #include <libxml/parser.h>
 
@@ -615,23 +616,32 @@ std::string svgfill::polygons_to_svg(const std::vector<polygon_2>& polygons, boo
 	return polygons_to_svg(pps, random_color);
 }
 
+svgfill::abstract_arrangement* svgfill::create_arrangement(solver s) {
+	if (s == CARTESIAN_DOUBLE) {
+		return new cgal_arrangement<CGAL::Cartesian<double>>;
+	} else if (s == CARTESIAN_QUOTIENT) {
+		return new cgal_arrangement<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>;
+	} else if (s == FILTERED_CARTESIAN_QUOTIENT) {
+		return new cgal_arrangement<CGAL::Filtered_kernel<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>>;
+	} else if (s == EXACT_PREDICATES) {
+		return new cgal_arrangement<CGAL::Epick>;
+	} else if (s == EXACT_CONSTRUCTIONS) {
+		return new cgal_arrangement<CGAL::Epeck>;
+	}
+	return nullptr;
+}
+
+void svgfill::destroy_arrangement(abstract_arrangement* arrangement) {
+	delete arrangement;
+}
+
 void svgfill::context::add(const std::vector<line_segment_2>& segments) {
 	segments_.insert(segments_.end(), segments.begin(), segments.end());
 }
 
 bool svgfill::context::build() {
-	if (solver_ == CARTESIAN_DOUBLE) {
-		arr_ = new cgal_arrangement<CGAL::Cartesian<double>>;
-	} else if (solver_ == CARTESIAN_QUOTIENT) {
-		arr_ = new cgal_arrangement<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>;
-	} else if (solver_ == FILTERED_CARTESIAN_QUOTIENT) {
-		arr_ = new cgal_arrangement<CGAL::Filtered_kernel<CGAL::Cartesian<CGAL::Quotient<CGAL::MP_Float>>>>;
-	} else if (solver_ == EXACT_PREDICATES) {
-		arr_ = new cgal_arrangement<CGAL::Epick>;
-	} else if (solver_ == EXACT_CONSTRUCTIONS) {
-		arr_ = new cgal_arrangement<CGAL::Epeck>;
-	}
-	return (*arr_)(eps_, segments_, progress_);
+	arr_ = create_arrangement(solver_);
+	return arr_ && (*arr_)(eps_, segments_, progress_);
 }
 
 void svgfill::context::merge(const std::vector<int>& edge_indices) {
@@ -642,4 +652,8 @@ void svgfill::context::write(std::vector<std::vector<polygon_2>>& p) {
 	std::vector<polygon_2> polygons;
 	arr_->write(polygons, progress_);
 	p.push_back(polygons);
+}
+
+svgfill::context::~context() {
+	destroy_arrangement(arr_);
 }

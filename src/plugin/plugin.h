@@ -40,7 +40,8 @@ enum class kind {
 	tree,
 	document_serializer,
 	geometry_serializer,
-	opencascade_geometry_ifc_writer
+	opencascade_geometry_ifc_writer,
+	linework_processing
 };
 
 struct PLUGIN_API abi_info {

@@ -77,6 +77,8 @@ namespace {
 			return "geometry_serializer";
 		case ifcopenshell::plugin::kind::opencascade_geometry_ifc_writer:
 			return "opencascade_geometry_ifc_writer";
+		case ifcopenshell::plugin::kind::linework_processing:
+			return "linework_processing";
 		default:
 			return "unknown";
 		}

@@ -216,7 +216,7 @@ def archive_executables() -> None:
         roots = {file}
 
         # IfcOpenShell plugins are loaded by name at runtime, so dumpbin cannot discover them.
-        # svgfill does not require plugins.
+        # svgfill links its provider plugin directly, so dumpbin can discover that dependency.
         if not file.name.lower().startswith("svgfill"):
             roots.update(ifc_runtime_plugins)
             for plugin in ifc_runtime_plugins:

@@ -46,14 +46,18 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS} ${SVGPP_INCLUDE})
 
 file(GLOB LIB_H_FILES src/*.h)
-file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp)
+file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp src/svgfill_plugin.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
-add_library(svgfill ${LIB_SRC_FILES})
-target_link_libraries(svgfill ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL)
-if(BUILD_SHARED_LIBS)
-    target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
+add_library(svgfill SHARED ${LIB_SRC_FILES})
+target_compile_definitions(svgfill PRIVATE BOOST_DLL_USE_STD_FS)
+if(NOT WASM_BUILD)
+    target_link_libraries(svgfill PRIVATE plugin)
 endif()
+target_link_libraries(svgfill PRIVATE ${Boost_LIBRARIES} ${BCRYPT_LIBRARIES} LibXml2::LibXml2 IFCOPENSHELL_CGAL)
+target_compile_definitions(svgfill PUBLIC IFC_SHARED_BUILD)
 set_target_properties(svgfill PROPERTIES PUBLIC_HEADER "${LIB_H_FILES}")
+set_target_properties(svgfill PROPERTIES OUTPUT_NAME "ifcopenshell.geometry.svgfill")
+ifcopenshell_wasm_plugin_link_options(svgfill ifcopenshell_register_linework_processing_plugin_v1)
 
 add_executable(svgfill_exe src/main.cpp)
 target_link_libraries(svgfill_exe svgfill)
@@ -68,6 +72,8 @@ if(WIN32)
     # conflict occurs.
     target_link_options(svgfill_exe PRIVATE "/NOIMPLIB")
 endif()
+
+set(linework_processing_libraries svgfill PARENT_SCOPE)
 
 install(
     TARGETS svgfill_exe svgfill

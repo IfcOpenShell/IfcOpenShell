@@ -105,9 +105,7 @@ namespace svgfill {
 		size_t num_faces() { return arr_->num_faces(); }
         size_t delete_same_facet_edge_pairs() { return arr_->delete_same_facet_edge_pairs(); }
 
-		~context() {
-			delete arr_;
-		}
+		~context();
 	};
 
 	SVGFILL_API bool svg_to_line_segments(const std::string& data, const std::optional<std::string>& class_name, std::vector<std::vector<line_segment_2>>& segments);
