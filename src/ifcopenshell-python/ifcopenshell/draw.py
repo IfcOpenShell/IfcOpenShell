@@ -159,52 +159,49 @@ def main(
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
     serialiser_settings = ifcopenshell.geom.serializer_settings()
-    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serialiser_settings)
-
-    sr.setFile(files[0])
     if settings.auto_floorplan:
-        sr.setSectionHeightsFromStoreys()
+        serialiser_settings.set("section-height-from-storeys", True)
 
-    # setElevationRefGuid and setElevationRef are also mutually exclusive in C-code.
+    # elevation-ref-guid and elevation-ref are also mutually exclusive in C-code.
     # Note that guid or object type are not checked anywhere to be valid,
     # it's up to user to keep them valid for the provided projects.
     if settings.drawing_guid or settings.drawing_object_type:
         if settings.drawing_guid:
             if not by_guid(settings.drawing_guid):
                 raise ValueError(f"Unable to find guid {settings.drawing_guid!r}")
-            sr.setElevationRefGuid(settings.drawing_guid)
+            serialiser_settings.set("elevation-ref-guid", settings.drawing_guid)
         elif settings.drawing_object_type:
-            sr.setElevationRef(settings.drawing_object_type)
-        sr.setWithoutStoreys(True)
+            serialiser_settings.set("elevation-ref", settings.drawing_object_type)
+        serialiser_settings.set("svg-without-storeys", True)
 
     # required for svgfill
-    sr.setPolygonal(True)
-    sr.setUseNamespace(True)
+    serialiser_settings.set("svg-write-poly", True)
+    serialiser_settings.set("svg-xmlns", True)
 
-    sr.setAlwaysProject(settings.include_projection)
-
-    sr.setProfileThreshold(settings.profile_threshold)
-    sr.setBoundingRectangle(settings.width, settings.height)
-    sr.setScale(settings.scale)
-    sr.setAutoElevation(settings.auto_elevation)
-    sr.setAutoSection(settings.auto_section)
-    sr.setPrintSpaceNames(settings.space_names)
-    sr.setPrintSpaceAreas(settings.space_areas)
-    sr.setDrawDoorArcs(settings.door_arcs)
-    sr.setNoCSS(not not settings.css)
+    serialiser_settings.set("svg-project", settings.include_projection)
+    serialiser_settings.set("profile-threshold", settings.profile_threshold)
+    serialiser_settings.set("bounds", f"{settings.width}x{settings.height}")
+    serialiser_settings.set("scale", str(settings.scale))
+    serialiser_settings.set("auto-elevation", settings.auto_elevation)
+    serialiser_settings.set("auto-section", settings.auto_section)
+    serialiser_settings.set("print-space-names", settings.space_names)
+    serialiser_settings.set("print-space-areas", settings.space_areas)
+    serialiser_settings.set("door-arcs", settings.door_arcs)
+    serialiser_settings.set("svg-no-css", bool(settings.css))
     if settings.subtract_before_hlr:
-        sr.setSubtractionSettings(W.ALWAYS)
+        serialiser_settings.set("svg-subtract-before", "always")
 
-    sr.setUseHlrPoly(settings.hlr_poly)
-    sr.setUsePrefiltering(settings.prefilter)
-    sr.setUnifyInputs(settings.unify_inputs)
-    sr.setMirrorY(settings.mirror_y)
+    serialiser_settings.set("svg-poly", settings.hlr_poly)
+    serialiser_settings.set("svg-prefilter", settings.prefilter)
+    serialiser_settings.set("svg-unify-inputs", settings.unify_inputs)
+    serialiser_settings.set("svg-mirror-y", settings.mirror_y)
 
-    try:
-        sh = ["none", "full", "left"].index(settings.storey_heights)
-        sr.setDrawStoreyHeights(sh)
-    except:
+    if settings.storey_heights not in {"none", "full", "left"}:
         raise ValueError("storey_heights should be one of {'none', 'full', 'left'}")
+    serialiser_settings.set("draw-storey-heights", settings.storey_heights)
+
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serialiser_settings)
+    sr.setFile(files[0])
 
     """
     # It is also possible to add drawing planes manually

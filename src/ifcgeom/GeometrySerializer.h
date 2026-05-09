@@ -141,6 +141,12 @@ inline namespace settings {
 		static constexpr const char* const description = "Draws a horizontal line at the height of building storeys in vertical drawings. Accepted values are none, full, and left.";
 	};
 
+	struct SvgProfileThreshold : public SettingBase<SvgProfileThreshold, int> {
+		static constexpr const char* const name = "profile-threshold";
+		static constexpr const char* const description = "Limits the number of projected wire profiles for non-wall and non-slab elements in SVG output. A negative value disables the limit.";
+		static constexpr int defaultvalue = -1;
+	};
+
 	struct SvgStoreyHeightLineLength : public SettingBase<SvgStoreyHeightLineLength, double> {
 		static constexpr const char* const name = "storey-height-line-length";
 		static constexpr const char* const description = "Length of the line when --draw-storey-heights=left.";
@@ -164,10 +170,21 @@ inline namespace settings {
 		static constexpr bool defaultvalue = false;
 	};
 
+	struct SvgUnifyInputs : public SettingBase<SvgUnifyInputs, bool> {
+		static constexpr const char* const name = "svg-unify-inputs";
+		static constexpr const char* const description = "Unify input shapes before SVG projection.";
+		static constexpr bool defaultvalue = false;
+	};
+
 	struct SvgSegmentProjection : public SettingBase<SvgSegmentProjection, bool> {
 		static constexpr const char* const name = "svg-segment-projection";
 		static constexpr const char* const description = "Segment result of projection with respect to original products.";
 		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgSubtractBefore : public SettingBase<SvgSubtractBefore, std::string> {
+		static constexpr const char* const name = "svg-subtract-before";
+		static constexpr const char* const description = "Controls which shapes are cut before SVG hidden-line projection. Accepted values are auto, slabs-and-walls, and always.";
 	};
 
 	struct SvgPolygonal : public SettingBase<SvgPolygonal, bool> {
@@ -191,6 +208,18 @@ inline namespace settings {
 	struct SvgNoCss : public SettingBase<SvgNoCss, bool> {
 		static constexpr const char* const name = "svg-no-css";
 		static constexpr const char* const description = "Do not emit CSS style declarations.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgMirrorY : public SettingBase<SvgMirrorY, bool> {
+		static constexpr const char* const name = "svg-mirror-y";
+		static constexpr const char* const description = "Mirror SVG output along the Y axis.";
+		static constexpr bool defaultvalue = false;
+	};
+
+	struct SvgMirrorX : public SettingBase<SvgMirrorX, bool> {
+		static constexpr const char* const name = "svg-mirror-x";
+		static constexpr const char* const description = "Mirror SVG output along the X axis.";
 		static constexpr bool defaultvalue = false;
 	};
 
@@ -251,15 +280,20 @@ class SerializerSettings : public SettingsContainer <
 		SvgAutoSection,
 		SvgAutoElevation,
 		SvgDrawStoreyHeights,
+		SvgProfileThreshold,
 		SvgStoreyHeightLineLength,
 		SvgUseNamespace,
 		SvgUseHlrPoly,
 		SvgUsePrefiltering,
+		SvgUnifyInputs,
 		SvgSegmentProjection,
+		SvgSubtractBefore,
 		SvgPolygonal,
 		SvgAlwaysProject,
 		SvgWithoutStoreys,
 		SvgNoCss,
+		SvgMirrorY,
+		SvgMirrorX,
 		SvgDoorArcs,
 		SvgSectionHeight,
 		SvgSectionHeightFromStoreys,

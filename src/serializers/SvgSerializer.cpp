@@ -97,10 +97,10 @@ namespace {
 const double PI2 = M_PI * 2.;
 
 std::pair<double, double> parse_svg_bounds(const std::string& value) {
-	unsigned int width = 0;
-	unsigned int height = 0;
-	if (std::sscanf(value.c_str(), "%ux%u", &width, &height) == 2 && width > 0 && height > 0) {
-		return { static_cast<double>(width), static_cast<double>(height) };
+	double width = 0.;
+	double height = 0.;
+	if (std::sscanf(value.c_str(), "%lfx%lf", &width, &height) == 2 && width > 0. && height > 0.) {
+		return { width, height };
 	}
 	throw std::runtime_error("Invalid use of --bounds");
 }
@@ -123,7 +123,25 @@ double parse_svg_scale(const std::string& value) {
 		numerator > 0 && denominator > 0) {
 		return static_cast<double>(numerator) / denominator;
 	}
+	double scale = 0.;
+	if (std::sscanf(value.c_str(), "%lf", &scale) == 1 && scale > 0.) {
+		return scale;
+	}
 	throw std::runtime_error("Invalid use of --scale");
+}
+
+subtract_before_project parse_subtract_before_project(const std::string& value) {
+	const auto setting = boost::to_lower_copy(value);
+	if (setting == "auto" || setting == "slabs-at-floorplans" || setting == "slabs-at-floor-plans") {
+		return ON_SLABS_AT_FLOORPLANS;
+	}
+	if (setting == "slabs-and-walls") {
+		return ON_SLABS_AND_WALLS;
+	}
+	if (setting == "always") {
+		return ALWAYS;
+	}
+	throw std::runtime_error("Invalid use of --svg-subtract-before, expected auto|slabs-and-walls|always");
 }
 
 SvgSerializer::storey_height_display_types parse_storey_height_display(const std::string& value) {
@@ -163,7 +181,7 @@ void SvgSerializer::apply_settings() {
 		setDrawingCenter(center.first, center.second);
 	}
 
-	if (settings().get<SvgSectionHeightFromStoreys>().get()) {
+	if (settings().get<SvgSectionHeightFromStoreys>().get() && file) {
 		if (settings().get<SvgSectionHeight>().has()) {
 			setSectionHeightsFromStoreys(settings().get<SvgSectionHeight>().get());
 		} else {
@@ -181,11 +199,19 @@ void SvgSerializer::apply_settings() {
 	setUseNamespace(settings().get<SvgUseNamespace>().get());
 	setUseHlrPoly(settings().get<SvgUseHlrPoly>().get());
 	setUsePrefiltering(settings().get<SvgUsePrefiltering>().get());
+	setUnifyInputs(settings().get<SvgUnifyInputs>().get());
 	setSegmentProjection(settings().get<SvgSegmentProjection>().get());
 	setPolygonal(settings().get<SvgPolygonal>().get());
 	setAlwaysProject(settings().get<SvgAlwaysProject>().get());
 	setWithoutStoreys(settings().get<SvgWithoutStoreys>().get());
 	setNoCSS(settings().get<SvgNoCss>().get());
+	setMirrorY(settings().get<SvgMirrorY>().get());
+	setMirrorX(settings().get<SvgMirrorX>().get());
+	setProfileThreshold(settings().get<SvgProfileThreshold>().get());
+
+	if (settings().get<SvgSubtractBefore>().has()) {
+		setSubtractionSettings(parse_subtract_before_project(settings().get<SvgSubtractBefore>().get()));
+	}
 
 	if (settings().get<SvgDrawStoreyHeights>().has()) {
 		setDrawStoreyHeights(parse_storey_height_display(settings().get<SvgDrawStoreyHeights>().get()));
@@ -2425,7 +2451,18 @@ std::string SvgSerializer::nameElement(express::Base elem_) {
 }
 
 void SvgSerializer::setFile(ifcopenshell::file* f) {
+	using namespace ifcopenshell::geometry::settings;
+
 	file = f;
+	auto apply_section_heights_from_storeys = [&]() {
+		if (settings().get<SvgSectionHeightFromStoreys>().get()) {
+			if (settings().get<SvgSectionHeight>().has()) {
+				setSectionHeightsFromStoreys(settings().get<SvgSectionHeight>().get());
+			} else {
+				setSectionHeightsFromStoreys();
+			}
+		}
+	};
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (storeys.empty()) {
@@ -2449,6 +2486,7 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 						delete matrix;
 #endif
 						logger::warning("No building storeys encountered, used for reference:", product);
+						apply_section_heights_from_storeys();
 						return;
 					}
 				}
@@ -2459,6 +2497,8 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 
 		logger::warning("No building storeys encountered, output might be invalid or missing");
 	}
+
+	apply_section_heights_from_storeys();
 }
 
 void SvgSerializer::setSectionHeight(double h, express::Base storey) {
