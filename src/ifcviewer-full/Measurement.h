@@ -39,6 +39,15 @@
 double volumeOfObjects(ViewportWindow& vp,
                        const std::vector<uint32_t>& object_ids);
 
+// Per-object volumes (m³).  Same algorithm as volumeOfObjects but
+// attributed per id rather than summed.  Skips ids that don't resolve
+// to a live instance, so the result may be shorter than the input.
+// Used by MainWindow's volume readout to drive both the total HUD and
+// the per-object overlay labels.
+std::vector<std::pair<uint32_t, double>>
+volumesPerObject(ViewportWindow& vp,
+                 const std::vector<uint32_t>& object_ids);
+
 // Click-to-accumulate area measurement.  Each pick resolves the screen
 // click to a (instance, triangle) using ViewportWindow's primitives,
 // expands it into the connected coplanar patch (BFS over shared edges,

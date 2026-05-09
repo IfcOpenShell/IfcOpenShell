@@ -255,11 +255,15 @@ public:
     // object selection); the app interprets them per-tool.  Esc exits the
     // active tool.  Backspace/Delete in length mode emits
     // toolBackspacePressed for "remove last point" semantics.
-    enum class ToolMode { None, Area, Length };
+    // Area / Length consume LMB clicks via surfacePickedInTool; Volume
+    // is passive — selection behaves as in None and the host just gates
+    // its volume HUD/labels on this mode.
+    enum class ToolMode { None, Area, Length, Volume };
     Q_ENUM(ToolMode)
 
     void toggleAreaTool();
     void toggleLengthTool();
+    void toggleVolumeTool();
     void setToolMode(ToolMode mode);
     ToolMode toolMode() const { return tool_mode_; }
 
@@ -379,6 +383,10 @@ public:
     // Frame the union of all finalized models.  No-op if the scene is empty.
     void viewAll();
 
+    // World-space AABB query.  Returns false when the object has no live
+    // instance or no mesh AABB yet (caller should treat as "unknown").
+    bool computeObjectAabb(uint32_t object_id, QVector3D& mn, QVector3D& mx) const;
+
     struct CameraState {
         QVector3D target;
         float distance;
@@ -466,10 +474,8 @@ private:
     void updateSectionDrag(int x, int y);
     void updateCamera();
 
-    // Geometry queries used by focusOnSelectedObject() / viewAll().  Both
-    // return false when nothing matched (caller should leave the camera
-    // alone).  Bounds are world-space AABBs.
-    bool computeObjectAabb(uint32_t object_id, QVector3D& mn, QVector3D& mx) const;
+    // Scene-wide AABB used by viewAll().  Returns false when the scene
+    // has no finalized geometry (caller should leave the camera alone).
     bool computeSceneAabb(QVector3D& mn, QVector3D& mx) const;
     // Re-aim the orbit camera so the bounding sphere of [mn, mx] just fits
     // vertically and horizontally within the current FOV, with `padding`
