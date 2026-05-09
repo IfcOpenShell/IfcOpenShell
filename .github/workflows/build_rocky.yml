@@ -12,12 +12,13 @@ jobs:
       - name: Install Dependencies
         run: |
           dnf update -y
+          dnf install -y epel-release
           dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
-                         findutils xz byacc
-          python3 -m pip install typing_extensions
+                         findutils xz byacc patchelf
+          python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
 
       - name: Install aws cli
@@ -56,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_IFCVIEWER=ON python3 ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()
@@ -88,6 +89,16 @@ jobs:
           cd ./build/`uname`/*/install/ifcopenshell
           mkdir -p ~/output
           install_root="$PWD"
+          QT6_VERSION="${QT6_VERSION:-6.8.3}"
+
+          if [ -z "${QT_DIR:-}" ]; then
+              for qt_candidate in "$(dirname "$install_root")"/qt6-${QT6_VERSION}-*/${QT6_VERSION}/*; do
+                  if [ -d "$qt_candidate/lib" ]; then
+                      QT_DIR="$qt_candidate"
+                      break
+                  fi
+              done
+          fi
 
           stage_runtime_payload() {
               dest="$1"
@@ -99,6 +110,34 @@ jobs:
                       find "$runtime_dir" -type f \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
                   done
               )
+          }
+
+          stage_qt_runtime_payload() {
+              exe_path="$1"
+              dest="$2"
+              [ -n "${QT_DIR:-}" ] && [ -d "$QT_DIR/lib" ] || return 0
+
+              if ! LD_LIBRARY_PATH="$QT_DIR/lib:${LD_LIBRARY_PATH:-}" ldd "$exe_path" 2>/dev/null | grep -q "libQt6"; then
+                  return 0
+              fi
+
+              find "$QT_DIR/lib" -maxdepth 1 \( -type f -o -type l \) -name "*.so*" -exec cp -L {} "$dest/" \;
+
+              if [ -d "$QT_DIR/plugins" ]; then
+                  pushd "$QT_DIR/plugins" > /dev/null
+                  find . \( -type f -o -type l \) -name "*.so*" | while IFS= read -r plugin_file; do
+                      mkdir -p "$dest/plugins/$(dirname "$plugin_file")"
+                      cp -L "$plugin_file" "$dest/plugins/$plugin_file"
+                  done
+                  popd > /dev/null
+                  if [ -d "$dest/plugins" ]; then
+                      find "$dest/plugins" -type f -name "*.so*" -exec patchelf --set-rpath '$ORIGIN/../..:$ORIGIN' {} \;
+                  fi
+              fi
+
+              find "$dest" -maxdepth 1 -type f -name "*.so*" -exec patchelf --set-rpath '$ORIGIN' {} \;
+
+              printf "[Paths]\nPrefix = .\n" > "$dest/qt.conf"
           }
 
           ls -d python-* | while read py_version; do
@@ -126,7 +165,9 @@ jobs:
               rm -rf "$package_dir"
               mkdir -p "$package_dir"
               cp "$exe_path" "$package_dir/"
+              patchelf --set-rpath '$ORIGIN' "$package_dir/$exe"
               stage_runtime_payload "$package_dir"
+              stage_qt_runtime_payload "$exe_path" "$package_dir"
               pushd "$package_dir" > /dev/null
               zip -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .
               popd > /dev/null

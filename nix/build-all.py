@@ -141,6 +141,7 @@ logger.addHandler(ch)
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
+BUILD_IFCVIEWER = os.getenv("BUILD_IFCVIEWER", "").lower() in {"1", "on", "true", "yes"}
 
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
@@ -161,6 +162,7 @@ TBB_VERSION = "2021.9.0"
 ROCKSDB_VERSION = "9.11.2"
 ZSTD_VERSION = "1.5.7"
 MANIFOLD_VERSION = "3.2.1"
+QT6_VERSION = os.getenv("QT6_VERSION", "6.8.3")
 
 # binaries
 cp = "cp"
@@ -335,6 +337,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
     "IfcOpenShell-Python": ("python", "swig", "IfcGeom"),
+    "IfcViewer": ("IfcGeom", "qt6"),
     "swig": (),
     "boost": (),
     "libxml2": (),
@@ -347,6 +350,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "rocksdb": ("zstd",),
     "zstd": (),
     "manifold": (),
+    "qt6": (),
     # 'usd': ('boost', 'oneTBB')
 }
 
@@ -400,6 +404,10 @@ else:
     targets = set(dependency_tree.keys())
 
 targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
+if not explicit_targets and not BUILD_IFCVIEWER:
+    targets.difference_update({"IfcViewer", "qt6"})
+if BUILD_IFCVIEWER:
+    targets.update(gather_dependencies("IfcViewer"))
 if WASM:
     SKIP_TARGETS_FOR_WASM = {
         "rocksdb",
@@ -409,6 +417,8 @@ if WASM:
         "IfcGeom",
         "IfcConvert",
         "IfcGeomServer",
+        "IfcViewer",
+        "qt6",
     }
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
     skip_targets = {t for t in targets if t.lower() in SKIP_TARGETS_FOR_WASM}
@@ -772,6 +782,55 @@ def build_dependency(
 
     if "diskcleanup" in flags:
         shutil.rmtree(build_dir, ignore_errors=True)
+
+
+def get_qt6_aqt_config() -> "tuple[str, str, str]":
+    if platform.system() != "Linux":
+        raise ValueError("Automatic Qt6 installation with aqtinstall is only configured for Linux builds.")
+
+    machine = platform.machine().lower()
+    if machine in {"x86_64", "amd64"}:
+        return "linux", "linux_gcc_64", "gcc_64"
+    if machine in {"aarch64", "arm64"}:
+        return "linux_arm64", "linux_gcc_arm64", "gcc_arm64"
+
+    raise ValueError(f"Automatic Qt6 installation is not configured for architecture '{platform.machine()}'.")
+
+
+def install_qt6() -> str:
+    host, qt_arch, install_suffix = get_qt6_aqt_config()
+    qt_install_root = INSTALL_DIR / f"qt6-{QT6_VERSION}-{install_suffix}"
+    qt_dir = qt_install_root / QT6_VERSION / install_suffix
+    os.environ["QT_DIR"] = str(qt_dir)
+
+    qt_config = qt_dir / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake"
+    qt_core = qt_dir / "lib" / "libQt6Core.so.6"
+    if qt_config.exists() and qt_core.exists():
+        logger.info(f"Found existing Qt6 at {qt_dir}, skipping")
+        return str(qt_dir)
+
+    os.makedirs(qt_install_root, exist_ok=True)
+    run(
+        [
+            sys.executable,
+            "-m",
+            "aqt",
+            "install-qt",
+            host,
+            "desktop",
+            QT6_VERSION,
+            qt_arch,
+            "-O",
+            str(qt_install_root),
+            "--archives",
+            "qtbase",
+        ]
+    )
+
+    if not qt_config.exists() or not qt_core.exists():
+        raise RuntimeError(f"Qt6 installation did not produce a usable Qt at {qt_dir}.")
+
+    return str(qt_dir)
 
 
 cecho("Collecting dependencies:", GREEN)
@@ -1279,6 +1338,9 @@ if "rocksdb" in targets:
         revision=f"v{ROCKSDB_VERSION}",
     )
 
+if "qt6" in targets:
+    install_qt6()
+
 cecho("Building IfcOpenShell:", GREEN)
 
 IFCOS_DIR = os.path.join(DEPS_DIR, "build", "ifcopenshell")
@@ -1390,14 +1452,23 @@ if "rocksdb" in targets:
 if "swig" in targets:
     cmake_args_prefix_path.append(f"{DEPS_DIR}/install/swig-{SWIG_VERSION}")
 
+if os.environ.get("QT_DIR"):
+    cmake_args_prefix_path.append(os.environ["QT_DIR"])
+    cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
+
+build_ifcviewer = BUILD_IFCVIEWER or "IfcViewer" in targets
+
 ifcos_build_args = [
     f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
+    f"-DBUILD_IFCVIEWER={OFF_ON[build_ifcviewer]}",
     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
 ]
 
-if not WASM and (not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer"} & set(explicit_targets)):
+if not WASM and (
+    build_ifcviewer or not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer", "IfcViewer"} & set(explicit_targets)
+):
     logger.info("\rConfiguring executables...")
 
     exec_args = [
