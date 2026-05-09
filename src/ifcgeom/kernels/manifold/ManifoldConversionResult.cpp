@@ -130,9 +130,9 @@ namespace {
 		std::unordered_map<std::pair<uint32_t, uint32_t>, int, EdgeHash> edges;
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
 			uint32_t tri[3] = {
-				mesh.triVerts[i * 3 + 0],
-				mesh.triVerts[i * 3 + 1],
-				mesh.triVerts[i * 3 + 2]
+				(uint32_t) mesh.triVerts[i * 3 + 0],
+				(uint32_t) mesh.triVerts[i * 3 + 1],
+				(uint32_t) mesh.triVerts[i * 3 + 2]
 			};
 			for (int j = 0; j < 3; ++j) {
 				auto a = tri[j];
