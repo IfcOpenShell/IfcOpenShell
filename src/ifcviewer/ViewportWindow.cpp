@@ -88,15 +88,21 @@ struct MeshQuant { vec4 aabb_min; vec4 aabb_max; };
 layout(std430, binding = 2) readonly buffer Meshes {
     MeshQuant meshes[];
 };
+// Per-object_id selection flag (bit 0 = in selection).  Sized so that
+// any object_id present in the scene is a valid index — see SelectionState.
+layout(std430, binding = 3) readonly buffer SelectionFlags {
+    uint sel_flags[];
+};
 
 uniform mat4 u_view_projection;
-uniform uint u_selected_id;
+uniform uint u_active_id;       // last single-clicked id (0 = none)
 
 out vec3 v_normal;
 out vec4 v_color;
 out vec3 v_world_pos;
 flat out uint v_object_id;
 flat out uint v_selected;
+flat out uint v_active;
 
 // Meyer et al. octahedral normal decode.  Input is in [-1,1]^2.
 vec3 octDecode(vec2 e) {
@@ -143,7 +149,10 @@ void main() {
     v_color = baked;
 
     v_object_id = inst.object_id;
-    v_selected = (v_object_id == u_selected_id) ? 1u : 0u;
+    // Index by object_id directly; SelectionState guarantees the buffer
+    // is sized to cover every id allocated to the scene.
+    v_selected  = ((sel_flags[v_object_id] & 1u) != 0u) ? 1u : 0u;
+    v_active    = (v_object_id == u_active_id) ? 1u : 0u;
 }
 )";
 
@@ -154,6 +163,7 @@ in vec4 v_color;
 in vec3 v_world_pos;
 flat in uint v_object_id;
 flat in uint v_selected;
+flat in uint v_active;
 
 uniform vec3 u_light_dir;       // primary key direction (world-space)
 uniform vec3 u_fill_dir;        // secondary fill direction
@@ -202,7 +212,11 @@ void main() {
     float cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
     color *= (1.0 - cavity);
 
-    if (v_selected == 1u) color = mix(color, vec3(0.2, 0.6, 1.0), 0.5);
+    // Selected (member of the multi-set) gets a blue tint; the active
+    // (last single-clicked) gets a stronger mix so the user can always
+    // tell which one drives the properties panel.
+    if (v_selected == 1u) color = mix(color, vec3(0.2, 0.6, 1.0), 0.45);
+    if (v_active   == 1u) color = mix(color, vec3(0.4, 0.8, 1.0), 0.40);
     frag_color = vec4(color, v_color.a);
 }
 )";
@@ -671,6 +685,7 @@ ViewportWindow::~ViewportWindow() {
             if (hiz_downsample_program_) gl_->glDeleteProgram(hiz_downsample_program_);
             if (hiz_downsample_vao_) gl_->glDeleteVertexArrays(1, &hiz_downsample_vao_);
             overlay_renderer_.release();
+            selection_.releaseGl();
         }
         context_->doneCurrent();
     }
@@ -692,6 +707,13 @@ void ViewportWindow::initGL() {
     buildPivotIndicator();
     buildSectionPlaneGizmo();
     overlay_renderer_.initialize(gl_);
+    selection_.initializeGl(gl_);
+    // Drive viewport repaints + tree/properties sync from selection state.
+    connect(&selection_, &SelectionState::changed, this,
+            [this](uint32_t active_id) {
+                requestUpdate();
+                emit objectPicked(active_id);
+            });
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
@@ -1074,6 +1096,8 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
 
     ModelGpuData& m = getOrCreateModel(chunk.model_id);
 
+    selection_.noteObjectId(chunk.object_id);
+
     InstanceCpu inst;
     inst.mesh_id  = chunk.local_mesh_id;
     inst.object_id = chunk.object_id;
@@ -1235,6 +1259,14 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.meshes = std::move(data.meshes);
     m.instances = std::move(data.instances);
 
+    // Sidecar path bypasses uploadInstanceChunk, so register every
+    // instance's object_id with the selection state up front — otherwise
+    // the per-object_id flags SSBO would be too small for these ids and
+    // their selection bit reads would silently fall outside the buffer.
+    for (const auto& inst : m.instances) {
+        selection_.noteObjectId(inst.object_id);
+    }
+
     uint32_t total_tri = 0;
     for (const auto& mesh : m.meshes) {
         total_tri += (mesh.index_count / 3) * mesh.instance_count;
@@ -1374,7 +1406,7 @@ void ViewportWindow::resetScene() {
         if (m.indirect_buffer) gl_->glDeleteBuffers(1, &m.indirect_buffer);
     }
     models_gpu_.clear();
-    selected_object_id_ = 0;
+    selection_.reset();
     have_cached_cull_ = false;
     requestUpdate();
 }
@@ -1436,8 +1468,10 @@ void ViewportWindow::removeModel(uint32_t model_id) {
 }
 
 void ViewportWindow::setSelectedObjectId(uint32_t id) {
-    selected_object_id_ = id;
-    requestUpdate();
+    // Convenience pass-through.  SelectionState fires `changed` which
+    // re-emits objectPicked + requestUpdate via the lambda hooked up in
+    // initGL, so we don't need to do those manually here.
+    selection_.setSelectedObjectId(id);
 }
 
 void ViewportWindow::setCamera(float tx, float ty, float tz,
@@ -1534,8 +1568,12 @@ void ViewportWindow::frameAabb(const QVector3D& mn, const QVector3D& mx,
 
 void ViewportWindow::focusOnSelectedObject() {
     if (camera_mode_ == CameraMode::Fps) return;
+    // F frames the *active* object so it's predictable across multi-select
+    // states.  Framing the union of every selected member would be more
+    // expansive but ambiguous in a large set.
+    const uint32_t target = selection_.activeObjectId();
     QVector3D mn, mx;
-    if (!computeObjectAabb(selected_object_id_, mn, mx)) {
+    if (!computeObjectAabb(target, mn, mx)) {
         qDebug("Focus: no object selected or no AABB available");
         return;
     }
@@ -2079,6 +2117,59 @@ uint32_t ViewportWindow::pickObjectAt(int x, int y) {
     return pixel;
 }
 
+std::unordered_set<uint32_t> ViewportWindow::picksInRect(const QRect& rect_logical) {
+    std::unordered_set<uint32_t> out;
+    if (!gl_initialized_) return out;
+    if (rect_logical.isEmpty() || rect_logical.width() < 1 || rect_logical.height() < 1) {
+        return out;
+    }
+    context_->makeCurrent(this);
+
+    const int w = width()  * devicePixelRatio();
+    const int h = height() * devicePixelRatio();
+    if (w <= 0 || h <= 0) return out;
+
+    // Reuse the same allocation path as pickObjectAt — call it once at
+    // (0,0) just to ensure the framebuffer matches the current size and
+    // the pick pass has been rendered for this state.
+    pickObjectAt(rect_logical.left(), rect_logical.top());
+
+    // Convert the logical-coords rect to physical pick-tex coords with
+    // GL's bottom-left origin.  Clamp to surface to avoid OOB reads.
+    const qreal dpr = devicePixelRatio();
+    QRect r = rect_logical
+        .intersected(QRect(0, 0, width(), height()));
+    if (r.isEmpty()) return out;
+    const int rx = int(r.left() * dpr);
+    const int ry_top = int((height() - (r.top() + r.height())) * dpr);
+    const int rw = std::max(1, int(r.width()  * dpr));
+    const int rh = std::max(1, int(r.height() * dpr));
+    if (rx < 0 || ry_top < 0 || rx + rw > w || ry_top + rh > h) {
+        // Final defensive clamp — devicePixelRatio + integer rounding can
+        // push the rect a pixel off the texture; readback would silently
+        // return zeros for those rows.
+        const int cx  = std::max(0, std::min(rx, w - 1));
+        const int cy  = std::max(0, std::min(ry_top, h - 1));
+        const int cw2 = std::max(1, std::min(rw, w - cx));
+        const int ch2 = std::max(1, std::min(rh, h - cy));
+        std::vector<uint32_t> pixels(size_t(cw2) * size_t(ch2), 0);
+        gl_->glGetTextureSubImage(pick_color_tex_, 0, cx, cy, 0, cw2, ch2, 1,
+                                  GL_RED_INTEGER, GL_UNSIGNED_INT,
+                                  GLsizei(pixels.size() * sizeof(uint32_t)),
+                                  pixels.data());
+        for (uint32_t id : pixels) if (id != 0) out.insert(id);
+        return out;
+    }
+
+    std::vector<uint32_t> pixels(size_t(rw) * size_t(rh), 0);
+    gl_->glGetTextureSubImage(pick_color_tex_, 0, rx, ry_top, 0, rw, rh, 1,
+                              GL_RED_INTEGER, GL_UNSIGNED_INT,
+                              GLsizei(pixels.size() * sizeof(uint32_t)),
+                              pixels.data());
+    for (uint32_t id : pixels) if (id != 0) out.insert(id);
+    return out;
+}
+
 bool ViewportWindow::pickSurfaceAt(int x, int y,
                                    uint32_t& object_id_out,
                                    QVector3D& world_pos_out,
@@ -2565,7 +2656,7 @@ void ViewportWindow::render() {
     GLint u_fill      = gl_->glGetUniformLocation(main_program_, "u_fill_dir");
     GLint u_sky       = gl_->glGetUniformLocation(main_program_, "u_sky_color");
     GLint u_ground    = gl_->glGetUniformLocation(main_program_, "u_ground_color");
-    GLint u_sel       = gl_->glGetUniformLocation(main_program_, "u_selected_id");
+    GLint u_active    = gl_->glGetUniformLocation(main_program_, "u_active_id");
     gl_->glUniformMatrix4fv(u_vp, 1, GL_FALSE, vp.constData());
     // Key light: high noon-ish from off-camera; fill ~120° away so back-of-
     // object surfaces still get some direct contribution.  Sky/ground tints
@@ -2577,7 +2668,8 @@ void ViewportWindow::render() {
     gl_->glUniform3f(u_fill,  -0.3f, -0.5f, 0.8f);
     gl_->glUniform3f(u_sky,    0.55f, 0.60f, 0.70f);
     gl_->glUniform3f(u_ground, 0.35f, 0.32f, 0.28f);
-    gl_->glUniform1ui(u_sel, selected_object_id_);
+    gl_->glUniform1ui(u_active, selection_.activeObjectId());
+    selection_.bindForRender(/*binding_index=*/3);
     uploadClipPlaneUniforms(main_program_);
 
     visible_triangles_ = 0;
@@ -2740,6 +2832,14 @@ void ViewportWindow::render() {
     // does not restore.
     {
         const qreal dpr = devicePixelRatio();
+        // Push the live box-select rect (or empty when not dragging) so
+        // the overlay draws/clears it as part of the per-frame pass.
+        QRect sel_rect;
+        if (box_select_active_) {
+            sel_rect = QRect(box_select_start_pos_,
+                             box_select_current_pos_).normalized();
+        }
+        overlay_renderer_.setSelectionRect(sel_rect);
         overlay_renderer_.render(vp.constData(),
                                  int(width()  * dpr),
                                  int(height() * dpr),
@@ -3455,6 +3555,9 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
     }
     active_button_ = e->button();
     last_mouse_pos_ = e->pos();
+    box_select_armed_       = false;
+    box_select_active_      = false;
+    press_pick_id_          = 0;
     if (e->button() == Qt::MiddleButton) {
         setPivotIndicatorVisible(true);
         requestUpdate();
@@ -3483,6 +3586,23 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
             section_plane_selected_ = -1;
             requestUpdate();
         }
+        return;
+    }
+
+    // Plain LMB: pick now so release can apply click semantics without
+    // a second pick pass, and arm a potential box-select drag — promoted
+    // to box_select_active_ at the first move past the click threshold.
+    // Arming on every LMB press (not just empty-space presses) means a
+    // drag that happens to start on an object still box-selects, which
+    // matches user intuition: the start point shouldn't disqualify the
+    // gesture.  Tool-mode LMB defers pick handling to surfacePickedInTool
+    // on release.
+    if (e->button() == Qt::LeftButton && tool_mode_ == ToolMode::None) {
+        press_pick_id_ = pickObjectAt(e->pos().x(), e->pos().y());
+        box_select_start_pos_   = e->pos();
+        box_select_current_pos_ = e->pos();
+        box_select_press_mods_  = e->modifiers();
+        box_select_armed_       = true;
     }
 }
 void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
@@ -3493,22 +3613,57 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
         active_button_ = Qt::NoButton;
         return;
     }
-    // LMB pick is suppressed in section-tool mode — LMB there creates or
-    // selects planes (handled in handleMousePress) and the release should
-    // not also trigger object selection.
-    if (active_button_ == Qt::LeftButton
-        && !section_tool_active_
-        && (e->pos() - last_mouse_pos_).manhattanLength() < 5) {
-        if (tool_mode_ != ToolMode::None) {
-            emit surfacePickedInTool(e->pos().x(), e->pos().y(),
-                                     int(e->modifiers()));
-        } else {
-            uint32_t id = pickObjectAt(e->pos().x(), e->pos().y());
-            selected_object_id_ = id;
-            emit objectPicked(id);
-            requestUpdate();  // selection highlight changed
+
+    if (active_button_ == Qt::LeftButton && !section_tool_active_) {
+        const bool was_drag =
+            (e->pos() - box_select_start_pos_).manhattanLength() >= 5;
+
+        if (box_select_active_) {
+            // Finalize a box-select.  Modifier captured at press-time
+            // decides commit semantics: plain → replace, Shift → add,
+            // Ctrl → remove.  Box-select never sets the active id; the
+            // last single-clicked object remains the active.
+            const QRect rect = QRect(box_select_start_pos_,
+                                     e->pos()).normalized();
+            const auto picks = picksInRect(rect);
+            const auto mods  = box_select_press_mods_;
+            if (mods & Qt::ShiftModifier) {
+                selection_.addToSelection(picks);
+            } else if (mods & Qt::ControlModifier) {
+                selection_.removeFromSelection(picks);
+            } else {
+                // Replace.  Active stays only if the new set still
+                // contains it; SelectionState handles the coercion.
+                selection_.setSelection(picks, selection_.activeObjectId());
+            }
+        } else if (!was_drag) {
+            // Click — apply press-time pick + modifiers.
+            if (tool_mode_ != ToolMode::None) {
+                emit surfacePickedInTool(e->pos().x(), e->pos().y(),
+                                         int(e->modifiers()));
+            } else {
+                const auto mods = e->modifiers();
+                if (mods & (Qt::ShiftModifier | Qt::ControlModifier)) {
+                    if (press_pick_id_ != 0) {
+                        // Toggle.  No-op on empty space so a stray
+                        // modifier-click doesn't blow away the set.
+                        selection_.toggleInSelection(press_pick_id_);
+                    }
+                } else {
+                    // Plain click — replace (or clear, for empty hit).
+                    selection_.setSelectedObjectId(press_pick_id_);
+                }
+            }
         }
+        // Drag from an object (no box select armed, movement > threshold)
+        // is intentionally a no-op — keeps stray drags from rewriting
+        // the selection.
+
+        box_select_armed_  = false;
+        box_select_active_ = false;
+        press_pick_id_     = 0;
     }
+
     const bool was_navigating = (active_button_ == Qt::MiddleButton);
     active_button_ = Qt::NoButton;
     if (was_navigating && pivot_indicator_visible_) {
@@ -3555,6 +3710,23 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
         last_mouse_pos_ = e->pos();
         return;
     }
+
+    // Promote an armed box-select to active once the cursor crosses the
+    // 5-px click threshold, then keep updating the rect for the overlay.
+    // last_mouse_pos_ stays at press position while armed so a fast tiny
+    // drag isn't classified as a click on release.
+    if (box_select_armed_ && active_button_ == Qt::LeftButton) {
+        if (!box_select_active_
+            && (e->pos() - box_select_start_pos_).manhattanLength() >= 5) {
+            box_select_active_ = true;
+        }
+        if (box_select_active_) {
+            box_select_current_pos_ = e->pos();
+            requestUpdate();
+        }
+        return;
+    }
+
     QPoint delta = e->pos() - last_mouse_pos_;
     last_mouse_pos_ = e->pos();
     if (active_button_ == Qt::MiddleButton) {
@@ -3697,7 +3869,8 @@ void ViewportWindow::setModelTransformation(uint32_t model_id,
 }
 
 void ViewportWindow::printSelectedObjectCoords() {
-    if (selected_object_id_ == 0) {
+    const uint32_t target = selection_.activeObjectId();
+    if (target == 0) {
         qInfo("printSelectedObjectCoords: no object selected");
         return;
     }
@@ -3710,7 +3883,7 @@ void ViewportWindow::printSelectedObjectCoords() {
         const ModelGpuData& m = kv.second;
         for (size_t i = 0; i < m.instances.size(); ++i) {
             const InstanceCpu& inst = m.instances[i];
-            if (inst.object_id != selected_object_id_) continue;
+            if (inst.object_id != target) continue;
 
             qInfo("Selected object %u (model %u, mesh %u, instance %zu):",
                   inst.object_id, inst.model_id, inst.mesh_id, i);
@@ -3776,7 +3949,7 @@ void ViewportWindow::printSelectedObjectCoords() {
         }
     }
     qInfo("printSelectedObjectCoords: object_id %u not found in any model",
-          selected_object_id_);
+          target);
 }
 
 bool ViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,

@@ -34,6 +34,7 @@ QT_END_NAMESPACE
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <cstdint>
 #include <mutex>
 #include <memory>
@@ -46,6 +47,7 @@ QT_END_NAMESPACE
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
 #include "OverlayRenderer.h"
+#include "Selection.h"
 #include "SidecarCache.h"
 
 // Matches GL_DRAW_INDIRECT_BUFFER layout for glMultiDrawElementsIndirect.
@@ -306,8 +308,21 @@ public:
     void setModelCoordinateOperation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
     void setModelTransformation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
 
+    // Selection.  The viewport owns a SelectionState that tracks both
+    // the multi-set and the "active" (last single-clicked) id.  External
+    // callers (MainWindow / tree sync) drive selection through it.
+    SelectionState&       selection()       { return selection_; }
+    const SelectionState& selection() const { return selection_; }
+    // Convenience: replace the selection with {id} (or clear if id==0).
+    // Used by callers that have not yet been ported off the single-id API.
     void setSelectedObjectId(uint32_t id);
+
     uint32_t pickObjectAt(int x, int y);
+    // Render the pick pass and collect every distinct non-zero object_id
+    // covered by the pixels inside `rect` (logical coords, top-left origin).
+    // Used by the box-select drag.  Returns an empty set if rect is empty
+    // or off-surface.
+    std::unordered_set<uint32_t> picksInRect(const QRect& rect);
 
     // Extended pick: returns the object id, world-space hit point, and
     // world-space surface normal at (x, y).  Renders the same pick pass as
@@ -695,8 +710,23 @@ private:
     QElapsedTimer  fps_last_tick_;
     bool           fps_ignore_next_mouse_move_ = false;
 
-    // Selection
-    uint32_t selected_object_id_ = 0;
+    // Selection — set + active id + per-object_id flags SSBO (binding=3).
+    SelectionState selection_;
+
+    // LMB-press state.  press_pick_id_ caches the object hit at press
+    // time so the release path can apply click semantics without a
+    // second pick pass.  box_select_armed_ is set only when the press
+    // landed on empty space — a subsequent drag past the click
+    // threshold then promotes to box_select_active_, so a small wobble
+    // on a click doesn't accidentally box-select.  Modifiers captured
+    // at press-time decide commit semantics: plain replace, Shift add,
+    // Ctrl remove.
+    uint32_t  press_pick_id_          = 0;
+    bool      box_select_armed_       = false;
+    bool      box_select_active_      = false;
+    QPoint    box_select_start_pos_;
+    QPoint    box_select_current_pos_;
+    Qt::KeyboardModifiers box_select_press_mods_ = Qt::NoModifier;
 
     // Active measurement tool: see ToolMode / surfacePickedInTool.
     ToolMode tool_mode_              = ToolMode::None;

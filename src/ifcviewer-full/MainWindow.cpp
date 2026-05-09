@@ -911,20 +911,32 @@ void MainWindow::onAllLoadsFinished() {
 }
 
 void MainWindow::onObjectPicked(uint32_t object_id) {
-    viewport_->setSelectedObjectId(object_id);
-
+    // Signal originates from the viewport's SelectionState — viewport
+    // selection is already authoritative.  Pushing setSelectedObjectId
+    // back here would clobber a multi-select set with {object_id}.
     auto it = tree_items_.find(object_id);
     if (it != tree_items_.end()) {
         element_tree_->blockSignals(true);
         element_tree_->setCurrentItem(it->second);
         element_tree_->blockSignals(false);
+    } else {
+        // No active (e.g. selection cleared, or active id is in a model
+        // whose tree node hasn't materialised) — drop the tree highlight
+        // so the panel doesn't lie about what's active.
+        element_tree_->blockSignals(true);
+        element_tree_->setCurrentItem(nullptr);
+        element_tree_->blockSignals(false);
     }
 
     populateProperties(object_id);
 
-    if (object_id != 0) {
-        const double v = volumeOfObjects(*viewport_, {object_id});
-        qInfo("Volume of object %u: %.6f m^3", object_id, v);
+    // Volume readout: report for the full selection so multi-select
+    // matches the highlighted set.
+    const auto& selection = viewport_->selection().selectionIds();
+    if (!selection.empty()) {
+        std::vector<uint32_t> ids(selection.begin(), selection.end());
+        const double v = volumeOfObjects(*viewport_, ids);
+        qInfo("Volume of %zu selected object(s): %.6f m^3", ids.size(), v);
     }
 }
 
@@ -933,6 +945,8 @@ void MainWindow::onTreeSelectionChanged() {
     if (items.isEmpty()) return;
 
     uint32_t object_id = items.first()->data(0, Qt::UserRole).toUInt();
+    // Tree stays single-select per UX choice — clicking a tree item
+    // replaces the viewport's multi-set with just that item.
     viewport_->setSelectedObjectId(object_id);
     populateProperties(object_id);
 }

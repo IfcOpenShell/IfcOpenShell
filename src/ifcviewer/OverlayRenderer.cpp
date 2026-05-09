@@ -382,6 +382,10 @@ void OverlayRenderer::setOverlayLabels(const std::vector<Label>& labels) {
     labels_ = labels;
 }
 
+void OverlayRenderer::setSelectionRect(const QRect& rect_logical) {
+    selection_rect_ = rect_logical;
+}
+
 void OverlayRenderer::setHighlightTriangles(const std::vector<float>& world_xyz,
                                              float r, float g, float b, float a) {
     if (!gl_) return;
@@ -512,6 +516,90 @@ void OverlayRenderer::render(const float view_proj[16],
     gl_->glDepthMask(prev_depth_msk);
     gl_->glDepthFunc(prev_depth_func);
 
+    if (pixel_w <= 0 || pixel_h <= 0) return;
+
+    const float logical_w = float(pixel_w) / float(dpr ? dpr : 1.0);
+    const float logical_h = float(pixel_h) / float(dpr ? dpr : 1.0);
+    auto px_to_ndc_x = [logical_w](float px) {
+        return (px / logical_w) * 2.0f - 1.0f;
+    };
+    auto px_to_ndc_y = [logical_h](float px) {
+        return 1.0f - (px / logical_h) * 2.0f;
+    };
+
+    // Box-select rectangle: translucent fill + 1-px outline drawn as
+    // four thin rects.  Comes before the HUD/label pass so the HUD
+    // backgrounds still render on top of the rectangle if they overlap.
+    if (selection_rect_.isValid()
+        && selection_rect_.width()  > 0
+        && selection_rect_.height() > 0) {
+        struct RectPx { float x0, y0, x1, y1; };
+        const QRect& sr = selection_rect_;
+        const float sx0 = float(sr.left());
+        const float sy0 = float(sr.top());
+        const float sx1 = float(sr.right() + 1);
+        const float sy1 = float(sr.bottom() + 1);
+        const RectPx pieces[5] = {
+            // Fill
+            {sx0, sy0, sx1, sy1},
+            // Top edge
+            {sx0, sy0, sx1, sy0 + 1.0f},
+            // Bottom edge
+            {sx0, sy1 - 1.0f, sx1, sy1},
+            // Left edge
+            {sx0, sy0, sx0 + 1.0f, sy1},
+            // Right edge
+            {sx1 - 1.0f, sy0, sx1, sy1},
+        };
+        const float colors[5][4] = {
+            {0.30f, 0.65f, 1.0f, 0.18f},  // fill
+            {0.30f, 0.65f, 1.0f, 0.9f},   // outline (each edge)
+            {0.30f, 0.65f, 1.0f, 0.9f},
+            {0.30f, 0.65f, 1.0f, 0.9f},
+            {0.30f, 0.65f, 1.0f, 0.9f},
+        };
+
+        GLboolean prev_dt2  = gl_->glIsEnabled(GL_DEPTH_TEST);
+        GLboolean prev_cf2  = gl_->glIsEnabled(GL_CULL_FACE);
+        GLboolean prev_bl2  = gl_->glIsEnabled(GL_BLEND);
+        gl_->glDisable(GL_DEPTH_TEST);
+        gl_->glDisable(GL_CULL_FACE);
+        gl_->glEnable(GL_BLEND);
+        gl_->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        gl_->glUseProgram(program_rect_);
+        gl_->glBindVertexArray(vao_rect_);
+
+        // Each piece is its own draw so we can switch alpha between
+        // fill and outline.  All five share the same VBO slot — we
+        // stream-overwrite per draw.
+        const size_t bytes = 12 * sizeof(float);
+        if (bytes > vbo_rect_capacity_) {
+            const size_t new_cap = bytes + bytes / 2;
+            gl_->glNamedBufferData(vbo_rect_, GLsizeiptr(new_cap),
+                                   nullptr, GL_DYNAMIC_DRAW);
+            vbo_rect_capacity_ = new_cap;
+        }
+        for (int i = 0; i < 5; ++i) {
+            const float x0 = px_to_ndc_x(pieces[i].x0);
+            const float x1 = px_to_ndc_x(pieces[i].x1);
+            const float y0 = px_to_ndc_y(pieces[i].y0);
+            const float y1 = px_to_ndc_y(pieces[i].y1);
+            const float ndc[12] = {
+                x0, y0,  x1, y0,  x0, y1,
+                x0, y1,  x1, y0,  x1, y1
+            };
+            gl_->glNamedBufferSubData(vbo_rect_, 0, GLsizeiptr(bytes), ndc);
+            gl_->glUniform4f(u_rect_color_,
+                             colors[i][0], colors[i][1],
+                             colors[i][2], colors[i][3]);
+            gl_->glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+        gl_->glBindVertexArray(0);
+        if (prev_dt2) gl_->glEnable(GL_DEPTH_TEST);
+        if (prev_cf2) gl_->glEnable(GL_CULL_FACE);
+        if (!prev_bl2) gl_->glDisable(GL_BLEND);
+    }
+
     // Two-stage HUD/label pass: collect rect bounds (in logical pixels) +
     // text strings, draw all rect backgrounds via GL (screen-space NDC
     // quads, depth test off), then run a QPainter pass that *only* draws
@@ -519,10 +607,7 @@ void OverlayRenderer::render(const float view_proj[16],
     // QOpenGLPaintDevice quirk where solid fills silently drop while
     // text continues to render.
     const bool any_painter = !hud_text_.isEmpty() || !labels_.empty();
-    if (!any_painter || pixel_w <= 0 || pixel_h <= 0) return;
-
-    const float logical_w = float(pixel_w) / float(dpr ? dpr : 1.0);
-    const float logical_h = float(pixel_h) / float(dpr ? dpr : 1.0);
+    if (!any_painter) return;
 
     QFont label_font("monospace", 9);
     label_font.setStyleHint(QFont::TypeWriter);
@@ -577,12 +662,6 @@ void OverlayRenderer::render(const float view_proj[16],
     if (!items.empty()) {
         std::vector<float> ndc;
         ndc.reserve(items.size() * 12);   // 6 verts * 2 floats per rect
-        auto px_to_ndc_x = [logical_w](float px) {
-            return (px / logical_w) * 2.0f - 1.0f;
-        };
-        auto px_to_ndc_y = [logical_h](float px) {
-            return 1.0f - (px / logical_h) * 2.0f;
-        };
         for (const auto& it : items) {
             const float x0 = px_to_ndc_x(float(it.bg.left()));
             const float x1 = px_to_ndc_x(float(it.bg.right() + 1));
