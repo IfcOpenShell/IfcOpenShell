@@ -18,36 +18,27 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_PANELS_MODELSPANELTYPES_H
+#define IFCINTERFACE_PANELS_MODELSPANELTYPES_H
 
-#include <QDockWidget>
+#include <QList>
+#include <QString>
 
-class QWidget;
-class QVBoxLayout;
+namespace ifcinterface::modules::models {
 
-namespace ifcinterface::components {
-
-class Panel : public QDockWidget {
-    Q_OBJECT
-
-public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
-
-    void addBodyWidget(QWidget* widget);
-    void clearBodyWidgets();
-
-signals:
-    void settingsRequested();
-
-private:
-    QVBoxLayout* body_layout_ = nullptr;
+enum class ItemKind {
+    Group,
+    Model,
 };
 
-} // namespace ifcinterface::components
+struct TreeNode {
+    QString id;
+    QString name;
+    ItemKind kind = ItemKind::Group;
+    bool visible = true;
+    QList<TreeNode> children;
+};
+
+} // namespace ifcinterface::modules::models
 
 #endif

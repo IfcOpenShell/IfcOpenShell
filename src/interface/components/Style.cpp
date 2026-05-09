@@ -128,6 +128,7 @@ QString buildAppStyleSheet() {
         QSpinBox,
         QDoubleSpinBox,
         QCheckBox,
+        QRadioButton,
         QPushButton,
         QToolButton {
             color: ${primary_text};
@@ -203,10 +204,25 @@ QString buildAppStyleSheet() {
             background: ${control_background};
             border: 1px solid ${border};
             border-radius: ${panel_radius}px;
-            padding: ${padding}px ${padding}px;
+            padding: ${padding}px 24px ${padding}px ${padding}px;
         }
         QComboBox:focus {
             border: 1px solid ${control_border_focus};
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 18px;
+            border: none;
+            background: transparent;
+        }
+        QComboBox::down-arrow {
+            width: 0px;
+            height: 0px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid ${secondary_text};
+            margin-right: 4px;
         }
         QComboBox QAbstractItemView {
             background: ${panel_background};
@@ -218,10 +234,37 @@ QString buildAppStyleSheet() {
             background: ${control_background};
             border: 1px solid ${border};
             border-radius: ${panel_radius}px;
-            padding: ${padding}px ${padding}px;
+            padding: ${padding}px 24px ${padding}px ${padding}px;
         }
         QSpinBox:focus, QDoubleSpinBox:focus {
             border: 1px solid ${control_border_focus};
+        }
+        QSpinBox::up-button, QDoubleSpinBox::up-button,
+        QSpinBox::down-button, QDoubleSpinBox::down-button {
+            subcontrol-origin: padding;
+            width: 18px;
+            border: none;
+            background: transparent;
+        }
+        QSpinBox::up-button, QDoubleSpinBox::up-button {
+            subcontrol-position: top right;
+        }
+        QSpinBox::down-button, QDoubleSpinBox::down-button {
+            subcontrol-position: bottom right;
+        }
+        QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+            width: 0px;
+            height: 0px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 5px solid ${secondary_text};
+        }
+        QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+            width: 0px;
+            height: 0px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid ${secondary_text};
         }
         QCheckBox {
             background: transparent;
@@ -240,6 +283,29 @@ QString buildAppStyleSheet() {
         QCheckBox::indicator:checked {
             border: 1px solid ${selection_background};
             background: ${selection_background};
+        }
+        QRadioButton {
+            background: transparent;
+            color: ${primary_text};
+            spacing: 8px;
+            padding: 2px 0;
+        }
+        QRadioButton::indicator {
+            width: 16px;
+            height: 16px;
+            border: 1px solid ${border};
+            border-radius: 8px;
+            background: ${control_background};
+        }
+        QRadioButton::indicator:hover {
+            background: ${ribbon_button_hover};
+        }
+        QRadioButton::indicator:checked {
+            border: 1px solid ${selection_background};
+            background: ${selection_background};
+        }
+        QRadioButton::indicator:unchecked {
+            background: ${control_background};
         }
         QPushButton {
             background: ${control_background};

@@ -38,7 +38,10 @@ namespace {
 
 class DockTitleBar : public QWidget {
 public:
-    explicit DockTitleBar(const QString& title, bool has_settings = false, QWidget* parent = nullptr)
+    explicit DockTitleBar(const QString& title,
+                          bool has_settings = false,
+                          std::function<void()> on_settings = {},
+                          QWidget* parent = nullptr)
         : QWidget(parent)
     {
         auto* layout = new QHBoxLayout(this);
@@ -58,11 +61,8 @@ public:
             settings->setFixedSize(18, 18);
             settings->setObjectName("panelTitleButton");
             settings->setToolTip(QString("%1 settings").arg(title));
-            connect(settings, &QToolButton::clicked, this, [this, title]() {
-                auto* anchor = parentWidget();
-                QMenu menu(anchor);
-                menu.addAction(QString("%1 settings coming soon").arg(title));
-                menu.exec(QCursor::pos());
+            connect(settings, &QToolButton::clicked, this, [on_settings = std::move(on_settings)]() {
+                if (on_settings) on_settings();
             });
             layout->addWidget(settings);
         }
@@ -118,7 +118,9 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
     setFeatures(QDockWidget::DockWidgetMovable |
                 QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
-    setTitleBarWidget(new DockTitleBar(title, has_settings, this));
+    setTitleBarWidget(new DockTitleBar(title, has_settings, [this]() {
+        emit settingsRequested();
+    }, this));
     setWidget(outer);
 }
 

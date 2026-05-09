@@ -18,36 +18,33 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
-#define IFCINTERFACE_COMPONENTS_PANEL_PANELCHROME_H
+#ifndef IFCINTERFACE_PANELS_MODELSPANELVIEW_H
+#define IFCINTERFACE_PANELS_MODELSPANELVIEW_H
 
-#include <QDockWidget>
+#include "Types.h"
 
-class QWidget;
-class QVBoxLayout;
+#include <QObject>
 
-namespace ifcinterface::components {
+namespace ifcinterface { class SessionState; }
 
-class Panel : public QDockWidget {
+namespace ifcinterface::modules::models {
+
+class ModelsPanel;
+
+class ModelsPanelView : public QObject {
     Q_OBJECT
-
 public:
-    explicit Panel(const QString& title,
-                   QWidget* content = nullptr,
-                   QWidget* parent = nullptr,
-                   bool has_settings = false,
-                   bool scrollable = false);
-
-    void addBodyWidget(QWidget* widget);
-    void clearBodyWidgets();
-
-signals:
-    void settingsRequested();
+    explicit ModelsPanelView(ModelsPanel* widget,
+                             ifcinterface::SessionState* session_state,
+                             QObject* parent = nullptr);
 
 private:
-    QVBoxLayout* body_layout_ = nullptr;
+    void reload();
+
+    ModelsPanel* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcinterface::modules::models
 
 #endif
