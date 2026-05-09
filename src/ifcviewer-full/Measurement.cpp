@@ -94,6 +94,41 @@ double volumeOfObjects(ViewportWindow& vp,
     return total;
 }
 
+std::vector<std::pair<uint32_t, double>>
+volumesPerObject(ViewportWindow& vp,
+                 const std::vector<uint32_t>& object_ids) {
+    std::vector<std::pair<uint32_t, double>> out;
+    if (object_ids.empty()) return out;
+    out.reserve(object_ids.size());
+
+    // Cache the local-frame volume per unique (model_id, mesh_id) so each
+    // mesh is read back at most once even when many instances share it
+    // (common for repeated families like windows / columns).
+    std::unordered_map<uint64_t, double> mesh_vol_local;
+    mesh_vol_local.reserve(object_ids.size());
+
+    ViewportWindow::MeshTriangles tris;
+    for (uint32_t oid : object_ids) {
+        ViewportWindow::InstanceLookup lk;
+        if (!vp.findInstance(oid, lk)) continue;
+
+        const uint64_t key = (uint64_t(lk.model_id) << 32) | lk.mesh_id;
+        auto it = mesh_vol_local.find(key);
+        double v_local = 0.0;
+        if (it == mesh_vol_local.end()) {
+            if (vp.readbackMeshTriangles(lk.model_id, lk.mesh_id, tris)) {
+                v_local = meshLocalVolume(tris);
+            }
+            mesh_vol_local.emplace(key, v_local);
+        } else {
+            v_local = it->second;
+        }
+        const double det = std::abs(det3(lk.placement_transformation));
+        out.emplace_back(oid, v_local * det);
+    }
+    return out;
+}
+
 namespace {
 
 // edge_key: undirected edge between two mesh-local vertex indices.

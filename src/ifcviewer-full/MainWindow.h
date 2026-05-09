@@ -93,6 +93,10 @@ private:
     bool confirmDiscardIfDirty();
     void updateWindowTitle();
     void populateProperties(uint32_t object_id);
+    // Push the volume HUD + per-object volume labels for the current
+    // selection.  No-op when a measurement tool is active — that tool
+    // owns the overlay state until it's exited.
+    void updateVolumeReadout();
     void appendElementToTree(uint32_t model_id,
                              uint32_t object_id,
                              int ifc_id,

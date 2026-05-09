@@ -238,8 +238,17 @@ void MainWindow::setupUi() {
             viewport_->setHudText("Length tool: click first point");
             status_label_->setText("Length tool: LMB add point, Backspace remove last, Esc exits");
             break;
+        case ViewportWindow::ToolMode::Volume:
+            // Volume tool is passive — selection works as in None.  The
+            // readout helper writes both HUD and per-object labels for
+            // whatever's currently selected, then keeps them in sync as
+            // the selection changes.
+            status_label_->setText("Volume tool: click / box-select objects, Esc exits");
+            updateVolumeReadout();
+            break;
         case ViewportWindow::ToolMode::None:
             viewport_->setHudText(QString());
+            viewport_->setOverlayLabels({});
             status_label_->setText("Ready");
             break;
         }
@@ -332,6 +341,9 @@ void MainWindow::setupMenus() {
     view_menu->addAction("Measure &Length", this, [this]() {
         viewport_->toggleLengthTool();
     }, QKeySequence("Ctrl+Shift+L"));
+    view_menu->addAction("Measure &Volume", this, [this]() {
+        viewport_->toggleVolumeTool();
+    }, QKeySequence("Ctrl+Shift+V"));
     view_menu->addSeparator();
     view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
     view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);
@@ -929,15 +941,47 @@ void MainWindow::onObjectPicked(uint32_t object_id) {
     }
 
     populateProperties(object_id);
+    updateVolumeReadout();
+}
 
-    // Volume readout: report for the full selection so multi-select
-    // matches the highlighted set.
-    const auto& selection = viewport_->selection().selectionIds();
-    if (!selection.empty()) {
-        std::vector<uint32_t> ids(selection.begin(), selection.end());
-        const double v = volumeOfObjects(*viewport_, ids);
-        qInfo("Volume of %zu selected object(s): %.6f m^3", ids.size(), v);
+void MainWindow::updateVolumeReadout() {
+    // Volume readout only renders while the volume tool is active —
+    // matches Area/Length, which are also gated behind their own tool
+    // mode.  Other modes own the HUD + overlay labels for their
+    // lifetime, so we stay quiet here.
+    if (viewport_->toolMode() != ViewportWindow::ToolMode::Volume) return;
+
+    const auto& sel = viewport_->selection().selectionIds();
+    if (sel.empty()) {
+        viewport_->setHudText(QString());
+        viewport_->setOverlayLabels({});
+        return;
     }
+
+    std::vector<uint32_t> ids(sel.begin(), sel.end());
+    const auto per_obj = volumesPerObject(*viewport_, ids);
+
+    double total = 0.0;
+    std::vector<OverlayRenderer::Label> labels;
+    labels.reserve(per_obj.size());
+    for (const auto& [oid, v] : per_obj) {
+        total += v;
+        QVector3D mn, mx;
+        if (!viewport_->computeObjectAabb(oid, mn, mx)) continue;
+        OverlayRenderer::Label lbl;
+        const QVector3D c = (mn + mx) * 0.5f;
+        lbl.world_pos[0] = c.x();
+        lbl.world_pos[1] = c.y();
+        lbl.world_pos[2] = c.z();
+        lbl.text = QString::number(v, 'f', 4) + " m³";
+        labels.push_back(std::move(lbl));
+    }
+
+    viewport_->setHudText(QString("Volume: %1 m³  (%2 object%3)")
+        .arg(total, 0, 'f', 4)
+        .arg(per_obj.size())
+        .arg(per_obj.size() == 1 ? "" : "s"));
+    viewport_->setOverlayLabels(labels);
 }
 
 void MainWindow::onTreeSelectionChanged() {

@@ -3596,8 +3596,11 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
     // drag that happens to start on an object still box-selects, which
     // matches user intuition: the start point shouldn't disqualify the
     // gesture.  Tool-mode LMB defers pick handling to surfacePickedInTool
-    // on release.
-    if (e->button() == Qt::LeftButton && tool_mode_ == ToolMode::None) {
+    // on release for tools that consume clicks (Area / Length); Volume is
+    // passive and routes input through normal selection.
+    const bool tool_consumes_clicks =
+        (tool_mode_ == ToolMode::Area || tool_mode_ == ToolMode::Length);
+    if (e->button() == Qt::LeftButton && !tool_consumes_clicks) {
         press_pick_id_ = pickObjectAt(e->pos().x(), e->pos().y());
         box_select_start_pos_   = e->pos();
         box_select_current_pos_ = e->pos();
@@ -3637,8 +3640,11 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
                 selection_.setSelection(picks, selection_.activeObjectId());
             }
         } else if (!was_drag) {
-            // Click — apply press-time pick + modifiers.
-            if (tool_mode_ != ToolMode::None) {
+            // Click — apply press-time pick + modifiers.  Area / Length
+            // intercept clicks; None and Volume drive normal selection.
+            const bool tool_consumes_clicks =
+                (tool_mode_ == ToolMode::Area || tool_mode_ == ToolMode::Length);
+            if (tool_consumes_clicks) {
                 emit surfacePickedInTool(e->pos().x(), e->pos().y(),
                                          int(e->modifiers()));
             } else {
@@ -4223,6 +4229,10 @@ void ViewportWindow::toggleAreaTool() {
 
 void ViewportWindow::toggleLengthTool() {
     setToolMode(tool_mode_ == ToolMode::Length ? ToolMode::None : ToolMode::Length);
+}
+
+void ViewportWindow::toggleVolumeTool() {
+    setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::None : ToolMode::Volume);
 }
 
 void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
