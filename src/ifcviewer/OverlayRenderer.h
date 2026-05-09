@@ -20,6 +20,7 @@
 #ifndef IFCVIEWER_OVERLAYRENDERER_H
 #define IFCVIEWER_OVERLAYRENDERER_H
 
+#include <QRect>
 #include <QString>
 #include <QtOpenGL/QOpenGLFunctions_4_5_Core>
 
@@ -85,6 +86,12 @@ public:
     // Top-left HUD text drawn via QPainter on the GL surface as part of
     // render().  Empty hides the HUD.
     void setHudText(const QString& text);
+
+    // Box-select rectangle (in logical pixel coords, top-left origin).
+    // Drawn as a translucent fill + 1-px outline using the same
+    // screen-space rect program that draws label/HUD backgrounds.
+    // Empty rect hides it.
+    void setSelectionRect(const QRect& rect_logical);
 
     // Render every overlay primitive in order: GL highlight triangles
     // (using `view_proj`, column-major float[16]), then HUD text via
@@ -182,6 +189,9 @@ private:
 
     std::vector<Label> labels_;
     QString            hud_text_;
+
+    // Box-select rectangle in logical pixels.  Null/empty = hidden.
+    QRect              selection_rect_;
 };
 
 #endif // IFCVIEWER_OVERLAYRENDERER_H
