@@ -182,16 +182,6 @@ MainWindow::MainWindow(QWidget* parent)
         if (!show) stats_label_->clear();
     });
 
-    // Toggling the CoordinateOperation setting walks every loaded model
-    // and pushes either its georef matrix or identity to the viewport.
-    connect(&AppSettings::instance(),
-            &AppSettings::applyCoordinateOperationChanged,
-            this, [this](bool /*enabled*/) {
-        for (const auto& kv : fed_id_to_model_id_) {
-            applyCoordinateOperationToViewport(kv.second);
-        }
-    });
-
     updateWindowTitle();
     resize(1400, 900);
 }
@@ -707,11 +697,9 @@ void MainWindow::onDataSourceReady(uint32_t mid) {
 
 void MainWindow::applyCoordinateOperationToViewport(uint32_t mid) {
     Eigen::Matrix4d M = Eigen::Matrix4d::Identity();
-    if (AppSettings::instance().applyCoordinateOperation()) {
-        if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
-            if (gr->has_coordinate_operation) {
-                M = gr->coordinate_operation_meters;
-            }
+    if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
+        if (gr->has_coordinate_operation) {
+            M = gr->coordinate_operation_meters;
         }
     }
     viewport_->setModelCoordinateOperation(mid, M);
@@ -733,8 +721,7 @@ void MainWindow::applyModelTransformationToViewport(uint32_t mid) {
             Eigen::Matrix4d coord_op = Eigen::Matrix4d::Identity();
             if (const ModelGeoref* gr = loader_->modelGeoref(mid)) {
                 units = gr->units;
-                if (AppSettings::instance().applyCoordinateOperation() &&
-                    gr->has_coordinate_operation) {
+                if (gr->has_coordinate_operation) {
                     coord_op = gr->coordinate_operation_meters;
                 }
             }
@@ -771,8 +758,7 @@ void MainWindow::maybeGuessFederatedFalseOrigin(uint32_t mid) {
     if (placement == nullptr || gr == nullptr) return;
 
     const FederatedFalseOrigin guess = guessFederatedFalseOrigin(
-        *placement, *gr, federation_->config(),
-        AppSettings::instance().applyCoordinateOperation());
+        *placement, *gr, federation_->config());
     federation_->setFederatedFalseOrigin(guess);
 }
 

@@ -84,23 +84,14 @@ ViewportController::ViewportController(ifcinterface::SessionState* session_state
         applyModelVisibility(mid);
         maybeGuessFederatedFalseOrigin(mid);
     });
-    connect(&AppSettings::instance(),
-            &AppSettings::applyCoordinateOperationChanged,
-            this, [this](bool /*enabled*/) {
-        for (uint32_t mid : session_state_->modelIds()) {
-            applyCoordinateOperation(mid);
-        }
-    });
 }
 
 void ViewportController::applyCoordinateOperation(uint32_t mid) {
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    if (AppSettings::instance().applyCoordinateOperation()) {
-        if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
-            if (georef->has_coordinate_operation) {
-                matrix = georef->coordinate_operation_meters;
-            }
+    if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
+        if (georef->has_coordinate_operation) {
+            matrix = georef->coordinate_operation_meters;
         }
     }
     viewport_->setModelCoordinateOperation(mid, matrix);
@@ -118,8 +109,7 @@ void ViewportController::applyModelTransformation(uint32_t mid) {
             Eigen::Matrix4d coordinate_operation = Eigen::Matrix4d::Identity();
             if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
                 units = georef->units;
-                if (AppSettings::instance().applyCoordinateOperation() &&
-                    georef->has_coordinate_operation) {
+                if (georef->has_coordinate_operation) {
                     coordinate_operation = georef->coordinate_operation_meters;
                 }
             }
@@ -187,8 +177,7 @@ void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
     if (placement == nullptr || georef == nullptr) return;
 
     federation->setFederatedFalseOrigin(guessFederatedFalseOrigin(
-        *placement, *georef, federation->config(),
-        AppSettings::instance().applyCoordinateOperation()));
+        *placement, *georef, federation->config()));
 }
 
 } // namespace ifcinterface::modules::viewport

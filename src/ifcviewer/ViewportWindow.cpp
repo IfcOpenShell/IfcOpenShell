@@ -733,6 +733,26 @@ void ViewportWindow::initGL() {
                 requestUpdate();
             });
 
+    // Cull thresholds and HiZ live-toggle: cached cull results assume the
+    // active values, so any change must invalidate them and request a
+    // re-render so the new threshold actually takes effect.
+    auto invalidate_cull = [this]() {
+        if (!gl_initialized_) return;
+        have_cached_cull_ = false;
+        requestUpdate();
+    };
+    connect(&AppSettings::instance(), &AppSettings::minPixelRadiusChanged,
+            this, [invalidate_cull](double){ invalidate_cull(); });
+    connect(&AppSettings::instance(), &AppSettings::motionMinPixelRadiusChanged,
+            this, [invalidate_cull](double){ invalidate_cull(); });
+    connect(&AppSettings::instance(), &AppSettings::lod1PixelThresholdChanged,
+            this, [invalidate_cull](double){ invalidate_cull(); });
+    connect(&AppSettings::instance(), &AppSettings::hizEnabledChanged,
+            this, [this, invalidate_cull](bool){
+                hiz_vp_valid_ = false;  // pyramid no longer trusted
+                invalidate_cull();
+            });
+
     gl_initialized_ = true;
     flushPendingOperations();
     requestUpdate();
@@ -1816,21 +1836,17 @@ void ViewportWindow::fpsIntegrate() {
 // (walls, slabs) reliably; finer detail doesn't help much because we're
 // sampling the pyramid at the mip level where the AABB's rect is ~2
 // texels anyway.  Readback cost is ~128 KB/frame ≈ negligible.
-// IFC_HIZ_SIZE=<N> overrides the width; height tracks aspect.
+// AppSettings::hizResolution() drives the width; height tracks aspect.
+// Captured once at first call — changing the setting requires a viewport
+// reinitialization to take effect (rebuilding the pyramid mid-session
+// would tangle with the framebuffer state machine for little gain).
 static int hizBaseWidth() {
-    static const int w = []{
-        const char* e = std::getenv("IFC_HIZ_SIZE");
-        return (e && *e) ? std::max(64, std::atoi(e)) : 256;
-    }();
+    static const int w = std::max(64, AppSettings::instance().hizResolution());
     return w;
 }
 
 static bool hizEnabled() {
-    static const bool disabled = []{
-        const char* e = std::getenv("IFC_NO_HIZ");
-        return e && e[0] == '1';
-    }();
-    return !disabled;
+    return AppSettings::instance().hizEnabled();
 }
 
 void ViewportWindow::buildHizPyramid() {
@@ -2314,12 +2330,10 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     phase_timer.restart();
 
     // LOD1 switches in when projected sphere radius (in pixels) drops below
-    // this threshold.  Overridable for tuning.  Set to 0 to disable LOD1
-    // entirely (always draw LOD0).
-    static const float lod1_px_threshold = []{
-        const char* e = std::getenv("IFC_LOD1_PX");
-        return (e && *e) ? static_cast<float>(std::atof(e)) : 30.0f;
-    }();
+    // this threshold.  AppSettings drives it (default 30).  Set to 0 in
+    // settings to disable LOD1 entirely (always draw LOD0).
+    const float lod1_px_threshold =
+        static_cast<float>(AppSettings::instance().lod1PixelThreshold());
 
     // Bounding-sphere contribution test: approximate an AABB by its enclosing
     // sphere (centre = midpoint, radius = half-diagonal).  Project radius to
@@ -2413,9 +2427,13 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
     // the buffer — a self-reinforcing feedback loop).  On static views HiZ
     // kicks in after a single frame of lag.
     const QMatrix4x4 current_vp = proj_matrix_ * view_matrix_;
+    // Default on: motion-frame HiZ stays trusted across small VP changes.
+    // Env var =0 reverts to the strict gate (previous frame's pyramid is
+    // discarded the moment the view-projection drifts) — useful when
+    // chasing the missing-geometry class of HiZ correctness bug.
     static const bool hiz_force_motion = []{
         const char* e = std::getenv("IFC_HIZ_MOTION");
-        return e && *e && std::atoi(e) != 0;
+        return !(e && e[0] == '0');
     }();
     const bool hiz_vp_matches = hiz_vp_valid_
         && (hiz_force_motion || hiz_vp_ == current_vp);
@@ -2640,15 +2658,11 @@ void ViewportWindow::render() {
     // culling below.
     const float focal_px = 0.5f * static_cast<float>(h) /
         std::tan(qDegreesToRadians(0.5f * camera_fov_y_deg_));
-    static const float base_min_pixel_radius = []{
-        const char* e = std::getenv("IFC_MIN_PX");
-        return (e && *e) ? static_cast<float>(std::atof(e)) : 2.0f;
-    }();
-    static const float motion_min_pixel_radius = []{
-        const char* e = std::getenv("IFC_MIN_PX_MOTION");
-        return (e && *e) ? static_cast<float>(std::atof(e))
-                         : 0.0f;  // 0 = disabled (no motion boost)
-    }();
+    const float base_min_pixel_radius =
+        static_cast<float>(AppSettings::instance().minPixelRadius());
+    // 0 = disabled (motion uses the same threshold as still frames).
+    const float motion_min_pixel_radius =
+        static_cast<float>(AppSettings::instance().motionMinPixelRadius());
 
     gl_->glUseProgram(main_program_);
     GLint u_vp        = gl_->glGetUniformLocation(main_program_, "u_view_projection");

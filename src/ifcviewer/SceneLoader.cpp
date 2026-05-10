@@ -241,7 +241,7 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
     // Restore the cached CoordinateOperation into the model so
     // modelGeoref(mid) returns it without needing the IFC source.  Prevents
     // sidecar-loaded models from silently losing their georef when the
-    // .ifc/.rdb sibling is absent or AppSettings.loadDataSource is off.
+    // .ifc/.rdb sibling is absent.
     {
         ModelGeoref& gr = model.georef;
         gr.has_coordinate_operation = data.has_coordinate_operation != 0;
@@ -276,8 +276,6 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
 }
 
 void SceneLoader::startDataSourceLoad(uint32_t mid) {
-    if (!AppSettings::instance().loadDataSource()) return;
-
     auto it = models_.find(mid);
     if (it == models_.end()) return;
 
@@ -355,13 +353,6 @@ void SceneLoader::onStreamerFinished() {
 
             qint64 ms = it->second.load_timer.elapsed();
             emit loadedFromStream(mid, ms);
-
-            // Slot(s) above run synchronously (sidecar write uses element_map_,
-            // not ifcFile()); drop the parsed file now to save memory if the
-            // user has opted out of keeping a property data source.
-            if (!AppSettings::instance().loadDataSource()) {
-                it->second.streamer->setIfcFile(nullptr);
-            }
         }
     }
 

@@ -52,21 +52,6 @@ void SettingsWindow::setupUi() {
         "closed solids; disable if you see holes in open geometry.");
     form->addRow("Backface Culling", backface_culling_check_);
 
-    load_data_source_check_ = new QCheckBox(this);
-    load_data_source_check_->setToolTip(
-        "Keep the .ifc/.rdb open after loading so element properties can "
-        "be queried.  Disable for geometry-only viewing — saves memory "
-        "and, on sidecar hits, avoids a second file read.");
-    form->addRow("Load Property Data Source", load_data_source_check_);
-
-    apply_coordinate_operation_check_ = new QCheckBox(this);
-    apply_coordinate_operation_check_->setToolTip(
-        "Apply each model's IfcCoordinateOperation (e.g. IfcMapConversion) "
-        "after load so it lands in georeferenced map coordinates.  "
-        "Disable to keep models in their local engineering frame.");
-    form->addRow("Apply Coordinate Operation",
-                 apply_coordinate_operation_check_);
-
     void_limit_spin_ = new QSpinBox(this);
     void_limit_spin_->setRange(0, 100000);
     void_limit_spin_->setToolTip(
@@ -94,6 +79,50 @@ void SettingsWindow::setupUi() {
         "curved surface.  Smaller = smoother shading but more triangles.");
     form->addRow("Angular Tolerance", angular_tolerance_spin_);
 
+    min_pixel_radius_spin_ = new QDoubleSpinBox(this);
+    min_pixel_radius_spin_->setRange(0.0, 100.0);
+    min_pixel_radius_spin_->setDecimals(2);
+    min_pixel_radius_spin_->setSingleStep(0.5);
+    min_pixel_radius_spin_->setToolTip(
+        "Minimum projected sphere radius (in pixels) for an instance to "
+        "be drawn.  Bigger = faster but more pop-in on small detail.");
+    form->addRow("Min Pixel Radius", min_pixel_radius_spin_);
+
+    motion_min_pixel_radius_spin_ = new QDoubleSpinBox(this);
+    motion_min_pixel_radius_spin_->setRange(0.0, 100.0);
+    motion_min_pixel_radius_spin_->setDecimals(2);
+    motion_min_pixel_radius_spin_->setSingleStep(1.0);
+    motion_min_pixel_radius_spin_->setToolTip(
+        "Aggressive cull threshold while the camera is moving.  0 = no "
+        "motion boost (motion uses the same threshold as still frames).  "
+        "Big perceived FPS win on heavy scenes.");
+    form->addRow("Motion Min Pixel Radius", motion_min_pixel_radius_spin_);
+
+    lod1_pixel_threshold_spin_ = new QDoubleSpinBox(this);
+    lod1_pixel_threshold_spin_->setRange(0.0, 1000.0);
+    lod1_pixel_threshold_spin_->setDecimals(1);
+    lod1_pixel_threshold_spin_->setSingleStep(1.0);
+    lod1_pixel_threshold_spin_->setToolTip(
+        "Pixel radius below which an instance switches to its LOD1 "
+        "representation.  0 disables LOD1 entirely (always draw LOD0).");
+    form->addRow("LOD1 Pixel Threshold", lod1_pixel_threshold_spin_);
+
+    hiz_enabled_check_ = new QCheckBox(this);
+    hiz_enabled_check_->setToolTip(
+        "Enable HiZ (hierarchical Z) occlusion culling.  Hides geometry "
+        "behind opaque blockers based on a downsampled depth pyramid "
+        "from the previous frame.  Big perf win on dense interiors.");
+    form->addRow("HiZ Occlusion", hiz_enabled_check_);
+
+    hiz_resolution_spin_ = new QSpinBox(this);
+    hiz_resolution_spin_->setRange(64, 4096);
+    hiz_resolution_spin_->setSingleStep(64);
+    hiz_resolution_spin_->setToolTip(
+        "Base HiZ pyramid width in texels (height tracks aspect).  "
+        "Bigger = tighter occlusion but more readback bandwidth.  "
+        "Changes take effect on next viewport reinitialization.");
+    form->addRow("HiZ Resolution", hiz_resolution_spin_);
+
     auto* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
 
@@ -116,23 +145,27 @@ void SettingsWindow::syncFromSettings() {
     geometry_library_edit_->setText(AppSettings::instance().geometryLibrary());
     show_stats_check_->setChecked(AppSettings::instance().showStats());
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
-    load_data_source_check_->setChecked(AppSettings::instance().loadDataSource());
-    apply_coordinate_operation_check_->setChecked(
-        AppSettings::instance().applyCoordinateOperation());
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
     deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
     angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
+    min_pixel_radius_spin_->setValue(AppSettings::instance().minPixelRadius());
+    motion_min_pixel_radius_spin_->setValue(AppSettings::instance().motionMinPixelRadius());
+    lod1_pixel_threshold_spin_->setValue(AppSettings::instance().lod1PixelThreshold());
+    hiz_enabled_check_->setChecked(AppSettings::instance().hizEnabled());
+    hiz_resolution_spin_->setValue(AppSettings::instance().hizResolution());
 }
 
 void SettingsWindow::onAccepted() {
     AppSettings::instance().setGeometryLibrary(geometry_library_edit_->text());
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
-    AppSettings::instance().setLoadDataSource(load_data_source_check_->isChecked());
-    AppSettings::instance().setApplyCoordinateOperation(
-        apply_coordinate_operation_check_->isChecked());
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
     AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());
+    AppSettings::instance().setMinPixelRadius(min_pixel_radius_spin_->value());
+    AppSettings::instance().setMotionMinPixelRadius(motion_min_pixel_radius_spin_->value());
+    AppSettings::instance().setLod1PixelThreshold(lod1_pixel_threshold_spin_->value());
+    AppSettings::instance().setHizEnabled(hiz_enabled_check_->isChecked());
+    AppSettings::instance().setHizResolution(hiz_resolution_spin_->value());
     accept();
 }

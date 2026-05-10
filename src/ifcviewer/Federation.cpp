@@ -140,12 +140,10 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
 FederatedFalseOrigin
 guessFederatedFalseOrigin(const Eigen::Matrix4d& first_placement_meters,
                           const ModelGeoref& georef,
-                          const FederationConfig& fed_cfg,
-                          bool apply_coordinate_operation) {
+                          const FederationConfig& fed_cfg) {
     Eigen::Vector3d t_m = first_placement_meters.block<3, 1>(0, 3);
 
-    const bool use_coord_op =
-        apply_coordinate_operation && georef.has_coordinate_operation;
+    const bool use_coord_op = georef.has_coordinate_operation;
     if (use_coord_op) {
         const Eigen::Vector4d th(t_m.x(), t_m.y(), t_m.z(), 1.0);
         t_m = (georef.coordinate_operation_meters * th).head<3>();

@@ -24,7 +24,6 @@
 
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
-#include "../../../ifcviewer/AppSettings.h"
 
 namespace ifcinterface::modules::properties {
 
@@ -88,7 +87,17 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         return;
     }
 
-    if (!AppSettings::instance().loadDataSource()) {
+    auto entity = registry->findEntity(object_id);
+    if (entity) {
+        state.entity.entity_class = QString::fromStdString(entity->declaration().name());
+        if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
+            state.property_sets[1].rows[0].value = state.entity.entity_class;
+        }
+    } else {
+        // No live IFC source for this object — typical when a pure-geometry
+        // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall
+        // back to the basic info cached in the element registry so the
+        // panel still shows class / name / guid for visible elements.
         auto info = registry->findBasicElementInfo(object_id);
         if (info && !info->type.isEmpty()) {
             state.entity.entity_class = info->type;
@@ -104,17 +113,6 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         }
         if (info && !info->guid.isEmpty()) {
             state.attributes[0].value = info->guid;
-        }
-
-        widget_->render(state);
-        return;
-    }
-
-    auto entity = registry->findEntity(object_id);
-    if (entity) {
-        state.entity.entity_class = QString::fromStdString(entity->declaration().name());
-        if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
-            state.property_sets[1].rows[0].value = state.entity.entity_class;
         }
     }
     widget_->render(state);

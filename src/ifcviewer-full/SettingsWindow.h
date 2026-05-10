@@ -46,11 +46,14 @@ private:
     QLineEdit* geometry_library_edit_ = nullptr;
     QCheckBox* show_stats_check_ = nullptr;
     QCheckBox* backface_culling_check_ = nullptr;
-    QCheckBox* load_data_source_check_ = nullptr;
-    QCheckBox* apply_coordinate_operation_check_ = nullptr;
     QSpinBox* void_limit_spin_ = nullptr;
     QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
     QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
+    QDoubleSpinBox* min_pixel_radius_spin_ = nullptr;
+    QDoubleSpinBox* motion_min_pixel_radius_spin_ = nullptr;
+    QDoubleSpinBox* lod1_pixel_threshold_spin_ = nullptr;
+    QSpinBox* hiz_resolution_spin_ = nullptr;
+    QCheckBox* hiz_enabled_check_ = nullptr;
 };
 
 #endif
