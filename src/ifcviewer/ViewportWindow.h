@@ -431,6 +431,17 @@ protected:
     bool event(QEvent* event) override;
 
 private:
+    // Resolved mouse-binding for the active AppSettings::NavPreset.
+    // Selection always stays on LMB; only orbit and pan move around
+    // (presets are picked so neither lands on plain LMB).
+    struct NavBindings {
+        Qt::MouseButton       orbit_button;
+        Qt::KeyboardModifiers orbit_mods;
+        Qt::MouseButton       pan_button;
+        Qt::KeyboardModifiers pan_mods;
+    };
+    NavBindings currentNavBindings() const;
+
     enum class PendingOpType {
         UploadMeshChunk,
         UploadInstanceChunk,

@@ -29,6 +29,21 @@
 class AppSettings : public QObject {
     Q_OBJECT
 public:
+    // Navigation preset.  Selects which mouse button (+ optional Shift)
+    // drives orbit and pan.  Selection is unaffected and stays on LMB
+    // for every preset — these three intentionally don't take LMB so
+    // click + box-select remain available without modifier gymnastics.
+    //
+    //   Blender   — Orbit MMB,        Pan Shift+MMB   (current default)
+    //   Rhino     — Orbit RMB,        Pan Shift+RMB
+    //   Revit     — Orbit Shift+MMB,  Pan MMB
+    enum class NavPreset {
+        Blender = 0,
+        Rhino   = 1,
+        Revit   = 2,
+    };
+    Q_ENUM(NavPreset)
+
     static AppSettings& instance();
 
     QString geometryLibrary() const;
@@ -89,6 +104,10 @@ public:
     bool hizEnabled() const;
     void setHizEnabled(bool value);
 
+    // Navigation preset (see NavPreset enum above).
+    NavPreset navPreset() const;
+    void setNavPreset(NavPreset value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
@@ -101,6 +120,7 @@ signals:
     void lod1PixelThresholdChanged(double value);
     void hizResolutionChanged(int value);
     void hizEnabledChanged(bool value);
+    void navPresetChanged(NavPreset value);
 
 private:
     AppSettings();
@@ -118,6 +138,7 @@ private:
     double lod1_pixel_threshold_ = 30.0;
     int hiz_resolution_ = 256;
     bool hiz_enabled_ = true;
+    NavPreset nav_preset_ = NavPreset::Blender;
 };
 
 #endif // APPSETTINGS_H
