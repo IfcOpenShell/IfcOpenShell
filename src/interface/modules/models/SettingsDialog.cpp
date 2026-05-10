@@ -136,7 +136,7 @@ QLabel* makeReadOnlyValue(QWidget* parent) {
 } // namespace
 
 SettingsDialog::SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent)
-    : components::Dialog(parent, true)
+    : components::TabbedDialog(parent)
     , session_state_(session_state)
     , federation_(session_state ? session_state->federation() : nullptr)
     , loader_(session_state ? session_state->loader() : nullptr)
@@ -145,7 +145,6 @@ SettingsDialog::SettingsDialog(ifcinterface::SessionState* session_state, QWidge
     setWindowTitle("Model Settings");
     setModal(true);
     resize(980, 560);
-    setStyleSheet(components::style::buildAppStyleSheet());
     setupUi();
 }
 
@@ -158,9 +157,7 @@ void SettingsDialog::showEvent(QShowEvent* event) {
 }
 
 void SettingsDialog::setupUi() {
-    auto* tabs = new components::TabWidget(this);
-
-    auto* federation_tab = new QWidget(tabs);
+    auto* federation_tab = new QWidget(this);
     auto* federation_layout = new QVBoxLayout(federation_tab);
     federation_layout->setContentsMargins(0, 0, 0, 0);
     federation_layout->setSpacing(components::style::metrics::padding);
@@ -213,7 +210,7 @@ void SettingsDialog::setupUi() {
     federation_layout->addWidget(origin_section);
     federation_layout->addStretch(1);
 
-    auto* model_tab = new QWidget(tabs);
+    auto* model_tab = new QWidget(this);
     auto* model_layout = new QVBoxLayout(model_tab);
     model_layout->setContentsMargins(0, 0, 0, 0);
     model_layout->setSpacing(components::style::metrics::padding);
@@ -324,8 +321,8 @@ void SettingsDialog::setupUi() {
     model_layout->addWidget(georef_section);
     model_layout->addWidget(table_section);
 
-    tabs->addTab(federation_tab, "Federation");
-    tabs->addTab(model_tab, "Model");
+    addTab("Federation", federation_tab);
+    addTab("Model", model_tab);
 
     connect(model_table_, &QTableWidget::currentCellChanged, this,
             [this](int /*current_row*/, int /*current_column*/, int /*previous_row*/, int /*previous_column*/) {
@@ -344,7 +341,6 @@ void SettingsDialog::setupUi() {
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() { onAccepted(); });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    addBodyWidget(tabs);
     addFooterWidget(buttons);
 }
 

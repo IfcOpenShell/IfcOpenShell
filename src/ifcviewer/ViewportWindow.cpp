@@ -725,7 +725,7 @@ void ViewportWindow::initGL() {
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
-    gl_->glClearColor(0.18f, 0.20f, 0.22f, 1.0f);
+    gl_->glClearColor(background_color_.redF(), background_color_.greenF(), background_color_.blueF(), 1.0f);
     gl_->glCullFace(GL_BACK);
     if (AppSettings::instance().backfaceCulling()) gl_->glEnable(GL_CULL_FACE);
     else                                            gl_->glDisable(GL_CULL_FACE);
@@ -766,6 +766,18 @@ void ViewportWindow::initGL() {
     requestUpdate();
 
     emit initialized();
+}
+
+void ViewportWindow::setBackgroundColor(const QColor& color) {
+    if (!color.isValid()) return;
+    const QColor normalized = color.toRgb();
+    if (background_color_ == normalized) return;
+    background_color_ = normalized;
+    if (gl_initialized_ && gl_) {
+        context_->makeCurrent(this);
+        gl_->glClearColor(background_color_.redF(), background_color_.greenF(), background_color_.blueF(), 1.0f);
+        requestUpdate();
+    }
 }
 
 void ViewportWindow::enqueuePendingOperation(PendingOperation op) {

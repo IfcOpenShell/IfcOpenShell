@@ -299,7 +299,6 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
 
 void MainWindow::setupRibbon() {
     auto* shell = new QFrame(this);
-    shell->setObjectName("ribbonShell");
 
     auto* shell_layout = new QVBoxLayout(shell);
     shell_layout->setContentsMargins(0, 0, 0, 0);

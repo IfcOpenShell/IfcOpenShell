@@ -23,16 +23,20 @@
 
 #include "../../components/Dialog.h"
 
+#include <QString>
+#include <vector>
+
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
 class QShowEvent;
 class QSpinBox;
+class QWidget;
 
 namespace ifcinterface::modules::settings {
 
-class SettingsDialog : public components::Dialog {
+class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
 public:
     explicit SettingsDialog(QWidget* parent = nullptr);
@@ -43,7 +47,15 @@ protected:
 private:
     void setupUi();
     void syncFromSettings();
+    void syncThemeSettings();
+    void updateThemeEditorEnabled();
+    void pickThemeColor(QLineEdit* edit);
     void onAccepted();
+
+    struct ThemeColorEditor {
+        QString key;
+        QLineEdit* edit = nullptr;
+    };
 
     QLineEdit* geometry_library_edit_ = nullptr;
     QCheckBox* show_stats_check_ = nullptr;
@@ -57,6 +69,9 @@ private:
     QCheckBox* hiz_enabled_check_ = nullptr;
     QSpinBox* hiz_resolution_spin_ = nullptr;
     QComboBox* nav_preset_combo_ = nullptr;
+    QComboBox* theme_mode_combo_ = nullptr;
+    QWidget* theme_custom_body_ = nullptr;
+    std::vector<ThemeColorEditor> theme_color_editors_;
 };
 
 } // namespace ifcinterface::modules::settings

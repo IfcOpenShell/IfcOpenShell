@@ -19,6 +19,7 @@
  ********************************************************************************/
 
 #include "MainWindow.h"
+#include "InterfaceSettings.h"
 #include "components/Style.h"
 
 #include <QApplication>
@@ -65,7 +66,14 @@ int main(int argc, char* argv[]) {
     parser.process(app);
 
     installUiFont();
-    app.setStyleSheet(ifcinterface::components::style::buildAppStyleSheet());
+    const auto applyStyle = [&app]() {
+        app.setStyleSheet(ifcinterface::components::style::buildAppStyleSheet());
+    };
+    applyStyle();
+    QObject::connect(&ifcinterface::InterfaceSettings::instance(),
+                     &ifcinterface::InterfaceSettings::themeChanged,
+                     &app,
+                     applyStyle);
 
     ifcinterface::shell::MainWindow window;
     window.show();

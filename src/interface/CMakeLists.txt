@@ -27,6 +27,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/InterfaceSettings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/InterfaceSettings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp

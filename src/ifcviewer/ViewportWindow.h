@@ -23,6 +23,7 @@
 #include <QWindow>
 #include <QOpenGLContext>
 #include <QtOpenGL/QOpenGLFunctions_4_5_Core>
+#include <QColor>
 #include <QElapsedTimer>
 #include <QMatrix4x4>
 #include <QVector3D>
@@ -312,6 +313,7 @@ public:
     void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
     void setModelCoordinateOperation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
     void setModelTransformation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
+    void setBackgroundColor(const QColor& color);
 
     // Selection.  The viewport owns a SelectionState that tracks both
     // the multi-set and the "active" (last single-clicked) id.  External
@@ -607,6 +609,7 @@ private:
     QOpenGLContext* context_ = nullptr;
     QOpenGLFunctions_4_5_Core* gl_ = nullptr;
     bool gl_initialized_ = false;
+    QColor background_color_ = QColor("#202329");
     std::deque<PendingOperation> pending_ops_;
 
     // Shaders

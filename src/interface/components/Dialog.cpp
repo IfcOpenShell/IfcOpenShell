@@ -21,6 +21,7 @@
 #include "Dialog.h"
 
 #include "Style.h"
+#include "Tabs.h"
 
 #include <QDialog>
 #include <QFrame>
@@ -80,6 +81,62 @@ void Dialog::addBodyWidget(QWidget* widget) {
 }
 
 void Dialog::addFooterWidget(QWidget* widget) {
+    footer_layout_->addWidget(widget);
+}
+
+TabbedDialog::TabbedDialog(QWidget* parent)
+    : QDialog(parent)
+{
+    auto* outer_layout = new QVBoxLayout(this);
+    outer_layout->setContentsMargins(style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding,
+                                     style::metrics::padding);
+    outer_layout->setSpacing(0);
+
+    auto* frame = new QFrame(this);
+    frame->setObjectName("panel");
+    auto* frame_layout = new QVBoxLayout(frame);
+    frame_layout->setContentsMargins(0,
+                                     style::metrics::section_body_padding,
+                                     0,
+                                     style::metrics::section_body_padding);
+    frame_layout->setSpacing(0);
+
+    tabs_ = new TabWidget(frame);
+    frame_layout->addWidget(tabs_, 1);
+
+    auto* footer = new QWidget(frame);
+    footer_layout_ = new QVBoxLayout(footer);
+    footer_layout_->setContentsMargins(style::metrics::section_body_padding,
+                                       style::metrics::section_body_padding,
+                                       style::metrics::section_body_padding,
+                                       0);
+    footer_layout_->setSpacing(style::metrics::section_body_padding);
+    footer_layout_->setAlignment(Qt::AlignTop);
+    frame_layout->addWidget(footer);
+
+    outer_layout->addWidget(frame);
+}
+
+void TabbedDialog::addTab(const QString& title, QWidget* widget) {
+    auto* scroll = new QScrollArea(tabs_);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+
+    auto* scroll_body = new QWidget(scroll);
+    scroll_body->setObjectName("panelScrollBody");
+    auto* layout = new QVBoxLayout(scroll_body);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(style::metrics::section_body_padding);
+    layout->setAlignment(Qt::AlignTop);
+    layout->addWidget(widget);
+
+    scroll->setWidget(scroll_body);
+    tabs_->addTab(scroll, title);
+}
+
+void TabbedDialog::addFooterWidget(QWidget* widget) {
     footer_layout_->addWidget(widget);
 }
 

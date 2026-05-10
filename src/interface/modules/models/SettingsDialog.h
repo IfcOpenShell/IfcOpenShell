@@ -41,7 +41,7 @@ class SessionState;
 
 namespace ifcinterface::modules::models {
 
-class SettingsDialog : public components::Dialog {
+class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
 public:
     explicit SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent = nullptr);

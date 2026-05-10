@@ -18,46 +18,55 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_COMPONENTS_DIALOG_H
-#define IFCINTERFACE_COMPONENTS_DIALOG_H
+#ifndef IFCINTERFACE_INTERFACESETTINGS_H
+#define IFCINTERFACE_INTERFACESETTINGS_H
 
-#include <QDialog>
+#include <QObject>
+#include <QString>
+#include <vector>
 
-class QVBoxLayout;
-class QWidget;
-class QTabWidget;
+namespace ifcinterface {
 
-namespace ifcinterface::components {
-
-class Dialog : public QDialog {
+class InterfaceSettings : public QObject {
     Q_OBJECT
-
 public:
-    explicit Dialog(QWidget* parent = nullptr,
-                    bool scrollable = false);
+    enum class ThemeMode {
+        Dark = 0,
+        Light = 1,
+        Custom = 2,
+    };
+    Q_ENUM(ThemeMode)
 
-    void addBodyWidget(QWidget* widget);
-    void addFooterWidget(QWidget* widget);
+    struct ThemeColorSpec {
+        const char* key;
+        const char* label;
+        const char* dark_default;
+        const char* light_default;
+    };
+
+    static InterfaceSettings& instance();
+    static const std::vector<ThemeColorSpec>& themeColorSpecs();
+
+    ThemeMode themeMode() const;
+    void setThemeMode(ThemeMode mode);
+
+    QString color(const QString& key) const;
+    QString customColor(const QString& key) const;
+    void setCustomColor(const QString& key, const QString& value);
+
+signals:
+    void themeModeChanged(ThemeMode mode);
+    void themeChanged();
 
 private:
-    QVBoxLayout* body_layout_ = nullptr;
-    QVBoxLayout* footer_layout_ = nullptr;
+    InterfaceSettings();
+    void load();
+    void persist() const;
+
+    ThemeMode theme_mode_ = ThemeMode::Dark;
+    std::vector<QString> custom_colors_;
 };
 
-class TabbedDialog : public QDialog {
-    Q_OBJECT
-
-public:
-    explicit TabbedDialog(QWidget* parent = nullptr);
-
-    void addTab(const QString& title, QWidget* widget);
-    void addFooterWidget(QWidget* widget);
-
-private:
-    QTabWidget* tabs_ = nullptr;
-    QVBoxLayout* footer_layout_ = nullptr;
-};
-
-} // namespace ifcinterface::components
+} // namespace ifcinterface
 
 #endif
