@@ -46,7 +46,7 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS} ${SVGPP_INCLUDE})
 
 file(GLOB LIB_H_FILES src/*.h)
-file(GLOB LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp src/svgfill_plugin.cpp)
+set(LIB_CPP_FILES src/svgfill.cpp src/arrange_polygons.cpp src/svgfill_plugin.cpp)
 set(LIB_SRC_FILES ${LIB_H_FILES} ${LIB_CPP_FILES})
 add_library(svgfill SHARED ${LIB_SRC_FILES})
 target_compile_definitions(svgfill PRIVATE BOOST_DLL_USE_STD_FS)
