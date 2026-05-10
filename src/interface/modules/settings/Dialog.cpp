@@ -28,6 +28,7 @@
 #include "../../components/Tabs.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFrame>
@@ -110,17 +111,84 @@ void SettingsDialog::setupUi() {
     angular_tolerance_spin_->setSingleStep(0.05);
     loading_form->addRow("Angular Tolerance", angular_tolerance_spin_);
 
-    auto* description = new QLabel(
-        "These settings are shared with the viewer backend and persist via QSettings.",
-        loading_body);
-    description->setProperty("textRole", "secondary");
-    description->setWordWrap(true);
-    loading_form->addRow(QString(), description);
+    min_pixel_radius_spin_ = new QDoubleSpinBox(loading_body);
+    min_pixel_radius_spin_->setRange(0.0, 100.0);
+    min_pixel_radius_spin_->setDecimals(2);
+    min_pixel_radius_spin_->setSingleStep(0.5);
+    min_pixel_radius_spin_->setToolTip(
+        "Minimum projected sphere radius (in pixels) for an instance to "
+        "be drawn. Bigger = faster but more pop-in on small detail.");
+    loading_form->addRow("Min Pixel Radius", min_pixel_radius_spin_);
+
+    motion_min_pixel_radius_spin_ = new QDoubleSpinBox(loading_body);
+    motion_min_pixel_radius_spin_->setRange(0.0, 100.0);
+    motion_min_pixel_radius_spin_->setDecimals(2);
+    motion_min_pixel_radius_spin_->setSingleStep(1.0);
+    motion_min_pixel_radius_spin_->setToolTip(
+        "Aggressive cull threshold while the camera is moving. 0 = no "
+        "motion boost (motion uses the same threshold as still frames).");
+    loading_form->addRow("Motion Min Pixel Radius", motion_min_pixel_radius_spin_);
+
+    lod1_pixel_threshold_spin_ = new QDoubleSpinBox(loading_body);
+    lod1_pixel_threshold_spin_->setRange(0.0, 1000.0);
+    lod1_pixel_threshold_spin_->setDecimals(1);
+    lod1_pixel_threshold_spin_->setSingleStep(1.0);
+    lod1_pixel_threshold_spin_->setToolTip(
+        "Pixel radius below which an instance switches to its LOD1 "
+        "representation. 0 disables LOD1 entirely.");
+    loading_form->addRow("LOD1 Pixel Threshold", lod1_pixel_threshold_spin_);
+
+    hiz_enabled_check_ = new QCheckBox(loading_body);
+    hiz_enabled_check_->setToolTip(
+        "Enable HiZ (hierarchical Z) occlusion culling. Hides geometry "
+        "behind opaque blockers based on a downsampled depth pyramid.");
+    loading_form->addRow("HiZ Occlusion", hiz_enabled_check_);
+
+    hiz_resolution_spin_ = new QSpinBox(loading_body);
+    hiz_resolution_spin_->setRange(64, 4096);
+    hiz_resolution_spin_->setSingleStep(64);
+    hiz_resolution_spin_->setToolTip(
+        "Base HiZ pyramid width in texels (height tracks aspect). "
+        "Changes take effect on next viewport reinitialization.");
+    loading_form->addRow("HiZ Resolution", hiz_resolution_spin_);
 
     loading_section->addBodyWidget(loading_body);
     graphics_layout->addWidget(general_section);
     graphics_layout->addWidget(loading_section);
     graphics_layout->addStretch(1);
+
+    // Navigation tab: orbit / pan presets.  Selection always stays on
+    // LMB so click + box-select keep working regardless of preset.
+    auto* navigation_tab = new QWidget(tabs);
+    {
+        auto* layout = new QVBoxLayout(navigation_tab);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(components::style::metrics::padding);
+
+        auto* section = new components::Section(
+            "Navigation", components::SectionHeaderMode::Visible, navigation_tab);
+        auto* body = new QWidget(section);
+        auto* form = new QFormLayout(body);
+        form->setContentsMargins(0, 0, 0, 0);
+        form->setHorizontalSpacing(16);
+        form->setVerticalSpacing(10);
+
+        nav_preset_combo_ = new QComboBox(body);
+        // Order must match AppSettings::NavPreset enum ordering — index
+        // is what we read back via currentIndex / setCurrentIndex.
+        nav_preset_combo_->addItem("Blender (Orbit MMB, Pan Shift+MMB)");
+        nav_preset_combo_->addItem("Rhino (Orbit RMB, Pan Shift+RMB)");
+        nav_preset_combo_->addItem("Revit (Orbit Shift+MMB, Pan MMB)");
+        nav_preset_combo_->setToolTip(
+            "Mouse-button mapping for orbit and pan.  Selection stays on "
+            "left mouse button for every preset, so click + box-select "
+            "always work.");
+        form->addRow("Preset", nav_preset_combo_);
+
+        section->addBodyWidget(body);
+        layout->addWidget(section);
+        layout->addStretch(1);
+    }
 
     auto make_placeholder_tab = [tabs](const QString& title, const QString& detail) {
         auto* tab = new QWidget(tabs);
@@ -147,8 +215,7 @@ void SettingsDialog::setupUi() {
         return tab;
     };
 
-    tabs->addTab(make_placeholder_tab("Navigation", "Navigation preferences and interaction modes will live here."),
-                 "Navigation");
+    tabs->addTab(navigation_tab, "Navigation");
     tabs->addTab(make_placeholder_tab("Keybindings", "Shortcut presets and command bindings will live here."),
                  "Keybindings");
     tabs->addTab(graphics_tab, "Graphics");
@@ -169,11 +236,8 @@ void SettingsDialog::setupUi() {
     connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::onAccepted);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    auto* actions_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
-    actions_section->addBodyWidget(buttons);
-
     addBodyWidget(tabs);
-    addBodyWidget(actions_section);
+    addFooterWidget(buttons);
 }
 
 void SettingsDialog::syncFromSettings() {
@@ -183,6 +247,12 @@ void SettingsDialog::syncFromSettings() {
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
     deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
     angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
+    min_pixel_radius_spin_->setValue(AppSettings::instance().minPixelRadius());
+    motion_min_pixel_radius_spin_->setValue(AppSettings::instance().motionMinPixelRadius());
+    lod1_pixel_threshold_spin_->setValue(AppSettings::instance().lod1PixelThreshold());
+    hiz_enabled_check_->setChecked(AppSettings::instance().hizEnabled());
+    hiz_resolution_spin_->setValue(AppSettings::instance().hizResolution());
+    nav_preset_combo_->setCurrentIndex(static_cast<int>(AppSettings::instance().navPreset()));
 }
 
 void SettingsDialog::onAccepted() {
@@ -192,6 +262,13 @@ void SettingsDialog::onAccepted() {
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
     AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());
+    AppSettings::instance().setMinPixelRadius(min_pixel_radius_spin_->value());
+    AppSettings::instance().setMotionMinPixelRadius(motion_min_pixel_radius_spin_->value());
+    AppSettings::instance().setLod1PixelThreshold(lod1_pixel_threshold_spin_->value());
+    AppSettings::instance().setHizEnabled(hiz_enabled_check_->isChecked());
+    AppSettings::instance().setHizResolution(hiz_resolution_spin_->value());
+    AppSettings::instance().setNavPreset(
+        static_cast<AppSettings::NavPreset>(nav_preset_combo_->currentIndex()));
     accept();
 }
 

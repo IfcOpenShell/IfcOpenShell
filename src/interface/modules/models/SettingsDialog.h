@@ -24,34 +24,50 @@
 #include "../../components/Dialog.h"
 
 #include <QString>
+#include <vector>
 
 class Federation;
+class SceneLoader;
 class QComboBox;
 class QLabel;
 class QLineEdit;
-class QRadioButton;
 class QShowEvent;
+class QTableWidget;
+class QTableWidgetItem;
+
+namespace ifcinterface {
+class SessionState;
+}
 
 namespace ifcinterface::modules::models {
 
 class SettingsDialog : public components::Dialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(Federation* federation, QWidget* parent = nullptr);
+    explicit SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent = nullptr);
 
 protected:
     void showEvent(QShowEvent* event) override;
 
 private:
+    struct ModelRowWidgets {
+        QString fed_id;
+        QComboBox* frame = nullptr;
+        QTableWidgetItem* from_point = nullptr;
+        QTableWidgetItem* to_point = nullptr;
+        QTableWidgetItem* rotate = nullptr;
+        QTableWidgetItem* pivot = nullptr;
+    };
+
     void setupUi();
     void syncFromFederation();
-    void populateModelCombo();
-    void syncFromModel(const QString& fed_id);
-    void refreshUnitLabels();
-    void onAFrameToggled();
+    void populateModelTable();
+    void updateSelectedModelGeoref();
     void onAccepted();
 
+    ifcinterface::SessionState* session_state_ = nullptr;
     Federation* federation_ = nullptr;
+    SceneLoader* loader_ = nullptr;
 
     QComboBox* unit_combo_ = nullptr;
     QLineEdit* xyz_x_ = nullptr;
@@ -59,24 +75,22 @@ private:
     QLineEdit* xyz_z_ = nullptr;
     QLineEdit* rz_deg_ = nullptr;
 
-    QComboBox* model_combo_ = nullptr;
-    QRadioButton* radio_local_ = nullptr;
-    QRadioButton* radio_global_ = nullptr;
-    QLineEdit* a_x_ = nullptr;
-    QLineEdit* a_y_ = nullptr;
-    QLineEdit* a_z_ = nullptr;
-    QLabel* a_unit_label_ = nullptr;
-    QLineEdit* b_x_ = nullptr;
-    QLineEdit* b_y_ = nullptr;
-    QLineEdit* b_z_ = nullptr;
-    QLabel* b_unit_label_ = nullptr;
-    QLineEdit* rx_ = nullptr;
-    QLineEdit* ry_ = nullptr;
-    QLineEdit* rz_ = nullptr;
-    QLineEdit* pivot_x_ = nullptr;
-    QLineEdit* pivot_y_ = nullptr;
-    QLineEdit* pivot_z_ = nullptr;
-    QLabel* pivot_unit_label_ = nullptr;
+    QLabel* georef_present_value_ = nullptr;
+    QLabel* georef_type_value_ = nullptr;
+    QLabel* georef_easting_value_ = nullptr;
+    QLabel* georef_northing_value_ = nullptr;
+    QLabel* georef_height_value_ = nullptr;
+    QLabel* georef_x_axis_abscissa_value_ = nullptr;
+    QLabel* georef_x_axis_ordinate_value_ = nullptr;
+    QLabel* georef_rotation_dd_value_ = nullptr;
+    QLabel* georef_rotation_dms_value_ = nullptr;
+    QLabel* georef_scale_value_ = nullptr;
+    QLabel* georef_factor_x_value_ = nullptr;
+    QLabel* georef_factor_y_value_ = nullptr;
+    QLabel* georef_factor_z_value_ = nullptr;
+
+    QTableWidget* model_table_ = nullptr;
+    std::vector<ModelRowWidgets> model_rows_;
 };
 
 } // namespace ifcinterface::modules::models

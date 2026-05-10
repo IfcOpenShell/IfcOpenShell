@@ -24,6 +24,7 @@
 #include "../../components/Dialog.h"
 
 class QCheckBox;
+class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
 class QShowEvent;
@@ -50,6 +51,12 @@ private:
     QSpinBox* void_limit_spin_ = nullptr;
     QDoubleSpinBox* deflection_tolerance_spin_ = nullptr;
     QDoubleSpinBox* angular_tolerance_spin_ = nullptr;
+    QDoubleSpinBox* min_pixel_radius_spin_ = nullptr;
+    QDoubleSpinBox* motion_min_pixel_radius_spin_ = nullptr;
+    QDoubleSpinBox* lod1_pixel_threshold_spin_ = nullptr;
+    QCheckBox* hiz_enabled_check_ = nullptr;
+    QSpinBox* hiz_resolution_spin_ = nullptr;
+    QComboBox* nav_preset_combo_ = nullptr;
 };
 
 } // namespace ifcinterface::modules::settings

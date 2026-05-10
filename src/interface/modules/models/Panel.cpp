@@ -27,6 +27,7 @@
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMenu>
+#include <QSizePolicy>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
@@ -36,8 +37,9 @@ ModelsPanel::ModelsPanel(QWidget* parent)
     : components::Panel("Models", nullptr, parent, true)
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
-
+    section->setBodyExpanding(true);
     tree_ = new QTreeWidget(section);
+    tree_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     tree_->setColumnCount(2);
     tree_->setHeaderLabels({"Model", ""});
     tree_->setIconSize(QSize(16, 16));

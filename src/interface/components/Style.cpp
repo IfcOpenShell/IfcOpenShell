@@ -87,15 +87,13 @@ QString buildAppStyleSheet() {
             border-right: none;
         }
         QLabel#ribbonGroupLabel {
-            font-size: 9px;
+            font-size: ${font_small}px;
             font-weight: 600;
-            letter-spacing: 0.08em;
         }
         QToolButton#ribbonButton {
             background: transparent;
             border: none;
             padding: 6px 4px 4px 4px;
-            font-size: 11px;
             color: ${primary_text};
         }
         QToolButton#ribbonButton:hover {
@@ -144,9 +142,8 @@ QString buildAppStyleSheet() {
         }
         QLabel#panelTitleText {
             color: ${primary_text};
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
+            font-size: ${font_small}px;
+            font-weight: 600;
         }
         QToolButton#panelTitleButton {
             color: ${panel_title_button};
@@ -167,6 +164,12 @@ QString buildAppStyleSheet() {
             border: none;
             outline: none;
             gridline-color: ${border};
+        }
+        QTableWidget#modelCoordinatesTable {
+            font-size: ${font_small}px;
+        }
+        QTableWidget#modelCoordinatesTable QHeaderView::section {
+            font-size: ${font_small}px;
         }
         QTreeWidget::viewport, QListWidget::viewport, QTableWidget::viewport {
             background: ${panel_background};
@@ -463,6 +466,7 @@ QString buildAppStyleSheet() {
     stylesheet.replace("${panel_radius}", QString::number(metrics::panel_radius));
     stylesheet.replace("${padding}", QString::number(metrics::padding));
     stylesheet.replace("${section_header_padding}", QString::number(metrics::section_header_padding));
+    stylesheet.replace("${font_small}", QString::number(typography::small));
 
     stylesheet.replace("${app_background}", palette::app_background);
     stylesheet.replace("${border}", palette::border);
