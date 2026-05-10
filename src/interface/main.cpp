@@ -30,14 +30,8 @@
 namespace {
 
 void installUiFont() {
-    const QString blender_font =
-        "/home/dion/drive/blender/blender-5.1.0-linux-x64/5.1/datafiles/fonts/Inter.woff2";
-
-    int font_id = QFontDatabase::addApplicationFont(blender_font);
-    if (font_id < 0) {
-        font_id = QFontDatabase::addApplicationFont(
-            ":/fonts/DMSans-VariableFont_opsz,wght.ttf");
-    }
+    const int font_id = QFontDatabase::addApplicationFont(
+        ":/fonts/DMSans-VariableFont_opsz,wght.ttf");
     QString family;
     if (font_id >= 0) {
         const QStringList families = QFontDatabase::applicationFontFamilies(font_id);

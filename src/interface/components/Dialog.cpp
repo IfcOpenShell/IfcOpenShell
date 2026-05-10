@@ -48,32 +48,39 @@ Dialog::Dialog(QWidget* parent, bool scrollable)
                                      style::metrics::section_body_padding);
     frame_layout->setSpacing(0);
 
-    if (scrollable) {
-        auto* scroll = new QScrollArea(frame);
-        scroll->setWidgetResizable(true);
-        scroll->setFrameShape(QFrame::NoFrame);
+    auto* scroll = new QScrollArea(frame);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
 
-        auto* scroll_body = new QWidget(scroll);
-        scroll_body->setObjectName("panelScrollBody");
-        body_layout_ = new QVBoxLayout(scroll_body);
-        body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(style::metrics::section_body_padding);
+    auto* scroll_body = new QWidget(scroll);
+    scroll_body->setObjectName("panelScrollBody");
+    body_layout_ = new QVBoxLayout(scroll_body);
+    body_layout_->setContentsMargins(0, 0, 0, 0);
+    body_layout_->setSpacing(style::metrics::section_body_padding);
+    body_layout_->setAlignment(Qt::AlignTop);
 
-        scroll->setWidget(scroll_body);
-        frame_layout->addWidget(scroll);
-    } else {
-        auto* body = new QWidget(frame);
-        body_layout_ = new QVBoxLayout(body);
-        body_layout_->setContentsMargins(0, 0, 0, 0);
-        body_layout_->setSpacing(style::metrics::section_body_padding);
-        frame_layout->addWidget(body);
-    }
+    scroll->setWidget(scroll_body);
+    frame_layout->addWidget(scroll, scrollable ? 1 : 0);
+
+    auto* footer = new QWidget(frame);
+    footer_layout_ = new QVBoxLayout(footer);
+    footer_layout_->setContentsMargins(style::metrics::section_body_padding,
+                                       style::metrics::section_body_padding,
+                                       style::metrics::section_body_padding,
+                                       0);
+    footer_layout_->setSpacing(style::metrics::section_body_padding);
+    footer_layout_->setAlignment(Qt::AlignTop);
+    frame_layout->addWidget(footer);
 
     outer_layout->addWidget(frame);
 }
 
 void Dialog::addBodyWidget(QWidget* widget) {
     body_layout_->addWidget(widget);
+}
+
+void Dialog::addFooterWidget(QWidget* widget) {
+    footer_layout_->addWidget(widget);
 }
 
 } // namespace ifcinterface::components

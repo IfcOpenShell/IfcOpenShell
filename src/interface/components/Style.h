@@ -32,6 +32,12 @@ inline constexpr int panel_radius = 3;
 
 } // namespace ifcinterface::components::style::metrics
 
+namespace ifcinterface::components::style::typography {
+
+inline constexpr int small = 10;
+
+} // namespace ifcinterface::components::style::typography
+
 namespace ifcinterface::components::style::palette {
 
 inline constexpr auto app_background = "#26292f";

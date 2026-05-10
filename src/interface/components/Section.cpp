@@ -24,6 +24,7 @@
 
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QSizePolicy>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -33,6 +34,7 @@ Section::Section(const QString& title, SectionHeaderMode header_mode, QWidget* p
     : QWidget(parent)
 {
     setObjectName("panelSection");
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(style::metrics::padding);
@@ -59,6 +61,11 @@ Section::Section(const QString& title, SectionHeaderMode header_mode, QWidget* p
         connect(toggle_button_, &QToolButton::toggled, this, [this](bool expanded) {
             toggle_button_->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
             body_->setVisible(expanded);
+            body_->setMaximumHeight(expanded ? QWIDGETSIZE_MAX : 0);
+            body_->setMinimumHeight(0);
+            setSizePolicy(QSizePolicy::Preferred,
+                          body_expanding_ && expanded ? QSizePolicy::Expanding : QSizePolicy::Maximum);
+            updateGeometry();
         });
     }
 
@@ -70,6 +77,7 @@ Section::Section(const QString& title, SectionHeaderMode header_mode, QWidget* p
                                      style::metrics::section_body_padding,
                                      0);
     body_layout_->setSpacing(style::metrics::padding);
+    body_->setMinimumHeight(0);
     layout->addWidget(body_);
 }
 
@@ -96,6 +104,15 @@ bool Section::isExpanded() const {
 void Section::setExpanded(bool expanded) {
     if (!toggle_button_) return;
     toggle_button_->setChecked(expanded);
+}
+
+void Section::setBodyExpanding(bool expanding) {
+    body_expanding_ = expanding;
+    body_->setSizePolicy(QSizePolicy::Preferred, expanding ? QSizePolicy::Expanding : QSizePolicy::Preferred);
+    body_layout_->setStretch(0, expanding ? 1 : 0);
+    setSizePolicy(QSizePolicy::Preferred,
+                  expanding && isExpanded() ? QSizePolicy::Expanding : QSizePolicy::Maximum);
+    updateGeometry();
 }
 
 } // namespace ifcinterface::components

@@ -46,12 +46,14 @@ public:
     void addHeaderWidget(QWidget* widget);
     bool isExpanded() const;
     void setExpanded(bool expanded);
+    void setBodyExpanding(bool expanding);
 
 private:
     QWidget* body_ = nullptr;
     QVBoxLayout* body_layout_ = nullptr;
     QHBoxLayout* header_layout_ = nullptr;
     QToolButton* toggle_button_ = nullptr;
+    bool body_expanding_ = false;
 };
 
 } // namespace ifcinterface::components

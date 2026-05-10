@@ -216,7 +216,7 @@ void ModelsPanelController::removeLoadedModel(const QString& fed_id) {
 }
 
 void ModelsPanelController::openSettings() {
-    SettingsDialog dialog(session_state_->federation(), host_);
+    SettingsDialog dialog(session_state_, host_);
     dialog.exec();
 }
 

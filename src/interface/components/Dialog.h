@@ -36,9 +36,11 @@ public:
                     bool scrollable = false);
 
     void addBodyWidget(QWidget* widget);
+    void addFooterWidget(QWidget* widget);
 
 private:
     QVBoxLayout* body_layout_ = nullptr;
+    QVBoxLayout* footer_layout_ = nullptr;
 };
 
 } // namespace ifcinterface::components

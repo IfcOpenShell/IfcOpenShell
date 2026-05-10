@@ -98,6 +98,7 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
         body_layout_ = new QVBoxLayout(scroll_body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
         body_layout_->setSpacing(style::metrics::section_body_padding);
+        body_layout_->setAlignment(Qt::AlignTop);
 
         scroll->setWidget(scroll_body);
         frame_layout->addWidget(scroll);
@@ -106,11 +107,12 @@ Panel::Panel(const QString& title, QWidget* content, QWidget* parent, bool has_s
         body_layout_ = new QVBoxLayout(body);
         body_layout_->setContentsMargins(0, 0, 0, 0);
         body_layout_->setSpacing(style::metrics::section_body_padding);
+        body_layout_->setAlignment(Qt::AlignTop);
         frame_layout->addWidget(body);
     }
 
     if (content) {
-        body_layout_->addWidget(content);
+        addBodyWidget(content);
     }
     outer_layout->addWidget(frame);
 
