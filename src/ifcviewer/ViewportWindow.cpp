@@ -3572,9 +3572,17 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
     box_select_armed_       = false;
     box_select_active_      = false;
     press_pick_id_          = 0;
-    if (e->button() == Qt::MiddleButton) {
-        setPivotIndicatorVisible(true);
-        requestUpdate();
+    // Show the pivot indicator while the user holds the navigation
+    // button(s) for the active preset — Blender uses MMB for both
+    // orbit + pan, Revit too (with Shift swapping the role), Rhino
+    // uses RMB.  Either way, the press of that button is what the
+    // user means as "I'm about to navigate".
+    {
+        const NavBindings nb = currentNavBindings();
+        if (e->button() == nb.orbit_button || e->button() == nb.pan_button) {
+            setPivotIndicatorVisible(true);
+            requestUpdate();
+        }
     }
     if (section_tool_active_ && e->button() == Qt::LeftButton) {
         // First try to grab an existing plane's arrow gizmo.
@@ -3684,7 +3692,9 @@ void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
         press_pick_id_     = 0;
     }
 
-    const bool was_navigating = (active_button_ == Qt::MiddleButton);
+    const NavBindings nb = currentNavBindings();
+    const bool was_navigating =
+        (active_button_ == nb.orbit_button || active_button_ == nb.pan_button);
     active_button_ = Qt::NoButton;
     if (was_navigating && pivot_indicator_visible_) {
         setPivotIndicatorVisible(false);
@@ -3749,26 +3759,40 @@ void ViewportWindow::handleMouseMove(QMouseEvent* e) {
 
     QPoint delta = e->pos() - last_mouse_pos_;
     last_mouse_pos_ = e->pos();
-    if (active_button_ == Qt::MiddleButton) {
-        if (e->modifiers() & Qt::ShiftModifier) {
-            const float pan_speed = camera_distance_ * 0.002f;
-            // Derive screen-right and screen-up from the actual camera basis
-            // rather than yaw/pitch alone — the latter assumed up = world +Z,
-            // which breaks at top/bottom views where updateCamera switches
-            // the lookAt up vector to world +Y.
-            const QVector3D forward = (camera_target_ - camera_eye_).normalized();
-            const QVector3D up_ref = (std::abs(camera_pitch_) >= 89.0f)
-                                   ? QVector3D(0, 1, 0)
-                                   : QVector3D(0, 0, 1);
-            const QVector3D right = QVector3D::crossProduct(forward, up_ref).normalized();
-            const QVector3D up    = QVector3D::crossProduct(right, forward).normalized();
-            camera_target_ -= right * delta.x() * pan_speed;
-            camera_target_ += up    * delta.y() * pan_speed;
-        } else {
-            camera_yaw_ -= delta.x() * 0.3f;
-            camera_pitch_ += delta.y() * 0.3f;
-            camera_pitch_ = qBound(-89.0f, camera_pitch_, 89.0f);
-        }
+
+    // Dispatch nav drag against the active preset.  Modifier matching
+    // is exact on the Shift bit only — the only modifier any of our
+    // presets uses — so toggling Shift mid-drag flips between orbit
+    // and pan when both share a button (Blender / Revit).
+    const NavBindings nb = currentNavBindings();
+    const bool shift_now      = (e->modifiers() & Qt::ShiftModifier) != 0;
+    const bool shift_for_pan  = (nb.pan_mods   & Qt::ShiftModifier) != 0;
+    const bool shift_for_orb  = (nb.orbit_mods & Qt::ShiftModifier) != 0;
+    const bool is_pan   = (active_button_ == nb.pan_button)
+                       && (shift_now == shift_for_pan);
+    const bool is_orbit = !is_pan
+                       && (active_button_ == nb.orbit_button)
+                       && (shift_now == shift_for_orb);
+
+    if (is_pan) {
+        const float pan_speed = camera_distance_ * 0.002f;
+        // Derive screen-right and screen-up from the actual camera basis
+        // rather than yaw/pitch alone — the latter assumed up = world +Z,
+        // which breaks at top/bottom views where updateCamera switches
+        // the lookAt up vector to world +Y.
+        const QVector3D forward = (camera_target_ - camera_eye_).normalized();
+        const QVector3D up_ref = (std::abs(camera_pitch_) >= 89.0f)
+                               ? QVector3D(0, 1, 0)
+                               : QVector3D(0, 0, 1);
+        const QVector3D right = QVector3D::crossProduct(forward, up_ref).normalized();
+        const QVector3D up    = QVector3D::crossProduct(right, forward).normalized();
+        camera_target_ -= right * delta.x() * pan_speed;
+        camera_target_ += up    * delta.y() * pan_speed;
+        requestUpdate();
+    } else if (is_orbit) {
+        camera_yaw_ -= delta.x() * 0.3f;
+        camera_pitch_ += delta.y() * 0.3f;
+        camera_pitch_ = qBound(-89.0f, camera_pitch_, 89.0f);
         requestUpdate();
     }
 }
@@ -4247,6 +4271,25 @@ void ViewportWindow::toggleLengthTool() {
 
 void ViewportWindow::toggleVolumeTool() {
     setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::None : ToolMode::Volume);
+}
+
+ViewportWindow::NavBindings ViewportWindow::currentNavBindings() const {
+    using NP = AppSettings::NavPreset;
+    switch (AppSettings::instance().navPreset()) {
+    case NP::Rhino:
+        // Orbit RMB,        Pan Shift+RMB.
+        return { Qt::RightButton,  Qt::NoModifier,
+                 Qt::RightButton,  Qt::ShiftModifier };
+    case NP::Revit:
+        // Orbit Shift+MMB,  Pan MMB.
+        return { Qt::MiddleButton, Qt::ShiftModifier,
+                 Qt::MiddleButton, Qt::NoModifier };
+    case NP::Blender:
+    default:
+        // Orbit MMB,        Pan Shift+MMB.
+        return { Qt::MiddleButton, Qt::NoModifier,
+                 Qt::MiddleButton, Qt::ShiftModifier };
+    }
 }
 
 void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,

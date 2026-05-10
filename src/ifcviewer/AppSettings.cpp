@@ -42,6 +42,7 @@ constexpr const char* kHizResolutionKey = "viewport/hiz_resolution";
 constexpr int kHizResolutionDefault = 256;
 constexpr int kHizResolutionFloor = 64;
 constexpr const char* kHizEnabledKey = "viewport/hiz_enabled";
+constexpr const char* kNavPresetKey = "viewport/nav_preset";
 }
 
 AppSettings& AppSettings::instance() {
@@ -181,6 +182,17 @@ void AppSettings::setHizEnabled(bool value) {
     emit hizEnabledChanged(value);
 }
 
+AppSettings::NavPreset AppSettings::navPreset() const {
+    return nav_preset_;
+}
+
+void AppSettings::setNavPreset(NavPreset value) {
+    if (nav_preset_ == value) return;
+    nav_preset_ = value;
+    persist();
+    emit navPresetChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
@@ -203,6 +215,17 @@ void AppSettings::load() {
     hiz_resolution_ = settings.value(kHizResolutionKey, kHizResolutionDefault).toInt();
     if (hiz_resolution_ < kHizResolutionFloor) hiz_resolution_ = kHizResolutionFloor;
     hiz_enabled_ = settings.value(kHizEnabledKey, true).toBool();
+    {
+        const int raw = settings.value(kNavPresetKey,
+                                       static_cast<int>(NavPreset::Blender)).toInt();
+        // Clamp to known values so a stale config doesn't drop us into
+        // an undefined preset slot.
+        if (raw < 0 || raw > static_cast<int>(NavPreset::Revit)) {
+            nav_preset_ = NavPreset::Blender;
+        } else {
+            nav_preset_ = static_cast<NavPreset>(raw);
+        }
+    }
 }
 
 void AppSettings::persist() {
@@ -218,4 +241,5 @@ void AppSettings::persist() {
     settings.setValue(kLod1PixelThresholdKey, lod1_pixel_threshold_);
     settings.setValue(kHizResolutionKey, hiz_resolution_);
     settings.setValue(kHizEnabledKey, hiz_enabled_);
+    settings.setValue(kNavPresetKey, static_cast<int>(nav_preset_));
 }
