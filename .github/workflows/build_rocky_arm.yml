@@ -2,6 +2,12 @@ name: Build IfcOpenShell Linux ARM
 
 on:
   workflow_dispatch:
+    inputs:
+      check_runtime_deps:
+        description: Run ldd checks before packaging
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build_ifcopenshell:
@@ -17,7 +23,7 @@ jobs:
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
-                         findutils xz byacc patchelf
+                         findutils xz byacc patchelf libxkbcommon-devel
           python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
 
@@ -84,6 +90,9 @@ jobs:
           git push || true
 
       - name: Package .zip archives
+        shell: bash
+        env:
+          IFCOPENSHELL_CHECK_RUNTIME_DEPS: ${{ inputs.check_runtime_deps }}
         run: |
           VERSION=v`cat VERSION`
           cd ./build/`uname`/*/install/ifcopenshell
@@ -140,6 +149,32 @@ jobs:
               printf "[Paths]\nPrefix = .\n" > "$dest/qt.conf"
           }
 
+          check_runtime_dependencies() {
+              case "${IFCOPENSHELL_CHECK_RUNTIME_DEPS:-false}" in
+                  1|true|TRUE|yes|YES|on|ON) ;;
+                  *) return 0 ;;
+              esac
+
+              package_dir="$1"
+              missing=0
+              while IFS= read -r binary_file; do
+                  readelf -h "$binary_file" >/dev/null 2>&1 || continue
+                  if ! LD_LIBRARY_PATH="$package_dir:${QT_DIR:+$QT_DIR/lib:}${LD_LIBRARY_PATH:-}" ldd "$binary_file" > "$package_dir/.ldd.out" 2>&1; then
+                      echo "ldd failed for $binary_file"
+                      cat "$package_dir/.ldd.out"
+                      missing=1
+                      continue
+                  fi
+                  if grep -q "not found" "$package_dir/.ldd.out"; then
+                      echo "Missing runtime dependencies for $binary_file"
+                      grep "not found" "$package_dir/.ldd.out"
+                      missing=1
+                  fi
+              done < <(find "$package_dir" -type f \( -perm /111 -o -name "*.so" -o -name "*.so.*" \))
+              rm -f "$package_dir/.ldd.out"
+              return "$missing"
+          }
+
           ls -d python-* | while read py_version; do
               postfix=`echo ${py_version: -1} | sed s/[0-9]//`
               numbers=`echo $py_version | grep -oE '[0-9]+\.[0-9]+' | tr -d '.'`
@@ -169,6 +204,7 @@ jobs:
               patchelf --set-rpath '$ORIGIN' "$package_dir/$exe"
               stage_runtime_payload "$package_dir"
               stage_qt_runtime_payload "$exe_path" "$package_dir"
+              check_runtime_dependencies "$package_dir"
               pushd "$package_dir" > /dev/null
               zip -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linuxarm64.zip" .
               popd > /dev/null

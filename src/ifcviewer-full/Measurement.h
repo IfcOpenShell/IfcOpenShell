@@ -20,6 +20,7 @@
 #ifndef IFCVIEWER_FULL_MEASUREMENT_H
 #define IFCVIEWER_FULL_MEASUREMENT_H
 
+#include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>

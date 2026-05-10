@@ -823,6 +823,7 @@ def install_qt6() -> str:
             "-O",
             str(qt_install_root),
             "--archives",
+            "icu",
             "qtbase",
         ]
     )
