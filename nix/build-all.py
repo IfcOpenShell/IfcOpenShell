@@ -1562,12 +1562,14 @@ if "IfcOpenShell-Python" in targets:
 
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
-                    # TODO: This symbol name depends on the Python version?
-                    so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
-                    if "wasm" in flags:
-                        run(["wasm-strip", so, "-k", "dylink.0"])
-                    else:
-                        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
+                    for so in glob.glob(os.path.join(module_dir, "*.so")):
+                        if "wasm" in flags:
+                            run(["wasm-strip", so, "-k", "dylink.0"])
+                        elif os.path.basename(so).startswith("_ifcopenshell_wrapper"):
+                            # TODO: This symbol name depends on the Python version?
+                            run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
+                        else:
+                            run([strip, "--strip-unneeded", so], cwd=module_dir)
 
             return module_dir
 
