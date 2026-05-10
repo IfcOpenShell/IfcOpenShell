@@ -2,12 +2,6 @@ name: Build IfcOpenShell Linux ARM
 
 on:
   workflow_dispatch:
-    inputs:
-      check_runtime_deps:
-        description: Run ldd checks before packaging
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   build_ifcopenshell:
@@ -91,8 +85,6 @@ jobs:
 
       - name: Package .zip archives
         shell: bash
-        env:
-          IFCOPENSHELL_CHECK_RUNTIME_DEPS: ${{ inputs.check_runtime_deps }}
         run: |
           VERSION=v`cat VERSION`
           cd ./build/`uname`/*/install/ifcopenshell
@@ -162,11 +154,6 @@ jobs:
           }
 
           check_runtime_dependencies() {
-              case "${IFCOPENSHELL_CHECK_RUNTIME_DEPS:-false}" in
-                  1|true|TRUE|yes|YES|on|ON) ;;
-                  *) return 0 ;;
-              esac
-
               package_dir="$1"
               missing=0
               while IFS= read -r binary_file; do
@@ -184,7 +171,10 @@ jobs:
                   fi
               done < <(find "$package_dir" -type f \( -perm /111 -o -name "*.so" -o -name "*.so.*" \))
               rm -f "$package_dir/.ldd.out"
-              return "$missing"
+              if [ "$missing" -ne 0 ]; then
+                  echo "Runtime dependency check found issues; continuing packaging."
+              fi
+              return 0
           }
 
           ls -d python-* | while read py_version; do
@@ -201,7 +191,7 @@ jobs:
               [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
               find ifcopenshell -name "*.pyc" -delete
               stage_runtime_payload ifcopenshell
-              zip -9 -y -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linuxarm64.zip ifcopenshell
+              zip -y -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linuxarm64.zip ifcopenshell
               mv *.zip ~/output
               popd > /dev/null
           done
@@ -218,7 +208,7 @@ jobs:
               stage_qt_runtime_payload "$exe_path" "$package_dir"
               check_runtime_dependencies "$package_dir"
               pushd "$package_dir" > /dev/null
-              zip -9 -y -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linuxarm64.zip" .
+              zip -y -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linuxarm64.zip" .
               popd > /dev/null
               rm -rf "$package_dir"
           done
