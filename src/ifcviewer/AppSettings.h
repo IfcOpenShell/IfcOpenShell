@@ -40,21 +40,6 @@ public:
     bool backfaceCulling() const;
     void setBackfaceCulling(bool value);
 
-    // When true, the IFC/RocksDB file is kept open (and, on sidecar hits,
-    // opened in the background) so element properties can be queried.
-    // When false, only geometry is loaded — saves memory and avoids a
-    // second file read on sidecar hits, at the cost of no property panel.
-    bool loadDataSource() const;
-    void setLoadDataSource(bool value);
-
-    // When true, each loaded model's IfcCoordinateOperation (e.g.
-    // IfcMapConversion) is applied to the per-instance transform after
-    // load, lifting the model into map (georeferenced) coordinates.
-    // When false, models render in their local engineering frame —
-    // useful for previewing geometry without translating to e.g. UTM.
-    bool applyCoordinateOperation() const;
-    void setApplyCoordinateOperation(bool value);
-
     // Skip elements with more than this many voids (HasOpenings inverse).
     // Boolean subtraction of many openings is the dominant cost in some
     // pathological exports; dropping those elements keeps load times sane.
@@ -72,15 +57,50 @@ public:
     double angularTolerance() const;
     void setAngularTolerance(double value);
 
+    // Minimum projected sphere radius (in pixels) for an instance to be
+    // worth drawing — below this it's contribution-culled.  Bigger value
+    // = faster rendering but more pop-in on small detail; smaller =
+    // more thorough but more draw cost.
+    double minPixelRadius() const;
+    void setMinPixelRadius(double value);
+
+    // Aggressive contribution-cull threshold while the camera is moving.
+    // 0 disables the motion boost (motion uses minPixelRadius like still
+    // frames).  When >= minPixelRadius, motion frames raise the bar so
+    // transient camera moves stay smooth on heavy scenes.
+    double motionMinPixelRadius() const;
+    void setMotionMinPixelRadius(double value);
+
+    // Projected sphere radius (in pixels) below which an instance
+    // switches to its LOD1 representation.  0 disables LOD1 entirely
+    // (always draw LOD0).
+    double lod1PixelThreshold() const;
+    void setLod1PixelThreshold(double value);
+
+    // Base HiZ pyramid width in texels (height tracks aspect).  Bigger
+    // = tighter occlusion but more readback bandwidth.  Floored at 64.
+    // Changes take effect on next viewport reinitialization.
+    int hizResolution() const;
+    void setHizResolution(int value);
+
+    // Master toggle for HiZ occlusion culling.  When false, only the
+    // frustum + contribution cull run; geometry hidden behind opaque
+    // blockers still draws.
+    bool hizEnabled() const;
+    void setHizEnabled(bool value);
+
 signals:
     void geometryLibraryChanged(const QString& value);
     void showStatsChanged(bool value);
     void backfaceCullingChanged(bool value);
-    void loadDataSourceChanged(bool value);
-    void applyCoordinateOperationChanged(bool value);
     void voidLimitChanged(int value);
     void deflectionToleranceChanged(double value);
     void angularToleranceChanged(double value);
+    void minPixelRadiusChanged(double value);
+    void motionMinPixelRadiusChanged(double value);
+    void lod1PixelThresholdChanged(double value);
+    void hizResolutionChanged(int value);
+    void hizEnabledChanged(bool value);
 
 private:
     AppSettings();
@@ -90,11 +110,14 @@ private:
     QString geometry_library_;
     bool show_stats_ = false;
     bool backface_culling_ = true;
-    bool load_data_source_ = true;
-    bool apply_coordinate_operation_ = false;
     int void_limit_ = 30;
     double deflection_tolerance_ = 0.001;
     double angular_tolerance_ = 0.5;
+    double min_pixel_radius_ = 2.0;
+    double motion_min_pixel_radius_ = 10.0;
+    double lod1_pixel_threshold_ = 30.0;
+    int hiz_resolution_ = 256;
+    bool hiz_enabled_ = true;
 };
 
 #endif // APPSETTINGS_H

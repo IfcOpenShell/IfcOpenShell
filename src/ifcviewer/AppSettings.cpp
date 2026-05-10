@@ -26,14 +26,22 @@ constexpr const char* kGeometryLibraryKey = "geometry/library";
 constexpr const char* kGeometryLibraryDefault = "hybrid-cgal-simple-opencascade";
 constexpr const char* kShowStatsKey = "viewport/show_stats";
 constexpr const char* kBackfaceCullingKey = "viewport/backface_culling";
-constexpr const char* kLoadDataSourceKey = "loading/load_data_source";
-constexpr const char* kApplyCoordinateOperationKey = "loading/apply_coordinate_operation";
 constexpr const char* kVoidLimitKey = "loading/void_limit";
 constexpr int kVoidLimitDefault = 30;
 constexpr const char* kDeflectionToleranceKey = "loading/deflection_tolerance";
 constexpr double kDeflectionToleranceDefault = 0.001;
 constexpr const char* kAngularToleranceKey = "loading/angular_tolerance";
 constexpr double kAngularToleranceDefault = 0.5;
+constexpr const char* kMinPixelRadiusKey = "viewport/min_pixel_radius";
+constexpr double kMinPixelRadiusDefault = 2.0;
+constexpr const char* kMotionMinPixelRadiusKey = "viewport/motion_min_pixel_radius";
+constexpr double kMotionMinPixelRadiusDefault = 10.0;
+constexpr const char* kLod1PixelThresholdKey = "viewport/lod1_pixel_threshold";
+constexpr double kLod1PixelThresholdDefault = 30.0;
+constexpr const char* kHizResolutionKey = "viewport/hiz_resolution";
+constexpr int kHizResolutionDefault = 256;
+constexpr int kHizResolutionFloor = 64;
+constexpr const char* kHizEnabledKey = "viewport/hiz_enabled";
 }
 
 AppSettings& AppSettings::instance() {
@@ -78,28 +86,6 @@ void AppSettings::setBackfaceCulling(bool value) {
     emit backfaceCullingChanged(value);
 }
 
-bool AppSettings::loadDataSource() const {
-    return load_data_source_;
-}
-
-void AppSettings::setLoadDataSource(bool value) {
-    if (load_data_source_ == value) return;
-    load_data_source_ = value;
-    persist();
-    emit loadDataSourceChanged(value);
-}
-
-bool AppSettings::applyCoordinateOperation() const {
-    return apply_coordinate_operation_;
-}
-
-void AppSettings::setApplyCoordinateOperation(bool value) {
-    if (apply_coordinate_operation_ == value) return;
-    apply_coordinate_operation_ = value;
-    persist();
-    emit applyCoordinateOperationChanged(value);
-}
-
 int AppSettings::voidLimit() const {
     return void_limit_;
 }
@@ -136,20 +122,87 @@ void AppSettings::setAngularTolerance(double value) {
     emit angularToleranceChanged(value);
 }
 
+double AppSettings::minPixelRadius() const {
+    return min_pixel_radius_;
+}
+
+void AppSettings::setMinPixelRadius(double value) {
+    if (value < 0.0) value = 0.0;
+    if (min_pixel_radius_ == value) return;
+    min_pixel_radius_ = value;
+    persist();
+    emit minPixelRadiusChanged(value);
+}
+
+double AppSettings::motionMinPixelRadius() const {
+    return motion_min_pixel_radius_;
+}
+
+void AppSettings::setMotionMinPixelRadius(double value) {
+    if (value < 0.0) value = 0.0;
+    if (motion_min_pixel_radius_ == value) return;
+    motion_min_pixel_radius_ = value;
+    persist();
+    emit motionMinPixelRadiusChanged(value);
+}
+
+double AppSettings::lod1PixelThreshold() const {
+    return lod1_pixel_threshold_;
+}
+
+void AppSettings::setLod1PixelThreshold(double value) {
+    if (value < 0.0) value = 0.0;
+    if (lod1_pixel_threshold_ == value) return;
+    lod1_pixel_threshold_ = value;
+    persist();
+    emit lod1PixelThresholdChanged(value);
+}
+
+int AppSettings::hizResolution() const {
+    return hiz_resolution_;
+}
+
+void AppSettings::setHizResolution(int value) {
+    if (value < kHizResolutionFloor) value = kHizResolutionFloor;
+    if (hiz_resolution_ == value) return;
+    hiz_resolution_ = value;
+    persist();
+    emit hizResolutionChanged(value);
+}
+
+bool AppSettings::hizEnabled() const {
+    return hiz_enabled_;
+}
+
+void AppSettings::setHizEnabled(bool value) {
+    if (hiz_enabled_ == value) return;
+    hiz_enabled_ = value;
+    persist();
+    emit hizEnabledChanged(value);
+}
+
 void AppSettings::load() {
     QSettings settings;
     geometry_library_ = settings.value(kGeometryLibraryKey, kGeometryLibraryDefault).toString();
     show_stats_ = settings.value(kShowStatsKey, false).toBool();
     backface_culling_ = settings.value(kBackfaceCullingKey, true).toBool();
-    load_data_source_ = settings.value(kLoadDataSourceKey, true).toBool();
-    apply_coordinate_operation_ =
-        settings.value(kApplyCoordinateOperationKey, false).toBool();
     void_limit_ = settings.value(kVoidLimitKey, kVoidLimitDefault).toInt();
     if (void_limit_ < 0) void_limit_ = 0;
     deflection_tolerance_ = settings.value(kDeflectionToleranceKey, kDeflectionToleranceDefault).toDouble();
     if (deflection_tolerance_ <= 0.0) deflection_tolerance_ = kDeflectionToleranceDefault;
     angular_tolerance_ = settings.value(kAngularToleranceKey, kAngularToleranceDefault).toDouble();
     if (angular_tolerance_ <= 0.0) angular_tolerance_ = kAngularToleranceDefault;
+    min_pixel_radius_ = settings.value(kMinPixelRadiusKey, kMinPixelRadiusDefault).toDouble();
+    if (min_pixel_radius_ < 0.0) min_pixel_radius_ = 0.0;
+    motion_min_pixel_radius_ =
+        settings.value(kMotionMinPixelRadiusKey, kMotionMinPixelRadiusDefault).toDouble();
+    if (motion_min_pixel_radius_ < 0.0) motion_min_pixel_radius_ = 0.0;
+    lod1_pixel_threshold_ =
+        settings.value(kLod1PixelThresholdKey, kLod1PixelThresholdDefault).toDouble();
+    if (lod1_pixel_threshold_ < 0.0) lod1_pixel_threshold_ = 0.0;
+    hiz_resolution_ = settings.value(kHizResolutionKey, kHizResolutionDefault).toInt();
+    if (hiz_resolution_ < kHizResolutionFloor) hiz_resolution_ = kHizResolutionFloor;
+    hiz_enabled_ = settings.value(kHizEnabledKey, true).toBool();
 }
 
 void AppSettings::persist() {
@@ -157,9 +210,12 @@ void AppSettings::persist() {
     settings.setValue(kGeometryLibraryKey, geometry_library_);
     settings.setValue(kShowStatsKey, show_stats_);
     settings.setValue(kBackfaceCullingKey, backface_culling_);
-    settings.setValue(kLoadDataSourceKey, load_data_source_);
-    settings.setValue(kApplyCoordinateOperationKey, apply_coordinate_operation_);
     settings.setValue(kVoidLimitKey, void_limit_);
     settings.setValue(kDeflectionToleranceKey, deflection_tolerance_);
     settings.setValue(kAngularToleranceKey, angular_tolerance_);
+    settings.setValue(kMinPixelRadiusKey, min_pixel_radius_);
+    settings.setValue(kMotionMinPixelRadiusKey, motion_min_pixel_radius_);
+    settings.setValue(kLod1PixelThresholdKey, lod1_pixel_threshold_);
+    settings.setValue(kHizResolutionKey, hiz_resolution_);
+    settings.setValue(kHizEnabledKey, hiz_enabled_);
 }

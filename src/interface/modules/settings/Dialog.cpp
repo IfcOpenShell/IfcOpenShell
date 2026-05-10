@@ -94,18 +94,6 @@ void SettingsDialog::setupUi() {
     loading_form->setHorizontalSpacing(16);
     loading_form->setVerticalSpacing(10);
 
-    load_data_source_checkbox_ = new QCheckBox(loading_body);
-    load_data_source_checkbox_->setToolTip(
-        "Keep the .ifc/.rdb open after loading so element properties can be queried. "
-        "Disable for geometry-only viewing.");
-    loading_form->addRow("Load Property Data Source", load_data_source_checkbox_);
-
-    apply_coordinate_operation_check_ = new QCheckBox(loading_body);
-    apply_coordinate_operation_check_->setToolTip(
-        "Apply each model's IfcCoordinateOperation after load so it lands in "
-        "georeferenced map coordinates.");
-    loading_form->addRow("Apply Coordinate Operation", apply_coordinate_operation_check_);
-
     void_limit_spin_ = new QSpinBox(loading_body);
     void_limit_spin_->setRange(0, 100000);
     loading_form->addRow("Void Limit", void_limit_spin_);
@@ -192,8 +180,6 @@ void SettingsDialog::syncFromSettings() {
     geometry_library_edit_->setText(AppSettings::instance().geometryLibrary());
     show_stats_check_->setChecked(AppSettings::instance().showStats());
     backface_culling_check_->setChecked(AppSettings::instance().backfaceCulling());
-    load_data_source_checkbox_->setChecked(AppSettings::instance().loadDataSource());
-    apply_coordinate_operation_check_->setChecked(AppSettings::instance().applyCoordinateOperation());
     void_limit_spin_->setValue(AppSettings::instance().voidLimit());
     deflection_tolerance_spin_->setValue(AppSettings::instance().deflectionTolerance());
     angular_tolerance_spin_->setValue(AppSettings::instance().angularTolerance());
@@ -203,8 +189,6 @@ void SettingsDialog::onAccepted() {
     AppSettings::instance().setGeometryLibrary(geometry_library_edit_->text());
     AppSettings::instance().setShowStats(show_stats_check_->isChecked());
     AppSettings::instance().setBackfaceCulling(backface_culling_check_->isChecked());
-    AppSettings::instance().setLoadDataSource(load_data_source_checkbox_->isChecked());
-    AppSettings::instance().setApplyCoordinateOperation(apply_coordinate_operation_check_->isChecked());
     AppSettings::instance().setVoidLimit(void_limit_spin_->value());
     AppSettings::instance().setDeflectionTolerance(deflection_tolerance_spin_->value());
     AppSettings::instance().setAngularTolerance(angular_tolerance_spin_->value());

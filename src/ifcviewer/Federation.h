@@ -135,18 +135,17 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
 // Position: `first_placement_meters` is the model's "anchor" placement —
 // typically the first instance's `placement_transformation`, which the
 // iterator already produces in metres (its `convert-back-units` default
-// is false).  The translation is optionally lifted through
-// `georef.coordinate_operation_meters` (controlled by
-// `apply_coordinate_operation`), then expressed in the federation unit.
+// is false).  The translation is lifted through
+// `georef.coordinate_operation_meters` when one is present, then
+// expressed in the federation unit.
 //
-// Rotation: read directly from `georef.coordinate_operation_meters` when
-// `apply_coordinate_operation && has_coordinate_operation` (this is the
-// helmert grid-north angle).  Otherwise zero.  Anticlockwise positive.
+// Rotation: read directly from `georef.coordinate_operation_meters`
+// when `has_coordinate_operation` (this is the helmert grid-north
+// angle); otherwise zero.  Anticlockwise positive.
 FederatedFalseOrigin
 guessFederatedFalseOrigin(const Eigen::Matrix4d& first_placement_meters,
                           const ModelGeoref& georef,
-                          const FederationConfig& fed_cfg,
-                          bool apply_coordinate_operation);
+                          const FederationConfig& fed_cfg);
 
 // 1 federation_unit -> N metres.
 double federationUnitToMeters(const FederationConfig&);
