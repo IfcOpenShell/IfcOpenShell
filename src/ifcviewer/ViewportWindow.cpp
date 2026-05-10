@@ -714,6 +714,14 @@ void ViewportWindow::initGL() {
                 requestUpdate();
                 emit objectPicked(active_id);
             });
+    // Element-level visibility lives entirely on the CPU (the cull
+    // consults the flag vector directly), but the cached cull result
+    // must be invalidated whenever the hidden set changes — otherwise
+    // a freshly-hidden object would stay drawn on still frames.
+    connect(&visibility_, &VisibilityState::changed, this, [this]() {
+        have_cached_cull_ = false;
+        requestUpdate();
+    });
 
     gl_->glEnable(GL_DEPTH_TEST);
     gl_->glEnable(GL_MULTISAMPLE);
@@ -1117,6 +1125,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     ModelGpuData& m = getOrCreateModel(chunk.model_id);
 
     selection_.noteObjectId(chunk.object_id);
+    visibility_.noteObjectId(chunk.object_id);
 
     InstanceCpu inst;
     inst.mesh_id  = chunk.local_mesh_id;
@@ -1280,11 +1289,12 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.instances = std::move(data.instances);
 
     // Sidecar path bypasses uploadInstanceChunk, so register every
-    // instance's object_id with the selection state up front — otherwise
-    // the per-object_id flags SSBO would be too small for these ids and
-    // their selection bit reads would silently fall outside the buffer.
+    // instance's object_id with both the selection and visibility
+    // states up front — otherwise their per-object_id flag vectors
+    // would be too small to cover these ids.
     for (const auto& inst : m.instances) {
         selection_.noteObjectId(inst.object_id);
+        visibility_.noteObjectId(inst.object_id);
     }
 
     uint32_t total_tri = 0;
@@ -1427,6 +1437,7 @@ void ViewportWindow::resetScene() {
     }
     models_gpu_.clear();
     selection_.reset();
+    visibility_.reset();
     have_cached_cull_ = false;
     requestUpdate();
 }
@@ -1492,6 +1503,36 @@ void ViewportWindow::setSelectedObjectId(uint32_t id) {
     // re-emits objectPicked + requestUpdate via the lambda hooked up in
     // initGL, so we don't need to do those manually here.
     selection_.setSelectedObjectId(id);
+}
+
+void ViewportWindow::hideSelectedElements() {
+    if (selection_.empty()) return;
+    visibility_.hideObjects(selection_.selectionIds());
+}
+
+void ViewportWindow::isolateSelectedElements() {
+    if (selection_.empty()) return;
+    // Build the new hidden set: every live object_id in a *visible*
+    // model that isn't part of the selection.  Skipping model-hidden
+    // objects keeps element-level hidden_ids_ from accumulating ids
+    // that are already model-hidden — model-hide always wins anyway.
+    const auto& sel = selection_.selectionIds();
+    std::unordered_set<uint32_t> new_hidden;
+    new_hidden.reserve(sel.size() * 8);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id == 0) continue;
+            if (sel.count(inst.object_id) == 0) {
+                new_hidden.insert(inst.object_id);
+            }
+        }
+    }
+    visibility_.setHidden(new_hidden);
+}
+
+void ViewportWindow::showAllElements() {
+    visibility_.showAll();
 }
 
 void ViewportWindow::setCamera(float tx, float ty, float tz,
@@ -2454,6 +2495,11 @@ void ViewportWindow::cullModelCpu(ModelGpuData& m, const float planes[6][4],
         }
         // Survivor — now pay the wide-struct fetch for mesh_id.
         const InstanceCpu& inst = m.instances[inst_idx];
+        // Element-level hide check.  Done after frustum/contribution/HiZ
+        // so we don't pay the InstanceCpu fetch on instances that would
+        // have been culled anyway; for the typical case (a small
+        // fraction of objects hidden) the wasted cull work is trivial.
+        if (visibility_.isHidden(inst.object_id)) return;
         if (inst.mesh_id >= m.meshes.size()) return;
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
         const bool want_lod1 = mesh.lod1_index_count > 0 &&
