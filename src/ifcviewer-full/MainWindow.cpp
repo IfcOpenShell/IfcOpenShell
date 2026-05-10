@@ -335,6 +335,20 @@ void MainWindow::setupMenus() {
         viewport_->toggleVolumeTool();
     }, QKeySequence("Ctrl+Shift+V"));
     view_menu->addSeparator();
+    // Element visibility — H hides the current selection, Shift+H
+    // isolates it (hides everything else within visible models), Alt+H
+    // restores every element.  Model-level hiding is independent and
+    // stays put.
+    view_menu->addAction("&Hide Selected", this, [this]() {
+        viewport_->hideSelectedElements();
+    }, QKeySequence(Qt::Key_H));
+    view_menu->addAction("&Isolate Selected", this, [this]() {
+        viewport_->isolateSelectedElements();
+    }, QKeySequence(Qt::SHIFT | Qt::Key_H));
+    view_menu->addAction("&Show All Elements", this, [this]() {
+        viewport_->showAllElements();
+    }, QKeySequence(Qt::ALT | Qt::Key_H));
+    view_menu->addSeparator();
     view_menu->addAction("Set &Home View", this, &MainWindow::onSetHomeView);
     view_menu->addAction("&Go to Home View", this, &MainWindow::onGoHomeView);
 }

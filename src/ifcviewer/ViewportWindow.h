@@ -49,6 +49,7 @@ QT_END_NAMESPACE
 #include "OverlayRenderer.h"
 #include "Selection.h"
 #include "SidecarCache.h"
+#include "Visibility.h"
 
 // Matches GL_DRAW_INDIRECT_BUFFER layout for glMultiDrawElementsIndirect.
 struct DrawElementsIndirectCommand {
@@ -327,6 +328,26 @@ public:
     // Used by the box-select drag.  Returns an empty set if rect is empty
     // or off-surface.
     std::unordered_set<uint32_t> picksInRect(const QRect& rect);
+
+    // Per-element visibility (independent of model-level hidden flag).
+    // External callers go through the convenience verbs below; the
+    // VisibilityState getter is exposed for read access (e.g. the host
+    // mirroring its state into a tree's grey-out style).
+    VisibilityState&       visibility()       { return visibility_; }
+    const VisibilityState& visibility() const { return visibility_; }
+    // Hide every currently-selected element.  Selection itself is
+    // preserved — toggling them back on with showAllElements() leaves
+    // the same items selected.
+    void hideSelectedElements();
+    // Hide every element NOT in the current selection (limited to
+    // visible models — model-hidden objects are left as-is so they
+    // stay model-hidden rather than picking up a redundant
+    // element-hidden flag too).  No-op when nothing is selected.
+    void isolateSelectedElements();
+    // Clear element-level visibility overrides for every loaded model.
+    // Model-level `hidden` flags are not touched — a hidden model stays
+    // hidden, matching the user's expectation of "show all *elements*".
+    void showAllElements();
 
     // Extended pick: returns the object id, world-space hit point, and
     // world-space surface normal at (x, y).  Renders the same pick pass as
@@ -729,6 +750,9 @@ private:
 
     // Selection — set + active id + per-object_id flags SSBO (binding=3).
     SelectionState selection_;
+    // Per-element visibility — CPU-only flag vector consulted by the
+    // cull, plus a canonical hidden-id set for mutation/reporting.
+    VisibilityState visibility_;
 
     // LMB-press state.  press_pick_id_ caches the object hit at press
     // time so the release path can apply click semantics without a
