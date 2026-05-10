@@ -107,6 +107,10 @@ ModelsPanel::ModelsPanel(QWidget* parent)
 
 void ModelsPanel::setNodes(const QList<TreeNode>& nodes) {
     tree_->clear();
+    const bool has_hierarchy = std::any_of(nodes.begin(), nodes.end(), [](const TreeNode& node) {
+        return !node.children.isEmpty() || node.kind == ItemKind::Group;
+    });
+    tree_->setRootIsDecorated(has_hierarchy);
     for (const auto& node : nodes) {
         addNode(tree_->invisibleRootItem(), node);
     }

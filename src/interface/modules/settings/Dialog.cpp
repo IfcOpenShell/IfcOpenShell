@@ -20,19 +20,21 @@
 
 #include "Dialog.h"
 
+#include "../../InterfaceSettings.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../components/Dialog.h"
 #include "../../components/Section.h"
-#include "../../components/Style.h"
 #include "../../components/SvgIcon.h"
-#include "../../components/Tabs.h"
+#include "../../components/Style.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFrame>
 #include <QFormLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -43,13 +45,12 @@
 namespace ifcinterface::modules::settings {
 
 SettingsDialog::SettingsDialog(QWidget* parent)
-    : components::Dialog(parent)
+    : components::TabbedDialog(parent)
 {
     setObjectName("appDialog");
     setWindowTitle("Settings");
     setModal(true);
     resize(520, 420);
-    setStyleSheet(components::style::buildAppStyleSheet());
     setupUi();
 }
 
@@ -59,12 +60,11 @@ void SettingsDialog::showEvent(QShowEvent* event) {
 }
 
 void SettingsDialog::setupUi() {
-    auto* tabs = new components::TabWidget(this);
-
-    auto* graphics_tab = new QWidget(tabs);
+    auto* graphics_tab = new QWidget(this);
     auto* graphics_layout = new QVBoxLayout(graphics_tab);
     graphics_layout->setContentsMargins(0, 0, 0, 0);
     graphics_layout->setSpacing(components::style::metrics::padding);
+    graphics_layout->setAlignment(Qt::AlignTop);
 
     auto* general_section = new components::Section("General", components::SectionHeaderMode::Visible, graphics_tab);
     auto* general_body = new QWidget(general_section);
@@ -159,14 +159,15 @@ void SettingsDialog::setupUi() {
 
     // Navigation tab: orbit / pan presets.  Selection always stays on
     // LMB so click + box-select keep working regardless of preset.
-    auto* navigation_tab = new QWidget(tabs);
+    auto* interface_tab = new QWidget(this);
     {
-        auto* layout = new QVBoxLayout(navigation_tab);
+        auto* layout = new QVBoxLayout(interface_tab);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(components::style::metrics::padding);
+        layout->setAlignment(Qt::AlignTop);
 
         auto* section = new components::Section(
-            "Navigation", components::SectionHeaderMode::Visible, navigation_tab);
+            "Navigation", components::SectionHeaderMode::Visible, interface_tab);
         auto* body = new QWidget(section);
         auto* form = new QFormLayout(body);
         form->setContentsMargins(0, 0, 0, 0);
@@ -187,14 +188,63 @@ void SettingsDialog::setupUi() {
 
         section->addBodyWidget(body);
         layout->addWidget(section);
-        layout->addStretch(1);
+
+        auto* theme_section = new components::Section(
+            "Theme", components::SectionHeaderMode::Visible, interface_tab);
+        auto* theme_body = new QWidget(theme_section);
+        auto* theme_layout = new QVBoxLayout(theme_body);
+        theme_layout->setContentsMargins(0, 0, 0, 0);
+        theme_layout->setSpacing(components::style::metrics::padding);
+
+        auto* theme_form = new QFormLayout();
+        theme_form->setContentsMargins(0, 0, 0, 0);
+        theme_form->setHorizontalSpacing(16);
+        theme_form->setVerticalSpacing(10);
+
+        theme_mode_combo_ = new QComboBox(theme_body);
+        theme_mode_combo_->addItem("Dark", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Dark));
+        theme_mode_combo_->addItem("Light", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Light));
+        theme_mode_combo_->addItem("Custom", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Custom));
+        theme_form->addRow("Preset", theme_mode_combo_);
+
+        theme_custom_body_ = new QWidget(theme_body);
+        auto* custom_grid = new QGridLayout(theme_custom_body_);
+        custom_grid->setContentsMargins(0, 0, 0, 0);
+        custom_grid->setHorizontalSpacing(12);
+        custom_grid->setVerticalSpacing(8);
+
+        int row = 0;
+        for (const auto& spec : ifcinterface::InterfaceSettings::themeColorSpecs()) {
+            auto* label = new QLabel(QString::fromUtf8(spec.label), theme_custom_body_);
+            auto* edit = new QLineEdit(theme_custom_body_);
+            edit->setPlaceholderText("#000000");
+            auto* pick = new QPushButton("Pick", theme_custom_body_);
+            connect(pick, &QPushButton::clicked, this, [this, edit]() { pickThemeColor(edit); });
+            custom_grid->addWidget(label, row, 0);
+            custom_grid->addWidget(edit, row, 1);
+            custom_grid->addWidget(pick, row, 2);
+            theme_color_editors_.push_back({QString::fromUtf8(spec.key), edit});
+            ++row;
+        }
+
+        auto* theme_form_widget = new QWidget(theme_body);
+        theme_form_widget->setLayout(theme_form);
+        theme_layout->addWidget(theme_form_widget);
+        theme_layout->addWidget(theme_custom_body_);
+        theme_section->addBodyWidget(theme_body);
+        layout->addWidget(theme_section);
+
+        connect(theme_mode_combo_, &QComboBox::currentIndexChanged, this, [this](int) {
+            updateThemeEditorEnabled();
+        });
     }
 
-    auto make_placeholder_tab = [tabs](const QString& title, const QString& detail) {
-        auto* tab = new QWidget(tabs);
+    auto make_placeholder_tab = [this](const QString& title, const QString& detail) {
+        auto* tab = new QWidget(this);
         auto* layout = new QVBoxLayout(tab);
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(components::style::metrics::padding);
+        layout->setAlignment(Qt::AlignTop);
 
         auto* section = new components::Section(title, components::SectionHeaderMode::Visible, tab);
         auto* body = new QWidget(section);
@@ -215,14 +265,10 @@ void SettingsDialog::setupUi() {
         return tab;
     };
 
-    tabs->addTab(navigation_tab, "Navigation");
-    tabs->addTab(make_placeholder_tab("Keybindings", "Shortcut presets and command bindings will live here."),
-                 "Keybindings");
-    tabs->addTab(graphics_tab, "Graphics");
-    tabs->addTab(make_placeholder_tab("Theme", "Theme, density, and UI appearance settings will live here."),
-                 "Theme");
-    tabs->addTab(make_placeholder_tab("About", "Version, credits, and environment information will live here."),
-                 "About");
+    addTab("Interface", interface_tab);
+    addTab("Keybindings", make_placeholder_tab("Keybindings", "Shortcut presets and command bindings will live here."));
+    addTab("Graphics", graphics_tab);
+    addTab("About", make_placeholder_tab("About", "Version, credits, and environment information will live here."));
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
@@ -236,7 +282,6 @@ void SettingsDialog::setupUi() {
     connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::onAccepted);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    addBodyWidget(tabs);
     addFooterWidget(buttons);
 }
 
@@ -253,6 +298,37 @@ void SettingsDialog::syncFromSettings() {
     hiz_enabled_check_->setChecked(AppSettings::instance().hizEnabled());
     hiz_resolution_spin_->setValue(AppSettings::instance().hizResolution());
     nav_preset_combo_->setCurrentIndex(static_cast<int>(AppSettings::instance().navPreset()));
+    syncThemeSettings();
+}
+
+void SettingsDialog::syncThemeSettings() {
+    const auto& settings = ifcinterface::InterfaceSettings::instance();
+    const int idx = theme_mode_combo_->findData(static_cast<int>(settings.themeMode()));
+    theme_mode_combo_->setCurrentIndex(idx >= 0 ? idx : 0);
+    for (auto& editor : theme_color_editors_) {
+        editor.edit->setText(settings.customColor(editor.key));
+    }
+    updateThemeEditorEnabled();
+}
+
+void SettingsDialog::updateThemeEditorEnabled() {
+    if (!theme_mode_combo_ || !theme_custom_body_) return;
+    const auto mode =
+        static_cast<ifcinterface::InterfaceSettings::ThemeMode>(theme_mode_combo_->currentData().toInt());
+    const bool is_custom = mode == ifcinterface::InterfaceSettings::ThemeMode::Custom;
+    theme_custom_body_->setVisible(is_custom);
+    theme_custom_body_->setEnabled(is_custom);
+}
+
+void SettingsDialog::pickThemeColor(QLineEdit* edit) {
+    QColorDialog dialog(QColor(edit->text()), this);
+    dialog.setObjectName("appDialog");
+    dialog.setWindowTitle("Choose Color");
+    dialog.setOption(QColorDialog::DontUseNativeDialog, true);
+    if (dialog.exec() != QDialog::Accepted) return;
+    const QColor color = dialog.selectedColor();
+    if (!color.isValid()) return;
+    edit->setText(color.name(QColor::HexRgb));
 }
 
 void SettingsDialog::onAccepted() {
@@ -269,6 +345,12 @@ void SettingsDialog::onAccepted() {
     AppSettings::instance().setHizResolution(hiz_resolution_spin_->value());
     AppSettings::instance().setNavPreset(
         static_cast<AppSettings::NavPreset>(nav_preset_combo_->currentIndex()));
+    auto& interface_settings = ifcinterface::InterfaceSettings::instance();
+    interface_settings.setThemeMode(
+        static_cast<ifcinterface::InterfaceSettings::ThemeMode>(theme_mode_combo_->currentData().toInt()));
+    for (const auto& editor : theme_color_editors_) {
+        interface_settings.setCustomColor(editor.key, editor.edit->text());
+    }
     accept();
 }
 

@@ -20,6 +20,8 @@
 
 #include "SvgIcon.h"
 
+#include "../InterfaceSettings.h"
+
 #include <QFile>
 #include <QPainter>
 #include <QRegularExpression>
@@ -61,12 +63,24 @@ QIcon makeTintedSvgIcon(const QString& icon_path, const QString& normal,
     return icon;
 }
 
+QIcon makeAccentSvgIcon(const QString& icon_path) {
+    const auto& theme = ifcinterface::InterfaceSettings::instance();
+    return makeTintedSvgIcon(icon_path,
+                             theme.color("icon_accent_color"),
+                             theme.color("icon_accent_active_color"),
+                             theme.color("icon_disabled_color"));
+}
+
 QIcon makeSvgIcon(const QString& icon_path) {
-    return makeTintedSvgIcon(icon_path, "#e7ebf2", "#ffffff", "#6f7988");
+    const auto& theme = ifcinterface::InterfaceSettings::instance();
+    return makeTintedSvgIcon(icon_path,
+                             theme.color("icon_color"),
+                             theme.color("icon_active_color"),
+                             theme.color("icon_disabled_color"));
 }
 
 QPixmap makeSvgPixmap(const QString& icon_path, const QSize& size) {
-    return renderTintedSvgPixmap(icon_path, "#e7ebf2", size);
+    return renderTintedSvgPixmap(icon_path, ifcinterface::InterfaceSettings::instance().color("icon_color"), size);
 }
 
 } // namespace ifcinterface::components::icons

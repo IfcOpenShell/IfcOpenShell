@@ -65,7 +65,6 @@ AddModelDialog::AddModelDialog(QWidget* parent)
     setObjectName("appDialog");
     setWindowTitle("Add Model");
     setModal(true);
-    setStyleSheet(components::style::buildAppStyleSheet());
     setupUi();
 }
 

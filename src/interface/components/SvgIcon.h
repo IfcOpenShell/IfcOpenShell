@@ -33,6 +33,7 @@ QIcon makeTintedSvgIcon(const QString& icon_path,
                         const QString& normal = "#39b54a",
                         const QString& active = "#53c763",
                         const QString& disabled = "#6f7988");
+QIcon makeAccentSvgIcon(const QString& icon_path);
 QIcon makeSvgIcon(const QString& icon_path);
 QPixmap makeSvgPixmap(const QString& icon_path, const QSize& size);
 

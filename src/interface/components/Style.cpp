@@ -20,9 +20,12 @@
 
 #include "Style.h"
 
+#include "../InterfaceSettings.h"
+
 namespace ifcinterface::components::style {
 
 QString buildAppStyleSheet() {
+    const auto& theme = ifcinterface::InterfaceSettings::instance();
     QString stylesheet = QStringLiteral(R"(
         QMainWindow#appWindow {
             background: ${app_background};
@@ -47,15 +50,11 @@ QString buildAppStyleSheet() {
             background: ${app_background};
             color: ${primary_text};
         }
-        QFrame#ribbonShell {
-            background: ${ribbon_shell_background};
-            border-bottom: 1px solid ${border};
-        }
         QTabBar#appTabBar {
-            background: ${ribbon_shell_background};
+            background: ${tab_bar_background};
         }
         QTabBar#appTabBar::tab {
-            background: transparent;
+            background: ${tab_background};
             color: ${secondary_text};
             padding: 8px 14px;
             margin-right: 2px;
@@ -66,10 +65,10 @@ QString buildAppStyleSheet() {
             border-bottom: 2px solid ${selection_background};
         }
         QTabBar#appTabBar::tab:hover {
-            color: ${ribbon_tab_hover_text};
+            color: ${hover_text};
         }
         QFrame#ribbonBand {
-            background: ${ribbon_band_background};
+            background: ${ribbon_background};
             border-top: 1px solid ${border};
         }
         QTabWidget#appTabWidget::pane {
@@ -107,7 +106,6 @@ QString buildAppStyleSheet() {
             border-top: none;
         }
         QFrame#viewportFrame {
-            background: ${viewport_background};
             border: 1px solid ${border};
         }
         QDockWidget {
@@ -146,13 +144,12 @@ QString buildAppStyleSheet() {
             font-weight: 600;
         }
         QToolButton#panelTitleButton {
-            color: ${panel_title_button};
             border: none;
             background: transparent;
         }
         QToolButton#panelTitleButton:hover {
-            color: ${ribbon_tab_hover_text};
-            background: ${panel_title_button_hover};
+            color: ${hover_text};
+            background: ${ribbon_button_hover};
         }
         QFrame#panel {
             background: ${panel_background};
@@ -440,7 +437,7 @@ QString buildAppStyleSheet() {
             margin: 0;
         }
         QToolButton#panelSectionHeaderButton:hover {
-            color: ${ribbon_tab_hover_text};
+            color: ${hover_text};
         }
         QToolButton#panelSectionHeaderButton::menu-indicator {
             image: none;
@@ -452,13 +449,13 @@ QString buildAppStyleSheet() {
             padding: ${section_header_padding}px;
         }
         QToolButton#panelSectionFilterToggle:hover {
-            background: ${panel_title_button_hover};
+            background: ${ribbon_button_hover};
         }
         QWidget#panelSectionBody {
             background: transparent;
         }
         QLabel#keyValueValueLabel {
-            color: ${key_value_value_text};
+            color: ${primary_text};
             background: transparent;
         }
     )");
@@ -468,33 +465,31 @@ QString buildAppStyleSheet() {
     stylesheet.replace("${section_header_padding}", QString::number(metrics::section_header_padding));
     stylesheet.replace("${font_small}", QString::number(typography::small));
 
-    stylesheet.replace("${app_background}", palette::app_background);
-    stylesheet.replace("${border}", palette::border);
-    stylesheet.replace("${selection_background}", palette::selection_background);
-    stylesheet.replace("${selection_text}", palette::selection_text);
-    stylesheet.replace("${ribbon_shell_background}", palette::ribbon_shell_background);
-    stylesheet.replace("${ribbon_tab_hover_text}", palette::ribbon_tab_hover_text);
-    stylesheet.replace("${ribbon_band_background}", palette::ribbon_band_background);
-    stylesheet.replace("${ribbon_button_hover}", palette::ribbon_button_hover);
-    stylesheet.replace("${ribbon_button_pressed}", palette::ribbon_button_pressed);
-    stylesheet.replace("${viewport_shell_background}", palette::viewport_shell_background);
-    stylesheet.replace("${viewport_background}", palette::viewport_background);
-    stylesheet.replace("${panel_title_button}", palette::panel_title_button);
-    stylesheet.replace("${panel_title_button_hover}", palette::panel_title_button_hover);
-    stylesheet.replace("${panel_background}", palette::panel_background);
-    stylesheet.replace("${control_background}", palette::control_background);
-    stylesheet.replace("${control_border_focus}", palette::control_border_focus);
-    stylesheet.replace("${box_background}", palette::box_background);
-    stylesheet.replace("${scroll_handle}", palette::scroll_handle);
-    stylesheet.replace("${scroll_handle_hover}", palette::scroll_handle_hover);
-    stylesheet.replace("${status_background}", palette::status_background);
-    stylesheet.replace("${section_header_background}", palette::section_header_background);
-    stylesheet.replace("${key_value_value_text}", palette::key_value_value_text);
+    stylesheet.replace("${app_background}", theme.color("app_background"));
+    stylesheet.replace("${border}", theme.color("border"));
+    stylesheet.replace("${selection_background}", theme.color("selection_background"));
+    stylesheet.replace("${selection_text}", theme.color("selection_text"));
+    stylesheet.replace("${tab_bar_background}", theme.color("tab_bar_background"));
+    stylesheet.replace("${tab_background}", theme.color("tab_background"));
+    stylesheet.replace("${hover_text}", theme.color("hover_text"));
+    stylesheet.replace("${ribbon_background}", theme.color("ribbon_background"));
+    stylesheet.replace("${ribbon_button_hover}", theme.color("ribbon_button_hover"));
+    stylesheet.replace("${ribbon_button_pressed}", theme.color("ribbon_button_pressed"));
+    stylesheet.replace("${viewport_shell_background}", theme.color("viewport_shell_background"));
+    stylesheet.replace("${viewport_background}", theme.color("viewport_background"));
+    stylesheet.replace("${panel_background}", theme.color("panel_background"));
+    stylesheet.replace("${control_background}", theme.color("control_background"));
+    stylesheet.replace("${control_border_focus}", theme.color("control_border_focus"));
+    stylesheet.replace("${box_background}", theme.color("box_background"));
+    stylesheet.replace("${scroll_handle}", theme.color("scroll_handle"));
+    stylesheet.replace("${scroll_handle_hover}", theme.color("scroll_handle_hover"));
+    stylesheet.replace("${status_background}", theme.color("status_background"));
+    stylesheet.replace("${section_header_background}", theme.color("section_header_background"));
 
-    stylesheet.replace("${primary_text}", palette::primary_text);
-    stylesheet.replace("${secondary_text}", palette::secondary_text);
-    stylesheet.replace("${disabled_text}", palette::disabled_text);
-    stylesheet.replace("${warning_text}", palette::warning_text);
+    stylesheet.replace("${primary_text}", theme.color("primary_text"));
+    stylesheet.replace("${secondary_text}", theme.color("secondary_text"));
+    stylesheet.replace("${disabled_text}", theme.color("disabled_text"));
+    stylesheet.replace("${warning_text}", theme.color("warning_text"));
 
     return stylesheet;
 }

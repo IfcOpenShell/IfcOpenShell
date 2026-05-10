@@ -20,6 +20,7 @@
 
 #include "Controller.h"
 
+#include "../../InterfaceSettings.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../../ifcviewer/Federation.h"
@@ -39,6 +40,12 @@ ViewportController::ViewportController(ifcinterface::SessionState* session_state
 {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
+    connect(&ifcinterface::InterfaceSettings::instance(),
+            &ifcinterface::InterfaceSettings::themeChanged,
+            this, [this]() {
+        viewport_->setBackgroundColor(QColor(ifcinterface::InterfaceSettings::instance().color("viewport_background")));
+    });
+    viewport_->setBackgroundColor(QColor(ifcinterface::InterfaceSettings::instance().color("viewport_background")));
     connect(federation, &Federation::federatedFalseOriginChanged,
             this, &ViewportController::applyFederatedFalseOrigin);
     connect(federation, &Federation::configChanged, this, [this]() {

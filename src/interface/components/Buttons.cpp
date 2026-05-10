@@ -36,7 +36,7 @@ QToolButton* makeButton(const QString& text,
     auto* button = new QToolButton(parent);
     button->setObjectName("ribbonButton");
     button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-    button->setIcon(components::icons::makeTintedSvgIcon(icon_path));
+    button->setIcon(components::icons::makeAccentSvgIcon(icon_path));
     button->setIconSize(QSize(20, 20));
     button->setText(text);
     button->setMinimumSize(QSize(90, 68));
