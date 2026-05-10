@@ -109,16 +109,27 @@ jobs:
               done
           fi
 
+          ensure_soname_links() {
+              dest="$1"
+              find "$dest" -maxdepth 1 -type f -name "*.so*" | while IFS= read -r shared_object; do
+                  soname=$(readelf -d "$shared_object" 2>/dev/null | sed -n 's/.*(SONAME).*Shared library: \[\(.*\)\].*/\1/p' | head -n 1)
+                  [ -n "$soname" ] || continue
+                  [ -e "$dest/$soname" ] && continue
+                  ln -s "$(basename "$shared_object")" "$dest/$soname"
+              done
+          }
+
           stage_runtime_payload() {
               dest="$1"
               while IFS= read -r runtime_file; do
-                  cp -L "$runtime_file" "$dest/"
+                  cp -P "$runtime_file" "$dest/"
               done < <(
                   for runtime_dir in "$install_root/bin" "$install_root/lib" "$install_root/lib64"; do
                       [ -d "$runtime_dir" ] || continue
-                      find "$runtime_dir" -type f \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
+                      find "$runtime_dir" \( -type f -o -type l \) \( -name "*.so" -o -name "*.so.*" -o -name "*.dylib" -o -name "*.dll" \)
                   done
               )
+              ensure_soname_links "$dest"
           }
 
           stage_qt_runtime_payload() {
@@ -130,13 +141,14 @@ jobs:
                   return 0
               fi
 
-              find "$QT_DIR/lib" -maxdepth 1 \( -type f -o -type l \) -name "*.so*" -exec cp -L {} "$dest/" \;
+              find "$QT_DIR/lib" -maxdepth 1 \( -type f -o -type l \) -name "*.so*" -exec cp -P {} "$dest/" \;
+              ensure_soname_links "$dest"
 
               if [ -d "$QT_DIR/plugins" ]; then
                   pushd "$QT_DIR/plugins" > /dev/null
                   find . \( -type f -o -type l \) -name "*.so*" | while IFS= read -r plugin_file; do
                       mkdir -p "$dest/plugins/$(dirname "$plugin_file")"
-                      cp -L "$plugin_file" "$dest/plugins/$plugin_file"
+                      cp -P "$plugin_file" "$dest/plugins/$plugin_file"
                   done
                   popd > /dev/null
                   if [ -d "$dest/plugins" ]; then
@@ -159,7 +171,7 @@ jobs:
               missing=0
               while IFS= read -r binary_file; do
                   readelf -h "$binary_file" >/dev/null 2>&1 || continue
-                  if ! LD_LIBRARY_PATH="$package_dir:${QT_DIR:+$QT_DIR/lib:}${LD_LIBRARY_PATH:-}" ldd "$binary_file" > "$package_dir/.ldd.out" 2>&1; then
+                  if ! env -u LD_LIBRARY_PATH ldd "$binary_file" > "$package_dir/.ldd.out" 2>&1; then
                       echo "ldd failed for $binary_file"
                       cat "$package_dir/.ldd.out"
                       missing=1
@@ -188,7 +200,7 @@ jobs:
               fi
               [ -d ifcopenshell/__pycache__ ] && rm -rf ifcopenshell/__pycache__
               find ifcopenshell -name "*.pyc" -delete
-              zip -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell
+              zip -9 -y -r -qq ifcopenshell-${py_version_major}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip ifcopenshell
               mv *.zip ~/output
               popd > /dev/null
           done
@@ -205,7 +217,7 @@ jobs:
               stage_qt_runtime_payload "$exe_path" "$package_dir"
               check_runtime_dependencies "$package_dir"
               pushd "$package_dir" > /dev/null
-              zip -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .
+              zip -9 -y -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .
               popd > /dev/null
               rm -rf "$package_dir"
           done
