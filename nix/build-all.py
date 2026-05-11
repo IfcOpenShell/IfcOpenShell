@@ -126,9 +126,8 @@ ssl._create_default_https_context = ssl._create_unverified_context
 import time
 from collections.abc import Generator, Sequence
 from pathlib import Path
-from urllib.request import urlretrieve
-
 from typing import Literal, Union
+from urllib.request import urlretrieve
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
