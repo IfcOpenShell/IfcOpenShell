@@ -314,6 +314,7 @@ public:
     void setModelCoordinateOperation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
     void setModelTransformation(uint32_t model_id, const Eigen::Matrix4d& matrix_meters);
     void setBackgroundColor(const QColor& color);
+    void enterFpsMode();
 
     // Selection.  The viewport owns a SelectionState that tracks both
     // the multi-set and the "active" (last single-clicked) id.  External
@@ -601,7 +602,6 @@ private:
     // way one long frame only produces a single catch-up step instead of
     // also missing a QTimer tick.
     enum class CameraMode { Orbit, Fps };
-    void enterFpsMode();
     void exitFpsMode();
     void fpsIntegrate();     // called from render()
     void recenterFpsCursor();

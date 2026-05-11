@@ -49,6 +49,7 @@
 #include <QIcon>
 #include <QLabel>
 #include <QMessageBox>
+#include <QShortcut>
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -91,6 +92,33 @@ void MainWindow::setupChrome() {
     setDockOptions(QMainWindow::AllowNestedDocks |
                    QMainWindow::AllowTabbedDocks |
                    QMainWindow::GroupedDragging);
+
+    auto bind_shortcut = [this](const QKeySequence& sequence, auto fn) {
+        auto* shortcut = new QShortcut(sequence, this);
+        shortcut->setContext(Qt::WindowShortcut);
+        connect(shortcut, &QShortcut::activated, this, fn);
+    };
+    bind_shortcut(QKeySequence("Ctrl+Shift+L"), [this]() {
+        viewport_controller_->toggleDistanceMode();
+    });
+    bind_shortcut(QKeySequence("Ctrl+Shift+A"), [this]() {
+        viewport_controller_->toggleAreaMode();
+    });
+    bind_shortcut(QKeySequence("Ctrl+Shift+V"), [this]() {
+        viewport_controller_->toggleVolumeMode();
+    });
+    bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_F), [this]() {
+        viewport_controller_->setFlyMode();
+    });
+    bind_shortcut(QKeySequence(Qt::Key_H), [this]() {
+        viewport_controller_->hideSelectedElements();
+    });
+    bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_H), [this]() {
+        viewport_controller_->isolateSelectedElements();
+    });
+    bind_shortcut(QKeySequence(Qt::ALT | Qt::Key_H), [this]() {
+        viewport_controller_->showAllElements();
+    });
     updateWindowTitle();
 }
 
@@ -211,18 +239,14 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
             viewport_widget_->viewport()->projectionOrtho() ? "Ortho" : "Perspective");
     });
 
-    auto* orbit_mode = components::buttons::makeButton("Orbit", ":/icons/rotate-camera-right.svg", this);
-    connect(orbit_mode, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Mode", "Orbit mode active");
-    });
     auto* fly_mode = components::buttons::makeButton("Fly", ":/icons/drone.svg", this);
     connect(fly_mode, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Mode", "Fly mode coming soon");
+        viewport_controller_->setFlyMode();
     });
 
     row->addWidget(components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this));
     row->addWidget(components::buttons::makeButtonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MODE", {orbit_mode, fly_mode}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MODE", {fly_mode}, this));
     row->addStretch(1);
     return page;
 }
@@ -236,15 +260,15 @@ QWidget* MainWindow::buildInspectRibbonPage() {
 
     auto* hide_selected = components::buttons::makeButton("Hide", ":/icons/eye-closed.svg", this);
     connect(hide_selected, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Selection", "Hide selected coming soon");
+        viewport_controller_->hideSelectedElements();
     });
     auto* isolate_selected = components::buttons::makeButton("Isolate", ":/icons/eye-solid.svg", this);
     connect(isolate_selected, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Selection", "Isolate selected coming soon");
+        viewport_controller_->isolateSelectedElements();
     });
     auto* show_all = components::buttons::makeButton("Show All", ":/icons/eye.svg", this);
     connect(show_all, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Selection", "Show all coming soon");
+        viewport_controller_->showAllElements();
     });
     auto* invert_selection = components::buttons::makeButton("Invert", ":/icons/intersect.svg", this);
     connect(invert_selection, &QToolButton::clicked, this, [this]() {
@@ -253,15 +277,15 @@ QWidget* MainWindow::buildInspectRibbonPage() {
 
     auto* distance = components::buttons::makeButton("Distance", ":/icons/select-edge3d.svg", this);
     connect(distance, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Measure", "Distance coming soon");
+        viewport_controller_->toggleDistanceMode();
     });
     auto* area = components::buttons::makeButton("Area", ":/icons/select-face3d.svg", this);
     connect(area, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Measure", "Area coming soon");
+        viewport_controller_->toggleAreaMode();
     });
     auto* volume = components::buttons::makeButton("Volume", ":/icons/select-point3d.svg", this);
     connect(volume, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Measure", "Volume coming soon");
+        viewport_controller_->toggleVolumeMode();
     });
 
     row->addWidget(components::buttons::makeButtonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}, this));

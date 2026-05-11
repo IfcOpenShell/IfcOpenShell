@@ -80,6 +80,8 @@ set(INTERFACE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ifcviewer-full/Measurement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ifcviewer-full/Measurement.h
     ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
 )
 

@@ -26,8 +26,13 @@
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/ViewportWindow.h"
+#include "../../../ifcviewer/OverlayRenderer.h"
+#include "../../../ifcviewer-full/Measurement.h"
 
 #include <Eigen/Dense>
+#include <QVector3D>
+
+#include <vector>
 
 namespace ifcinterface::modules::viewport {
 
@@ -37,6 +42,8 @@ ViewportController::ViewportController(ifcinterface::SessionState* session_state
     : QObject(parent)
     , session_state_(session_state)
     , viewport_(viewport)
+    , area_measurement_(std::make_unique<AreaMeasurement>())
+    , length_measurement_(std::make_unique<LengthMeasurement>())
 {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
@@ -91,7 +98,59 @@ ViewportController::ViewportController(ifcinterface::SessionState* session_state
         applyModelVisibility(mid);
         maybeGuessFederatedFalseOrigin(mid);
     });
+    connect(viewport_, &ViewportWindow::surfacePickedInTool, this,
+            [this](int x, int y, int modifiers) {
+        const bool alt = (modifiers & Qt::AltModifier) != 0;
+        switch (viewport_->toolMode()) {
+        case ViewportWindow::ToolMode::Area:
+            area_measurement_->onPick(*viewport_, x, y, alt);
+            viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
+                .arg(area_measurement_->totalArea(), 0, 'f', 4)
+                .arg(area_measurement_->triangleCount()));
+            break;
+        case ViewportWindow::ToolMode::Length:
+            length_measurement_->onPick(*viewport_, x, y, alt);
+            break;
+        case ViewportWindow::ToolMode::None:
+        case ViewportWindow::ToolMode::Volume:
+            break;
+        }
+    });
+    connect(viewport_, &ViewportWindow::toolModeChanged, this,
+            [this](ViewportWindow::ToolMode mode) {
+        area_measurement_->clear(*viewport_);
+        length_measurement_->clear(*viewport_);
+        switch (mode) {
+        case ViewportWindow::ToolMode::None:
+            viewport_->setHudText(QString());
+            viewport_->setOverlayLabels({});
+            session_state_->setStatusMessage("Measure", "Measurement tool off");
+            break;
+        case ViewportWindow::ToolMode::Length:
+            viewport_->setHudText("Length tool: click first point");
+            session_state_->setStatusMessage("Measure", "Length tool: LMB add point, Backspace remove last, Esc exits");
+            break;
+        case ViewportWindow::ToolMode::Area:
+            viewport_->setHudText("Area: 0.0000 m²  (0 tris)");
+            session_state_->setStatusMessage("Measure", "Area tool: LMB add, Alt+LMB single tri, click again to remove, Esc exits");
+            break;
+        case ViewportWindow::ToolMode::Volume:
+            session_state_->setStatusMessage("Measure", "Volume tool: click / box-select objects, Esc exits");
+            updateVolumeReadout();
+            break;
+        }
+    });
+    connect(viewport_, &ViewportWindow::toolBackspacePressed, this, [this]() {
+        if (viewport_->toolMode() == ViewportWindow::ToolMode::Length) {
+            length_measurement_->removeLastPoint(*viewport_);
+        }
+    });
+    connect(viewport_, &ViewportWindow::objectPicked, this, [this](uint32_t) {
+        updateVolumeReadout();
+    });
 }
+
+ViewportController::~ViewportController() = default;
 
 void ViewportController::applyCoordinateOperation(uint32_t mid) {
     SceneLoader* loader = session_state_->loader();
@@ -168,6 +227,72 @@ void ViewportController::goHomeView() {
         home_view.target.x(), home_view.target.y(), home_view.target.z(),
         home_view.distance, home_view.yaw, home_view.pitch);
     session_state_->setStatusMessage("Camera", "Home view restored");
+}
+
+void ViewportController::setFlyMode() {
+    viewport_->requestActivate();
+    viewport_->enterFpsMode();
+    session_state_->setStatusMessage("Mode", "Fly mode active");
+}
+
+void ViewportController::toggleDistanceMode() {
+    viewport_->toggleLengthTool();
+}
+
+void ViewportController::toggleAreaMode() {
+    viewport_->toggleAreaTool();
+}
+
+void ViewportController::toggleVolumeMode() {
+    viewport_->toggleVolumeTool();
+}
+
+void ViewportController::hideSelectedElements() {
+    viewport_->hideSelectedElements();
+}
+
+void ViewportController::isolateSelectedElements() {
+    viewport_->isolateSelectedElements();
+}
+
+void ViewportController::showAllElements() {
+    viewport_->showAllElements();
+}
+
+void ViewportController::updateVolumeReadout() {
+    if (viewport_->toolMode() != ViewportWindow::ToolMode::Volume) return;
+
+    const auto& sel = viewport_->selection().selectionIds();
+    if (sel.empty()) {
+        viewport_->setHudText(QString());
+        viewport_->setOverlayLabels({});
+        return;
+    }
+
+    std::vector<uint32_t> ids(sel.begin(), sel.end());
+    const auto per_obj = volumesPerObject(*viewport_, ids);
+
+    double total = 0.0;
+    std::vector<OverlayRenderer::Label> labels;
+    labels.reserve(per_obj.size());
+    for (const auto& [oid, v] : per_obj) {
+        total += v;
+        QVector3D mn, mx;
+        if (!viewport_->computeObjectAabb(oid, mn, mx)) continue;
+        OverlayRenderer::Label lbl;
+        const QVector3D c = (mn + mx) * 0.5f;
+        lbl.world_pos[0] = c.x();
+        lbl.world_pos[1] = c.y();
+        lbl.world_pos[2] = c.z();
+        lbl.text = QString::number(v, 'f', 4) + " m³";
+        labels.push_back(std::move(lbl));
+    }
+
+    viewport_->setHudText(QString("Volume: %1 m³  (%2 object%3)")
+        .arg(total, 0, 'f', 4)
+        .arg(per_obj.size())
+        .arg(per_obj.size() == 1 ? "" : "s"));
+    viewport_->setOverlayLabels(labels);
 }
 
 void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {

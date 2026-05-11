@@ -22,9 +22,12 @@
 #define IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
 
 #include <QObject>
+#include <memory>
 
 namespace ifcinterface { class SessionState; }
 class ViewportWindow;
+class AreaMeasurement;
+class LengthMeasurement;
 
 namespace ifcinterface::modules::viewport {
 
@@ -35,19 +38,30 @@ public:
     explicit ViewportController(ifcinterface::SessionState* session_state,
                                 ViewportWindow* viewport,
                                 QObject* parent = nullptr);
+    ~ViewportController() override;
 
     void applyFederatedFalseOrigin();
     void setHomeView();
     void goHomeView();
+    void setFlyMode();
+    void toggleDistanceMode();
+    void toggleAreaMode();
+    void toggleVolumeMode();
+    void hideSelectedElements();
+    void isolateSelectedElements();
+    void showAllElements();
 
 private:
     void applyCoordinateOperation(uint32_t mid);
     void applyModelTransformation(uint32_t mid);
     void applyModelVisibility(uint32_t mid);
     void maybeGuessFederatedFalseOrigin(uint32_t mid);
+    void updateVolumeReadout();
 
     ifcinterface::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
+    std::unique_ptr<AreaMeasurement> area_measurement_;
+    std::unique_ptr<LengthMeasurement> length_measurement_;
 };
 
 } // namespace ifcinterface::modules::viewport
