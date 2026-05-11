@@ -351,6 +351,9 @@ public:
     // Model-level `hidden` flags are not touched — a hidden model stays
     // hidden, matching the user's expectation of "show all *elements*".
     void showAllElements();
+    // Flip element-level visibility across every live element in visible
+    // models. Model-hidden objects are skipped and remain model-hidden.
+    void invertElementVisibility();
 
     // Extended pick: returns the object id, world-space hit point, and
     // world-space surface normal at (x, y).  Renders the same pick pass as
@@ -399,10 +402,9 @@ public:
     void setBenchmarkFrames(int n);
     QString cameraString() const;
 
-    // Move camera_target_ to the selected object's world-AABB centroid and
-    // dolly camera_distance_ so the object's bounding sphere fits the
-    // current viewport.  Yaw/pitch are preserved.  No-op if no object is
-    // selected or its AABB is unknown.
+    // Move camera_target_ to the selected set's world-AABB centroid and
+    // dolly camera_distance_ so the union fits the current viewport.
+    // Yaw/pitch are preserved.  No-op if no selected object has an AABB.
     void focusOnSelectedObject();
     // Frame the union of all finalized models.  No-op if the scene is empty.
     void viewAll();

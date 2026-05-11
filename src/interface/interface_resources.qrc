@@ -22,8 +22,8 @@
         <file alias="building.svg">icons/building.svg</file>
         <file alias="cellar.svg">icons/cellar.svg</file>
         <file alias="perspective-view.svg">icons/perspective-view.svg</file>
-        <file alias="rotate-camera-right.svg">icons/rotate-camera-right.svg</file>
         <file alias="drone.svg">icons/drone.svg</file>
+        <file alias="cube-cut-with-curve.svg">icons/cube-cut-with-curve.svg</file>
         <file alias="folder-plus.svg">icons/folder-plus.svg</file>
         <file alias="folder-minus.svg">icons/folder-minus.svg</file>
         <file alias="folder.svg">icons/folder.svg</file>

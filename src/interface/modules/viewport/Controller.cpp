@@ -235,6 +235,20 @@ void ViewportController::setFlyMode() {
     session_state_->setStatusMessage("Mode", "Fly mode active");
 }
 
+void ViewportController::toggleSectionMode() {
+    viewport_->toggleSectionTool();
+    if (viewport_->sectionToolActive()) {
+        session_state_->setStatusMessage("Section", "Section tool active");
+    } else {
+        session_state_->setStatusMessage("Section", "Section tool off");
+    }
+}
+
+void ViewportController::clearSectionPlanes() {
+    viewport_->clearSectionPlanes();
+    session_state_->setStatusMessage("Section", "Section planes cleared");
+}
+
 void ViewportController::toggleDistanceMode() {
     viewport_->toggleLengthTool();
 }
@@ -247,6 +261,10 @@ void ViewportController::toggleVolumeMode() {
     viewport_->toggleVolumeTool();
 }
 
+void ViewportController::focusSelectedObject() {
+    viewport_->focusOnSelectedObject();
+}
+
 void ViewportController::hideSelectedElements() {
     viewport_->hideSelectedElements();
 }
@@ -257,6 +275,10 @@ void ViewportController::isolateSelectedElements() {
 
 void ViewportController::showAllElements() {
     viewport_->showAllElements();
+}
+
+void ViewportController::invertSelection() {
+    viewport_->invertElementVisibility();
 }
 
 void ViewportController::updateVolumeReadout() {

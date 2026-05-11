@@ -44,12 +44,16 @@ public:
     void setHomeView();
     void goHomeView();
     void setFlyMode();
+    void toggleSectionMode();
+    void clearSectionPlanes();
     void toggleDistanceMode();
     void toggleAreaMode();
     void toggleVolumeMode();
+    void focusSelectedObject();
     void hideSelectedElements();
     void isolateSelectedElements();
     void showAllElements();
+    void invertSelection();
 
 private:
     void applyCoordinateOperation(uint32_t mid);

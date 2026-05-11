@@ -110,6 +110,12 @@ void MainWindow::setupChrome() {
     bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_F), [this]() {
         viewport_controller_->setFlyMode();
     });
+    bind_shortcut(QKeySequence(Qt::Key_K), [this]() {
+        viewport_controller_->toggleSectionMode();
+    });
+    bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_K), [this]() {
+        viewport_controller_->clearSectionPlanes();
+    });
     bind_shortcut(QKeySequence(Qt::Key_H), [this]() {
         viewport_controller_->hideSelectedElements();
     });
@@ -212,7 +218,7 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     });
     auto* view_selected = components::buttons::makeButton("View Selected", ":/icons/cube-scan-solid.svg", this);
     connect(view_selected, &QToolButton::clicked, this, [this]() {
-        if (viewport_widget_) viewport_widget_->viewport()->focusOnSelectedObject();
+        viewport_controller_->focusSelectedObject();
     });
 
     auto* plan_view = components::buttons::makeButton("Plan", ":/icons/planimetry.svg", this);
@@ -243,10 +249,14 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     connect(fly_mode, &QToolButton::clicked, this, [this]() {
         viewport_controller_->setFlyMode();
     });
+    auto* section_mode = components::buttons::makeButton("Section", ":/icons/cube-cut-with-curve.svg", this);
+    connect(section_mode, &QToolButton::clicked, this, [this]() {
+        viewport_controller_->toggleSectionMode();
+    });
 
     row->addWidget(components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this));
     row->addWidget(components::buttons::makeButtonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MODE", {fly_mode}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MODE", {fly_mode, section_mode}, this));
     row->addStretch(1);
     return page;
 }
@@ -272,7 +282,7 @@ QWidget* MainWindow::buildInspectRibbonPage() {
     });
     auto* invert_selection = components::buttons::makeButton("Invert", ":/icons/intersect.svg", this);
     connect(invert_selection, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Selection", "Invert selection coming soon");
+        viewport_controller_->invertSelection();
     });
 
     auto* distance = components::buttons::makeButton("Distance", ":/icons/select-edge3d.svg", this);
