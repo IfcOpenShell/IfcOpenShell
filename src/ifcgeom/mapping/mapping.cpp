@@ -562,6 +562,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
             }
             // Check if it's failed or just some unsupported case.
             if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
+                failed_on_purpose_.insert(material);
                 return nullptr;
             }
             Logger::Warning("Skipping unsupported material style for material: ", material);
@@ -569,6 +570,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
     }
 
     // When material does not have a representation we don't create a style from it
+    failed_on_purpose_.insert(material);
     return nullptr;
 
     /*
