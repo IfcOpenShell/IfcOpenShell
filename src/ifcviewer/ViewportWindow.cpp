@@ -1547,6 +1547,20 @@ void ViewportWindow::showAllElements() {
     visibility_.showAll();
 }
 
+void ViewportWindow::invertElementVisibility() {
+    std::unordered_set<uint32_t> inverted;
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id == 0) continue;
+            if (!visibility_.isHidden(inst.object_id)) {
+                inverted.insert(inst.object_id);
+            }
+        }
+    }
+    visibility_.setHidden(inverted);
+}
+
 void ViewportWindow::setCamera(float tx, float ty, float tz,
                                 float dist, float yaw, float pitch) {
     camera_target_ = QVector3D(tx, ty, tz);
@@ -1641,16 +1655,34 @@ void ViewportWindow::frameAabb(const QVector3D& mn, const QVector3D& mx,
 
 void ViewportWindow::focusOnSelectedObject() {
     if (camera_mode_ == CameraMode::Fps) return;
-    // F frames the *active* object so it's predictable across multi-select
-    // states.  Framing the union of every selected member would be more
-    // expansive but ambiguous in a large set.
-    const uint32_t target = selection_.activeObjectId();
-    QVector3D mn, mx;
-    if (!computeObjectAabb(target, mn, mx)) {
+    const auto& sel = selection_.selectionIds();
+    if (sel.empty()) {
         qDebug("Focus: no object selected or no AABB available");
         return;
     }
-    frameAabb(mn, mx, 1.30f);  // a bit of headroom around small objects
+
+    bool found = false;
+    QVector3D lo(std::numeric_limits<float>::max(),
+                 std::numeric_limits<float>::max(),
+                 std::numeric_limits<float>::max());
+    QVector3D hi(-std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max(),
+                 -std::numeric_limits<float>::max());
+    for (uint32_t object_id : sel) {
+        QVector3D mn, mx;
+        if (!computeObjectAabb(object_id, mn, mx)) continue;
+        for (int a = 0; a < 3; ++a) {
+            if (mn[a] < lo[a]) lo[a] = mn[a];
+            if (mx[a] > hi[a]) hi[a] = mx[a];
+        }
+        found = true;
+    }
+
+    if (!found) {
+        qDebug("Focus: no object selected or no AABB available");
+        return;
+    }
+    frameAabb(lo, hi, 1.30f);
 }
 
 void ViewportWindow::viewAll() {
@@ -1756,23 +1788,6 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         case Qt::Key_Y: setStandardView(neg ? 270.0f : 90.0f,  0.0f);  break;
         case Qt::Key_Z: setStandardView(camera_yaw_, neg ? -90.0f : 90.0f); break;
         }
-        return;
-    }
-    // K toggles the section tool.
-    if (key == Qt::Key_K
-        && event->modifiers() == Qt::NoModifier
-        && !event->isAutoRepeat()) {
-        toggleSectionTool();
-        return;
-    }
-    // Shift+K clears every section plane (and the selection).
-    if (key == Qt::Key_K
-        && event->modifiers() == Qt::ShiftModifier
-        && !event->isAutoRepeat()) {
-        clearSectionPlanes();
-        section_plane_selected_ = -1;
-        section_drag_active_ = false;
-        section_drag_index_  = -1;
         return;
     }
     // While the section tool is active: Esc exits the tool, Delete removes
