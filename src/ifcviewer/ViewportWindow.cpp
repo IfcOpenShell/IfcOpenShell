@@ -1690,16 +1690,6 @@ ViewportWindow::CameraState ViewportWindow::cameraState() const {
 void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     const int key = event->key();
 
-    // Shift+F toggles FPS/fly mode.  Checked before auto-repeat filtering so
-    // a held Shift+F doesn't thrash between modes.
-    if (key == Qt::Key_F
-        && (event->modifiers() & Qt::ShiftModifier)
-        && !event->isAutoRepeat()) {
-        if (camera_mode_ == CameraMode::Fps) exitFpsMode();
-        else                                 enterFpsMode();
-        return;
-    }
-
     if (camera_mode_ == CameraMode::Fps) {
         if (key == Qt::Key_Escape && !event->isAutoRepeat()) {
             exitFpsMode();
@@ -1731,7 +1721,6 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     }
 
     // Plain F (no modifiers): focus camera on the currently selected object.
-    // Shift+F is FPS-mode toggle and was handled above.
     if (key == Qt::Key_F
         && event->modifiers() == Qt::NoModifier
         && !event->isAutoRepeat()) {
@@ -3678,14 +3667,16 @@ void ViewportWindow::handleMousePress(QMouseEvent* e) {
     // gesture.  Tool-mode LMB defers pick handling to surfacePickedInTool
     // on release for tools that consume clicks (Area / Length); Volume is
     // passive and routes input through normal selection.
-    const bool tool_consumes_clicks =
-        (tool_mode_ == ToolMode::Area || tool_mode_ == ToolMode::Length);
-    if (e->button() == Qt::LeftButton && !tool_consumes_clicks) {
-        press_pick_id_ = pickObjectAt(e->pos().x(), e->pos().y());
+    if (e->button() == Qt::LeftButton) {
         box_select_start_pos_   = e->pos();
         box_select_current_pos_ = e->pos();
-        box_select_press_mods_  = e->modifiers();
-        box_select_armed_       = true;
+        const bool tool_consumes_clicks =
+            (tool_mode_ == ToolMode::Area || tool_mode_ == ToolMode::Length);
+        if (!tool_consumes_clicks) {
+            press_pick_id_ = pickObjectAt(e->pos().x(), e->pos().y());
+            box_select_press_mods_  = e->modifiers();
+            box_select_armed_       = true;
+        }
     }
 }
 void ViewportWindow::handleMouseRelease(QMouseEvent* e) {
