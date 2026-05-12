@@ -1469,6 +1469,7 @@ std::vector<MergedBoxRecord> merge_intersecting_parallel_boxes_iterative(const s
         std::vector<size_t> members = clusters[i].members;
         members.insert(members.end(), clusters[j].members.begin(), clusters[j].members.end());
         auto merged = BoxCluster{members, merge_cluster_to_box(members, records)};
+        std::cout << "Result width: " << merged.box.avg_width << " fromt " << clusters[i].box.avg_width << " & " << clusters[j].box.avg_width << std::endl;
 
         std::vector<BoxCluster> next_clusters;
         next_clusters.reserve(clusters.size() - 1);
@@ -2170,91 +2171,114 @@ extend_end_vertices_based_on_input_simple(
     const K::FT& max_projection_distance)
 {
     auto max_intersection_distance = max_projection_distance / 4;
-    std::list<std::pair<Point_2, Point_2>> constructed_segments;
 
-        for (auto it = G.vertices_begin(); it != G.vertices_end(); ++it) {
-        if (it->second.size() == 1) {
-            auto& M = it->first;
+    const auto& process_point = [&](const Point_2& M, const Point_2& incoming) {
+        for (auto& bnd : outer_perimiter) {
+            // if point M is contained in bnd interior:
+            // if (!bnd.has_on_unbounded_side(M)) {
+            if (bnd.has_on_bounded_side(M)) {
+                // create ray incoming -> M
+                CGAL::Ray_2<K> ray(incoming, M - incoming);
 
-            for (auto& bnd : outer_perimiter) {
-                // if point M is contained in bnd interior:
-                // if (!bnd.has_on_unbounded_side(M)) {
-                if (bnd.has_on_bounded_side(M)) {
-                    auto& incoming = *it->second.begin();
-                    // create ray incoming -> M
-                    CGAL::Ray_2<K> ray(incoming, M - incoming);
+                // intersect ray with boundary
+                boost::optional<CGAL::Segment_2<K>> closest_segment;
+                boost::optional<CGAL::Point_2<K>> closest_intersection_point;
+                K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
+                for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
+                    const auto& seg = *jt;
+                    auto x = CGAL::intersection(ray, seg);
+                    if (x) {
+                        if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
+                            auto dist = ((*xp) - M).squared_length();
+                            if (dist < sq_distance_along_ray) {
+                                if (dist < (max_intersection_distance * max_intersection_distance)) {
+                                    closest_segment = seg;
+                                    closest_intersection_point = *xp;
+                                    sq_distance_along_ray = dist;
+                                } else {
+                                }
+                            }
+                        }
+                    }
+                }
 
-                    // intersect ray with boundary
-                    boost::optional<CGAL::Segment_2<K>> closest_segment;
-                    boost::optional<CGAL::Point_2<K>> closest_intersection_point;
-                    K::FT sq_distance_along_ray = std::numeric_limits<double>::infinity();
-                    for (auto jt = bnd.edges_begin(); jt != bnd.edges_end(); ++jt) {
-                        const auto& seg = *jt;
-                        auto x = CGAL::intersection(ray, seg);
-                        if (x) {
-                            if (auto* xp = variant_get<CGAL::Point_2<K>>(&*x)) {
-                                auto dist = ((*xp) - M).squared_length();
-                                if (dist < sq_distance_along_ray) {
-                                    if (dist < (max_intersection_distance * max_intersection_distance)) {
-                                        closest_segment = seg;
-                                        closest_intersection_point = *xp;
-                                        sq_distance_along_ray = dist;
-                                    } else {
+                if (closest_intersection_point) {
+                    return closest_intersection_point;
+                    // constructed_segments.push_front({M, *closest_intersection_point});
+                } else {
+
+                    // Loop over boundary segments, and project point onto it, take the closest
+                    K::FT closest_distance = std::numeric_limits<double>::infinity();
+                    boost::optional<CGAL::Point_2<K>> closest_point;
+                    for (auto& poly : outer_perimiter) {
+                        for (auto jt = poly.edges_begin(); jt != poly.edges_end(); ++jt) {
+                            auto seg = *jt;
+                            auto Pp = seg.supporting_line().projection(M);
+                            if (seg.has_on(Pp)) {
+                                auto d = CGAL::squared_distance(Pp, M);
+                                if (d < (max_projection_distance * max_projection_distance)) {
+                                    if (d < closest_distance) {
+                                        closest_distance = d;
+                                        closest_point = Pp;
                                     }
                                 }
                             }
                         }
                     }
 
-                    if (closest_intersection_point) {
-                        constructed_segments.push_front({M, *closest_intersection_point});
+                    if (closest_point) {
+                        return closest_point;
+                        // constructed_segments.push_front({M, *closest_point});
                     } else {
 
-                        // Loop over boundary segments, and project point onto it, take the closest
-                        K::FT closest_distance = std::numeric_limits<double>::infinity();
-                        boost::optional<CGAL::Point_2<K>> closest_point;
                         for (auto& poly : outer_perimiter) {
-                            for (auto jt = poly.edges_begin(); jt != poly.edges_end(); ++jt) {
-                                auto seg = *jt;
-                                auto Pp = seg.supporting_line().projection(M);
-                                if (seg.has_on(Pp)) {
-                                    auto d = CGAL::squared_distance(Pp, M);
-                                    if (d < (max_projection_distance * max_projection_distance)) {
-                                        if (d < closest_distance) {
-                                            closest_distance = d;
-                                            closest_point = Pp;
-                                        }
+                            for (auto it = poly.begin(); it != poly.end(); ++it) {
+                                auto Pp = *it;
+                                auto d = CGAL::squared_distance(Pp, M);
+                                if (d < (max_projection_distance * max_projection_distance)) {
+                                    if (d < closest_distance) {
+                                        closest_distance = d;
+                                        closest_point = Pp;
                                     }
                                 }
                             }
                         }
 
                         if (closest_point) {
-                            constructed_segments.push_front({M, *closest_point});
+                            return closest_point;
+                            // constructed_segments.push_front({M, *closest_point});
                         } else {
-
-                            for (auto& poly : outer_perimiter) {
-                                for (auto it = poly.begin(); it != poly.end(); ++it) {
-                                    auto Pp = *it;
-                                    auto d = CGAL::squared_distance(Pp, M);
-                                    if (d < (max_projection_distance * max_projection_distance)) {
-                                        if (d < closest_distance) {
-                                            closest_distance = d;
-                                            closest_point = Pp;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (closest_point) {
-                                constructed_segments.push_front({M, *closest_point});
-                            } else {
-                                std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
-                            }
                         }
                     }
                 }
             }
+        }
+        return boost::optional<Point_2>{};
+    };
+
+    using solution_length_point_incoming = std::tuple<K::FT, Point_2, Point_2>;
+    std::vector<solution_length_point_incoming> solutions;
+
+    for (auto it = G.vertices_begin(); it != G.vertices_end(); ++it) {
+        if (it->second.size() == 1) {
+            auto& M = it->first;
+            if (auto result = process_point(M, *it->second.begin())) {
+                auto d = (M - *result).squared_length();
+                solutions.emplace_back(d, *result, *it->second.begin());
+            } else {
+                std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
+            }
+        }
+    }
+
+    std::sort(solutions.begin(), solutions.end());
+    std::list<std::pair<Point_2, Point_2>> constructed_segments;
+
+    for (auto& [d, point, incoming] : solutions) {
+        if (auto result = process_point(point, incoming)) {
+            constructed_segments.push_front({point, *result});
+        } else {
+            std::cout << "Unable to find projection or intersection point for interior boundary (" << M.x() << " " << M.y() << ")" << std::endl;
         }
     }
 
