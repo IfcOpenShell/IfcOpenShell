@@ -36,11 +36,13 @@ add_ifcviewer_unit_test(test_bvh_accel
     SOURCES ${IFCVIEWER_SRC}/BvhAccel.cpp
 )
 
-add_ifcviewer_unit_test(test_lod_builder
-    SOURCES
-        ${IFCVIEWER_SRC}/LodBuilder.cpp
-    LIBS meshoptimizer::meshoptimizer
-)
+if(WITH_MESH_OPTIMIZER)
+    add_ifcviewer_unit_test(test_lod_builder
+        SOURCES
+            ${IFCVIEWER_SRC}/LodBuilder.cpp
+        LIBS meshoptimizer::meshoptimizer
+    )
+endif()
 
 add_ifcviewer_unit_test(test_sidecar_cache
     SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp
