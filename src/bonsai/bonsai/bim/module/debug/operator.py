@@ -1044,6 +1044,13 @@ class DebugActiveDrawing(bpy.types.Operator):
 
         test_elements(list(all_elements))
 
+        if failing_elements:
+            for obj in context.scene.objects:
+                obj.select_set(False)
+            for element in failing_elements:
+                if obj := tool.Ifc.get_object(element):
+                    obj.select_set(True)
+
         print(f"\n{BOLD}{'='*60}{END}")
         if failing_elements:
             print(f"{BOLD}{RED}Found {len(failing_elements)} failing element(s):{END}")
