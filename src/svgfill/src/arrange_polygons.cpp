@@ -1635,13 +1635,28 @@ std::map<Point_2, std::vector<Point_2>> snap_points_to_box_axes(
             auto& c2 = containing[1];
             if (angle_between_dirs_deg(boxes[c1.box_index].direction, boxes[c2.box_index].direction) > 8.) {
                 if (auto x = intersect_infinite_lines_exact(boxes[c1.box_index], boxes[c2.box_index])) {
-                    snapped_points[i] = *x;
-                    debug.write_segment(graph.points[i], *x, "snap_candidate_1");
-                    continue;
+                    auto seg = CGAL::Segment_2<K>(graph.points[i], *x);
+                    bool intersects_with_other_box_axis = false;
+                    for (size_t j = 0; j < boxes.size(); ++j) {
+                        if (j == c1.box_index || j == c2.box_index) {
+                            continue;
+                        }
+                        auto& box = boxes[j];
+                        auto box_seg = CGAL::Segment_2<K>(box.exact_start, box.exact_end);
+                        if (CGAL::do_intersect(seg, box_seg)) {
+                            intersects_with_other_box_axis = true;
+                            break;
+                        }
+                    }
+                    if (!intersects_with_other_box_axis) {
+                        snapped_points[i] = *x;
+                        debug.write_segment(graph.points[i], *x, "snap_candidate_1");
+                        continue;
+                    }
                 }
             }
-            snapped_points[i] = c1.projection;
-            debug.write_segment(graph.points[i], c1.projection, "snap_candidate_2");
+            snapped_points[i] = (c1.projection - graph.points[i]).squared_length() < (c2.projection - graph.points[i]).squared_length() ? c1.projection : c2.projection;
+            debug.write_segment(graph.points[i], snapped_points[i], "snap_candidate_2");
             continue;
         }
 
