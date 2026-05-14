@@ -1,3 +1,4 @@
+// This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -17,195 +18,85 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef IFCINTERFACE_SHELL_MAINWINDOW_H
+#define IFCINTERFACE_SHELL_MAINWINDOW_H
 
+#include <QHash>
 #include <QMainWindow>
-#include <QTreeWidget>
-#include <QTableWidget>
-#include <QProgressBar>
-#include <QLabel>
-#include <QSplitter>
-#include <QElapsedTimer>
+#include <QStringList>
 
-#include <map>
-#include <unordered_map>
-#include <vector>
-
-#include "Measurement.h"
-#include "ViewportWindow.h"
-#include "SceneLoader.h"
-
+class QLabel;
+class QDockWidget;
+class QProgressBar;
+class QStackedWidget;
+class QToolButton;
 class Federation;
-class SettingsWindow;
-class FederationSettingsDialog;
-class ModelTransformationDialog;
+class SceneLoader;
+namespace ifcinterface { class ElementRegistry; }
+namespace ifcinterface { class SessionState; }
+namespace ifcinterface::components { class TabBar; }
+namespace ifcinterface::modules::models { class ModelsPanelController; }
+namespace ifcinterface::modules::models { class ModelsPanel; }
+namespace ifcinterface::modules::models { class ModelsPanelView; }
+namespace ifcinterface::modules::project { class ProjectController; }
+namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanel; }
+namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
+namespace ifcinterface::modules::properties { class PropertiesPanel; }
+namespace ifcinterface::modules::properties { class PropertiesPanelView; }
+namespace ifcinterface::modules::viewport { class ViewportController; }
+namespace ifcinterface::modules::viewport { class ViewportPanel; }
+
+namespace ifcinterface::shell {
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    ~MainWindow();
-
-    void addFiles(const QStringList& paths);
-    bool openFederation(const QString& path);
-    void setPendingCamera(const QString& params);
-    void setPendingBenchmark(int frames);
-
-protected:
-    void closeEvent(QCloseEvent* event) override;
-
-private slots:
-    void onFileOpen();
-    void onDatabaseOpen();
-    void onFederationNew();
-    void onFederationOpen();
-    bool onFederationSave();
-    bool onFederationSaveAs();
-    void onSetHomeView();
-    void onGoHomeView();
-    void onFileSettings();
-    void onFederationSettings();
-    void onModelTransformations();
-    void onObjectPicked(uint32_t object_id);
-    void onTreeSelectionChanged();
-    void onTreeContextMenu(const QPoint& pos);
-
-    void onLoadStarted(uint32_t mid, QString display_name);
-    void onLoadProgressChanged(int percent);
-    void onSidecarElementsReady(uint32_t mid,
-                                std::vector<PackedElementInfo> elements,
-                                std::string string_table);
-    void onLoadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
-    void onDataSourceReady(uint32_t mid);
-    void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
-    void onLoadedFromStream(uint32_t mid, qint64 elapsed_ms);
-    void onLoadCancelled(uint32_t mid);
-    void onLoadError(uint32_t mid, QString message);
-    void onAllLoadsFinished();
 
 private:
-    void setupUi();
-    void setupMenus();
-    void loadModelsFromPaths(const QStringList& paths,
-                             const QStringList& fed_ids);
-    void clearScene();
-    bool confirmDiscardIfDirty();
+    void setupChrome();
+    void setupRibbon();
+    void setupViewport();
+    void setupPanels();
+    void setupStatus();
+    void setupLoader();
+    QWidget* buildHomeRibbonPage();
+    QWidget* buildNavigateRibbonPage();
+    QWidget* buildInspectRibbonPage();
+    QWidget* buildPanelsRibbonPage();
     void updateWindowTitle();
-    void populateProperties(uint32_t object_id);
-    // Push the volume HUD + per-object volume labels for the current
-    // selection.  No-op when a measurement tool is active — that tool
-    // owns the overlay state until it's exited.
-    void updateVolumeReadout();
-    void appendElementToTree(uint32_t model_id,
-                             uint32_t object_id,
-                             int ifc_id,
-                             int parent_ifc_id,
-                             const std::string& guid,
-                             const std::string& name,
-                             const std::string& type);
-    void writeSidecarForModel(uint32_t mid);
-    void removeModelUi(uint32_t mid);
-    void removeModel(uint32_t mid);
-    // Returns the model_id whose tree root is `item`, or 0 if `item` is not
-    // a model root (i.e. an element row, group, or null).
-    uint32_t modelIdForRoot(QTreeWidgetItem* item) const;
-    // Returns the group_id whose tree item is `item`, or empty string when
-    // `item` is null or is not a group item.
-    QString  groupIdForItem(QTreeWidgetItem* item) const;
-    // Place / reparent a model root under its group (or at top level when
-    // group_id is empty / unknown).  Idempotent.  No-op if there's no tree
-    // root yet for `mid`.
-    void     reparentModelTreeRoot(uint32_t mid);
-    // Place / reparent a group item under its parent group (or at top
-    // level).  Idempotent.  No-op if there's no tree item for `group_id`.
-    void     reparentGroupTreeItem(const QString& group_id);
-    // Lazily create the QTreeWidgetItem for `group_id` if not already in
-    // group_tree_items_.  Returns the item.  Sets text + flags but does
-    // not place it under a parent — call reparentGroupTreeItem afterwards.
-    QTreeWidgetItem* ensureGroupTreeItem(const QString& group_id);
-    // Recompute italic/grey on a group row from current effective visibility.
-    void     refreshGroupRowAppearance(const QString& group_id);
-    // Walk descendants of `group_id` and re-push effective visibility to
-    // the viewport for every model under it.  When `group_id` is empty,
-    // re-pushes every model in the federation.
-    void     applyVisibilityCascadeFromGroup(const QString& group_id);
-    // Walk every group_id whose ancestor chain currently includes
-    // `group_id` (inclusive).
-    std::vector<QString> descendantGroupIds(const QString& group_id) const;
-    // Push the federation's `visible` flag for `mid` onto the viewport.
-    // No-op if `mid` is not in the federation map.  Idempotent — safe to
-    // call before the model is finalised on the viewport (hideModel is a
-    // lookup-and-set on models_gpu_; missing entries are skipped).
-    void applyModelVisibilityToViewport(uint32_t mid);
-    void applyPendingBenchmark();
+    QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
 
-    // Push a model's CoordinateOperation matrix to the viewport (or
-    // identity, when the AppSettings toggle is off or the model has no
-    // map conversion).  No-op if the model isn't yet known to the loader
-    // or its IFC file isn't available (sidecar-hit before data-source
-    // load); the call retries on onDataSourceReady.
-    void applyCoordinateOperationToViewport(uint32_t mid);
-
-    // Push a model's ModelTransformation (stage 4) matrix to the viewport,
-    // composed from the federation's authoring intent + the model's units
-    // + the active CoordinateOperation matrix.  Identity when the model is
-    // not in the federation.
-    void applyModelTransformationToViewport(uint32_t mid);
-
-    // Push the federation-wide FederatedFalseOrigin (stage 3) matrix to
-    // the viewport.  Affects every loaded model.
-    void applyFederatedFalseOriginToViewport();
-
-    // For an untitled federation whose FederatedFalseOrigin is still at
-    // its default, derive a sensible origin from `mid`'s first instance
-    // placement + georef and push it via Federation.  Idempotent: a
-    // non-default origin (user-edited, already guessed by a sibling load
-    // in the same batch, or loaded from a saved .ifcfed) is left
-    // untouched, so multi-file batches naturally anchor on whichever
-    // model finishes first.
-    void maybeGuessFederatedFalseOrigin(uint32_t mid);
-    QString formatElapsed(qint64 ms) const;
-
-    ViewportWindow* viewport_ = nullptr;
-    SceneLoader*    loader_   = nullptr;
-    Federation*     federation_ = nullptr;
-    SettingsWindow* settings_ = nullptr;
-    FederationSettingsDialog* federation_settings_ = nullptr;
-    ModelTransformationDialog* model_transformations_ = nullptr;
-    QWidget* viewport_container_ = nullptr;
-    QTreeWidget* element_tree_ = nullptr;
-    QTableWidget* property_table_ = nullptr;
-    QProgressBar* progress_bar_ = nullptr;
-    QLabel* status_label_ = nullptr;
-    QLabel* stats_label_ = nullptr;
-
-    // Per-model tree roots, keyed by model_id.  May live at the top level
-    // of element_tree_ or as a child of a group tree item.
-    std::map<uint32_t, QTreeWidgetItem*> tree_roots_;
-    // Per-group tree items, keyed by Federation group id.
-    std::unordered_map<QString, QTreeWidgetItem*> group_tree_items_;
-
-    // Bidirectional federation_id <-> model_id map.  Federation owns the
-    // persistent ids; SceneLoader owns the runtime model_ids.
-    std::unordered_map<QString, uint32_t> fed_id_to_model_id_;
-    std::unordered_map<uint32_t, QString> model_id_to_fed_id_;
-
-    // Display-side element registry for tree + property lookup.
-    std::unordered_map<uint32_t, ElementInfo> element_map_;
-    std::unordered_map<uint32_t, QTreeWidgetItem*> tree_items_;
-    // Scoped (model_id, ifc_id) -> object_id
-    std::unordered_map<uint64_t, uint32_t> scoped_ifc_id_to_object_id_;
-
-    static uint64_t scopedKey(uint32_t model_id, int ifc_id) {
-        return (static_cast<uint64_t>(model_id) << 32) | static_cast<uint32_t>(ifc_id);
-    }
-
-    QString pending_camera_;
-    int     pending_benchmark_ = 0;
-
-    AreaMeasurement   area_measurement_;
-    LengthMeasurement length_measurement_;
+private:
+    Federation* federation_ = nullptr;
+    QLabel* status_mode_label_ = nullptr;
+    QLabel* status_selection_label_ = nullptr;
+    QLabel* status_perf_label_ = nullptr;
+    QProgressBar* status_progress_bar_ = nullptr;
+    ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
+    QStackedWidget* ribbon_pages_ = nullptr;
+    ifcinterface::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
+    ifcinterface::modules::viewport::ViewportController* viewport_controller_ = nullptr;
+    SceneLoader* loader_ = nullptr;
+    ifcinterface::ElementRegistry* element_registry_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcinterface::modules::models::ModelsPanel* models_panel_ = nullptr;
+    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
+    QDockWidget* layers_panel_ = nullptr;
+    ifcinterface::modules::properties::PropertiesPanel* properties_panel_ = nullptr;
+    QDockWidget* stored_views_panel_ = nullptr;
+    QDockWidget* search_panel_ = nullptr;
+    QDockWidget* spreadsheet_panel_ = nullptr;
+    QDockWidget* audit_panel_ = nullptr;
+    QDockWidget* clash_panel_ = nullptr;
+    QDockWidget* issues_panel_ = nullptr;
+    ifcinterface::modules::models::ModelsPanelController* models_controller_ = nullptr;
+    ifcinterface::modules::models::ModelsPanelView* models_view_ = nullptr;
+    ifcinterface::modules::project::ProjectController* project_controller_ = nullptr;
+    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
+    ifcinterface::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
 };
 
-#endif // MAINWINDOW_H
+} // namespace ifcinterface::shell
+
+#endif

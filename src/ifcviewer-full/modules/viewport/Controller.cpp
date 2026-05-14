@@ -27,7 +27,7 @@
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/ViewportWindow.h"
 #include "../../../ifcviewer/OverlayRenderer.h"
-#include "../../../ifcviewer-full/Measurement.h"
+#include "../../Measurement.h"
 
 #include <Eigen/Dense>
 #include <QVector3D>

@@ -1,3 +1,4 @@
+// This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -17,8 +18,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCVIEWER_FULL_MEASUREMENT_H
-#define IFCVIEWER_FULL_MEASUREMENT_H
+#ifndef IFCINTERFACE_MEASUREMENT_H
+#define IFCINTERFACE_MEASUREMENT_H
 
 #include <cstddef>
 #include "ViewportWindow.h"
@@ -158,4 +159,4 @@ private:
     ViewportWindow::MeshLocalPick first_pick_{};
 };
 
-#endif // IFCVIEWER_FULL_MEASUREMENT_H
+#endif // IFCINTERFACE_MEASUREMENT_H

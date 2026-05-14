@@ -144,7 +144,7 @@ void ModelsPanelController::bindLoader(SceneLoader* loader) {
     connect(loader, &SceneLoader::loadError, this,
             [this, host = host_](uint32_t /*mid*/, const QString& message) {
         session_state_->setStatusMessage("Error", message);
-        QMessageBox::warning(host, "IfcInterfaceMockup", message);
+        QMessageBox::warning(host, "IfcViewer", message);
     });
     connect(loader, &SceneLoader::allLoadsFinished, this,
             [this, loader]() {
