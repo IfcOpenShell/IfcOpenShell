@@ -53,6 +53,7 @@
 #include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
+#include <QProgressBar>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -432,12 +433,16 @@ void MainWindow::setupStatus() {
     status_mode_label_ = new QLabel("Ready", this);
     status_selection_label_ = new QLabel("No selection", this);
     status_perf_label_ = new QLabel(this);
+    status_progress_bar_ = new QProgressBar(this);
     status_perf_label_->setVisible(AppSettings::instance().showStats());
+    status_progress_bar_->setMaximumWidth(200);
+    status_progress_bar_->setVisible(false);
 
     statusBar()->setSizeGripEnabled(false);
     statusBar()->addWidget(status_mode_label_);
     statusBar()->addWidget(status_selection_label_, 1);
     statusBar()->addPermanentWidget(status_perf_label_);
+    statusBar()->addPermanentWidget(status_progress_bar_);
 
     connect(&AppSettings::instance(), &AppSettings::showStatsChanged, this, [this](bool show) {
         status_perf_label_->setVisible(show);
@@ -461,6 +466,36 @@ void MainWindow::setupLoader() {
     project_controller_ = new modules::project::ProjectController(
         this, federation_, session_state_, element_registry_,
         viewport_widget_->viewport(), models_controller_, viewport_controller_, this);
+
+    connect(loader_, &SceneLoader::loadStarted, this,
+            [this](uint32_t /*mid*/, const QString& /*display_name*/) {
+        status_progress_bar_->setValue(0);
+        status_progress_bar_->setVisible(true);
+    });
+    connect(loader_, &SceneLoader::progressChanged, this,
+            [this](int percent) {
+        status_progress_bar_->setValue(percent);
+    });
+
+    auto hide_progress = [this]() {
+        status_progress_bar_->setVisible(false);
+    };
+    connect(loader_, &SceneLoader::loadedFromSidecar, this,
+            [hide_progress](uint32_t /*mid*/, qint64 /*elapsed_ms*/) {
+        hide_progress();
+    });
+    connect(loader_, &SceneLoader::loadedFromStream, this,
+            [hide_progress](uint32_t /*mid*/, qint64 /*elapsed_ms*/) {
+        hide_progress();
+    });
+    connect(loader_, &SceneLoader::loadCancelled, this,
+            [hide_progress](uint32_t /*mid*/) {
+        hide_progress();
+    });
+    connect(loader_, &SceneLoader::loadError, this,
+            [hide_progress](uint32_t /*mid*/, const QString& /*message*/) {
+        hide_progress();
+    });
 
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
             [this](const ViewportWindow::FrameStats& s) {

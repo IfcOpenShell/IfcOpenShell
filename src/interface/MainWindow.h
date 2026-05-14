@@ -27,6 +27,7 @@
 
 class QLabel;
 class QDockWidget;
+class QProgressBar;
 class QStackedWidget;
 class QToolButton;
 class Federation;
@@ -71,6 +72,7 @@ private:
     QLabel* status_mode_label_ = nullptr;
     QLabel* status_selection_label_ = nullptr;
     QLabel* status_perf_label_ = nullptr;
+    QProgressBar* status_progress_bar_ = nullptr;
     ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
     ifcinterface::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
