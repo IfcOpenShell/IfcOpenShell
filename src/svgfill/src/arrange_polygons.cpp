@@ -2386,7 +2386,7 @@ extend_end_vertices_based_on_input_simple(
                     continue;
                 }
                 auto d = (M - *result).squared_length();
-                solutions.emplace_back(d, *result, *it->second.begin());
+                solutions.emplace_back(d, M, *it->second.begin());
             } else {
                 std::cout << "Unable to find projection or intersection point for interior boundary pass " << pass << " [round 1] (" << M.x() << " " << M.y() << ")" << std::endl;
             }
