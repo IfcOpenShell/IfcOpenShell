@@ -19,6 +19,7 @@
  ********************************************************************************/
 
 #include "SettingsDialog.h"
+#include "SettingsView.h"
 
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
@@ -44,8 +45,6 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
-
-#include <cmath>
 
 namespace ifcinterface::modules::models {
 
@@ -116,16 +115,6 @@ Eigen::Vector3d parseVector3(const QString& text) {
     return Eigen::Vector3d(x, y, z);
 }
 
-QString formatAngleDms(double degrees) {
-    const double absolute = std::fabs(degrees);
-    const int d = static_cast<int>(absolute);
-    const double minutes_total = (absolute - static_cast<double>(d)) * 60.0;
-    const int m = static_cast<int>(minutes_total);
-    const double s = (minutes_total - static_cast<double>(m)) * 60.0;
-    const QString sign = degrees < 0.0 ? "-" : "";
-    return QString("%1%2° %3' %4\"").arg(sign).arg(d).arg(m, 2, 10, QChar('0')).arg(formatNumber(s));
-}
-
 QLabel* makeReadOnlyValue(QWidget* parent) {
     auto* label = new QLabel(parent);
     label->setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -140,6 +129,7 @@ SettingsDialog::SettingsDialog(ifcinterface::SessionState* session_state, QWidge
     , session_state_(session_state)
     , federation_(session_state ? session_state->federation() : nullptr)
     , loader_(session_state ? session_state->loader() : nullptr)
+    , settings_view_(new SettingsView(this, session_state))
 {
     setObjectName("appDialog");
     setWindowTitle("Model Settings");
@@ -225,6 +215,8 @@ void SettingsDialog::setupUi() {
     georef_layout->setAlignment(Qt::AlignTop);
     georef_present_value_ = makeReadOnlyValue(georef_body);
     georef_type_value_ = makeReadOnlyValue(georef_body);
+    georef_project_unit_value_ = makeReadOnlyValue(georef_body);
+    georef_map_unit_value_ = makeReadOnlyValue(georef_body);
     georef_easting_value_ = makeReadOnlyValue(georef_body);
     georef_northing_value_ = makeReadOnlyValue(georef_body);
     georef_height_value_ = makeReadOnlyValue(georef_body);
@@ -243,6 +235,8 @@ void SettingsDialog::setupUi() {
     georef_col_1->setVerticalSpacing(8);
     georef_col_1->addRow("Georeferenced", georef_present_value_);
     georef_col_1->addRow("Coordinate Operation", georef_type_value_);
+    georef_col_1->addRow("Project Unit", georef_project_unit_value_);
+    georef_col_1->addRow("Map Unit", georef_map_unit_value_);
     georef_col_1->addRow("Easting", georef_easting_value_);
     georef_col_1->addRow("Northing", georef_northing_value_);
     georef_col_1->addRow("OrthogonalHeight", georef_height_value_);
@@ -422,78 +416,39 @@ void SettingsDialog::populateModelTable() {
     updateSelectedModelGeoref();
 }
 
-void SettingsDialog::updateSelectedModelGeoref() {
-    auto set_unknown = [this](const QString& georef, const QString& type) {
-        georef_present_value_->setText(georef);
-        georef_type_value_->setText(type);
-        georef_easting_value_->setText("—");
-        georef_northing_value_->setText("—");
-        georef_height_value_->setText("—");
-        georef_x_axis_abscissa_value_->setText("—");
-        georef_x_axis_ordinate_value_->setText("—");
-        georef_rotation_dd_value_->setText("—");
-        georef_rotation_dms_value_->setText("—");
-        georef_scale_value_->setText("—");
-        georef_factor_x_value_->setText("—");
-        georef_factor_y_value_->setText("—");
-        georef_factor_z_value_->setText("—");
-    };
+void SettingsDialog::renderSelectedModelGeoref(const SelectedModelGeorefState& state) {
+    georef_present_value_->setText(state.georef_present);
+    georef_type_value_->setText(state.coordinate_operation_type);
+    georef_project_unit_value_->setText(state.project_unit);
+    georef_map_unit_value_->setText(state.map_unit);
+    georef_easting_value_->setText(state.easting);
+    georef_northing_value_->setText(state.northing);
+    georef_height_value_->setText(state.height);
+    georef_x_axis_abscissa_value_->setText(state.x_axis_abscissa);
+    georef_x_axis_ordinate_value_->setText(state.x_axis_ordinate);
+    georef_rotation_dd_value_->setText(state.rotation_dd);
+    georef_rotation_dms_value_->setText(state.rotation_dms);
+    georef_scale_value_->setText(state.scale);
+    georef_factor_x_value_->setText(state.factor_x);
+    georef_factor_y_value_->setText(state.factor_y);
+    georef_factor_z_value_->setText(state.factor_z);
+}
 
+void SettingsDialog::updateSelectedModelGeoref() {
     const int row = model_table_->currentRow();
     if (row < 0 || row >= static_cast<int>(model_rows_.size())) {
-        set_unknown("No model selected", "—");
+        renderSelectedModelGeoref(
+            {"No model selected", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—"});
         return;
     }
 
-    const QString& fed_id = model_rows_[row].fed_id;
-    if (!session_state_) {
-        set_unknown("Unavailable", "No session state");
+    if (!settings_view_) {
+        renderSelectedModelGeoref(
+            {"Unavailable", "No settings view", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—"});
         return;
     }
 
-    const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-    if (mid == 0 || !loader_) {
-        set_unknown("Not loaded", "No live model");
-        return;
-    }
-
-    const ModelGeoref* georef = loader_->modelGeoref(mid);
-    if (!georef) {
-        set_unknown("Not available yet", "No data source");
-        return;
-    }
-
-    if (!georef->has_coordinate_operation) {
-        set_unknown("No", "None");
-        return;
-    }
-
-    const Eigen::Matrix4d& m = georef->coordinate_operation_meters;
-    const Eigen::Vector3d translation = m.block<3, 1>(0, 3);
-    const Eigen::Vector3d x_axis = m.block<3, 1>(0, 0);
-    const Eigen::Vector3d y_axis = m.block<3, 1>(0, 1);
-    const double factor_x = x_axis.norm();
-    const double factor_y = y_axis.norm();
-    const double factor_z = m.block<3, 1>(0, 2).norm();
-    const double scale = (factor_x + factor_y) * 0.5;
-    const double x_axis_abscissa = factor_x > 0.0 ? x_axis.x() / factor_x : 1.0;
-    const double x_axis_ordinate = factor_x > 0.0 ? x_axis.y() / factor_x : 0.0;
-    constexpr double kRadiansToDegrees = 57.29577951308232;
-    const double rotation_dd = std::atan2(x_axis_ordinate, x_axis_abscissa) * kRadiansToDegrees;
-
-    georef_present_value_->setText("Yes");
-    georef_type_value_->setText("IfcMapConversion");
-    georef_easting_value_->setText(formatNumber(translation.x()));
-    georef_northing_value_->setText(formatNumber(translation.y()));
-    georef_height_value_->setText(formatNumber(translation.z()));
-    georef_x_axis_abscissa_value_->setText(formatNumber(x_axis_abscissa));
-    georef_x_axis_ordinate_value_->setText(formatNumber(x_axis_ordinate));
-    georef_rotation_dd_value_->setText(formatNumber(rotation_dd));
-    georef_rotation_dms_value_->setText(formatAngleDms(rotation_dd));
-    georef_scale_value_->setText(formatNumber(scale));
-    georef_factor_x_value_->setText(formatNumber(factor_x));
-    georef_factor_y_value_->setText(formatNumber(factor_y));
-    georef_factor_z_value_->setText(formatNumber(factor_z));
+    settings_view_->refresh(model_rows_[row].fed_id);
 }
 
 void SettingsDialog::onAccepted() {

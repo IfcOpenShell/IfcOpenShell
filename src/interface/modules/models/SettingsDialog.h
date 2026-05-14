@@ -22,6 +22,7 @@
 #define IFCINTERFACE_MODULES_MODELS_SETTINGSDIALOG_H
 
 #include "../../components/Dialog.h"
+#include "Types.h"
 
 #include <QString>
 #include <vector>
@@ -41,10 +42,13 @@ class SessionState;
 
 namespace ifcinterface::modules::models {
 
+class SettingsView;
+
 class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
 public:
     explicit SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent = nullptr);
+    void renderSelectedModelGeoref(const SelectedModelGeorefState& state);
 
 protected:
     void showEvent(QShowEvent* event) override;
@@ -77,6 +81,8 @@ private:
 
     QLabel* georef_present_value_ = nullptr;
     QLabel* georef_type_value_ = nullptr;
+    QLabel* georef_project_unit_value_ = nullptr;
+    QLabel* georef_map_unit_value_ = nullptr;
     QLabel* georef_easting_value_ = nullptr;
     QLabel* georef_northing_value_ = nullptr;
     QLabel* georef_height_value_ = nullptr;
@@ -91,6 +97,7 @@ private:
 
     QTableWidget* model_table_ = nullptr;
     std::vector<ModelRowWidgets> model_rows_;
+    SettingsView* settings_view_ = nullptr;
 };
 
 } // namespace ifcinterface::modules::models

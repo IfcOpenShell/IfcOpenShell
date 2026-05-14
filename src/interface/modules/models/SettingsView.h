@@ -18,43 +18,29 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_MODELSPANELTYPES_H
-#define IFCINTERFACE_PANELS_MODELSPANELTYPES_H
+#ifndef IFCINTERFACE_MODULES_MODELS_SETTINGSVIEW_H
+#define IFCINTERFACE_MODULES_MODELS_SETTINGSVIEW_H
 
-#include <QList>
-#include <QString>
+#include "Types.h"
+
+namespace ifcinterface {
+class SessionState;
+}
 
 namespace ifcinterface::modules::models {
 
-enum class ItemKind {
-    Group,
-    Model,
-};
+class SettingsDialog;
 
-struct TreeNode {
-    QString id;
-    QString name;
-    ItemKind kind = ItemKind::Group;
-    bool visible = true;
-    QList<TreeNode> children;
-};
+class SettingsView {
+public:
+    explicit SettingsView(SettingsDialog* widget,
+                          ifcinterface::SessionState* session_state);
 
-struct SelectedModelGeorefState {
-    QString georef_present;
-    QString coordinate_operation_type;
-    QString project_unit;
-    QString map_unit;
-    QString easting;
-    QString northing;
-    QString height;
-    QString x_axis_abscissa;
-    QString x_axis_ordinate;
-    QString rotation_dd;
-    QString rotation_dms;
-    QString scale;
-    QString factor_x;
-    QString factor_y;
-    QString factor_z;
+    void refresh(const QString& fed_id) const;
+
+private:
+    SettingsDialog* widget_ = nullptr;
+    ifcinterface::SessionState* session_state_ = nullptr;
 };
 
 } // namespace ifcinterface::modules::models
