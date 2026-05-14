@@ -30,6 +30,7 @@ enum class SourceMode {
     IfcFile,
     IfcDatabase,
     GeometryOnly,
+    ConvertToDatabase,
 };
 
 class AddModelDialog : public components::Dialog {

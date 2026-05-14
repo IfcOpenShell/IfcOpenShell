@@ -31,15 +31,22 @@
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarCache.h"
 #include "../../../ifcviewer/ViewportWindow.h"
+#include "../../../ifcgeom/Serializer.h"
+#include "../../../serializers/document_serializer_plugin.h"
 
+#include <QDebug>
 #include <QElapsedTimer>
 #include <QFileDialog>
-#include <QDebug>
+#include <QFileInfo>
 #include <QListView>
 #include <QMessageBox>
+#include <QProgressDialog>
+#include <QThread>
 #include <QTreeView>
 
 #include <Eigen/Dense>
+
+#include <memory>
 
 namespace ifcviewerfull::modules::models {
 
@@ -195,11 +202,131 @@ void ModelsPanelController::addFiles() {
         }
         break;
     }
+    case modules::models::SourceMode::ConvertToDatabase:
+        convertIfcToDatabase();
+        return;
     case modules::models::SourceMode::None:
         return;
     }
 
     addFiles(paths);
+}
+
+void ModelsPanelController::convertIfcToDatabase() {
+    QFileDialog input_dialog(host_, "Select IFC File to Convert");
+    input_dialog.setFileMode(QFileDialog::ExistingFile);
+    input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
+    input_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (input_dialog.exec() != QDialog::Accepted) return;
+    const QStringList inputs = input_dialog.selectedFiles();
+    if (inputs.isEmpty()) return;
+    const QString input_path = inputs.first();
+
+    const QFileInfo input_info(input_path);
+    const QString default_output = input_info.absoluteDir().filePath(input_info.completeBaseName() + ".rdb");
+
+    QFileDialog output_dialog(host_, "Save IFC Database As");
+    output_dialog.setAcceptMode(QFileDialog::AcceptSave);
+    output_dialog.setFileMode(QFileDialog::AnyFile);
+    output_dialog.setNameFilter("IFC Database (*.rdb);;All Files (*)");
+    output_dialog.setDefaultSuffix("rdb");
+    output_dialog.selectFile(default_output);
+    output_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    output_dialog.setOption(QFileDialog::DontConfirmOverwrite, true);
+    if (output_dialog.exec() != QDialog::Accepted) return;
+    const QStringList outputs = output_dialog.selectedFiles();
+    if (outputs.isEmpty()) return;
+    QString output_path = outputs.first();
+    if (!output_path.endsWith(".rdb", Qt::CaseInsensitive)) {
+        output_path += ".rdb";
+    }
+
+    const QFileInfo output_info(output_path);
+    if (output_info.exists()) {
+        const QString message = QString("'%1' already exists. Overwrite?").arg(output_info.fileName());
+        if (QMessageBox::question(host_, "Convert IFC to Database", message,
+                                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    runIfcToDatabaseConversion(input_path, output_path);
+}
+
+void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path, const QString& output_path) {
+    auto* progress = new QProgressDialog(host_);
+    progress->setWindowTitle("Convert IFC to Database");
+    progress->setLabelText(QString("Converting %1 to %2…")
+                               .arg(QFileInfo(input_path).fileName(),
+                                    QFileInfo(output_path).fileName()));
+    progress->setRange(0, 0);
+    progress->setCancelButton(nullptr);
+    progress->setMinimumDuration(0);
+    progress->setWindowModality(Qt::ApplicationModal);
+    progress->setAutoClose(false);
+    progress->setAutoReset(false);
+    progress->show();
+
+    session_state_->setStatusMessage("Converting",
+        QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
+
+    auto timer = std::make_shared<QElapsedTimer>();
+    timer->start();
+    auto error_message = std::make_shared<QString>();
+
+    QThread* thread = QThread::create([input_path, output_path, error_message]() {
+        try {
+            ifcopenshell::serializers::document_serializer_context context;
+            context.file = nullptr;
+            context.input_filename = input_path.toStdString();
+            context.output_filename = output_path.toStdString();
+            context.stream = true;
+
+            auto& registry = ifcopenshell::serializers::document_serializer_registry_instance();
+            const auto* info = registry.find("rdb");
+            if (!info) {
+                throw ifcopenshell::exception(
+                    "No 'rdb' document serializer is registered. The RocksDB serializer plugin may not be installed.");
+            }
+            if (!info->supports_input_filename) {
+                throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
+            }
+
+            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            serializer->finalize();
+        } catch (const std::exception& e) {
+            *error_message = QString::fromUtf8(e.what());
+        } catch (...) {
+            *error_message = "Unknown error during IFC to RDB conversion";
+        }
+    });
+
+    connect(thread, &QThread::finished, this,
+            [this, thread, progress, timer, error_message, input_path, output_path]() {
+        const qint64 elapsed = timer->elapsed();
+
+        progress->close();
+        progress->deleteLater();
+        thread->deleteLater();
+
+        if (!error_message->isEmpty()) {
+            session_state_->setStatusMessage("Error", *error_message);
+            QMessageBox::warning(host_, "Convert IFC to Database",
+                                 QString("Conversion failed:\n%1").arg(*error_message));
+            return;
+        }
+
+        session_state_->setStatusMessage(
+            "Converted",
+            QString("%1 → %2 in %3")
+                .arg(QFileInfo(input_path).fileName(),
+                     QFileInfo(output_path).fileName(),
+                     formatElapsed(elapsed)));
+        QMessageBox::information(host_, "Convert IFC to Database",
+                                 QString("Database written to:\n%1").arg(output_path));
+    });
+
+    thread->start();
 }
 
 void ModelsPanelController::addFiles(const QStringList& paths) {

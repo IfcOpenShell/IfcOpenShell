@@ -547,9 +547,9 @@ if(BUILD_IFCGEOM)
     add_subdirectory(../src/ifcgeom ifcgeom)
 endif(BUILD_IFCGEOM)
 
-if(BUILD_CONVERT OR BUILD_IFCPYTHON)
+if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_IFCVIEWER)
     add_subdirectory(../src/serializers serializers)
-endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_IFCVIEWER)
 
 if(BUILD_CONVERT)
     add_subdirectory(../src/ifcconvert ifcconvert)

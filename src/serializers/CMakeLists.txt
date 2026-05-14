@@ -1,5 +1,5 @@
-set(document_serializer_plugin_runtime_dir "${CMAKE_BINARY_DIR}/serializers/$<CONFIG>")
-set(geometry_serializer_plugin_runtime_dir "${CMAKE_BINARY_DIR}/serializers/$<CONFIG>")
+set(document_serializer_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
+set(geometry_serializer_plugin_runtime_dir "$<TARGET_FILE_DIR:IfcGeom>")
 
 file(GLOB SERIALIZERS_H_FILES *.h)
 file(GLOB SERIALIZERS_S_H_FILES schema_dependent/*.h)

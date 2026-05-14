@@ -120,8 +120,9 @@ void AddModelDialog::setupUi() {
         default_description));
 
     auto* convert_database = components::buttons::makeButton("Convert IFC File\nto Database", ":/icons/database-restore.svg", choices);
-    connect(convert_database, &QToolButton::clicked, this, [description]() {
-        description->setText("IFC-to-database conversion is coming soon.");
+    connect(convert_database, &QToolButton::clicked, this, [this]() {
+        selected_mode_ = SourceMode::ConvertToDatabase;
+        accept();
     });
     convert_database->installEventFilter(new HoverDescriptionFilter(
         description,
