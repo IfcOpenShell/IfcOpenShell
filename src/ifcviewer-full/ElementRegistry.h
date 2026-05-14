@@ -33,7 +33,7 @@ class SceneLoader;
 struct PackedElementInfo;
 struct ElementInfo;
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 
 struct BasicElementInfo {
     uint32_t object_id = 0;
@@ -67,6 +67,6 @@ private:
     std::unordered_map<uint32_t, BasicElementInfo> elements_;
 };
 
-} // namespace ifcinterface
+} // namespace ifcviewerfull
 
 #endif

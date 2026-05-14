@@ -28,7 +28,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::components::buttons {
+namespace ifcviewerfull::components::buttons {
 
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
@@ -74,4 +74,4 @@ QWidget* makeButtonGroup(const QString& title,
     return group;
 }
 
-} // namespace ifcinterface::components::buttons
+} // namespace ifcviewerfull::components::buttons

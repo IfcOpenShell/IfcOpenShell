@@ -20,7 +20,7 @@
 
 #include "Tabs.h"
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 TabBar::TabBar(QWidget* parent)
     : QTabBar(parent)
@@ -37,4 +37,4 @@ TabWidget::TabWidget(QWidget* parent)
     setTabBar(new TabBar(this));
 }
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components

@@ -23,26 +23,26 @@
 
 #include "Types.h"
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 class SessionState;
 }
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 class SettingsDialog;
 
 class SettingsView {
 public:
     explicit SettingsView(SettingsDialog* widget,
-                          ifcinterface::SessionState* session_state);
+                          ifcviewerfull::SessionState* session_state);
 
     void refresh(const QString& fed_id) const;
 
 private:
     SettingsDialog* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

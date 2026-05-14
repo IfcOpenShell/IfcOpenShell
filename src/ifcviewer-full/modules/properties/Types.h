@@ -25,7 +25,7 @@
 #include <QPair>
 #include <QString>
 
-namespace ifcinterface::modules::properties {
+namespace ifcviewerfull::modules::properties {
 
 struct KeyValueRow {
     QString key;
@@ -55,6 +55,6 @@ struct PropertiesPanelState {
     QList<PropertySet> quantity_sets;
 };
 
-} // namespace ifcinterface::modules::properties
+} // namespace ifcviewerfull::modules::properties
 
 #endif

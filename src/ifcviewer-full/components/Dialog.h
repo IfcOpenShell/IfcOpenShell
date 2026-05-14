@@ -27,7 +27,7 @@ class QVBoxLayout;
 class QWidget;
 class QTabWidget;
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 class Dialog : public QDialog {
     Q_OBJECT
@@ -58,6 +58,6 @@ private:
     QVBoxLayout* footer_layout_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
 
 #endif

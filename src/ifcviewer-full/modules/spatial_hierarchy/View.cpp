@@ -24,7 +24,7 @@
 
 #include "../../SessionState.h"
 
-namespace ifcinterface::modules::spatial_hierarchy {
+namespace ifcviewerfull::modules::spatial_hierarchy {
 
 namespace {
 
@@ -40,7 +40,7 @@ TreeNode* findNodeRecursive(QList<TreeNode>& nodes, const NodePath& path, int de
 } // namespace
 
 SpatialHierarchyPanelView::SpatialHierarchyPanelView(SpatialHierarchyPanel* widget,
-                                                     ifcinterface::SessionState* session_state,
+                                                     ifcviewerfull::SessionState* session_state,
                                                      QObject* parent)
     : QObject(parent), widget_(widget), session_state_(session_state)
 {
@@ -72,4 +72,4 @@ TreeNode* SpatialHierarchyPanelView::findNode(const NodePath& path) {
     return findNodeRecursive(nodes_, path, 0);
 }
 
-} // namespace ifcinterface::modules::spatial_hierarchy
+} // namespace ifcviewerfull::modules::spatial_hierarchy

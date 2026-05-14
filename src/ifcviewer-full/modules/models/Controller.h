@@ -27,11 +27,11 @@
 #include <QStringList>
 
 class QWidget;
-namespace ifcinterface { class SessionState; }
+namespace ifcviewerfull { class SessionState; }
 class ViewportWindow;
 class SceneLoader;
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 class ModelsPanel;
 
@@ -41,7 +41,7 @@ class ModelsPanelController : public QObject {
 public:
     explicit ModelsPanelController(QWidget* host,
                                    ModelsPanel* widget,
-                                   ifcinterface::SessionState* session_state,
+                                   ifcviewerfull::SessionState* session_state,
                                    ViewportWindow* viewport,
                                    QObject* parent = nullptr);
 
@@ -58,10 +58,10 @@ private:
 
     QWidget* host_ = nullptr;
     ModelsPanel* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

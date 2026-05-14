@@ -41,11 +41,11 @@
 
 #include <Eigen/Dense>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 ModelsPanelController::ModelsPanelController(QWidget* host,
                                              ModelsPanel* widget,
-                                             ifcinterface::SessionState* session_state,
+                                             ifcviewerfull::SessionState* session_state,
                                              ViewportWindow* viewport,
                                              QObject* parent)
     : QObject(parent)
@@ -315,4 +315,4 @@ void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t m
     qDebug("  Sidecar write: %lld ms (%s)", sidecar_timer.elapsed(), ok ? "ok" : "FAILED");
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

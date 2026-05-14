@@ -27,7 +27,7 @@ class QHBoxLayout;
 class QToolButton;
 class QVBoxLayout;
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 enum class SectionHeaderMode {
     Visible,
@@ -56,6 +56,6 @@ private:
     bool body_expanding_ = false;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
 
 #endif

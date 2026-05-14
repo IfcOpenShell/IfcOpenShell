@@ -24,7 +24,7 @@
 #include "../ifcviewer/SceneLoader.h"
 #include "../ifcviewer/SidecarCache.h"
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 
 ElementRegistry::ElementRegistry(QObject* parent)
     : QObject(parent)
@@ -123,4 +123,4 @@ void ElementRegistry::onStreamedElementsReady(uint32_t /*mid*/, std::vector<Elem
     }
 }
 
-} // namespace ifcinterface
+} // namespace ifcviewerfull

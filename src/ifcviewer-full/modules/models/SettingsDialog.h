@@ -36,18 +36,18 @@ class QShowEvent;
 class QTableWidget;
 class QTableWidgetItem;
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 class SessionState;
 }
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 class SettingsView;
 
 class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent = nullptr);
+    explicit SettingsDialog(ifcviewerfull::SessionState* session_state, QWidget* parent = nullptr);
     void renderSelectedModelGeoref(const SelectedModelGeorefState& state);
 
 protected:
@@ -69,7 +69,7 @@ private:
     void updateSelectedModelGeoref();
     void onAccepted();
 
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
     Federation* federation_ = nullptr;
     SceneLoader* loader_ = nullptr;
 
@@ -100,6 +100,6 @@ private:
     SettingsView* settings_view_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

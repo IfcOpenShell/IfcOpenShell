@@ -22,11 +22,11 @@
 
 #include "Panel.h"
 
-#include "../../InterfaceSettings.h"
+#include "../../ViewerSettings.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 namespace {
 
@@ -57,22 +57,22 @@ TreeNode makeGroupNode(const Federation* federation, const Federation::Group* gr
 } // namespace
 
 ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
-                                 ifcinterface::SessionState* session_state,
+                                 ifcviewerfull::SessionState* session_state,
                                  QObject* parent)
     : QObject(parent), widget_(widget), session_state_(session_state)
 {
-    connect(session_state_, &ifcinterface::SessionState::modelsChanged,
+    connect(session_state_, &ifcviewerfull::SessionState::modelsChanged,
             this, [this]() { reload(); });
-    connect(session_state_, &ifcinterface::SessionState::federationStructureChanged,
+    connect(session_state_, &ifcviewerfull::SessionState::federationStructureChanged,
             this, [this]() { reload(); });
-    connect(session_state_, &ifcinterface::SessionState::visibilityChanged,
+    connect(session_state_, &ifcviewerfull::SessionState::visibilityChanged,
             this, [this]() { reload(); });
-    connect(session_state_, &ifcinterface::SessionState::projectReset,
+    connect(session_state_, &ifcviewerfull::SessionState::projectReset,
             this, [this]() { reload(); });
-    connect(session_state_, &ifcinterface::SessionState::projectOpened,
+    connect(session_state_, &ifcviewerfull::SessionState::projectOpened,
             this, [this](const QString&) { reload(); });
-    connect(&ifcinterface::InterfaceSettings::instance(),
-            &ifcinterface::InterfaceSettings::themeChanged,
+    connect(&ifcviewerfull::ViewerSettings::instance(),
+            &ifcviewerfull::ViewerSettings::themeChanged,
             this, [this]() { reload(); });
 
     reload();
@@ -97,4 +97,4 @@ void ModelsPanelView::reload() {
     widget_->setNodes(nodes);
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

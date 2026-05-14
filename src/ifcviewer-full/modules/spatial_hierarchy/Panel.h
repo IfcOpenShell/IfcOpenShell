@@ -28,7 +28,7 @@
 class QTreeWidget;
 class QTreeWidgetItem;
 
-namespace ifcinterface::modules::spatial_hierarchy {
+namespace ifcviewerfull::modules::spatial_hierarchy {
 
 class SpatialHierarchyPanel : public components::Panel {
     Q_OBJECT
@@ -48,6 +48,6 @@ private:
     QTreeWidget* tree_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::spatial_hierarchy
+} // namespace ifcviewerfull::modules::spatial_hierarchy
 
 #endif

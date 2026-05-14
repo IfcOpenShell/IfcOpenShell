@@ -32,21 +32,21 @@ class QStackedWidget;
 class QToolButton;
 class Federation;
 class SceneLoader;
-namespace ifcinterface { class ElementRegistry; }
-namespace ifcinterface { class SessionState; }
-namespace ifcinterface::components { class TabBar; }
-namespace ifcinterface::modules::models { class ModelsPanelController; }
-namespace ifcinterface::modules::models { class ModelsPanel; }
-namespace ifcinterface::modules::models { class ModelsPanelView; }
-namespace ifcinterface::modules::project { class ProjectController; }
-namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanel; }
-namespace ifcinterface::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
-namespace ifcinterface::modules::properties { class PropertiesPanel; }
-namespace ifcinterface::modules::properties { class PropertiesPanelView; }
-namespace ifcinterface::modules::viewport { class ViewportController; }
-namespace ifcinterface::modules::viewport { class ViewportPanel; }
+namespace ifcviewerfull { class ElementRegistry; }
+namespace ifcviewerfull { class SessionState; }
+namespace ifcviewerfull::components { class TabBar; }
+namespace ifcviewerfull::modules::models { class ModelsPanelController; }
+namespace ifcviewerfull::modules::models { class ModelsPanel; }
+namespace ifcviewerfull::modules::models { class ModelsPanelView; }
+namespace ifcviewerfull::modules::project { class ProjectController; }
+namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPanel; }
+namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
+namespace ifcviewerfull::modules::properties { class PropertiesPanel; }
+namespace ifcviewerfull::modules::properties { class PropertiesPanelView; }
+namespace ifcviewerfull::modules::viewport { class ViewportController; }
+namespace ifcviewerfull::modules::viewport { class ViewportPanel; }
 
-namespace ifcinterface::shell {
+namespace ifcviewerfull::shell {
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -73,30 +73,30 @@ private:
     QLabel* status_selection_label_ = nullptr;
     QLabel* status_perf_label_ = nullptr;
     QProgressBar* status_progress_bar_ = nullptr;
-    ifcinterface::components::TabBar* ribbon_tabs_ = nullptr;
+    ifcviewerfull::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
-    ifcinterface::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
-    ifcinterface::modules::viewport::ViewportController* viewport_controller_ = nullptr;
+    ifcviewerfull::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
+    ifcviewerfull::modules::viewport::ViewportController* viewport_controller_ = nullptr;
     SceneLoader* loader_ = nullptr;
-    ifcinterface::ElementRegistry* element_registry_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
-    ifcinterface::modules::models::ModelsPanel* models_panel_ = nullptr;
-    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
+    ifcviewerfull::ElementRegistry* element_registry_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
+    ifcviewerfull::modules::models::ModelsPanel* models_panel_ = nullptr;
+    ifcviewerfull::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
     QDockWidget* layers_panel_ = nullptr;
-    ifcinterface::modules::properties::PropertiesPanel* properties_panel_ = nullptr;
+    ifcviewerfull::modules::properties::PropertiesPanel* properties_panel_ = nullptr;
     QDockWidget* stored_views_panel_ = nullptr;
     QDockWidget* search_panel_ = nullptr;
     QDockWidget* spreadsheet_panel_ = nullptr;
     QDockWidget* audit_panel_ = nullptr;
     QDockWidget* clash_panel_ = nullptr;
     QDockWidget* issues_panel_ = nullptr;
-    ifcinterface::modules::models::ModelsPanelController* models_controller_ = nullptr;
-    ifcinterface::modules::models::ModelsPanelView* models_view_ = nullptr;
-    ifcinterface::modules::project::ProjectController* project_controller_ = nullptr;
-    ifcinterface::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
-    ifcinterface::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
+    ifcviewerfull::modules::models::ModelsPanelController* models_controller_ = nullptr;
+    ifcviewerfull::modules::models::ModelsPanelView* models_view_ = nullptr;
+    ifcviewerfull::modules::project::ProjectController* project_controller_ = nullptr;
+    ifcviewerfull::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
+    ifcviewerfull::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
 };
 
-} // namespace ifcinterface::shell
+} // namespace ifcviewerfull::shell
 
 #endif

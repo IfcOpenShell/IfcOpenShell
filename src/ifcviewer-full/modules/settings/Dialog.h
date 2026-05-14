@@ -34,7 +34,7 @@ class QShowEvent;
 class QSpinBox;
 class QWidget;
 
-namespace ifcinterface::modules::settings {
+namespace ifcviewerfull::modules::settings {
 
 class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
@@ -74,6 +74,6 @@ private:
     std::vector<ThemeColorEditor> theme_color_editors_;
 };
 
-} // namespace ifcinterface::modules::settings
+} // namespace ifcviewerfull::modules::settings
 
 #endif

@@ -35,31 +35,31 @@
 
 namespace {
 
-QWidget* makePropertySetPanel(const ifcinterface::modules::properties::PropertySet& property_set, QWidget* parent = nullptr) {
+QWidget* makePropertySetPanel(const ifcviewerfull::modules::properties::PropertySet& property_set, QWidget* parent = nullptr) {
     auto* group = new QGroupBox(property_set.title, parent);
     group->setObjectName("propertySetBox");
     auto* layout = new QVBoxLayout(group);
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(0);
 
-    QList<ifcinterface::components::KeyValueTableRow> rows;
+    QList<ifcviewerfull::components::KeyValueTableRow> rows;
     for (const auto& row : property_set.rows) {
         rows.append({row.key, row.value, "keyValueValueLabel", "", "", 0});
     }
-    layout->addWidget(new ifcinterface::components::KeyValueTable(rows, group));
+    layout->addWidget(new ifcviewerfull::components::KeyValueTable(rows, group));
     return group;
 }
 
-QWidget* makeAttributeList(const QList<ifcinterface::modules::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
-    QList<ifcinterface::components::KeyValueTableRow> table_rows;
+QWidget* makeAttributeList(const QList<ifcviewerfull::modules::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
+    QList<ifcviewerfull::components::KeyValueTableRow> table_rows;
     for (const auto& row : rows) {
         table_rows.append({row.key, row.value, "keyValueValueLabel", "", "", 0});
     }
-    return new ifcinterface::components::KeyValueTable(table_rows, parent);
+    return new ifcviewerfull::components::KeyValueTable(table_rows, parent);
 }
 
-QWidget* makeRelationshipList(const QList<ifcinterface::modules::properties::RelationshipRow>& rows, QWidget* parent = nullptr) {
-    QList<ifcinterface::components::KeyValueTableRow> table_rows;
+QWidget* makeRelationshipList(const QList<ifcviewerfull::modules::properties::RelationshipRow>& rows, QWidget* parent = nullptr) {
+    QList<ifcviewerfull::components::KeyValueTableRow> table_rows;
     for (const auto& row_data : rows) {
         table_rows.append({row_data.key,
                            row_data.value,
@@ -68,22 +68,22 @@ QWidget* makeRelationshipList(const QList<ifcinterface::modules::properties::Rel
                            "keyValueTrailingIconLabel",
                            72});
     }
-    return new ifcinterface::components::KeyValueTable(table_rows, parent);
+    return new ifcviewerfull::components::KeyValueTable(table_rows, parent);
 }
 
 QWidget* makeFilterWrapper(QLineEdit** field_out, QWidget* parent = nullptr) {
     auto* wrapper = new QWidget(parent);
     wrapper->setObjectName("panelSectionFilterWrapper");
     auto* layout = new QVBoxLayout(wrapper);
-    layout->setContentsMargins(ifcinterface::components::style::metrics::section_body_padding,
+    layout->setContentsMargins(ifcviewerfull::components::style::metrics::section_body_padding,
                                0,
-                               ifcinterface::components::style::metrics::section_body_padding,
+                               ifcviewerfull::components::style::metrics::section_body_padding,
                                0);
     layout->setSpacing(0);
 
     auto* field = new QLineEdit(wrapper);
     field->setClearButtonEnabled(true);
-    field->addAction(ifcinterface::components::icons::makeSvgIcon(":/icons/filter.svg"), QLineEdit::LeadingPosition);
+    field->addAction(ifcviewerfull::components::icons::makeSvgIcon(":/icons/filter.svg"), QLineEdit::LeadingPosition);
     field->setVisible(false);
     layout->addWidget(field);
 
@@ -91,7 +91,7 @@ QWidget* makeFilterWrapper(QLineEdit** field_out, QWidget* parent = nullptr) {
     return wrapper;
 }
 
-QFrame* makeEntityBox(const ifcinterface::modules::properties::EntitySummary& entity, QWidget* parent = nullptr) {
+QFrame* makeEntityBox(const ifcviewerfull::modules::properties::EntitySummary& entity, QWidget* parent = nullptr) {
     auto* entity_box = new QFrame(parent);
     entity_box->setObjectName("entityClassBox");
     auto* entity_layout = new QHBoxLayout(entity_box);
@@ -99,7 +99,7 @@ QFrame* makeEntityBox(const ifcinterface::modules::properties::EntitySummary& en
     entity_layout->setSpacing(10);
 
     auto* entity_icon = new QLabel(entity_box);
-    entity_icon->setPixmap(ifcinterface::components::icons::makeSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
+    entity_icon->setPixmap(ifcviewerfull::components::icons::makeSvgPixmap(":/icons/cube-dots.svg", QSize(28, 28)));
     entity_icon->setAlignment(Qt::AlignCenter);
 
     auto* entity_text = new QWidget(entity_box);
@@ -121,7 +121,7 @@ QFrame* makeEntityBox(const ifcinterface::modules::properties::EntitySummary& en
 
 } // namespace
 
-namespace ifcinterface::modules::properties {
+namespace ifcviewerfull::modules::properties {
 
 PropertiesPanel::PropertiesPanel(QWidget* parent)
     : components::Panel("Properties", nullptr, parent, false, true)
@@ -234,4 +234,4 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     addBodyWidget(quantities_section);
 }
 
-} // namespace ifcinterface::modules::properties
+} // namespace ifcviewerfull::modules::properties

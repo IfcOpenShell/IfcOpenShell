@@ -25,9 +25,9 @@
 #include <QString>
 #include <vector>
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 
-class InterfaceSettings : public QObject {
+class ViewerSettings : public QObject {
     Q_OBJECT
 public:
     enum class ThemeMode {
@@ -44,7 +44,7 @@ public:
         const char* light_default;
     };
 
-    static InterfaceSettings& instance();
+    static ViewerSettings& instance();
     static const std::vector<ThemeColorSpec>& themeColorSpecs();
 
     ThemeMode themeMode() const;
@@ -59,7 +59,7 @@ signals:
     void themeChanged();
 
 private:
-    InterfaceSettings();
+    ViewerSettings();
     void load();
     void persist() const;
 
@@ -67,6 +67,6 @@ private:
     std::vector<QString> custom_colors_;
 };
 
-} // namespace ifcinterface
+} // namespace ifcviewerfull
 
 #endif

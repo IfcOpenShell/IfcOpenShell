@@ -20,7 +20,7 @@
 
 #include "Panel.h"
 
-#include "../../InterfaceSettings.h"
+#include "../../ViewerSettings.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 
@@ -41,11 +41,11 @@
 
 #include <functional>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 namespace {
 
-constexpr auto kDragMimeType = "application/x-ifcinterface-model-items";
+constexpr auto kDragMimeType = "application/x-ifcviewerfull-model-items";
 
 class ModelsTreeWidget : public QTreeWidget {
 public:
@@ -434,7 +434,7 @@ void ModelsPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
 
     if (!node.visible) {
         const QBrush disabled_brush(
-            QColor(ifcinterface::InterfaceSettings::instance().color("disabled_text")));
+            QColor(ifcviewerfull::ViewerSettings::instance().color("disabled_text")));
         item->setForeground(0, disabled_brush);
         item->setForeground(1, disabled_brush);
     }
@@ -444,4 +444,4 @@ void ModelsPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
     }
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

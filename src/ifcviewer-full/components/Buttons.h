@@ -26,7 +26,7 @@
 class QToolButton;
 class QWidget;
 
-namespace ifcinterface::components::buttons {
+namespace ifcviewerfull::components::buttons {
 
 QToolButton* makeButton(const QString& text,
                         const QString& icon_path,
@@ -38,6 +38,6 @@ QWidget* makeButtonGroup(const QString& title,
                          bool trailing_separator = true,
                          int vertical_spacing = 4);
 
-} // namespace ifcinterface::components::buttons
+} // namespace ifcviewerfull::components::buttons
 
 #endif

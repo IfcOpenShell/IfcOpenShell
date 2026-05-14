@@ -20,7 +20,7 @@
 
 #include "Controller.h"
 
-#include "../../InterfaceSettings.h"
+#include "../../ViewerSettings.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../../ifcviewer/Federation.h"
@@ -34,9 +34,9 @@
 
 #include <vector>
 
-namespace ifcinterface::modules::viewport {
+namespace ifcviewerfull::modules::viewport {
 
-ViewportController::ViewportController(ifcinterface::SessionState* session_state,
+ViewportController::ViewportController(ifcviewerfull::SessionState* session_state,
                                        ViewportWindow* viewport,
                                        QObject* parent)
     : QObject(parent)
@@ -47,12 +47,12 @@ ViewportController::ViewportController(ifcinterface::SessionState* session_state
 {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
-    connect(&ifcinterface::InterfaceSettings::instance(),
-            &ifcinterface::InterfaceSettings::themeChanged,
+    connect(&ifcviewerfull::ViewerSettings::instance(),
+            &ifcviewerfull::ViewerSettings::themeChanged,
             this, [this]() {
-        viewport_->setBackgroundColor(QColor(ifcinterface::InterfaceSettings::instance().color("viewport_background")));
+        viewport_->setBackgroundColor(QColor(ifcviewerfull::ViewerSettings::instance().color("viewport_background")));
     });
-    viewport_->setBackgroundColor(QColor(ifcinterface::InterfaceSettings::instance().color("viewport_background")));
+    viewport_->setBackgroundColor(QColor(ifcviewerfull::ViewerSettings::instance().color("viewport_background")));
     connect(federation, &Federation::federatedFalseOriginChanged,
             this, &ViewportController::applyFederatedFalseOrigin);
     connect(federation, &Federation::configChanged, this, [this]() {
@@ -334,4 +334,4 @@ void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
         *placement, *georef, federation->config()));
 }
 
-} // namespace ifcinterface::modules::viewport
+} // namespace ifcviewerfull::modules::viewport

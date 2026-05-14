@@ -46,7 +46,7 @@
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 namespace {
 
@@ -124,7 +124,7 @@ QLabel* makeReadOnlyValue(QWidget* parent) {
 
 } // namespace
 
-SettingsDialog::SettingsDialog(ifcinterface::SessionState* session_state, QWidget* parent)
+SettingsDialog::SettingsDialog(ifcviewerfull::SessionState* session_state, QWidget* parent)
     : components::TabbedDialog(parent)
     , session_state_(session_state)
     , federation_(session_state ? session_state->federation() : nullptr)
@@ -479,4 +479,4 @@ void SettingsDialog::onAccepted() {
     accept();
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

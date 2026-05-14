@@ -20,7 +20,7 @@
 
 #include "Dialog.h"
 
-#include "../../InterfaceSettings.h"
+#include "../../ViewerSettings.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../components/Dialog.h"
 #include "../../components/Section.h"
@@ -42,7 +42,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 
-namespace ifcinterface::modules::settings {
+namespace ifcviewerfull::modules::settings {
 
 SettingsDialog::SettingsDialog(QWidget* parent)
     : components::TabbedDialog(parent)
@@ -202,9 +202,9 @@ void SettingsDialog::setupUi() {
         theme_form->setVerticalSpacing(10);
 
         theme_mode_combo_ = new QComboBox(theme_body);
-        theme_mode_combo_->addItem("Dark", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Dark));
-        theme_mode_combo_->addItem("Light", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Light));
-        theme_mode_combo_->addItem("Custom", static_cast<int>(ifcinterface::InterfaceSettings::ThemeMode::Custom));
+        theme_mode_combo_->addItem("Dark", static_cast<int>(ifcviewerfull::ViewerSettings::ThemeMode::Dark));
+        theme_mode_combo_->addItem("Light", static_cast<int>(ifcviewerfull::ViewerSettings::ThemeMode::Light));
+        theme_mode_combo_->addItem("Custom", static_cast<int>(ifcviewerfull::ViewerSettings::ThemeMode::Custom));
         theme_form->addRow("Preset", theme_mode_combo_);
 
         theme_custom_body_ = new QWidget(theme_body);
@@ -214,7 +214,7 @@ void SettingsDialog::setupUi() {
         custom_grid->setVerticalSpacing(8);
 
         int row = 0;
-        for (const auto& spec : ifcinterface::InterfaceSettings::themeColorSpecs()) {
+        for (const auto& spec : ifcviewerfull::ViewerSettings::themeColorSpecs()) {
             auto* label = new QLabel(QString::fromUtf8(spec.label), theme_custom_body_);
             auto* edit = new QLineEdit(theme_custom_body_);
             edit->setPlaceholderText("#000000");
@@ -302,7 +302,7 @@ void SettingsDialog::syncFromSettings() {
 }
 
 void SettingsDialog::syncThemeSettings() {
-    const auto& settings = ifcinterface::InterfaceSettings::instance();
+    const auto& settings = ifcviewerfull::ViewerSettings::instance();
     const int idx = theme_mode_combo_->findData(static_cast<int>(settings.themeMode()));
     theme_mode_combo_->setCurrentIndex(idx >= 0 ? idx : 0);
     for (auto& editor : theme_color_editors_) {
@@ -314,8 +314,8 @@ void SettingsDialog::syncThemeSettings() {
 void SettingsDialog::updateThemeEditorEnabled() {
     if (!theme_mode_combo_ || !theme_custom_body_) return;
     const auto mode =
-        static_cast<ifcinterface::InterfaceSettings::ThemeMode>(theme_mode_combo_->currentData().toInt());
-    const bool is_custom = mode == ifcinterface::InterfaceSettings::ThemeMode::Custom;
+        static_cast<ifcviewerfull::ViewerSettings::ThemeMode>(theme_mode_combo_->currentData().toInt());
+    const bool is_custom = mode == ifcviewerfull::ViewerSettings::ThemeMode::Custom;
     theme_custom_body_->setVisible(is_custom);
     theme_custom_body_->setEnabled(is_custom);
 }
@@ -345,13 +345,13 @@ void SettingsDialog::onAccepted() {
     AppSettings::instance().setHizResolution(hiz_resolution_spin_->value());
     AppSettings::instance().setNavPreset(
         static_cast<AppSettings::NavPreset>(nav_preset_combo_->currentIndex()));
-    auto& interface_settings = ifcinterface::InterfaceSettings::instance();
+    auto& interface_settings = ifcviewerfull::ViewerSettings::instance();
     interface_settings.setThemeMode(
-        static_cast<ifcinterface::InterfaceSettings::ThemeMode>(theme_mode_combo_->currentData().toInt()));
+        static_cast<ifcviewerfull::ViewerSettings::ThemeMode>(theme_mode_combo_->currentData().toInt()));
     for (const auto& editor : theme_color_editors_) {
         interface_settings.setCustomColor(editor.key, editor.edit->text());
     }
     accept();
 }
 
-} // namespace ifcinterface::modules::settings
+} // namespace ifcviewerfull::modules::settings

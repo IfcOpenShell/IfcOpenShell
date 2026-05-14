@@ -27,8 +27,8 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ElementRegistry.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/InterfaceSettings.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/InterfaceSettings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ViewerSettings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ViewerSettings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SessionState.h
     ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
@@ -84,7 +84,7 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/interface_resources.qrc
+    ${CMAKE_CURRENT_SOURCE_DIR}/ifcviewer_full_resources.qrc
 )
 
 add_executable(IfcViewerFull ${IFCVIEWER_FULL_FILES})

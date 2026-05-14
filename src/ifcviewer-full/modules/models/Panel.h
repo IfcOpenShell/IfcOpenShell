@@ -28,7 +28,7 @@
 class QTreeWidget;
 class QTreeWidgetItem;
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 class ModelsPanel : public components::Panel {
     Q_OBJECT
@@ -52,6 +52,6 @@ private:
     QTreeWidget* tree_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

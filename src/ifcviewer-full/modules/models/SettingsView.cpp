@@ -29,7 +29,7 @@
 
 #include <cmath>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 namespace {
 
@@ -203,7 +203,7 @@ SelectedModelGeorefState stateFromCachedGeoref(const ModelGeoref& georef) {
 } // namespace
 
 SettingsView::SettingsView(SettingsDialog* widget,
-                           ifcinterface::SessionState* session_state)
+                           ifcviewerfull::SessionState* session_state)
     : widget_(widget), session_state_(session_state)
 {
 }
@@ -243,4 +243,4 @@ void SettingsView::refresh(const QString& fed_id) const {
     widget_->renderSelectedModelGeoref(stateFromCachedGeoref(*georef));
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

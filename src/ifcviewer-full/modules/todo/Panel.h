@@ -23,7 +23,7 @@
 
 #include <QWidget>
 
-namespace ifcinterface::modules::todo {
+namespace ifcviewerfull::modules::todo {
 
 class TodoPanel : public QWidget {
     Q_OBJECT
@@ -31,6 +31,6 @@ public:
     explicit TodoPanel(const QString& title, QWidget* parent = nullptr);
 };
 
-} // namespace ifcinterface::modules::todo
+} // namespace ifcviewerfull::modules::todo
 
 #endif

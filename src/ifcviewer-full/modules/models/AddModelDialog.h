@@ -23,7 +23,7 @@
 
 #include "../../components/Dialog.h"
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 enum class SourceMode {
     None,
@@ -45,6 +45,6 @@ private:
     SourceMode selected_mode_ = SourceMode::None;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

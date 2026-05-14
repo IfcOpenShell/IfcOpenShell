@@ -20,14 +20,14 @@
 
 #include "SvgIcon.h"
 
-#include "../InterfaceSettings.h"
+#include "../ViewerSettings.h"
 
 #include <QFile>
 #include <QPainter>
 #include <QRegularExpression>
 #include <QSvgRenderer>
 
-namespace ifcinterface::components::icons {
+namespace ifcviewerfull::components::icons {
 
 QPixmap renderTintedSvgPixmap(const QString& icon_path, const QString& color, const QSize& size) {
     QFile file(icon_path);
@@ -64,7 +64,7 @@ QIcon makeTintedSvgIcon(const QString& icon_path, const QString& normal,
 }
 
 QIcon makeAccentSvgIcon(const QString& icon_path) {
-    const auto& theme = ifcinterface::InterfaceSettings::instance();
+    const auto& theme = ifcviewerfull::ViewerSettings::instance();
     return makeTintedSvgIcon(icon_path,
                              theme.color("icon_accent_color"),
                              theme.color("icon_accent_active_color"),
@@ -72,7 +72,7 @@ QIcon makeAccentSvgIcon(const QString& icon_path) {
 }
 
 QIcon makeSvgIcon(const QString& icon_path) {
-    const auto& theme = ifcinterface::InterfaceSettings::instance();
+    const auto& theme = ifcviewerfull::ViewerSettings::instance();
     return makeTintedSvgIcon(icon_path,
                              theme.color("icon_color"),
                              theme.color("icon_active_color"),
@@ -80,7 +80,7 @@ QIcon makeSvgIcon(const QString& icon_path) {
 }
 
 QPixmap makeSvgPixmap(const QString& icon_path, const QSize& size) {
-    return renderTintedSvgPixmap(icon_path, ifcinterface::InterfaceSettings::instance().color("icon_color"), size);
+    return renderTintedSvgPixmap(icon_path, ifcviewerfull::ViewerSettings::instance().color("icon_color"), size);
 }
 
-} // namespace ifcinterface::components::icons
+} // namespace ifcviewerfull::components::icons

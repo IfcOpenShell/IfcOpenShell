@@ -28,7 +28,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 Section::Section(const QString& title, SectionHeaderMode header_mode, QWidget* parent)
     : QWidget(parent)
@@ -115,4 +115,4 @@ void Section::setBodyExpanding(bool expanding) {
     updateGeometry();
 }
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components

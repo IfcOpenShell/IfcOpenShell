@@ -26,7 +26,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-namespace ifcinterface::modules::viewport {
+namespace ifcviewerfull::modules::viewport {
 
 ViewportPanel::ViewportPanel(QWidget* parent)
     : QWidget(parent)
@@ -57,4 +57,4 @@ ViewportPanel::ViewportPanel(QWidget* parent)
     root->addWidget(shell);
 }
 
-} // namespace ifcinterface::modules::viewport
+} // namespace ifcviewerfull::modules::viewport

@@ -25,17 +25,17 @@
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
 
-namespace ifcinterface::modules::properties {
+namespace ifcviewerfull::modules::properties {
 
 PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
-                                         ifcinterface::SessionState* session_state,
+                                         ifcviewerfull::SessionState* session_state,
                                          QObject* parent)
     : QObject(parent), widget_(widget), session_state_(session_state)
 {
-    connect(session_state_, &ifcinterface::SessionState::selectionChanged, this, [this](uint32_t object_id) {
+    connect(session_state_, &ifcviewerfull::SessionState::selectionChanged, this, [this](uint32_t object_id) {
         refresh(object_id);
     });
-    connect(session_state_, &ifcinterface::SessionState::projectReset, this, [this]() {
+    connect(session_state_, &ifcviewerfull::SessionState::projectReset, this, [this]() {
         refresh(0);
     });
     refresh(0);
@@ -118,4 +118,4 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
     widget_->render(state);
 }
 
-} // namespace ifcinterface::modules::properties
+} // namespace ifcviewerfull::modules::properties

@@ -20,12 +20,12 @@
 
 #include "Style.h"
 
-#include "../InterfaceSettings.h"
+#include "../ViewerSettings.h"
 
-namespace ifcinterface::components::style {
+namespace ifcviewerfull::components::style {
 
 QString buildAppStyleSheet() {
-    const auto& theme = ifcinterface::InterfaceSettings::instance();
+    const auto& theme = ifcviewerfull::ViewerSettings::instance();
     QString stylesheet = QStringLiteral(R"(
         QMainWindow#appWindow {
             background: ${app_background};
@@ -494,4 +494,4 @@ QString buildAppStyleSheet() {
     return stylesheet;
 }
 
-} // namespace ifcinterface::components::style
+} // namespace ifcviewerfull::components::style

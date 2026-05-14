@@ -25,9 +25,9 @@
 
 #include <QObject>
 
-namespace ifcinterface { class SessionState; }
+namespace ifcviewerfull { class SessionState; }
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 class ModelsPanel;
 
@@ -35,16 +35,16 @@ class ModelsPanelView : public QObject {
     Q_OBJECT
 public:
     explicit ModelsPanelView(ModelsPanel* widget,
-                             ifcinterface::SessionState* session_state,
+                             ifcviewerfull::SessionState* session_state,
                              QObject* parent = nullptr);
 
 private:
     void reload();
 
     ModelsPanel* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

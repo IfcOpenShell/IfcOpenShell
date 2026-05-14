@@ -25,8 +25,8 @@
 
 #include <QObject>
 
-namespace ifcinterface { class SessionState; }
-namespace ifcinterface::modules::properties {
+namespace ifcviewerfull { class SessionState; }
+namespace ifcviewerfull::modules::properties {
 
 class PropertiesPanel;
 
@@ -34,16 +34,16 @@ class PropertiesPanelView : public QObject {
     Q_OBJECT
 public:
     explicit PropertiesPanelView(PropertiesPanel* widget,
-                                 ifcinterface::SessionState* session_state,
+                                 ifcviewerfull::SessionState* session_state,
                                  QObject* parent = nullptr);
 
 private:
     void refresh(uint32_t object_id);
 
     PropertiesPanel* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::properties
+} // namespace ifcviewerfull::modules::properties
 
 #endif

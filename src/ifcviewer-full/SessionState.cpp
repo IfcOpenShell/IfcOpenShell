@@ -22,7 +22,7 @@
 
 #include "../ifcviewer/Federation.h"
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 
 SessionState::SessionState(QObject* parent)
     : QObject(parent)
@@ -108,4 +108,4 @@ void SessionState::notifyProjectReset() {
     emit projectReset();
 }
 
-} // namespace ifcinterface
+} // namespace ifcviewerfull

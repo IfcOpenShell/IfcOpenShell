@@ -25,8 +25,8 @@
 
 #include <QObject>
 
-namespace ifcinterface { class SessionState; }
-namespace ifcinterface::modules::spatial_hierarchy {
+namespace ifcviewerfull { class SessionState; }
+namespace ifcviewerfull::modules::spatial_hierarchy {
 
 class SpatialHierarchyPanel;
 
@@ -34,7 +34,7 @@ class SpatialHierarchyPanelView : public QObject {
     Q_OBJECT
 public:
     explicit SpatialHierarchyPanelView(SpatialHierarchyPanel* widget,
-                                       ifcinterface::SessionState* session_state,
+                                       ifcviewerfull::SessionState* session_state,
                                        QObject* parent = nullptr);
 
 private:
@@ -42,10 +42,10 @@ private:
     TreeNode* findNode(const NodePath& path);
 
     SpatialHierarchyPanel* widget_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
     QList<TreeNode> nodes_;
 };
 
-} // namespace ifcinterface::modules::spatial_hierarchy
+} // namespace ifcviewerfull::modules::spatial_hierarchy
 
 #endif

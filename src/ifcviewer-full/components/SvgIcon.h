@@ -26,7 +26,7 @@
 #include <QString>
 #include <QSize>
 
-namespace ifcinterface::components::icons {
+namespace ifcviewerfull::components::icons {
 
 QPixmap renderTintedSvgPixmap(const QString& icon_path, const QString& color, const QSize& size);
 QIcon makeTintedSvgIcon(const QString& icon_path,
@@ -37,6 +37,6 @@ QIcon makeAccentSvgIcon(const QString& icon_path);
 QIcon makeSvgIcon(const QString& icon_path);
 QPixmap makeSvgPixmap(const QString& icon_path, const QSize& size);
 
-} // namespace ifcinterface::components::icons
+} // namespace ifcviewerfull::components::icons
 
 #endif

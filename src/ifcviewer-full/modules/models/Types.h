@@ -24,7 +24,7 @@
 #include <QList>
 #include <QString>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 enum class ItemKind {
     Group,
@@ -57,6 +57,6 @@ struct SelectedModelGeorefState {
     QString factor_z;
 };
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models
 
 #endif

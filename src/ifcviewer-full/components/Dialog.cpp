@@ -28,7 +28,7 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 Dialog::Dialog(QWidget* parent, bool scrollable)
     : QDialog(parent)
@@ -140,4 +140,4 @@ void TabbedDialog::addFooterWidget(QWidget* widget) {
     footer_layout_->addWidget(widget);
 }
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components

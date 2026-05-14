@@ -31,7 +31,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::modules::models {
+namespace ifcviewerfull::modules::models {
 
 namespace {
 
@@ -136,4 +136,4 @@ void AddModelDialog::setupUi() {
     addBodyWidget(choices_section);
 }
 
-} // namespace ifcinterface::modules::models
+} // namespace ifcviewerfull::modules::models

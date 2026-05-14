@@ -25,7 +25,7 @@
 
 class ViewportWindow;
 
-namespace ifcinterface::modules::viewport {
+namespace ifcviewerfull::modules::viewport {
 
 class ViewportPanel : public QWidget {
     Q_OBJECT
@@ -40,6 +40,6 @@ private:
     QWidget* viewport_container_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::viewport
+} // namespace ifcviewerfull::modules::viewport
 
 #endif

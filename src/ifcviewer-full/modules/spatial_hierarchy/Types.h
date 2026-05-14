@@ -25,7 +25,7 @@
 #include <QString>
 #include <QStringList>
 
-namespace ifcinterface::modules::spatial_hierarchy {
+namespace ifcviewerfull::modules::spatial_hierarchy {
 
 enum class ItemKind {
     Site,
@@ -43,6 +43,6 @@ struct TreeNode {
 
 using NodePath = QStringList;
 
-} // namespace ifcinterface::modules::spatial_hierarchy
+} // namespace ifcviewerfull::modules::spatial_hierarchy
 
 #endif

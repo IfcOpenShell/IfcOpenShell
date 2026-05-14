@@ -31,7 +31,7 @@ class QLabel;
 class QLineEdit;
 class QToolButton;
 
-namespace ifcinterface::modules::properties {
+namespace ifcviewerfull::modules::properties {
 
 class PropertiesPanel : public components::Panel {
     Q_OBJECT
@@ -51,6 +51,6 @@ private:
     QString quantities_filter_text_;
 };
 
-} // namespace ifcinterface::modules::properties
+} // namespace ifcviewerfull::modules::properties
 
 #endif

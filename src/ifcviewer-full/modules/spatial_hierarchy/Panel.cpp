@@ -27,7 +27,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
-namespace ifcinterface::modules::spatial_hierarchy {
+namespace ifcviewerfull::modules::spatial_hierarchy {
 
 SpatialHierarchyPanel::SpatialHierarchyPanel(QWidget* parent)
     : components::Panel("Spatial Hierarchy", nullptr, parent)
@@ -92,4 +92,4 @@ QString SpatialHierarchyPanel::iconPath(ItemKind kind) const {
     return ":/icons/frame-alt.svg";
 }
 
-} // namespace ifcinterface::modules::spatial_hierarchy
+} // namespace ifcviewerfull::modules::spatial_hierarchy

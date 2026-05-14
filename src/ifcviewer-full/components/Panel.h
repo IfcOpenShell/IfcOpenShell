@@ -26,7 +26,7 @@
 class QWidget;
 class QVBoxLayout;
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 class Panel : public QDockWidget {
     Q_OBJECT
@@ -48,6 +48,6 @@ private:
     QVBoxLayout* body_layout_ = nullptr;
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
 
 #endif

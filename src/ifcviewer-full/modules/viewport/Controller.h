@@ -24,18 +24,18 @@
 #include <QObject>
 #include <memory>
 
-namespace ifcinterface { class SessionState; }
+namespace ifcviewerfull { class SessionState; }
 class ViewportWindow;
 class AreaMeasurement;
 class LengthMeasurement;
 
-namespace ifcinterface::modules::viewport {
+namespace ifcviewerfull::modules::viewport {
 
 class ViewportController : public QObject {
     Q_OBJECT
 
 public:
-    explicit ViewportController(ifcinterface::SessionState* session_state,
+    explicit ViewportController(ifcviewerfull::SessionState* session_state,
                                 ViewportWindow* viewport,
                                 QObject* parent = nullptr);
     ~ViewportController() override;
@@ -62,12 +62,12 @@ private:
     void maybeGuessFederatedFalseOrigin(uint32_t mid);
     void updateVolumeReadout();
 
-    ifcinterface::SessionState* session_state_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
     std::unique_ptr<AreaMeasurement> area_measurement_;
     std::unique_ptr<LengthMeasurement> length_measurement_;
 };
 
-} // namespace ifcinterface::modules::viewport
+} // namespace ifcviewerfull::modules::viewport
 
 #endif

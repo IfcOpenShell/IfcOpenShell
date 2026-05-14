@@ -25,7 +25,7 @@
 #include <QString>
 #include <QWidget>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 struct KeyValueTableRow {
     QString key;
@@ -42,6 +42,6 @@ public:
     explicit KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* parent = nullptr);
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
 
 #endif

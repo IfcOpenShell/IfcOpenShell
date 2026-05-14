@@ -24,7 +24,7 @@
 #include <QTabBar>
 #include <QTabWidget>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 class TabBar : public QTabBar {
     Q_OBJECT
@@ -40,6 +40,6 @@ public:
     explicit TabWidget(QWidget* parent = nullptr);
 };
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
 
 #endif

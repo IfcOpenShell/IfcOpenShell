@@ -23,22 +23,22 @@
 
 #include <QString>
 
-namespace ifcinterface::components::style::metrics {
+namespace ifcviewerfull::components::style::metrics {
 
 inline constexpr int padding = 6;
 inline constexpr int section_body_padding = 10;
 inline constexpr int section_header_padding = 2;
 inline constexpr int panel_radius = 3;
 
-} // namespace ifcinterface::components::style::metrics
+} // namespace ifcviewerfull::components::style::metrics
 
-namespace ifcinterface::components::style::typography {
+namespace ifcviewerfull::components::style::typography {
 
 inline constexpr int small = 10;
 
-} // namespace ifcinterface::components::style::typography
+} // namespace ifcviewerfull::components::style::typography
 
-namespace ifcinterface::components::style::palette {
+namespace ifcviewerfull::components::style::palette {
 
 inline constexpr auto app_background = "#26292f";
 inline constexpr auto border = "#3e444e";
@@ -66,12 +66,12 @@ inline constexpr auto warning_text = "#e4b35a";
 inline constexpr auto selection_text = "#14161a";
 inline constexpr auto hover_text = "#ffffff";
 
-} // namespace ifcinterface::components::style::palette
+} // namespace ifcviewerfull::components::style::palette
 
-namespace ifcinterface::components::style {
+namespace ifcviewerfull::components::style {
 
 QString buildAppStyleSheet();
 
-} // namespace ifcinterface::components::style
+} // namespace ifcviewerfull::components::style
 
 #endif

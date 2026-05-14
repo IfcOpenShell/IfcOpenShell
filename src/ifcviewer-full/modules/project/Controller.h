@@ -26,12 +26,12 @@
 class QWidget;
 class Federation;
 class ViewportWindow;
-namespace ifcinterface { class ElementRegistry; }
-namespace ifcinterface { class SessionState; }
-namespace ifcinterface::modules::models { class ModelsPanelController; }
-namespace ifcinterface::modules::viewport { class ViewportController; }
+namespace ifcviewerfull { class ElementRegistry; }
+namespace ifcviewerfull { class SessionState; }
+namespace ifcviewerfull::modules::models { class ModelsPanelController; }
+namespace ifcviewerfull::modules::viewport { class ViewportController; }
 
-namespace ifcinterface::modules::project {
+namespace ifcviewerfull::modules::project {
 
 class ProjectController : public QObject {
     Q_OBJECT
@@ -39,11 +39,11 @@ class ProjectController : public QObject {
 public:
     explicit ProjectController(QWidget* host,
                                Federation* federation,
-                               ifcinterface::SessionState* session_state,
-                               ifcinterface::ElementRegistry* element_registry,
+                               ifcviewerfull::SessionState* session_state,
+                               ifcviewerfull::ElementRegistry* element_registry,
                                ViewportWindow* viewport,
-                               ifcinterface::modules::models::ModelsPanelController* models_controller,
-                               ifcinterface::modules::viewport::ViewportController* viewport_controller,
+                               ifcviewerfull::modules::models::ModelsPanelController* models_controller,
+                               ifcviewerfull::modules::viewport::ViewportController* viewport_controller,
                                QObject* parent = nullptr);
 
     bool newProject();
@@ -59,13 +59,13 @@ private:
 
     QWidget* host_ = nullptr;
     Federation* federation_ = nullptr;
-    ifcinterface::SessionState* session_state_ = nullptr;
-    ifcinterface::ElementRegistry* element_registry_ = nullptr;
+    ifcviewerfull::SessionState* session_state_ = nullptr;
+    ifcviewerfull::ElementRegistry* element_registry_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
-    ifcinterface::modules::models::ModelsPanelController* models_controller_ = nullptr;
-    ifcinterface::modules::viewport::ViewportController* viewport_controller_ = nullptr;
+    ifcviewerfull::modules::models::ModelsPanelController* models_controller_ = nullptr;
+    ifcviewerfull::modules::viewport::ViewportController* viewport_controller_ = nullptr;
 };
 
-} // namespace ifcinterface::modules::project
+} // namespace ifcviewerfull::modules::project
 
 #endif

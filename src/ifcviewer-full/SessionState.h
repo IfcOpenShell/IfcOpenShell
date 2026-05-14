@@ -28,7 +28,7 @@
 class Federation;
 class SceneLoader;
 
-namespace ifcinterface {
+namespace ifcviewerfull {
 
 class ElementRegistry;
 
@@ -88,6 +88,6 @@ private:
     QHash<uint32_t, QString> model_id_to_fed_id_;
 };
 
-} // namespace ifcinterface
+} // namespace ifcviewerfull
 
 #endif

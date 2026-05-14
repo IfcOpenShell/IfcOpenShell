@@ -25,7 +25,7 @@
 #include <QGridLayout>
 #include <QLabel>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* parent)
     : QWidget(parent)
@@ -69,4 +69,4 @@ KeyValueTable::KeyValueTable(const QList<KeyValueTableRow>& rows, QWidget* paren
     }
 }
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components

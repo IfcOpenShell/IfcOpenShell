@@ -25,7 +25,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-namespace ifcinterface::modules::todo {
+namespace ifcviewerfull::modules::todo {
 
 TodoPanel::TodoPanel(const QString& title, QWidget* parent)
     : QWidget(parent)
@@ -56,4 +56,4 @@ TodoPanel::TodoPanel(const QString& title, QWidget* parent)
     layout->addWidget(section);
 }
 
-} // namespace ifcinterface::modules::todo
+} // namespace ifcviewerfull::modules::todo

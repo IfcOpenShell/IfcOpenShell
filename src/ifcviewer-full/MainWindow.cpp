@@ -57,27 +57,27 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::shell {
+namespace ifcviewerfull::shell {
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     federation_ = new Federation(this);
-    element_registry_ = new ifcinterface::ElementRegistry(this);
-    session_state_ = new ifcinterface::SessionState(this);
+    element_registry_ = new ifcviewerfull::ElementRegistry(this);
+    session_state_ = new ifcviewerfull::SessionState(this);
     session_state_->bindFederation(federation_);
     session_state_->bindElementRegistry(element_registry_);
     connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
         setWindowModified(dirty);
         updateWindowTitle();
     });
-    connect(session_state_, &ifcinterface::SessionState::modelsChanged,
+    connect(session_state_, &ifcviewerfull::SessionState::modelsChanged,
             this, &MainWindow::updateWindowTitle);
-    connect(session_state_, &ifcinterface::SessionState::projectOpened,
+    connect(session_state_, &ifcviewerfull::SessionState::projectOpened,
             this, [this](const QString&) { updateWindowTitle(); });
-    connect(session_state_, &ifcinterface::SessionState::projectSaved,
+    connect(session_state_, &ifcviewerfull::SessionState::projectSaved,
             this, [this](const QString&) { updateWindowTitle(); });
-    connect(session_state_, &ifcinterface::SessionState::projectReset,
+    connect(session_state_, &ifcviewerfull::SessionState::projectReset,
             this, &MainWindow::updateWindowTitle);
     setupChrome();
     setupViewport();
@@ -448,7 +448,7 @@ void MainWindow::setupStatus() {
         status_perf_label_->setVisible(show);
         if (!show) status_perf_label_->clear();
     });
-    connect(session_state_, &ifcinterface::SessionState::statusMessageChanged,
+    connect(session_state_, &ifcviewerfull::SessionState::statusMessageChanged,
             this, [this](const QString& mode, const QString& detail) {
         status_mode_label_->setText(mode);
         status_selection_label_->setText(detail);
@@ -528,4 +528,4 @@ void MainWindow::updateWindowTitle() {
     }
 }
 
-} // namespace ifcinterface::shell
+} // namespace ifcviewerfull::shell

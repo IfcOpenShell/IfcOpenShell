@@ -32,7 +32,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcinterface::components {
+namespace ifcviewerfull::components {
 
 namespace {
 
@@ -137,4 +137,4 @@ void Panel::clearBodyWidgets() {
     }
 }
 
-} // namespace ifcinterface::components
+} // namespace ifcviewerfull::components
