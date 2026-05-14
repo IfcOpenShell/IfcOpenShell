@@ -858,6 +858,13 @@ void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     std::vector<OverlayRenderer::Label> labels;
     QStringList hud_lines;
     hud_lines << QStringLiteral("Laser measure (click another point for distance)");
+    double enh[3] = {0.0, 0.0, 0.0};
+    if (vp.meshLocalToGlobal(first_pick_.object_id, first_pick_.mesh_local, enh)) {
+        hud_lines << QString("ENH: %1, %2, %3")
+                         .arg(enh[0], 0, 'f', 3)
+                         .arg(enh[1], 0, 'f', 3)
+                         .arg(enh[2], 0, 'f', 3);
+    }
 
     // ---------- Coplanar-patch BFS for face extent ----------
     // Read back the seed mesh, transform every vertex into world space,

@@ -22,6 +22,7 @@
 
 #include "Panel.h"
 
+#include "../../InterfaceSettings.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
 
@@ -70,6 +71,9 @@ ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
             this, [this]() { reload(); });
     connect(session_state_, &ifcinterface::SessionState::projectOpened,
             this, [this](const QString&) { reload(); });
+    connect(&ifcinterface::InterfaceSettings::instance(),
+            &ifcinterface::InterfaceSettings::themeChanged,
+            this, [this]() { reload(); });
 
     reload();
 }

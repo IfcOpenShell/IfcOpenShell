@@ -233,6 +233,11 @@ public:
         float    composed_transform[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
     };
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
+    // Resolve a mesh-local point to the IFC's own georeferenced global
+    // frame: CoordinateOperation · placement_transformation · mesh_local.
+    // Excludes FederatedFalseOrigin and ModelTransformation.
+    bool meshLocalToGlobal(uint32_t object_id, const float mesh_local[3],
+                           double global_out[3]) const;
 
     // CPU raycast against the per-model BVHs.  Walks the BVH for each
     // finalised model, transforms the world ray into mesh-local space

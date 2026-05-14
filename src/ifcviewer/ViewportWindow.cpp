@@ -4156,6 +4156,28 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     return false;
 }
 
+bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
+                                       const float mesh_local[3],
+                                       double global_out[3]) const {
+    InstanceLookup inst;
+    if (!findInstance(object_id, inst)) return false;
+
+    auto model_it = models_gpu_.find(inst.model_id);
+    if (model_it == models_gpu_.end()) return false;
+
+    using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+    const Eigen::Matrix4d placement =
+        Eigen::Map<const Mat4fCol>(inst.placement_transformation).cast<double>();
+    const Eigen::Vector4d local(mesh_local[0], mesh_local[1], mesh_local[2], 1.0);
+    const Eigen::Vector3d global =
+        (model_it->second.coordinate_operation_meters * placement * local).head<3>();
+
+    global_out[0] = global.x();
+    global_out[1] = global.y();
+    global_out[2] = global.z();
+    return true;
+}
+
 void ViewportWindow::setToolMode(ToolMode mode) {
     if (tool_mode_ == mode) return;
     tool_mode_ = mode;

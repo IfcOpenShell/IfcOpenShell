@@ -20,9 +20,12 @@
 
 #include "Panel.h"
 
+#include "../../InterfaceSettings.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 
+#include <QBrush>
+#include <QColor>
 #include <QDataStream>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -427,6 +430,13 @@ void ModelsPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
     } else {
         item->setIcon(0, components::icons::makeSvgIcon(":/icons/cube.svg"));
         item->setIcon(1, components::icons::makeSvgIcon(node.visible ? ":/icons/eye-solid.svg" : ":/icons/eye-closed.svg"));
+    }
+
+    if (!node.visible) {
+        const QBrush disabled_brush(
+            QColor(ifcinterface::InterfaceSettings::instance().color("disabled_text")));
+        item->setForeground(0, disabled_brush);
+        item->setForeground(1, disabled_brush);
     }
 
     for (const auto& child : node.children) {
