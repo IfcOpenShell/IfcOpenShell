@@ -77,6 +77,28 @@ ModelsPanelController::ModelsPanelController(QWidget* host,
         session_state_->notifyFederationStructureChanged();
         session_state_->setStatusMessage("Models", "Group added");
     });
+    connect(widget_, &ModelsPanel::renameGroupRequested, this,
+            [this](const QString& id, const QString& name) {
+        session_state_->federation()->setGroupName(id, name);
+        session_state_->notifyFederationStructureChanged();
+        session_state_->setStatusMessage("Models", "Group renamed");
+    });
+    connect(widget_, &ModelsPanel::moveGroupRequested, this,
+            [this](const QString& id, const QString& parent_group_id) {
+        session_state_->federation()->setGroupParent(id, parent_group_id);
+        session_state_->notifyFederationStructureChanged();
+        session_state_->setStatusMessage("Models", parent_group_id.isEmpty() ? "Group moved to root"
+                                                                               : "Group moved");
+    });
+    connect(widget_, &ModelsPanel::moveModelsRequested, this,
+            [this](const QStringList& ids, const QString& parent_group_id) {
+        for (const auto& id : ids) {
+            session_state_->federation()->setModelGroup(id, parent_group_id);
+        }
+        session_state_->notifyFederationStructureChanged();
+        session_state_->setStatusMessage("Models", parent_group_id.isEmpty() ? "Model(s) moved to root"
+                                                                              : "Model(s) moved");
+    });
     connect(widget_, &ModelsPanel::removeGroupRequested, this,
             [this](const QString& id) {
         session_state_->federation()->removeGroup(id);

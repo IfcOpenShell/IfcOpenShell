@@ -40,6 +40,9 @@ public:
 signals:
     void visibilityToggleRequested(ItemKind kind, const QString& id);
     void addGroupRequested(const QString& parent_group_id, const QString& name);
+    void renameGroupRequested(const QString& id, const QString& name);
+    void moveGroupRequested(const QString& id, const QString& parent_group_id);
+    void moveModelsRequested(const QStringList& ids, const QString& parent_group_id);
     void removeGroupRequested(const QString& id);
     void removeModelRequested(const QString& id);
 
