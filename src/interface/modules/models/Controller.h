@@ -54,6 +54,7 @@ public:
 
 private:
     QString formatElapsed(qint64 ms) const;
+    void writeSidecarForModel(SceneLoader* loader, uint32_t mid) const;
 
     QWidget* host_ = nullptr;
     ModelsPanel* widget_ = nullptr;

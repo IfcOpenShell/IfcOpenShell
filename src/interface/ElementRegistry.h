@@ -53,6 +53,7 @@ public:
     void bindLoader(SceneLoader* loader);
     void clear();
     void removeModel(uint32_t model_id);
+    std::vector<BasicElementInfo> basicElementInfoForModel(uint32_t model_id) const;
     std::optional<BasicElementInfo> findBasicElementInfo(uint32_t object_id) const;
     std::optional<express::Base> findEntity(uint32_t object_id) const;
 

@@ -27,13 +27,19 @@
 #include "../../SessionState.h"
 #include "AddModelDialog.h"
 #include "../../../ifcviewer/Federation.h"
+#include "../../../ifcviewer/LodBuilder.h"
 #include "../../../ifcviewer/SceneLoader.h"
+#include "../../../ifcviewer/SidecarCache.h"
 #include "../../../ifcviewer/ViewportWindow.h"
 
+#include <QElapsedTimer>
 #include <QFileDialog>
+#include <QDebug>
 #include <QListView>
 #include <QMessageBox>
 #include <QTreeView>
+
+#include <Eigen/Dense>
 
 namespace ifcinterface::modules::models {
 
@@ -102,6 +108,7 @@ void ModelsPanelController::bindLoader(SceneLoader* loader) {
     });
     connect(loader, &SceneLoader::loadedFromStream, this,
             [this, loader](uint32_t mid, qint64 elapsed_ms) {
+        writeSidecarForModel(loader, mid);
         session_state_->setStatusMessage(
             "Loaded",
             QString("%1 streamed in %2")
@@ -224,6 +231,66 @@ QString ModelsPanelController::formatElapsed(qint64 ms) const {
     return (ms >= 1000)
         ? QString::number(ms / 1000.0, 'f', 2) + " s"
         : QString::number(ms) + " ms";
+}
+
+void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t mid) const {
+    if (!loader || !viewport_ || !session_state_) return;
+
+    SidecarData sidecar_data;
+    if (!viewport_->snapshotModel(mid, sidecar_data)) return;
+
+    if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
+        sidecar_data.has_coordinate_operation = georef->has_coordinate_operation ? 1 : 0;
+        Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
+            sidecar_data.coordinate_operation_meters) = georef->coordinate_operation_meters;
+        sidecar_data.project_length_to_meters = georef->units.project_length_to_meters;
+        sidecar_data.map_unit_to_meters = georef->units.map_unit_to_meters;
+    }
+
+    auto* element_registry = session_state_->elementRegistry();
+    if (element_registry) {
+        for (const auto& info : element_registry->basicElementInfoForModel(mid)) {
+            PackedElementInfo packed;
+            packed.object_id = info.object_id;
+            packed.model_id = info.model_id;
+            packed.ifc_id = info.ifc_id;
+            packed.parent_id = info.parent_id;
+
+            const std::string guid = info.guid.toStdString();
+            packed.guid_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
+            packed.guid_length = static_cast<uint32_t>(guid.size());
+            sidecar_data.string_table += guid;
+
+            const std::string name = info.name.toStdString();
+            packed.name_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
+            packed.name_length = static_cast<uint32_t>(name.size());
+            sidecar_data.string_table += name;
+
+            const std::string type = info.type.toStdString();
+            packed.type_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
+            packed.type_length = static_cast<uint32_t>(type.size());
+            sidecar_data.string_table += type;
+
+            sidecar_data.elements.push_back(packed);
+        }
+    }
+
+    QElapsedTimer lod_timer;
+    lod_timer.start();
+    buildLods(sidecar_data);
+    const LodStats lod_stats = summariseLods(sidecar_data);
+    qDebug("  LOD build: %lld ms — %u/%u meshes got LOD1 "
+           "(%u tris -> %u tris for those meshes)",
+           lod_timer.elapsed(),
+           lod_stats.meshes_with_lod1, lod_stats.meshes_total,
+           lod_stats.tris_lod0_for_lod1, lod_stats.tris_lod1);
+
+    viewport_->applyLodExtension(mid, sidecar_data);
+
+    QElapsedTimer sidecar_timer;
+    sidecar_timer.start();
+    const bool ok = writeSidecar(loader->filePath(mid).toStdString(), sidecar_data);
+    qDebug("  Sidecar write: %lld ms (%s)", sidecar_timer.elapsed(), ok ? "ok" : "FAILED");
 }
 
 } // namespace ifcinterface::modules::models

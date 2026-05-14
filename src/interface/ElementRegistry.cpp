@@ -53,6 +53,17 @@ void ElementRegistry::removeModel(uint32_t model_id) {
     }
 }
 
+std::vector<BasicElementInfo> ElementRegistry::basicElementInfoForModel(uint32_t model_id) const {
+    std::vector<BasicElementInfo> result;
+    result.reserve(elements_.size());
+    for (const auto& [object_id, info] : elements_) {
+        (void)object_id;
+        if (info.model_id != model_id) continue;
+        result.push_back(info);
+    }
+    return result;
+}
+
 std::optional<BasicElementInfo> ElementRegistry::findBasicElementInfo(uint32_t object_id) const {
     auto it = elements_.find(object_id);
     if (it == elements_.end()) return std::nullopt;
