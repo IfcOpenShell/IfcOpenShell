@@ -1457,6 +1457,13 @@ std::pair<double, double> merge_score(const MergedBoxRecord& a, const MergedBoxR
 }
 
 bool clusters_can_merge(const BoxCluster& a, const BoxCluster& b, double angle_tol_deg = 5., double axis_overlap_ratio_limit = 0.5) {
+    auto min_width = a.box.avg_width < b.box.avg_width ? a.box.avg_width : b.box.avg_width;
+    auto max_width = a.box.avg_width > b.box.avg_width ? a.box.avg_width : b.box.avg_width;
+    if (min_width > 1.e-9) {
+        if (max_width / min_width > 5) {
+            return false;
+        }
+    }
     if (!aabb_overlap(a.box.bbox, b.box.bbox)) {
         return false;
     }
