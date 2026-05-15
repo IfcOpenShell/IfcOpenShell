@@ -799,6 +799,7 @@ class DecoratorData:
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension") or {}
         show_description_only = pset_data.get("ShowDescriptionOnly", False)
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
+        suppress_zero_feet = pset_data.get("SuppressZeroFeet", False)
         text_prefix = pset_data.get("TextPrefix", None) or ""
         text_suffix = pset_data.get("TextSuffix", None) or ""
         custom_units = list(pset_data.get("CustomUnit", None) or [])
@@ -808,6 +809,7 @@ class DecoratorData:
             "dimension_style": dimension_style,
             "show_description_only": show_description_only,
             "suppress_zero_inches": suppress_zero_inches,
+            "suppress_zero_feet": suppress_zero_feet,
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
             "fill_bg": fill_bg,
